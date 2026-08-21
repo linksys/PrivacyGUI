@@ -41,12 +41,21 @@ import '../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
 /// other 17 cards. What #1267 makes possible is measuring them; measuring them is
 /// separate work that will add coordinates.
 ///
-/// Non-default profiles get their own allowlist keys (`card|width|tab@profile`),
-/// so the default profile's arithmetic — the number every closed ticket in this
-/// epic quotes — is untouched by anything here.
+/// Non-default profiles used to get their own allowlist keys
+/// (`card|width|tab@profile`), which kept the default profile's arithmetic — the
+/// number every closed ticket in this epic quotes — untouched by anything here.
+/// **#1341 re-keyed the allowlist on the overflow's `file:line`**, and a source
+/// location has no profile axis, so an exemption earned here now covers that same
+/// location on the default data too. The cell ids the profile sweep records
+/// (`OverflowCell`) still carry `profile`, so the *dataset* keeps the two apart;
+/// it is only exemptions that no longer separate. Nothing is in fact widened
+/// today — the allowlist is empty — and `dashboard_card_overflow_test.dart`'s
+/// profile-sweep header states the trade in full.
 class CardDataProfile {
-  /// Short key used in test names and in allowlist keys. Must be stable: it is
-  /// part of the ratchet's identity for these cases.
+  /// Short key used in test names and in the baseline dataset's cell ids. Must be
+  /// stable: renaming it reads as every cell of this profile disappearing and a
+  /// new profile's cells appearing. Since #1341 it is *not* part of an allowlist
+  /// key — those are `file:line`.
   final String key;
 
   /// What varies from the default fixtures, for the failure message.

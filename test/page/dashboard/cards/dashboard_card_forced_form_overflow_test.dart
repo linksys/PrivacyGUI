@@ -79,11 +79,12 @@ import '../../../util/overflow_baseline.dart';
 ///
 /// ## No allowlist
 ///
-/// `known_overflows.json` baselines the normal form's inherited debt at widths the
-/// grid chose. Nothing here is inherited — these boxes did not exist before this
-/// ticket — so a failure is this ticket's regression and there is nothing to
-/// grandfather. AC 10 is the other half of that: the fixture is unchanged, and the
-/// #1183 gate stays green.
+/// `known_overflows.json` baselines the normal form's inherited debt — since #1341
+/// keyed on the overflow's `file:line`, so an exemption is a source location rather
+/// than a coordinate the grid chose. Nothing here is inherited — these boxes did
+/// not exist before this ticket — so a failure is this ticket's regression and
+/// there is nothing to grandfather. AC 10 is the other half of that: the fixture is
+/// unchanged, and the #1183 gate stays green.
 ///
 /// ## Mutation table
 ///

@@ -14,11 +14,12 @@ through).
 
 **The gate is not one test.** It is a family of independent suites that share
 two things and nothing else: the tag `layout-gate` (which is what makes them
-PR-blocking) and the probe in
-[test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart). **38
-suites carry `layout-gate` today**, and most of them are not overflow sweeps at
-all — they are density, readability, form and gesture, layout-block, probe
-self-test and render-parity gates. `layout-gate` (#1336) is the name of what
+PR-blocking) and the measurement spine in
+[test/layout_gate/](../../../test/layout_gate/), still imported through
+[test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
+a re-export of it since #1340. **39 suites carry `layout-gate` today**, and most
+of them are not overflow sweeps at all — they are density, readability, form and
+gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
@@ -33,7 +34,8 @@ gate.
 | `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328) |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles all 314 test files in order to skip 310 of them: measured 2026-08-21,
+compiles every test file in the repo (315 at #1341) to skip all but four:
+measured 2026-08-21,
 those same 2,386 tests take **1m53s under the tag and 32s when the four files are
 named**. Identical selection either way, so name the files for a tight inner loop
 and use the tag when a fifth sweep must not be silently missed.
@@ -43,6 +45,8 @@ verdict depends on", which would slide the tag back over the whole family. So
 the probe self-tests
 ([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
 [overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
+and the ratchet's oracle
+([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them.
 
@@ -99,6 +103,12 @@ below may drift:
 
 1. Gate test — [test/page/dashboard/cards/dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart)
 2. Allowlist fixture — [test/fixtures/known_overflows.json](../../../test/fixtures/known_overflows.json)
+   and the module that reads it —
+   [test/layout_gate/ratchet.dart](../../../test/layout_gate/ratchet.dart)
+   (`OverflowRatchet`: key shape, dead-entry rules, why a null site is never
+   exempt). Its oracle is
+   [test/layout_gate/ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart)
+   — the fastest way to see what a fixture edit does is to add a case there.
 3. Runner — [tool/run_overflow_test.sh](../../../tool/run_overflow_test.sh)
 4. Probe + grid math + tab registry — [test/util/dashboard/dashboard_card_probe.dart](../../../test/util/dashboard/dashboard_card_probe.dart)
 5. Data profiles + per-card sweep list — [test/util/dashboard/card_data_profiles.dart](../../../test/util/dashboard/card_data_profiles.dart)
@@ -107,9 +117,9 @@ below may drift:
 
 ## Architecture — Data Flow (the card sweep)
 
-Everything in this diagram except `overflow_probe.dart` belongs to the card
-sweep alone. Another member of the gate reuses the box in the middle and nothing
-above or below it.
+Everything in this diagram except the `test/layout_gate/` boxes belongs to the
+card sweep alone. Another member of the gate reuses the box in the middle and
+nothing above or below it.
 
 ```
 UspWidgetSpecs.all ──┐  (card registry: id + min/pref/max column span)
@@ -126,18 +136,27 @@ card_data_profiles.dart ────────────┤  (#1267: the rou
     triples, each pumped through the same width × locale sweep
                                     │
                                     ▼
-                    overflow_probe.dart  (runWithOverflowCollection)
+                    layout_gate/collector.dart  (runWithOverflowCollection,
+                                                 via overflow_probe.dart)
                     hooks FlutterError.onError → collects "overflowed by Npx"
                     as OverflowIncident, forwards real errors so they still fail
+                    · layout_gate/surface.dart sets the viewport and restores it
                                     │
                                     ▼
     dashboard_card_overflow_test.dart  (one testWidgets PER card×width×tab×locale,
                                         plus one per profile sweep's own cases)
-          overflow > 2px tolerance?
-            ├─ in allowlist  → print "KNOWN OVERFLOW (allowlisted)", PASS
-            └─ not in allowlist → FAIL with fix/allowlist instructions
-          clean, but the coordinate IS in the allowlist?
-            └─ FAIL "dead exemption" / "over-broad exemption" (both directions)
+          overflow > 2px tolerance?  →  layout_gate/ratchet.dart consultCell()
+            ├─ EVERY incident's file:line allowlisted for this locale
+            │    → print "KNOWN OVERFLOW (allowlisted)" + its tracking note, PASS
+            └─ any incident not allowlisted → FAIL, naming that file:line as the
+                                              key to add
+                                    │
+                      tearDownAll → ratchet.deadEntryFailure()
+            └─ an entry, or one of its locale tags, that nothing overflowed at all
+               run  → FAIL "dead exemption" / "over-broad exemption". Taken ONCE
+               for the whole run, and skipped entirely when the run was filtered
+               (-c / -L / -m), because a subset cannot tell "fixed" from
+               "not measured"
                                     │
                     (only when DUMP > 0) tearDownAll →
                                     ▼
@@ -223,100 +242,148 @@ committed baselines, in
 
 ## Fixture Format — `known_overflows.json`
 
+**Keys are the overflowing widget's source location, `file:line` — not a
+coordinate.** #1341 re-keyed it: a `card|width|tab` key invalidated wholesale the
+moment a layout was rearranged, while a source location survives the
+rearrangement and is the join column between this gate's verdicts and golden CI's
+advisory findings (architecture doc §3.5, §8).
+
 ```jsonc
 {
   "tracking": {
-    "network_health": "legend fix #1145/#1174"   // optional per-card note,
-  },                                               // printed on allowlisted hits
+    // same file:line keys as below — one note per SITE, not per card
+    "lib/page/dashboard/views/components/usp_network_health_card.dart:424":
+        "legend fix #1145/#1174",
+  },
   "allowlist": {
-    // key = "cardId|widthLabel|tabIndex"  →  set of overflowing locale tags
-    "lan_info|min|0": ["*"],                       // "*" = structural: overflows
+    // key = "<repo-relative file>:<line>"  →  set of overflowing locale tags
+    "lib/page/dashboard/views/components/usp_network_health_card.dart:424":
+        ["de", "fi", "pl"],                        // text-length dependent
+    "ui_kit_library/lib/src/widgets/app_chip.dart:63": ["*"]
+                                                   // "*" = structural: overflows
                                                    //   in EVERY locale (text-length
                                                    //   independent)
-    "device_info|preferred|0": ["fi", "id", "pl", "sv"],  // text-length dependent
-    "system_status|min|2": ["de", "es", "es_AR", "fr", "..."],
-    "wifi_performance|min|2@triband": ["tr"]      // a data-profile sweep's case
   }
 }
 ```
 
-Key grammar — `cardId|widthLabel|tabIndex[@profileKey]`:
+Key grammar — `<file>:<line>`:
 
-- `cardId` — a `UspWidgetSpecs.all` id (`-l` lists them).
-- `widthLabel` — one of `min` / `preferred` / `max` (the card's column span whose
-  narrowest grid width overflowed).
-- `tabIndex` — 0-based; single-view cards are always `0`. Tabbed cards use the
-  count in `kTabbedCardTabCounts`.
-- `@profileKey` — **absent** for the default data profile, which keeps every
-  pre-#1267 key byte-identical. A `kCardDataProfileSweeps` case lands under
-  `…@<profile.key>` (e.g. `@triband`) so a second profile's findings can never
-  move the default profile's entry count — the number every closed ticket in this
-  epic quotes as "N coordinates cleared" (design §2.7).
+- The exact string the failure message already prints. Every incident renders as
+  `+41.0px right at lib/page/…/x.dart:424` (`OverflowIncident.toString`), so the
+  key is the part after `at` — copy it, do not reconstruct it.
+- `file` is repo-relative and forward-slashed. A widget built inside a git
+  dependency collapses to `<package>/<path>` (e.g.
+  `ui_kit_library/lib/src/…`), so pub-cache paths and commit SHAs never reach the
+  fixture. `line` is 1-based and must be > 0.
+- **A pre-#1341 coordinate key is rejected, loudly.** `OverflowRatchet` throws on
+  any key containing `|` or `@` (and on a bare card id in `tracking`), because a
+  key that matches no site would otherwise read as "not allowlisted" everywhere
+  and the stale entry would be invisible in both directions. Re-derive keys from a
+  full sweep's failure messages; there is no mechanical translation from the old
+  shape, since one coordinate can hold several sites and one site appears at many
+  coordinates.
+- **The key has no width, tab or profile axis.** An exemption therefore covers
+  that source location *wherever* it overflows — every width, every tab, the
+  data-profile sweeps and the normal-band sweep included. That is coarser than the
+  old key on purpose; if a profile-only exemption is ever needed, narrow the key
+  shape in `ratchet.dart` rather than adding a second fixture.
+- **An incident whose location did not resolve can never be exempted** — a null
+  site is not a key, and `"*"` on every entry still will not cover it. Deliberate,
+  and the safe direction.
 - Value — a JSON array of **locale tags** (`_localeTag` format: `en`, `de`,
   `es_AR`, `fr_CA`, `pt_PT`, `zh_TW`, …), OR `["*"]` meaning "overflows in all
   locales regardless of text". A hit is tolerated if the set contains the locale
-  **or** contains `"*"`.
+  **or** contains `"*"`. An empty array, a non-string tag, `"*"` mixed with
+  explicit tags, and an unknown top-level key are all parse errors — the loader
+  fails the run once as `(setUpAll)` instead of printing a warning nobody reads
+  inside a 1,900-test run.
 
 ## The Ratchet — How the Gate Reacts to Edits
 
 The allowlist only *tolerates* the exact baseline. Every direction fails:
 
-- **New overflow** — a card/width/tab not listed, or a listed entry seen in a
-  **new locale** → the test FAILS. This is the point: regressions block the PR.
+- **New overflow** — a `file:line` not listed, or a listed site seen in a **new
+  locale** → the test FAILS. This is the point: regressions block the PR. A cell is
+  tolerated only when **every** incident in it is exempt; one known site plus one
+  new site still fails, and the message quotes the new one.
 - **Premature removal** — deleting a locale that still overflows fails exactly
   that test (proven both ways in #1183). You cannot shrink the list by editing
   JSON alone; you must fix the layout first.
-- **Dead exemption** — a locale listed as overflowing that now renders clean also
-  FAILS, with "remove it". Before this, a fixed overflow kept its exemption
-  silently, and a stale entry was indistinguishable from tracked debt — which is
-  how 46 of them came to be retired by hand. Fixing a card therefore includes
-  editing the fixture in the same change.
-- **Over-broad `"*"`** — a `"*"` entry with *any* clean locale FAILS too: `"*"`
-  claims the overflow is structural, so one clean locale disproves it. Replace it
-  with the explicit tags that still overflow.
+- **Dead exemption** — an entry (or one of its locale tags) that nothing overflowed
+  at during the run FAILS, with "remove it". Before this, a fixed overflow kept its
+  exemption silently, and a stale entry was indistinguishable from tracked debt —
+  which is how 46 of them came to be retired by hand. Fixing a card therefore
+  includes editing the fixture in the same change.
+- **Over-broad `"*"`** — a `"*"` entry seen in fewer locales than the run covered
+  FAILS too: `"*"` claims the overflow is structural, so a locale it never appeared
+  in disproves it. Replace it with the explicit tags the message lists.
+
+Two things about that closing direction, both consequences of the key:
+
+- **It is judged once, in `tearDownAll`, over the whole run** — not per cell. One
+  source location can be rendered by many cards, so a single clean cell proves
+  nothing about the site. The cost: the failure names the site and the locales, and
+  no longer names the exact coordinate that came clean. Get that from
+  `./tool/run_overflow_test.sh -c <card> -d 2`.
+- **A filtered run does not judge it at all.** `-c` / `-L` / `-m` (and
+  `--dart-define=LOCALE` / `MIN_SCREEN`) each mean the run measured a subset, and a
+  subset cannot distinguish "fixed" from "not measured". The suite prints
+  `⚠️ … dead-entry detection skipped` and leaves the verdict to the full gate. So
+  **a green `-c <card>` run is not evidence that an entry is still needed.**
 
 The gate's own failure message tells the operator exactly what to do:
 
 > Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if this is knowingly
-> deferred, add "`<locale>`" to the `'<card>|<width>|<tab>'` entry.
+> deferred, add "`<locale>`" to the `'lib/page/…/x.dart:424'` entry of the
+> "allowlist" map in `test/fixtures/known_overflows.json`, along with a "tracking"
+> note under the same key.
 
 ## Playbooks
 
 ### A. A `layout-gate` test failed — triage
 
 1. Read the failure: it names `card`, `width` (`min`/`preferred`/`max`), `tab`,
-   `locale`, and the overflow (`+Npx right/bottom`).
+   `locale`, the overflow (`+Npx right/bottom`) **and the source location the
+   overflow happened at** (`at lib/page/…/x.dart:424`). That last part is the
+   allowlist key and usually the fastest route to the culprit widget — go read that
+   line before anything else.
 2. Reproduce + visualize:
    `./tool/run_overflow_test.sh -c <card> -L <locale> -o`
 3. Decide, in this order:
    - **Real regression** (a fix or new feature made an existing-clean case
      overflow) → **fix the layout**, don't allowlist. Re-run until green.
    - **Genuinely new card** → see Playbook C.
-   - **Known overflow surfacing in a new locale** (an entry exists for
-     `card|width|tab` but not this locale) → if the deferral is legitimate and
+   - **Known overflow surfacing in a new locale** (an entry exists for that
+     `file:line` but not this locale) → if the deferral is legitimate and
      tracked, add the locale tag to that entry's array. Prefer fixing.
-   - **"Dead exemption" / "Over-broad exemption"** → the opposite failure: the
-     coordinate is clean and the fixture still exempts it. Do what the message
-     says — drop that locale tag (and the entry plus its `tracking` note once the
-     list empties), or narrow a `"*"` to the tags that still overflow. Nothing to
-     fix in the layout; this is the ratchet closing.
+   - **"Dead exemption" / "Over-broad exemption"** → the opposite failure, and it
+     arrives from `(tearDownAll)` rather than from a named test: nothing in the run
+     overflowed at a site the fixture still exempts. Do what the message says —
+     drop that locale tag (and the entry plus its `tracking` note once the list
+     empties), or narrow a `"*"` to the tags it lists. Nothing to fix in the
+     layout; this is the ratchet closing. Only a **full** sweep raises it (see
+     above), so do not go looking for it in a `-c` run.
    - **A `[<profile>]` in the failure name** → the case comes from
      `kCardDataProfileSweeps`, so the *data*, not the width, is what breaks it.
-     The message says so explicitly. Its allowlist key carries `@<profileKey>`.
+     The message says so explicitly. Note that allowlisting it exempts that same
+     `file:line` on the default data too — the key carries no profile.
 4. Never retag the test or delete it to make CI pass.
 
 ### B. Edit the allowlist (defer a known overflow)
 
 1. Confirm it's genuinely deferred (has, or needs, a tracking issue), not a
    regression you should fix now.
-2. Add the locale tag to the matching `cardId|widthLabel|tabIndex[@profileKey]`
-   array in `known_overflows.json` (create the entry if absent). Use `"*"` only
-   when it overflows in **every** locale (structural) — the gate now fails the
-   first clean locale it finds under a `"*"`, so guessing costs a red run.
-3. Add/update a `tracking` note for the card so the allowlisted hit prints a
-   pointer.
+2. Copy the `file:line` out of the failure message (the part after `at`) and add
+   the locale tag to that key's array in `known_overflows.json` (create the entry
+   if absent). Use `"*"` only when it overflows in **every** locale (structural) —
+   a full run fails a `"*"` that appeared in fewer locales than it covered, so
+   guessing costs a red run.
+3. Add/update a `tracking` note **under the same `file:line` key** so the
+   allowlisted hit prints a pointer. A note keyed on a card id is a parse error.
 4. Re-run the affected slice to confirm green:
-   `./tool/run_overflow_test.sh -c <card>`
+   `./tool/run_overflow_test.sh -c <card>`. That proves the exemption works; it
+   does **not** exercise dead-entry detection, which only a full sweep does.
 
 ### C. Onboard a NEW dashboard card
 
@@ -344,21 +411,27 @@ New cards in `UspWidgetSpecs.all` are picked up automatically — but:
 
 ### D. Removing a card / tab
 
-- Removing a card from `UspWidgetSpecs.all` → delete its `known_overflows.json`
-  entries (including any `…@profileKey` ones), its `tracking` note, and any
-  `kCardDataProfileSweeps` entry naming it.
+- Removing a card from `UspWidgetSpecs.all` → delete any `known_overflows.json`
+  entry whose `file:line` lives in **that card's own files**, plus its `tracking`
+  note, and any `kCardDataProfileSweeps` entry naming it. Keys no longer carry the
+  card id, so this is a judgement call, not a grep for the name: a site in
+  `ui_kit_library` or in a shared row widget may still be reached by another card.
+  Delete the card, run the **full** sweep, and let the dead-entry check name what
+  actually died.
 - Changing a card's tab count → update `kTabbedCardTabCounts`; the meta-test
-  enforces it. Re-baseline that card's entries, and check whether a profile sweep
-  still names a tab index that exists.
+  enforces it. Run the full sweep afterwards: a tab that stopped being swept can
+  leave an entry dead, and only that run will say so.
 
 ### E. Shrink the allowlist (#1183 follow-up)
 
-For each entry: fix the card's layout so it no longer overflows at that
-width/tab/locale, then **remove** those locales (or the whole entry). Re-run
-`-c <card>` — the ratchet confirms the removal is real from both sides: a
-premature removal fails that exact test, and a fix you forget to record fails as
-a dead exemption. This is the intended long-term direction; the baseline is debt,
-not a target to grow.
+For each entry: fix the layout at that `file:line` so it no longer overflows, then
+**remove** the locales it was listed for (or the whole entry, plus its `tracking`
+note). The ratchet confirms the removal is real from both sides: a premature
+removal fails the exact test that still overflows — `-c <card>` shows that — and a
+fix you forget to record fails as a dead exemption, which needs the **full** sweep
+(`fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart`).
+Run both before claiming an entry is retired. This is the intended long-term
+direction; the baseline is debt, not a target to grow.
 
 ## Adding a New Probe (a surface that is not a card)
 
@@ -373,21 +446,33 @@ Reference implementation:
 
 ### The seven rules
 
-1. **The only shared asset is the `overflow_probe.dart` import path.**
-   `collectOverflow` /
-   `OverflowIncident` / `kOverflowTolerancePx` were extracted in #1270 for exactly
-   this. Since #1338 the parser half — `OverflowIncident`, `kOverflowTolerancePx`,
-   `isOverflowError` — lives in
-   [test/layout_gate/incident.dart](../../../test/layout_gate/incident.dart) and
-   `overflow_probe.dart` re-exports it, so importing the probe path is still
-   correct and no importer changed. Everything else in the card sweep has **one**
-   user: the grid geometry in
-   `dashboard_card_probe.dart`, the report generator, and `known_overflows.json`
-   each serve that one suite. Do not stretch the card-shaped model over a non-card
-   surface — `OverflowReportItem` *requires* `cardId`/`columnSpan`/`rowSpan`/
-   `recCols`/`recRows`, and its whole `OverflowStatus` vocabulary asks "can this
-   card get a wider span?". Page chrome has no span, so the answer is not "false",
-   it is "the question does not apply".
+1. **The shared assets are the `overflow_probe.dart` import path and
+   `test/layout_gate/`.** `collectOverflow` / `OverflowIncident` /
+   `kOverflowTolerancePx` were extracted in #1270 for exactly this. Since #1338 the
+   parser half — `OverflowIncident`, `kOverflowTolerancePx`, `isOverflowError` —
+   lives in
+   [test/layout_gate/incident.dart](../../../test/layout_gate/incident.dart), and
+   since #1340 the collector half (`runWithOverflowCollection`, `collectOverflow`,
+   `settleIgnoringAnimations`) lives in
+   [test/layout_gate/collector.dart](../../../test/layout_gate/collector.dart)
+   beside the new surface primitive `setLayoutSurface`
+   ([surface.dart](../../../test/layout_gate/surface.dart)), which is now the only
+   place any suite in the family may set the test viewport — it registers the
+   restore itself, so hand-writing `setSurfaceSize` + `physicalSize` +
+   `devicePixelRatio` in a new sweep is a review comment. `overflow_probe.dart`
+   re-exports all three files, so importing the probe path is still correct and
+   no importer changed. Since #1341 the allowlist is a module too —
+   [test/layout_gate/ratchet.dart](../../../test/layout_gate/ratchet.dart) — keyed
+   on `file:line` and therefore usable by any suite, card-shaped or not: a new
+   probe that ever needs grandfathering constructs an `OverflowRatchet` instead of
+   copying ~80 lines of allowlist logic (see rule 3 — it should not need one).
+   Everything else in the card sweep has **one** user: the grid geometry in
+   `dashboard_card_probe.dart` and the report generator each serve that one suite.
+   Do not stretch the card-shaped model over a non-card surface —
+   `OverflowReportItem` *requires* `cardId`/`columnSpan`/`rowSpan`/`recCols`/
+   `recRows`, and its whole `OverflowStatus` vocabulary asks "can this card get a
+   wider span?". Page chrome has no span, so the answer is not "false", it is "the
+   question does not apply".
 2. **Each suite chooses its own assertion axes.** The card sweep's axis is span
    (× tab × locale × data profile); page chrome's is screen width × locale; a
    dialog's would likely be content length × locale. Pick the axes the bug
@@ -482,8 +567,10 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Mistake | Correct approach |
 |---------|------------------|
 | Allowlisting a real regression to get CI green | Fix the layout; the allowlist is for tracked, deferred debt only |
-| Using `"*"` after seeing overflow in a few locales | `"*"` means *every* locale — verify with a full-locale sweep of that card first; the gate fails the first clean locale under a `"*"` |
-| Fixing a card's layout and leaving its allowlist entry behind | The clean case now fails as a "dead exemption" — remove the tag in the same change |
+| Using `"*"` after seeing overflow in a few locales | `"*"` means *every* locale — verify with a full-locale sweep first; a full run fails a `"*"` that showed up in fewer locales than it covered, and lists the ones it saw |
+| Fixing a card's layout and leaving its allowlist entry behind | The next **full** sweep fails in `(tearDownAll)` as a "dead exemption" — remove the tag in the same change. A green `-c <card>` run will not tell you |
+| Writing an allowlist key as `card\|width\|tab` (the pre-#1341 shape) | Keys are the overflow's `file:line`. The loader rejects anything that is not `<path>.dart:<line>`, so the run fails at `(setUpAll)` — copy the location out of the failure message instead. A `\|` in the key also gets named as the old coordinate shape; `@` does not, since it is legal in a path |
+| Expecting an exemption to apply to one width, tab or data profile only | A `file:line` key has none of those axes: it exempts that source location everywhere it overflows. Fix the layout if the exemption would be too broad |
 | Assuming a clean sweep covers every router | Data is a swept dimension only for cards opted into `kCardDataProfileSweeps`; otherwise "clean" means clean *on the default fixture* |
 | Wrong locale tag (`zh-TW`, `es-AR`) | Use `_localeTag` form with underscore: `zh_TW`, `es_AR`, `fr_CA`, `pt_PT` |
 | New tabbed card, but only tab 0 gets tested | Add it to `kTabbedCardTabCounts`; the `tab registry` meta-test enforces both directions, so an unregistered tabbed card fails instead of quietly under-sweeping |

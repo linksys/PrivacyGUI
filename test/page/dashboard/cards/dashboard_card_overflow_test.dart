@@ -1,7 +1,6 @@
 @Tags(['layout-gate', 'overflow'])
 library;
 
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -12,6 +11,7 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
+import '../../../layout_gate/ratchet.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/card_data_profiles.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
@@ -58,9 +58,13 @@ import '../../../util/overflow_probe.dart';
 ///   drop out of the gate.) It also carries `overflow` (#1336), the narrower
 ///   selector `flutter test --tags overflow` uses to run the four sweeps alone.
 
-/// Locale identity used as the allowlist key and in test names. Keeps the
-/// country code so regional variants stay distinct (`zh` vs `zh_TW`, `fr` vs
+/// Locale identity used as the allowlist's locale tag and in test names. Keeps
+/// the country code so regional variants stay distinct (`zh` vs `zh_TW`, `fr` vs
 /// `fr_CA`) — they can differ in label length and must be tracked separately.
+///
+/// Since #1341 the *key* is the overflow's `file:line`; the locale is the value
+/// side of the entry. Both halves still have to be exact, and the tags are what
+/// the ratchet compares against the run's covered locale set.
 String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
     ? l.languageCode
     : '${l.languageCode}_${l.countryCode}';
@@ -91,84 +95,117 @@ List<Locale> get _targetLocales {
 /// drift apart — see [kOverflowTolerancePx] for why it is 2.0 (#1270).
 const double _tolerancePx = kOverflowTolerancePx;
 
-Map<String, String> _trackingByCard = {};
-Map<String, Set<String>> _knownOverflowAllowlist = {};
+/// The allowlist, re-keyed on `file:line` at #1341.
+///
+/// Was ~80 lines of private, coordinate-keyed helpers in this file
+/// (`_isAllowlisted` / `_failIfDeadExemption` / a `catch`-and-print loader); is
+/// now [OverflowRatchet], which has its own oracle at
+/// `test/layout_gate/ratchet_test.dart` and can be proved to report a dead entry
+/// without standing a 1,898-cell sweep up. Read that class for why the key is a
+/// source location, why a null site can never be exempted, and why the
+/// dead-entry verdict is taken once for the whole run rather than per cell.
+///
+/// Not `late final`: [setUpAll] overwrites it, and if the fixture is malformed
+/// that setUpAll throws — after which `tearDownAll` still runs, and a `late`
+/// field would raise a LateInitializationError on top of the real failure.
+/// Starting empty means the closing check finds nothing to say and the fixture
+/// error stays the only message.
+OverflowRatchet _ratchet = OverflowRatchet.empty();
 
-String _trackingFor(String card) => _trackingByCard[card] ?? 'baseline #1183';
+/// Cells that consult the ratchet: counted as they are *declared* in `main()`,
+/// and again as they are *measured* at run time.
+///
+/// The pair is the only mechanism this file has for noticing that a `--name`
+/// filter (which `tool/run_overflow_test.sh -c <card>` passes) narrowed the run,
+/// because a name filter is applied by the test runner and is invisible to the
+/// suite. It also catches a cell that threw before it measured anything. Both
+/// answers feed [_coverageGaps], and a gap is what stops the dead-entry verdict.
+int _declaredCells = 0;
+int _measuredCells = 0;
 
-void _loadKnownOverflowsFixture() {
-  final file = File('test/fixtures/known_overflows.json');
-  if (!file.existsSync()) return;
-
-  try {
-    final content = file.readAsStringSync();
-    final Map<String, dynamic> json = jsonDecode(content);
-
-    if (json.containsKey('tracking')) {
-      _trackingByCard = Map<String, String>.from(json['tracking']);
-    }
-    if (json.containsKey('allowlist')) {
-      final Map<String, dynamic> allowMap = json['allowlist'];
-      _knownOverflowAllowlist = allowMap.map((key, value) {
-        return MapEntry(key, Set<String>.from(value as List));
-      });
-    }
-  } catch (e) {
-    // ignore: avoid_print
-    print('⚠️ Failed to load known overflows fixture: $e');
-  }
+/// Every reason this run measured less than the full sweep, empty when it did
+/// not.
+///
+/// Read once, in `tearDownAll`. The three sources are the three ways the sweep
+/// can be narrowed — the two dump-tooling defines the architecture doc's §5
+/// contract 3 pins, plus the runner-level name filter the counters detect — and
+/// each is phrased in the operator's own vocabulary so the skip note names the
+/// flag they typed.
+List<String> _coverageGaps() {
+  final allLocales = AppLocalizations.supportedLocales.length;
+  return [
+    if (_targetLocales.length != allLocales)
+      '--dart-define=LOCALE selected ${_targetLocales.length} of $allLocales '
+          'locales',
+    if (minScreenFilter > 0)
+      '--dart-define=MIN_SCREEN=${minScreenFilter.toStringAsFixed(0)} moved '
+          'every width this sweep pumps',
+    if (_measuredCells != _declaredCells)
+      '$_measuredCells of $_declaredCells declared cells were measured (a '
+          '--name / -c filter, or a cell that threw before measuring)',
+  ];
 }
 
-/// True if (card, widthLabel, tab, locale) is in the baseline — either its
-/// locale set lists [tag] explicitly, or the set is `{'*'}` (all locales).
+/// `+41.0px right at lib/x.dart:9 — legend fix #1145` for each incident.
 ///
-/// [profileKey] is null for the default data profile, keeping every pre-#1267 key
-/// byte-identical. A named profile's cases live under `card|width|tab@profile`, so
-/// the default profile's entry count — the number every closed ticket in this epic
-/// quotes as "N coordinates cleared" — cannot be moved by a second profile's
-/// findings (design §2.7).
-bool _isAllowlisted(String card, String width, int tab, String tag,
-    {String? profileKey}) {
-  final suffix = profileKey == null ? '' : '@$profileKey';
-  final locales = _knownOverflowAllowlist['$card|$width|$tab$suffix'];
-  if (locales == null) return false;
-  return locales.contains('*') || locales.contains(tag);
+/// The tracking note is per **site**, not per card, because the key it hangs off
+/// is: two sites in one card can be deferred under different tickets, and one
+/// site — anything in `ui_kit_library`, any shared row widget — can be reached
+/// from several cards, where a card-keyed note would print whichever card
+/// happened to hit it.
+String _trackedDetail(List<OverflowIncident> incidents) =>
+    incidents.map((i) => '$i — ${_ratchet.trackingNote(i.site)}').join(', ');
+
+/// The incidents the reader has to act on, and how many the fixture already
+/// covers.
+///
+/// A cell can now hold a mix: one site deferred, another new. The failure quotes
+/// the new ones — those are the work — but says the coordinate carries more, so
+/// nobody reads a one-incident message as the whole story. Under the old
+/// coordinate key the mix could not arise, because the exemption covered the
+/// whole cell.
+String _blockingDetail(
+  List<OverflowIncident> blocking,
+  List<OverflowIncident> significant,
+) {
+  final exempt = significant.length - blocking.length;
+  return '${blocking.join(', ')}'
+      '${exempt == 0 ? '' : ' (plus $exempt already allowlisted here)'}';
 }
 
-/// Fails a *clean* case whose coordinate the baseline still exempts.
+/// The "how to defer this" paragraph, in the `file:line` key shape.
 ///
-/// Without this the ratchet only turns one way: an overflow that gets fixed
-/// leaves its exemption behind, and the next reader cannot tell a deferred
-/// defect from a dead entry — which is how this epic came to retire 46 stale
-/// coordinates by hand (#1273). Runs on the clean path, so it reads one map
-/// entry and returns for every card that isn't listed.
-void _failIfDeadExemption(String card, String width, int tab, String tag,
-    {String? profileKey}) {
-  final suffix = profileKey == null ? '' : '@$profileKey';
-  final key = '$card|$width|$tab$suffix';
-  final locales = _knownOverflowAllowlist[key];
-  if (locales == null) return;
-
-  if (locales.contains(tag)) {
-    fail(
-      'Dead exemption: \'$key\' lists "$tag" in\n'
-      '  test/fixtures/known_overflows.json\n'
-      'but this coordinate no longer overflows. Remove "$tag" from that entry '
-      '— and the entry itself, plus its "tracking" note, once the locale list '
-      'empties.',
-    );
+/// It quotes the keys themselves and says where they came from: the incidents
+/// printed immediately above already end in `at <file>:<line>`
+/// ([OverflowIncident.toString]), so the failure hands the operator the exact
+/// string to paste. That is deliberately the only place the key shape is
+/// explained — deriving it from the incident is one fact to keep true, whereas a
+/// worked example of the grammar would be a second.
+String _remediation(List<OverflowIncident> blocking, String tag) {
+  final sites = blocking.map((i) => i.site).whereType<String>().toSet().toList()
+    ..sort();
+  // Counted directly rather than as `blocking.length - sites.length`: `sites` is
+  // deduplicated, so two blocking incidents at one site would have made the
+  // difference claim an incident had no location when both did — the operator
+  // would go looking for an incident the message above never printed.
+  final unresolved = blocking.where((i) => i.site == null).length;
+  if (sites.isEmpty) {
+    return 'No incident above resolved a source location, so none of them can '
+        'be allowlisted at all: the ratchet keys on `file:line` and a null '
+        'location is not a key (deliberately — see OverflowRatchet). Fix the '
+        'layout.';
   }
-  if (locales.contains('*')) {
-    fail(
-      'Over-broad exemption: \'$key\' is marked "*" — overflows in every '
-      'locale — in\n'
-      '  test/fixtures/known_overflows.json\n'
-      'but locale "$tag" renders clean, so the overflow is text-dependent, not '
-      'structural. Replace "*" with the explicit locale tags that still '
-      'overflow (`./tool/run_overflow_test.sh -c $card -d 1` lists them), or '
-      'delete the entry if none do.',
-    );
-  }
+  return 'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if this is '
+      'knowingly deferred, add "$tag" to the\n'
+      '${sites.map((s) => "  '$s'").join('\n')}\n'
+      'entr${sites.length == 1 ? 'y' : 'ies'} of the "allowlist" map in\n'
+      '  $kKnownOverflowsFixturePath\n'
+      'along with a "tracking" note under the same key. Each key is the source '
+      'location the matching incident above ends in ("… at <file>:<line>") — '
+      'not the card|width|tab coordinate this fixture used before #1341.'
+      '${unresolved == 0 ? '' : '\n$unresolved further incident(s) resolved no '
+          'source location and therefore cannot be exempted at all; those need '
+          'the layout fixed.'}';
 }
 
 /// Report output mode. Set this in-file to dump locally without passing
@@ -249,7 +286,11 @@ void main() {
   }
 
   setUpAll(() async {
-    _loadKnownOverflowsFixture();
+    // Throws on a fixture it cannot read — including one still carrying
+    // pre-#1341 coordinate keys — and a throw here fails once, as `(setUpAll)`,
+    // instead of 1,898 times. The old loader printed a warning and carried on
+    // with an empty allowlist, which reads as a green gate.
+    _ratchet = OverflowRatchet.fromFixture();
     await loadAppFonts();
   });
 
@@ -262,6 +303,28 @@ void main() {
         html: _shouldDumpHtml,
       );
     }
+
+    // The ratchet's closing direction, taken **here** rather than inside each
+    // cell: under a `file:line` key deadness is a property of a site over the
+    // whole run, and one site can be rendered by many cells, so a cell that
+    // renders it cleanly proves nothing on its own (OverflowRatchet explains the
+    // trade in full, including what the old per-cell check caught and this does
+    // not). A `tearDownAll` failure is reported as `(tearDownAll)` and fails the
+    // suite without adding a test to the count — measured: 1,921 either way.
+    // Verified on a full run at #1341: declared == measured == 1,898 and
+    // therefore no gap, so the closing direction below is live on the gate and
+    // on CI. A filtered run (`-c`, `-L`, `-m`) reports a gap and skips it.
+    final gaps = _coverageGaps();
+    final skipped = _ratchet.coverageSkipNote(gaps);
+    if (skipped != null) {
+      // ignore: avoid_print
+      print(skipped);
+    }
+    final dead = _ratchet.deadEntryFailure(
+      localesCovered: _targetLocales.map(_localeTag).toSet(),
+      coverageGaps: gaps,
+    );
+    if (dead != null) fail(dead);
   });
 
   // Meta-test: the hardcoded tab counts in kTabbedCardTabCounts must match what
@@ -358,6 +421,7 @@ void main() {
           for (final locale in _targetLocales) {
             final tag = _localeTag(locale);
             final tabLabel = tabCount > 1 ? ' tab$tab' : '';
+            _declaredCells++;
             testWidgets(
               'no overflow @${wc.label} ${wc.widthKey}px$tabLabel ($tag)',
               (tester) async {
@@ -381,10 +445,16 @@ void main() {
 
                 final significant =
                     incidents.where((i) => i.pixels > _tolerancePx).toList();
-                if (significant.isEmpty) {
-                  _failIfDeadExemption(spec.id, wc.label, tab, tag);
-                  return;
-                }
+                // Counted before the early return, because a clean cell is a
+                // measured one — that is exactly what makes the run's coverage
+                // complete enough for the dead-entry verdict.
+                _measuredCells++;
+                if (significant.isEmpty) return;
+
+                // One call per cell: it records every site as live debt *and*
+                // answers which incidents are not exempt. Empty = the cell is
+                // tolerated.
+                final blocking = _ratchet.consultCell(significant, tag);
 
                 final maxColsOnScreen = gridColumnsForWidth(wc.screenWidth);
                 final currentColSpan = wc.columnSpan.clamp(1, maxColsOnScreen);
@@ -463,7 +533,19 @@ void main() {
                     tabCount: tabCount,
                     localeTag: tag,
                     incidents: significant,
-                    isAllowed: _isAllowlisted(spec.id, wc.label, tab, tag),
+                    // "The gate tolerated this row", i.e. **every** significant
+                    // incident in it is exempt. It was a per-cell boolean while
+                    // the allowlist was keyed per cell; under a site key
+                    // exemption is a per-incident question, and "any" would let
+                    // one known site colour a row green that the gate itself
+                    // failed. The report has one row per coordinate, so the row
+                    // must carry the coordinate's verdict, not a disjunction
+                    // over its incidents. (Today no generator reads this field —
+                    // it is declared and never used in
+                    // `dashboard_overflow_report_generator.dart` — so the choice
+                    // is about what the column will mean when someone renders
+                    // it, not about current output.)
+                    isAllowed: blocking.isEmpty,
                     recCols: recCols,
                     recRows: recRows,
                     recWidth: recWidth,
@@ -474,29 +556,22 @@ void main() {
                   ));
                 }
 
-                final allowed = _isAllowlisted(spec.id, wc.label, tab, tag);
-                final detail = significant.join(', ');
-
-                if (allowed) {
+                if (blocking.isEmpty) {
                   // Documented + tracked: surface it but don't fail the gate.
                   // ignore: avoid_print
                   print(
                     'KNOWN OVERFLOW (allowlisted) ${spec.id} @${wc.label} '
-                    '${wc.widthKey}px tab$tab $tag: $detail '
-                    '— ${_trackingFor(spec.id)}',
+                    '${wc.widthKey}px tab$tab $tag: '
+                    '${_trackedDetail(significant)}',
                   );
                   return;
                 }
 
                 fail(
                   'Dashboard card "${spec.id}" overflows at ${wc.label} width '
-                  '(${wc.widthKey}px), tab $tab, locale "$tag": $detail.\n'
-                  'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if '
-                  'this is knowingly deferred, add "$tag" to the\n'
-                  "  '${spec.id}|${wc.label}|$tab'\n"
-                  'entry of the "allowlist" map in\n'
-                  '  test/fixtures/known_overflows.json\n'
-                  'along with a "tracking" note for the card.',
+                  '(${wc.widthKey}px), tab $tab, locale "$tag": '
+                  '${_blockingDetail(blocking, significant)}.\n'
+                  '${_remediation(blocking, tag)}',
                 );
               },
             );
@@ -533,11 +608,14 @@ void main() {
   // passing after a threshold moved out from under it, measuring a form the width no
   // longer selects.
   //
-  // Allowlist keys are `card|normalAbove|tab`, which the existing grammar and the
-  // dead-exemption check already handle. Unlike the forced-form sweep these
-  // coordinates are *inherited* debt — the normal form was always rendered here in
-  // production, only never measured — so grandfathering is the right mechanism if
-  // this finds anything.
+  // Exemptions here are keyed on the overflow's own `file:line`, like every other
+  // sweep since #1341 — this sweep needs no key grammar of its own, which is one of
+  // the things the re-key bought. Unlike the forced-form sweep these coordinates
+  // are *inherited* debt — the normal form was always rendered here in production,
+  // only never measured — so grandfathering is the right mechanism if this finds
+  // anything. Note the coarsening it comes with: a site exempted for the normal
+  // band is exempted wherever else it overflows, including in the popup form the
+  // main sweep pumps, because the key carries no width.
   //
   // No report collection, for a reason specific to this sweep: the report's
   // recommendation columns advise a wider span, and this coordinate sits exactly at
@@ -680,6 +758,7 @@ void main() {
         for (final locale in _targetLocales) {
           final tag = _localeTag(locale);
           final tabLabel = tabCount > 1 ? ' tab$tab' : '';
+          _declaredCells++;
           testWidgets(
             'no overflow @normalAbove ${wc.widthKey}px$tabLabel ($tag)',
             (tester) async {
@@ -713,18 +792,16 @@ void main() {
 
               final significant =
                   incidents.where((i) => i.pixels > _tolerancePx).toList();
-              if (significant.isEmpty) {
-                _failIfDeadExemption(spec.id, wc.label, tab, tag);
-                return;
-              }
+              _measuredCells++;
+              if (significant.isEmpty) return;
 
-              final detail = significant.join(', ');
-              if (_isAllowlisted(spec.id, wc.label, tab, tag)) {
+              final blocking = _ratchet.consultCell(significant, tag);
+              if (blocking.isEmpty) {
                 // ignore: avoid_print
                 print(
                   'KNOWN OVERFLOW (allowlisted) ${spec.id} @normalAbove '
-                  '${wc.widthKey}px tab$tab $tag: $detail '
-                  '— ${_trackingFor(spec.id)}',
+                  '${wc.widthKey}px tab$tab $tag: '
+                  '${_trackedDetail(significant)}',
                 );
                 return;
               }
@@ -733,15 +810,11 @@ void main() {
                 'Dashboard card "${spec.id}" overflows in its **normal** form at '
                 '${wc.widthKey}px — the narrowest width its own '
                 'normalAbove (${spec.normalAbove}) admits — tab $tab, locale '
-                '"$tag": $detail.\n'
+                '"$tag": ${_blockingDetail(blocking, significant)}.\n'
                 'This width is above the threshold, so no degradation applies '
                 'here: the fix is to the normal form itself, or to the threshold '
                 'if the form cannot read at this width (#1288 measured it).\n'
-                'If knowingly deferred, add "$tag" to the\n'
-                "  '${spec.id}|${wc.label}|$tab'\n"
-                'entry of the "allowlist" map in\n'
-                '  test/fixtures/known_overflows.json\n'
-                'along with a "tracking" note for the card.',
+                '${_remediation(blocking, tag)}',
               );
             },
           );
@@ -758,16 +831,24 @@ void main() {
   // all 18, and what that deliberately does not claim.
   //
   // Same widths, same 26 locales, same one-pump-per-test rule as above; only the
-  // data differs. Two things are deliberately *not* shared with the default
-  // sweep:
+  // data differs. One thing is deliberately *not* shared with the default sweep:
   //
-  //   * Allowlist keys carry an `@profile` suffix, so the default profile's
-  //     arithmetic is untouched by anything found here (see `_isAllowlisted`).
   //   * No report collection. `OverflowReportItem` has no profile dimension, so a
   //     second-profile item would render in the HTML report indistinguishable
   //     from a default-profile one at the same coordinate — a worse outcome than
   //     its absence. Profile sweeps are measured by reading the failure, which
   //     names the profile.
+  //
+  // The allowlist used to be the second item on that list, and losing it is worth
+  // naming: keys carried an `@profile` suffix, so an exemption earned on this data
+  // could not silence the default sweep. A `file:line` key has no profile axis (nor
+  // a width or tab one), so an exemption granted for a profile overflow now covers
+  // that same source location everywhere, default data included. The trade was made
+  // knowingly at #1341 — the suffix bought separation, while the coordinate key it
+  // was part of invalidated wholesale on any layout rearrangement — and the fixture
+  // is empty today, so nothing is in fact widened. If a profile-only exemption is
+  // ever needed the answer is a narrower key shape in `OverflowRatchet`, not a
+  // second fixture.
   for (final sweep in kCardDataProfileSweeps) {
     final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == sweep.cardId);
     final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
@@ -828,6 +909,7 @@ void main() {
         for (final wc in widthCases) {
           for (final locale in _targetLocales) {
             final tag = _localeTag(locale);
+            _declaredCells++;
             testWidgets(
               'no overflow @${wc.label} ${wc.widthKey}px tab$tab ($tag)',
               (tester) async {
@@ -851,20 +933,16 @@ void main() {
 
                 final significant =
                     incidents.where((i) => i.pixels > _tolerancePx).toList();
-                if (significant.isEmpty) {
-                  _failIfDeadExemption(sweep.cardId, wc.label, tab, tag,
-                      profileKey: profile.key);
-                  return;
-                }
+                _measuredCells++;
+                if (significant.isEmpty) return;
 
-                if (_isAllowlisted(sweep.cardId, wc.label, tab, tag,
-                    profileKey: profile.key)) {
+                final blocking = _ratchet.consultCell(significant, tag);
+                if (blocking.isEmpty) {
                   // ignore: avoid_print
                   print(
                     'KNOWN OVERFLOW (allowlisted) ${sweep.cardId} '
                     '[${profile.key}] @${wc.label} ${wc.widthKey}px tab$tab '
-                    '$tag: ${significant.join(', ')} '
-                    '— ${_trackingFor(sweep.cardId)}',
+                    '$tag: ${_trackedDetail(significant)}',
                   );
                   return;
                 }
@@ -873,14 +951,12 @@ void main() {
                   'Dashboard card "${sweep.cardId}" overflows on the '
                   '"${profile.key}" data profile (${profile.description}) at '
                   '${wc.label} width (${wc.widthKey}px), tab $tab, locale '
-                  '"$tag": ${significant.join(', ')}.\n'
+                  '"$tag": ${_blockingDetail(blocking, significant)}.\n'
                   'This coordinate is clean on the default profile — the data, '
-                  'not the width, is what breaks it.\n'
-                  'Fix the layout, or if knowingly deferred add "$tag" to the\n'
-                  "  '${sweep.cardId}|${wc.label}|$tab@${profile.key}'\n"
-                  'entry of the "allowlist" map in\n'
-                  '  test/fixtures/known_overflows.json\n'
-                  'along with a "tracking" note for the card.',
+                  'not the width, is what breaks it, so allowlisting it exempts '
+                  'the same source location on the default data too (see the '
+                  'note above this sweep).\n'
+                  '${_remediation(blocking, tag)}',
                 );
               },
             );
