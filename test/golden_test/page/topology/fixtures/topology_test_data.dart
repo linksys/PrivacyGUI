@@ -158,29 +158,37 @@ final slaveNodeWithDevices = UspNodeDetailState(
   connectedClients: _meshSlaveClients,
 );
 
-// Slave node whose backhaul reports a PHY rate and a last-contact time, so the
-// backhaul card's bottom row renders. No other fixture sets either field, which
-// is why that row's overflow went unreported by the golden suite (#1302) — it
-// has never been rendered there.
-final slaveNodeWithBackhaulTiming = UspNodeDetailState(
-  node: SlaveNode(
-    deviceId: 'AA:BB:CC:DD:FF:03',
-    model: 'MX2000',
-    manufacturer: 'Linksys',
-    serialNumber: 'DEF789014',
-    softwareVersion: '1.0.10.200000',
-    connectedClients: _meshSlaveClients,
-    backhaul: BackhaulInfo(
-      mediaType: 'Wi-Fi',
-      signalStrength: -50,
-      phyRate: 1200,
-      // Fixed and far in the past: the tile renders this as a relative time, so
-      // a near date would change text as the clock moves.
-      lastContactTime: '2020-01-01T00:00:00Z',
-    ),
-  ),
-  connectedClients: _meshSlaveClients,
-);
+/// Slave node whose backhaul reports both a PHY rate and a last-contact time, so
+/// the card's bottom row renders (`usp_node_detail_view.dart:429`). Both fields
+/// matter: with `phyRate` at 0 the last-contact tile becomes the row's only
+/// child and takes the full width, which is not the half-width geometry the
+/// #1302 fix was measured against.
+///
+/// A getter rather than a `final`, and deliberately not a fixed date. The tile
+/// renders the timestamp through `DateFormatUtils.formatRelativeTime`, which
+/// reads `DateTime.now()` and cannot be faked from the golden harness (nothing
+/// there installs a clock). Any fixed past date therefore renders a day counter
+/// that increments daily, so a golden taken from this state would diff against
+/// its own baseline the next day. `Just now` (`diff.inSeconds < 60`) is the one
+/// branch of that formatter that does not move, and recomputing per access keeps
+/// every read inside that window however long a suite runs.
+UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
+      node: SlaveNode(
+        deviceId: 'AA:BB:CC:DD:FF:03',
+        model: 'MX2000',
+        manufacturer: 'Linksys',
+        serialNumber: 'DEF789014',
+        softwareVersion: '1.0.10.200000',
+        connectedClients: _meshSlaveClients,
+        backhaul: BackhaulInfo(
+          mediaType: 'Wi-Fi',
+          signalStrength: -50,
+          phyRate: 1200,
+          lastContactTime: DateTime.now().toUtc().toIso8601String(),
+        ),
+      ),
+      connectedClients: _meshSlaveClients,
+    );
 
 final masterNodeEmptyDevices = UspNodeDetailState(
   node: MasterNode(

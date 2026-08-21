@@ -472,9 +472,10 @@ class UspNodeDetailView extends ConsumerWidget {
                               // interface caption above — and this one does not
                               // even fit in English: 21 locales overflow the
                               // 99dp row, `en` by 2.4dp at 1241px and `ru` by
-                              // 39dp. No golden fixture sets lastContactTime,
-                              // so this whole row never renders in the golden
-                              // suite and the overflow went unreported (#1302).
+                              // 39dp. It went unreported in #1302 because no
+                              // fixture set lastContactTime, so the golden
+                              // suite never rendered this row; the
+                              // `slave_backhaul_timing` state now does.
                               Expanded(
                                 child: AppText.labelSmall(
                                   loc(context).lastContact,

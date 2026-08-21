@@ -30,13 +30,14 @@ import '../../../util/overflow_probe.dart';
 ///   **`en` by 2.4dp**, so this one is not a long-translation edge case at all.
 ///
 /// Nothing else fails on either. The #1183 gate sweeps the dashboard's
-/// `UspWidgetSpecs.all` registry, which does not contain this page; the golden
-/// suite renders the interface tile and compares byte-equal against a baseline
-/// PNG with the overflow stripe baked in, and it never renders the last-contact
-/// tile at all — no fixture set `lastContactTime` until this file added one, which
-/// is why that overflow was missing from #1302's report. Hence a test, and hence
-/// the `dashboard-card` tag: `run_tests.sh` excludes `golden||loc||ui`, so a
-/// `ui`-tagged test would not block a PR.
+/// `UspWidgetSpecs.all` registry, which does not contain this page. The golden
+/// suite does render both tiles now — `slave_backhaul_timing` was added for the
+/// last-contact one, whose absence is why that overflow was missing from #1302's
+/// report — but it cannot gate either: it compares byte-equal against a baseline
+/// PNG with the overflow stripe already baked in, and it runs neither of the
+/// widths that overflow. Hence a test, and hence the `dashboard-card` tag:
+/// `run_tests.sh` excludes `golden||loc||ui`, so a `ui`-tagged test would not
+/// block a PR.
 ///
 /// ## The Ethernet branch is out of scope, and measured safe
 ///
@@ -65,6 +66,7 @@ import '../../../util/overflow_probe.dart';
 ///   | last-contact caption's `Expanded` removed (pre-fix shape) | clean last-contact tile: ru +39px@1241, +33px@1280, +29px@320; fi +22px@1241, +15px@1280, +11px@320; da +12px@1241, +5.3px@1280; en +2.4px@1241 |
 ///   | interface value given `maxLines: 1` + ellipsis | interface value stays whole |
 ///   | last-contact caption's `maxLines`/ellipsis dropped (`Expanded` kept) | caption-shortens-value-does-not, and last-contact-matches-sibling-height (81dp against the sibling's 64dp in `ru`@320) — the clean groups all still pass, because wrapping trades the overflow for a taller tile rather than fixing it |
+///   | `slaveNodeWithBackhaulTiming.phyRate` set to 0 | the precondition group, plus last-contact-matches-sibling-height (the PHY Rate tile it compares against is no longer built at all). The overflow groups stay green: the tile is now full-width, so the caption fits — which is exactly why the precondition asserts `phyRate > 0` rather than trusting the fixture |
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is square and the
@@ -102,6 +104,15 @@ void main() {
       isNotNull,
       reason: 'slaveNodeWithBackhaulTiming must keep a lastContactTime — the '
           'last-contact tile is built only when it has one',
+    );
+    expect(
+      timingNode.backhaul.phyRate,
+      greaterThan(0),
+      reason: 'slaveNodeWithBackhaulTiming must keep a phyRate — at 0 the PHY '
+          'Rate tile is not built, the last-contact tile becomes the Row\'s '
+          'only child and its Expanded takes the full card width, which is not '
+          'the half-width geometry every number in this file was measured '
+          'against',
     );
   });
 
