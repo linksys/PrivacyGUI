@@ -206,6 +206,8 @@ class OverflowRatchet {
           _parseLocaleSet(entry.value, key: entry.key, source: source);
     }
 
+    _validateKeySymmetry(tracking.keys.toSet(), allowlist.keys.toSet(), source);
+
     return OverflowRatchet._(allowlist, tracking, source);
   }
 
@@ -225,7 +227,9 @@ class OverflowRatchet {
   /// * "Remove the entry and its tracking note" is one lookup only if both hang
   ///   off one key. With two key spaces the note is what gets left behind, and a
   ///   note pointing at nothing is the dead entry the ratchet was built to
-  ///   prevent, one level up.
+  ///   prevent, one level up. One key space is necessary but not sufficient for
+  ///   that — the two maps can still drift within it — so the pairing is enforced
+  ///   at load by [_validateKeySymmetry].
   /// * The card sweep's is not the only family that will read this fixture
   ///   (#1342 onwards). `card` is not an axis the chrome family has.
   final Map<String, String> _tracking;
@@ -409,12 +413,26 @@ class OverflowRatchet {
       }
 
       if (listed.contains(kAnyLocale)) {
-        if (seen.length < localesCovered.length) {
+        // Which locales are missing, not how many were seen. The two sets are
+        // not drawn from one vocabulary: `localesCovered` is what the sweep
+        // declares it pumped, `seen` is what `consultCell` was actually handed,
+        // and a single tag observed outside the declared set makes the counts
+        // equal while a covered locale never overflowed at all — an over-broad
+        // "*" that survives on arithmetic. The tags are what the operator has to
+        // edit anyway, so the message may as well name them.
+        final missing = _sorted(localesCovered.difference(seen));
+        if (missing.isNotEmpty) {
+          // Restricted to the covered set, because that is what the operator can
+          // write: `unknownTags` above rejects a listed tag this sweep does not
+          // run, so a replacement list quoting an undeclared observation would
+          // fail the very next run.
+          final hit = _sorted(seen.intersection(localesCovered));
           complaints.add(
-            '$site is marked "*" — overflows in every locale — but only '
-            '${seen.length} of ${localesCovered.length} covered locales '
-            'overflowed there, so the overflow is text-dependent, not '
-            'structural. Replace "*" with: ${_sorted(seen).join(', ')}.',
+            '$site is marked "*" — overflows in every locale — but nothing '
+            'overflowed there in ${_quoteAll(missing)} (${hit.length} of '
+            '${localesCovered.length} covered locales did), so the overflow is '
+            'text-dependent, not structural. '
+            '${hit.isEmpty ? 'It overflowed only in ${_quoteAll(_sorted(seen))}, which this run does not report as covered — the sweep\'s locale list and the `localesCovered` it passes disagree, so fix that before editing the fixture.' : 'Replace "*" with: ${hit.join(', ')}.'}',
           );
         }
         continue;
@@ -539,6 +557,52 @@ class OverflowRatchet {
       'than translating the old keys by hand; a coordinate does not carry which '
       'widget inside the card overflowed.',
     );
+  }
+
+  /// Throws unless `"tracking"` and `"allowlist"` name exactly the same sites.
+  ///
+  /// One entry in this fixture is two halves — the exemption and the reason for
+  /// it — and nothing but the shared key holds them together, so each direction
+  /// is its own way for the pairing to rot:
+  ///
+  /// * **A note with no exemption** is the dead entry, one level up. It reads as
+  ///   documentation of debt the gate is not carrying, so anyone asking "what are
+  ///   we still deferring?" is answered with a site that is already clean — and
+  ///   no other check can catch it, because a note is never consulted unless
+  ///   something exempted the site. This is the failure the [_tracking] comment
+  ///   predicts if the two sections are ever allowed to drift apart.
+  /// * **An exemption with no note** prints [kUntrackedNote] and leaves the
+  ///   reader unable to tell deferred debt from an accidental commit, which is
+  ///   the one judgement the allowlist exists to record. Refusing it here is the
+  ///   other half of why [kUntrackedNote] is not a ticket number: an
+  ///   unattributed entry is rejected rather than attributed to a guess.
+  ///
+  /// Deliberately last, after both sections have parsed, so a malformed key or
+  /// locale list is still diagnosed by its own message and this one only ever
+  /// fires on two key sets that are individually valid.
+  static void _validateKeySymmetry(
+    Set<String> tracked,
+    Set<String> exempted,
+    String source,
+  ) {
+    final unexempted = _sorted(tracked.difference(exempted));
+    final untracked = _sorted(exempted.difference(tracked));
+    if (unexempted.isEmpty && untracked.isEmpty) return;
+    throw OverflowRatchetFormatException([
+      '$source: "tracking" and "allowlist" must name the same sites — an entry '
+          'is one exemption plus the reason for it.',
+      if (unexempted.isNotEmpty)
+        '  * ${_quoteAll(unexempted)} '
+            '${unexempted.length == 1 ? 'has a "tracking" note' : 'have "tracking" notes'} '
+            'but no "allowlist" entry, so nothing is exempt there and the note '
+            'documents debt this gate is not carrying. Delete the note, or add '
+            'the exemption it describes.',
+      if (untracked.isNotEmpty)
+        '  * ${_quoteAll(untracked)} '
+            '${untracked.length == 1 ? 'is' : 'are'} exempt with no "tracking" '
+            'note, so nothing says whether this is deferred debt or an accident. '
+            'Add the note, naming the ticket that will delete the entry.',
+    ].join('\n'));
   }
 
   static Set<String> _parseLocaleSet(

@@ -54,7 +54,10 @@ void main() {
 
     test('a site key with a locale list loads', () {
       final ratchet = OverflowRatchet.fromJson({
-        'tracking': {'lib/x.dart:9': 'legend fix #1145'},
+        'tracking': {
+          'lib/x.dart:9': 'legend fix #1145',
+          'ui_kit_library/lib/src/y.dart:12': 'upstream #1146',
+        },
         'allowlist': {
           'lib/x.dart:9': ['de', 'fi'],
           'ui_kit_library/lib/src/y.dart:12': ['*'],
@@ -108,6 +111,7 @@ void main() {
       // it is not: it is legal in a directory name, and the reliable tell for
       // the old grammar is the pipe. A key that is a genuine path has to load.
       final ratchet = OverflowRatchet.fromJson({
+        'tracking': {'lib/page/a@b/foo_card.dart:47': 'tracked #0000'},
         'allowlist': {
           'lib/page/a@b/foo_card.dart:47': ['de'],
         },
@@ -177,6 +181,73 @@ void main() {
           (e) => e.message,
           'message',
           allOf(contains('network_health'), contains('tracking')),
+        )),
+      );
+    });
+
+    test('a tracking note with no allowlist entry is rejected', () {
+      // The dead entry one level up, and the one shape no other check can see: a
+      // note is never consulted unless something exempted the site, so this
+      // survives a whole green run while telling every reader of the fixture
+      // that the gate is deferring a defect it is not.
+      expect(
+        () => OverflowRatchet.fromJson({
+          'tracking': {
+            'lib/x.dart:9': 'legend fix #1145',
+            'lib/gone.dart:3': 'fixed in #1200, note left behind',
+          },
+          'allowlist': {
+            'lib/x.dart:9': ['de'],
+          },
+        }),
+        throwsA(isA<OverflowRatchetFormatException>().having(
+          (e) => e.message,
+          'message',
+          allOf(
+            contains('lib/gone.dart:3'),
+            contains('Delete the note'),
+            isNot(contains('lib/x.dart:9')),
+          ),
+        )),
+        reason: 'only the unpaired site is named — the paired one is not the '
+            'operator\'s problem',
+      );
+    });
+
+    test('an allowlist entry with no tracking note is rejected', () {
+      // The other direction: it loads today and prints kUntrackedNote, which
+      // leaves nobody able to tell deferred debt from an accidentally committed
+      // exemption. Rejecting it is why that constant is not a ticket number.
+      expect(
+        () => OverflowRatchet.fromJson({
+          'tracking': {'lib/x.dart:9': 'legend fix #1145'},
+          'allowlist': {
+            'lib/x.dart:9': ['de'],
+            'lib/new.dart:7': ['*'],
+          },
+        }),
+        throwsA(isA<OverflowRatchetFormatException>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('lib/new.dart:7'), contains('"tracking"')),
+        )),
+      );
+    });
+
+    test('a malformed key is diagnosed as malformed, not as unpaired', () {
+      // Ordering, as a test: the symmetry check runs last precisely so an
+      // operator holding a pre-#1341 coordinate is told *that*, rather than
+      // being sent to add a tracking note for a key that can never match.
+      expect(
+        () => OverflowRatchet.fromJson({
+          'allowlist': {
+            'lan_info|min|0': ['*'],
+          },
+        }),
+        throwsA(isA<OverflowRatchetFormatException>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('file:line'), isNot(contains('same sites'))),
         )),
       );
     });
@@ -400,6 +471,52 @@ void main() {
       expect(failure, contains('lib/x.dart:9'));
       expect(failure, contains('de'),
           reason: 'the replacement list the operator has to write');
+    });
+
+    test(
+        'an over-broad "*" is caught by which locales are missing, not how many',
+        () {
+      // The two sets are not one vocabulary: `localesCovered` is what the sweep
+      // declares, `_observed` is what it was handed. Counting made an
+      // undeclared observation cancel out a covered locale that never
+      // overflowed, so this entry — structural in name, text-dependent in fact —
+      // passed on arithmetic alone.
+      final ratchet = _ratchetFor({
+        'lib/x.dart:9': ['*']
+      });
+      ratchet.consultCell([_incident(site: 'lib/x.dart:9')], 'de');
+      ratchet.consultCell([_incident(site: 'lib/x.dart:9')], 'zz');
+      final failure =
+          ratchet.deadEntryFailure(localesCovered: const {'de', 'fi'});
+      expect(failure, isNotNull,
+          reason: '2 observed tags for 2 covered locales, and yet nothing ever '
+              'overflowed in fi');
+      expect(failure, contains('"fi"'));
+      expect(failure, contains('Replace "*" with: de'),
+          reason: 'the replacement quotes only covered tags — a listed tag the '
+              'sweep does not run is rejected by the check above it');
+    });
+
+    test('a "*" observed only outside the covered set names the contradiction',
+        () {
+      // Reachable only from a sweep whose locale list and `localesCovered`
+      // disagree, which is a bug in the sweep rather than in the fixture — so the
+      // message must not hand over an empty replacement list and call it advice.
+      final ratchet = _ratchetFor({
+        'lib/x.dart:9': ['*']
+      });
+      ratchet.consultCell([_incident(site: 'lib/x.dart:9')], 'zz');
+      final failure =
+          ratchet.deadEntryFailure(localesCovered: const {'de', 'fi'});
+      expect(
+        failure,
+        allOf(
+          isNotNull,
+          contains('"zz"'),
+          contains('disagree'),
+          isNot(contains('Replace "*" with')),
+        ),
+      );
     });
 
     test('a "*" seen in every covered locale is live', () {
