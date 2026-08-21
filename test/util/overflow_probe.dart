@@ -1,112 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../layout_gate/incident.dart';
 import 'overflow_baseline.dart';
 
-/// The overflow every probe in this suite ignores.
+/// The parser, the tolerance and the predicate moved to `test/layout_gate/`
+/// (#1338) and are re-exported from here so this file's 20 importers are
+/// untouched — [OverflowIncident], [kOverflowTolerancePx] and [isOverflowError]
+/// all still resolve through `import '.../overflow_probe.dart'`.
 ///
-/// Small tolerance for sub-pixel shaping differences between the mac (local) and
-/// ubuntu (CI) font rasterizers. The project bundles fixed font files so the two
-/// load the same glyphs, but borderline cases (~1px) can still flip; anything
-/// meaningfully clipped is many pixels over.
-///
-/// Shared (#1270) because the #1183 gate and its five satellite suites all
-/// filtered on a bare `2.0`. A satellite that drifted to a looser value would
-/// report a coordinate the gate still fails on — and a tighter one would fail on
-/// CI only. [OverflowIncident.unparseablePixels] is deliberately above every
-/// tolerance, so raising this can never silence an unreadable report.
-const double kOverflowTolerancePx = 2.0;
-
-/// A single RenderFlex overflow captured during a pump.
-///
-/// Parsed from Flutter's overflow error string, e.g.
-/// "A RenderFlex overflowed by 41 pixels on the right."
-class OverflowIncident {
-  /// How many logical pixels the child exceeded its parent by.
-  final double pixels;
-
-  /// Direction of the overflow: 'right', 'bottom', 'left', 'top', or 'unknown'.
-  final String side;
-
-  /// The raw Flutter error string (first line), kept for diagnostics.
-  final String message;
-
-  /// Full Flutter details string (includes line numbers, stack, and cause).
-  final String fullLog;
-
-  const OverflowIncident({
-    required this.pixels,
-    required this.side,
-    required this.message,
-    this.fullLog = '',
-  });
-
-  /// Matches one `"<n> pixels on the <side>"` clause.
-  ///
-  /// The exponent alternative covers Flutter's own formatting: sub-pixel
-  /// overflows go through `toStringAsPrecision(3)`, which yields `1.00e-7` for
-  /// very small values. Without it the number parses as `1.00` — 10 million
-  /// times too large, though still under any sane tolerance.
-  static final _re = RegExp(
-    r'([\d.]+(?:e-?\d+)?) pixels on the (\w+)',
-    caseSensitive: false,
-  );
-
-  /// Marks a message this parser could not read. Deliberately not `0`: every
-  /// caller filters incidents by `pixels > tolerance`, so a zero would be
-  /// dropped and the unreadable overflow would disappear — the gate would read
-  /// clean precisely when it has stopped understanding Flutter's output.
-  /// Infinity survives every threshold and fails loudly instead.
-  static const double unparseablePixels = double.infinity;
-
-  /// Parses [errorString], reporting the **worst** side it overflowed on.
-  ///
-  /// One report can name several sides — Flutter emits them in the fixed order
-  /// left, top, bottom, right ("0.5 pixels on the bottom and 41 pixels on the
-  /// right"), so taking the *first* clause would have reported that row as
-  /// +0.5px bottom and a 2px tolerance would then have dropped a 41px right
-  /// overflow. [OverflowIncident] carries a single measurement, so it carries
-  /// the largest one.
-  ///
-  /// Falls back to [unparseablePixels] and `side: 'unknown'` if no clause parses,
-  /// so a change in Flutter's message shape surfaces as a failure rather than as
-  /// silence.
-  factory OverflowIncident.parse(String errorString, {String fullLog = ''}) {
-    final firstLine = errorString.split('\n').first.trim();
-    var worst = -1.0;
-    var worstSide = '';
-    for (final m in _re.allMatches(errorString)) {
-      final pixels = double.tryParse(m.group(1)!);
-      if (pixels != null && pixels > worst) {
-        worst = pixels;
-        worstSide = m.group(2)!.toLowerCase();
-      }
-    }
-    return OverflowIncident(
-      pixels: worst < 0 ? unparseablePixels : worst,
-      side: worst < 0 ? 'unknown' : worstSide,
-      message: firstLine,
-      fullLog: fullLog.isNotEmpty ? fullLog : errorString,
-    );
-  }
-
-  @override
-  String toString() => '+${pixels}px $side';
-}
-
-/// Whether [exceptionAsString] is Flutter's own overflow report, i.e. the one
-/// message [runWithOverflowCollection] is entitled to intercept.
-///
-/// `debug_overflow_indicator.dart` emits exactly
-/// `A <RenderObject> overflowed by <n> pixels on the <side>.`, so both markers
-/// must be present. A bare `contains('overflowed')` would also swallow any
-/// unrelated `FlutterError` that happens to use the word — a provider throwing
-/// "buffer overflowed", a hint sentence quoting the term — and swallowed errors
-/// do not fail the test they occurred in. Everything that fails this test is
-/// forwarded to the original handler, which is what turns it into a failure.
-bool isOverflowError(String exceptionAsString) =>
-    exceptionAsString.contains('overflowed by') &&
-    exceptionAsString.contains('pixels on the');
+/// Relocating a test utility with that many callers would mean touching ~70
+/// files for no behavioural gain, so the new framework layer is additive and the
+/// old paths re-export from it (`doc/testing/overflow_gate_architecture.md`
+/// §3.1). The collection helpers below stay here until #1340 moves them to
+/// `test/layout_gate/collector.dart` behind the same re-export.
+export '../layout_gate/incident.dart';
 
 /// Runs [body] with a RenderFlex-overflow collector installed, returning
 /// [body]'s result.
@@ -140,6 +48,15 @@ Future<T> runWithOverflowCollection<T>(
   FlutterError.onError = (FlutterErrorDetails details) {
     final asString = details.exceptionAsString();
     if (isOverflowError(asString)) {
+      // `details.toString()` is what supplies the incident's file:line (#1338),
+      // and it already did — no richer string is needed. Measured against
+      // Flutter 3.44: `exceptionAsString()` is the one line and nothing else,
+      // while `FlutterErrorDetails.toString()` renders
+      // `toDiagnosticsNode().toStringDeep(minLevel: info)` and so carries the
+      // `The relevant error-causing widget was` block with its
+      // `Widget:file:///…:line:col` creation location. It omits only the
+      // `creator:` chain, which is below `info` — and which the parser
+      // deliberately does not read anyway.
       incidents.add(
         OverflowIncident.parse(asString, fullLog: details.toString()),
       );
