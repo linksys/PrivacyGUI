@@ -17,13 +17,13 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **39 suites carry `layout-gate` today**, and most
+a re-export of it since #1340. **40 suites carry `layout-gate` today**, and most
 of them are not overflow sweeps at all — they are density, readability, form and
 gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Four of the 38 additionally carry `overflow`**, the pre-commit selector.
+**Four of the 40 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else:
 
 | Sweep | What it pumps |
@@ -31,13 +31,14 @@ gate.
 | `test/page/dashboard/cards/dashboard_card_overflow_test.dart` | every card × narrowest grid width per span × tab × 26 locales (#1183) |
 | `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239) |
 | `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could |
-| `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328) |
+| `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328), declared through `runOverflowSweep` since #1342 |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles every test file in the repo (315 at #1341) to skip all but four:
+compiles every test file in the repo (316 at #1342) to skip all but four:
 measured 2026-08-21,
-those same 2,386 tests take **1m53s under the tag and 32s when the four files are
-named**. Identical selection either way, so name the files for a tight inner loop
+those same **2,412** tests take **1m43s under the tag and 28s when the four files are
+named** (`flutter test`'s own clock; the shell sees 1m59s and 34s, the difference
+being package resolution and build). Identical selection either way, so name the files for a tight inner loop
 and use the tag when a fifth sweep must not be silently missed.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
@@ -45,10 +46,13 @@ verdict depends on", which would slide the tag back over the whole family. So
 the probe self-tests
 ([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
 [overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
-and the ratchet's oracle
-([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341)
+and the two framework oracles
+([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341;
+[sweep_test.dart](../../../test/layout_gate/sweep_test.dart), #1342)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
-on them.
+on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
+what naming the four sweep files measures (2,412), so nothing has quietly joined
+the pre-commit selector.
 
 Two members are worth naming:
 
@@ -60,11 +64,17 @@ Two members are worth naming:
   every other card's "clean" verdict is a verdict about the one default fixture.
   Everything below headed *card* describes this member only.
 - **The #1314/#1328 page-chrome sweep** — `page_chrome_overflow_test.dart`.
-  Sweeps **screen width × 26 locales** over the top bar and the dashboard header.
-  It exists because the card sweep is blind to page chrome *by construction*: it
-  pumps one card at a computed card width and never renders a page at a screen
-  width, so no page-level `Row` is in its view. It shares the probe; it shares
-  no geometry, no report, no allowlist.
+  Sweeps **screen width × 26 locales** over the top bar and the dashboard header
+  (× 3 action modes for the header). It exists because the card sweep is blind to
+  page chrome *by construction*: it pumps one card at a computed card width and
+  never renders a page at a screen width, so no page-level `Row` is in its view.
+  **Since #1342 it is declared, not written**: two `runOverflowSweep(...)` calls
+  against `ChromeTopBarFamily` / `ChromeHeaderFamily`
+  ([test/layout_gate/families/page_chrome_family.dart](../../../test/layout_gate/families/page_chrome_family.dart)),
+  so it now shares the whole measurement spine rather than just the probe — while
+  still sharing no geometry, no report and no allowlist. What is left in the suite
+  file is the seven readability tests, whose oracle is not "did a `RenderFlex`
+  overflow".
 
 This skill is for **operating and maintaining** that family: running a sweep,
 reading its report, editing the allowlist correctly, keeping the card sweep
@@ -466,6 +476,10 @@ Reference implementation:
    on `file:line` and therefore usable by any suite, card-shaped or not: a new
    probe that ever needs grandfathering constructs an `OverflowRatchet` instead of
    copying ~80 lines of allowlist logic (see rule 3 — it should not need one).
+   And since #1342 the sweep itself is shared —
+   [sweep.dart](../../../test/layout_gate/sweep.dart) declares the tests and
+   [families/](../../../test/layout_gate/families/) is where a new surface's axes
+   and hosts go, next to the existing ones (see rule 5).
    Everything else in the card sweep has **one** user: the grid geometry in
    `dashboard_card_probe.dart` and the report generator each serve that one suite.
    Do not stretch the card-shaped model over a non-card surface —
@@ -500,10 +514,29 @@ Reference implementation:
    same string: `sv` "Instrumentpanel" overran its 188px box by 3.6px, rendered as
    "Instrumentpane / l", and the suite went **31/31 green** — `hasSplitToken` is
    what turned it red again. Assert both, in that order.
-5. **One pump per cell.** Flutter reports each `RenderFlex`'s overflow once per
-   render-object lifetime, so a loop that re-pumps inside one `testWidgets`
-   silently drops every incident after the first. Give each pump a unique
-   `ValueKey` so the tree is genuinely new.
+5. **Declare the sweep through the runner; do not hand-write the loop.** Since
+   #1342, `runOverflowSweep(family: …, expectedCellCount: …)`
+   ([test/layout_gate/sweep.dart](../../../test/layout_gate/sweep.dart)) owns the
+   surface, the fresh subtree, the settle, the tolerance filter, the per-cell
+   exception isolation and the aggregated failure. A new probe writes an
+   `OverflowSurfaceFamily` — which coordinates exist, and how one becomes a host
+   widget — and nothing else.
+
+   The rule this replaces was **"one pump per cell: give each pump a unique
+   `ValueKey`"**, and the reason it existed still holds: Flutter reports each
+   `RenderFlex`'s overflow once per render-object lifetime, so a loop that
+   re-pumps inside one `testWidgets` silently drops every incident after the
+   first. The runner now keys every cell host on the cell's own id, so that trap
+   is disarmed for you — but a suite that pumps trees *outside* the runner (a
+   readability test of its own, like the chrome suite's seven) still has to key
+   them by hand.
+
+   Two consequences of the runner worth knowing before you write a family:
+   `expectedCellCount` is **required** — pin it as a literal from the ticket, not
+   as `widths.length * locales.length`, which is the enumeration restating itself
+   — and locale is a **field on the cell, not an axis**, because the runner groups
+   by every axis except locale and loops locale inside one test. Declaring
+   `locale` in `axisNames` is reported as a malformed family.
 6. **`@Tags(['layout-gate'])` — never `loc` / `ui` / `golden`.** `run_tests.sh`
    only does `--exclude-tags="golden||loc||ui"`; nothing in `.github/` names
    `layout-gate`. So "is it in the PR gate?" means "is it un-excluded?", and the

@@ -41,7 +41,7 @@ kinds of difference appear, and they are not equally alarming:
 1 cell no longer measured (coverage lost — this would otherwise read as a pass):
   - forced_form.skeleton|variant=list|px=122|rows=1          ← the dangerous one
 2 new cells:
-  + chrome.header|px=800|mode=collapsed|locale=fr            ← added coverage
+  + chrome.header|screen_px=800|mode=viewing_local|locale=fr ← added coverage
 1 cell changed:
   - card.width|card=lan_info|px=191|tab=0|locale=de  clean     -   -  -              -
   + card.width|card=lan_info|px=191|tab=0|locale=de  overflow  41.0 right lib/a.dart:120 Row
