@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/models/smart_qos_recommendation.dart';
+import 'package:privacy_gui/page/health_check/views/components/smart_qos_result.dart';
 import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
 import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/utils.dart';
@@ -543,6 +545,14 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final (resultTitle, resultDesc) =
         _getTestResultDesc(result?.speedTestResult);
     final date = _getTestResultDate(result?.timestamp);
+
+    // Smart QoS resolves the finished speed test into a feature-configuration
+    // surface. Only meaningful when there is a measurement to derive shaping
+    // from; null on error or an empty result so the cards are skipped.
+    final speedTestResult = result?.speedTestResult;
+    final smartQosRecommendation = speedTestResult != null
+        ? SmartQosRecommendation.fromResult(speedTestResult)
+        : null;
     return switch (state.step) {
       'error' => SizedBox(
           width: ResponsiveLayout.isMobileLayout(context)
@@ -585,6 +595,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                         uploadBandWidth.value,
                         uploadBandWidth.unit),
                     // ISP info
+                    if (smartQosRecommendation != null) ...[
+                      const AppGap.small3(),
+                      SmartQosResult(recommendation: smartQosRecommendation),
+                    ],
                   ],
                 ),
               ),
@@ -617,6 +631,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 child:
                     _performanceDescriptionCard(resultTitle, resultDesc, date),
               ),
+              if (smartQosRecommendation != null) ...[
+                const AppGap.small3(),
+                SmartQosResult(recommendation: smartQosRecommendation),
+              ],
             ],
           ),
         ),
