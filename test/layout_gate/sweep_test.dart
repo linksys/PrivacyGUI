@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../util/app_test_fonts.dart';
 import '../util/overflow_baseline.dart';
+import 'incident.dart';
 import 'locale_tag.dart';
 import 'sweep.dart';
 
@@ -24,6 +25,33 @@ import 'sweep.dart';
 /// each one exercised rather than asserted in a comment, because a framework
 /// whose invariants are only documented is how the gate ends up "faster, quieter,
 /// blinder" (§9.3).
+///
+/// ## What each invariant is worth, measured (#1348)
+///
+/// R5's acceptance is that this file's claims are **executed**, not argued, so
+/// every row below was applied to the working tree, run, and reverted on
+/// 2026-08-22 at the R3 tip. "Killed by" is the observed failure set, not the
+/// expected one. Where a mutation only becomes visible in the presence of a real
+/// defect, the defect is named and the pair was run together — an invariant whose
+/// removal is invisible on a clean tree is exactly the kind that gets refactored
+/// away.
+///
+/// | # | mutation | killed by |
+/// |---|---|---|
+/// | F1 | drop the `KeyedSubtree(key: ValueKey(id))` wrapper (invariant 1) | 2 cases here (`INVARIANT 1: the same shape overflows again in the same test`, `the default verdict is the zero-tolerance one`) **and the popup sweep**, whose dataset flips 26 cells `clean` → `error` because its `onCellSettled` taps a form the stale tree left obscured. The card, forced-form and chrome datasets stay byte-identical. **With a real defect present it is worse than blind:** the same 104px overflow that 26 of 26 locales report on a clean framework is reported by **1 of 26** without the wrapper — the gate stays red only because the *first* locale happens to overflow. A `ru`-only defect would go green. |
+/// | F2 | drop `_restoreSurfaceAfterTest(tester)` from `setLayoutSurface` (invariant 2) | 3 cases in `../util/overflow_probe_test.dart`, and **none here** — as `INVARIANT 2` below says in its own body, a test cannot watch its own teardown. The proof has to outlive the test that set the surface. |
+/// | F3a | replace invariant 3's `catch` with a `rethrow` | 3 cases here. In a real sweep, with F1's throw as the defect: the throwing cell's record is still written (`"threw":true`, the collector got there first), but the coordinate aborts and **26 cells vanish from the dataset** — one per 3-locale coordinate, the locale that would have followed. `overflow_baseline.dart diff` calls that "coverage lost — this would otherwise read as a pass". With the `catch` in place the same throw kept all 347 cells and flagged 26. |
+/// | F3b | drop `tester.takeException()` after the settle (invariant 3's build-phase half) | 2 cases here. |
+/// | F4 | drop one coordinate (26 cells) from `CardWidthFamily.enumerate()` | `card.width enumerates 1638 cells` (1,638 → 1,612) **and** the #1337 baseline diff (26 cells "no longer measured"). Nothing else: the other 62 coordinate tests report the same green, and the dropped coordinate's own test simply stops existing. This is the whole case for `expectedCellCount` being required rather than defaulted. |
+/// | F5 | `kOverflowTolerancePx` 2.0 → 200.0 | 5 cases — 4 here plus `kOverflowTolerancePx is still 2.0 and still reachable through the probe path` in `overflow_probe_test.dart`. |
+/// | F5a | the same constant to **1.9** and to **2.1**, which is what #1348 actually asked for | **one case each, and it is the literal pin** — `kOverflowTolerancePx is still 2.0 …`. Nothing in this file notices either: the oracle's cases overflow by 1px and by 100px, so a ±0.1px move changes no verdict they assert on. Worth stating plainly, because F5's five killers make the constant look better defended than it is: what protects its *value* is one hand-written literal, and what the behavioural cases protect is the *shape* of the comparison. Both are needed, and only the gross mutation exercises both. |
+/// | F5b | the significance filter's `>` → `>=`, i.e. the boundary itself | **Nothing, until this ticket.** The 1px case passes either way and no cell in any committed baseline overflows by exactly 2.0px, so neither the oracle nor the dataset could see the flip. Closed by `holds an incident of exactly kOverflowTolerancePx` below rather than filed as an issue, because the gap was five lines wide. |
+/// | F6 | a dead `known_overflows.json` entry (a site nothing overflows at) | the ratchet's close phase, in `tearDownAll`, naming the site and telling the operator to delete the entry and its note. A second variant — `"*"` at a 500px ceiling against a real 104px overflow — is caught by the same phase with the tightening advice, and by *nothing else*: the sweep itself goes fully green, which is what the close phase is for. |
+/// | F7 | empty `CardNormalBandFamily.onCardSettled` (the `expect` that the pumped form really is `normal`) | **Nothing on a clean tree — 99 of 99 green.** Paired with the `normalBandCaseFor` mutation the card table's row 3 uses, the killers drop from **9 to 1**: the 8 coordinate tests all go quiet and only the `each threshold is realizable` meta-test still notices. So the hook is worth 8 of those 9, and 208 cells would otherwise keep measuring the wrong band in silence. This is the executable substitute for "`onCellSettled` omitted", which is compile-enforced (the member is abstract) and so cannot be run as a mutation. |
+/// | F8 | revert #1328's top-bar fix (`git revert c3cd0bac`) | `chrome.top_bar` at **601, 640 and 700px** — exactly the three swept widths inside the 601–767px band — plus the icon-only presentation test. 600px and 768px, the immediate neighbours, stay clean. The per-width locale counts reproduce the band's shape: 22 of 26 locales at 601px, 13 at 640px, 2 (`nl`, `pl`) at 700px. Note the revert is not applicable as-is: the chrome suite references `kTopNavLabelMinWidth`, so reverting the constant too breaks compilation — a compile-time coupling between the fix and its gate. |
+///
+/// One mutation from #1348's list is **not runnable**: #1321's stale DHCP fixture,
+/// because PR #1325 is still open. It stays on the list rather than being dropped.
 void main() {
   setUpAll(() async {
     // The invariant tests below measure real overflow in pixels, so the Ahem
@@ -364,6 +392,41 @@ void main() {
       expect(verdict.incidents, hasLength(1));
       expect(verdict.incidents.single.pixels, closeTo(1, 0.01));
       expect(verdict.significant, isEmpty);
+      expect(verdict.failed, isFalse);
+    });
+
+    testWidgets('holds an incident of exactly kOverflowTolerancePx',
+        (tester) async {
+      // The boundary itself, and the only case that pins which comparison the
+      // filter uses. #1348 mutated `> tolerancePx` to `>= tolerancePx` and
+      // **nothing failed** — the 1px case above passes either way, and no cell in
+      // any of the four committed baselines overflows by exactly 2.0px, so the
+      // dataset could not report the flip either. A boundary no test names is a
+      // boundary the next refactor gets to choose.
+      //
+      // Tolerated, not significant, because that is what the constant says it is:
+      // `kOverflowTolerancePx` is documented as "the overflow every probe in this
+      // suite ignores", and the ratchet grants the same figure inclusively
+      // (`OverflowExemption.coversMagnitude`: `pixels <= maxOverflowPx +
+      // kOverflowTolerancePx`). An exclusive filter here against an inclusive one
+      // there would make 2.0px a failure the allowlist cannot exempt.
+      final family = _FakeFamily(axisNames: const ['screen_px']);
+      final verdict = await measureOverflowCell(
+        tester,
+        family: family,
+        cell: _cell(
+          axes: const {'screen_px': '100'},
+          locale: const Locale('en'),
+          surfaceSize: const Size(100, 200),
+          build: () => _overflowingRow(childWidth: 100 + kOverflowTolerancePx),
+        ),
+      );
+
+      expect(verdict.incidents, hasLength(1));
+      expect(
+          verdict.incidents.single.pixels, closeTo(kOverflowTolerancePx, 0.01));
+      expect(verdict.significant, isEmpty,
+          reason: 'an overflow of exactly the tolerance is tolerated');
       expect(verdict.failed, isFalse);
     });
 
