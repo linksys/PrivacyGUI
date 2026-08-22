@@ -20,13 +20,14 @@ tags:
   # `test/layout_gate/families/dashboard_card_gate_test.dart` since #1343).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 317 test files to skip 313 of them. Measured 2026-08-22 after #1343, the
-  # same 590 tests take 1m43s under the tag and 26s when the four files are
-  # named (shell clock; `flutter test`'s own is 1m29s and 21s). Name the file for
-  # a tight loop; use the tag when a fifth sweep must not be missed.
+  # all 317 test files to skip 313 of them. Measured 2026-08-22 after
+  # #1344/#1345, the same 273 tests take 2m09s under the tag and 27s when the
+  # four files are named (shell clock; `flutter test`'s own is 1m53s and 19s).
+  # Name the file for a tight loop; use the tag when a fifth sweep must not be
+  # missed.
   #
-  # 590, not the 2,412 this said before #1343: the card sweep now loops its 26
-  # locales inside one test per coordinate, so the same 1,898 cells are declared
-  # by 99 tests. Cells are what the gate measures; the test count is how they
-  # are named.
+  # 273, not the 590 this said after #1343 nor the 2,412 before it: every sweep
+  # now loops its locales inside one test per coordinate, so the same 3,587 cells
+  # are declared by 273 tests (card 99, popup 80, chrome 57, forced-form 37).
+  # Cells are what the gate measures; the test count is how they are named.
   overflow:

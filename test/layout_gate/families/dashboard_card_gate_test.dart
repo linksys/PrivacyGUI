@@ -12,7 +12,7 @@ import '../../util/dashboard/dashboard_card_probe.dart';
 import '../incident.dart';
 import '../ratchet.dart';
 import '../sweep.dart';
-import 'dashboard_card_family.dart';
+import 'card_sweep_cell.dart';
 import 'dashboard_card_gate.dart';
 
 /// The card gate's oracle (#1343).

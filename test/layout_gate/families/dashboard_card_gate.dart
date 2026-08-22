@@ -46,7 +46,7 @@ import '../incident.dart';
 import '../locale_tag.dart';
 import '../ratchet.dart';
 import '../sweep.dart';
-import 'dashboard_card_family.dart';
+import 'card_sweep_cell.dart';
 
 /// Target locales parsed from `--dart-define=LOCALE=...` or the environment.
 /// Defaults to all shipped locales when no filter is given.

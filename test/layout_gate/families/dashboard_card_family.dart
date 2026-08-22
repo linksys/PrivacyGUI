@@ -18,8 +18,9 @@
 /// What they share — the allowlist, the report, the locale set, the coverage
 /// counters — is one [CardSweepGate] passed to all three. See its header for why
 /// that state cannot be per-family. The shape they share is `_CardFamily`, which
-/// holds the gate, the cached enumeration and the coverage delegate, and narrows
-/// both runner hooks to [CardSweepCell] so the cast is paid once.
+/// holds the gate, the cached enumeration, the coverage delegate and the dump key,
+/// on top of the [CardOverflowFamily] the two secondary suites also stand on
+/// (#1344).
 ///
 /// ## Why the host is a plain `buildDashboardCardApp` call
 ///
@@ -34,7 +35,6 @@
 library;
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -43,100 +43,9 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
 import '../../util/dashboard/card_data_profiles.dart';
 import '../../util/dashboard/dashboard_card_probe.dart';
-import '../locale_tag.dart';
 import '../sweep.dart';
+import 'card_sweep_cell.dart';
 import 'dashboard_card_gate.dart';
-
-/// One card coordinate, plus what the gate needs to judge it.
-///
-/// A subclass rather than a `Map` of extras on [OverflowSweepCell.axes]: the axes
-/// are the cell's *identity* and every entry in them lands in the dataset id, so
-/// putting `tabCount` or a `GlobalKey` there would rename 1,898 cells. Everything
-/// here is derivable from the axes plus the registry, and is carried rather than
-/// re-derived because the verdict is 26 locales deep in a loop.
-class CardSweepCell extends OverflowSweepCell {
-  CardSweepCell._({
-    required super.axes,
-    required super.locale,
-    required super.surfaceSize,
-    required super.build,
-    required this.cardId,
-    required this.widthCase,
-    required this.rows,
-    required this.tab,
-    required this.tabCount,
-    required this.repaintKey,
-  });
-
-  /// Builds the cell and the host it pumps in one place, so the surface and the
-  /// card geometry cannot be given two different heights.
-  ///
-  /// [overrides] is called inside [build] rather than here: `profile.overrides()`
-  /// constructs Riverpod overrides, and the pre-#1343 sweep built them per pump.
-  /// Building them once at enumeration would make 52 cells share one list, which
-  /// is a change to what the sweep pumps rather than to how it is declared.
-  factory CardSweepCell({
-    required Map<String, Object?> axes,
-    required Locale locale,
-    required String cardId,
-    required CardWidthCase widthCase,
-    required int rows,
-    required int tab,
-    required int tabCount,
-    List<Override> Function()? overrides,
-  }) {
-    // Allocated per cell, and only when a dump run will read it: a `GlobalKey`
-    // must be unique in the tree, and one cell's host is the only tree mounted
-    // while it is measured.
-    final repaintKey = shouldDumpCardPng ? GlobalKey() : null;
-    final cardHeight = dashboardCardHeight(rows);
-    return CardSweepCell._(
-      axes: axes,
-      locale: locale,
-      // The viewport is the card's own box, which is what keeps every sweep
-      // measuring exactly the space the grid gives the card
-      // (`probeCardOverflow` says the same, and why).
-      surfaceSize: Size(widthCase.screenWidth, cardHeight),
-      build: () => buildDashboardCardApp(
-        cardId: cardId,
-        locale: locale,
-        screenWidth: widthCase.screenWidth,
-        cardWidth: widthCase.cardWidth,
-        cardHeight: cardHeight,
-        tabIndex: tab,
-        repaintKey: repaintKey,
-        extraOverrides: overrides?.call() ?? const [],
-      ),
-      cardId: cardId,
-      widthCase: widthCase,
-      rows: rows,
-      tab: tab,
-      tabCount: tabCount,
-      repaintKey: repaintKey,
-    );
-  }
-
-  final String cardId;
-  final CardWidthCase widthCase;
-  final int rows;
-  final int tab;
-
-  /// How many tabs the card has — not which one this cell pumps. It is in the PNG
-  /// filename and the report row, both of which distinguish "tab 0 of 3" from a
-  /// single-view card.
-  final int tabCount;
-
-  /// The `RepaintBoundary` key the before-screenshot is taken from, null outside a
-  /// PNG dump run.
-  final GlobalKey? repaintKey;
-
-  String get tag => localeTag(locale);
-
-  /// `@min 191px tab0` — the coordinate as the dump tooling and the tolerated-
-  /// overflow line spell it.
-  String get widthLabel => '@${widthCase.label} ${widthCase.widthKey}px '
-      'tab$tab';
-}
 
 /// The registry entry for a card id.
 ///
@@ -155,12 +64,12 @@ WidgetSpec _specFor(String cardId) =>
 /// family that forgot to override it would pin a subset of its cells as though it
 /// were the whole sweep — green, while measuring less than it claims.
 ///
-/// [onCardSettled] and [judgeCard] are the runner's two hooks with the cast paid
-/// once. They stay **abstract**, which is the point: `onCellSettled` is abstract
-/// in the runner deliberately (architecture doc §6), and an inherited empty body
-/// is exactly how the next family would stop being asked whether it has a premise
-/// to check.
-abstract class _CardFamily extends OverflowSurfaceFamily {
+/// [CardOverflowFamily] is where the two hook casts are paid; what this adds is
+/// everything that only a *gated* family has. [judgeCard] is re-abstracted rather
+/// than inherited: its default is the runner's plain verdict, and all three sweeps
+/// here route through [CardSweepGate.judge] instead, so an inherited default would
+/// be a fourth family silently opting out of the ratchet.
+abstract class _CardFamily extends CardOverflowFamily {
   _CardFamily(this.gate);
 
   final CardSweepGate gate;
@@ -177,30 +86,22 @@ abstract class _CardFamily extends OverflowSurfaceFamily {
   /// the count test reads.
   List<CardSweepCell> enumerate();
 
-  /// The cast each hook would otherwise repeat, paid once and explained once.
-  ///
-  /// Safe by construction, and unsound to express in the signature instead: the
-  /// runner's hooks are typed on the base cell, and the only cells it hands back
-  /// are the ones [enumerate] built.
   @override
-  Future<void> onCellSettled(WidgetTester tester, OverflowSweepCell cell) =>
-      onCardSettled(tester, cell as CardSweepCell);
-
-  @override
-  Future<String?> judgeCell(
-    WidgetTester tester,
-    OverflowSweepCell cell,
-    OverflowCellVerdict verdict,
-  ) =>
-      judgeCard(tester, cell as CardSweepCell, verdict);
-
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell cell);
-
   Future<String?> judgeCard(
     WidgetTester tester,
     CardSweepCell cell,
     OverflowCellVerdict verdict,
   );
+
+  /// Allocated per cell, and only when a dump run will read it: a `GlobalKey` must
+  /// be unique in the tree, and one cell's host is the only tree mounted while it
+  /// is measured.
+  ///
+  /// Here rather than inside [CardSweepCell]'s factory (where #1343 put it),
+  /// because the PNG pair is written from the report row and the report row is the
+  /// width sweep alone — see [CardSweepGate.judge]. The three secondary families
+  /// #1344/#1345 add never dump, so they never allocate.
+  GlobalKey? newRepaintKey() => shouldDumpCardPng ? GlobalKey() : null;
 
   @override
   List<String> enumerationGaps() => gate.enumerationGaps();
@@ -245,6 +146,7 @@ class CardWidthFamily extends _CardFamily {
               rows: rows,
               tab: tab,
               tabCount: tabCount,
+              repaintKey: newRepaintKey(),
             ));
           }
         }
@@ -318,6 +220,7 @@ class CardNormalBandFamily extends _CardFamily {
             rows: rows,
             tab: tab,
             tabCount: tabCount,
+            repaintKey: newRepaintKey(),
           ));
         }
       }
@@ -428,6 +331,7 @@ class CardProfileFamily extends _CardFamily {
               rows: rows,
               tab: tab,
               tabCount: tabCount,
+              repaintKey: newRepaintKey(),
               overrides: profile.overrides,
             ));
           }

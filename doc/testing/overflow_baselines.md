@@ -245,6 +245,16 @@ other three files are untouched, and that is the evidence the shared `localeTag(
 changed nothing for them: `check card popup forced_form` compares 1,917 + 347 + 75
 cells against the pre-#1356 bytes and reports all three identical.
 
+`forced_form` was then **re-captured at `d6fa9e27-dirty`** for #1344, and it is the
+second case of a rewritten dataset that is not a measurement change: its six
+`skeleton` rows gain the `|locale=en` they were always measured in, because
+`runOverflowSweep` appends the locale to every cell id by construction and locale is
+a field on the cell rather than an axis a family may respell. Same 75 cells, same
+groups, same six columns; the other 69 rows are byte-identical, so the whole diff is
+six renamed keys and the commit stamp. `popup` came through #1345 untouched — all
+three of its sweeps already carried `locale` last — which is what says the port
+measured the same 347 coordinates.
+
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|
 | `card` | `dashboard_card_overflow_test.dart` | 1,917 | 0 | `width` 1638 · `normal_band` 208 · `profile` 52 · `single_view` 12 · `tab_registry` 6 · `profile_data` 1 |

@@ -29,20 +29,21 @@ gate.
 | Sweep | What it pumps |
 |---|---|
 | `test/page/dashboard/cards/dashboard_card_overflow_test.dart` | every card × narrowest grid width per span × tab × 26 locales (#1183), declared through `runOverflowSweep` since #1343 |
-| `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239) |
-| `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could |
+| `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239), declared through `runOverflowSweep` since #1345 |
+| `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could, declared through `runOverflowSweep` since #1344 |
 | `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328), declared through `runOverflowSweep` since #1342 |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles every test file in the repo (317 at #1343) to skip all but four:
+compiles every test file in the repo (317 at #1345) to skip all but four:
 measured 2026-08-22,
-those same **590** tests take **1m29s under the tag and 21s when the four files are
-named** (`flutter test`'s own clock; the shell sees 1m43s and 26s, the difference
+those same **273** tests take **1m53s under the tag and 19s when the four files are
+named** (`flutter test`'s own clock; the shell sees 2m09s and 27s, the difference
 being package resolution and build). Identical selection either way, so name the files for a tight inner loop
-and use the tag when a fifth sweep must not be silently missed. **590, not 2,412,
-since #1343**: the card sweep now aggregates its 26 locales inside one test per
-coordinate, so it declares 99 tests over the same 1,898 cells. The cells are what
-the gate measures; the test count is only how they are named.
+and use the tag when a fifth sweep must not be silently missed. **273 — 590 after
+#1343, 2,412 before it**: all four sweeps now aggregate their locales inside one
+test per coordinate, so 273 tests declare the same 3,587 cells (card 99, popup 80,
+chrome 57, forced-form 37). The cells are what the gate measures; the test count is
+only how they are named.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
 verdict depends on", which would slide the tag back over the whole family. So
@@ -55,7 +56,7 @@ and the three framework oracles
 [families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart), #1343)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
-what naming the four sweep files measures (590), so nothing has quietly joined
+what naming the four sweep files measures (273), so nothing has quietly joined
 the pre-commit selector.
 
 Two members are worth naming:
@@ -450,12 +451,24 @@ New cards in `UspWidgetSpecs.all` are picked up automatically — but:
    naming only the tabs that actually render the varying data. That file's doc
    states the opt-in cost plainly — a card is uncovered on the second profile
    until someone adds it — so record the decision either way.
-4. **Update the pinned cell counts** in
-   [dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart)
-   — `expectedCellCount:` on each affected `runOverflowSweep` call. A new card adds
-   `spans × tabs × 26` to `CardWidthFamily`, another `tabs × 26` to
-   `CardNormalBandFamily` if it declares a `normalAbove`, and `tabs × widths × 26`
-   to `CardProfileFamily` if you added it to `kCardDataProfileSweeps` in step 3.
+4. **Update the pinned cell counts** — `expectedCellCount:` on each affected
+   `runOverflowSweep` call. Since #1344/#1345 that is **three files, not one**, and
+   a new card can touch all eight sweeps:
+   - [dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart)
+     — `spans × tabs × 26` to `CardWidthFamily`, another `tabs × 26` to
+     `CardNormalBandFamily` if it declares a `normalAbove`, and `tabs × widths × 26`
+     to `CardProfileFamily` if you added it to `kCardDataProfileSweeps` in step 3.
+   - [dashboard_card_popup_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart)
+     — `+26` to `popup.form` and `+3` to `popup.dialog` if the grid can put the card
+     under `kPopupBelow` (a `minColumns` of 3), and `+3` to `popup.picked_dialog`
+     unless the card is in `cardsWithoutPopupForm`. That file's
+     `what this file sweeps` group pins both inventories, so it fails first and
+     names which of the two the card joined.
+   - [dashboard_card_forced_form_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart)
+     — `+3` to `forced_form.popup_tile` and `+3` to `forced_form.compact_floor`, per
+     form the card offers in `selectableForms`. `forced_form.skeleton` is fixed at 6:
+     it sweeps skeleton *variants*, not cards.
+
    This is not optional bookkeeping and it is not derived on purpose: since #1343
    the count is the *only* thing standing between "regrouped 1,898 cells into 73
    tests" and "quietly stopped enumerating 800 of them", so a computed pin would be
