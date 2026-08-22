@@ -1,10 +1,10 @@
 # Overflow Gate — Framework Architecture
 
-**Last Updated: 2026-08-22** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1346, #1348, #1349). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix and its consequence for R2/R4 verification recorded 2026-08-21 (§8, §9.2). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 into R4 on 2026-08-21 (§3.5), because it is the only part of R2 a developer machine cannot verify. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1).**
+**Last Updated: 2026-08-22** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1345, #1351, #1348, #1349 — #1346 left the epic on 2026-08-22, §9.4, and #1361 was opened outside it). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix recorded 2026-08-21 and its consequence narrowed to the scout alone on 2026-08-22 (§8, §9.2, §9.4). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 on 2026-08-21 (§3.5) — on a "cannot be verified on a developer machine" claim §3.5 has since corrected; the split still stands, for sequencing. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1). **#1344 and #1345 then closed R3** — the forced-form and popup sweeps, in one pass over one shared `CardSweepCell`, with `check popup` byte-identical at 347 cells and `check forced_form` 75 cells carrying the six `|locale=en` renames §2's rule forces; all four sweeps are now declared through the runner and every count in §1.2 is re-measured. **R4 then left this epic on 2026-08-22 — see §9.4.** The gate is the guard and golden is the scout (§8), and a scout-side deliverable sitting inside a guard-side epic had put a three-hour CI round-trip in front of the epic's own acceptance: #1346 is now a standalone golden-facing ticket, #1339 stays as a gate-side finishing ticket with an offline verification, and one coupling this document had recorded as harmless — the gate's fixtures living under `test/golden_test/` — is ticketed on its own as #1361.**
 
-**Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · R4 → #1346 + #1339 (retire the golden framework's own parser — resequenced here 2026-08-21, see §3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349**. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
+**Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · **R4 → gone; it left this epic on 2026-08-22 (§9.4)** — #1346 is a standalone golden-facing ticket, and #1339 (retire the golden framework's own parser) stays as a gate-side finishing ticket whose verification is offline rather than CI-bound (§3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349** · plus **#1361**, the fixture-decoupling ticket §9.4 opened. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
-**Two steps this document did not have (added 2026-08-21).** R1–R4 as written verify that each port matches its own baseline, which is necessary and not sufficient: a refactor that makes 3,800 cells run faster and quieter while measuring less satisfies all of it. So **R5 (#1348)** re-runs the card suite's existing mutation table against the ported code and adds one *executed* mutation per framework invariant — the precedent being that table's own row 1, where a real defect was killed by 26 of 26 `network_health` tab-0 cases while the main width sweep, the largest thing in the file, saw nothing (§9.3, which also records which of that table's counts no longer reconcile). And the **pilot (#1349)** is now ticketed inside the epic rather than deferred past it, gated on R5, with §10 Q5 as its deliverable.
+**Two steps this document did not have (added 2026-08-21).** R1–R3 as written verify that each port matches its own baseline, which is necessary and not sufficient: a refactor that makes 3,800 cells run faster and quieter while measuring less satisfies all of it. So **R5 (#1348)** re-runs the card suite's existing mutation table against the ported code and adds one *executed* mutation per framework invariant — the precedent being that table's own row 1, where a real defect was killed by 26 of 26 `network_health` tab-0 cases while the main width sweep, the largest thing in the file, saw nothing (§9.3, which also records which of that table's counts no longer reconcile). And the **pilot (#1349)** is now ticketed inside the epic rather than deferred past it, gated on R5, with §10 Q5 as its deliverable.
 
 ## Purpose
 
@@ -108,8 +108,9 @@ back is a red test rather than a silent re-key of 3,587 rows.
         └────────────────────────────┘                          └──────────────────────────────┘
                                                                                │
                                                        pass/fail discarded (:373–391 `return;`) — correct
-                                                       file:line discarded downstream, in THIS repo, at
-                                                       test_scripts/combine_results.dart:178  ◄── the real loss
+                                                       file:line survives into the report rows, at
+                                                       combine_results.dart:181 — since #1197, NOT lost
+                                                       what stays screen-keyed is golden CI's collector
 ```
 
 **The chrome column is now history, as of #1342.** Six of its rows moved to the
@@ -301,23 +302,34 @@ read that as a verdict "thrown away". Two things are wrong with that:
 2. The record is then parsed by `test_scripts/overflow_details.dart` into
    `OverflowDetail{widget, file, line, pixels, side, message, occurrences}` — a
    **richer** row than the gate's own card-shaped `OverflowReportItem`, which
-   carries no source location at all. The direction of R4 in §9.2 was therefore
+   carries no source location at all. The direction R4 was written in was therefore
    backwards: it is the gate that needs to learn the golden side's join column,
-   not the reverse, and #1338/#1343 already deliver it.
+   not the reverse, and #1338/#1343 already deliver it. (R4 itself left the epic on
+   2026-08-22 — §9.4.)
 
-The real loss is one step further down, in this repo, at
-`test_scripts/combine_results.dart:178`:
+**Corrected again 2026-08-22: the site is not lost in this repo either.** An
+earlier revision of this section put the loss at
+`test_scripts/combine_results.dart:178`, which is one line above what that file
+actually does:
 
 ```dart
 final sites = overflowDetails[goldenName] ?? const [];
-test['hasOverflow'] = sites.isNotEmpty;   // ← file:line dies here
+test['hasOverflow'] = sites.isNotEmpty;                          // :178
+test['overflowSites'] = sites.map((s) => s.toJson()).toList();   // :181
 ```
 
-Every consumer downstream is screen-keyed as a direct consequence. Golden CI's
-day-over-day collector (`PrivacyGUI-golden-ci`, `triage-agent/collector.py`) keys
-its overflow diff on `{tsName}|{locale}|{deviceType}`, which is why one source
-location multiplies into hundreds of rows, and why that collector's new-overflow
-issue creation is **held in code** against a ~361-issue blast.
+`:181` landed 2026-08-07 with #1197 (`83758c5c`, PR #1209) and carries widget /
+file / line / pixels / side / occurrences into every report row;
+`generate_gallery_report.dart:629` and `html_generate_functions.dart:649` both
+consume it. The report layer therefore **already emits the join column**, and the
+first acceptance criterion #1346 was written with is already met.
+
+What is screen-keyed is the **consumer**, and it lives in the other repo: golden
+CI's day-over-day collector (`PrivacyGUI-golden-ci`,
+`triage-agent/collector.py:190`) reads `hasOverflow` and keys its diff on
+`{tsName}|{locale}|{deviceType}` — which is why one source location multiplies
+into hundreds of rows, and why that collector's new-overflow issue creation is
+**held in code** (`:543-549`) against a ~361-issue blast.
 
 That pipeline is not idle. It runs in the golden CI repo across 26 locales and
 four devices (`desktop1280`, `desktop1241`, `phone480`, `phone320` — more devices
@@ -338,8 +350,15 @@ roughly 135 ticketed coordinates:
 So the question the refactor has to answer is not "how do we detect page-level
 overflow" — that already happens daily — and not "why is a measured signal
 advisory" either, since §8 concludes advisory is correct for the scout. It is
-**"why can the two datasets not be compared"**, and the answer is one line that
-collapses a list of sites to a boolean. §8 is the shape of the comparison.
+**"why can the two datasets not be compared"**, and the answer is a key choice in
+the collector rather than a missing column in this repo. §8 is the shape that
+comparison would take.
+
+**And it is no longer this epic's question (2026-08-22, §9.4).** Making the two
+datasets comparable is worth doing and its benefit lands entirely on golden CI's
+triage; the gate's own correctness does not depend on it. Keeping it here made the
+guard's acceptance wait on the scout's pipeline, so §1.3 is now a diagnosis this
+document records and #1346 owns standalone.
 
 ---
 
@@ -428,8 +447,9 @@ the whole R2 sequence moved, and it moved for a reason the re-export cannot serv
             │ re-export                    │ re-export                │ R2: shares the parser
    test/util/overflow_probe.dart   dashboard_card_probe.dart    golden_framework/
    (22 importers unchanged)         (26 importers unchanged)     (golden_runner unchanged;
-                                                                  R4 is one line down, in
-                                                                  test_scripts/combine_results)
+                                                                  #1339 finishes the swap;
+                                                                  the report rows are #1346's,
+                                                                  outside this epic — §9.4)
 ```
 
 <details>
@@ -465,7 +485,7 @@ graph TD
   U1["test/util/overflow_probe.dart<br/>21 importers"] -.re-export.-> K7
   U2["dashboard_card_probe.dart<br/>24 importers"] -.re-export.-> K6
   U3["golden_framework<br/>golden_runner unchanged"] -.R2 shares parser.-> K7
-  U4["test_scripts/combine_results.dart<br/>:178 stops flattening"] -.R4.-> K5
+  U4["test_scripts/combine_results.dart<br/>:181 carries overflowSites since #1197"] -. "#1346 · outside this epic" .-> K5
 ```
 
 </details>
@@ -768,7 +788,7 @@ split into two groups that do **not** belong in one ticket:
 | | Call site | Verifiable locally? |
 |---|---|---|
 | **gate side** (#1351) ✅ | `test/util/overflow_baseline.dart:185` spread `parseOverflowSource` into every baseline record — the *only* parser coupling between the gate family and the golden framework, and the reason that file imported it at all | **yes** — `./tool/overflow_baseline.sh check` |
-| **golden side** (#1339) | `golden_runner.dart` uses its own copy; #1339 deletes it and points the runner here | **no** — needs golden-ci artifacts |
+| **golden side** (#1339) | `golden_runner.dart` uses its own copy; #1339 deletes it and points the runner here | **yes, offline** — corrected 2026-08-22, see below |
 
 The gate side is a byte-for-byte no-op today, and provably so: all 3,587 rows
 across the four frozen baselines are `clean`, with `-` in every incident column,
@@ -778,13 +798,26 @@ so nothing exercises the source fields. What changes is only the shape of a row 
 is an `int`. (An earlier revision of this section called that "rewrites rows in a
 dataset #1337 froze byte-for-byte". It does not; the dataset has no such row.)
 
-**Consequence for sequencing.** Nothing in R2 or R3 depends on the golden side —
-the only ticket that does is #1346, which needs the two sides measuring the same
-way before it can join them on `file:line`. Verified 2026-08-21: of the 39
-`layout-gate` files, four import `golden_framework`, and all four import only
-`mocks/`. So #1339 is a prerequisite of **R4**, not of R2, and doing the gate side
-separately — split out as **#1351** on 2026-08-21 — takes golden-ci off R2's
-and R3's critical path entirely.
+**#1339's verification is offline — corrected 2026-08-22.** The row above read
+"**no** — needs golden-ci artifacts" until this date, which confused *producing*
+the data with *verifying against* it. The golden runner preserves the raw
+diagnostics strings verbatim: `_writeOverflowReport` at `golden_runner.dart:458`
+writes `{'records': …, 'logs': […]}`, and `combine_results.dart:201` carries that
+table into the published report as `overflowLogs`. Both parsers are pure functions
+of that string, so the difference between them — the golden copy takes the *first*
+overflow side it matches, the gate's takes the *worst* — is diffed by running the
+two over a stored `logs` array on a developer machine. That is not a weaker check
+than a live CI diff, it is a stronger one: a diff of two report runs is polluted by
+suite-completion append order, by `logIndex` drift, and by the lost-record race
+`golden_runner.dart:404-415` documents and accepts, none of which touch a parser.
+
+**Consequence for sequencing.** Nothing in R2, R3 or R5 depends on the golden
+side. Verified 2026-08-21: of the 39 `layout-gate` files, four import
+`golden_framework`, and all four import only `mocks/` — and that residual import
+is the one real code coupling left, ticketed as **#1361** on 2026-08-22 (§9.4).
+Doing the gate side of the parser separately — split out as **#1351** on
+2026-08-21 — took golden-ci off R2's and R3's critical path entirely, and #1339
+finishing the job is now a gate-side tail rather than a gate to anything.
 
 **The gate side landed 2026-08-21 (#1351).** `overflow_baseline.dart` reads
 `OverflowIncident.file` / `.line` / `.widget` instead of calling the golden
@@ -798,15 +831,21 @@ becoming false.
 
 So the epic's "exactly one parser of Flutter's overflow string exists in the repo"
 is now met **inside the gate family** — one parser is canonical and one runs — and
-partially met repo-wide: `golden_runner.dart` still uses the copy, which is #1339
-in R4.
+partially met repo-wide: `golden_runner.dart` still uses the copy, which is what
+#1339 finishes.
 
-`file:line` is not decoration. It is the correct ratchet key: a coordinate-keyed
-allowlist invalidates wholesale whenever a layout is rearranged, whereas a
-source-location key survives it. And it is the join column that makes golden CI's
-advisory findings and the local gate's verdicts one comparable dataset (§8) —
-which is what turns the graduation rule from something a person has to watch into
-something a diff computes.
+`file:line` is not decoration, and it earns its place here for **one** reason: it
+is the correct ratchet key. A coordinate-keyed allowlist invalidates wholesale
+whenever a layout is rearranged, whereas a source-location key survives it — which
+is why #1341 rekeyed the fixture and why `deadEntryFailure` can tell a moved
+exemption from a fixed one.
+
+It *also* happens to be a column golden CI's advisory findings could be joined on
+(§8), and until 2026-08-22 this paragraph stated both roles in one breath. That
+fusion is how a scout-side deliverable entered a guard-side epic: the two roles
+have different owners. The ratchet key is verified by `./tool/overflow_baseline.sh
+check` on a laptop; the join is verified by a triage pipeline in another repo,
+three hours per round trip. Only the first is this epic's (§9.4).
 
 **But the key is not the whole entry, and #1356's review is where that was
 noticed.** The very property that makes `file:line` durable — one location is
@@ -1172,8 +1211,8 @@ family again.
    launderable via --update-goldens                not launderable; guards new pages
             │                                                ▲
             │ overflow_warnings.json → OverflowDetail          │ graduation rule:
-            │ (already carries file:line; R4 stops             │ a surface earns a probe
-            │  combine_results.dart:178 flattening it)         │ only after it is at 0
+            │ (carries file:line into the report rows          │ a surface earns a probe
+            │  at combine_results.dart:181, since #1197)       │ only after it is at 0
             ▼                                                 │
    ┌──────────────────────────────────────────────────────────────────────────┐
    │  join key = file:line                                                    │
@@ -1193,16 +1232,27 @@ The two oracles are not redundant, and the difference is why both exist:
   what lets whoever last ran `--update-goldens` bless a regression.
 
 **The scout's two matrices are not the same, and only one of them finds anything.**
-`golden_test_config.dart` defaults to `[phone480, desktop1280]` and `[Locale('en')]`,
-so a golden run on a developer machine sweeps **one locale by two devices**; CI
-sweeps **26 by four**. Measured 2026-08-21, the local run costs 2m13s and reports
+`golden_test_config.dart:85` falls back to `[Locale('en')]`, so a golden run on a
+developer machine sweeps **one locale**; golden CI's `daily-verify.yml:90` calls
+*this repo's* `run_golden_verify.sh -l <26 locales> -s 480,1280`, so it sweeps
+**26**. (Corrected 2026-08-22: the difference is the locale list, not the device
+list — `-s 480,1280` is byte-identical to `run_golden_verify.sh`'s own default, and
+a suite declaring custom devices keeps them either way through `_resolveDevices`.
+An earlier revision of this paragraph read "26 by four", which does not reconcile
+with the workflow.) Measured 2026-08-21, the local run costs 2m13s and reports
 **zero** overflow — `goldens/overflow_warnings.json` is not even created — because
 every one of the ~135 coordinates that pipeline has found is locale-driven (`fr`,
-`fr_CA`, `fi`). The consequence is structural, not incidental: **anything that
-verifies scout output has to be verified against a CI artifact**, and the golden
-side has no local baseline to capture. That is why #1337's baseline mechanism is
-scoped to the four local sweeps only, and why the golden side's baseline is
-#1346's problem.
+`fr_CA`, `fi`).
+
+So the scout has no local baseline to capture, and **verifying the scout's output
+means verifying against a CI artifact**. That is a true statement about the scout,
+and it is why #1337's baseline mechanism is scoped to the four local sweeps only.
+It is *not* a constraint on this epic, and reading it as one was the mistake
+corrected on 2026-08-22 (§9.4): the join in the box above is a triage improvement
+whose whole benefit lands in the other repo, so it is owned by a golden-facing
+ticket rather than by the guard. Nothing the guard asserts about itself needs a
+golden run — which is what lets the epic's own acceptance (#1348) be a laptop
+command instead of a three-hour round trip.
 
 Advisory is the *right* setting for the scout and the *wrong* one for the guard.
 The graduation rule follows: a surface gets a local probe only after it has been
@@ -1229,24 +1279,30 @@ and deferred**: R3 lands here first, and the merge is resolved once, when #1325
 goes in. Whoever resolves it should treat #1325's side as authoritative for card
 data and thresholds, and this branch's side as authoritative for structure.
 
-### 9.2 The five steps
+### 9.2 The four steps
 
-Each is individually green. R1–R4 are the original plan; **R5 was added
-2026-08-21** because R1–R4 verify only that each port matches its own baseline,
-which is necessary and not sufficient (§9.3).
+Each is individually green. R1–R4 were the original plan; **R5 was added
+2026-08-21** because a port matching its own baseline is necessary and not
+sufficient (§9.3). **R4 then left this epic on 2026-08-22** (§9.4), so the plan is
+**R1 → R2 → R3 → R5 → pilot**: its row is kept below, struck through, because two
+other rows refer to it and because the reason it left is the document's own
+correction rather than a change of mind about the work.
 
 | Step | Content | Verification |
 |---|---|---|
 | **R1** | Tag swap: the old card-shaped gate tag becomes `layout-gate` on 38 files (37 when this row was written; #1337 added the 38th); add `overflow` to the sweeps; `dart_test.yaml`; `run_overflow_test.sh` consumes the tag; prose (`SKILL.md` ×10, `dashboard_density_design.md` ×5, `dashboard_framework_overflow_investigation.md` ×1, `doc/theme/unicode_glyph_coverage_decision.md` ×1, `test/golden_test/flutter_test_config.dart:9` comment). No behavioural change. | `./run_tests.sh` reports the same total as before the swap; `flutter test --tags overflow` selects the four sweeps only |
-| **R2** | `test/layout_gate/` spine: merged parser (with `file:line`), `surface.dart`, `collector.dart`; old paths re-export. Then **#1351** drops the gate's own last call into the golden parser (`overflow_baseline.dart:185`). Deleting the duplicate in `overflow_diagnostics.dart` and pointing `golden_runner.dart` at the shared one — with the advisory caller opting out of the loud-failure default **explicitly**, so a future gate caller cannot inherit tolerance by omission — **moved to R4 on 2026-08-21 as #1339** (§3.5): it is verifiable only against golden-ci artifacts, and holding R2 for it would put a CI round-trip in front of R3. Revised 2026-08-21: the chrome suite *does* change here, collapsing its seven hand-copied surface blocks, because otherwise this step has no verification signal of its own. The card suites still do not. **Landed 2026-08-21** (#1338 → #1351 → #1340). | family still green; count **7,229** after all three (7,217 at #1338 — its own 17 parser tests being the whole delta from #1337's 7,200 — then +4 at #1351 and +8 at #1340), and no existing test moved; `overflow_probe_test.dart` extended for the new fields, including a real Flutter overflow whose `file:line` is asserted against the line the `Row` is written on, 3 tests pinning `toString()`, and #1340's 8-test surface group whose six mutations all have recorded killers; chrome's failure set unchanged; #1351's and #1340's swaps both verified by `./tool/overflow_baseline.sh check` exiting 0 on all four sweeps, 3,587 cells identical — **entirely local**, since the CI-artifact obligation left with #1339 |
+| **R2** | `test/layout_gate/` spine: merged parser (with `file:line`), `surface.dart`, `collector.dart`; old paths re-export. Then **#1351** drops the gate's own last call into the golden parser (`overflow_baseline.dart:185`). Deleting the duplicate in `overflow_diagnostics.dart` and pointing `golden_runner.dart` at the shared one — with the advisory caller opting out of the loud-failure default **explicitly**, so a future gate caller cannot inherit tolerance by omission — **moved out of R2 on 2026-08-21 as #1339** (§3.5) — to R4, then out of the epic's critical path with it on 2026-08-22 (§9.4). The move itself stands: nothing in R2 or R3 needs the golden runner to have changed parsers. The *reason* recorded for it — "verifiable only against golden-ci artifacts" — was wrong, and §3.5 corrects it. Revised 2026-08-21: the chrome suite *does* change here, collapsing its seven hand-copied surface blocks, because otherwise this step has no verification signal of its own. The card suites still do not. **Landed 2026-08-21** (#1338 → #1351 → #1340). | family still green; count **7,229** after all three (7,217 at #1338 — its own 17 parser tests being the whole delta from #1337's 7,200 — then +4 at #1351 and +8 at #1340), and no existing test moved; `overflow_probe_test.dart` extended for the new fields, including a real Flutter overflow whose `file:line` is asserted against the line the `Row` is written on, 3 tests pinning `toString()`, and #1340's 8-test surface group whose six mutations all have recorded killers; chrome's failure set unchanged; #1351's and #1340's swaps both verified by `./tool/overflow_baseline.sh check` exiting 0 on all four sweeps, 3,587 cells identical — **entirely local**, since #1339 left with the golden runner (and, per §3.5, is verifiable locally too) |
 | **R3** | `runOverflowSweep` + `OverflowSurfaceFamily`. Port **chrome first** (31 tests → 57, no ratchet, no report — the proof, **#1342, landed 2026-08-21**), then the ratchet re-key (**#1341, landed 2026-08-21 ahead of the runner** — it is a module extraction plus a key change, and neither needs `runOverflowSweep` to exist), then the card family last because it carries ratchet, report and PNG dumps: main sweep (1,921 tests, **#1343, landed 2026-08-22**), forced-form (80 → 37, **#1344**) and popup (354 → 80, **#1345**), both landed 2026-08-22 in one pass over one shared cell type. **Four tickets, not one** — see the note below the table. | `./tool/overflow_baseline.sh check <sweep>` exits 0 against #1337's pre-port baseline — cell counts and verdicts compared by diff, not by eye; `./run_tests.sh` legitimately drops by **1,822** (`1,921 − 99`) from whatever it measures at the time — **5,539** from #1342's 7,339, not the epic's literal 5,319 — with a `cell count` test per family pinning 1,638 / 208 / 52. **#1343 is verified and closed:** `check card` reports **1,917 cells identical**, the card suite is 99 tests green, `dashboard_card_gate_test.dart`'s 11 cases pin what a green sweep cannot reach (the ratchet's tolerate / block / ceiling-breach branches, the paste-ready entry, and declared-vs-measured), `sweep_test.dart` grew 11 for the `judgeCell` hook and the three-way count decision, and all four dump-tooling contracts of §5 were exercised end to end — `-l` still lists 18 cards, and `--name network_health --dart-define=LOCALE=de --dart-define=DUMP=3 --dart-define=MIN_SCREEN=400` still writes `overflow_report.html` and `.md`. **One path could not be exercised locally**: no card overflows today, so the PNG pair and the report row — both reached only when a cell has a significant incident — ran their surrounding code but never their bodies, exactly as before the port. **The port's own review then found four things the baseline diff could not**, all fixed before it landed: a narrowing that matches nothing left every pin skipped and the suite green over zero measurements (now `overflowSweepCountAction`'s third branch, with an oracle case); the report row judged its re-measured screenshot against `kOverflowTolerancePx` while the cell beside it used the sweep's `tolerancePx` (now carried on `OverflowCellVerdict`); `dart_test.yaml` still documented 40 carriers and 2,412 tests; and the three families each re-declared the `gate` field, the cached enumeration and the `enumerationGaps` delegate, where a fourth that forgot the last of those would have pinned a subset as the whole sweep (now a private `_CardFamily` base that also pays the `CardSweepCell` cast once). **#1342 is verified and closed:** `check chrome` reports 1,248 cells identical, its two counts are pinned as the literals 312 and 936, `sweep_test.dart`'s 27 cases pin the three invariants (invariant 1 and invariant 3's build-phase half each by an executed mutation), and the **negative check** — #1328's fix reverted in `lib/` while the ported sweep ran — put 601px red in 22 locales, 640px in 13 and 700px in 2 with 320/375/480/600 and 768–1280 all clean, which is the band §2 says is not monotone, recovered by the framework rather than by the hand-written suite. #1341's own share is verified without any of that: `ratchet_test.dart` proves the allowlisted-passes / not-allowlisted-fails / dead-entry-reported triple against a string, and the card sweep's 1,921 tests and its `card` baseline were both unchanged by it (#1343 then regrouped the tests and left the baseline alone). **#1344 and #1345 are verified and closed, in one pass:** `check popup` reports **347 cells identical** and `check forced_form` **75 cells with exactly six ids renamed** — the skeleton rows gaining the `|locale=en` the runner appends by construction, re-captured and stated in the ticket — the two suites are 37 and 80 tests green, `check card chrome` is still identical (the shared cell type moved without moving a measurement), and the gate falls to **5,222**. Neither port needed an oracle of its own: the runner and the three invariants were already proved at #1342/#1343, so the only new code is enumeration, and the baselines are what prove the enumeration. **The ports' own review found three things the baseline diff could not**, all fixed before they landed and none of them a measurement: the popup families re-derived each card's narrowest width *per cell* rather than per card, so a 26-locale family paid `narrowestCaseFor`'s 320-to-2560 scan 52 times per card at declaration (now one `_bandCells(locales)` both width-path families call, which is also the duplicated comprehension gone); the two dialog families each carried the same tap-and-assert body, where the argument for the tap being inside the hook is the thing that must be said once (now `_openPresentation`); and `forced_form_card_family.dart` was one line off `dart format`. `check popup` is identical across all three. **The residual risk these ports were reported with turned out not to be one.** The runner claims the binding's pending exception after `onCellSettled` where `probeCardOverflow` never did, and the review read that as "a benign pending exception from the dialog tap would newly fail". It cannot: an untaken pending exception fails the test it happened in either way — checked directly after the ports landed, bare and through `probeCardOverflow`'s own `after:` hook, both red. What the claim describes is a change to the **dataset**, which §3.4, the decision log and the oracle's own comment all had right: without the two lines the cell's row is written `clean` for a tree that threw, and the grouped test dies with a bare stack instead of an attributed failure. So there is nothing here for #1348 to carry — and the 78 tapped cells raise nothing today in any case |
-| **R4** | `test_scripts/combine_results.dart:178` stops flattening the overflow sites to a boolean: report rows carry file / line / side / pixels / occurrences. `golden_runner`'s early `return` is **not** touched — the scout stays advisory. Plus **#1339**, moved here from R2: delete `overflow_diagnostics.dart`'s parser and point `golden_runner.dart` at the shared one, which is what makes both sides of the join measure the same way. Follow-up in `PrivacyGUI-golden-ci`: re-key the collector's diff on `file:line`, which lifts its ~361-issue hold. | golden report rows and gate rows join on `file:line`; grouped by the new key, #1302's 15 coordinates collapse to 5 source locations and admin's 120 to 1 — verified against a **CI artifact**, since a local run has no rows to group (see the note below); and every difference #1339 makes to `overflow_warnings.json` attributed incident-by-incident to first-side → worst-side, byte-identical being unachievable there |
+| ~~**R4**~~ | ~~Report rows carry file / line / side / pixels / occurrences; plus #1339's parser deletion; plus a collector re-key in `PrivacyGUI-golden-ci`.~~ **Left this epic 2026-08-22 (§9.4)**, split in two. Its report half is **#1346, now standalone and golden-facing** — and its first acceptance criterion was already met by **#1197** (`83758c5c`, PR #1209), which has carried `overflowSites[]` at `combine_results.dart:181` since 2026-08-07, so what is left there is read-time normalisation, the join demonstration and the collector follow-up (§1.3). Its parser half is **#1339**, which stays a **gate-side finishing ticket** — one parser repo-wide is the gate's own invariant, and §3.5 shows its verification is offline. | #1339: both parsers run over a stored `logs` array, every difference attributed first-side → worst-side, **no golden run** (§3.5). #1346's verification is golden CI's and is no longer this epic's acceptance |
 | **R5** | Acceptance (#1348). Part A: `./tool/overflow_baseline.sh check` exits 0 for all four sweeps against the committed baselines (`4fb1ac5e-dirty`; `chrome` `785c6f67-dirty`). Part B: every row of the card suite's existing mutation table re-run, plus one executed mutation per framework invariant — keyed subtree removed, surface teardown dropped, per-cell exception allowed to propagate, a coordinate dropped from `enumerateCells()`, tolerance at 1.9/2.1px, a dead allowlist entry, `onCellSettled` omitted, #1328's fix reverted. **#1342 offers four of those rows a recorded killer; whether R5 accepts them or re-derives them is #1348's call, not #1342's** — an inherited killer was executed against a framework one ticket old, and R5's job is to ask the question again of the framework three ports later. The four, with what killed each: keyed subtree removed (`sweep_test.dart` INVARIANT 1, and only that case); a per-cell exception propagating (INVARIANT 3, which also asserts the next locale is still measured); an error raised while *building* a host, which is invariant 3's other half and reaches the binding rather than any `catch` (INVARIANT 3's second case — removing `tester.takeException()` from the runner fails it with a bare stack, which is exactly the report the fix exists to prevent); and #1328 reverted (the 601/640/700 band, red in 22/13/2 locales). A fifth row changed shape rather than gaining a killer: `onCellSettled` omitted cannot be *executed* as a mutation, because the member is abstract and a family that skips it does not compile — so R5 should either record it as compile-time-enforced or replace it with a mutation that can run, e.g. a hook body emptied. Part C: §1.2's cost table re-measured. | every mutation has a recorded killer; a mutation killed by *nothing* becomes its own issue rather than vanishing from the table |
 
-The pages pilot is sequenced after R5 — not merely after R4 — so that the third
-family arrives to one framework that has been proved both invariant *and* still
-capable of failing. Two pages only, one cheap form page and one provider-heavy
-page, both at zero beforehand per §8's graduation rule.
+The pages pilot is sequenced after **R5** — the acceptance step, not merely the
+last port — so that the third family arrives to one framework that has been proved
+both invariant *and* still capable of failing. (This sentence read "not merely after
+R4" while R4 was the last step; the point was always R5's mutation pass, and R4
+leaving the epic does not move the pilot one ticket earlier.) Two pages only, one
+cheap form page and one provider-heavy page, both at zero beforehand per §8's
+graduation rule.
 
 **R3 is four tickets** (#1341–#1345), not the one step the table's single row
 suggests. The two secondary card files are not one sweep each: the forced-form
@@ -1266,23 +1322,33 @@ family↔gate import cycle, by lifting the PNG-dump key allocation out of the ce
 factory into `_CardFamily.newRepaintKey()` — behaviour-preserving, because the dump
 is written from the report row and the report row is the width sweep alone.
 
-**R4's golden-side halves cannot be verified on a developer machine** (added
-2026-08-21; this said "R2's and R4's" until #1339 moved into R4 — the constraint
-is what moved it). A full local golden run takes 2m13s and writes **no
-`goldens/overflow_warnings.json` at all**, because the local default matrix is one
-locale by two devices while CI runs 26 by four (§8), and every coordinate that
-pipeline has found is locale-driven. So the artifact #1339 and #1346 compare has
-to come from CI, and the comparison is not a plain diff for two reasons: the
-merged parser reports the **worst** side where the golden copy reported the
-**first**, so any multi-side incident legitimately changes; and the file is
-written read-merge-append-write, so it is never truncated, its record order is
-suite-completion order, and its `logIndex` is an insertion-order integer. R4 must
-therefore normalise its input rather than trust it, which is a stated
-precondition on #1346.
+**A local golden run produces nothing to compare, and only one of R4's halves
+cared** (rewritten 2026-08-22; this paragraph asserted that *both* halves were
+CI-bound, and that assertion is what put a three-hour round trip in front of this
+epic's acceptance). The fact is unchanged: a full local golden run takes 2m13s and
+writes **no `goldens/overflow_warnings.json` at all**, because the local run sweeps
+one locale where CI sweeps 26 (§8) and every coordinate that pipeline has found is
+locale-driven.
+
+What follows from it is narrower than what was written. **#1346** does need CI data,
+because its subject *is* the scout's rows — and it is now a standalone golden-facing
+ticket, where that cost is ordinary rather than blocking. **#1339 does not.** Its
+subject is a parser, the raw diagnostics strings are stored verbatim in
+`overflow_warnings.json`'s `logs` array, and running two pure functions over a
+stored string is not a CI operation (§3.5).
+
+Either way the input must be normalised rather than trusted, and for reasons that
+have nothing to do with where it is read: the merged parser reports the **worst**
+side where the golden copy reported the **first**, so any multi-side incident
+legitimately changes; and the file is written read-merge-append-write, so it is
+never truncated, its record order is suite-completion order, and its `logIndex` is
+an insertion-order integer. That is a stated precondition on #1346, and it is the
+reason #1339's offline diff over `logs` is the *better* check rather than the
+cheaper one.
 
 ### 9.3 Why R5 exists, and one thing it must not trust
 
-R1–R4 each verify that a port reproduces its own baseline. That is necessary and
+R1–R3 each verify that a port reproduces its own baseline. That is necessary and
 it is not sufficient, because **the cheapest way to pass all of it is to measure
 less**: a framework that quietly stops enumerating a coordinate, stops resetting
 the surface, or swallows a per-cell exception will match a baseline that was
@@ -1321,6 +1387,62 @@ tree, and re-running that mutation after the port will produce different numbers
 The row's *conclusion* — that the main sweep was blind to a defect a smaller group
 caught — is what matters and is unaffected; the counts are not evidence any more.
 
+### 9.4 R4 leaves the epic: the guard and the scout are decoupled (2026-08-22)
+
+Reviewed on the principle that **overflow and golden are decoupled, not
+interdependent** — the gate proves during development that a data flow produces no
+overflow; golden verifies more broadly and produces the visual report. §8 already
+said this, and the review's finding is that the *concept* layer agreed all along
+while the *work-item* layer did not.
+
+**What was already right.** The code direction is single, and was audited again:
+`test/golden_test/` imports exactly one thing from outside itself,
+`test/util/app_test_fonts.dart` — a neutral shared util, and the pattern this
+section wants more of. Golden imports nothing from `test/layout_gate/`. #1351 had
+already removed the gate's call into the golden parser. The epic's own framing was
+right too: "It is a refactor, not a feature. Nothing here adds a surface to the
+gate", and #1349 explicitly counts "too expensive — pages stay scout-only in golden
+CI" as the pilot *succeeding*.
+
+**Where the coupling actually was: three places, one root cause.** The root cause is
+in §3.5 — `file:line` serves two roles, and one sentence stated them together. Role
+(a) is the ratchet key, which is the gate's own correctness and is verified by a
+laptop command. Role (b) is a join key between the scout's advisory rows and the
+guard's verdicts, whose entire benefit lands on triage in `PrivacyGUI-golden-ci`.
+Fusing them let (b) inherit (a)'s ownership:
+
+| # | Where | Change |
+|---|---|---|
+| 1 | Epic **#1335**'s acceptance criterion "golden CI's advisory findings and the local gate's verdicts join on `file:line`" | **Removed** from the ACs, restated under Out of scope pointing at #1346. An epic's ACs are its definition of done, so a criterion that can only be checked in another repo's pipeline makes a three-hour round trip part of finishing the gate. The gate epic's ACs now contain only what is locally verifiable. |
+| 2 | **R4** = #1339 + #1346, inside the gate epic | **Dissolved.** #1346 becomes standalone and golden-facing; #1339 stays as a gate-side finishing ticket ("exactly one parser repo-wide" is the gate's own invariant) with its verification restated as offline (§3.5). Roadmap: **R1–R3 ✅ → R5 (#1348) → pilot (#1349)**. |
+| 3 | §8 and §9.2's "anything that verifies scout output has to be verified against a CI artifact" | **Split.** Kept as a fact about the scout; deleted as a constraint on this epic, since only #1346 has the scout's rows as its subject. Also corrected there: CI's difference from a local run is **26 locales**, not "26 by four" — `daily-verify.yml:90` passes `-s 480,1280`, the local default. |
+
+Two facts found while auditing, both of which the tickets carried wrongly. **#1346's
+first acceptance criterion was already met**: `overflowSites[]` has been on the
+report rows since #1197 (`83758c5c`, PR #1209, 2026-08-07) at
+`combine_results.dart:181`, and §1.3's "the site is lost at `:178`" was stale.
+And **#1339 needs no CI artifact**, because `logs` preserves the raw diagnostics
+strings verbatim (§3.5).
+
+**The one real coupling left is the fixtures, and it is now #1361.** This
+document had recorded the gate's `mocks/` import as harmless because it is only
+`mocks/`. That is true of its blast radius and false of its shape: the shared card
+fixtures and mock builders live *inside* `test/golden_test/`, so any test that wants
+a realistic dashboard card has to reach into the golden suite for it. Measured
+2026-08-22 — 18 files outside `test/golden_test/` name it, of which 2 are comments
+and 1 is the parser's own test (#1339's subject), leaving **15 real importers: the
+gate's `page_chrome_family.dart:58`, the two shared utils
+(`kitchen_sink_overrides.dart:3-5`, `card_data_profiles.dart:3-4`), and 12
+`test/page/**` widget tests** that have nothing to do with either oracle. The most
+imported are `cards_test_data.dart` (6), `mock_dashboard_cards.dart` (5) and
+`mock_common.dart` (5). CLAUDE.md's own convention is `test/mocks/test_data/` —
+which exists and holds four files already — so #1361 moves the eight shared mocks
+and fixtures there and has golden, the gate and the page tests each import it.
+No behavioural change, and
+afterwards neither oracle owns the other's fixtures. The target shape has a
+precedent pointing the right way: `test/golden_test/flutter_test_config.dart:5`
+imports `../util/app_test_fonts.dart`, a neutral util living outside both.
+
 ---
 
 ## 10. Open questions
@@ -1335,16 +1457,20 @@ surface blocks, because otherwise that step has no verification signal of its ow
 
 1. **#1302's ~135 coordinates** — fixed one by one, or does an ownership table come
    first? Five source locations plus 120 admin coordinates at a single site is a
-   small number of fixes and a large number of tickets. *Blocks nothing in R1–R4;
-   blocks the pilot's scope.*
+   small number of fixes and a large number of tickets. *Blocks nothing in R1–R3
+   or R5; blocks the pilot's scope.*
 2. ~~**Which repo holds the golden CI pipeline**~~ — **closed 2026-08-21.** The
    consumers of `overflow_warnings.json` are all in this repo:
    `test_scripts/overflow_details.dart`, `combine_results.dart` and
    `generate_gallery_report.dart`, each already covered by
    `test/test_scripts/overflow_details_test.dart`. `linksys/PrivacyGUI-golden-ci`
-   only *runs* the golden suite and reads the finished report, so R4 needs nothing
-   new from it; the collector re-key is a follow-up ticket in that repo, blocked by
-   R4 rather than blocking it. *Blocks nothing.*
+   only *runs* the golden suite (`daily-verify.yml:90` calls this repo's
+   `run_golden_verify.sh`) and reads the finished report, so nothing here needs
+   anything new from it; the collector re-key is a follow-up ticket in that repo,
+   blocked by **#1346** rather than blocking it. **Re-read 2026-08-22 and the
+   direction holds in code too:** golden-ci imports nothing from the gate, and the
+   gate's only reach into golden is a `mocks/` import, now **#1361** (§9.4).
+   *Blocks nothing.*
 3. **Does the skill get renamed?** `.claude/skills/dashboard-overflow-gate/` is
    card-shaped in its name and in most of its text, and its name is also the slash
    command people type. R1 rewrites its prose either way. *Blocks nothing; R1 can
