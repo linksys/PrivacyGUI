@@ -200,8 +200,23 @@ class RouterChatController extends ChangeNotifier {
   /// first, and caching matches on prefixes. The summary sits past that
   /// boundary, so it can differ on every request and still leave the cached
   /// prefix intact — cache hits are visible in the per-response token logs.
+  ///
+  /// A summary that cannot be built costs the context, not the answer. The
+  /// model still has its instructions and its tools, so it can fetch what it
+  /// needs; dropping the exchange instead would turn a degraded reply into a
+  /// generic error. This became reachable when the build moved inside the
+  /// request loop — it now runs once per round rather than once per session.
   List<SystemPromptPart> _buildSystemPromptParts() {
-    final routerContext = _routerContextBuilder();
+    String routerContext;
+    try {
+      routerContext = _routerContextBuilder();
+    } catch (e) {
+      // Structural only: the summary is the user's network, so its contents
+      // must not reach a release log.
+      _log('_buildSystemPromptParts: router context unavailable, '
+          'continuing without it (${e.runtimeType})');
+      routerContext = '';
+    }
     // The summary is the user's network: model, IP addresses, SSIDs, device
     // names. Debug builds only.
     aiLogSensitive(() => 'Router context:\n$routerContext');

@@ -85,6 +85,20 @@ void main() {
       expect(build(), contains('Current Router State'));
     });
 
+    // The class comment forbids `autoDispose`: a disposed provider's ref throws
+    // exactly like a disposed widget's, which is the failure this provider
+    // exists to avoid. Nothing enforced that, and the widget test below does
+    // NOT catch it — with `autoDispose` the captured closure still answers
+    // there, so the regression would land silently.
+    test('is not autoDispose', () {
+      expect(
+        routerContextBuilderProvider,
+        isNot(isA<AutoDisposeProvider<String Function()>>()),
+        reason: 'autoDispose would let the provider be disposed while the chat '
+            'controller still holds its builder',
+      );
+    });
+
     // The chat controller assembles its system prompt inside a loop that spans
     // `await`s, so a later round can run after the user has navigated away. A
     // builder closing over `WidgetRef` throws there — "Cannot use ref after the

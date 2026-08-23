@@ -21,6 +21,10 @@ void main() {
   /// network changing under a session that is already open.
   late String routerContext;
 
+  /// Set mid-test to make the summary builder throw, standing in for a provider
+  /// read that fails while the exchange is already under way.
+  late bool throwingContext;
+
   setUpAll(() {
     registerFallbackValue(<ChatMessage>[]);
     registerFallbackValue(<GenTool>[]);
@@ -30,7 +34,12 @@ void main() {
   setUp(() {
     mockGenerator = MockConversationGenerator();
     mockCommandProvider = MockRouterCommandProvider();
+    // Deliberately not production's `# Current Router State` heading: the
+    // freshness test reassigns this and then asserts the two requests carried
+    // different summaries, which needs the before and after to be tellable
+    // apart. Aligning it with production would make that assertion vacuous.
     routerContext = '# Test Router Context\nModel: TestRouter';
+    throwingContext = false;
 
     when(() => mockCommandProvider.listCommands()).thenAnswer(
       (_) async => [
@@ -58,7 +67,10 @@ void main() {
     controller = RouterChatController(
       generator: mockGenerator,
       commandProvider: mockCommandProvider,
-      routerContextBuilder: () => routerContext,
+      routerContextBuilder: () {
+        if (throwingContext) throw StateError('provider unavailable');
+        return routerContext;
+      },
     );
   });
 
@@ -127,6 +139,26 @@ void main() {
           reason: 'second request should carry the changed summary, not the '
               'one captured when the controller was built',
         );
+      });
+
+      test('a builder that throws costs the context, not the answer', () async {
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).thenAnswer((_) async => _textResponse('ok'));
+
+        throwingContext = true;
+
+        await controller.sendMessage('hi');
+
+        expect(controller.hasError, isFalse,
+            reason:
+                'a summary that cannot be built must not abort the exchange');
+        final assistant =
+            controller.messages.where((m) => m.role == ChatRole.assistant);
+        expect(assistant, isNotEmpty, reason: 'the model should still answer');
       });
 
       /// Guards the property the refresh depends on: the static instructions are
