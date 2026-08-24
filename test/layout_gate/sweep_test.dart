@@ -1,6 +1,8 @@
 @Tags(['layout-gate'])
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,6 +10,7 @@ import '../util/app_test_fonts.dart';
 import '../util/overflow_baseline.dart';
 import 'incident.dart';
 import 'locale_tag.dart';
+import 'screenshot.dart';
 import 'sweep.dart';
 
 /// The sweep runner's oracle (#1342).
@@ -876,6 +879,173 @@ void main() {
       expect(note, contains('not the 1638 this sweep pins'));
       expect(note, contains('LOCALE=de narrowed 26 locales to 1'));
       expect(note, contains('Run the sweep unfiltered'));
+    });
+  });
+
+  group('the cell screenshot dump', () {
+    /// A dump pointed at a fresh directory, installed for one test.
+    ///
+    /// The runner reads a library-level variable rather than the environment
+    /// directly, which is what makes this observable at all: `OVERFLOW_PNG` is set
+    /// by `tool/overflow_baseline.sh` and a test cannot set it for itself.
+    OverflowScreenshotDump install(String pattern) {
+      final dir = Directory.systemTemp.createTempSync('overflow-shots');
+      addTearDown(() {
+        overflowScreenshotDump = OverflowScreenshotDump.off();
+        if (dir.existsSync()) dir.deleteSync(recursive: true);
+      });
+      return overflowScreenshotDump =
+          OverflowScreenshotDump(pattern: pattern, dir: dir.path);
+    }
+
+    Future<OverflowCellVerdict> measure(
+      WidgetTester tester, {
+      required String screenPx,
+      String locale = 'en',
+    }) {
+      return measureOverflowCell(
+        tester,
+        family: _FakeFamily(axisNames: const ['screen_px']),
+        cell: _cell(
+          axes: {'screen_px': screenPx},
+          locale: Locale(locale),
+          surfaceSize: const Size(100, 200),
+          build: () => _overflowingRow(childWidth: 50),
+        ),
+      );
+    }
+
+    test('is off until something turns it on', () {
+      // The gate's default. Read from the environment on first use, and
+      // `tool/overflow_baseline.sh` only sets `OVERFLOW_PNG` in its `shoot` mode —
+      // so every capture, check and PR-gate run allocates no key and writes no
+      // file. A dump mode that were on by default would put 4,032 PNGs and
+      // several minutes of encoding into the PR gate.
+      expect(OverflowScreenshotDump.off().enabled, isFalse);
+      expect(OverflowScreenshotDump.off().wants('fake|screen_px=100|locale=en'),
+          isFalse);
+      expect(
+        OverflowScreenshotDump(pattern: 'all', dir: '').enabled,
+        isFalse,
+        reason: 'a pattern with nowhere to write is not a dump',
+      );
+    });
+
+    testWidgets('writes nothing when it is off', (tester) async {
+      final dir = Directory.systemTemp.createTempSync('overflow-shots-off');
+      addTearDown(() {
+        overflowScreenshotDump = OverflowScreenshotDump.off();
+        dir.deleteSync(recursive: true);
+      });
+      // A real, writable directory and no pattern — the half of "off" that is easy
+      // to get wrong, because `shoot` gives `OVERFLOW_PNG_DIR` a default and gives
+      // `OVERFLOW_PNG` none. Not even the manifest may appear: an empty index is
+      // indistinguishable from a run whose images were deleted.
+      overflowScreenshotDump =
+          OverflowScreenshotDump(pattern: '', dir: dir.path);
+
+      final verdict = await measure(tester, screenPx: '100');
+
+      expect(verdict.error, isNull);
+      expect(dir.listSync(), isEmpty);
+    });
+
+    testWidgets('shoots the cells the pattern names, and no others',
+        (tester) async {
+      // One rule, and only one: the pattern decides. A dump that also shot every
+      // failing cell would make its own output depend on the verdicts as well as
+      // the pattern, which is a second rule to document and a second rule to get
+      // wrong. A failing cell's id is printed in the report — copy it.
+      final dump = install('locale=ar');
+
+      await measure(tester, screenPx: '100', locale: 'ar');
+      await measure(tester, screenPx: '100', locale: 'ru');
+
+      expect(dump.written.keys, ['fake|screen_px=100|locale=ar']);
+    });
+
+    testWidgets('`all` shoots every measured cell', (tester) async {
+      final dump = install(kOverflowScreenshotAll);
+
+      await measure(tester, screenPx: '100', locale: 'ar');
+      await measure(tester, screenPx: '200', locale: 'ru');
+
+      expect(dump.written, hasLength(2));
+      for (final name in dump.written.values) {
+        expect(File('${dump.dir}/$name').lengthSync(), greaterThan(0));
+      }
+    });
+
+    testWidgets('records what it wrote in a manifest keyed by cell id',
+        (tester) async {
+      // The join between the two halves of this feature, and the reason there is
+      // no second copy of the filename rule. `render` reads this file rather than
+      // deriving a name from the cell id itself — the deriving happens in one
+      // program, and the other is told the answer. `test_scripts/` cannot import
+      // `test/` (it runs under a bare `dart run`), so a shared rule would have
+      // been two rules that must never disagree.
+      final dump = install(kOverflowScreenshotAll);
+
+      await measure(tester, screenPx: '100', locale: 'ar');
+
+      final manifest = File(dump.manifestPath).readAsLinesSync();
+      expect(manifest.first, '# $kOverflowScreenshotManifestFormat');
+      expect(
+        manifest[1],
+        'fake|screen_px=100|locale=ar\t'
+        '${dump.written['fake|screen_px=100|locale=ar']}',
+      );
+    });
+
+    testWidgets('a shoot that cannot write does not change the verdict',
+        (tester) async {
+      // The one behaviour that makes this safe to leave in the runner at all. A
+      // capture happens after the measurement and before the judge, so anything it
+      // raises would otherwise be attributed to the cell by invariant 3 — and a
+      // mistyped `OVERFLOW_PNG_DIR` would turn a green sweep into 4,032 cells that
+      // "threw". The verdict below is the same one the same cell reports with the
+      // dump off.
+      final blocker = Directory.systemTemp.createTempSync('overflow-shots-bad');
+      File('${blocker.path}/a-file').writeAsStringSync('not a directory');
+      addTearDown(() {
+        overflowScreenshotDump = OverflowScreenshotDump.off();
+        blocker.deleteSync(recursive: true);
+      });
+      overflowScreenshotDump = OverflowScreenshotDump(
+        pattern: kOverflowScreenshotAll,
+        // A path *under a file*, so neither `create(recursive: true)` nor the
+        // manifest's write can succeed however the platform spells the errno.
+        dir: '${blocker.path}/a-file/shots',
+      );
+
+      final verdict = await measure(tester, screenPx: '100');
+
+      expect(verdict.error, isNull);
+      expect(verdict.incidents, isEmpty);
+      expect(overflowScreenshotDump.written, isEmpty);
+    });
+
+    test('a file name is derived from the cell id, and stays unique', () {
+      // Browsable on purpose: the folder is opened by a person comparing widths,
+      // so `card.width__card-lan_info__px-191__locale-ar.png` is worth more than a
+      // serial number. The characters the id grammar uses are the ones a shell and
+      // a URL both dislike, hence the mapping.
+      final taken = <String>{};
+      expect(
+        overflowScreenshotFileName('page.dhcp|screen_px=320|locale=ar',
+            taken: taken),
+        'page.dhcp__screen_px-320__locale-ar.png',
+      );
+
+      // An axis *value* may carry prose — `chrome.header`'s mode axis read
+      // `mode=viewing, local (3 actions)` until #1356 — so two distinct ids can
+      // sanitise to one name. The manifest would then have two rows pointing at
+      // one image, and the report would show the wrong screenshot for a cell,
+      // which is the failure mode this whole feature exists to avoid.
+      final first = overflowScreenshotFileName('c|m=a b', taken: taken);
+      final second = overflowScreenshotFileName('c|m=a_b', taken: taken);
+      expect(first, isNot(second));
+      expect(second, contains('~2'));
     });
   });
 }

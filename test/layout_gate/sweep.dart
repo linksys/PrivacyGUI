@@ -90,8 +90,11 @@
 /// ## The ratchet and the report live in the family, behind one hook (#1343)
 ///
 /// This file still knows nothing about `known_overflows.json`,
-/// `OverflowReportItem` or PNG dumps, and that is deliberate: three of the four
-/// sweeps carry none of them. What it grew at #1343 is a single seam —
+/// `OverflowReportItem` or the card family's **failure** PNG pair, and that is
+/// deliberate: three of the four sweeps carry none of them. (It does own a
+/// screenshot of its own since the cell dump below — a different picture taken for
+/// a different reason, and the header there says which.) What it grew at #1343 is
+/// a single seam —
 /// [OverflowSurfaceFamily.judgeCell] — asked once per measured cell, whose answer
 /// is that cell's failure line or `null` for "this one is fine". The card family
 /// puts its allowlist consult, its report row, its screenshots and its
@@ -111,6 +114,23 @@
 /// finish building is never handed to the family (invariant 3 owns it), and a
 /// judge that throws is that cell's failure like any other — see
 /// [measureOverflowCoordinate].
+///
+/// ## The cell screenshot dump lives here, and only here
+///
+/// A photograph of a *measured* cell is the one piece of family-independent
+/// tooling in this family, because the pump is here and nowhere else: all five
+/// sweeps build a host, this file sets the surface and settles it, and only this
+/// file knows the moment at which the tree is both fully settled and still
+/// mounted. So the `RepaintBoundary` goes in [measureOverflowCell] and the policy
+/// — which cells, where to, under what name — goes in `screenshot.dart`.
+///
+/// It changes no verdict, in either direction. It is opt-in
+/// (`OVERFLOW_PNG=<pattern>`), off in CI, cannot fail a cell (every entry point in
+/// `screenshot.dart` swallows its own errors), and the boundary is wrapped
+/// **outside** invariant 1's `KeyedSubtree` with a fresh `GlobalKey` per cell — so
+/// a run that shoots and a run that does not pump the same subtree against the same
+/// render objects, and the baseline dataset is byte-identical either way. That last
+/// property is the one worth checking after touching this: `capture` then `check`.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -121,6 +141,7 @@ import '../util/overflow_baseline.dart';
 import 'collector.dart';
 import 'incident.dart';
 import 'locale_tag.dart';
+import 'screenshot.dart';
 import 'surface.dart';
 
 /// One measurable coordinate: enough to pump exactly one tree, plus a stable
@@ -478,6 +499,11 @@ Future<OverflowCellVerdict> measureOverflowCell(
 }) async {
   final baselineCell = overflowSweepBaselineCell(family, cell);
   final id = overflowBaselineCellId(baselineCell);
+  // Read once, so a dump swapped mid-cell cannot photograph a boundary that was
+  // never allocated. Null is both "not wanted" and "nothing to capture", which is
+  // why the pump below can branch on the key rather than re-ask the dump.
+  final dump = overflowScreenshotDump;
+  final boundaryKey = dump.wants(id) ? GlobalKey() : null;
   try {
     final incidents = await runWithOverflowCollection(
       cell: baselineCell,
@@ -487,7 +513,14 @@ Future<OverflowCellVerdict> measureOverflowCell(
           // INVARIANT 1. Keyed on the cell's own identity, so re-pumping in the
           // same test replaces the subtree instead of updating it in place and
           // every cell gets its own render objects to report against.
-          KeyedSubtree(key: ValueKey(id), child: cell.build()),
+          //
+          // The boundary goes OUTSIDE that key, never inside it: a widget between
+          // the key and the host would be a widget the shooting run renders and
+          // the measuring run does not. Outside, with a per-cell `GlobalKey`, the
+          // root element is replaced for the same reason the subtree is, so
+          // invariant 1 holds either way and `RepaintBoundary` adds a layer rather
+          // than a constraint.
+          _hostFor(id, cell, boundaryKey),
         );
         await settleIgnoringAnimations(tester);
         await family.onCellSettled(tester, cell);
@@ -505,6 +538,14 @@ Future<OverflowCellVerdict> measureOverflowCell(
         return sink;
       },
     );
+    // Photographed after the collection closes and before the family judges: the
+    // tree is still mounted, `onCellSettled` has already opened whatever
+    // presentation this family opens (so a popup cell is a photograph of the
+    // dialog, not of the 122px tile behind it — #1366), and the record for this
+    // cell is already written, so nothing here can reach the dataset.
+    if (boundaryKey != null) {
+      await dump.capture(tester, cellId: id, boundaryKey: boundaryKey);
+    }
     return OverflowCellVerdict(
       cellId: id,
       incidents: incidents,
@@ -525,6 +566,14 @@ Future<OverflowCellVerdict> measureOverflowCell(
       error: error,
     );
   }
+}
+
+/// The widget [measureOverflowCell] pumps: invariant 1's keyed subtree, inside a
+/// repaint boundary when — and only when — this cell is being photographed.
+Widget _hostFor(String id, OverflowSweepCell cell, GlobalKey? boundaryKey) {
+  final host = KeyedSubtree(key: ValueKey(id), child: cell.build());
+  if (boundaryKey == null) return host;
+  return RepaintBoundary(key: boundaryKey, child: host);
 }
 
 /// What one coordinate's locale loop measured: the failing lines, and how many of

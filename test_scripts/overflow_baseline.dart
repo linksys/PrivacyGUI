@@ -718,6 +718,8 @@ class BaselineReport {
     required this.sites,
     required this.findings,
     required this.headerDisagreements,
+    required this.shots,
+    required this.shotWarnings,
   });
 
   /// The dataset this describes.
@@ -761,12 +763,27 @@ class BaselineReport {
   /// Ways the header's own counts contradict the rows. Empty is the normal case.
   final List<String> headerDisagreements;
 
+  /// Cell id → image href, for the coordinates this dataset actually holds.
+  /// Sorted by cell id, and empty whenever `render` was given no `--shots`.
+  final Map<String, String> shots;
+
+  /// Why the images and the rows do not fully reconcile: an unreadable manifest,
+  /// or a photograph of a coordinate these rows do not carry. Reported rather than
+  /// dropped for the same reason [headerDisagreements] is — the two halves come
+  /// from two runs and nothing forces them to be the same run — but **not** part of
+  /// the exit code, because a gallery is decoration and a stale `build/` folder is
+  /// not a corrupt dataset.
+  final List<String> shotWarnings;
+
   /// The same one-line shape [ExtractedBaseline.summary] prints.
   String get summary =>
       '$cells cells, ${noise + overflows} incidents, $overflows overflows, '
       '$unmeasured unmeasured';
 
-  static BaselineReport of(BaselineFile file) {
+  static BaselineReport of(
+    BaselineFile file, {
+    ScreenshotIndex shots = ScreenshotIndex.none,
+  }) {
     final groups = <String, _Tally>{};
     final axes = <String, _Tally>{};
     final axisValues = <String, Map<String, _Tally>>{};
@@ -802,6 +819,20 @@ class BaselineReport {
     // the same measurements could differ.
     findings.sort((a, b) => a.join('\t').compareTo(b.join('\t')));
 
+    // Linked only where the rows carry the coordinate. An image whose cell id is
+    // absent here was taken against a different enumeration — a shoot from before
+    // a re-capture, most often — and linking it would put a picture next to a
+    // coordinate this document says nothing about.
+    final linked = <String, String>{};
+    final orphans = <String>[];
+    for (final shot in shots.images.entries) {
+      if (file.cells.containsKey(shot.key)) {
+        linked[shot.key] = shot.value;
+      } else {
+        orphans.add(shot.key);
+      }
+    }
+
     final siteTallies =
         sites.entries.map((e) => e.value.freeze(_siteLabel(e.key))).toList()
           ..sort((a, b) {
@@ -834,7 +865,27 @@ class BaselineReport {
       sites: siteTallies,
       findings: findings,
       headerDisagreements: _headerDisagreements(file, total),
+      shots: linked,
+      shotWarnings: [
+        ...shots.warnings,
+        if (orphans.isNotEmpty) _orphanWarning(shots.source, orphans),
+      ],
     );
+  }
+
+  /// Every orphan named, up to a stated limit.
+  ///
+  /// Listed rather than counted because the reader's next question is which — and
+  /// the limit says how many it is not showing, since a truncation nobody is told
+  /// about reads as the whole list.
+  static String _orphanWarning(String source, List<String> orphans) {
+    const shown = 10;
+    final head = orphans.take(shown).join(', ');
+    final rest = orphans.length - shown;
+    return '$source: ${orphans.length} '
+        '${orphans.length == 1 ? 'image names a coordinate' : 'images name coordinates'} '
+        'this dataset does not hold, so they were not linked: $head'
+        '${rest > 0 ? ' (+$rest more)' : ''}';
   }
 
   /// `page.dhcp|screen_px=320|locale=ar` → `{screen_px: 320, locale: ar}`.
@@ -884,6 +935,132 @@ class BaselineReport {
     return out;
   }
 }
+
+/// The manifest format this script can read, and the file it reads it from.
+///
+/// Written by `test/layout_gate/screenshot.dart`, whose own constants are the
+/// authority — these are the reader's half of a version negotiation, deliberately
+/// a second copy. The two programs ship in one commit today and nothing makes them
+/// ship in one commit forever: this one runs under a bare `dart run` and so cannot
+/// import `test/`, which is also why the *file name* is carried in a manifest at
+/// all rather than derived from the cell id twice.
+const String overflowScreenshotManifestFormat = 'overflow-screenshots 1';
+const String overflowScreenshotManifestName = 'index.tsv';
+
+/// The images a shoot took, as hrefs a report can link.
+///
+/// Parsed rather than trusted: an unreadable manifest yields no images and says
+/// why, because an image linked under the wrong cell id would show a reader a
+/// picture of a coordinate they are not reading about — worse than no gallery.
+class ScreenshotIndex {
+  const ScreenshotIndex._({
+    required this.images,
+    required this.warnings,
+    required this.source,
+  });
+
+  /// No manifest: what four of the five sweeps are rendered with.
+  static const ScreenshotIndex none =
+      ScreenshotIndex._(images: {}, warnings: [], source: '');
+
+  /// Reads a manifest, resolving each name against [href].
+  ///
+  /// [href] is the images' directory **as the report must spell it** — see
+  /// [screenshotHref]. Resolving here rather than at render time keeps one rule in
+  /// one place: the gallery links whatever this map holds.
+  factory ScreenshotIndex.parse(
+    String text, {
+    required String source,
+    required String href,
+  }) {
+    final lines =
+        text.split('\n').where((line) => line.trim().isNotEmpty).toList();
+    if (lines.isEmpty) {
+      return ScreenshotIndex._(
+        images: const {},
+        warnings: ['$source: holds no rows'],
+        source: source,
+      );
+    }
+    const expected = '# $overflowScreenshotManifestFormat';
+    if (lines.first.trim() != expected) {
+      return ScreenshotIndex._(
+        images: const {},
+        warnings: [
+          '$source: expected "$expected" on the first line but it reads '
+              '"${lines.first.trim()}", so nothing in it was read'
+        ],
+        source: source,
+      );
+    }
+
+    final entries = <String, String>{};
+    var malformed = 0;
+    for (final line in lines.skip(1)) {
+      final fields = line.split('\t');
+      if (fields.length != 2 || fields.any((f) => f.trim().isEmpty)) {
+        malformed++;
+        continue;
+      }
+      entries[fields[0].trim()] =
+          href.isEmpty ? fields[1].trim() : '$href/${fields[1].trim()}';
+    }
+
+    // Sorted by cell id, not left in the manifest's own order: it is appended to
+    // as the sweep enumerates, so its order is the run's, and two shoots of the
+    // same cells would otherwise render two galleries that differ on every line.
+    final sorted = entries.keys.toList()..sort();
+    return ScreenshotIndex._(
+      images: {for (final cell in sorted) cell: entries[cell]!},
+      warnings: [
+        if (malformed > 0)
+          '$source: skipped $malformed row${malformed == 1 ? '' : 's'} that is '
+              'not a cell id and a file name — a manifest is appended to a row at '
+              'a time, so a killed shoot can leave a half-written line',
+      ],
+      source: source,
+    );
+  }
+
+  /// Cell id → href, sorted by cell id.
+  final Map<String, String> images;
+
+  /// Why this index is smaller than the file it was read from. Empty is normal.
+  final List<String> warnings;
+
+  /// The manifest's path, for the warnings a report adds of its own.
+  final String source;
+}
+
+/// How a report written to [fromFile] must spell the directory [toDir].
+///
+/// The manifest sits beside its images in `build/…/shots/<sweep>/` and the report
+/// is written to `build/…/report/<sweep>.md`, so an href copied from either path
+/// alone resolves to nothing — and clicking is the one thing a reader does with a
+/// gallery. Both paths must be relative to the same place, or `toDir` is returned
+/// unchanged: two spellings of "where" cannot be reconciled by guessing.
+String screenshotHref({required String fromFile, required String toDir}) {
+  final slash = fromFile.lastIndexOf('/');
+  final fromDir = slash < 0 ? '' : fromFile.substring(0, slash);
+  if (fromDir.startsWith('/') != toDir.startsWith('/')) return toDir;
+
+  final from = _pathSegments(fromDir);
+  final to = _pathSegments(toDir);
+  var shared = 0;
+  while (shared < from.length &&
+      shared < to.length &&
+      from[shared] == to[shared]) {
+    shared++;
+  }
+  final parts = [
+    ...List.filled(from.length - shared, '..'),
+    ...to.skip(shared),
+  ];
+  return parts.isEmpty ? '.' : parts.join('/');
+}
+
+List<String> _pathSegments(String path) =>
+    path.split('/').where((s) => s.isNotEmpty && s != '.').toList();
 
 /// How an incident with no resolved source location is shown.
 ///
@@ -1026,7 +1203,14 @@ th, td { border: 1px solid #d0d7de; padding: 0.25rem 0.6rem; text-align: left;
          white-space: nowrap; }
 th { background: #f6f8fa; }
 code { background: #f6f8fa; border-radius: 3px; padding: 0 0.2rem; }
-ul { padding-left: 1.2rem; }''';
+ul { padding-left: 1.2rem; }
+.gallery { display: grid; gap: 1rem; margin: 1rem 0;
+           grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+.gallery figure { margin: 0; }
+.gallery img { width: 100%; height: auto; border: 1px solid #d0d7de;
+               background: #fff; }
+.gallery figcaption { font-size: 0.8rem; word-break: break-all;
+                      margin-top: 0.25rem; }''';
 
 /// The document, built once and rendered twice.
 ///
@@ -1185,7 +1369,7 @@ List<_Block> _reportBlocks(BaselineReport report) {
       "None: all ${report.cells} coordinates measured clean at the sweep's "
       'tolerance.',
     ));
-    return blocks;
+    return blocks..addAll(_galleryBlocks(report));
   }
   blocks
     ..add(_Para(
@@ -1242,6 +1426,47 @@ List<_Block> _reportBlocks(BaselineReport report) {
         'name is one nobody can retire.',
       ));
     }
+  }
+  return blocks..addAll(_galleryBlocks(report));
+}
+
+/// The gallery, and whatever did not reconcile about it.
+///
+/// Absent entirely from a report with no images — four of the five sweeps are
+/// rendered that way, and an empty gallery would read as "photographed, and there
+/// was nothing to show".
+///
+/// It answers the one question the dataset cannot: a cell's verdict says a
+/// `RenderFlex` did not overflow, and says nothing about whether the result is
+/// legible. Four dashboard cards pass at 191px rendering unreadably (#1240 AC1) and
+/// #1349's fix trades an overflow for a wrap that every cell is blind to — both
+/// green, both visible only in a picture.
+List<_Block> _galleryBlocks(BaselineReport report) {
+  final blocks = <_Block>[];
+  if (report.shots.isEmpty && report.shotWarnings.isEmpty) return blocks;
+
+  blocks.add(_Heading(2, 'Screenshots'));
+  if (report.shots.isNotEmpty) {
+    blocks
+      ..add(_Para(
+        'Images for ${report.shots.length} of the ${report.cells} coordinates '
+        'above, taken by `./tool/overflow_baseline.sh shoot ${report.sweep}` and '
+        'linked by cell id. A verdict above says no `RenderFlex` overflowed; it '
+        'says nothing about whether the result can be read — which is what these '
+        'are for.',
+      ))
+      ..add(_Gallery(report.shots));
+  }
+  if (report.shotWarnings.isNotEmpty) {
+    blocks
+      ..add(_Para(
+        '**The images and the rows do not fully reconcile.** A shoot and a '
+        'capture are two runs, and the cell id is the only thing joining them, so '
+        'this pair came from **a different run** of at least one side — most often '
+        'a `shoot` taken before the coordinates were re-enumerated. Nothing below '
+        'is linked:',
+      ))
+      ..add(_Bullets(report.shotWarnings));
   }
   return blocks;
 }
@@ -1339,6 +1564,52 @@ class _Table implements _Block {
   }
 }
 
+/// One image per cell id, captioned with the id.
+///
+/// A block of its own rather than a column on the findings table, for two reasons:
+/// a table cell is escaped as data (so a link written into one arrives as literal
+/// text, by design — see [_escapeMarkdownCell]), and the gallery covers *clean*
+/// coordinates, which the findings table by definition does not list.
+///
+/// The two spellings differ on purpose. Markdown has no way to size an image, so it
+/// inlines each at full size under its id — which is what a reader diffing two
+/// widths in an editor preview wants. HTML lays them out as a lazy-loading grid, so
+/// a shoot of hundreds opens at all, and each thumbnail links to its own file.
+class _Gallery implements _Block {
+  const _Gallery(this.images);
+
+  /// Cell id → href, already sorted by cell id.
+  final Map<String, String> images;
+
+  @override
+  String markdown() {
+    final out = StringBuffer();
+    for (final shot in images.entries) {
+      out
+        ..writeln('#### `${shot.key}`')
+        ..writeln()
+        // Image inside a link: the picture is the point, and the link is what
+        // opens it at full size when the preview has scaled it down.
+        ..writeln('[![${shot.key}](${shot.value})](${shot.value})')
+        ..writeln();
+    }
+    return out.toString();
+  }
+
+  @override
+  String html() {
+    final out = StringBuffer()..writeln('<div class="gallery">');
+    for (final shot in images.entries) {
+      final href = _escapeHtml(shot.value);
+      final cell = _escapeHtml(shot.key);
+      out.writeln('<figure><a href="$href">'
+          '<img src="$href" alt="$cell" loading="lazy"></a>'
+          '<figcaption><code>$cell</code></figcaption></figure>');
+    }
+    return (out..write('</div>')).toString();
+  }
+}
+
 /// Keeps a value inside its column.
 ///
 /// Every cell id contains `|` — it is the axis separator — and a widget name
@@ -1372,7 +1643,8 @@ usage:
 
   # read a committed baseline; runs no tests
   dart run test_scripts/overflow_baseline.dart render \\
-      --baseline <file> [--format md|html] [--out <file>]
+      --baseline <file> [--format md|html] [--out <file>] \\
+      [--shots <dir of a shoot's PNGs + $overflowScreenshotManifestName>]
 
 exit codes: 0 = clean, 1 = the datasets differ (for render: the baseline
 disagrees with its own header), 2 = bad input
@@ -1519,6 +1791,7 @@ int _renderCommand(
   final path = _require(options, '--baseline');
   final report = BaselineReport.of(
     BaselineFile.parse(_readFile(path), source: path),
+    shots: _shotsFor(options, err),
   );
 
   final format = options['--format'] ?? 'md';
@@ -1537,7 +1810,39 @@ int _renderCommand(
   for (final disagreement in report.headerDisagreements) {
     err.writeln(disagreement);
   }
+  // Printed, and deliberately not part of the exit code: `--shots` points at
+  // `build/`, which survives a re-capture, so a stale image folder must not make a
+  // green dataset read as a failed check. The document says the same thing.
+  for (final warning in report.shotWarnings) {
+    err.writeln(warning);
+  }
   return report.headerDisagreements.isEmpty ? 0 : 1;
+}
+
+/// The gallery `render` was asked for, or [ScreenshotIndex.none].
+///
+/// A missing manifest is a note on stderr rather than an error: `--shots` is
+/// passed by `tool/overflow_baseline.sh` whenever the directory exists, and a
+/// report without pictures is still the report.
+ScreenshotIndex _shotsFor(Map<String, String> options, StringSink err) {
+  final dir = options['--shots'];
+  if (dir == null || dir.isEmpty) return ScreenshotIndex.none;
+
+  final manifest = '$dir/$overflowScreenshotManifestName';
+  if (!File(manifest).existsSync()) {
+    err.writeln('no screenshot manifest at $manifest, '
+        'so this report has no gallery');
+    return ScreenshotIndex.none;
+  }
+  // Relative to the file being written, because that is what a browser resolves
+  // against. Rendering to stdout has no location to be relative to, so the
+  // directory is used as given.
+  final out = options['--out'];
+  return ScreenshotIndex.parse(
+    File(manifest).readAsStringSync(),
+    source: manifest,
+    href: out == null ? dir : screenshotHref(fromFile: out, toDir: dir),
+  );
 }
 
 /// Whether [args] is asking for the usage text rather than for work.

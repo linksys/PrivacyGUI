@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -20,6 +18,7 @@ import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../layout_gate/screenshot.dart';
 import '../overflow_baseline.dart';
 import '../overflow_probe.dart';
 import 'kitchen_sink_overrides.dart';
@@ -758,41 +757,34 @@ Future<List<OverflowIncident>> probeCardOverflow(
 }
 
 /// Saves the widget rendered under [repaintKey] to a PNG file at [path].
+///
+/// The card sweep's **report** PNG: the pair `dashboard_card_gate.dart` writes for
+/// a cell that already failed, one as-is and one re-pumped at the recommended
+/// geometry. `skipIfExists` is what makes the second of those a keep rather than an
+/// overwrite, and is this function's own policy — the layout gate's cell dump
+/// (`test/layout_gate/screenshot.dart`) deliberately overwrites, so a re-shoot after
+/// a layout change cannot leave two trees in one folder.
+///
+/// The encoding itself moved to [writeBoundaryPng] at the point the spine grew a
+/// dump of its own; the printed lines are unchanged, because a `DUMP=2` run's output
+/// is read by people who have been reading it since #1183.
 Future<void> saveCardScreenshot(
   WidgetTester tester,
   GlobalKey repaintKey,
   String path, {
   double pixelRatio = 2.0,
 }) async {
-  await tester.binding.runAsync(() async {
-    try {
-      final file = File(path);
-      if (file.existsSync()) return;
-
-      final boundary = repaintKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
-        // ignore: avoid_print
-        print('[PNG DUMP FAILED] boundary is null for $path');
-        return;
-      }
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData != null) {
-        await file.parent.create(recursive: true);
-        await file.writeAsBytes(byteData.buffer.asUint8List());
-        // ignore: avoid_print
-        print(
-            '[PNG DUMP SUCCESS] Saved $path (${byteData.lengthInBytes} bytes)');
-      } else {
-        // ignore: avoid_print
-        print('[PNG DUMP FAILED] byteData is null for $path');
-      }
-    } catch (e, st) {
-      // ignore: avoid_print
-      print('[PNG DUMP EXCEPTION] Failed to save $path: $e\n$st');
-    }
-  });
+  final bytes = await writeBoundaryPng(
+    tester,
+    boundaryKey: repaintKey,
+    path: path,
+    pixelRatio: pixelRatio,
+    skipIfExists: true,
+  );
+  if (bytes != null) {
+    // ignore: avoid_print
+    print('[PNG DUMP SUCCESS] Saved $path ($bytes bytes)');
+  }
 }
 
 /// Calculates the grid rows needed to fit a target logical height.

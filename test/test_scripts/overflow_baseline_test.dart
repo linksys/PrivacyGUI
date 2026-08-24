@@ -1241,6 +1241,175 @@ void main() {
     });
   });
 
+  group("render's screenshot gallery", () {
+    /// The manifest `test/layout_gate/screenshot.dart` writes, as text.
+    String manifest(Map<String, String> rows,
+            {String format = 'overflow-screenshots 1'}) =>
+        ['# $format', ...rows.entries.map((e) => '${e.key}\t${e.value}')]
+            .join('\n');
+
+    BaselineReport reportOf(
+      List<String> records, {
+      ScreenshotIndex shots = ScreenshotIndex.none,
+    }) =>
+        BaselineReport.of(
+          BaselineFile.parse(
+            renderBaseline(
+              extractBaseline(reporter(records), sweep: 'page'),
+              suite: 'test/page/_shared/page_surface_overflow_test.dart',
+              commit: '69079cb0',
+            ),
+            source: 'test/fixtures/overflow_baselines/page.tsv',
+          ),
+          shots: shots,
+        );
+
+    test('is absent from a report that has no images', () {
+      // The normal case, and the reason this is a section rather than a column:
+      // four of the five sweeps will be rendered with no manifest at all, and an
+      // empty gallery would read as "photographed and found nothing to show".
+      final text = renderReportMarkdown(
+          reportOf([marked('page.dhcp|screen_px=320|locale=ar', const [])]));
+
+      expect(text, isNot(contains('Screenshots')));
+      expect(ScreenshotIndex.none.images, isEmpty);
+    });
+
+    test('links every photographed cell, in cell-id order', () {
+      // Sorted by cell id, not by the manifest's own order: the manifest is
+      // append-ordered, so it holds the order the sweep happened to enumerate in,
+      // and two runs of the same shoot would otherwise render two documents that
+      // differ on every line of the gallery.
+      final shots = ScreenshotIndex.parse(
+        manifest({
+          'page.dhcp|screen_px=601|locale=ar': 'b.png',
+          'page.dhcp|screen_px=320|locale=ar': 'a.png',
+        }),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final text = renderReportMarkdown(
+        reportOf([
+          marked('page.dhcp|screen_px=320|locale=ar', const []),
+          marked('page.dhcp|screen_px=601|locale=ar', const []),
+        ], shots: shots),
+      );
+
+      expect(text, contains('## Screenshots'));
+      expect(text, contains('../shots/page/a.png'));
+      expect(text.indexOf('a.png'), lessThan(text.indexOf('b.png')));
+      expect(text, contains('2 of the 2 coordinates'),
+          reason:
+              'a gallery is a subset of the dataset, and says which subset');
+    });
+
+    test('states the href relative to the report, not the shoot', () {
+      // The manifest lives beside the images in `build/…/shots/<sweep>/` and the
+      // report is written to `build/…/report/<sweep>.md`, so an href copied from
+      // either path alone resolves to nothing in a browser. The one thing a reader
+      // does with this document is click.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'}),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+
+      expect(shots.images['page.dhcp|screen_px=320|locale=ar'],
+          '../shots/page/a.png');
+      expect(
+        screenshotHref(
+          fromFile: 'build/overflow_baseline/report/page.md',
+          toDir: 'build/overflow_baseline/shots/page',
+        ),
+        '../shots/page',
+      );
+    });
+
+    test('shows a thumbnail in HTML that opens the full image', () {
+      // The whole point of the feature: the reader is comparing two widths of one
+      // card by eye, so the images have to be on one page at a size that fits
+      // several, and one click from full size.
+      final html = renderReportHtml(
+        reportOf([
+          marked('page.dhcp|screen_px=320|locale=ar', const []),
+        ],
+            shots: ScreenshotIndex.parse(
+              manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'}),
+              source: 'index.tsv',
+              href: '../shots/page',
+            )),
+      );
+
+      expect(html, contains('<a href="../shots/page/a.png"'));
+      expect(html, contains('loading="lazy"'),
+          reason: 'a shoot of a whole sweep is thousands of images');
+      expect(
+          html, contains('page.dhcp|screen_px=320|locale=ar'.split('|').last));
+    });
+
+    test('will not link an image for a coordinate the dataset does not hold',
+        () {
+      // The two halves come from two runs, and nothing forces them to be the same
+      // run. A gallery that linked an id the rows do not carry would be showing a
+      // picture of a coordinate this document says nothing about — the same class
+      // of mistake as trusting a header over its rows, so it is reported the same
+      // way: recount from the rows, and say what did not reconcile.
+      final shots = ScreenshotIndex.parse(
+        manifest({
+          'page.dhcp|screen_px=320|locale=ar': 'a.png',
+          'page.dhcp|screen_px=999|locale=ar': 'gone.png',
+        }),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final report = reportOf(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        shots: shots,
+      );
+      final text = renderReportMarkdown(report);
+
+      expect(text, contains('../shots/page/a.png'));
+      expect(text, isNot(contains('gone.png')));
+      expect(report.shotWarnings, hasLength(1));
+      expect(report.shotWarnings.single,
+          allOf(contains('1'), contains('page.dhcp|screen_px=999|locale=ar')));
+      expect(text, contains('a different run'));
+    });
+
+    test('reads no images out of a manifest it does not recognise', () {
+      // Versioned for the same reason the dataset is: the writer is
+      // `test/layout_gate/screenshot.dart` and the reader is this script, and
+      // nothing makes them ship together forever. A row shape this cannot read
+      // must not be guessed at — an image linked under the wrong cell id is worse
+      // than no gallery.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'},
+            format: 'overflow-screenshots 99'),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+
+      expect(shots.images, isEmpty);
+      expect(shots.warnings.single,
+          allOf(contains('index.tsv'), contains('overflow-screenshots 99')));
+    });
+
+    test('skips a row that is not a cell id and a name', () {
+      // A truncated append — the manifest is written a row at a time, so a killed
+      // shoot really can leave a half-written line.
+      final shots = ScreenshotIndex.parse(
+        '# overflow-screenshots 1\n'
+        'page.dhcp|screen_px=320|locale=ar\ta.png\n'
+        'page.dhcp|screen_px=601|locale=a',
+        source: 'index.tsv',
+        href: 'shots',
+      );
+
+      expect(shots.images, hasLength(1));
+      expect(shots.warnings.single, contains('1 row'));
+    });
+  });
+
   group('the command', () {
     late File reporterFile;
 

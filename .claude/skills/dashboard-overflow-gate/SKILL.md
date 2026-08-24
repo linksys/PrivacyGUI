@@ -282,8 +282,8 @@ committed baselines, in
 [doc/testing/overflow_baselines.md](../../../doc/testing/overflow_baselines.md).
 
 A third mode reads a committed baseline as a report — no flutter, no test run, and
-the only one of the three that works for all five sweeps (`run_overflow_test.sh`'s
-`DUMP=2` report is card-shaped by construction):
+the only report that works for all five sweeps (`run_overflow_test.sh`'s `DUMP=2`
+report is card-shaped by construction):
 
 ```bash
 ./tool/overflow_baseline.sh render page   # → build/overflow_baseline/report/page.{md,html}
@@ -295,6 +295,34 @@ header, **not** your tree — so `capture` before quoting one as today's state. 
 counts are recounted from the rows and cross-checked against the header, so a
 hand-edited baseline reports the disagreement and exits 1 rather than rendering a
 plausible lie.
+
+### Looking at a cell the gate calls clean — `shoot`
+
+`clean` means one thing: no `RenderFlex` overflowed. It does not mean legible, and
+the card sweep's own PNGs cannot show you the difference — they are written only for
+a cell with a significant incident, so a green tree produces **zero** images. Nine
+of them, on the other hand, are what #1240 AC1 is about:
+
+```bash
+./tool/overflow_baseline.sh shoot card 'px=191|tab=0|locale=en'   # the four unreadable cards
+./tool/overflow_baseline.sh shoot page locale=ar                  # 16 Arabic page cells
+./tool/overflow_baseline.sh shoot page 'page.dhcp|screen_px=601|locale=ru'
+```
+
+One sweep, one pattern, both required (`all` is a valid pattern and 1,943 images on
+`card`). Selection is by **cell id, never by verdict** — a failing cell prints its
+id, so copy it the way an allowlist key is copied. Images go to
+`build/overflow_baseline/shots/<sweep>/` named after the coordinate, and the
+rendered report grows a gallery linking them; a later `render <sweep>` picks the
+folder up with no flag.
+
+It asserts nothing and changes nothing: `check` after a `shoot` is byte-identical,
+the capture sits between the measurement and `judgeCell` (so a popup cell
+photographs the dialog, not the tile), and it swallows its own errors — a dump that
+threw would be attributed to the *cell* by invariant 3, turning one mistyped
+directory into thousands of cells that "threw". The pictures are of your working
+tree while the rows beside them are of the header's commit, so an image whose
+coordinate the dataset does not hold is **listed as a warning rather than linked**.
 
 ## Fixture Format — `known_overflows.json`
 
