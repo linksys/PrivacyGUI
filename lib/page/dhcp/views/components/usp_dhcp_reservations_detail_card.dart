@@ -31,7 +31,18 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleSmall(loc(context).dhcpReservations),
+              // Flexible, not a bare AppText (#1349). The title sized itself to
+              // its natural width against a rigid count-plus-button group, so
+              // neither child could yield: `ar` overflowed this row by 113px at a
+              // 320px screen and by 141px at 601px, where the page's two-column
+              // band hands the card a narrower box than the one-column band does.
+              // Flexible rather than Expanded so a short title still paints at its
+              // own width and `spaceBetween` keeps distributing the slack — the
+              // layout is unchanged wherever it already fitted, and wraps instead
+              // of overflowing where it did not.
+              Flexible(
+                child: AppText.titleSmall(loc(context).dhcpReservations),
+              ),
               Row(
                 children: [
                   AppText.labelLarge('${reservations.length}'),

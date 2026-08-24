@@ -13,7 +13,7 @@ import 'sweep.dart';
 /// The sweep runner's oracle (#1342).
 ///
 /// Tagged `layout-gate` and **not** `overflow`, for the reason
-/// `dart_test.yaml` gives: the second tag selects the four sweeps, and this file
+/// `dart_test.yaml` gives: the second tag selects the five sweeps, and this file
 /// is a framework self-test, next to `ratchet_test.dart` and
 /// `overflow_probe_test.dart` rather than inside the pre-commit sweep set.
 ///
@@ -801,7 +801,8 @@ void main() {
   group('a narrowed run does not pin a subset (#1343)', () {
     test('a family declares no enumeration gaps by default', () {
       // The pin is checked for every family that cannot be narrowed, which is
-      // three of the four sweeps.
+      // four of the five sweeps — every one but the card sweep, whose LOCALE /
+      // MIN_SCREEN / -c knobs are the only narrowing the family set has.
       expect(_FakeFamily(axisNames: const ['screen_px']).enumerationGaps(),
           isEmpty);
     });

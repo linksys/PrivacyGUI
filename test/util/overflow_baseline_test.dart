@@ -265,8 +265,8 @@ void main() {
 
   group('emission', () {
     test('is off unless it is asked for', () {
-      // The four sweeps run in the PR gate on every push. Emitting there would
-      // put ~3,500 lines through the reporter for no reader.
+      // The five sweeps run in the PR gate on every push. Emitting there would
+      // put ~4,000 lines through the reporter for no reader.
       final lines = capturePrints(() {
         emitOverflowBaselineRecord(
           const OverflowCell('card.width', {'card': 'lan_info'}),

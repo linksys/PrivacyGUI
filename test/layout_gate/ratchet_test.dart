@@ -12,7 +12,7 @@ import 'ratchet.dart';
 /// The ratchet's oracle (#1341).
 ///
 /// Tagged `layout-gate` and **not** `overflow`: that second tag is the
-/// pre-commit selector for the four sweeps, and a suite that pumps no cells does
+/// pre-commit selector for the five sweeps, and a suite that pumps no cells does
 /// not belong in it — the same line `dart_test.yaml` draws for the probe
 /// self-tests (`overflow_probe_test.dart`, `overflow_baseline_test.dart`), which
 /// every sweep's verdict also rests on.

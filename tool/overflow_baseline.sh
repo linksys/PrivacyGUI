@@ -2,7 +2,7 @@
 # ==============================================================================
 # Overflow Sweep Baselines (#1337)
 # ==============================================================================
-# Captures a byte-stable dataset of every coordinate the four overflow sweeps
+# Captures a byte-stable dataset of every coordinate the five overflow sweeps
 # measure, and diffs a fresh run against the committed one.
 #
 # WHY
@@ -16,11 +16,13 @@
 #   the sweep with `--reporter json`, and test_scripts/overflow_baseline.dart turns
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
-#   All four sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 3,616 coordinates that are measured and clean — card 1,943,
+#   All five sweeps pass today and the allowlist is empty, so what these baselines
+#   freeze is coverage: 4,032 coordinates that are measured and clean — card 1,943,
 #   popup 347, forced_form 78, chrome 1,248, re-checked at the `dev-2.7.0` merge on
 #   2026-08-24, where +29 cells arrived from a production spec change (#1325's
-#   `normalAbove` on `dhcp_reservations`) with no sweep edited. The test run
+#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 416 from
+#   #1349's pilot the same day (the fifth sweep, and the first one registered here
+#   after the framework existed: two lines, see `suite_for`). The test run
 #   is nonetheless allowed to exit non-zero — a sweep can go red at any time, and
 #   its records are still the right input for a diff. What must never be tolerated
 #   is a *truncated* run, which the extractor rejects on its own.
@@ -34,7 +36,7 @@
 
 set -euo pipefail
 
-SWEEPS=(card popup forced_form chrome)
+SWEEPS=(card popup forced_form chrome page)
 BASELINE_DIR="test/fixtures/overflow_baselines"
 RUN_DIR="build/overflow_baseline"
 EXTRACTOR="test_scripts/overflow_baseline.dart"
@@ -55,7 +57,7 @@ Usage:
   ./tool/overflow_baseline.sh check   [sweep...]   Compare a fresh run against the committed baselines
   ./tool/overflow_baseline.sh diff    [sweep...]   Alias for check
 
-Sweeps: ${SWEEPS[*]} (default: all four)
+Sweeps: ${SWEEPS[*]} (default: all five)
 
 Options:
   -h, --help    Show this message
@@ -92,6 +94,10 @@ suite_for() {
     popup)       echo "test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart" ;;
     forced_form) echo "test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart" ;;
     chrome)      echo "test/page/shell/page_chrome_overflow_test.dart" ;;
+    # One entry per *baseline id*, not per family: the extractor splits a record's
+    # `page.dhcp` on the first dot, so both pilot pages land in one dataset the way
+    # the card sweep's three families do (#1349).
+    page)        echo "test/page/_shared/page_surface_overflow_test.dart" ;;
     *)           die "unknown sweep '$1'. Known: ${SWEEPS[*]}" ;;
   esac
 }

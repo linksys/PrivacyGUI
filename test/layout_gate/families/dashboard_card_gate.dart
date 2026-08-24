@@ -5,7 +5,7 @@
 /// ## Why this is a second file, and an object
 ///
 /// [runOverflowSweep] knows nothing about `known_overflows.json`,
-/// `OverflowReportItem` or `build/overflow_testing/` — three of the four sweeps
+/// `OverflowReportItem` or `build/overflow_testing/` — four of the five sweeps
 /// carry none of them, and #1342's header says why an unused hook is a guess. So
 /// the card port had to put them *somewhere*, and the choice was between the
 /// families and here.

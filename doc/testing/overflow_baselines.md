@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-22** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5). **Two ports have now been signed off against it**: #1342 (`check chrome`, 1,248 cells identical) and #1343 (`check card`, 1,917 identical).
+**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`.
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -84,11 +84,13 @@ would read the same in both and mean different things.
 Axis **values** carry two rules, both of them consequences of the ids being a join
 key that humans also grep (#1356):
 
-- **`locale` has one spelling across all four sweeps: `zh_TW`, not `zh-TW`.** The
+- **`locale` has one spelling across all five sweeps: `zh_TW`, not `zh-TW`.** The
   three card sweeps each defined the underscore form privately and `chrome` called
   `Locale.toLanguageTag()`, so the datasets disagreed about how to name one locale.
   It is now `localeTag()` in `test/layout_gate/locale_tag.dart`, imported by all
-  four — the same spelling the ratchet's locale lists and `--dart-define=LOCALE=`
+  five — the fifth reaching it through `runOverflowSweep` rather than by hand,
+  which is the shape #1342 built it in — the same spelling the ratchet's locale
+  lists and `--dart-define=LOCALE=`
   already used.
 - **An axis value is an identity, so prose stays out of it.** `chrome.header`'s
   mode axis read `mode=viewing, local (3 actions)`; the count is useful in a
@@ -109,10 +111,10 @@ bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
 `pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
 drift. `assets/fonts/` is not on the list either — not because fonts are
 irrelevant, they decide every measurement in this dataset, but because none of
-the fonts these sweeps load live there: all four call `loadAppFonts()`, which
+the fonts these sweeps load live there: all five call `loadAppFonts()`, which
 reads the ui_kit faces from the pub-cache checkout `pubspec.yaml` pins and the
 Noto fallbacks from `test/fonts/`, both already covered. The Flutter SDK version
-is the one input no stamp here can see.) The four baselines here all carry the
+is the one input no stamp here can see.) The five baselines here all carry the
 suffix: they were taken with this ticket's own instrumentation still
 uncommitted, which is unavoidable for a mechanism that measures the code that
 introduces it. So `4fb1ac5e-dirty` reads "the tree at `4fb1ac5e` plus #1337", not
@@ -158,7 +160,7 @@ keep.
   probeCardOverflow(tester, …,
       cell: OverflowCell('card.width', {             ← a null cell emits nothing.
         'card': spec.id, 'px': wc.widthKey,            All 17 probe calls in the
-        'tab': tab, 'locale': tag,                     four sweeps name a cell, so
+        'tab': tab, 'locale': tag,                     five sweeps name a cell, so
       }))                                              nothing they measure is
         │                                              missing from the dataset
         ▼
@@ -232,7 +234,7 @@ environment to narrow a debugging run. Any of them left exported would change
 against it. `tool/overflow_baseline.sh` unsets all four (both spellings) before
 each run.
 
-## 5. The four baselines, as captured
+## 5. The five baselines, as captured
 
 Taken at `4fb1ac5e-dirty` on `fix/1314-1328-chrome-overflow` — that is, at
 `4fb1ac5e` plus this ticket's instrumentation — before any port. `chrome` was
@@ -255,12 +257,21 @@ six renamed keys and the commit stamp. `popup` came through #1345 untouched — 
 three of its sweeps already carried `locale` last — which is what says the port
 measured the same 347 coordinates.
 
+All four were then **re-captured at `25d1b8ed-dirty`** for the `dev-2.7.0` merge, which
+is the third rewritten-dataset-that-is-not-a-port: `card` gains 26 `normal_band` cells
+and `forced_form` 3 `compact_floor` cells, all of them #1325's production spec change
+(`normalAbove` on `dhcp_reservations`) arriving through an unedited sweep. And `page`
+was **captured at `69079cb0-dirty`** for #1349's pilot — a new sweep rather than a
+re-capture, so it has nothing to diff against yet and its 416 rows are the claim
+future ports check.
+
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|
-| `card` | `dashboard_card_overflow_test.dart` | 1,917 | 0 | `width` 1638 · `normal_band` 208 · `profile` 52 · `single_view` 12 · `tab_registry` 6 · `profile_data` 1 |
+| `card` | `dashboard_card_overflow_test.dart` | 1,943 | 0 | `width` 1638 · `normal_band` 234 · `profile` 52 · `single_view` 12 · `tab_registry` 6 · `profile_data` 1 |
 | `chrome` | `page_chrome_overflow_test.dart` | 1,248 | 0 | `header` 936 · `top_bar` 312 |
 | `popup` | `dashboard_card_popup_overflow_test.dart` | 347 | 0 | `form` 234 · `picked_dialog` 51 · `dialog` 27 · `picked_value` 17 · `picked_height` 17 · `exempt` 1 |
-| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 75 | 0 | `popup_tile` 51 · `compact_floor` 18 · `skeleton` 6 |
+| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 78 | 0 | `popup_tile` 51 · `compact_floor` 21 · `skeleton` 6 |
+| `page` | `page_surface_overflow_test.dart` | 416 | 0 | `dhcp` 208 · `wifi_settings` 208 |
 
 **`card`'s density cells come to 1,638 + 208 + 52 = 1,898**, the figure
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §1.2 measured
@@ -278,9 +289,10 @@ no red failure set to freeze. The entry *shape* changed at #1356's review (an
 exemption now carries a `maxOverflowPx` ceiling beside its locale list, and the
 two sections must name the same sites — see
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §3), but an empty
-map is an empty map under either shape, and all four baselines still `check`
-identical. What is being frozen is the *coverage*: 3,587
-coordinates that are measured and clean today. Against an all-clean baseline the
+map is an empty map under either shape, and all five baselines still `check`
+identical. What is being frozen is the *coverage*: **4,032**
+coordinates that are measured and clean today (3,587 at capture, 3,616 after the
+merge, plus #1349's 416). Against an all-clean baseline the
 only difference a port can produce is a lost cell, a new overflow, or a cell that
 stopped finishing — which is exactly what R3 and R5 need to detect, and what a
 pass/fail run cannot distinguish from success.
@@ -289,11 +301,12 @@ Two notes on these numbers:
 
 - **Cells are not pumps.** §1.2 estimates "~1,468 pumps" in the chrome file against
   1,248 cells here. The difference is not uninstrumented coverage: every call that
-  installs the overflow collector in all four sweeps names a cell (17 of 17). The
+  installs the overflow collector in all five sweeps names a cell (17 of 17, and
+  the page sweep adds none — the runner installs it for every declared cell). The
   rest of that file's pumps are behaviour tests — menu selection, action
   reachability, the title staying whole — which never collect overflow and so have
   no measurement to record.
-- **Only the four local sweeps are covered.** The golden side has no local
+- **Only the five local sweeps are covered.** The golden side has no local
   baseline to capture at all: the default local matrix is one locale by two
   devices, it writes no `overflow_warnings.json`, and every coordinate that
   pipeline has found is locale-driven. That is #1346's problem, recorded in

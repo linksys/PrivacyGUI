@@ -29,7 +29,7 @@ import '../layout_gate/incident.dart';
 /// out as `print` events, `test_scripts/overflow_baseline.dart` turns them into a
 /// sorted TSV dataset, and two datasets are compared with a plain diff.
 ///
-/// Capture through `tool/overflow_baseline.sh`, which knows the four sweeps and
+/// Capture through `tool/overflow_baseline.sh`, which knows the five sweeps and
 /// how the stream has to be redirected — `--file-reporter json:<file>` drops
 /// records silently, for the reason spelled out where the extractor rejects it.
 ///
@@ -66,8 +66,8 @@ bool? debugOverflowBaselineCapture;
 
 /// Whether the sweeps should emit baseline records.
 ///
-/// Off by default, and it must stay that way: the four sweeps run in the PR gate
-/// on every push, where ~3,500 extra lines have no reader. Turned on by
+/// Off by default, and it must stay that way: the five sweeps run in the PR gate
+/// on every push, where ~4,000 extra lines have no reader. Turned on by
 /// `OVERFLOW_BASELINE=1` in the environment — an environment variable rather than
 /// a `--dart-define` so switching it does not invalidate the compiled kernel and
 /// make every capture pay a cold build. Both spellings of the define are read too,
@@ -208,7 +208,7 @@ String overflowBaselineRecordLine(
           // The extractor renders every column through `'$value'`
           // (`test_scripts/overflow_baseline.dart:_field`), so `120` and `"120"`
           // both reach the `site` column as `120` — the type is invisible past
-          // the JSON. And all 3,587 rows across the four frozen baselines are
+          // the JSON. And all 4,032 rows across the five frozen baselines are
           // `clean` with `-` in every incident column, so no committed row
           // exercises these keys at all.
           //

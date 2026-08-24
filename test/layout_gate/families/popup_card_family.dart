@@ -2,7 +2,8 @@
 /// opens (#1345).
 ///
 /// The port of `dashboard_card_popup_overflow_test.dart`'s three sweeps — 312 of the
-/// gate's 3,587 committed baseline cells — onto [runOverflowSweep]. Why the form is
+/// gate's committed baseline cells (3,587 then, 4,032 since #1349) — onto
+/// [runOverflowSweep]. Why the form is
 /// pinned rather than provoked by a width, which cards are swept and which nine have
 /// no popup form at all, stays documented where the sweeps are declared; this file is
 /// the enumeration and the premises it declares, and nothing else. The *checking* of

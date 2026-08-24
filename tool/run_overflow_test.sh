@@ -6,21 +6,29 @@
 # filtering, card targeting, and automatic report cleanup.
 #
 # Selection is by tag, not by filename (#1336): `--tags overflow` picks up all
-# four sweeps — the main card sweep, the popup and forced-form card sweeps, and
-# the page-chrome sweep — so a fifth sweep is covered the moment it declares the
-# tag. Before this the script named one file, and the other three were reachable
-# only by knowing they existed.
+# five sweeps — the main card sweep, the popup and forced-form card sweeps, the
+# page-chrome sweep, and #1349's two-page surface sweep — so a sixth is covered
+# the moment it declares the tag. That promise has now been paid out once: the
+# page sweep joined this script's default run without the script being edited.
+# Before #1336 it named one file, and the others were reachable only by knowing
+# they existed.
 #
 # The tag costs load time, and it is not small. `@Tags` is discovered by loading
-# the suite, so `--tags overflow` compiles all 323 test files and then skips 319
-# of them: re-measured 2026-08-24 at the `dev-2.7.0` merge, the same 277 tests
-# take 2m08s under the tag and 28s when the four files are named (shell clock;
-# `flutter test`'s own is 1m52s and 22s). The test count fell from 2,386 to 277
+# the suite, so `--tags overflow` compiles all 325 test files and then skips 320
+# of them: re-measured 2026-08-24 for #1349, the same 296 tests
+# take 2m03s under the tag and 32.1s when the five files are named (shell clock;
+# `flutter test`'s own is 1m48s and 25s). The test count fell from 2,386 to 296
 # without losing a cell — #1344 and #1343 regrouped each sweep's locales inside
-# one test per coordinate, so the same 3,616 cells are now named by 277 tests.
+# one test per coordinate, so 4,032 cells are named by 295 of those tests, the
+# 296th being #1349's readability guard, which pumps 52 trees and names no cell.
 # Correctness is identical — the selection is
-# exactly those four either way — so the tag is right for a pre-commit run and
-# for this script, whose job is to be complete. For a tight inner loop on one
+# exactly those five either way — so the tag is right for a pre-commit run and
+# for this script, whose job is to be complete.
+#
+# One consequence of being complete: the page sweep ignores `-L` and `-m`, the way
+# the chrome sweep already does (its widths and its 26 locales are the coverage
+# claim, not a filter), so a narrowed debugging run still pays its ~20s. `-c` is
+# unaffected — it is a `--name` filter, and no page cell matches a card id. For a tight inner loop on one
 # card, name the file and skip the discovery pass:
 #
 #   fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart \
@@ -86,7 +94,7 @@ Examples:
   # List all registered cards
   ./tool/run_overflow_test.sh -l
 
-  # Default run: all four sweeps, HTML report & PNG screenshots
+  # Default run: all five sweeps, HTML report & PNG screenshots
   ./tool/run_overflow_test.sh
 
   # Narrow debug run: only the device_info cells, Russian locale, open the report

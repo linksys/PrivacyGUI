@@ -23,7 +23,7 @@ import 'popup_card_family.dart';
 /// The card gate's oracle (#1343).
 ///
 /// Tagged `layout-gate` and **not** `overflow`: like `sweep_test.dart` and
-/// `ratchet_test.dart` this is a framework self-test, not one of the four sweeps
+/// `ratchet_test.dart` this is a framework self-test, not one of the five sweeps
 /// the narrower selector runs.
 ///
 /// What it exists to prove is the half of #1343 a baseline diff cannot see.

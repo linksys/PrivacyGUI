@@ -246,10 +246,10 @@ abstract class OverflowSurfaceFamily {
 
 /// The dataset's coordinate for [cell]: the family's axes, then the locale.
 ///
-/// Locale goes last because that is where all four committed baselines already
+/// Locale goes last because that is where all five committed baselines already
 /// have it (`chrome.header|screen_px=1024|mode=editing|locale=ar`,
 /// `card.width|card=connected_devices|width=min|px=191|tab=0|locale=ar`), and a
-/// port that moved it would rename 3,587 rows to say the same thing.
+/// port that moved it would rename 4,032 rows to say the same thing.
 OverflowCell overflowSweepBaselineCell(
   OverflowSurfaceFamily family,
   OverflowSweepCell cell,

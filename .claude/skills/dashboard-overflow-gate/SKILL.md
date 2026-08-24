@@ -17,13 +17,13 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **41 suites carry `layout-gate` today**, and most
+a re-export of it since #1340. **46 suites carry `layout-gate` today**, and most
 of them are not overflow sweeps at all — they are density, readability, form and
 gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Four of the 41 additionally carry `overflow`**, the pre-commit selector.
+**Five of the 46 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else:
 
 | Sweep | What it pumps |
@@ -32,32 +32,36 @@ gate.
 | `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239), declared through `runOverflowSweep` since #1345 |
 | `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could, declared through `runOverflowSweep` since #1344 |
 | `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328), declared through `runOverflowSweep` since #1342 |
+| `test/page/_shared/page_surface_overflow_test.dart` | two **whole pages** — `dhcp` and `wifi_settings` — at 8 screen widths × 26 locales (#1349's pilot). Two pages by decision, not as a class: a page cell costs 37.7ms against a card's 8.8ms, so a page earns a local probe one at a time (architecture doc §11) |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles every test file in the repo (317 at #1345) to skip all but four:
-measured 2026-08-22,
-those same **273** tests take **1m53s under the tag and 19s when the four files are
-named** (`flutter test`'s own clock; the shell sees 2m09s and 27s, the difference
+compiles every test file in the repo (325 at #1349) to skip all but five:
+measured 2026-08-24,
+those same **296** tests take **1m48s under the tag and 25s when the five files are
+named** (`flutter test`'s own clock; the shell sees 2m03s and 32.1s, the difference
 being package resolution and build). Identical selection either way, so name the files for a tight inner loop
-and use the tag when a fifth sweep must not be silently missed. **273 — 590 after
-#1343, 2,412 before it**: all four sweeps now aggregate their locales inside one
-test per coordinate, so 273 tests declare the same 3,587 cells (card 99, popup 80,
-chrome 57, forced-form 37). The cells are what the gate measures; the test count is
-only how they are named.
+and use the tag when a sixth sweep must not be silently missed — the fifth arrived on
+the day this line last said "fifth". **296 — 277 before #1349, 590 after
+#1343, 2,412 before it**: all five sweeps aggregate their locales inside one
+test per coordinate, so 295 of those tests declare 4,032 cells (card 102, popup 80,
+chrome 57, forced-form 38, page 18) and the 296th is #1349's readability guard, which
+pumps 52 trees and names no cell. The cells are what the gate measures; the test
+count is only how they are named.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
 verdict depends on", which would slide the tag back over the whole family. So
 the probe self-tests
 ([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
 [overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
-and the three framework oracles
+and the four framework oracles
 ([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341;
 [sweep_test.dart](../../../test/layout_gate/sweep_test.dart), #1342;
-[families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart), #1343)
+[families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart), #1343;
+[families/page_surface_family_test.dart](../../../test/layout_gate/families/page_surface_family_test.dart), #1349)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
-what naming the four sweep files measures (273), so nothing has quietly joined
-the pre-commit selector.
+what naming the five sweep files measures (**296** both ways, confirmed
+2026-08-24), so nothing has quietly joined the pre-commit selector.
 
 Two members are worth naming:
 
@@ -250,7 +254,7 @@ Always run via `fvm flutter` (the script does). Output dir: `build/overflow_test
 
 # What the PR gate actually runs (no dump, just pass/fail):
 fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart
-# all four sweeps, the pre-commit run:  fvm flutter test --tags overflow
+# all five sweeps, the pre-commit run:  fvm flutter test --tags overflow
 # or the whole gate set:  ./run_tests.sh   (layout-gate is NOT excluded)
 ```
 
@@ -260,12 +264,12 @@ Raw `flutter test` knobs (the script wraps these as `--dart-define`):
 ### Before and after a refactor — `tool/overflow_baseline.sh`
 
 `run_overflow_test.sh` answers "is the gate green". It cannot answer "does the
-gate still measure the same 3,587 coordinates", and a refactor that stops
+gate still measure the same 4,032 coordinates", and a refactor that stops
 enumerating a coordinate is green for exactly that reason. So when you are about
 to restructure a sweep rather than fix a card:
 
 ```bash
-./tool/overflow_baseline.sh capture          # freeze today's coverage, all four sweeps
+./tool/overflow_baseline.sh capture          # freeze today's coverage, all five sweeps
 # … refactor …
 ./tool/overflow_baseline.sh check chrome     # exit 0 = identical, 1 = read the diff
 ```
@@ -273,7 +277,7 @@ to restructure a sweep rather than fix a card:
 The dataset records a **clean cell as a row**, so a dropped coordinate appears as
 `no longer measured` instead of as a card that got fixed — and a cell whose pump
 died reads as `error`, not as one that fits. Read the diff before re-capturing — a
-re-capture is how lost coverage becomes permanent. Full mechanism, and the four
+re-capture is how lost coverage becomes permanent. Full mechanism, and the five
 committed baselines, in
 [doc/testing/overflow_baselines.md](../../../doc/testing/overflow_baselines.md).
 
@@ -520,6 +524,27 @@ existing one.
 
 Reference implementation:
 [test/page/shell/page_chrome_overflow_test.dart](../../../test/page/shell/page_chrome_overflow_test.dart).
+
+**If the surface is a whole page, read #1349 first.** The newer reference is
+[test/page/_shared/page_surface_overflow_test.dart](../../../test/page/_shared/page_surface_overflow_test.dart)
+plus [test/layout_gate/families/page_surface_family.dart](../../../test/layout_gate/families/page_surface_family.dart),
+where the family is *parameterised* by a `PageSurfaceCase` — so a page is a data
+entry, not a new class — and `pageSurfaceHost` is the one place the
+`GoRouter`/`LinksysRoute`/theme scaffolding a real view needs is built. Two
+constraints come with it, both from the architecture doc §11/§8:
+
+- **A page cell costs 37.7ms**, ~4× a card cell, so pages do **not** join as a
+  class. (Re-measured in a second session it reads 33.2ms; the doc plans against the
+  top of the 33–38ms band, so every projection there is an upper bound.) The budget
+  is a **rate — 7.8s of pump CPU per page** — to be re-read at
+  each graduation, not a headroom total: the 42 remaining page-view files (35 of
+  them routed) are 5m29s of pump CPU, more than the whole gate's current wall
+  clock, and land somewhere between 1.6× and 2.8× on it depending on how much
+  else `flutter test` has to overlap with. By the criterion "the page sweep costs
+  more than every other sweep combined", the edge is **four** pages, not eight.
+- **A page earns a probe only once it is already at zero** — fix it, then pin it.
+  A new sweep must not arrive with an allowlist entry, which is what would turn the
+  ratchet back into a to-do list.
 
 ### The seven rules
 

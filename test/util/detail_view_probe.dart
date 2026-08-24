@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/localization/fallback_font_resolver.dart';
-import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import '../mocks/provider_overrides/mock_common.dart';
+import '../layout_gate/families/page_surface_family.dart';
 import 'overflow_probe.dart';
 
 /// Shared overflow harness for the whole-page detail views (#1302).
@@ -34,10 +30,23 @@ import 'overflow_probe.dart';
 /// is not a fact about either page: it is the answer to "how do I pump a real
 /// view", and two copies of it would drift — the failure the Statistics probe
 /// documents from its own three-copy history (#1270).
-
-/// Built once per test process, not once per pump: `createLightTheme()` walks the
-/// whole JSON config, and every call site wants the same base.
-final _baseTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
+///
+/// ## The scaffolding moved, and this file kept the one-pump rule (#1349)
+///
+/// The argument above is why the tree itself is no longer here: the #1349 page
+/// family needed the same answer to the same question, and a second copy of it
+/// would have been the drift this header warns about, two paragraphs after warning
+/// about it. So the host is [pageSurfaceHost] (`test/layout_gate/families/
+/// page_surface_family.dart`), where §3.1 puts host construction, and this file is
+/// now what is *left over* once the tree is shared: the one-pump guard and the
+/// tolerance filter, neither of which the declarative runner needs — it wraps every
+/// cell in a `KeyedSubtree` (invariant 1), which is a better answer to the same
+/// hazard than failing on the second call, and it carries the tolerance on the
+/// verdict.
+///
+/// Which is the honest reading of what this probe is: the hand-written form of a
+/// sweep, kept because its two suites carry #1302's mutation ledgers and are not
+/// worth re-shaping until a page family graduates (§11).
 
 /// Testers that have already pumped in the current test — see the one-pump rule
 /// in [probeViewOverflow]. Entries are removed by the tester's own tearDown, so
@@ -84,9 +93,6 @@ Future<List<OverflowIncident>> probeViewOverflow(
 
   final surface = Size(screenWidth, screenHeight);
 
-  // Same call as `lib/app.dart`, not a copy of its body — see #1285.
-  final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
-
   return runWithOverflowCollection((sink) async {
     // [setLayoutSurface], not the three lines by hand: it is the gate's
     // Invariant 2 — the surface is set and reset in **one** place (architecture
@@ -98,38 +104,13 @@ Future<List<OverflowIncident>> probeViewOverflow(
     // test. What changes is what the *next* test in the file measures in.
     await setLayoutSurface(tester, surface);
 
-    // `LinksysRoute`, not `GoRoute`: it is what the app builds its routes with,
-    // and it is what carries the dirty-guard contract these detail pages sit
-    // under. A plain `GoRoute` would pump a page the app never renders.
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        LinksysRoute(
-          path: '/',
-          name: 'test_root',
-          builder: (context, state) => view,
-        ),
-      ],
-    );
-
+    // The `GoRouter`/`LinksysRoute`/theme/`MediaQuery` scaffolding, and why each
+    // piece is load-bearing, is documented at [pageSurfaceHost]. It is the same
+    // tree this function built by hand until #1349, not a re-derivation of it —
+    // which is what makes the two #1302 suites and the page sweep measurements of
+    // the same thing.
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...commonOverrides(), ...overrides],
-        child: MaterialApp.router(
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: theme,
-          // Applied inside the app via builder so the view under test actually
-          // observes disableAnimations: true — a MediaQuery wrapped outside
-          // MaterialApp would be overridden.
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child ?? const SizedBox.shrink(),
-          ),
-          routerConfig: router,
-        ),
-      ),
+      pageSurfaceHost(view: view, locale: locale, overrides: overrides),
     );
     await settleIgnoringAnimations(tester);
     return sink.where((i) => i.pixels > tolerancePx).toList();

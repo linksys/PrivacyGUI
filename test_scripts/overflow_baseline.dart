@@ -53,7 +53,7 @@ import 'dart:io';
 ///     dart run test_scripts/overflow_baseline.dart diff \
 ///         --baseline test/fixtures/overflow_baselines/card.tsv --reporter <json>
 ///
-/// `tool/overflow_baseline.sh` wraps both with the four-sweep registry; prefer it.
+/// `tool/overflow_baseline.sh` wraps both with the five-sweep registry; prefer it.
 
 /// Marks a baseline record on a sweep's stdout.
 ///
@@ -677,7 +677,7 @@ usage:
 
 exit codes: 0 = clean, 1 = the datasets differ, 2 = bad input
 
-Prefer tool/overflow_baseline.sh, which knows the four sweeps and their files.
+Prefer tool/overflow_baseline.sh, which knows the five sweeps and their files.
 ''';
 
 /// Entry point, separated from [main] so tests can assert on exit codes and
@@ -870,7 +870,7 @@ String _headCommit() {
 /// resolved-version drift no stamp here can see.
 ///
 /// Not `assets/fonts` either — but not because fonts are irrelevant here. They
-/// decide every measurement in this dataset, which is why all four sweeps call
+/// decide every measurement in this dataset, which is why all five sweeps call
 /// `loadAppFonts()`. It is that none of the fonts they load live in that
 /// directory: the ui_kit faces are read out of the pub-cache checkout
 /// `pubspec.yaml` pins, and the Noto fallbacks are committed under
