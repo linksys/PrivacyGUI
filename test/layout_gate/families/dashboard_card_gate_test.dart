@@ -17,6 +17,8 @@ import '../sweep.dart';
 import 'card_sweep_cell.dart';
 import 'dashboard_card_family.dart';
 import 'dashboard_card_gate.dart';
+import 'forced_form_card_family.dart';
+import 'popup_card_family.dart';
 
 /// The card gate's oracle (#1343).
 ///
@@ -460,6 +462,309 @@ void main() {
     });
   });
 
+  group('the declared structural premise', () {
+    // #1366. The other three families' hooks held a `find.byType` `expect` that
+    // nothing required them to keep, and the measurement said so: emptying
+    // `ForcedCompactFloorFamily`'s two left the forced-form suite 38 of 38 green and
+    // the whole `layout-gate` tag 1,368 of 1,368 green. These cases are the two
+    // halves that make the move enforceable — the check, and the declaration it
+    // reads.
+    CardSweepCell premiseCell(List<CardWidgetPremise> premises) =>
+        CardSweepCell(
+          axes: {
+            'card': spec.id,
+            'width': widthCase.label,
+            'px': widthCase.widthKey,
+            'tab': 0,
+          },
+          locale: const Locale('de'),
+          cardId: spec.id,
+          widthCase: widthCase,
+          rows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+          widgetPremises: premises,
+        );
+
+    /// The message [body] failed with, or a failure of our own if it passed.
+    Future<String> failureOf(Future<void> Function() body) async {
+      try {
+        await body();
+      } on TestFailure catch (failure) {
+        return failure.message ?? '';
+      }
+      fail(
+          'the declared premise was not checked: this cell named a widget that '
+          'had to be in the tree, or had to be absent from it, and '
+          'onCellSettled returned normally');
+    }
+
+    testWidgets('a required widget missing fails, naming it and the reason',
+        (tester) async {
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const SizedBox());
+
+      final message = await failureOf(
+        () => family.onCellSettled(
+          tester,
+          premiseCell(const [
+            CardWidgetPremise.present(Placeholder,
+                reason: 'the pick is what produces it'),
+          ]),
+        ),
+      );
+
+      expect(message, contains('"device_info" @min 191px tab0'));
+      expect(message, contains('Placeholder must be in the tree it pumped'));
+      expect(message, contains('and 0 were'));
+      expect(message, contains('the pick is what produces it'),
+          reason: 'the family\'s own reason is carried as data for the same '
+              'reason the form premise carries one');
+      expect(family.hookRan, isFalse,
+          reason: 'the premise is about the tree the runner pumped, so it is '
+              'checked before anything can pump another one over it');
+    });
+
+    testWidgets(
+        'a forbidden widget present fails, and says the smaller form fits',
+        (tester) async {
+      // The half with teeth. A card that fell through to a *smaller* form passes
+      // every overflow assertion in the sweep by fitting the box, so the failure
+      // has to say that out loud — a reader who only sees "premise not met" will
+      // look for a layout bug that is not there.
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const Placeholder());
+
+      final message = await failureOf(
+        () => family.onCellSettled(
+          tester,
+          premiseCell(const [
+            CardWidgetPremise.absent(Placeholder,
+                reason: 'compact is the middle band'),
+          ]),
+        ),
+      );
+
+      expect(
+          message, contains('Placeholder must not be in the tree it pumped'));
+      expect(message, contains('and 1 were'));
+      expect(
+          message, contains('the form that fits is not the form under test'));
+      expect(family.hookRan, isFalse);
+    });
+
+    testWidgets('both directions pass together, and the hook still runs',
+        (tester) async {
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const Placeholder());
+
+      await family.onCellSettled(
+        tester,
+        premiseCell(const [
+          CardWidgetPremise.present(Placeholder,
+              reason: 'it is what we pumped'),
+          CardWidgetPremise.absent(SizedBox, reason: 'and this is not'),
+        ]),
+      );
+
+      expect(family.hookRan, isTrue,
+          reason: 'the check is a precondition on the hook, not a replacement');
+    });
+
+    testWidgets('a cell that declares none is not asked at all',
+        (tester) async {
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const SizedBox());
+
+      await family.onCellSettled(tester, premiseCell(const []));
+
+      expect(family.hookRan, isTrue);
+    });
+
+    test('the three premise families declare their structure, and say why', () {
+      // The pin that catches the other mutation: deleting `widgetPremises:` from an
+      // enumeration. A set per family rather than a count, for the reason the form
+      // premise's pin gives — a `const []` slipping into one card's cells is what a
+      // count cannot see.
+      final expected = <String, List<CardWidgetPremise>>{
+        'forced_form.popup_tile': kPopupTilePremise,
+        'forced_form.compact_floor': kCompactFloorPremises,
+        'popup.form': kPopupFormPremise,
+      };
+
+      for (final family in [
+        const ForcedPopupTileFamily(),
+        const ForcedCompactFloorFamily(),
+        const PopupFormFamily(),
+      ]) {
+        final cells = family.enumerateCells().cast<CardSweepCell>().toList();
+        expect(cells, isNotEmpty);
+        expect(
+          cells.map((cell) => cell.widgetPremises).toSet(),
+          {same(expected[family.name])},
+          reason:
+              '${family.name} measures a form it cannot find by type, so the '
+              'structural claim is the only thing standing between a clean '
+              'verdict and a verdict about another tree',
+        );
+      }
+
+      expect(
+        expected.values.expand((list) => list).where((p) => p.reason.isEmpty),
+        isEmpty,
+        reason:
+            'a structural claim with no stated reason is one a reader cannot '
+            'act on',
+      );
+    });
+
+    test('the other six card families declare none, deliberately', () {
+      // Pinning the absence, for the reason the form premise's twin case gives.
+      // `forced_form.skeleton` is the interesting one: the widget under test *is*
+      // the override, so it is in the tree by construction and a premise here would
+      // assert the harness rather than the card.
+      for (final family in [
+        CardWidthFamily(CardSweepGate()),
+        CardNormalBandFamily(CardSweepGate()),
+        CardProfileFamily(CardSweepGate()),
+        const ForcedFormSkeletonFamily(),
+        const PopupDialogFamily(),
+        const PickedPopupDialogFamily(),
+      ]) {
+        final declared = family
+            .enumerateCells()
+            .cast<CardSweepCell>()
+            .map((cell) => cell.widgetPremises)
+            .toSet();
+        expect(declared, {isEmpty},
+            reason: '${family.name} declares no structural premise');
+      }
+    });
+  });
+
+  group('the declared surface opener', () {
+    // #1366's sharper half. The two dialog families' hook did not merely assert a
+    // premise, it *produced the surface being measured* — so emptying it left the
+    // popup suite 80 of 80 green **and** `overflow_baseline.sh check popup`
+    // reporting 347 cells identical, while 78 cells quietly measured the 122px tile
+    // instead of the presentation. The baseline is the tool built for exactly that
+    // question and it cannot see this, because the cell id and the verdict are both
+    // unchanged. Which leaves these cases as the only detector.
+    CardSweepCell openerCell({
+      CardSurfaceOpener? openWith,
+      List<CardWidgetPremise> premises = const [],
+    }) =>
+        CardSweepCell(
+          axes: {
+            'card': spec.id,
+            'width': widthCase.label,
+            'px': widthCase.widthKey,
+            'tab': 0,
+          },
+          locale: const Locale('de'),
+          cardId: spec.id,
+          widthCase: widthCase,
+          rows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+          widgetPremises: premises,
+          openWith: openWith,
+        );
+
+    testWidgets('the declared opener runs, and runs before the hook',
+        (tester) async {
+      // The order is the whole point: a hook that ran first would be asserting
+      // against the tile, which is the confusion the ticket was filed for.
+      final order = <String>[];
+      final family = _PremiseProbeFamily(onHook: () => order.add('hook'));
+      await tester.pumpWidget(const SizedBox());
+
+      await family.onCellSettled(
+        tester,
+        openerCell(
+          openWith: CardSurfaceOpener(
+            name: 'probe',
+            open: (_, __) async => order.add('open'),
+          ),
+        ),
+      );
+
+      expect(order, ['open', 'hook']);
+    });
+
+    testWidgets('a failing premise stops the opener', (tester) async {
+      // Ordering in the other direction, and it matters for triage: opening a
+      // surface on top of a tree that already failed its premise buries the first
+      // failure under whatever the tap does next.
+      var opened = false;
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const SizedBox());
+
+      try {
+        await family.onCellSettled(
+          tester,
+          openerCell(
+            premises: const [
+              CardWidgetPremise.present(Placeholder, reason: 'never here'),
+            ],
+            openWith: CardSurfaceOpener(
+              name: 'probe',
+              open: (_, __) async => opened = true,
+            ),
+          ),
+        );
+        fail('the premise was not checked before the surface was opened');
+      } on TestFailure catch (_) {
+        expect(opened, isFalse);
+      }
+    });
+
+    testWidgets('a cell that declares none opens nothing', (tester) async {
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const SizedBox());
+
+      await family.onCellSettled(tester, openerCell());
+
+      expect(family.hookRan, isTrue);
+    });
+
+    test('the two dialog families declare the presentation opener', () {
+      // The pin that catches deleting `openWith:` from either enumeration — the
+      // mutation that was killed by nothing, baseline included.
+      for (final family in [
+        const PopupDialogFamily(),
+        const PickedPopupDialogFamily(),
+      ]) {
+        final cells = family.enumerateCells().cast<CardSweepCell>().toList();
+        expect(cells, isNotEmpty);
+        expect(
+          cells.map((cell) => cell.openWith?.name).toSet(),
+          {kPresentationOpener.name},
+          reason: '${family.name} is named after the presentation, and tapping '
+              'the tile open is the only thing that puts one in the tree',
+        );
+      }
+    });
+
+    test('and no other card family declares one', () {
+      // Symmetry with the form premise's absence pin, and the same reason: a family
+      // that declared an opener it does not need would tap a tile that is not there.
+      for (final family in [
+        CardWidthFamily(CardSweepGate()),
+        CardNormalBandFamily(CardSweepGate()),
+        CardProfileFamily(CardSweepGate()),
+        const ForcedPopupTileFamily(),
+        const ForcedFormSkeletonFamily(),
+        const ForcedCompactFloorFamily(),
+        const PopupFormFamily(),
+      ]) {
+        final declared = family
+            .enumerateCells()
+            .cast<CardSweepCell>()
+            .map((cell) => cell.openWith)
+            .toSet();
+        expect(declared, {null},
+            reason: '${family.name} measures the tree the runner pumped');
+      }
+    });
+  });
+
   group('the closing direction', () {
     testWidgets('a complete run reports the entry nothing needed',
         (tester) async {
@@ -522,11 +827,14 @@ void main() {
 /// A card family that enumerates nothing and records whether its hook ran.
 ///
 /// So that the premise cases exercise [CardOverflowFamily.onCellSettled] and
-/// nothing else: the three real families each carry a gate, an enumeration and a
-/// verdict, and any of those failing would look like the check failing. `hookRan`
-/// is what pins the *order*, which is the part a reader cannot see from the call.
+/// nothing else: the nine real families each carry an enumeration and a verdict, and
+/// any of those failing would look like the check failing. `hookRan` is what pins the
+/// *order*, which is the part a reader cannot see from the call — and [onHook], for
+/// the one case where the order is three-way rather than two (#1366).
 class _PremiseProbeFamily extends CardOverflowFamily {
-  _PremiseProbeFamily();
+  _PremiseProbeFamily({this.onHook});
+
+  final void Function()? onHook;
 
   bool hookRan = false;
 
@@ -542,5 +850,6 @@ class _PremiseProbeFamily extends CardOverflowFamily {
   @override
   Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
     hookRan = true;
+    onHook?.call();
   }
 }

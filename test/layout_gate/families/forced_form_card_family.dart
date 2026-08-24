@@ -5,7 +5,9 @@
 /// of the gate's committed baseline cells — onto [runOverflowSweep]. What each
 /// sweep *is*, and why these two geometries are not dominated by the widths the
 /// grid produces, stays documented where the sweeps are declared; this file is the
-/// enumeration and the premise check, and nothing else.
+/// enumeration and the premises it declares, and nothing else. The *checking* of those
+/// premises left for `card_sweep_cell.dart` at #1366 — see [kCompactFloorPremises] for
+/// what the two `expect`s that used to be here were worth when they were deleted.
 ///
 /// It was 75 at #1344. #1325 gave `dhcp_reservations` a `normalAbove`, which is
 /// the predicate [UspWidgetSpecs.selectableForms] reads, so a seventh card became
@@ -19,7 +21,7 @@
 /// — and [OverflowSurfaceFamily.name] *is* that group name, so one class could not
 /// have kept the cell ids where they are. They also differ in the two ways §2
 /// calls essential: the skeleton sweep pumps a widget rather than a card (its axis
-/// is `variant`, not `card`), and the popup and compact sweeps each assert
+/// is `variant`, not `card`), and the popup and compact sweeps each declare
 /// something different about the tree they pumped.
 ///
 /// ## The one cell id this port changes
@@ -143,6 +145,53 @@ const Map<String, CardSkeleton> kForcedFormSkeletonVariants = {
   'status': CardSkeleton.status(),
 };
 
+/// [ForcedPopupTileFamily]'s premise: the pick actually produced a popup form.
+///
+/// Eight of these cards had no reachable popup form before #1299, so this is what
+/// distinguishes "the tile fits" from "the card ignored the pick and its full form
+/// happens not to have overflowed yet". A `const` beside the enumeration rather than a
+/// literal inside it, so the 51 cells share one list and the claim is readable without
+/// unwrapping two loops.
+///
+/// The box is not named here even though the pre-#1366 hook named it: the failure prints
+/// [CardSweepCell.widthLabel], which is `@popup 122px tab0` and comes from the width
+/// case rather than from prose that could disagree with it.
+const List<CardWidgetPremise> kPopupTilePremise = [
+  CardWidgetPremise.present(
+    CardPopupForm,
+    reason: 'Eight of these cards had no reachable popup form before #1299. A '
+        'card that bypasses the template keeps its full form inside the tile, '
+        'which is the overflow the parent epic exists to prevent.',
+  ),
+];
+
+/// [ForcedCompactFloorFamily]'s premise, in the two halves available here.
+///
+/// The compact form has no widget of its own to find — each of the seven cards arranges
+/// its own — so the structural claim is that the card still went through the template
+/// that reads the density, and that it did not fall through to the popup form instead.
+///
+/// Both halves matter, and the second is the one with teeth: measured against a defect
+/// that made a pinned form be ignored, the pair took it from **7 killers to 0** when the
+/// hook holding them was emptied (#1366). The popup form is *smaller* than the compact
+/// one, so it fits the 261px box and every overflow assertion in the sweep passes while
+/// the card's content is gone.
+const List<CardWidgetPremise> kCompactFloorPremises = [
+  CardWidgetPremise.present(
+    DashboardCardTemplate,
+    reason:
+        'The density scope the card reads is what selects the compact form, '
+        'and the template is what reads it — a card that bypassed the template '
+        'sized itself from its own width instead.',
+  ),
+  CardWidgetPremise.absent(
+    CardPopupForm,
+    reason: 'Compact is the middle band. Falling through to the popup form '
+        'satisfies every overflow assertion here while losing the card\'s '
+        'content, because the popup form is the smaller of the two.',
+  ),
+];
+
 /// Every card that can be picked into popup, in the 122×1 tile the pick produces.
 /// 17 cards × 3 locales = 51 cells.
 class ForcedPopupTileFamily extends CardOverflowFamily {
@@ -169,26 +218,19 @@ class ForcedPopupTileFamily extends CardOverflowFamily {
               widthCase: forcedPopupTileCase,
               rows: UspWidgetSpecs.popupHeightRows,
               density: CardDensity.popup,
+              widgetPremises: kPopupTilePremise,
             ),
       ];
 
-  /// The sweep's premise: the pick actually produced a popup form.
+  /// Empty since #1366, and the premise above is why.
   ///
-  /// Eight of these cards had no reachable popup form before #1299, so this is the
-  /// assertion that distinguishes "the tile fits" from "the card ignored the pick
-  /// and its full form happens not to have overflowed yet".
+  /// It was this body, as a `find.byType` `expect` nothing required it to keep — the
+  /// state #1364 measured one family over and #1366 measured here. The claim did not
+  /// change; it is a value on the cell now, checked for every card family by
+  /// [CardOverflowFamily.onCellSettled], and pinned by `dashboard_card_gate_test.dart`
+  /// so deleting the declaration is as loud as deleting the check.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
-    expect(
-      find.byType(CardPopupForm),
-      findsOneWidget,
-      reason: '${card.cardId} did not render the popup form. Eight of these '
-          'cards had no reachable popup form before #1299 — one that bypasses '
-          'the template would keep its full form inside a '
-          '${forcedPopupTileCase.widthKey}px box, which is the overflow the '
-          'parent epic exists to prevent',
-    );
-  }
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }
 
 /// The six loading placeholders in the same tile, in `en` alone. 6 cells.
@@ -293,29 +335,17 @@ class ForcedCompactFloorFamily extends CardOverflowFamily {
               widthCase: forcedCompactFloorCase,
               rows: forcedCompactFloorRows(spec),
               density: CardDensity.compact,
+              widgetPremises: kCompactFloorPremises,
             ),
       ];
 
-  /// The sweep's premise, in the two halves available here.
+  /// Empty since #1366, and [kCompactFloorPremises] is why.
   ///
-  /// The compact form has no widget of its own to find — each of the seven cards
-  /// arranges its own — so the structural claim is that the card still went through
-  /// the template that reads the density, and that it did not fall through to the
-  /// popup form instead.
+  /// This is the family the ticket was measured on: the two `expect`s that were here
+  /// were killed by nothing when deleted, and were worth 7 killers when paired with a
+  /// real defect. Declaring `expectedDensity: compact` would not have replaced them —
+  /// the cells pin that density themselves, so the check would only read back the
+  /// override, while the fall-through defect publishes a popup scope the card obeys.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
-    expect(
-      find.byType(DashboardCardTemplate),
-      findsOneWidget,
-      reason: '${card.cardId} must render through the card template; the '
-          'density scope it reads is what selects the compact form',
-    );
-    expect(
-      find.byType(CardPopupForm),
-      findsNothing,
-      reason: '${card.cardId}: compact is the middle band. Falling through to '
-          'the popup form would satisfy every overflow assertion here while '
-          'losing the card\'s content',
-    );
-  }
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }

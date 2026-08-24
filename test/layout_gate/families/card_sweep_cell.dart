@@ -7,9 +7,17 @@
 /// header says that file is "the enumeration and the verdict, and nothing else".
 /// #1344 and #1345 put three more families each on the same cell, in two more
 /// suites, so it is no longer a detail of the largest surface — it is the card
-/// half of the framework, and six families now depend on it. Left where it was,
+/// half of the framework, and nine families now depend on it. Left where it was,
 /// two suites would import a third suite's families to reach it, and the
 /// `families/` directory would have one file that means both things.
+///
+/// Since #1364 and #1366 it carries the families' *premises* as well as their
+/// geometry — the form ([CardSweepCell.expectedDensity]), the structure
+/// ([CardSweepCell.widgetPremises]) and the surface ([CardSweepCell.openWith]) — and
+/// [CardOverflowFamily.onCellSettled] enforces all three under every card family at
+/// once. That is what makes it the framework half rather than a shared data class:
+/// each of the three was a hook body that could be, and provably was, emptied without
+/// anything noticing.
 ///
 /// Nothing here knows about [CardSweepGate]: the ratchet, the report and the PNG
 /// dump belong to the three sweeps that have them, which is why [judgeCard] has a
@@ -60,6 +68,8 @@ class CardSweepCell extends OverflowSweepCell {
     required this.tabCount,
     required this.expectedDensity,
     required this.expectedDensityReason,
+    required this.widgetPremises,
+    required this.openWith,
     required this.repaintKey,
   });
 
@@ -86,6 +96,8 @@ class CardSweepCell extends OverflowSweepCell {
     CardDensity? density,
     CardDensity? expectedDensity,
     String? expectedDensityReason,
+    List<CardWidgetPremise> widgetPremises = const [],
+    CardSurfaceOpener? openWith,
     Widget? cardOverride,
     int? screenHeightRows,
     GlobalKey? repaintKey,
@@ -129,6 +141,8 @@ class CardSweepCell extends OverflowSweepCell {
       tabCount: tabCount,
       expectedDensity: expectedDensity,
       expectedDensityReason: expectedDensityReason,
+      widgetPremises: widgetPremises,
+      openWith: openWith,
       repaintKey: repaintKey,
     );
   }
@@ -173,11 +187,12 @@ class CardSweepCell extends OverflowSweepCell {
   ///
   /// ## Which families declare one
   ///
-  /// The one whose premise *is* a form: [CardNormalBandFamily]. The forced-form and
-  /// popup families pin their density and then assert something strictly stronger in
-  /// their hooks — that the form's own widget is in the tree — so their premise is
-  /// structural and stays there. [CardWidthFamily] and [CardProfileFamily] declare
-  /// none, and their hooks say why.
+  /// Exactly one, and it is the only family whose premise *is* a form:
+  /// [CardNormalBandFamily]. The forced-form and popup families pin their density and
+  /// claim something strictly stronger — that the form's own widget is in the tree —
+  /// which is [widgetPremises] and not this. [CardWidthFamily], [CardProfileFamily] and
+  /// the skeleton family declare no form, and the oracle pins that absence so nobody
+  /// "completes the pattern" by inventing one.
   final CardDensity? expectedDensity;
 
   /// Why this coordinate must select [expectedDensity], and what to look at when it
@@ -190,9 +205,28 @@ class CardSweepCell extends OverflowSweepCell {
   /// exist would be quoted by a failure that cannot happen.
   final String? expectedDensityReason;
 
+  /// What must, and must not, be in the tree this cell pumped — empty for "this cell
+  /// asserts nothing structural about it, and is saying so" (#1366).
+  ///
+  /// The structural half of a premise, where [expectedDensity] is the form half. Three
+  /// families asserted exactly this shape in their hook bodies and nothing made them:
+  /// `find.byType(X)` `findsOneWidget`, or `findsNothing`. Carried here for the reason
+  /// [expectedDensity] gives, and for one it does not — a density premise cannot
+  /// express these. [ForcedCompactFloorFamily]'s cells pin `compact` themselves, so
+  /// declaring `expectedDensity: compact` would only read back the override they set;
+  /// what its hook actually claimed is that the card went *through the template that
+  /// reads the scope*, and did not fall through to the popup form. Neither is a value
+  /// of [CardDensity].
+  final List<CardWidgetPremise> widgetPremises;
+
+  /// How this cell reaches the surface it is named after, when that surface is not the
+  /// tree the runner pumped — null for every card cell but the two dialog families'
+  /// (#1366).
+  final CardSurfaceOpener? openWith;
+
   /// The `RepaintBoundary` key the before-screenshot is taken from, null outside a
-  /// PNG dump run — and null for every family that does not dump, which is five
-  /// of the six.
+  /// PNG dump run — and null for every family that does not dump, which is the six
+  /// outside `dashboard_card_family.dart`.
   final GlobalKey? repaintKey;
 
   String get tag => localeTag(locale);
@@ -201,6 +235,71 @@ class CardSweepCell extends OverflowSweepCell {
   /// overflow line spell it.
   String get widthLabel => '@${widthCase.label} ${widthCase.widthKey}px '
       'tab$tab';
+}
+
+/// A widget that must — or must not — be in the tree a cell pumped, and why.
+///
+/// One entry per `expect` the three premise-carrying families used to write by hand.
+/// Measured before the move (#1366): emptying [ForcedCompactFloorFamily]'s two of them
+/// left the forced-form suite 38 of 38 green and the whole `layout-gate` tag 1,368 of
+/// 1,368 green — and paired with a pinned form being ignored
+/// (`card_density_scope.dart` returning a popup scope for an overridden cell) it took
+/// that defect from **7 killers to 0**, because the popup form is *smaller* and fits
+/// the box the coordinate is named after.
+///
+/// A [Type] rather than a `Finder`: a finder is not a constant, so it could not be
+/// declared beside the cell's other axes, and all four real premises are a `byType`.
+/// Widen it when a family needs something a type cannot say, and not before.
+class CardWidgetPremise {
+  const CardWidgetPremise.present(this.widget, {required this.reason})
+      : mustBePresent = true;
+
+  const CardWidgetPremise.absent(this.widget, {required this.reason})
+      : mustBePresent = false;
+
+  final Type widget;
+
+  /// True for the `findsOneWidget` the hooks wrote, false for `findsNothing`. Exactly
+  /// one, not "at least one": that is what the hooks asserted, and a second copy of a
+  /// form in one card is its own defect.
+  final bool mustBePresent;
+
+  /// Why the measurement is about the wrong tree without it — quoted verbatim by
+  /// [cardWidgetPremiseFailure], and required rather than optional for the reason
+  /// [CardSweepCell.expectedDensityReason] is asserted against its premise: a
+  /// structural claim with no stated reason is one a reader cannot act on, and there is
+  /// no case here where the premise exists but the reason does not.
+  final String reason;
+}
+
+/// How a cell reaches the surface it is named after, when that surface is not the tree
+/// the runner pumped.
+///
+/// A sharper version of #1364, and the reason #1366 is not only about assertions. The
+/// two dialog families' `onCardSettled` *was* `_openPresentation` — a hook that both
+/// asserted the premise and **produced the thing being measured** — so emptying it did
+/// not weaken an assertion, it silently changed what 78 cells measure. Measured: both
+/// emptied left the popup suite 80 of 80 green *and*
+/// `./tool/overflow_baseline.sh check popup` reporting 347 cells identical. The tool
+/// built to answer "is the gate still measuring the same coordinates" cannot see this
+/// one, because the cell id and the verdict are both unchanged and only the surface
+/// behind the id moved.
+///
+/// Declared on the cell and run by [CardOverflowFamily.onCellSettled], so an empty hook
+/// no longer decides which surface is measured. What makes deleting the *declaration*
+/// loud is `dashboard_card_gate_test.dart` pinning which families carry one — the same
+/// half that `expectedDensity` needed.
+class CardSurfaceOpener {
+  const CardSurfaceOpener({required this.name, required this.open});
+
+  /// Short, and what the oracle's expectations are written against: a set of names
+  /// reads in a failure message where a set of closures does not.
+  final String name;
+
+  /// Runs *inside* the collector, which is what keeps the opened surface's own overflow
+  /// attributed to this cell — `sweep.dart` invariant 1 is what makes a second pump
+  /// safe there.
+  final Future<void> Function(WidgetTester tester, CardSweepCell card) open;
 }
 
 /// What a broken form premise reads as: the coordinate, both forms, and the
@@ -268,6 +367,52 @@ void checkCardDensityPremise(WidgetTester tester, CardSweepCell card) {
   fail(cardDensityPremiseFailure(card, selected));
 }
 
+/// What a broken structural premise reads as: the coordinate, what was required, what
+/// the tree held, and the family's own reason.
+///
+/// A pure function for the reason [cardDensityPremiseFailure] is one, plus a second: the
+/// two directions fail for opposite reasons and a shared "premise not met" line would
+/// lose the one that is easy to miss — a *smaller* form satisfies every overflow
+/// assertion in the sweep by not being the form.
+String cardWidgetPremiseFailure(
+  CardSweepCell card,
+  CardWidgetPremise premise,
+  int found,
+) {
+  final coordinate = '"${card.cardId}" ${card.widthLabel} declares that '
+      '${premise.widget} must ';
+  return [
+    if (premise.mustBePresent)
+      '${coordinate}be in the tree it pumped, and $found were. The tree never '
+          'rendered the thing this coordinate is named after, so every overflow '
+          'verdict it reported is about a layout the cell id does not describe.'
+    else
+      '${coordinate}not be in the tree it pumped, and $found were. Falling through '
+          'to another form passes every overflow assertion here while measuring '
+          'something else: the form that fits is not the form under test, and the '
+          'card\'s content is what was lost.',
+    premise.reason,
+    'The premise is declared on the cell and checked for every card family '
+        '(#1366), so it is not something a hook body can be emptied out of.',
+  ].join('\n');
+}
+
+/// Checks the structural premises [card] declared against the tree that was just
+/// pumped.
+///
+/// Nothing at all for a cell that declared none, which is most of the gate's cells — so
+/// the tree walk is paid only by the three families that ask for it, the same
+/// short-circuit [checkCardDensityPremise] takes. The counts are pinned in
+/// `dashboard_card_gate_test.dart` rather than restated here, where they would drift the
+/// first time a card gains a selectable form.
+void checkCardWidgetPremises(WidgetTester tester, CardSweepCell card) {
+  for (final premise in card.widgetPremises) {
+    final found = find.byType(premise.widget).evaluate().length;
+    if (premise.mustBePresent ? found == 1 : found == 0) continue;
+    fail(cardWidgetPremiseFailure(card, premise, found));
+  }
+}
+
 /// A family whose cells are all [CardSweepCell]s: the runner's two hooks with the
 /// cast paid once.
 ///
@@ -284,9 +429,16 @@ void checkCardDensityPremise(WidgetTester tester, CardSweepCell card) {
 ///
 /// Being asked, though, is not the same as answering, which is #1364: the abstract
 /// member forces a *declaration* and nothing forced the body to assert anything.
-/// [onCellSettled] is therefore no longer a bare delegation — it checks the form
-/// premise the cell declared first, and that half is framework code sitting under
-/// every card family at once.
+/// [onCellSettled] is therefore no longer a bare delegation — it checks what the cell
+/// declared first, and that is framework code sitting under every card family at once.
+///
+/// After #1366 all nine card families' bodies are empty, and the member is kept anyway.
+/// Not as ceremony: it is the escape hatch for a family whose claim is neither a form
+/// ([CardSweepCell.expectedDensity]), a widget ([CardSweepCell.widgetPremises]) nor a
+/// surface ([CardSweepCell.openWith]) — the three shapes the nine actually had. A tenth
+/// family needing a fourth shape should write it here and be measured, not be forced to
+/// bend one of the three. What changed is that an empty body is now the *documented*
+/// state rather than an indistinguishable one.
 abstract class CardOverflowFamily extends OverflowSurfaceFamily {
   const CardOverflowFamily();
 
@@ -294,11 +446,17 @@ abstract class CardOverflowFamily extends OverflowSurfaceFamily {
   Future<void> onCellSettled(
       WidgetTester tester, OverflowSweepCell cell) async {
     final card = cell as CardSweepCell;
-    // Before the family's hook, not after. The premise is about the tree the
-    // runner pumped, and two hooks pump another one over it: the dialog
-    // `_openPresentation` opens publishes a density scope of its own, so a check
-    // that ran afterwards would be reading the presentation's form.
+    // Both premises before anything can pump a second tree over the runner's. The
+    // opener below does so by design, and until #1366 two hooks did it here: the
+    // dialog `_openPresentation` opens publishes a density scope of its own, so a
+    // check that ran afterwards would be reading the presentation's form.
     checkCardDensityPremise(tester, card);
+    checkCardWidgetPremises(tester, card);
+    // Then the surface, for the cells whose is not the tree that was pumped. Before
+    // the hook rather than after, because a family that ever needs both means its
+    // bespoke assertion to be about the surface it declared, not about the tile
+    // behind it — which is the confusion #1366 was filed for.
+    await card.openWith?.open(tester, card);
     await onCardSettled(tester, card);
   }
 

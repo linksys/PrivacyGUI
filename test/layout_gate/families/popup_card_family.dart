@@ -5,7 +5,9 @@
 /// gate's 3,587 committed baseline cells — onto [runOverflowSweep]. Why the form is
 /// pinned rather than provoked by a width, which cards are swept and which nine have
 /// no popup form at all, stays documented where the sweeps are declared; this file is
-/// the enumeration and the premise check, and nothing else.
+/// the enumeration and the premises it declares, and nothing else. The *checking* of
+/// those premises, and the *running* of [kPresentationOpener], left for
+/// `card_sweep_cell.dart` at #1366.
 ///
 /// ## Three families, because the dataset already records three groups
 ///
@@ -23,7 +25,10 @@
 ///   full-height screen — the only sweep in the whole gate whose surface height is
 ///   not its card's box. See [kPopupSweepScreenRows].
 /// * **What is measured after settling.** Two of the three tap the tile open, so the
-///   dialog's own layout is inside the collection window. `popup.form` does not.
+///   dialog's own layout is inside the collection window. `popup.form` does not. Since
+///   #1366 that difference is [CardSweepCell.openWith] on their cells rather than a
+///   hook body, because a hook that *produces* the surface is one whose deletion
+///   changes what 78 cells measure — silently, and past the coverage baseline.
 ///
 /// All three cell ids already carried `locale` last, so this port renames nothing:
 /// `./tool/overflow_baseline.sh check popup` is byte-identical across it.
@@ -130,7 +135,14 @@ List<String> popupBandEnumerationGaps() {
 /// the 26-locale family would otherwise pay that 52 times per card before anything
 /// is pumped. `forced_form_card_family.dart` hoists its own cases for the same
 /// reason.
-List<OverflowSweepCell> _bandCells(Iterable<Locale> locales) {
+/// [premises] and [openWith] are the two families' whole remaining difference in what
+/// they claim, which is why they are parameters here rather than a second comprehension:
+/// the width path is identical and the premise is not (#1366).
+List<OverflowSweepCell> _bandCells(
+  Iterable<Locale> locales, {
+  List<CardWidgetPremise> premises = const [],
+  CardSurfaceOpener? openWith,
+}) {
   final cells = <OverflowSweepCell>[];
   for (final spec in UspWidgetSpecs.all.where(canReachPopupBand)) {
     final wc = narrowestCaseFor(spec)!;
@@ -143,23 +155,57 @@ List<OverflowSweepCell> _bandCells(Iterable<Locale> locales) {
         widthCase: wc,
         rows: rows,
         density: CardDensity.popup,
+        widgetPremises: premises,
+        openWith: openWith,
       ));
     }
   }
   return cells;
 }
 
+/// [PopupFormFamily]'s premise: the pinned density actually produced a popup form.
+///
+/// A card that bypasses the template reads its own width instead of the scope, so it
+/// would silently keep its full form here — and a full form that has not overflowed
+/// *yet* passes every overflow assertion in the sweep.
+///
+/// Not declared by the two dialog families on the same coordinate: what they measure is
+/// the presentation, and their claim about the tile is that tapping it opens one, which
+/// is [kPresentationOpener]'s own assertion rather than a second copy of this.
+const List<CardWidgetPremise> kPopupFormPremise = [
+  CardWidgetPremise.present(
+    CardPopupForm,
+    reason:
+        'This sweep pins the popup density, and the popup form is what that '
+        'is supposed to produce. A card that bypasses the template reads its own '
+        'width instead of the scope and silently keeps its full form.',
+  ),
+];
+
+/// The surface the two dialog families measure, declared on their cells (#1366).
+///
+/// It was their `onCardSettled`, and that is what made it deletable in silence — the
+/// hook did not merely assert the premise, it *produced the thing being measured*.
+/// Measured: both hooks emptied left the popup suite 80 of 80 green and
+/// `./tool/overflow_baseline.sh check popup` reporting 347 cells identical, so 78 cells
+/// silently measured the 122px tile [PopupFormFamily] already covers and no tool in the
+/// family could see it. As a declaration the framework runs it, and
+/// `dashboard_card_gate_test.dart` pins which families carry it.
+///
+/// Shared by [PopupDialogFamily] and [PickedPopupDialogFamily], which differ in the box
+/// they open it from and in nothing about the opening.
+const CardSurfaceOpener kPresentationOpener = CardSurfaceOpener(
+  name: 'presentation',
+  open: _openPresentation,
+);
+
 /// Taps the tile open, which is where the two dialog sweeps' measurement actually
 /// happens.
 ///
-/// The tap is in the settled-cell hook rather than before the sweep, because the
-/// hook runs *inside* the collector (`sweep.dart` invariant 1 is what makes a second
-/// pump safe there) — so the dialog's own overflow is collected against this cell.
-/// Moving it out would leave those sweeps measuring the tile [PopupFormFamily]
-/// already measured.
-///
-/// Shared by [PopupDialogFamily] and [PickedPopupDialogFamily], which differ in the
-/// box they open it from and in nothing about the opening.
+/// Runs *inside* the collector, because [CardOverflowFamily.onCellSettled] does
+/// (`sweep.dart` invariant 1 is what makes a second pump safe there) — so the dialog's
+/// own overflow is collected against this cell. Moving it out would leave those sweeps
+/// measuring the tile [PopupFormFamily] already measured.
 Future<void> _openPresentation(WidgetTester tester, CardSweepCell card) async {
   await tester.tap(find.byType(CardPopupForm));
   await settleIgnoringAnimations(tester);
@@ -187,26 +233,17 @@ class PopupFormFamily extends CardOverflowFamily {
   List<String> get axisNames => const ['card', 'px'];
 
   @override
-  Iterable<OverflowSweepCell> enumerateCells() =>
-      _bandCells(AppLocalizations.supportedLocales);
+  Iterable<OverflowSweepCell> enumerateCells() => _bandCells(
+        AppLocalizations.supportedLocales,
+        premises: kPopupFormPremise,
+      );
 
   @override
   List<String> enumerationGaps() => popupBandEnumerationGaps();
 
-  /// The sweep's premise: the pinned density actually produced a popup form.
-  ///
-  /// A card that bypasses the template reads its own width instead of the scope, so
-  /// it would silently keep its full form here — and a full form that has not
-  /// overflowed *yet* passes every overflow assertion in the sweep.
+  /// Empty since #1366, and [kPopupFormPremise] is why.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
-    expect(
-      find.byType(CardPopupForm),
-      findsOneWidget,
-      reason: '${card.cardId} did not render the popup form — a card that '
-          'bypasses the template would silently keep its full form here',
-    );
-  }
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }
 
 /// The same nine cards' *normal* form, inside the presentation the tile opens.
@@ -225,15 +262,18 @@ class PopupDialogFamily extends CardOverflowFamily {
   List<String> get axisNames => const ['card', 'px'];
 
   @override
-  Iterable<OverflowSweepCell> enumerateCells() =>
-      _bandCells(kCardTextBoundingLocales);
+  Iterable<OverflowSweepCell> enumerateCells() => _bandCells(
+        kCardTextBoundingLocales,
+        openWith: kPresentationOpener,
+      );
 
   @override
   List<String> enumerationGaps() => popupBandEnumerationGaps();
 
+  /// Empty since #1366, and [kPresentationOpener] is why: the surface this family
+  /// measures is now declared on its cells rather than opened by this body.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) =>
-      _openPresentation(tester, card);
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }
 
 /// The presentation opened from a *picked* popup tile. 17 cards × 3 locales = 51
@@ -280,13 +320,14 @@ class PickedPopupDialogFamily extends CardOverflowFamily {
             // A full-height screen: the tile is short, the device is not.
             screenHeightRows: kPopupSweepScreenRows,
             density: CardDensity.popup,
+            openWith: kPresentationOpener,
           ),
     ];
   }
 
+  /// Empty since #1366, for the reason [PopupDialogFamily]'s is.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) =>
-      _openPresentation(tester, card);
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 
   /// The one family here that does not take the runner's default verdict.
   ///

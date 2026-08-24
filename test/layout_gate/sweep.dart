@@ -62,18 +62,30 @@
 ///   fully green while text is truncated to nothing — measured, four dashboard
 ///   cards pass at 191px rendering unreadably.
 ///
-///   What the abstract member buys is that the family is *asked*; #1364 is what
-///   the gap between being asked and answering cost. Emptying the normal band's
-///   body left the card suite 102 of 102 green, and paired with a loosened
-///   threshold search it took that mutation from 10 killers to 1 while 234 cells
-///   went on measuring the wrong form. So the one premise that *is* a value moved
-///   out of the body and onto the cell — `CardSweepCell.expectedDensity`, checked
-///   for every card family at once by `CardOverflowFamily.onCellSettled` — which is
-///   the same move `expectedCellCount` above is, and it distinguishes the two empty
-///   bodies by construction: a cell that declares no premise is answering.
-///   Everything a value cannot carry (readability, structure, gesture) is still the
-///   body's business, so an empty body remains legal — and remains something its
-///   doc comment has to say why about.
+///   What the abstract member buys is that the family is *asked*; #1364 and #1366
+///   are what the gap between being asked and answering cost. Measured three times
+///   over: emptying the normal band's body left the card suite 102 of 102 green
+///   (paired with a loosened threshold search, 10 killers to 1, 234 cells measuring
+///   the wrong form); emptying the compact floor's two `expect`s left the whole
+///   `layout-gate` tag 1,368 of 1,368 green (paired with a pinned form being
+///   ignored, 7 killers to 0); and emptying the two dialog families' body left the
+///   popup suite 80 of 80 green **and the coverage baseline byte-identical**, while
+///   78 cells measured a 122px tile instead of the presentation they are named
+///   after — because that body was not asserting the premise, it was *opening the
+///   surface*.
+///
+///   So the premise moved out of the body and onto the cell, in the three shapes the
+///   nine card families actually had: `CardSweepCell.expectedDensity` (a form),
+///   `.widgetPremises` (a widget present or absent), `.openWith` (the surface). All
+///   three are checked or run for every card family at once by
+///   `CardOverflowFamily.onCellSettled`, which is the same move `expectedCellCount`
+///   above is — and it distinguishes the two empty bodies by construction: a cell
+///   that declares no premise is answering. Note what the third one adds: a
+///   declaration is only enforceable if something pins *which* families carry it,
+///   which is `dashboard_card_gate_test.dart`'s job and not this file's. Anything a
+///   value cannot carry (readability, gesture) is still the body's business, so an
+///   empty body remains legal — and remains something its doc comment has to say why
+///   about.
 ///
 /// ## The ratchet and the report live in the family, behind one hook (#1343)
 ///
