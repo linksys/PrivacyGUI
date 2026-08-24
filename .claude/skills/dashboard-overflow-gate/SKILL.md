@@ -281,6 +281,21 @@ re-capture is how lost coverage becomes permanent. Full mechanism, and the five
 committed baselines, in
 [doc/testing/overflow_baselines.md](../../../doc/testing/overflow_baselines.md).
 
+A third mode reads a committed baseline as a report — no flutter, no test run, and
+the only one of the three that works for all five sweeps (`run_overflow_test.sh`'s
+`DUMP=2` report is card-shaped by construction):
+
+```bash
+./tool/overflow_baseline.sh render page   # → build/overflow_baseline/report/page.{md,html}
+```
+
+Coverage per group, coverage per axis with its denominator, and any findings keyed
+the way `known_overflows.json` is keyed. It describes the commit in that file's
+header, **not** your tree — so `capture` before quoting one as today's state. Its
+counts are recounted from the rows and cross-checked against the header, so a
+hand-edited baseline reports the disagreement and exits 1 rather than rendering a
+plausible lie.
+
 ## Fixture Format — `known_overflows.json`
 
 **Keys are the overflowing widget's source location, `file:line` — not a

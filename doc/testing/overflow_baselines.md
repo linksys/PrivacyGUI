@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`.
+**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`. A third subcommand, **`render`**, was added the same day so the committed rows can be read as a report without running anything (§1).
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -9,10 +9,11 @@ mechanism turns the claim into a plain diff.
 
 | | |
 |---|---|
-| Capture / compare | [`tool/overflow_baseline.sh`](../../tool/overflow_baseline.sh) |
+| Capture / compare / render | [`tool/overflow_baseline.sh`](../../tool/overflow_baseline.sh) |
 | Committed baselines | [`test/fixtures/overflow_baselines/`](../../test/fixtures/overflow_baselines/) |
 | Emitter (runs inside the sweeps) | [`test/util/overflow_baseline.dart`](../../test/util/overflow_baseline.dart) |
-| Extractor / differ | [`test_scripts/overflow_baseline.dart`](../../test_scripts/overflow_baseline.dart) |
+| Extractor / differ / reporter | [`test_scripts/overflow_baseline.dart`](../../test_scripts/overflow_baseline.dart) |
+| Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.{md,html}` |
 | Architecture it serves | [overflow_gate_architecture.md](overflow_gate_architecture.md) §9.2 R3, R5 |
 
 ---
@@ -50,6 +51,49 @@ kinds of difference appear, and they are not equally alarming:
 Only re-capture once a difference is understood and intended, and say which
 difference and why in the commit message. A re-capture is how a lost cell becomes
 permanent.
+
+### Reading one without running it — `render`
+
+A baseline is 4,032 sorted rows across five files. `check` answers "did it move";
+it does not answer "what does this sweep cover", which is the question anyone
+inheriting the gate asks first. `render` turns a committed `.tsv` into a report:
+
+```bash
+# Every sweep, Markdown + HTML, seconds — no flutter, no test run
+./tool/overflow_baseline.sh render
+
+# One sweep, then read it
+./tool/overflow_baseline.sh render page && open build/overflow_baseline/report/page.html
+```
+
+Reports land in `build/overflow_baseline/report/<sweep>.{md,html}` (gitignored).
+Each one recounts the dataset and states, in this order: where the rows came from,
+the summary counts, coverage per group, coverage per axis with its denominator, and
+the findings keyed the way `known_overflows.json` is keyed — so a real failure set
+can be read as an allowlist worklist rather than transcribed from scrollback.
+
+Three things about it are deliberate:
+
+- **It reads the file, not a run.** So it describes the commit stamped in that
+  file's header and *not* the working tree it was invoked from, which the document
+  says at the top of itself. This is also why it generalises: the per-cell table is
+  already sweep-agnostic, while the card sweep's own HTML report
+  (`dashboard_overflow_report_generator.dart`, `DUMP=2`) is card-shaped — column
+  span, a grid recommendation, before/after PNGs. Use that one for a card; use this
+  one for any of the five, at the cost of having no screenshots.
+- **Every number is recounted from the rows**, then compared against the header the
+  capture wrote. A disagreement is not silently preferred either way: it becomes a
+  warning inside the document, a line on stderr, and **exit 1**. A hand-edited
+  header therefore cannot launder itself into a plausible-looking report.
+- **Nothing volatile is in the output** — no timestamp, no duration, no run id — so
+  two renders of one file are byte-identical and two reports diff as cleanly as the
+  datasets do. Pinned by a byte-identity test. The one input-dependent string is the
+  `--baseline` path itself, quoted back as the first line of provenance: render a
+  copy from `/tmp` and the report says `/tmp`, which is the report naming what it
+  read rather than volatility.
+
+Exit codes match the rest of the tool: **0** clean, **1** the file disagrees with
+its own header, **2** bad input (an unknown `--format`, a missing baseline).
 
 ## 2. What is in a baseline
 
@@ -317,4 +361,4 @@ Two notes on these numbers:
 | File | Covers |
 |---|---|
 | `test/util/overflow_baseline_test.dart` | cell id construction and sanitising, record shape, the tolerance verdict, a `testWidgets` that induces a real `Row` overflow and asserts the row it produces end to end, and a pump that throws — proving it is recorded and flagged rather than dropped or read as clean |
-| `test/test_scripts/overflow_baseline_test.dart` | extraction, every refusal in §4, rendering, parsing, and the diff's difference kinds, including a cell that became `error`. Two contract tests span the `flutter_test` / bare-`dart` boundary, where nothing can be imported: `overflowBaselineMarker == emitter.kOverflowBaselineMarker`, and a cell id built by the real emitter routed back to its group by the real extractor. Both would otherwise drift silently — as an empty dataset reading "no overflows anywhere", or as records filed under a baseline they do not belong to |
+| `test/test_scripts/overflow_baseline_test.dart` | extraction, every refusal in §4, TSV rendering, parsing, and the diff's difference kinds, including a cell that became `error`. Also the §1 report: that its counts are recounted rather than quoted (a `# cells 9` header over one row is reported, not believed), that a rendered report is byte-identical on a re-render, that a group with no `locale` axis is disclosed as a denominator instead of averaged away, and that findings come out keyed like `known_overflows.json`. Two contract tests span the `flutter_test` / bare-`dart` boundary, where nothing can be imported: `overflowBaselineMarker == emitter.kOverflowBaselineMarker`, and a cell id built by the real emitter routed back to its group by the real extractor. Both would otherwise drift silently — as an empty dataset reading "no overflows anywhere", or as records filed under a baseline they do not belong to |

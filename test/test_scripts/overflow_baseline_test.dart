@@ -876,6 +876,371 @@ void main() {
     });
   });
 
+  group('render', () {
+    /// A committed baseline, built through the extractor and the renderer so the
+    /// report under test is read out of the same bytes the repo holds.
+    BaselineFile fileOf(
+      List<String> records, {
+      String sweep = 'page',
+      String commit = '69079cb0',
+      String suite = 'test/page/_shared/page_surface_overflow_test.dart',
+      String source = 'test/fixtures/overflow_baselines/page.tsv',
+    }) =>
+        BaselineFile.parse(
+          renderBaseline(
+            extractBaseline(reporter(records), sweep: sweep),
+            suite: suite,
+            commit: commit,
+          ),
+          source: source,
+        );
+
+    String markdown(List<String> records, {String commit = '69079cb0'}) =>
+        renderReportMarkdown(
+            BaselineReport.of(fileOf(records, commit: commit)));
+
+    final overflowing = [
+      incident(
+        px: '41.0',
+        side: 'right',
+        significant: true,
+        widget: 'Row',
+        file: 'lib/a.dart',
+        line: 10,
+      ),
+    ];
+
+    test('says which commit the rows measure, and that it is not this tree',
+        () {
+      // The one way this report can mislead: every other artefact in the gate is
+      // produced by running the code, so it describes the tree it ran against.
+      // This one is rendered from a file that was committed at some earlier sha,
+      // and a green report read as a statement about today would be exactly the
+      // #1321 failure in a new wrapper.
+      final text =
+          markdown([marked('page.dhcp|screen_px=320|locale=ar', const [])]);
+
+      expect(text, contains('69079cb0'));
+      expect(text, contains('test/fixtures/overflow_baselines/page.tsv'));
+      expect(
+          text, contains('test/page/_shared/page_surface_overflow_test.dart'));
+      expect(text, contains('not of the working tree'));
+      expect(text, contains('capture page'),
+          reason: 'the reader is told the one command that refreshes it');
+    });
+
+    test('repeats the -dirty stamp as a caveat, not only as a suffix', () {
+      // `-dirty` in a header is a disclaimer a reader has to know to look for.
+      // In a report it is prose, because the whole document is otherwise a
+      // claim about a nameable commit.
+      final text = markdown(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        commit: '69079cb0-dirty',
+      );
+
+      expect(text, contains('69079cb0-dirty'));
+      expect(text, contains('will not reproduce'));
+    });
+
+    test('reports an all-clean sweep as coverage, not as an empty report', () {
+      // The five committed baselines are all clean today, so this is the normal
+      // case and it must not render as "nothing found". What the dataset proves
+      // is that N coordinates were pumped and measured — the same reason a clean
+      // cell is a row here rather than an absence.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', const []),
+        marked('page.dhcp|screen_px=320|locale=de', const []),
+        marked('page.dhcp|screen_px=601|locale=ar', const []),
+      ]);
+
+      expect(text, contains('| Coordinates measured | 3 |'));
+      expect(text, contains('| Clean | 3 |'));
+      expect(text, contains('coverage claim'));
+      expect(text, contains('all 3 coordinates measured clean'));
+    });
+
+    test('counts each group of the sweep on its own line', () {
+      // A sweep's baseline holds every family that shares its id — `page.dhcp`
+      // and `page.wifi_settings` here, six groups in the card file — and a total
+      // alone cannot say which page a lost cell came from.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', overflowing),
+        marked('page.wifi_settings|screen_px=320|locale=ar', const []),
+        marked('page.wifi_settings|screen_px=601|locale=ar', const []),
+      ]);
+
+      expect(text, contains('| page.dhcp | 1 | 0 | 0 | 1 | 0 |'));
+      expect(text, contains('| page.wifi_settings | 2 | 2 | 0 | 0 | 0 |'));
+    });
+
+    test('counts an axis over the cells that carry it, and says how many', () {
+      // Not every group of a sweep varies on every axis: three of the card
+      // sweep's six groups enumerate no locale at all, and `popup.exempt`
+      // enumerates none either. An axis table that printed only its own totals
+      // would read as full coverage of an axis two thirds of the cells never
+      // visit, so the denominator is the whole sweep.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', const []),
+        marked('page.exempt|screen_px=320', const []),
+      ]);
+
+      expect(text, contains('### `locale` — 1 value over 1 of 2 coordinates'));
+      expect(
+          text, contains('### `screen_px` — 1 value over 2 of 2 coordinates'));
+    });
+
+    test('sorts an axis numerically when every value is a number', () {
+      // `screen_px=1241` sorted as text lands between 1 and 320, and this axis is
+      // read as a range: the whole point of the width list is which widths were
+      // visited, in order.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', const []),
+        marked('page.dhcp|screen_px=601|locale=ar', const []),
+        marked('page.dhcp|screen_px=1241|locale=ar', const []),
+      ]);
+
+      expect(text.indexOf('| 320 |'), lessThan(text.indexOf('| 601 |')));
+      expect(text.indexOf('| 601 |'), lessThan(text.indexOf('| 1241 |')));
+    });
+
+    test('lists every row that is not clean, keyed the way the allowlist is',
+        () {
+      // The `site` column is the `file:line` key `known_overflows.json` uses
+      // (#1341), and the failure message a sweep prints is the other place it
+      // appears. A report that rendered the location any other way would send a
+      // reader to reconstruct a key the ratchet then refuses.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', overflowing),
+        marked('page.dhcp|screen_px=601|locale=ar', const []),
+      ]);
+
+      expect(text, contains('known_overflows.json'));
+      expect(
+          text,
+          contains(r'| page.dhcp\|screen_px=320\|locale=ar | overflow | 41.0 | '
+              r'right | lib/a.dart:10 | Row |'));
+    });
+
+    test('labels a sub-tolerance row as noise rather than as a failure', () {
+      // These are recorded and not asserted on, so a report that listed them
+      // beside overflows without saying so would read as a red sweep.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', [
+          incident(px: '1.5', side: 'bottom', significant: false),
+        ]),
+      ]);
+
+      expect(text, contains('| Noise'));
+      expect(text, contains('tolerance'));
+      expect(text, contains('| noise | 1.5 | bottom |'));
+    });
+
+    test('says a cell whose pump never finished measured nothing', () {
+      // The dataset's own central distinction, one layer out: an `error` row
+      // collected no incidents, so a report that only tabulated verdicts would
+      // let it read as a coordinate that fits.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', const [], threw: true),
+      ]);
+
+      expect(text, contains('| Unmeasured'));
+      expect(text, contains('measured nothing'));
+      expect(text, contains('| error |'));
+    });
+
+    test('groups incidents by site, the most affected first', () {
+      // One site overflows at many coordinates — that is why #1341 re-keyed the
+      // fixture by location — so the count that matters when reading a red sweep
+      // is per site, not per cell.
+      final onB = [
+        incident(
+          px: '7.0',
+          side: 'right',
+          significant: true,
+          widget: 'Column',
+          file: 'lib/b.dart',
+          line: 20,
+        ),
+      ];
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', overflowing),
+        marked('page.dhcp|screen_px=601|locale=ar', onB),
+        marked('page.dhcp|screen_px=905|locale=ar', onB),
+      ]);
+
+      expect(text.indexOf('lib/b.dart:20 | 2'),
+          lessThan(text.indexOf('lib/a.dart:10 | 1')));
+    });
+
+    test('says an unresolved location can never be exempted', () {
+      // A null site is not a key, and `"*"` on every allowlist entry still will
+      // not cover it (`OverflowRatchet`). A row rendered as a bare `-` in a table
+      // of copyable keys would not say that.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', [
+          incident(px: '9.0', side: 'right', significant: true),
+        ]),
+      ]);
+
+      expect(text, contains('(unresolved)'));
+      expect(text, contains('cannot be allowlisted'));
+    });
+
+    test('reports a header that disagrees with the rows instead of trusting it',
+        () {
+      // The counts in the header were written by the extractor at capture time;
+      // the rows are the measurement. A file where they differ has been edited by
+      // hand, and a report that printed the header's numbers would launder that
+      // into a document nobody can tell apart from a real capture.
+      final report = BaselineReport.of(BaselineFile.parse(
+        '# overflow-baseline $overflowBaselineVersion\n'
+        '# sweep page\n'
+        '# cells 9\n'
+        '# incidents 0\n'
+        '# overflows 0\n'
+        '# unmeasured 0\n'
+        '# columns cell\tverdict\tpx\tside\tsite\twidget\n'
+        'page.dhcp|screen_px=320|locale=ar\tclean\t-\t-\t-\t-\n',
+        source: 'hand-edited.tsv',
+      ));
+
+      expect(report.headerDisagreements, hasLength(1));
+      expect(report.headerDisagreements.single,
+          allOf(contains('cells'), contains('9'), contains('1')));
+      expect(renderReportMarkdown(report), contains('disagrees with its rows'));
+      expect(report.cells, 1, reason: 'the rows are what is reported');
+    });
+
+    test('does not print a re-capture command it cannot name a sweep for', () {
+      // The provenance paragraph tells the reader the one command that refreshes
+      // the dataset, and the sweep name comes out of a header. A file without
+      // that header would otherwise be handed `capture (unnamed)`, which is not a
+      // command — worse than no advice, because it looks like one.
+      final report = BaselineReport.of(BaselineFile.parse(
+        '# overflow-baseline $overflowBaselineVersion\n'
+        '# columns cell\tverdict\tpx\tside\tsite\twidget\n'
+        'page.dhcp|screen_px=320|locale=ar\tclean\t-\t-\t-\t-\n',
+        source: 'headerless.tsv',
+      ));
+      final text = renderReportMarkdown(report);
+
+      expect(text, isNot(contains('capture (unnamed)')));
+      expect(text, contains('which sweep wrote it'));
+      expect(text, contains('carries no `commit` header'),
+          reason: 'and the missing commit is stated rather than implied');
+    });
+
+    test('gives an unknown verdict a column of its own in every table', () {
+      // A verdict from a newer emitter must not vanish. It is already counted
+      // apart in the summary; without the same column on the coverage tables it
+      // would sit inside `coordinates` and in none of the verdict columns, so
+      // every row of those tables would silently fail to add up.
+      final report = BaselineReport.of(BaselineFile.parse(
+        '# overflow-baseline $overflowBaselineVersion\n'
+        '# sweep page\n'
+        '# columns cell\tverdict\tpx\tside\tsite\twidget\n'
+        'page.dhcp|screen_px=320|locale=ar\tclipped\t-\t-\t-\t-\n'
+        'page.dhcp|screen_px=601|locale=ar\tclean\t-\t-\t-\t-\n',
+        source: 'newer-emitter.tsv',
+      ));
+      final text = renderReportMarkdown(report);
+
+      expect(report.unrecognised, 1);
+      expect(report.groups.single.unrecognised, 1);
+      expect(text, contains('| Unrecognised verdict | 1 |'));
+      expect(text, contains('| page.dhcp | 2 | 1 | 0 | 0 | 0 | 1 |'),
+          reason: 'coordinates, clean, noise, overflow, unmeasured, then it');
+      expect(text, contains('| unrecognised |'),
+          reason: 'the column is only there when the dataset holds one');
+      expect(text, contains('`$verdictClean`'),
+          reason: 'and the four it does know are named, so the gap is legible');
+    });
+
+    test('renders the same bytes twice, so two reports can be diffed', () {
+      // The dataset deliberately carries nothing volatile — no timestamps, no run
+      // ids, no durations — and a report that stamped the time it was rendered
+      // would put all of that back and make two reports differ on every line that
+      // did not change.
+      final records = [
+        marked('page.dhcp|screen_px=320|locale=ar', overflowing),
+        marked('page.dhcp|screen_px=601|locale=ar', const []),
+      ];
+      final first = BaselineReport.of(fileOf(records));
+      final second = BaselineReport.of(fileOf(records));
+
+      expect(renderReportMarkdown(first), renderReportMarkdown(second));
+      expect(renderReportHtml(first), renderReportHtml(second));
+    });
+
+    test('escapes a value that would otherwise split a Markdown row', () {
+      // Every cell id contains `|` — it is the axis separator — and a widget name
+      // reaches the TSV with only tabs and newlines stripped. Unescaped, one row
+      // of a table would silently gain columns and the reader would see a
+      // mangled key.
+      final text = markdown([
+        marked('page.dhcp|screen_px=320|locale=ar', [
+          incident(
+            px: '41.0',
+            side: 'right',
+            significant: true,
+            widget: 'Row|Column',
+            file: 'lib/a.dart',
+            line: 10,
+          ),
+        ]),
+      ]);
+
+      expect(text, contains(r'Row\|Column'));
+      expect(text, contains(r'page.dhcp\|screen_px=320\|locale=ar'));
+    });
+
+    test('renders HTML as one self-contained document that escapes its data',
+        () {
+      // Opened straight out of `build/`, so no stylesheet to fetch and no
+      // server; and the data is not markup — a widget name with angle brackets
+      // must reach the page as text.
+      final html = renderReportHtml(BaselineReport.of(fileOf([
+        marked('page.dhcp|screen_px=320|locale=ar', [
+          incident(
+            px: '41.0',
+            side: 'right',
+            significant: true,
+            widget: 'Row<Foo>',
+            file: 'lib/a.dart',
+            line: 10,
+          ),
+        ]),
+      ])));
+
+      expect(html, startsWith('<!DOCTYPE html>'));
+      expect(html, contains('<style>'));
+      expect(html, contains('Row&lt;Foo&gt;'));
+      expect(html, isNot(contains('Row<Foo>')));
+      expect(html, contains('69079cb0'));
+      expect(html, contains('lib/a.dart:10'));
+    });
+
+    test('states the same numbers in both formats', () {
+      // Two renderers over one model, so a count cannot be right in Markdown and
+      // wrong in HTML — the failure a second hand-written renderer invites.
+      final report = BaselineReport.of(fileOf([
+        marked('page.dhcp|screen_px=320|locale=ar', overflowing),
+        marked('page.dhcp|screen_px=601|locale=ar', const []),
+      ]));
+
+      for (final text in [
+        renderReportMarkdown(report),
+        renderReportHtml(report),
+      ]) {
+        expect(text, contains('page'));
+        expect(text, contains('lib/a.dart:10'));
+        expect(text, contains('2'), reason: 'two coordinates');
+      }
+      expect(report.cells, 2);
+      expect(report.overflows, 1);
+    });
+  });
+
   group('the command', () {
     late File reporterFile;
 
@@ -894,6 +1259,23 @@ void main() {
       final err = StringBuffer();
       final code = await runOverflowBaseline(args, out: out, err: err);
       return (code, out.toString(), err.toString());
+    }
+
+    /// A committed baseline, made the way one really is: by extracting it.
+    /// `diff` and `render` both need one as *input*, and hand-writing the TSV
+    /// instead would let them pass against a shape `extract` never emits.
+    Future<String> capture() async {
+      final path = '${tempDir.path}/card.tsv';
+      await run([
+        'extract',
+        '--reporter',
+        reporterFile.path,
+        '--sweep',
+        'card',
+        '--out',
+        path
+      ]);
+      return path;
     }
 
     test('extracts to a file and reports what it captured', () async {
@@ -916,16 +1298,7 @@ void main() {
     });
 
     test('exits 0 when a fresh run matches the committed baseline', () async {
-      final target = '${tempDir.path}/card.tsv';
-      await run([
-        'extract',
-        '--reporter',
-        reporterFile.path,
-        '--sweep',
-        'card',
-        '--out',
-        target
-      ]);
+      final target = await capture();
 
       final (code, _, err) =
           await run(['diff', '--baseline', target, '--actual', target]);
@@ -933,16 +1306,7 @@ void main() {
     });
 
     test('exits non-zero on any difference, and says what it was', () async {
-      final baseline = '${tempDir.path}/card.tsv';
-      await run([
-        'extract',
-        '--reporter',
-        reporterFile.path,
-        '--sweep',
-        'card',
-        '--out',
-        baseline
-      ]);
+      final baseline = await capture();
 
       final freshReporter = File('${tempDir.path}/report2.json')
         ..writeAsStringSync(reporter([
@@ -970,16 +1334,7 @@ void main() {
         () async {
       // `check` is what the port tickets run: capture, extract, compare, in one
       // step, against the committed file.
-      final baseline = '${tempDir.path}/card.tsv';
-      await run([
-        'extract',
-        '--reporter',
-        reporterFile.path,
-        '--sweep',
-        'card',
-        '--out',
-        baseline
-      ]);
+      final baseline = await capture();
 
       final (code, _, err) = await run([
         'diff',
@@ -989,6 +1344,65 @@ void main() {
         reporterFile.path,
       ]);
       expect(code, 0, reason: err);
+    });
+
+    test('renders a committed baseline into Markdown on stdout', () async {
+      // No test run: the input is the file the repo holds, which is what makes a
+      // report cheap enough to ask for at review time.
+      final baseline = await capture();
+
+      final (code, out, err) = await run(['render', '--baseline', baseline]);
+      expect(code, 0, reason: err);
+      expect(out, contains('# Overflow baseline report — card'));
+      expect(out, contains('| Coordinates measured | 2 |'));
+    });
+
+    test('writes the report to a file and says where it went', () async {
+      final baseline = await capture();
+      final target = '${tempDir.path}/report/card.html';
+
+      final (code, out, err) = await run([
+        'render',
+        '--baseline',
+        baseline,
+        '--format',
+        'html',
+        '--out',
+        target,
+      ]);
+      expect(code, 0, reason: err);
+      expect(File(target).readAsStringSync(), startsWith('<!DOCTYPE html>'));
+      expect(out, contains(target));
+      expect(out, contains('2 cells'),
+          reason: 'the same one-line summary `extract` prints');
+    });
+
+    test('exits 2 on a format it cannot write, naming the ones it can',
+        () async {
+      final baseline = await capture();
+
+      final (code, _, err) =
+          await run(['render', '--baseline', baseline, '--format', 'pdf']);
+      expect(code, 2);
+      expect(err, allOf(contains('pdf'), contains('md'), contains('html')));
+    });
+
+    test('exits 1 when the baseline disagrees with its own header', () async {
+      // Same exit code as a diff that differs, and for the same reason: two
+      // readings of one dataset do not match, so nothing here should be quoted
+      // until someone has looked.
+      final hand = File('${tempDir.path}/hand.tsv')
+        ..writeAsStringSync('# overflow-baseline $overflowBaselineVersion\n'
+            '# sweep card\n'
+            '# cells 99\n'
+            '# columns cell\tverdict\tpx\tside\tsite\twidget\n'
+            'card.width|card=a\tclean\t-\t-\t-\t-\n');
+
+      final (code, out, err) = await run(['render', '--baseline', hand.path]);
+      expect(code, 1);
+      expect(out, contains('disagrees with its rows'),
+          reason: 'the document says so too, since that is what gets read');
+      expect(err, contains('99'));
     });
 
     test('exits 2 with usage on a command it does not have', () async {

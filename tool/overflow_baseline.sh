@@ -39,6 +39,7 @@ set -euo pipefail
 SWEEPS=(card popup forced_form chrome page)
 BASELINE_DIR="test/fixtures/overflow_baselines"
 RUN_DIR="build/overflow_baseline"
+REPORT_DIR="$RUN_DIR/report"
 EXTRACTOR="test_scripts/overflow_baseline.dart"
 
 FLUTTER="flutter"
@@ -56,6 +57,7 @@ Usage:
   ./tool/overflow_baseline.sh capture [sweep...]   Re-capture and overwrite the committed baselines
   ./tool/overflow_baseline.sh check   [sweep...]   Compare a fresh run against the committed baselines
   ./tool/overflow_baseline.sh diff    [sweep...]   Alias for check
+  ./tool/overflow_baseline.sh render  [sweep...]   Render the committed baselines as MD + HTML
 
 Sweeps: ${SWEEPS[*]} (default: all five)
 
@@ -69,8 +71,16 @@ Examples:
   # After porting the chrome sweep: prove it measures the same cells identically
   ./tool/overflow_baseline.sh check chrome
 
+  # Read what a sweep covers, without running it (seconds, no flutter)
+  ./tool/overflow_baseline.sh render page && open $REPORT_DIR/page.html
+
 Exit codes: 0 = every sweep matched, 1 = a sweep differs, 2 = bad input or an
 unusable run.
+
+'render' runs no tests at all: it reads the committed .tsv files, so each report
+describes the commit stamped in its own header and not this working tree. That is
+said again at the top of every report, because it is the one way a report here
+can mislead.
 
 A 'check' failure is not automatically a regression — read the diff. Cells
 reported as "no longer measured" are the dangerous ones: a port that drops a
@@ -111,6 +121,7 @@ case "$1" in
   capture)   MODE="capture"; shift ;;
   check)     MODE="check"; shift ;;
   diff)      MODE="check"; shift ;;
+  render)    MODE="render"; shift ;;
   *)         die "unknown command '$1'" ;;
 esac
 
@@ -152,19 +163,58 @@ else
 fi
 
 mkdir -p "$RUN_DIR" "$BASELINE_DIR"
+if [ "$MODE" = "render" ]; then
+  mkdir -p "$REPORT_DIR"
+fi
 
 echo "======================================================="
 echo " 📐 Overflow sweep baselines — $MODE"
 echo "======================================================="
-echo "  Commit: $COMMIT$DIRTY"
+if [ "$MODE" = "render" ]; then
+  # Deliberately not the stamp above: nothing is measured here, so this tree's
+  # sha would name a commit these rows were not taken at. Every report states the
+  # commit out of its own header instead.
+  echo "  Source: $BASELINE_DIR (committed rows — no test run)"
+else
+  echo "  Commit: $COMMIT$DIRTY"
+fi
 echo "  Sweeps: ${TARGETS[*]}"
 echo "======================================================="
 
 FAILED=()
 for sweep in "${TARGETS[@]}"; do
+  baseline="$BASELINE_DIR/$sweep.tsv"
+
+  if [ "$MODE" = "render" ]; then
+    echo ""
+    echo "▶ $sweep — $baseline"
+    [ -f "$baseline" ] || die "no committed baseline at $baseline — run 'capture' first"
+    render_exit=0
+    for format in md html; do
+      # The format name doubles as the extension, so the two reports land beside
+      # each other as <sweep>.md and <sweep>.html.
+      set +e
+      $DART run "$EXTRACTOR" render \
+        --baseline "$baseline" --format "$format" \
+        --out "$REPORT_DIR/$sweep.$format"
+      code=$?
+      set -e
+      case $code in
+        0) ;;
+        # The document is still written on a 1 — it is what says what the
+        # disagreement was — so both formats are always attempted.
+        1) render_exit=1 ;;
+        *) die "could not render $sweep as $format (exit $code)" ;;
+      esac
+    done
+    # FAILED carries a different meaning in this mode — "disagrees with its own
+    # header", not "differs from the baseline" — and the summary below says which.
+    [ $render_exit -eq 0 ] || FAILED+=("$sweep")
+    continue
+  fi
+
   suite="$(suite_for "$sweep")"
   report="$RUN_DIR/$sweep.json"
-  baseline="$BASELINE_DIR/$sweep.tsv"
 
   echo ""
   echo "▶ $sweep — $suite"
@@ -211,6 +261,19 @@ done
 
 echo ""
 echo "======================================================="
+if [ "$MODE" = "render" ]; then
+  if [ ${#FAILED[@]} -eq 0 ]; then
+    echo " ✅ Reports in $REPORT_DIR/: ${TARGETS[*]}"
+    echo "    Each one describes the commit stamped in its own header, not this"
+    echo "    tree — re-capture before reading one as a statement about today."
+    exit 0
+  fi
+  echo " ❌ Rendered, but these disagree with their own headers: ${FAILED[*]}"
+  echo "    The counts in a header are written at capture time and the rows were"
+  echo "    recounted, so the file has been edited by hand or by another version."
+  echo "    Re-capture it rather than quoting the report."
+  exit 1
+fi
 if [ "$MODE" = "capture" ]; then
   echo " ✅ Captured at $COMMIT: ${TARGETS[*]}"
   echo "    Commit $BASELINE_DIR/ so every later run has something to diff against."

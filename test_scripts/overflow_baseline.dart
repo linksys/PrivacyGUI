@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// Turns a sweep run into a byte-stable dataset, and compares two of them
-/// (#1337).
+/// Turns a sweep run into a byte-stable dataset, compares two of them (#1337),
+/// and renders one for a human to read (#1349).
 ///
 /// ## Why this exists
 ///
@@ -52,8 +52,13 @@ import 'dart:io';
 ///         --reporter build/overflow_baseline/card.json --sweep card --out <file>
 ///     dart run test_scripts/overflow_baseline.dart diff \
 ///         --baseline test/fixtures/overflow_baselines/card.tsv --reporter <json>
+///     dart run test_scripts/overflow_baseline.dart render \
+///         --baseline test/fixtures/overflow_baselines/page.tsv --format html
 ///
-/// `tool/overflow_baseline.sh` wraps both with the five-sweep registry; prefer it.
+/// `tool/overflow_baseline.sh` wraps all three with the five-sweep registry;
+/// prefer it. Note what the third one does *not* do: `render` reads the committed
+/// file and runs no tests, so it describes the commit in that file's header and
+/// not the tree it is invoked from. See [BaselineReport].
 
 /// Marks a baseline record on a sweep's stdout.
 ///
@@ -91,6 +96,15 @@ const String verdictError = 'error';
 
 const String _absent = '-';
 const int _columns = 6;
+
+/// Positions in a row of the six columns `cell verdict px side site widget`.
+///
+/// Only the two anything reads back are named. The row stays a `List<String>`
+/// rather than becoming a type: `extract` builds one, `diff` compares whole
+/// lines, and only `render` looks inside — so a row type would be a fifth
+/// spelling of the same six fields for one caller's benefit.
+const int _colVerdict = 1;
+const int _colSite = 4;
 
 /// A sweep run, flattened and sorted.
 class ExtractedBaseline {
@@ -436,17 +450,20 @@ String renderBaseline(
 /// A committed baseline, or a fresh capture rendered the same way.
 class BaselineFile {
   BaselineFile._({
-    required this.sweep,
-    required this.commit,
+    required this.headers,
     required this.cells,
     required this.source,
   });
 
+  /// The `# key value` lines, unparsed. Kept whole because [BaselineReport]
+  /// quotes the provenance ones back to a reader and cross-checks the counts.
+  final Map<String, String> headers;
+
   /// Baseline id from the header, or null if the file predates it.
-  final String? sweep;
+  String? get sweep => headers['sweep'];
 
   /// Commit the file was captured at. Reported, never compared.
-  final String? commit;
+  String? get commit => headers['commit'];
 
   /// Coordinate → its rows, in file order.
   final Map<String, List<String>> cells;
@@ -506,8 +523,7 @@ class BaselineFile {
     // saw a row to check.
     if (!sawVersion) throw _notABaseline(source);
     return BaselineFile._(
-      sweep: headers['sweep'],
-      commit: headers['commit'],
+      headers: headers,
       cells: cells,
       source: source,
     );
@@ -614,7 +630,7 @@ class BaselineDiff {
 
   static bool _isUnmeasured(String row) {
     final fields = row.split('\t');
-    return fields.length > 1 && fields[1] == verdictError;
+    return fields.length > _colVerdict && fields[_colVerdict] == verdictError;
   }
 }
 
@@ -665,6 +681,685 @@ bool _sameRows(List<String> a, List<String> b) {
   return true;
 }
 
+/// A committed baseline tallied for reading, rather than for diffing (#1349).
+///
+/// ## Why the file and not the run
+///
+/// Every other artefact this gate produces is written by the suite that pumped
+/// the cells — which is why the card sweep's HTML report is card-shaped: its rows
+/// carry a column span, a grid recommendation and a screenshot path, none of
+/// which a page, a dialog or a top bar has. Rendering the committed TSV instead
+/// costs no test run and works for all five sweeps unchanged, because the dataset
+/// is already the sweep-agnostic per-cell table.
+///
+/// The price is that there is no picture, and the risk is provenance: this is the
+/// one artefact here that describes a tree nobody just ran. So a report leads with
+/// the commit out of its own header, repeats a `-dirty` stamp as prose, and names
+/// the command that refreshes it.
+///
+/// **Everything below is recounted from the rows.** The `# cells` / `# incidents`
+/// / `# overflows` / `# unmeasured` headers were written by [renderBaseline] at
+/// capture time, so quoting them would let a hand-edited file print a summary its
+/// own rows contradict. They are compared instead, and any disagreement is
+/// reported — in the document, on stderr, and in the exit code.
+class BaselineReport {
+  BaselineReport._({
+    required this.file,
+    required this.sweep,
+    required this.cells,
+    required this.rows,
+    required this.clean,
+    required this.noise,
+    required this.overflows,
+    required this.unmeasured,
+    required this.unrecognised,
+    required this.groups,
+    required this.axes,
+    required this.sites,
+    required this.findings,
+    required this.headerDisagreements,
+  });
+
+  /// The dataset this describes.
+  final BaselineFile file;
+
+  /// Baseline id, or `(unnamed)` for a file that predates the header.
+  final String sweep;
+
+  /// Coordinates the dataset holds. A clean cell is one of them.
+  final int cells;
+
+  /// Rows, which exceeds [cells] wherever a coordinate recorded more than one
+  /// incident, or died after recording some.
+  final int rows;
+
+  final int clean;
+  final int noise;
+  final int overflows;
+
+  /// Coordinates whose pump did not finish, so they measured nothing.
+  final int unmeasured;
+
+  /// Rows whose verdict this reader does not know — 0 for any file the extractor
+  /// wrote. Counted rather than skipped so a foreign verdict cannot go missing
+  /// from every table at once.
+  final int unrecognised;
+
+  /// Per sweep group, e.g. `page.dhcp`. Sorted by name.
+  final List<ReportTally> groups;
+
+  /// Per axis of the cell ids, e.g. `locale`. Sorted by name.
+  final List<ReportAxis> axes;
+
+  /// Per `file:line` an incident was reported at, most rows first. Empty when
+  /// nothing overflowed.
+  final List<ReportTally> sites;
+
+  /// Every row that is not clean, as its six fields, sorted.
+  final List<List<String>> findings;
+
+  /// Ways the header's own counts contradict the rows. Empty is the normal case.
+  final List<String> headerDisagreements;
+
+  /// The same one-line shape [ExtractedBaseline.summary] prints.
+  String get summary =>
+      '$cells cells, ${noise + overflows} incidents, $overflows overflows, '
+      '$unmeasured unmeasured';
+
+  static BaselineReport of(BaselineFile file) {
+    final groups = <String, _Tally>{};
+    final axes = <String, _Tally>{};
+    final axisValues = <String, Map<String, _Tally>>{};
+    final sites = <String, _Tally>{};
+    final findings = <List<String>>[];
+    final total = _Tally();
+
+    for (final entry in file.cells.entries) {
+      final cell = entry.key;
+      final group = cell.split('|').first;
+      final cellAxes = _axesOf(cell);
+      for (final row in entry.value) {
+        final fields = row.split('\t');
+        final verdict = fields[_colVerdict];
+        total.add(cell, verdict);
+        groups.putIfAbsent(group, _Tally.new).add(cell, verdict);
+        for (final axis in cellAxes.entries) {
+          axes.putIfAbsent(axis.key, _Tally.new).add(cell, verdict);
+          axisValues
+              .putIfAbsent(axis.key, () => <String, _Tally>{})
+              .putIfAbsent(axis.value, _Tally.new)
+              .add(cell, verdict);
+        }
+        if (verdict == verdictNoise || verdict == verdictOverflow) {
+          sites.putIfAbsent(fields[_colSite], _Tally.new).add(cell, verdict);
+        }
+        if (verdict != verdictClean) findings.add(fields);
+      }
+    }
+
+    // Sorted by the whole row, matching the dataset's own ordering rule: the
+    // report must not inherit an order from the file it read, or two reports of
+    // the same measurements could differ.
+    findings.sort((a, b) => a.join('\t').compareTo(b.join('\t')));
+
+    final siteTallies =
+        sites.entries.map((e) => e.value.freeze(_siteLabel(e.key))).toList()
+          ..sort((a, b) {
+            final byRows = b.incidents.compareTo(a.incidents);
+            return byRows != 0 ? byRows : a.name.compareTo(b.name);
+          });
+
+    return BaselineReport._(
+      file: file,
+      sweep: file.sweep ?? '(unnamed)',
+      cells: file.cells.length,
+      rows: file.rowCount,
+      clean: total.clean,
+      noise: total.noise,
+      overflows: total.overflow,
+      unmeasured: total.unmeasured,
+      unrecognised: total.unrecognised,
+      groups: (groups.keys.toList()..sort())
+          .map((name) => groups[name]!.freeze(name))
+          .toList(),
+      axes: (axes.keys.toList()..sort())
+          .map((name) => ReportAxis(
+                name,
+                axes[name]!.cells.length,
+                _sortedValues(axisValues[name]!.keys)
+                    .map((value) => axisValues[name]![value]!.freeze(value))
+                    .toList(),
+              ))
+          .toList(),
+      sites: siteTallies,
+      findings: findings,
+      headerDisagreements: _headerDisagreements(file, total),
+    );
+  }
+
+  /// `page.dhcp|screen_px=320|locale=ar` → `{screen_px: 320, locale: ar}`.
+  ///
+  /// A segment without `=` is skipped rather than invented a name for; the axis
+  /// totals are stated as "N of M coordinates" precisely so an axis that does not
+  /// reach every cell — for whatever reason — reads as the gap it is.
+  static Map<String, String> _axesOf(String cell) {
+    final axes = <String, String>{};
+    for (final segment in cell.split('|').skip(1)) {
+      final eq = segment.indexOf('=');
+      if (eq <= 0) continue;
+      axes[segment.substring(0, eq)] = segment.substring(eq + 1);
+    }
+    return axes;
+  }
+
+  /// Numerically when every value is a number, so `1241` does not sort between
+  /// `1` and `320` on an axis a reader reads as a range.
+  static List<String> _sortedValues(Iterable<String> values) {
+    final list = values.toList();
+    if (list.every((v) => num.tryParse(v) != null)) {
+      list.sort((a, b) => num.parse(a).compareTo(num.parse(b)));
+    } else {
+      list.sort();
+    }
+    return list;
+  }
+
+  static List<String> _headerDisagreements(BaselineFile file, _Tally total) {
+    final out = <String>[];
+    void check(String header, int measured, String unit) {
+      final stated = file.headers[header];
+      // Absent is not a disagreement: a file written before a header existed is
+      // simply not cross-checkable on it, and the rows are what gets reported
+      // either way.
+      if (stated == null) return;
+      if (int.tryParse(stated) == measured) return;
+      out.add('${file.source}: "# $header $stated" but the rows hold '
+          '$measured $unit');
+    }
+
+    check('cells', file.cells.length, 'coordinates');
+    check('incidents', total.noise + total.overflow, 'incident rows');
+    check('overflows', total.overflow, 'above tolerance');
+    check('unmeasured', total.unmeasured, 'unmeasured coordinates');
+    return out;
+  }
+}
+
+/// How an incident with no resolved source location is shown.
+///
+/// Named rather than left as the dataset's `-`, because the reader's next move
+/// after seeing a site is to key an allowlist entry with it, and this is the one
+/// site that can never be keyed at all (#1341).
+String _siteLabel(String site) => site == _absent ? '(unresolved)' : site;
+
+/// Verdict counts over some slice of a dataset — a group, an axis value, a site.
+class ReportTally {
+  const ReportTally({
+    required this.name,
+    required this.cells,
+    required this.clean,
+    required this.noise,
+    required this.overflow,
+    required this.unmeasured,
+    required this.unrecognised,
+  });
+
+  final String name;
+
+  /// Coordinates in this slice, not rows.
+  final int cells;
+
+  /// Rows verdicted `clean` — measured, and under nothing worth recording.
+  final int clean;
+
+  /// Rows verdicted `noise`: an incident below the sweep's tolerance, recorded
+  /// and not asserted on.
+  final int noise;
+
+  /// Rows verdicted `overflow`, which is what the gate fails on.
+  final int overflow;
+
+  /// Rows verdicted `error`: the pump did not finish, so nothing was measured.
+  final int unmeasured;
+
+  /// Rows whose verdict this reader does not know. Carried per slice, not only
+  /// in the total, so a row that lands in none of the four columns above still
+  /// explains why they do not sum to [cells].
+  final int unrecognised;
+
+  int get incidents => noise + overflow;
+}
+
+/// One axis of a sweep's cell ids, and every value it was measured at.
+class ReportAxis {
+  const ReportAxis(this.name, this.cells, this.values);
+
+  final String name;
+
+  /// Coordinates carrying this axis. Below the sweep's total when some group
+  /// does not vary on it — three of the card sweep's six groups enumerate no
+  /// locale, which is a coverage fact worth reading off a report.
+  final int cells;
+
+  final List<ReportTally> values;
+}
+
+class _Tally {
+  final Set<String> cells = <String>{};
+  int clean = 0;
+  int noise = 0;
+  int overflow = 0;
+  int unmeasured = 0;
+  int unrecognised = 0;
+
+  void add(String cell, String verdict) {
+    cells.add(cell);
+    switch (verdict) {
+      case verdictClean:
+        clean++;
+      case verdictNoise:
+        noise++;
+      case verdictOverflow:
+        overflow++;
+      case verdictError:
+        unmeasured++;
+      default:
+        unrecognised++;
+    }
+  }
+
+  ReportTally freeze(String name) => ReportTally(
+        name: name,
+        cells: cells.length,
+        clean: clean,
+        noise: noise,
+        overflow: overflow,
+        unmeasured: unmeasured,
+        unrecognised: unrecognised,
+      );
+}
+
+/// Renders a [BaselineReport] as Markdown.
+String renderReportMarkdown(BaselineReport report) {
+  final out = StringBuffer();
+  for (final block in _reportBlocks(report)) {
+    out.writeln(block.markdown());
+  }
+  return out.toString();
+}
+
+/// Renders a [BaselineReport] as one self-contained HTML file.
+///
+/// Self-contained deliberately: it is opened out of `build/` with no server and
+/// no network, the same way the card sweep's report is.
+String renderReportHtml(BaselineReport report) {
+  final out = StringBuffer()
+    ..writeln('<!DOCTYPE html>')
+    ..writeln('<html lang="en">')
+    ..writeln('<head>')
+    ..writeln('<meta charset="utf-8">')
+    ..writeln('<meta name="viewport" '
+        'content="width=device-width, initial-scale=1">')
+    ..writeln('<title>'
+        '${_escapeHtml('Overflow baseline — ${report.sweep}')}</title>')
+    ..writeln('<style>')
+    ..writeln(_reportCss)
+    ..writeln('</style>')
+    ..writeln('</head>')
+    ..writeln('<body>');
+  for (final block in _reportBlocks(report)) {
+    out.writeln(block.html());
+  }
+  return (out
+        ..writeln('</body>')
+        ..writeln('</html>'))
+      .toString();
+}
+
+const String _reportCss = '''
+body { margin: 2rem auto; padding: 0 1rem; max-width: 64rem; color: #24292f;
+       font: 14px/1.6 -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 2rem; }
+h3 { font-size: 1rem; margin-top: 1.5rem; }
+table { border-collapse: collapse; margin: 0.5rem 0 1.5rem; }
+th, td { border: 1px solid #d0d7de; padding: 0.25rem 0.6rem; text-align: left;
+         white-space: nowrap; }
+th { background: #f6f8fa; }
+code { background: #f6f8fa; border-radius: 3px; padding: 0 0.2rem; }
+ul { padding-left: 1.2rem; }''';
+
+/// The document, built once and rendered twice.
+///
+/// Two hand-written renderers would be two places to state the same counts and
+/// the same prose, and the failure that invites is a number that is right in one
+/// format and wrong in the other. So the blocks are the report and the formats
+/// are only spellings of them; prose is written as Markdown and translated for
+/// HTML, while table cells are treated as data and escaped, never translated.
+List<_Block> _reportBlocks(BaselineReport report) {
+  final blocks = <_Block>[
+    _Heading(1, 'Overflow baseline report — ${report.sweep}'),
+  ];
+
+  final commit = report.file.commit;
+  // The sweep name is a header, so a file missing it cannot be told how to
+  // re-capture itself: `capture (unnamed)` is not a command anyone can run, and
+  // printing it would be worse than saying so.
+  final recapture = report.file.sweep == null
+      ? 'and this file names no sweep, so re-capturing it means finding which '
+          'sweep wrote it first'
+      : 'so re-capture it '
+          '(`./tool/overflow_baseline.sh capture ${report.sweep}`)';
+  blocks.add(_Para(
+    'Rendered from `${report.file.source}`, which is a measurement of '
+    '${commit == null ? '**an unnamed tree** (the file carries no `commit` '
+        'header)' : 'commit `$commit`'} — '
+    '**not of the working tree**. Nothing here was re-measured to produce it, '
+    "$recapture before reading it as a statement about today's code.",
+  ));
+  if (commit != null && commit.endsWith('-dirty')) {
+    blocks.add(_Para(
+      'The commit is stamped `-dirty`: the measured paths carried uncommitted '
+      'work when these rows were taken, so checking that sha out and '
+      're-capturing **will not reproduce** them.',
+    ));
+  }
+  if (report.headerDisagreements.isNotEmpty) {
+    blocks
+      ..add(_Para(
+        '**This baseline disagrees with its rows.** The counts its header states '
+        'were written at capture time, and everything below is recounted from '
+        'the rows themselves — so the file has been edited by hand, or written '
+        'by another version of this script. Read it as unverified until that is '
+        'explained:',
+      ))
+      ..add(_Bullets(report.headerDisagreements));
+  }
+
+  blocks
+    ..add(_Heading(2, 'What this file is'))
+    ..add(_Bullets([
+      'Sweep: `${report.sweep}`',
+      if (report.file.headers['suite'] case final suite? when suite != _absent)
+        'Suite: `$suite`',
+      if (report.file.headers['groups'] case final groups?)
+        'Groups: ${groups.split(' ').map((g) => '`$g`').join(', ')}',
+      'Captured at: `${commit ?? '(unknown)'}`',
+      'Dataset format: overflow-baseline $overflowBaselineVersion',
+    ]))
+    ..add(_Heading(2, 'Summary'))
+    ..add(_Table(const [
+      'measurement',
+      'count'
+    ], [
+      ['Coordinates measured', '${report.cells}'],
+      ['Clean', '${report.clean}'],
+      [
+        'Overflow (above tolerance, what the gate fails on)',
+        '${report.overflows}'
+      ],
+      ['Noise (under tolerance, recorded not asserted)', '${report.noise}'],
+      ['Unmeasured (the pump never finished)', '${report.unmeasured}'],
+      if (report.unrecognised > 0)
+        ['Unrecognised verdict', '${report.unrecognised}'],
+      ['Rows', '${report.rows}'],
+    ]))
+    ..add(_Para(
+      '**A clean cell is a row here, not an absence.** So the '
+      '${report.cells} above is a coverage claim and not only a pass: every one '
+      'of those coordinates was enumerated and pumped'
+      // Not "and measured" when a pump died there: that is the one claim an
+      // `error` row disproves, and the paragraph below is about exactly it.
+      '${report.unmeasured == 0 ? ' and measured' : ''}. A coordinate '
+      'that stops being enumerated leaves this dataset entirely, which is what '
+      '`check` reports as lost coverage rather than as a layout that got fixed.',
+    ));
+  if (report.unmeasured > 0) {
+    blocks.add(_Para(
+      '`$verdictError` rows: ${report.unmeasured} of the coordinates above never '
+      'finished their pump, so they **measured nothing**. They are present, so '
+      'no diff calls them lost, and they are empty, so nothing distinguishes '
+      'them from a layout that fits — which is why they are counted apart from '
+      '`clean` here as well as in the dataset.',
+    ));
+  }
+  if (report.unrecognised > 0) {
+    blocks.add(_Para(
+      '${report.unrecognised} '
+      '${report.unrecognised == 1 ? 'row carries' : 'rows carry'} a verdict this '
+      'script does not know, so above they are in no column but `Rows`, and the '
+      'coverage tables below carry an `unrecognised` column they would otherwise '
+      'be missing from while still counting under `coordinates`. The four '
+      'verdicts it knows are `$verdictClean`, `$verdictNoise`, '
+      '`$verdictOverflow` and `$verdictError`.',
+    ));
+  }
+
+  // A verdict nothing here knows would otherwise count under `coordinates` and
+  // in none of the verdict columns, leaving every row of these tables silently
+  // short. Only present when the dataset holds one, so the normal report is the
+  // four columns the dataset defines.
+  final columns = report.unrecognised > 0
+      ? const [
+          'coordinates',
+          'clean',
+          'noise',
+          'overflow',
+          'unmeasured',
+          'unrecognised'
+        ]
+      : const ['coordinates', 'clean', 'noise', 'overflow', 'unmeasured'];
+  List<String> tallyRow(ReportTally tally) =>
+      _tallyRow(tally, unrecognised: report.unrecognised > 0);
+
+  blocks
+    ..add(_Heading(2, 'Coverage by group'))
+    ..add(_Table(
+      ['group', ...columns],
+      report.groups.map(tallyRow).toList(),
+    ))
+    ..add(_Heading(2, 'Coverage by axis'))
+    ..add(_Para(
+      'Each axis is counted over the coordinates that carry it, and the '
+      'denominator is the whole sweep. A total below ${report.cells} therefore '
+      'means some group does not vary on that axis at all — three of the card '
+      "sweep's six groups enumerate no locale, for instance — which is a "
+      'coverage fact and not a smaller sweep.',
+    ));
+  for (final axis in report.axes) {
+    blocks
+      ..add(_Heading(
+        3,
+        '`${axis.name}` — ${axis.values.length} '
+        '${axis.values.length == 1 ? 'value' : 'values'} over ${axis.cells} of '
+        '${report.cells} coordinates',
+      ))
+      ..add(_Table(
+        ['value', ...columns],
+        axis.values.map(tallyRow).toList(),
+      ));
+  }
+
+  blocks.add(_Heading(2, 'Findings'));
+  if (report.findings.isEmpty) {
+    blocks.add(_Para(
+      "None: all ${report.cells} coordinates measured clean at the sweep's "
+      'tolerance.',
+    ));
+    return blocks;
+  }
+  blocks
+    ..add(_Para(
+      '${report.findings.length} of ${report.rows} rows are not clean. The '
+      '`site` column is the `file:line` key '
+      '`test/fixtures/known_overflows.json` is keyed by (#1341), so copy an '
+      'exemption key from it rather than reconstructing one — a key that matches '
+      'no site reads as "not allowlisted" everywhere.',
+    ))
+    ..add(_Table(
+      const ['cell', 'verdict', 'px', 'side', 'site', 'widget'],
+      // The row verbatim except for one column, which is the point: a finding is
+      // quoted as the dataset holds it, so the `cell` and `site` a reader copies
+      // into `known_overflows.json` are the strings the sweep wrote.
+      report.findings
+          .map((row) => [
+                ...row.take(_colSite),
+                // An `error` row's empty site is left as the dataset's `-`. It is
+                // not an incident whose location failed to resolve — there was no
+                // incident — so calling it `(unresolved)` would send a reader
+                // looking for a widget the allowlist note above cannot help with.
+                row[_colVerdict] == verdictError
+                    ? row[_colSite]
+                    : _siteLabel(row[_colSite]),
+                ...row.skip(_colSite + 1),
+              ])
+          .toList(),
+    ));
+  if (report.sites.isNotEmpty) {
+    blocks
+      ..add(_Heading(3, 'By site'))
+      ..add(_Para(
+        'One source location overflows at many coordinates — that is why the '
+        'allowlist is keyed by location and not by cell — so this is the count '
+        'to read when deciding what to fix.',
+      ))
+      ..add(_Table(
+        const ['site', 'incident rows', 'overflow', 'noise', 'coordinates'],
+        report.sites
+            .map((site) => [
+                  site.name,
+                  '${site.incidents}',
+                  '${site.overflow}',
+                  '${site.noise}',
+                  '${site.cells}',
+                ])
+            .toList(),
+      ));
+    if (report.sites.any((s) => s.name == '(unresolved)')) {
+      blocks.add(_Para(
+        'An incident whose location did not resolve is shown as `(unresolved)`. '
+        'It has no key, so it **cannot be allowlisted** at all — `"*"` on every '
+        'entry still will not cover it, deliberately: an exemption nobody can '
+        'name is one nobody can retire.',
+      ));
+    }
+  }
+  return blocks;
+}
+
+List<String> _tallyRow(ReportTally tally, {required bool unrecognised}) => [
+      tally.name,
+      '${tally.cells}',
+      '${tally.clean}',
+      '${tally.noise}',
+      '${tally.overflow}',
+      '${tally.unmeasured}',
+      if (unrecognised) '${tally.unrecognised}',
+    ];
+
+/// One piece of a report, in the two spellings it has.
+abstract class _Block {
+  String markdown();
+  String html();
+}
+
+class _Heading implements _Block {
+  const _Heading(this.level, this.text);
+
+  final int level;
+  final String text;
+
+  @override
+  String markdown() => '${'#' * level} $text\n';
+
+  @override
+  String html() => '<h$level>${_inlineHtml(text)}</h$level>';
+}
+
+class _Para implements _Block {
+  const _Para(this.text);
+
+  final String text;
+
+  @override
+  String markdown() => '$text\n';
+
+  @override
+  String html() => '<p>${_inlineHtml(text)}</p>';
+}
+
+class _Bullets implements _Block {
+  const _Bullets(this.items);
+
+  final List<String> items;
+
+  @override
+  String markdown() => '${items.map((i) => '- $i').join('\n')}\n';
+
+  @override
+  String html() =>
+      '<ul>\n${items.map((i) => '  <li>${_inlineHtml(i)}</li>').join('\n')}\n'
+      '</ul>';
+}
+
+/// Header row plus data rows. Every cell is data, never prose.
+class _Table implements _Block {
+  const _Table(this.columns, this.rows);
+
+  final List<String> columns;
+  final List<List<String>> rows;
+
+  @override
+  String markdown() {
+    final out = StringBuffer()
+      ..writeln('| ${columns.map(_escapeMarkdownCell).join(' | ')} |')
+      ..writeln('|${columns.map((_) => '---').join('|')}|');
+    for (final row in rows) {
+      out.writeln('| ${row.map(_escapeMarkdownCell).join(' | ')} |');
+    }
+    return out.toString();
+  }
+
+  @override
+  String html() {
+    final out = StringBuffer()
+      ..writeln('<table>')
+      ..writeln('<thead><tr>'
+          '${columns.map((c) => '<th>${_escapeHtml(c)}</th>').join()}'
+          '</tr></thead>')
+      ..writeln('<tbody>');
+    for (final row in rows) {
+      out.writeln('<tr>'
+          '${row.map((c) => '<td>${_escapeHtml(c)}</td>').join()}'
+          '</tr>');
+    }
+    return (out
+          ..writeln('</tbody>')
+          ..write('</table>'))
+        .toString();
+  }
+}
+
+/// Keeps a value inside its column.
+///
+/// Every cell id contains `|` — it is the axis separator — and a widget name
+/// reaches the TSV with only tabs and newlines stripped. Unescaped, one row would
+/// silently gain columns, and the key a reader copied out of it would be a
+/// fragment.
+String _escapeMarkdownCell(String value) => value.replaceAll('|', r'\|');
+
+String _escapeHtml(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+/// Translates the Markdown the prose is written in — `**bold**` and `` `code` ``
+/// and nothing else — into HTML, after escaping the text.
+String _inlineHtml(String text) => _escapeHtml(text)
+    .replaceAllMapped(
+        RegExp(r'\*\*(.+?)\*\*'), (m) => '<strong>${m[1]}</strong>')
+    .replaceAllMapped(RegExp('`(.+?)`'), (m) => '<code>${m[1]}</code>');
+
 const String _usage = '''
 usage:
   # capture with: flutter test <suite> --reporter json > run.json
@@ -675,7 +1370,12 @@ usage:
   dart run test_scripts/overflow_baseline.dart diff \\
       --baseline <file> (--actual <file> | --reporter <run.json>)
 
-exit codes: 0 = clean, 1 = the datasets differ, 2 = bad input
+  # read a committed baseline; runs no tests
+  dart run test_scripts/overflow_baseline.dart render \\
+      --baseline <file> [--format md|html] [--out <file>]
+
+exit codes: 0 = clean, 1 = the datasets differ (for render: the baseline
+disagrees with its own header), 2 = bad input
 
 Prefer tool/overflow_baseline.sh, which knows the five sweeps and their files.
 ''';
@@ -712,6 +1412,8 @@ Future<int> runOverflowBaseline(
         return _extractCommand(options, stdoutSink);
       case 'diff':
         return _diffCommand(options, stdoutSink);
+      case 'render':
+        return _renderCommand(options, stdoutSink, stderrSink);
       default:
         stderrSink.writeln('unknown command "${args.first}"');
         stderrSink.write(_usage);
@@ -737,16 +1439,30 @@ int _extractCommand(Map<String, String> options, StringSink out) {
     commit: options['--commit'] ?? _headCommit(),
   );
 
+  _writeOrPrint(text, summary: extracted.summary, options: options, out: out);
+  return 0;
+}
+
+/// `--out <file>` or stdout, the one way both writing subcommands emit.
+///
+/// The two are deliberately symmetrical: a document on stdout is pipeable, and a
+/// document written to a file leaves [summary] on stdout instead — so the counts
+/// are reported either way and never interleaved with the thing being counted.
+void _writeOrPrint(
+  String text, {
+  required String summary,
+  required Map<String, String> options,
+  required StringSink out,
+}) {
   final target = options['--out'];
   if (target == null) {
     out.write(text);
-  } else {
-    File(target)
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(text);
-    out.writeln('${extracted.summary} -> $target');
+    return;
   }
-  return 0;
+  File(target)
+    ..parent.createSync(recursive: true)
+    ..writeAsStringSync(text);
+  out.writeln('$summary -> $target');
 }
 
 int _diffCommand(Map<String, String> options, StringSink out) {
@@ -786,6 +1502,42 @@ int _diffCommand(Map<String, String> options, StringSink out) {
   final diff = diffBaselines(baseline: baseline, actual: actual);
   out.write(diff.report());
   return diff.isClean ? 0 : 1;
+}
+
+/// Turns a committed baseline into something a human reads.
+///
+/// Exits 1 when the file's own header contradicts its rows — the same code a
+/// differing diff uses, and for the same reason: two readings of one dataset do
+/// not agree, so nothing in the document should be quoted until someone has
+/// looked. The document is still written, because it is what says what the
+/// disagreement is.
+int _renderCommand(
+  Map<String, String> options,
+  StringSink out,
+  StringSink err,
+) {
+  final path = _require(options, '--baseline');
+  final report = BaselineReport.of(
+    BaselineFile.parse(_readFile(path), source: path),
+  );
+
+  final format = options['--format'] ?? 'md';
+  final String text;
+  switch (format) {
+    case 'md':
+      text = renderReportMarkdown(report);
+    case 'html':
+      text = renderReportHtml(report);
+    default:
+      throw FormatException(
+          'unknown --format "$format": this writes md or html');
+  }
+
+  _writeOrPrint(text, summary: report.summary, options: options, out: out);
+  for (final disagreement in report.headerDisagreements) {
+    err.writeln(disagreement);
+  }
+  return report.headerDisagreements.isEmpty ? 0 : 1;
 }
 
 /// Whether [args] is asking for the usage text rather than for work.

@@ -43,7 +43,7 @@ adding a third family to two frameworks would produce three.
 
 | Document | Role |
 |---|---|
-| [overflow_baselines.md](overflow_baselines.md) | **#1337, landed.** The mechanism R3 and R5 compare against: `./tool/overflow_baseline.sh check <sweep>`. Baselines for the four dashboard-and-chrome sweeps are captured at `4fb1ac5e-dirty`, before any port — `chrome` re-captured at `785c6f67-dirty` for #1356's cell-id fixes, all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge, and a fifth (`page`, 416 cells) captured at `69079cb0-dirty` for #1349. |
+| [overflow_baselines.md](overflow_baselines.md) | **#1337, landed.** The mechanism R3 and R5 compare against: `./tool/overflow_baseline.sh check <sweep>`. Baselines for the four dashboard-and-chrome sweeps are captured at `4fb1ac5e-dirty`, before any port — `chrome` re-captured at `785c6f67-dirty` for #1356's cell-id fixes, all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge, and a fifth (`page`, 416 cells) captured at `69079cb0-dirty` for #1349. Also **`render <sweep>`**, which reads a committed baseline into an MD/HTML coverage report without running anything — the only report that works for all five sweeps, since §5's card report is card-shaped. |
 | [../dashboard/dashboard_density_design.md](../dashboard/dashboard_density_design.md) | How the card family's 560 → 27 → 0 allowlist was eliminated; the measurements the card axes rest on. |
 | [../dashboard/dashboard_framework_overflow_investigation.md](../dashboard/dashboard_framework_overflow_investigation.md) | How a declared spec constraint becomes a real `BoxConstraints`. |
 | [../../.claude/skills/dashboard-overflow-gate/SKILL.md](../../.claude/skills/dashboard-overflow-gate/SKILL.md) | How to operate the gate today. Its "adding a new probe" section is superseded by §3 here once R3 lands. |
@@ -164,7 +164,7 @@ that last run, and the parenthesised figures are what each row read before it:
 | The five overflow sweeps (5 files, named) | **296** (277 pre-#1349, 273 pre-merge) | 4,032 rows † | 25s (**32s** wall) | — |
 | The same five via `--tags overflow` | **296** | 4,032 rows † | 1m48s (**2m03s** wall) | — |
 | Whole `layout-gate` family (46 files) | **1,414** (1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m06s (1m52s pre-#1349, **2m14s** wall) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,362** (5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m43s (2m44s without the page suite, **2m49s** wall) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,384** (5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m43s (2m44s without the page suite, **2m49s** wall) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -181,6 +181,16 @@ oracle outside the `overflow` tag (§11.4), which is the #1364/#1366 shape rathe
 this footnote's. Its one hand-written test is a **readability** guard (§7), and it
 deliberately names no cell: it never installs the collector, so the `page` baseline
 stays 416 rows and the 20 above stays 20.
+
+**Only the gate row moved for the baseline reporter** (`overflow_baseline.sh render`,
+[overflow_baselines.md](overflow_baselines.md) §1): +22 tests in
+`test/test_scripts/overflow_baseline_test.dart`, which is a plain script test —
+strings in, strings out, no binding and no pump. So `--tags overflow` stays **296**,
+`layout-gate` stays **1,414**, every cell count is untouched, and the clock column is
+left as the quiet-session figures above rather than replaced by the 3m04s the
+verifying run measured under contention. A reporter that reads a committed dataset
+cannot change what the gate measures; if any row but the last one had moved, that
+would have been the finding.
 
 **The whole table moved at #1343, and only the test-count column.** The pumped
 cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917
