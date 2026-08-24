@@ -2,136 +2,64 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/top_navigation_menu.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
-import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
-import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/providers/auth/_auth.dart';
-// `uspShellNavigatorKey` lives in `route_usp_dashboard.dart`, which is a part of
-// this library.
-import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../golden_test/golden_framework/mocks/mock_common.dart';
+import '../../layout_gate/collector.dart';
+import '../../layout_gate/families/page_chrome_family.dart';
 import '../../layout_gate/locale_tag.dart';
+import '../../layout_gate/surface.dart';
+import '../../layout_gate/sweep.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
-import '../../util/overflow_baseline.dart';
-import '../../util/overflow_probe.dart';
 
 /// Overflow coverage for the dashboard's **page chrome** — the top bar and the
 /// dashboard header — across screen width and locale.
+///
+/// ## What is where, since #1342
+///
+/// The two width × locale sweeps are **declared**, not written: `runOverflowSweep`
+/// (`test/layout_gate/sweep.dart`) owns the surface, the fresh subtree, the
+/// settle, the tolerance filter, the per-cell exception isolation and the
+/// aggregated failure, and the two families in
+/// `test/layout_gate/families/page_chrome_family.dart` own the axes and the hosts.
+/// Nothing about the coordinates measured changed in that port — proved cell by
+/// cell against the committed baseline
+/// (`./tool/overflow_baseline.sh check chrome`, 1,248 cells identical).
+///
+/// What stays in this file is everything the runner is not for: the assertions
+/// whose oracle is not "did a `RenderFlex` overflow". They are the reason this
+/// suite found defects an overflow sweep cannot see — an ellipsized nav chip
+/// *fits*, and so does a page title broken mid-word.
 ///
 /// ## Why this exists next to the #1183 gate rather than inside it
 ///
 /// The gate (`test/page/dashboard/cards/dashboard_card_overflow_test.dart`) is
 /// card-width-keyed: `dashboard_card_probe.dart`'s `narrowestRealizationOf(span)`
 /// computes each span's narrowest *card box* and pumps one card at that width. It
-/// never renders a page at a screen width, so a `Row` belonging to the page
-/// rather than to a card is invisible to it **by construction** — no amount of
-/// tuning the gate would have caught either bug below. Hence a separate suite
-/// with its own axes, sharing only the measurement spine — `test/layout_gate/`
-/// since #1338/#1340, still reached through `test/util/overflow_probe.dart`,
-/// which is now a re-export of it. This suite's surface handling is part of that
-/// sharing as of #1340: the three-line dance it hand-copied seven times, and the
-/// private teardown that undid it, are now `setLayoutSurface` in
-/// `test/layout_gate/surface.dart`, which the card path calls too and which
-/// registers the restore itself.
-///
-/// ## The two defects it pins
-///
-/// - **#1314, dashboard header.** `Row(spaceBetween)` with an unbounded title on
-///   the left and three or four `AppIconButton`s on the right. Neither child
-///   could yield, so it overflowed at and below 480px.
-/// - **#1328, top bar.** `Row(spaceBetween)` with three rigid children. The
-///   failure band was **601–767px**, not the narrow widths intuition suggests:
-///   `menu_holder.dart` collapses the top nav to `SizedBox.shrink()` below 601px,
-///   so the row broke at exactly the width the nav chips appear at. `en` cleared
-///   at 640px but `pl` needed 768px — **locale is a first-class axis here**, and
-///   an `en`-only measurement would have reported a 167px-wide failure band as a
-///   39px edge case.
+/// never renders a page at a screen width, so a `Row` belonging to the page rather
+/// than to a card is invisible to it **by construction** — no amount of tuning the
+/// gate would have caught either #1314 or #1328. Hence a separate suite with its
+/// own axes, now sharing the whole measurement spine rather than one file.
 ///
 /// ## Tag choice
 ///
 /// `layout-gate` and `overflow` (#1336). `run_tests.sh` only does
-/// `--exclude-tags="golden||loc||ui"` and no CI config names either tag — so
-/// "in the PR gate" means "not excluded", and `layout-gate` is that meaning
-/// written as a name: a PR-blocking defensive layout gate. `overflow` is the
-/// narrower second selector, carried only by a suite that pumps cells and
-/// asserts zero overflow, so `flutter test --tags overflow` runs this suite and
-/// the three card sweeps and nothing else — the pre-commit run.
-/// Tagging this `ui` or `loc` would have removed it from the gate silently.
+/// `--exclude-tags="golden||loc||ui"` and no CI config names either tag — so "in
+/// the PR gate" means "not excluded", and `layout-gate` is that meaning written as
+/// a name: a PR-blocking defensive layout gate. `overflow` is the narrower second
+/// selector, carried only by a suite that pumps cells and asserts zero overflow,
+/// so `flutter test --tags overflow` runs this suite and the three card sweeps and
+/// nothing else — the pre-commit run. Tagging this `ui` or `loc` would have
+/// removed it from the gate silently.
+///
+/// The readability assertions below share the file and therefore both tags. They
+/// are **not** what `overflow` selects for and do not belong to the sweeps: their
+/// oracle is "is it still legible", and merging the two questions would blur both.
 void main() {
-  /// Widths swept per locale.
-  ///
-  /// Both sides of both breakpoints that matter — `breakpointMobile` (600) and
-  /// [kTopNavLabelMinWidth] (768) — plus the interior of the 601–767 band #1328
-  /// broke in, plus 320 as the narrowest width the app claims to support.
-  const sweepWidths = <double>[
-    320,
-    375,
-    480,
-    600,
-    601,
-    640,
-    700,
-    768,
-    800,
-    905,
-    1024,
-    1280,
-  ];
-
-  /// Tall enough that nothing is vertically pressured: every assertion here is
-  /// about horizontal fit, and a short surface would add unrelated incidents.
-  const sweepHeight = 800.0;
-
-  /// The three action sets [DashboardHeaderBar] can render.
-  ///
-  /// Not the full 2×2 of the two flags: edit mode ignores `isRemoteMode`
-  /// entirely (the edit action is already gone), so `editing + remote` is the
-  /// same tree as `editing + local` and sweeping it would buy nothing.
-  ///
-  /// Two names per mode, and the split matters (#1356). [id] is the identity: it
-  /// goes into the baseline cell id and the host's widget key, so it must change
-  /// only when the *case* changes. [label] is prose for failure messages, and is
-  /// free to say how many actions the mode renders — which is exactly why the
-  /// count cannot be in the id. It was: the ids read
-  /// `mode=viewing, local (3 actions)`, so adding or moving a header action
-  /// renamed every cell of this sweep, and the baseline diff would have reported
-  /// a re-labelled coordinate as its whole coverage lost and an equal number of
-  /// new cells found — the one reading `overflow_baselines.md` tells a porter to
-  /// treat as the dangerous case.
-  const headerModes =
-      <({String id, String label, bool isEditMode, bool isRemoteMode})>[
-    (
-      id: 'viewing_local',
-      label: 'viewing, local (3 actions)',
-      isEditMode: false,
-      isRemoteMode: false
-    ),
-    (
-      id: 'viewing_remote',
-      label: 'viewing, remote (2 actions)',
-      isEditMode: false,
-      isRemoteMode: true
-    ),
-    (
-      id: 'editing',
-      label: 'editing (4 actions)',
-      isEditMode: true,
-      isRemoteMode: false
-    ),
-  ];
-
   final localizationsByTag = <String, AppLocalizations>{};
 
   setUpAll(() async {
@@ -139,14 +67,9 @@ void main() {
     // measured below is fiction.
     await loadAppFonts();
 
-    // Called for its side effect only. It registers the GetIt singletons
-    // `UspTopBar` and `buildStudioThemeData` read; the override list it returns
-    // is discarded because this suite needs the *widest* top bar — logged in
-    // with the Apps capability on — and `commonOverrides` pins both to their
-    // logged-out values. See [_widestTopBarOverrides].
-    commonOverrides();
-
-    _stubPackageInfoChannel();
+    // The GetIt singletons and the platform channel the hosts read from outside
+    // the widget tree.
+    prepareChromeHosts();
 
     for (final locale in AppLocalizations.supportedLocales) {
       localizationsByTag[localeTag(locale)] =
@@ -154,60 +77,31 @@ void main() {
     }
   });
 
+  // 12 widths × 26 locales. A literal, not `widths.length * locales.length`,
+  // which would be the enumeration restating itself: after the framework's
+  // regrouping this sweep reports 12 tests where it used to report 12 cells
+  // apiece, so "deliberately regrouped" and "stopped enumerating" look identical
+  // in the report and only a hand-written number tells them apart.
+  runOverflowSweep(family: const ChromeTopBarFamily(), expectedCellCount: 312);
+
+  // 12 widths × 3 modes × 26 locales. 312 + 936 = the 1,248 cells
+  // `test/fixtures/overflow_baselines/chrome.tsv` records.
+  runOverflowSweep(family: const ChromeHeaderFamily(), expectedCellCount: 936);
+
   group('top bar', () {
-    for (final width in sweepWidths) {
-      testWidgets('lays out cleanly at ${width.toInt()}px in every locale',
-          (tester) async {
-        final failures = <String>[];
-
-        for (final locale in AppLocalizations.supportedLocales) {
-          final tag = localeTag(locale);
-          final incidents = await collectOverflow(
-            tester,
-            _topBarHost(locale: locale, cellKey: '$width-$tag'),
-            surfaceSize: Size(width, sweepHeight),
-            cell: OverflowCell('chrome.top_bar', {
-              // `screen_px`, not `px`: what this sweep varies is the screen, while
-              // the card sweeps vary a card inside one. Both would read `px=800`
-              // and mean different things — and these ids are what a porter greps
-              // when a row changes.
-              //
-              // Whole pixels, the same identity `CardWidthCase.widthKey` gives a
-              // width — and rounded rather than truncated for the same reason it
-              // is: two widths a pixel apart must not collapse into one cell id.
-              'screen_px': width.toStringAsFixed(0),
-              'locale': tag,
-            }),
-          );
-          final real =
-              incidents.where((i) => i.pixels > kOverflowTolerancePx).toList();
-          if (real.isNotEmpty) {
-            failures.add('$tag: ${real.join(', ')}');
-          }
-        }
-
-        expect(
-          failures,
-          isEmpty,
-          reason: 'top bar overflowed at ${width.toInt()}px in '
-              '${failures.length} locale(s):\n${failures.join('\n')}',
-        );
-      });
-    }
-
     testWidgets(
         'keeps the nav labels whole in every locale at and above '
         '${kTopNavLabelMinWidth.toInt()}px', (tester) async {
       final labelledWidths =
-          sweepWidths.where((w) => w >= kTopNavLabelMinWidth).toList();
+          kChromeSweepWidths.where((w) => w >= kTopNavLabelMinWidth).toList();
       final failures = <String>[];
 
       for (final width in labelledWidths) {
         for (final locale in AppLocalizations.supportedLocales) {
           final tag = localeTag(locale);
-          await setLayoutSurface(tester, Size(width, sweepHeight));
+          await setLayoutSurface(tester, Size(width, kChromeSweepHeight));
           await tester.pumpWidget(
-            _topBarHost(locale: locale, cellKey: 'labels-$width-$tag'),
+            chromeTopBarHost(locale: locale, cellKey: 'labels-$width-$tag'),
           );
           await settleIgnoringAnimations(tester);
 
@@ -250,7 +144,7 @@ void main() {
 
       // Identifiers and chip counts do not vary by locale, so one locale is the
       // whole story here — unlike the label-fit assertion above.
-      final iconOnlyWidths = sweepWidths
+      final iconOnlyWidths = kChromeSweepWidths
           .where((w) => w > AppLayoutConfig.breakpointMobile)
           .where((w) => w < kTopNavLabelMinWidth)
           .toList();
@@ -258,9 +152,9 @@ void main() {
           reason: 'the sweep must cover the icon-only band');
 
       for (final width in iconOnlyWidths) {
-        await setLayoutSurface(tester, Size(width, sweepHeight));
+        await setLayoutSurface(tester, Size(width, kChromeSweepHeight));
         await tester.pumpWidget(
-          _topBarHost(locale: const Locale('en'), cellKey: 'icons-$width'),
+          chromeTopBarHost(locale: const Locale('en'), cellKey: 'icons-$width'),
         );
         await settleIgnoringAnimations(tester);
 
@@ -290,48 +184,6 @@ void main() {
   });
 
   group('dashboard header', () {
-    for (final width in sweepWidths) {
-      testWidgets('lays out cleanly at ${width.toInt()}px in every locale',
-          (tester) async {
-        final failures = <String>[];
-
-        for (final mode in headerModes) {
-          for (final locale in AppLocalizations.supportedLocales) {
-            final tag = localeTag(locale);
-            final incidents = await collectOverflow(
-              tester,
-              _headerHost(
-                locale: locale,
-                cellKey: '$width-$tag-${mode.id}',
-                isEditMode: mode.isEditMode,
-                isRemoteMode: mode.isRemoteMode,
-              ),
-              surfaceSize: Size(width, sweepHeight),
-              cell: OverflowCell('chrome.header', {
-                // The screen width, as in `chrome.top_bar` above.
-                'screen_px': width.toStringAsFixed(0),
-                'mode': mode.id,
-                'locale': tag,
-              }),
-            );
-            final real = incidents
-                .where((i) => i.pixels > kOverflowTolerancePx)
-                .toList();
-            if (real.isNotEmpty) {
-              failures.add('$tag [${mode.label}]: ${real.join(', ')}');
-            }
-          }
-        }
-
-        expect(
-          failures,
-          isEmpty,
-          reason: 'dashboard header overflowed at ${width.toInt()}px in '
-              '${failures.length} case(s):\n${failures.join('\n')}',
-        );
-      });
-    }
-
     testWidgets('keeps the page title whole at the narrowest supported width',
         (tester) async {
       const width = 320.0;
@@ -348,11 +200,11 @@ void main() {
       // so nothing "exceeded"), and `hasSplitToken` is blind to an ellipsis (the
       // surviving tokens all fit). "Instrumentpane / l" is the case that proved
       // it — 3.6px over the box, reported clean by the first check alone.
-      for (final mode in headerModes) {
+      for (final mode in kChromeHeaderModes) {
         for (final locale in AppLocalizations.supportedLocales) {
           final tag = localeTag(locale);
-          await setLayoutSurface(tester, const Size(width, sweepHeight));
-          await tester.pumpWidget(_headerHost(
+          await setLayoutSurface(tester, const Size(width, kChromeSweepHeight));
+          await tester.pumpWidget(chromeHeaderHost(
             locale: locale,
             cellKey: 'title-$tag-${mode.id}',
             isEditMode: mode.isEditMode,
@@ -398,7 +250,7 @@ void main() {
       // run, so a deferred dispose fails the test it was meant to clean up.
       final handle = tester.ensureSemantics();
 
-      for (final mode in headerModes) {
+      for (final mode in kChromeHeaderModes) {
         // The action that keeps its own button, and the ones that move into the
         // menu. Identifier values are unchanged from the pre-#1314 header — the
         // only change is that below 600px the menu has to be open first.
@@ -421,8 +273,8 @@ void main() {
             ),
         };
 
-        await setLayoutSurface(tester, const Size(320, sweepHeight));
-        await tester.pumpWidget(_headerHost(
+        await setLayoutSurface(tester, const Size(320, kChromeSweepHeight));
+        await tester.pumpWidget(chromeHeaderHost(
           locale: const Locale('en'),
           cellKey: 'menu-${mode.id}',
           isEditMode: mode.isEditMode,
@@ -462,8 +314,8 @@ void main() {
       final handle = tester.ensureSemantics();
       var printed = 0;
 
-      await setLayoutSurface(tester, const Size(320, sweepHeight));
-      await tester.pumpWidget(_headerHost(
+      await setLayoutSurface(tester, const Size(320, kChromeSweepHeight));
+      await tester.pumpWidget(chromeHeaderHost(
         locale: const Locale('en'),
         cellKey: 'invoke-print',
         isEditMode: false,
@@ -500,8 +352,8 @@ void main() {
         required IconData primaryIcon,
         required double width,
       }) async {
-        await setLayoutSurface(tester, Size(width, sweepHeight));
-        await tester.pumpWidget(_headerHost(
+        await setLayoutSurface(tester, Size(width, kChromeSweepHeight));
+        await tester.pumpWidget(chromeHeaderHost(
           locale: const Locale('en'),
           cellKey: 'headroom-$width-$isEditMode',
           isEditMode: isEditMode,
@@ -541,14 +393,14 @@ void main() {
       // The contrast that makes the assertion above meaningful, and the
       // regression guard for "the wide header renders exactly as it did before
       // #1314".
-      for (final mode in headerModes) {
+      for (final mode in kChromeHeaderModes) {
         final expected = switch (mode.isEditMode) {
           true => 4,
           false when mode.isRemoteMode => 2,
           false => 3,
         };
-        await setLayoutSurface(tester, const Size(1280, sweepHeight));
-        await tester.pumpWidget(_headerHost(
+        await setLayoutSurface(tester, const Size(1280, kChromeSweepHeight));
+        await tester.pumpWidget(chromeHeaderHost(
           locale: const Locale('en'),
           cellKey: 'wide-${mode.id}',
           isEditMode: mode.isEditMode,
@@ -563,159 +415,4 @@ void main() {
       }
     });
   });
-}
-
-/// The widest top bar the app can render: logged in, Apps capability on.
-///
-/// Both are overridden rather than left to `commonOverrides`, which returns the
-/// logged-out pair. The logged-out row is a strict subset of this one — it drops
-/// the Apps button and keeps everything else — so sweeping the widest
-/// configuration covers both, and sweeping the narrow one would have hidden the
-/// case #1328 was reported from.
-///
-/// The list length is fixed on purpose: `ProviderScope` asserts
-/// `_debugOverridesLength == overrides.length` across rebuilds, so a
-/// conditionally-included override reads as a framework assertion rather than as
-/// the layout question this suite is asking.
-List<Override> _widestTopBarOverrides() => [
-      authProvider.overrideWith(() => _LoggedInAuthNotifier()),
-      appsCapabilityProvider.overrideWith((ref) => true),
-    ];
-
-class _LoggedInAuthNotifier extends AuthNotifier {
-  @override
-  Future<AuthState> build() =>
-      Future.value(const AuthState(loginType: LoginType.local));
-}
-
-/// Hosts [UspTopBar] the way the shell does.
-///
-/// Three parts of this are load-bearing:
-/// - **A `GoRouter` ancestor.** `MenuHolderState.didChangeDependencies` calls
-///   `GoRouter.of(context)` unguarded, so a bare `MaterialApp` throws.
-/// - **A mounted `Navigator` under [uspShellNavigatorKey].** `MenuHolder.build`
-///   returns `MenuDisplay.none` while `navigatorKey.currentContext` is null, so
-///   without it the nav never appears and the sweep measures a row that is
-///   missing the child that overflowed.
-/// - **A unique [cellKey] per pump.** Flutter reports each `RenderFlex`'s
-///   overflow once per render-object lifetime. Re-pumping a same-shaped tree
-///   updates the elements in place and reuses those render objects, so every
-///   cell after the first would report clean. Re-keying the root forces a fresh
-///   subtree.
-/// - **`ExcludeSemantics` around that `Navigator`.** Its `MaterialPageRoute`
-///   ships a `ModalBarrier`, and a modal barrier is a `BlockSemantics` — it
-///   drops the semantics of everything painted before it, which in this `Column`
-///   is the entire top bar. Measured: without it the semantics tree held only
-///   the route, so every `nav-*` identifier read as absent at *every* width and
-///   the icon-only assertion below failed for a reason that had nothing to do
-///   with the nav. Production does not have this problem — there the top bar and
-///   the page content are plain siblings in a `Column`
-///   (`usp_dashboard_view.dart:36`), with no nested route between them — so the
-///   blocker is this host's, and excluding the placeholder route's semantics is
-///   the honest fix rather than a workaround for app behaviour.
-Widget _topBarHost({required Locale locale, required String cellKey}) {
-  return ProviderScope(
-    key: ValueKey('top-bar-$cellKey'),
-    overrides: _widestTopBarOverrides(),
-    child: MaterialApp.router(
-      locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
-      routerConfig: GoRouter(
-        initialLocation: '/',
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => Scaffold(
-              body: Column(
-                children: [
-                  UspTopBar(controllerProvider: uspMenuController),
-                  Expanded(
-                    child: ExcludeSemantics(
-                      child: Navigator(
-                        key: uspShellNavigatorKey,
-                        onGenerateRoute: (settings) => MaterialPageRoute(
-                          builder: (_) => const SizedBox.shrink(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/// Hosts [DashboardHeaderBar] with the padding `UspSliverDashboardView` wraps it
-/// in, so the width it is measured at is the width production grants it.
-///
-/// No `ProviderScope`: the widget takes values and callbacks only, which is what
-/// makes a 12-width × 26-locale × 3-mode sweep affordable at all. Pumping the
-/// view instead would mean standing up the whole dashboard orchestrator per
-/// cell.
-Widget _headerHost({
-  required Locale locale,
-  required String cellKey,
-  required bool isEditMode,
-  required bool isRemoteMode,
-  VoidCallback? onPrint,
-}) {
-  return MaterialApp(
-    key: ValueKey('header-$cellKey'),
-    locale: locale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
-    home: Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Builder(
-            builder: (context) => Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.pageMargin,
-                vertical: AppSpacing.md,
-              ),
-              child: DashboardHeaderBar(
-                isEditMode: isEditMode,
-                isRemoteMode: isRemoteMode,
-                onPrint: onPrint ?? () {},
-                onRefresh: () {},
-                onEdit: () {},
-                onOptimizeLayout: () {},
-                onLayoutSettings: () {},
-                onCancelEdit: () {},
-                onCommitEdit: () {},
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/// `GeneralSettingsWidget` inside the top bar reads `package_info` during build,
-/// which has no platform implementation under `flutter test`.
-void _stubPackageInfoChannel() {
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('dev.fluttercommunity.plus/package_info'),
-    (MethodCall methodCall) async {
-      if (methodCall.method == 'getAll') {
-        return <String, dynamic>{
-          'appName': 'PrivacyGUI',
-          'packageName': 'com.linksys.privacygui',
-          'version': '0.0.0',
-          'buildNumber': '0',
-        };
-      }
-      return null;
-    },
-  );
 }

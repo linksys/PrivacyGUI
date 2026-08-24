@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-21** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5)
+**Last Updated: 2026-08-22** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5). **Two ports have now been signed off against it**: #1342 (`check chrome`, 1,248 cells identical) and #1343 (`check card`, 1,917 identical).
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -41,7 +41,7 @@ kinds of difference appear, and they are not equally alarming:
 1 cell no longer measured (coverage lost — this would otherwise read as a pass):
   - forced_form.skeleton|variant=list|px=122|rows=1          ← the dangerous one
 2 new cells:
-  + chrome.header|px=800|mode=collapsed|locale=fr            ← added coverage
+  + chrome.header|screen_px=800|mode=viewing_local|locale=fr ← added coverage
 1 cell changed:
   - card.width|card=lan_info|px=191|tab=0|locale=de  clean     -   -  -              -
   + card.width|card=lan_info|px=191|tab=0|locale=de  overflow  41.0 right lib/a.dart:120 Row
@@ -142,7 +142,10 @@ keep.
   1,898 test names into 73 group names *by design*. A dataset keyed on test names
   would report that intended change as total loss and total gain, and the real
   question — did the same 1,898 coordinates get measured — would be unanswerable.
-  So cells are keyed on their intrinsic axes.
+  So cells are keyed on their intrinsic axes. **#1343 executed that regrouping**
+  (1,921 → 99 tests in the file) and `check card` reported 1,917 cells identical,
+  which is the design decision earning its keep: the largest port in the epic is
+  signed off by a diff that never saw a test name.
 - **Nothing volatile.** No timestamps, no run ids, no durations, no failure prose,
   and no map iteration order: axes are ordered as written and rows are sorted
   whole-line.
@@ -241,6 +244,16 @@ each of its 984 affected rows maps to exactly one row of the old file under
 other three files are untouched, and that is the evidence the shared `localeTag()`
 changed nothing for them: `check card popup forced_form` compares 1,917 + 347 + 75
 cells against the pre-#1356 bytes and reports all three identical.
+
+`forced_form` was then **re-captured at `d6fa9e27-dirty`** for #1344, and it is the
+second case of a rewritten dataset that is not a measurement change: its six
+`skeleton` rows gain the `|locale=en` they were always measured in, because
+`runOverflowSweep` appends the locale to every cell id by construction and locale is
+a field on the cell rather than an axis a family may respell. Same 75 cells, same
+groups, same six columns; the other 69 rows are byte-identical, so the whole diff is
+six renamed keys and the commit stamp. `popup` came through #1345 untouched — all
+three of its sweeps already carried `locale` last — which is what says the port
+measured the same 347 coordinates.
 
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|
