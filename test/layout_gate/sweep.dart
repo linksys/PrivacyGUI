@@ -60,8 +60,20 @@
 /// * **[OverflowSurfaceFamily.onCellSettled]**, which is an abstract member and
 ///   so cannot be omitted or defaulted. A sweep that only checks overflow can be
 ///   fully green while text is truncated to nothing — measured, four dashboard
-///   cards pass at 191px rendering unreadably. Writing an empty body is allowed;
-///   not noticing that you did is not.
+///   cards pass at 191px rendering unreadably.
+///
+///   What the abstract member buys is that the family is *asked*; #1364 is what
+///   the gap between being asked and answering cost. Emptying the normal band's
+///   body left the card suite 102 of 102 green, and paired with a loosened
+///   threshold search it took that mutation from 10 killers to 1 while 234 cells
+///   went on measuring the wrong form. So the one premise that *is* a value moved
+///   out of the body and onto the cell — `CardSweepCell.expectedDensity`, checked
+///   for every card family at once by `CardOverflowFamily.onCellSettled` — which is
+///   the same move `expectedCellCount` above is, and it distinguishes the two empty
+///   bodies by construction: a cell that declares no premise is answering.
+///   Everything a value cannot carry (readability, structure, gesture) is still the
+///   body's business, so an empty body remains legal — and remains something its
+///   doc comment has to say why about.
 ///
 /// ## The ratchet and the report live in the family, behind one hook (#1343)
 ///

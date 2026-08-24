@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
@@ -13,6 +15,7 @@ import '../incident.dart';
 import '../ratchet.dart';
 import '../sweep.dart';
 import 'card_sweep_cell.dart';
+import 'dashboard_card_family.dart';
 import 'dashboard_card_gate.dart';
 
 /// The card gate's oracle (#1343).
@@ -283,6 +286,180 @@ void main() {
     });
   });
 
+  group('the declared form premise', () {
+    // #1364. The premise `CardNormalBandFamily` used to assert in its hook body is
+    // now a value on the cell, checked by [CardOverflowFamily.onCellSettled]. These
+    // are the cases that make that enforceable rather than merely written down:
+    // emptying either half — the check, or the declaration the check reads — has to
+    // fail something here.
+    //
+    // The tree is a bare `CardDensityScope`, because that is all
+    // [selectedCardDensity] reads. Standing up a real card in the wrong form would
+    // mean moving a production threshold to test the harness.
+    Future<void> pumpForm(WidgetTester tester, CardDensity density) =>
+        tester.pumpWidget(
+          CardDensityScope(density: density, child: const SizedBox()),
+        );
+
+    CardSweepCell premiseCell({CardDensity? expected}) => CardSweepCell(
+          axes: {
+            'card': spec.id,
+            'width': widthCase.label,
+            'px': widthCase.widthKey,
+            'tab': 0,
+          },
+          locale: const Locale('de'),
+          cardId: spec.id,
+          widthCase: widthCase,
+          rows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+          expectedDensity: expected,
+          expectedDensityReason:
+              expected == null ? null : 'the threshold is what puts it here',
+        );
+
+    /// The message [body] failed with, or a failure of our own if it passed.
+    ///
+    /// "It passed" is the mutation this whole group exists to catch, so it gets a
+    /// sentence rather than an unexplained `throwsA` mismatch.
+    Future<String> failureOf(Future<void> Function() body) async {
+      try {
+        await body();
+      } on TestFailure catch (failure) {
+        return failure.message ?? '';
+      }
+      fail('the declared premise was not checked: this cell asked for one form '
+          'and was handed another, and onCellSettled returned normally');
+    }
+
+    testWidgets('a tree in another form fails, naming both and the reason',
+        (tester) async {
+      final family = _PremiseProbeFamily();
+      await pumpForm(tester, CardDensity.compact);
+
+      final message = await failureOf(
+        () => family.onCellSettled(
+            tester,
+            premiseCell(
+              expected: CardDensity.normal,
+            )),
+      );
+
+      expect(message, contains('"device_info" @min 191px tab0'));
+      expect(message, contains('declares expectedDensity CardDensity.normal'));
+      expect(message, contains('selected CardDensity.compact'));
+      expect(message, contains('the threshold is what puts it here'),
+          reason: 'the family\'s own reason is carried as data so the shared '
+              'check can print it — a generic message would send the reader back '
+              'to the debugger');
+      expect(family.hookRan, isFalse,
+          reason: 'the premise is about the tree the runner pumped, so it is '
+              'checked before a hook can pump another one over it');
+    });
+
+    testWidgets('the same cell passes on the form it declared', (tester) async {
+      final family = _PremiseProbeFamily();
+      await pumpForm(tester, CardDensity.normal);
+
+      await family.onCellSettled(
+          tester,
+          premiseCell(
+            expected: CardDensity.normal,
+          ));
+
+      expect(family.hookRan, isTrue,
+          reason: 'the check is a precondition on the hook, not a replacement');
+    });
+
+    testWidgets('a tree with no scope at all fails rather than reading normal',
+        (tester) async {
+      // The vacuous pass this fix could have shipped with. `selectedCardDensity`
+      // answers `normal` when nothing published a scope, and `normal` is the one
+      // value this band declares — so a card that lost its `CardDensityHost` would
+      // satisfy the premise having read nothing, which is #1364's own subject one
+      // level down. `publishedCardDensity` returns null instead, and null is not a
+      // form.
+      final family = _PremiseProbeFamily();
+      await tester.pumpWidget(const SizedBox());
+
+      final message = await failureOf(
+        () => family.onCellSettled(
+            tester,
+            premiseCell(
+              expected: CardDensity.normal,
+            )),
+      );
+
+      expect(message, contains('published no CardDensityScope at all'));
+      expect(message, contains('CardDensityHost'),
+          reason:
+              'a missing scope is a missing host, not a moved threshold, and '
+              'the two have different first things to look at');
+      expect(family.hookRan, isFalse);
+    });
+
+    testWidgets('a cell that declares nothing is not asked at all',
+        (tester) async {
+      // The half that makes an empty hook a legible answer rather than a
+      // suspicious one: three card families have no form to assert, and a cell
+      // declaring no premise is how they say so. If this ever failed, those three
+      // would have to invent a premise to stay green.
+      final family = _PremiseProbeFamily();
+      await pumpForm(tester, CardDensity.popup);
+
+      await family.onCellSettled(tester, premiseCell());
+
+      expect(family.hookRan, isTrue);
+    });
+
+    test('every normal-band cell declares normal, and says why', () {
+      // The pin that catches the other mutation: deleting `expectedDensity:` from
+      // `CardNormalBandFamily.enumerate()`. Written as a set rather than a count so
+      // one cell losing the declaration is the failure — the count is already
+      // pinned by the sweep, and a `null` slipping into 234 identical values is
+      // exactly what a count cannot see.
+      final cells = CardNormalBandFamily(CardSweepGate())
+          .enumerateCells()
+          .cast<CardSweepCell>()
+          .toList();
+
+      expect(cells, isNotEmpty);
+      expect(
+        {for (final cell in cells) cell.expectedDensity},
+        {CardDensity.normal},
+        reason:
+            'this sweep exists to measure the normal band, and the cells are '
+            'the only place that claim is now written down',
+      );
+      expect(
+        cells.where((cell) => cell.expectedDensityReason == null),
+        isEmpty,
+        reason: 'the reason names the card\'s own normalAbove, which is what '
+            'makes the failure actionable',
+      );
+      expect(cells.first.expectedDensityReason, contains('normalAbove'));
+    });
+
+    test('the other two card families declare none, deliberately', () {
+      // Not symmetry for its own sake. `card.width` pumps whatever form the grid's
+      // narrowest realization selects — the four cards that pass at 191px while
+      // rendering unreadably are #1240 AC1's, not a premise this sweep can state —
+      // and `card.profile` varies the data, not the form. Pinning the absence is
+      // what stops someone "completing" the pattern by declaring a form these
+      // sweeps do not have.
+      for (final family in [
+        CardWidthFamily(CardSweepGate()),
+        CardProfileFamily(CardSweepGate()),
+      ]) {
+        final declared = family
+            .enumerateCells()
+            .cast<CardSweepCell>()
+            .map((cell) => cell.expectedDensity)
+            .toSet();
+        expect(declared, {null}, reason: '${family.name} declares no form');
+      }
+    });
+  });
+
   group('the closing direction', () {
     testWidgets('a complete run reports the entry nothing needed',
         (tester) async {
@@ -340,4 +517,30 @@ void main() {
       expect(printed.single, contains('1 of 2 declared cells were measured'));
     });
   });
+}
+
+/// A card family that enumerates nothing and records whether its hook ran.
+///
+/// So that the premise cases exercise [CardOverflowFamily.onCellSettled] and
+/// nothing else: the three real families each carry a gate, an enumeration and a
+/// verdict, and any of those failing would look like the check failing. `hookRan`
+/// is what pins the *order*, which is the part a reader cannot see from the call.
+class _PremiseProbeFamily extends CardOverflowFamily {
+  _PremiseProbeFamily();
+
+  bool hookRan = false;
+
+  @override
+  String get name => 'card.premise_probe';
+
+  @override
+  List<String> get axisNames => const ['card'];
+
+  @override
+  Iterable<OverflowSweepCell> enumerateCells() => const [];
+
+  @override
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
+    hookRan = true;
+  }
 }

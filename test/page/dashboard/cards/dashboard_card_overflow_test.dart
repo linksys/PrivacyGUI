@@ -282,10 +282,19 @@ void main() {
   // that is pinned rather than argued.
   //
   // No density is pinned. The coordinate is chosen so production's own selection
-  // lands on normal, and every cell asserts that it did — in
-  // [CardNormalBandFamily.onCellSettled], because a pinned sweep would keep
-  // passing after a threshold moved out from under it, measuring a form the width
-  // no longer selects.
+  // lands on normal, and every cell asserts that it did — because a pinned sweep
+  // would keep passing after a threshold moved out from under it, measuring a form
+  // the width no longer selects.
+  //
+  // Since #1364 that assertion is a **declared value and not a hook body**: each
+  // cell carries `expectedDensity: CardDensity.normal` plus the reason its width is
+  // the band's, and `CardOverflowFamily.onCellSettled` checks it for every card
+  // family before the family's own hook runs. It was an `expect` inside
+  // [CardNormalBandFamily.onCardSettled] until then, which is a body that could be
+  // emptied — measured, 102 of 102 green with 234 cells measuring the wrong form,
+  // and row 3 below is the pairing that made it visible. As data it is enforced by
+  // code no family overrides and pinned by
+  // `test/layout_gate/families/dashboard_card_gate_test.dart`.
   //
   // Exemptions here are keyed on the overflow's own `file:line`, like every other
   // sweep since #1341 — this sweep needs no key grammar of its own, which is one of
@@ -352,7 +361,7 @@ void main() {
   // |---|---|---|---|
   // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | **7 tests, none of them the main width sweep**: `usp_network_health_density_test`'s four pinned-normal assertions, the two dialog groups in `dashboard_card_popup_overflow_test` (400px — 6 tests pre-port, regrouped by #1344), and one coordinate of *this* sweep, `network_health` tab 0, which was 26 failing `testWidgets` pre-port and is one failing test naming 26 locales now. The only row the merge left alone, and the only one whose killers #1348 already counted outside this file. `card.width` — still the largest thing in the file at 1,638 cells — sees **nothing**, before the port and after |
   // | 2 | `the seven cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | **18**, of which 4 are in this file: all 3 meta-tests plus `card.normal_band`'s declared count (234 → 156; 208 → 130 at #1348, which counted only these). The other 14 are what a card losing its threshold actually costs: 10 in `usp_network_health_density_test`, because a card with no threshold has no compact *or* popup band and every form that suite pins disappears; 2 in `dashboard_card_popup_overflow_test`'s inventory; and 2 in `dashboard_card_forced_form_overflow_test`, where `forced_form.compact_floor` falls 21 → 18 and its partition test loses an id — `selectableForms` reads `normalAbove`, so a card without one is not pickable-compact. Those last two were killable at #1348's re-run and were simply not run. The pre-port entry said the sweep "stays green *if the pin is edited to match*"; there are now count pins in two files, and both fail first |
-  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | **10**: all 9 `card.normal_band` coordinates (234 of 234 cells — 8 and 208 of 208 at #1348, the same total coverage either way), plus `each threshold is realizable`. The count pin does **not** fire, and that is the honest half of this row: the mutation moves every `px=` in the sweep and changes no cell count, so it is `./tool/overflow_baseline.sh check card` that reports it and not something an `expectedCellCount` can see |
+  // | 3 | each cell's declared `expectedDensity: CardDensity.normal`, checked by `checkCardDensityPremise` (it was an `expect` in `onCardSettled` until #1364) | `normalBandCaseFor` accepts widths 100px below the threshold | **10**: all 9 `card.normal_band` coordinates (234 of 234 cells — 8 and 208 of 208 at #1348, the same total coverage either way), plus `each threshold is realizable`. Re-run on 2026-08-24 against #1364's fix and still 10, which is that ticket's acceptance: the premise moved from a body to a value and the pairing kept the same killers, now each quoting the reason `enumerate()` declared. The count pin does **not** fire, and that is the honest half of this row: the mutation moves every `px=` in the sweep and changes no cell count, so it is `./tool/overflow_baseline.sh check card` that reports it and not something an `expectedCellCount` can see |
   // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | **17**, where pre-port it was 1 and #1348 counted 3. Four here: `the gate's own widths cannot reach the normal band` (`widest` becomes 448.0), `each threshold is realizable` (new at the merge — `dhcp_reservations` realizes at screen 401, so a 480 floor pushes it to 818), and both count pins, `card.width` 1,638 → **2,470** and `card.profile` 52 → **78**. Dropping a screen floor makes the generator realize *more* widths, so the sweep silently grows by 858 cells — coverage drift upward, which nothing in the pre-port suite could see. Ten more are `narrowestRealizationOf`'s own unit tests and 3 are in the density suite. `dashboard_card_forced_form_overflow_test` stays **green** while every box it measures moves, exactly as its family header predicts: its spans are fixed constants, so a floor changes `px=` without changing how many cells there are, and the baseline diff is the only thing that reports it |
   // | 5 | the 9-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | **4**, where pre-port it was 1 — the one row the wider scope and the merge both leave alone: `the seven cards that declare a threshold` (9 → 7), `card.width` 1,638 → 1,534, `card.normal_band` 234 → 182, and — instead of `network_health still has 3 tabs`, which no longer exists because that loop iterates the registry — `network_health is single-view, so tab 0 is full coverage`, the inverse half written for exactly this case |
   group('normal band coverage', () {

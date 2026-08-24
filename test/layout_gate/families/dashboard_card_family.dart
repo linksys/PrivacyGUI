@@ -223,6 +223,15 @@ class CardNormalBandFamily extends _CardFamily {
       final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
       final wc = normalBandCaseFor(spec)!;
       final tabCount = tabCountFor(spec.id);
+      // Hoisted out of the two inner loops: it is a fact about the card, and
+      // building it per cell would be 26 identical strings per coordinate.
+      final because =
+          '${wc.widthKey}px is the narrowest width the grid produces '
+          'at or above "${spec.id}"\'s own declared normalAbove '
+          '(${spec.normalAbove}), which is the whole of why this coordinate is in '
+          'the normal band. normalBandCaseFor and densityForWidth have therefore '
+          'disagreed: check whether the threshold moved or the selection rule '
+          'changed.';
       for (var tab = 0; tab < tabCount; tab++) {
         for (final locale in cardSweepLocales) {
           cells.add(CardSweepCell(
@@ -238,6 +247,11 @@ class CardNormalBandFamily extends _CardFamily {
             rows: rows,
             tab: tab,
             tabCount: tabCount,
+            // The sweep's premise, as data. Nothing is pinned into the tree — see
+            // [onCardSettled] for why it is declared here rather than asserted
+            // there.
+            expectedDensity: CardDensity.normal,
+            expectedDensityReason: because,
             repaintKey: newRepaintKey(),
           ));
         }
@@ -247,29 +261,23 @@ class CardNormalBandFamily extends _CardFamily {
     return cells;
   }
 
-  /// The sweep's premise, checked on the tree it just pumped: no density is pinned
-  /// here, so a threshold that moved out from under the coordinate would leave
-  /// these cells measuring a degraded form and reporting green.
+  /// Empty, because this family's premise is a **declared value** and no longer a
+  /// hook body: every cell carries `expectedDensity: CardDensity.normal`, and
+  /// [CardOverflowFamily.onCellSettled] checks it before this runs.
   ///
-  /// In the settled-cell hook rather than after the measurement, which is what the
-  /// hook is for. A failure here is invariant 3's case: it becomes this cell's
-  /// failure and the other 25 locales are still measured — where the pre-#1343
-  /// `expect` failed one whole `testWidgets`, which was one locale anyway.
+  /// It used to be the `expect` here, and #1364 is what that cost. No density is
+  /// pinned into the tree, so a threshold that moved out from under the coordinate
+  /// leaves these cells measuring a degraded form and reporting green — and the
+  /// assertion that catches it was worth 9 of the 10 tests that killed a loosened
+  /// `normalBandCaseFor`, while emptying this body was killed by nothing at all.
+  /// As data it cannot be emptied from here, and
+  /// `dashboard_card_gate_test.dart` pins that all 234 cells still declare it.
+  ///
+  /// What has not changed is where the failure lands: the check runs inside the
+  /// settled-cell hook, so it is invariant 3's case — this cell's failure, with the
+  /// other 25 locales still measured.
   @override
-  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {
-    final spec = _specFor(card.cardId);
-    expect(
-      selectedCardDensity(tester),
-      CardDensity.normal,
-      reason:
-          '"${card.cardId}" was pumped at ${card.widthCase.widthKey}px — the '
-          'narrowest width at or above its declared normalAbove '
-          '(${spec.normalAbove}) — but selected a degraded form, so this case is '
-          'no longer measuring the normal band. normalBandCaseFor and '
-          'densityForWidth have disagreed: check whether the threshold moved or '
-          'the selection rule changed.',
-    );
-  }
+  Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 
   @override
   Future<String?> judgeCard(

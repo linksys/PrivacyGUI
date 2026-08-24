@@ -384,9 +384,26 @@ CardWidthCase? normalBandCaseFor(WidgetSpec spec) {
 /// The point is that it is a read and not a pin: a sweep that pinned the form it
 /// wanted would keep passing after a threshold moved out from under it, measuring a
 /// form production no longer shows at that width (#1318).
-CardDensity selectedCardDensity(WidgetTester tester) {
+///
+/// Absence answers `normal`, which is a convenience for the readability suites that
+/// pump a form directly and have no host. It is also indistinguishable from a host
+/// that *selected* normal, so anything asserting the normal band's premise wants
+/// [publishedCardDensity] instead — see its header.
+CardDensity selectedCardDensity(WidgetTester tester) =>
+    publishedCardDensity(tester) ?? CardDensity.normal;
+
+/// The [CardDensity] the pumped tree published, or null when it published no
+/// [CardDensityScope] at all.
+///
+/// The distinction [selectedCardDensity] cannot make, and the reason it matters is
+/// #1364's own subject one level down: that function's absence fallback is `normal`,
+/// which is the one value [CardNormalBandFamily] declares — so a card that stopped
+/// being wrapped in a [CardDensityHost] would satisfy the band's premise *vacuously*,
+/// which is the shape of assertion that ticket exists to remove. `null` here is a
+/// third answer rather than a form, so `checkCardDensityPremise` can fail on it.
+CardDensity? publishedCardDensity(WidgetTester tester) {
   final finder = find.byType(CardDensityScope);
-  if (finder.evaluate().isEmpty) return CardDensity.normal;
+  if (finder.evaluate().isEmpty) return null;
   return tester.widget<CardDensityScope>(finder.first).density;
 }
 
