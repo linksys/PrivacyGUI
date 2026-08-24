@@ -88,9 +88,15 @@ Future<List<OverflowIncident>> probeViewOverflow(
   final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
 
   return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    // [setLayoutSurface], not the three lines by hand: it is the gate's
+    // Invariant 2 — the surface is set and reset in **one** place (architecture
+    // doc §3.4) — and #1340 exists because those three lines were hand-copied ten
+    // times, of which only the chrome half ever undid them. This file was written
+    // on `dev-2.7.0`, where #1340 had not landed, so the merge made it the
+    // eleventh copy and the second unreset one. Nothing measured here changes:
+    // the restore runs at teardown, and both callers set their own width in every
+    // test. What changes is what the *next* test in the file measures in.
+    await setLayoutSurface(tester, surface);
 
     // `LinksysRoute`, not `GoRoute`: it is what the app builds its routes with,
     // and it is what carries the dirty-guard contract these detail pages sit

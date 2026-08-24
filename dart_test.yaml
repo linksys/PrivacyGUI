@@ -3,10 +3,14 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 41 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 44 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
-  # render-parity and overflow.
+  # render-parity and overflow. 41 until the `dev-2.7.0` merge on 2026-08-24
+  # brought three files written against the retired `dashboard-card` name (two
+  # detail-view sweeps from #1302 and a density suite from #1321); renaming their
+  # tag is what enrolled them, and the count is here so the next such file is
+  # noticed rather than merged in silence.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
@@ -20,14 +24,19 @@ tags:
   # `test/layout_gate/families/dashboard_card_gate_test.dart` since #1343).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 317 test files to skip 313 of them. Measured 2026-08-22 after
-  # #1344/#1345, the same 273 tests take 2m09s under the tag and 27s when the
-  # four files are named (shell clock; `flutter test`'s own is 1m53s and 19s).
-  # Name the file for a tight loop; use the tag when a fifth sweep must not be
-  # missed.
+  # all 323 test files to skip 319 of them. Re-measured 2026-08-24 at the
+  # `dev-2.7.0` merge, the same 277 tests take 2m08s under the tag and 28s when
+  # the four files are named (shell clock; `flutter test`'s own is 1m52s and
+  # 22s). Name the file for a tight loop; use the tag when a fifth sweep must not
+  # be missed.
   #
-  # 273, not the 590 this said after #1343 nor the 2,412 before it: every sweep
-  # now loops its locales inside one test per coordinate, so the same 3,587 cells
-  # are declared by 273 tests (card 99, popup 80, chrome 57, forced-form 37).
+  # 277, not the 590 this said after #1343 nor the 2,412 before it: every sweep
+  # now loops its locales inside one test per coordinate, so the same 3,616 cells
+  # are declared by 277 tests (card 102, popup 80, chrome 57, forced-form 38).
   # Cells are what the gate measures; the test count is how they are named.
+  #
+  # +4 tests and +29 cells at the merge, and no sweep was edited for either:
+  # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal
+  # band's sweep and in `selectableForms(compact)`. The clock did not move — the
+  # cost here is compiling 323 suites, not pumping 29 more cells.
   overflow:
