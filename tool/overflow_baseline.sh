@@ -17,7 +17,10 @@
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
 #   All four sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 3,587 coordinates that are measured and clean. The test run
+#   freeze is coverage: 3,616 coordinates that are measured and clean — card 1,943,
+#   popup 347, forced_form 78, chrome 1,248, re-checked at the `dev-2.7.0` merge on
+#   2026-08-24, where +29 cells arrived from a production spec change (#1325's
+#   `normalAbove` on `dhcp_reservations`) with no sweep edited. The test run
 #   is nonetheless allowed to exit non-zero — a sweep can go red at any time, and
 #   its records are still the right input for a diff. What must never be tolerated
 #   is a *truncated* run, which the extractor rejects on its own.

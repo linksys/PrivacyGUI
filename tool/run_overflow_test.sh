@@ -12,9 +12,13 @@
 # only by knowing they existed.
 #
 # The tag costs load time, and it is not small. `@Tags` is discovered by loading
-# the suite, so `--tags overflow` compiles all 314 test files and then skips 310
-# of them: measured 2026-08-21, the same 2,386 tests take 1m53s under the tag and
-# 32s when the four files are named. Correctness is identical — the selection is
+# the suite, so `--tags overflow` compiles all 323 test files and then skips 319
+# of them: re-measured 2026-08-24 at the `dev-2.7.0` merge, the same 277 tests
+# take 2m08s under the tag and 28s when the four files are named (shell clock;
+# `flutter test`'s own is 1m52s and 22s). The test count fell from 2,386 to 277
+# without losing a cell — #1344 and #1343 regrouped each sweep's locales inside
+# one test per coordinate, so the same 3,616 cells are now named by 277 tests.
+# Correctness is identical — the selection is
 # exactly those four either way — so the tag is right for a pre-commit run and
 # for this script, whose job is to be complete. For a tight inner loop on one
 # card, name the file and skip the discovery pass:
@@ -36,7 +40,8 @@ OVERFLOW_TAG="overflow"
 # `-l` stays pointed at one file rather than the tag: what it prints is the
 # `UspWidgetSpecs.all` registry, a card-family concern, and the main card sweep
 # is the only suite that implements the `LIST_CARDS` early return. Under the tag
-# the other three sweeps would run in full — 465 tests — to print one list.
+# the other three sweeps would run in full — 175 tests (popup 80, chrome 57,
+# forced-form 38) — to print one list.
 LIST_TARGET_TEST="test/page/dashboard/cards/dashboard_card_overflow_test.dart"
 OUTPUT_DIR="build/overflow_testing"
 
@@ -49,8 +54,9 @@ card sweep, the popup and forced-form card sweeps, and the page-chrome sweep.
 The same selector as the pre-commit run, \`flutter test --tags overflow\`.
 
 Note the tag's discovery cost: every test file is loaded so its tags can be
-read, which is ~1m20s on top of the sweeps themselves. Complete, not quick.
-For a tight loop on one card, name the sweep file directly instead.
+read, which is ~1m40s on top of the sweeps themselves (2m08s under the tag
+against 28s for the four files named, shell clock, 2026-08-24). Complete, not
+quick. For a tight loop on one card, name the sweep file directly instead.
 
 Usage:
   ./tool/run_overflow_test.sh [options]
