@@ -5,7 +5,9 @@ import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-/// Common provider overrides shared across all golden tests.
+/// Common provider overrides shared across all golden tests — and, since #1361 moved
+/// this file out of `test/golden_test/`, across the widget tests and the overflow gate
+/// that were already importing it from there.
 ///
 /// Sets up:
 /// - GetIt singletons (ThemeJsonConfig, dark/light ThemeData)

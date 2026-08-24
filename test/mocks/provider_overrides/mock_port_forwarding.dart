@@ -71,7 +71,9 @@ class FixedPortForwardingPageNotifier extends UspPortForwardingPageNotifier {
       String instancePath, bool enabled) async {}
 }
 
-/// Returns provider overrides for port forwarding golden tests.
+/// Returns provider overrides for the port forwarding page — the golden view test and
+/// the tab-identifier widget test, which is why this lives outside `test/golden_test/`
+/// (#1361).
 List<Override> portForwardingOverrides(PortForwardingPageFeatureState state) =>
     [
       uspPortForwardingPageProvider

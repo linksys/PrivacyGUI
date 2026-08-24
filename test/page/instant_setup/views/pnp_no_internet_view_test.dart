@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../golden_test/golden_framework/mocks/mock_common.dart';
+import '../../../mocks/provider_overrides/mock_common.dart';
 
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,

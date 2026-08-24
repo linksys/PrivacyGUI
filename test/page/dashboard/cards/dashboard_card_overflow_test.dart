@@ -102,14 +102,14 @@ import '../../../util/overflow_baseline.dart';
 /// family.
 final CardSweepGate _gate = CardSweepGate();
 
-/// The fixture every card case in this file pumps, named once so #1319 — which
-/// moves it out of `test/golden_test/` — has one line to change.
+/// The fixture every card case in this file pumps, named once — which is what made
+/// #1361, the ticket that moved it out of `test/golden_test/`, one line here.
 ///
 /// It survived #1343's port even though the rest of this file's plumbing did not:
 /// the two groups that read it assert something about the fixture *file*, not
 /// about a rendered tree, so there is no cell for a family to enumerate.
 const String _sharedFixturePath =
-    'test/golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+    'test/mocks/test_data/scenes/cards_test_data.dart';
 
 bool get _isListOnly {
   const d = String.fromEnvironment('LIST_CARDS');
@@ -504,9 +504,10 @@ void main() {
       expect(
         file.existsSync(),
         isTrue,
-        reason: 'the shared fixture is not at $_sharedFixturePath. #1319 moves '
-            'it out of test/golden_test/ — update _sharedFixturePath here, '
-            'which is the only place this suite names the path.',
+        reason: 'the shared fixture is not at $_sharedFixturePath. Whoever '
+            'moves it again — #1361 already moved it once, out of the golden '
+            'suite — updates _sharedFixturePath here, which is the only place '
+            'this suite names the path.',
       );
 
       final offenders = <String>[];

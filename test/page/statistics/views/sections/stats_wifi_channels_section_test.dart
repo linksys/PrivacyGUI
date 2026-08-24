@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/statistics/views/sections/stats_wifi_channels_s
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../golden_test/golden_framework/mocks/mock_statistics.dart';
+import '../../../../mocks/provider_overrides/mock_statistics.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../../util/overflow_probe.dart';

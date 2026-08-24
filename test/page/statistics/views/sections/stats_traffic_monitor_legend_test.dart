@@ -8,8 +8,8 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 
-import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../../mocks/test_data/scenes/cards_test_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/overflow_probe.dart';
 import '../../../../util/statistics/stats_section_probe.dart';

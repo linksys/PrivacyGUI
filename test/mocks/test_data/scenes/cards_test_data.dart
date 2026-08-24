@@ -381,7 +381,7 @@ final testDhcpReservations = [
 /// with the wall clock, so the `card_dhcp_reservations` golden gains a cell that
 /// churns between baseline generation and verification. This is the sibling
 /// fixture's existing behaviour rather than a new class of problem —
-/// `test/golden_test/page/dhcp/fixtures/dhcp_test_data.dart:27` has shipped
+/// `test/mocks/test_data/scenes/dhcp_test_data.dart:27` has shipped
 /// `DateTime.now().add(...)` behind a golden that renders `leaseExpiryFormatted`,
 /// an absolute `yyyy-MM-dd HH:mm` stamp, which churns every minute. The systemic
 /// fix is a clock seam (`clock.now()` in the model, `withClock` in the golden

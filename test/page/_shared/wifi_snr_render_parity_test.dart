@@ -20,8 +20,8 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart
 // file needs the client model's. Only `AppLoader` is wanted from ui_kit here.
 import 'package:ui_kit_library/ui_kit.dart' hide ConnectionType;
 
-import '../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../golden_test/golden_framework/mocks/mock_statistics.dart';
+import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../mocks/provider_overrides/mock_statistics.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/dashboard_card_probe.dart';
 import '../../util/overflow_probe.dart';

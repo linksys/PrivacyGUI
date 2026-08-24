@@ -373,10 +373,18 @@ test/golden_test/golden_framework/
   mocks/
     mock_firewall.dart      // FixedFirewallNotifier + firewallOverrides()
     mock_wifi_settings.dart // FixedWifiSettingsNotifier + wifiOverrides()
-    mock_common.dart        // commonOverrides() — shared across all views
   golden_test_config.dart
   golden_runner.dart
+
+test/mocks/provider_overrides/
+    mock_common.dart        // commonOverrides() — shared across all views,
+                            //   and with the non-golden widget tests (#1361)
 ```
+
+A mock only golden uses stays under `golden_framework/mocks/`. One a test outside
+`test/golden_test/` also imports moves to `test/mocks/provider_overrides/`, so no test
+has to reach into the golden suite for a provider override — see #1361 and
+`doc/testing/overflow_gate_architecture.md` §9.4.
 
 ### Per-Feature Mock Example
 
@@ -385,7 +393,9 @@ See the complete Firewall example above for `mock_firewall.dart` implementation.
 ### Common Overrides
 
 ```dart
-// test/golden_test/golden_framework/mocks/mock_common.dart
+// test/mocks/provider_overrides/mock_common.dart
+// (moved out of golden_framework/mocks/ by #1361 — non-golden widget tests
+//  import it too, so it lives in the neutral location)
 
 List<Override> commonOverrides() => [
   authProvider.overrideWith(() => FixedAuthNotifier()),
@@ -720,14 +730,25 @@ done
 test/golden_test/
   flutter_test_config.dart        # Alchemist config + font loading (auto-loaded by test runner)
   golden_framework/
-    golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType
+    golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType,
+                                  #   GoldenDevice (names here; the two Sizes come
+                                  #   from test/util/test_viewports.dart, which a
+                                  #   non-golden card test reads too — #1361)
     golden_runner.dart            # runViewGoldenTests(), _buildGoldenWidget()
-    devices.dart                  # GoldenDevice definitions
     mocks/
-      mock_common.dart            # commonOverrides()
       mock_firewall.dart          # FixedFirewallNotifier + firewallOverrides()
       mock_dashboard.dart         # Dashboard-specific mocks + stub widget factory
-      ...                         # one file per feature
+      ...                         # one file per feature, golden-only
+
+test/mocks/                       # neutral: imported by golden AND by widget tests
+  provider_overrides/
+    mock_common.dart              # commonOverrides()
+    mock_dashboard_cards.dart     # Fixed*DataNotifier for the dashboard cards
+    ...                           # the seven #1361 moved out of golden_framework/
+  test_data/
+    scenes/
+      cards_test_data.dart        # the dashboard cards' shared fixture
+      ...                         # the five #1361 moved out of page/*/fixtures/
 ```
 
 ### Per-Feature Tests

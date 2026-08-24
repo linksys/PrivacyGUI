@@ -1,6 +1,6 @@
 # Overflow Gate — Framework Architecture
 
-**Last Updated: 2026-08-24** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1345, #1351, #1348, #1349 — #1346 left the epic on 2026-08-22, §9.4, and #1361 was opened outside it). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix recorded 2026-08-21 and its consequence narrowed to the scout alone on 2026-08-22 (§8, §9.2, §9.4). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 on 2026-08-21 (§3.5) — on a "cannot be verified on a developer machine" claim §3.5 has since corrected; the split still stands, for sequencing. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1). **#1344 and #1345 then closed R3** — the forced-form and popup sweeps, in one pass over one shared `CardSweepCell`, with `check popup` byte-identical at 347 cells and `check forced_form` 75 cells carrying the six `|locale=en` renames §2's rule forces; all four sweeps are now declared through the runner and every count in §1.2 is re-measured. **R4 then left this epic on 2026-08-22 — see §9.4.** The gate is the guard and golden is the scout (§8), and a scout-side deliverable sitting inside a guard-side epic had put a three-hour CI round-trip in front of the epic's own acceptance: #1346 is now a standalone golden-facing ticket, #1339 stays as a gate-side finishing ticket with an offline verification, and one coupling this document had recorded as harmless — the gate's fixtures living under `test/golden_test/` — is ticketed on its own as #1361.** **`dev-2.7.0` was merged into `fix/1314-1328-chrome-overflow` on 2026-08-24, and the gate grew by 29 cells without anyone editing a sweep**: #1325 gave `dhcp_reservations` a `normalAbove: 369`, which both `CardNormalBandFamily` (one coordinate per threshold per tab × 26 locales, +26) and `ForcedCompactFloorFamily` (`selectableForms` reads that field, +3) enumerate from. Both `expectedCellCount` pins fired, which is what they are required rather than defaulted for (§4 of `sweep.dart`); the four baselines are re-captured at **card 1,943 · popup 347 · forced_form 78 · chrome 1,248 = 3,616 rows**, a purely additive diff of 29 new rows with none removed and none changed, verified `check`-identical on two runs minutes apart to prove #1321's now-relative lease fixture is byte-stable. The card suite's mutation table was re-executed against the merged code and its scope fixed (§9.3), §1.2 and §6 are re-measured against the merged tree (**5,310 in the whole gate, and all 87 above R3's 5,223 accounted for**), the density suite's own ledger is re-measured (row A 66 → 18, all of it R3's regrouping), and **F9 — #1348's one unrunnable mutation — was finally run**: reverting #1321's fixture fix is caught by 2 tests out of 1,362 and by no swept cell at all (§9.5). **#1364 then closed R5's one surviving mutation, and #1366 closed the two further shapes of it that closing turned up** (both 2026-08-24): a premise a family holds in `onCardSettled` is deletable in silence, so all three shapes are now values on `CardSweepCell` — `expectedDensity`, `widgetPremises` and `openWith` — checked by `CardOverflowFamily.onCellSettled` and pinned family-by-family in `families/dashboard_card_gate_test.dart`, whose oracle went 11 cases → 28. F11 is the one worth reading: an emptied hook left the popup sweep 80 of 80 green *and* `check popup` reporting 347 cells identical while 78 of them measured a tree another family already covers, which is the first coverage loss in this epic that the coverage baseline is structurally blind to. All four baselines stay byte-identical at 3,616 across both tickets — they change what the gate asserts, not what it measures (§9.5).
+**Last Updated: 2026-08-24** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1345, #1351, #1348, #1349 — #1346 left the epic on 2026-08-22, §9.4, and #1361 was opened outside it). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix recorded 2026-08-21 and its consequence narrowed to the scout alone on 2026-08-22 (§8, §9.2, §9.4). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 on 2026-08-21 (§3.5) — on a "cannot be verified on a developer machine" claim §3.5 has since corrected; the split still stands, for sequencing. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1). **#1344 and #1345 then closed R3** — the forced-form and popup sweeps, in one pass over one shared `CardSweepCell`, with `check popup` byte-identical at 347 cells and `check forced_form` 75 cells carrying the six `|locale=en` renames §2's rule forces; all four sweeps are now declared through the runner and every count in §1.2 is re-measured. **R4 then left this epic on 2026-08-22 — see §9.4.** The gate is the guard and golden is the scout (§8), and a scout-side deliverable sitting inside a guard-side epic had put a three-hour CI round-trip in front of the epic's own acceptance: #1346 is now a standalone golden-facing ticket, #1339 stays as a gate-side finishing ticket with an offline verification, and one coupling this document had recorded as harmless — the gate's fixtures living under `test/golden_test/` — is ticketed on its own as #1361.** **`dev-2.7.0` was merged into `fix/1314-1328-chrome-overflow` on 2026-08-24, and the gate grew by 29 cells without anyone editing a sweep**: #1325 gave `dhcp_reservations` a `normalAbove: 369`, which both `CardNormalBandFamily` (one coordinate per threshold per tab × 26 locales, +26) and `ForcedCompactFloorFamily` (`selectableForms` reads that field, +3) enumerate from. Both `expectedCellCount` pins fired, which is what they are required rather than defaulted for (§4 of `sweep.dart`); the four baselines are re-captured at **card 1,943 · popup 347 · forced_form 78 · chrome 1,248 = 3,616 rows**, a purely additive diff of 29 new rows with none removed and none changed, verified `check`-identical on two runs minutes apart to prove #1321's now-relative lease fixture is byte-stable. The card suite's mutation table was re-executed against the merged code and its scope fixed (§9.3), §1.2 and §6 are re-measured against the merged tree (**5,310 in the whole gate, and all 87 above R3's 5,223 accounted for**), the density suite's own ledger is re-measured (row A 66 → 18, all of it R3's regrouping), and **F9 — #1348's one unrunnable mutation — was finally run**: reverting #1321's fixture fix is caught by 2 tests out of 1,362 and by no swept cell at all (§9.5). **#1364 then closed R5's one surviving mutation, and #1366 closed the two further shapes of it that closing turned up** (both 2026-08-24): a premise a family holds in `onCardSettled` is deletable in silence, so all three shapes are now values on `CardSweepCell` — `expectedDensity`, `widgetPremises` and `openWith` — checked by `CardOverflowFamily.onCellSettled` and pinned family-by-family in `families/dashboard_card_gate_test.dart`, whose oracle went 11 cases → 28. F11 is the one worth reading: an emptied hook left the popup sweep 80 of 80 green *and* `check popup` reporting 347 cells identical while 78 of them measured a tree another family already covers, which is the first coverage loss in this epic that the coverage baseline is structurally blind to. All four baselines stay byte-identical at 3,616 across both tickets — they change what the gate asserts, not what it measures (§9.5). **#1361 then removed the last coupling this document had recorded as harmless** (2026-08-24): the shared card fixtures and provider-override builders now live in `test/mocks/`, so no test outside `test/golden_test/` imports anything inside it — 19 real importers rather than the ticket's 15 and 12 files rather than 8, because `dev-2.7.0` added four more importers in the two days the ticket sat open. Suite and gate totals unchanged, all four baselines `check`-identical (§9.4).
 
 **Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · **R4 → gone; it left this epic on 2026-08-22 (§9.4)** — #1346 is a standalone golden-facing ticket, and #1339 (retire the golden framework's own parser) stays as a gate-side finishing ticket whose verification is offline rather than CI-bound (§3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349** · plus **#1361**, the fixture-decoupling ticket §9.4 opened. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
@@ -1134,7 +1134,10 @@ drops its hardwired `TARGET_TEST` in favour of the tag.
    neither side and does not trigger it.
 5. **`test/util/app_test_fonts.dart` is shared with `test/golden_test/flutter_test_config.dart`
    deliberately**, so that both font loaders answer "how wide is this text"
-   identically. Do not fork it.
+   identically. Do not fork it. `test/util/test_viewports.dart` is the second file of
+   that shape (#1361, §9.4): the golden `GoldenDevice` sizes and the DHCP card tests'
+   `phoneSize` are the same two constants, for the same reason — a measurement shared
+   with the baselines is only shared while there is one copy of it.
 
 ---
 
@@ -1597,6 +1600,68 @@ afterwards neither oracle owns the other's fixtures. The target shape has a
 precedent pointing the right way: `test/golden_test/flutter_test_config.dart:5`
 imports `../util/app_test_fonts.dart`, a neutral util living outside both.
 
+**#1361 landed 2026-08-24, and re-measuring first is what set its size.** The ticket's
+scope was written on 2026-08-22 and the `dev-2.7.0` merge (§9.1) invalidated the count
+two days later: **15 real importers became 19, and 8 files to move became 12.** The four
+new importers are `usp_dhcp_reservations_density_test.dart`,
+`usp_device_detail_speed_card_overflow_test.dart`,
+`usp_node_detail_backhaul_overflow_test.dart` and `test/util/detail_view_probe.dart` —
+none of them written with this ticket in view, which is the point: the coupling was
+still spreading while the ticket to remove it sat open, and moving only the eight named
+files would have left the AC2 grep dirty and the ticket looking done. So the four files
+the new importers reach for moved too (`mock_devices`, `mock_topology`,
+`devices_test_data`, `topology_test_data`).
+
+Where they went, and why not all in one directory: `test/mocks/provider_overrides/` for
+the **seven** mock builders (`mock_common.dart` exposes `commonOverrides()`,
+`mock_dashboard_cards.dart` a set of `Fixed*DataNotifier`s — they build `List<Override>`,
+not data) and `test/mocks/test_data/scenes/` for the **five** `*_test_data.dart`
+fixtures. The `scenes/` subdirectory is not tidying: `test/mocks/test_data/` already
+holds a `devices_test_data.dart` — 486 lines wrapping a `class DevicesTestData` of
+static factories — and golden's is 172 lines of top-level scene instances
+(`final wifiDevice1 = ClientDevice(...)`). Different shapes, same name, and the ticket
+puts both consolidation and renaming out of scope, so a flat move would have had to pick
+one of the two things it was told not to do. **30 files' imports were rewritten, 52
+lines**, of which 12 files are golden's own — the direction is now golden → neutral,
+like `app_test_fonts.dart`.
+
+A **thirteenth** file moved for a different reason. `dhcp_card_test_harness.dart:7`
+imported `golden_framework/golden_test_config.dart` — a 91-line framework header with
+`GoldenTestConfig`, `ShellType` and `Interaction` in it — to read one thing:
+`GoldenDevice.phone480.size`. It was the only non-fixture reason a page test named
+`test/golden_test/` at all, and copying `Size(480, 800)` into the harness would have
+silently ended the agreement the comment there claims ("shared with the golden suite so
+both agree on 'mobile'"). Both sides now read `test/util/test_viewports.dart`;
+`GoldenDevice` keeps the *names*, which are golden filename components and mean nothing
+outside that suite. The gate's own widths are deliberately not in that file — §2's
+enumerated `narrowestRealizationOf` has no viewport list to share, and offering it two
+would invite back the sampled scan #1225 retired.
+
+**What the move is verified not to have changed.** `./run_tests.sh` **5,327**,
+`--tags layout-gate` **1,379**, all four baselines `check`-identical at card 1,943 ·
+popup 347 · forced_form 78 · chrome 1,248 = **3,616**, `dart analyze test` 0 errors /
+0 warnings. The AC2 grep now returns **ten comment lines across six files and exactly
+one import** — `test/test_scripts/overflow_diagnostics_test.dart:6`, the golden parser
+#1339 will retire. Nothing else under `test/` reaches into the golden suite. One of the
+comments is worth
+keeping: `dashboard_card_overflow_test.dart` names the shared fixture's path in exactly
+one place (`_sharedFixturePath`), which is why the F9 meta-tests that read the *file*
+rather than a tree needed a one-line edit rather than a rewrite — the property #1321
+asked for was written to survive this move, and did.
+
+**Golden's own verdict is an argument, not a run.** The touched golden suites report
+70 passed / 53 failed locally, and none of that is this move: all 489 baseline PNGs on
+the machine predate 2026-08-23 while `dev-2.7.0` — #1325's card thresholds and #1301's
+semantics work — landed on 2026-08-24, and the baselines are gitignored, so there is no
+shared set to compare against. What makes the failures *provably* pre-existing is the
+diff rather than the count: with renames detected, five of the seven moved mock builders
+and four of the five moved fixtures are **0 changed lines**, and the three that differ
+differ only inside `///` comments (a claim the move falsified, a path, a sibling path).
+`GoldenDevice.phone480` still resolves to `Size(480, 800)`. A tree built from
+byte-identical code at an identical viewport rasterizes identically, so no pixel diff
+here is attributable to the move — which is the shape §9.5 keeps insisting on: the count
+is not the evidence.
+
 ### 9.5 What R5 measured (#1348, 2026-08-22; F9 on 2026-08-24)
 
 Nineteen mutations executed — each applied to the working tree, run, and reverted —
@@ -1827,8 +1892,9 @@ surface blocks, because otherwise that step has no verification signal of its ow
    anything new from it; the collector re-key is a follow-up ticket in that repo,
    blocked by **#1346** rather than blocking it. **Re-read 2026-08-22 and the
    direction holds in code too:** golden-ci imports nothing from the gate, and the
-   gate's only reach into golden is a `mocks/` import, now **#1361** (§9.4).
-   *Blocks nothing.*
+   gate's only reach into golden was a `mocks/` import, ticketed as **#1361** and
+   **landed 2026-08-24** — no test outside `test/golden_test/` imports anything
+   inside it now (§9.4). *Blocks nothing.*
 3. **Does the skill get renamed?** `.claude/skills/dashboard-overflow-gate/` is
    card-shaped in its name and in most of its text, and its name is also the slash
    command people type. R1 rewrites its prose either way. *Blocks nothing; R1 can

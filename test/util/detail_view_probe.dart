@@ -7,7 +7,7 @@ import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import '../golden_test/golden_framework/mocks/mock_common.dart';
+import '../mocks/provider_overrides/mock_common.dart';
 import 'overflow_probe.dart';
 
 /// Shared overflow harness for the whole-page detail views (#1302).

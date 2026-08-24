@@ -7,8 +7,8 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
-import '../../../golden_test/golden_framework/mocks/mock_devices.dart';
-import '../../../golden_test/page/devices/fixtures/devices_test_data.dart';
+import '../../../mocks/provider_overrides/mock_devices.dart';
+import '../../../mocks/test_data/scenes/devices_test_data.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';

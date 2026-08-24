@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../golden_test/golden_framework/golden_test_config.dart';
+import '../../../../util/test_viewports.dart';
 
 /// Shared harness for the DHCP card layout tests (#1140).
 ///
-/// Both card tests pump a single card at the golden suite's mobile viewport, so
-/// the theme, viewport and scaffold setup live here instead of being duplicated.
+/// Both card tests pump a single card at the mobile viewport the golden suite shoots
+/// its baselines at, so the theme, viewport and scaffold setup live here instead of
+/// being duplicated. The viewport itself comes from a neutral util both suites import
+/// (#1361) — this file used to reach into `golden_framework/` for a single `Size`.
 
 final dhcpCardTestTheme = AppTheme.create(
   brightness: Brightness.light,
@@ -18,7 +20,7 @@ final dhcpCardTestTheme = AppTheme.create(
 );
 
 /// Mobile viewport, shared with the golden suite so both agree on "mobile".
-final phoneSize = GoldenDevice.phone480.size;
+const phoneSize = kPhoneViewportSize;
 
 /// Content width the page grid hands a card at [phoneSize]: the screen width
 /// minus `AppLayoutConfig.marginMobile` (16) on both sides.

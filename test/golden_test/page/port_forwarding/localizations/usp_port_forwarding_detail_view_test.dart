@@ -11,8 +11,8 @@ import 'package:ui_kit_library/ui_kit.dart' show AppIconButton;
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
-import '../../../golden_framework/mocks/mock_port_forwarding.dart';
-import '../fixtures/port_forwarding_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_port_forwarding.dart';
+import '../../../../mocks/test_data/scenes/port_forwarding_test_data.dart';
 
 void main() {
   runViewGoldenTests(

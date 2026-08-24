@@ -55,7 +55,7 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../golden_test/golden_framework/mocks/mock_common.dart';
+import '../../mocks/provider_overrides/mock_common.dart';
 import '../sweep.dart';
 
 /// Screen widths swept per locale.
