@@ -887,9 +887,12 @@ suite-completion append order, by `logIndex` drift, and by the lost-record race
 `golden_runner.dart:404-415` documents and accepts, none of which touch a parser.
 
 **Consequence for sequencing.** Nothing in R2, R3 or R5 depends on the golden
-side. Verified 2026-08-21: of the 39 `layout-gate` files, four import
-`golden_framework`, and all four import only `mocks/` — and that residual import
-is the one real code coupling left, ticketed as **#1361** on 2026-08-22 (§9.4).
+side. Re-checked 2026-08-24: of the **44** `layout-gate` files, **six** import
+`golden_framework`, and all six import only `mocks/` (four distinct modules) — and
+that residual import is the one real code coupling left, ticketed as **#1361** on
+2026-08-22 (§9.4). Both figures were 39 and four on 2026-08-21; the `dev-2.7.0`
+merge moved them, and the two new importers arrived without anyone deciding to add
+a dependency on golden's fixtures, which is #1361's case restated by arithmetic.
 Doing the gate side of the parser separately — split out as **#1351** on
 2026-08-21 — took golden-ci off R2's and R3's critical path entirely, and #1339
 finishing the job is now a gate-side tail rather than a gate to anything.
@@ -960,14 +963,23 @@ so none of this was a migration.
 
 ## 4. Tags
 
-`layout-gate` is carried by **39 test files** (a 40th mention, at
+`layout-gate` is carried by **44 test files** (a 45th mention, at
 `test/golden_test/flutter_test_config.dart:9`, is a comment) — 38 until #1341
 added `test/layout_gate/ratchet_test.dart`, which carries `layout-gate` **only**:
 it pumps no cell, so the `overflow` pre-commit selector has nothing to gain from
-it. Only **6** of the 39 have "overflow" in the filename; the rest are density,
-readability, form and gesture, layout blocks, probe self-tests, the ratchet oracle
-and render-parity gates. Renaming the tag to `overflow` would therefore mislabel
-33 files.
+it. Only **8** of the 44 have "overflow" in the filename, and only **4** carry the
+`overflow` tag; the rest are density, readability, form and gesture, layout blocks,
+probe self-tests, the ratchet oracle and render-parity gates. Renaming the tag to
+`overflow` would therefore mislabel **36** files.
+
+The `dev-2.7.0` merge is what took 39 to 44, and it widened the gap the paragraph
+above is about: two of the five new carriers *are* named `*_overflow_test.dart`
+(`usp_node_detail_backhaul_overflow_test.dart`,
+`usp_device_detail_speed_card_overflow_test.dart`) and neither carries the
+`overflow` tag, because neither is one of the four sweeps the pre-commit selector
+names. So "overflow in the filename" and "in the `overflow` tag" have drifted
+further apart, in both directions — 8 files named for it, 4 tagged with it, and no
+file in either set implied by the other.
 
 `dart_test.yaml` documents the tag's real meaning — since #1336 landed, in the
 name as well as the comment:
