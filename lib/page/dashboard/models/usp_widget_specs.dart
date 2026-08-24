@@ -337,6 +337,79 @@ abstract class UspWidgetSpecs {
   static const dhcpReservations = WidgetSpec(
     id: 'dhcp_reservations',
     displayName: 'DHCP Reservations',
+    // Measured floor, #1321: the narrowest width at which the **normal** Active
+    // Leases row seats an IP *and* a lease duration side by side — measured
+    // against the widest row the product can produce, not against the fixture.
+    //
+    // ## What "widest" means here, and why it is not the fixture
+    //
+    // Both operands are bounded, so both are measured at their bound. This is
+    // the criterion `usp_dhcp_reservations_density_test.dart` inherits from
+    // #1289: a bounded token must never be clipped, an unbounded one may.
+    //
+    //  - the IP is a 15-character IPv4 quad. The pool is user-editable
+    //    (`AppIpv4TextField`, Local Network page), so `192.168.100.200` is an
+    //    ordinary address rather than a corner case, and the fixture's
+    //    `192.168.1.102` is two characters short of the format.
+    //  - the lease is `leaseTimeFormatted`'s widest bucket. `validateLeaseTime`
+    //    caps a pool's lease at 525600 minutes
+    //    (`usp_local_network_service.dart:197`), so `364d 23h` is the widest
+    //    string the getter can render for a lease this product accepts.
+    //
+    // 1px sweeps of the pinned normal form, `en`, three lease rows per shape:
+    //
+    // | row content                   | first width with no clipping |
+    // |-------------------------------|------------------------------|
+    // | fixture IP + `23h 59m`        | 329                          |
+    // | fixture IP + `364d 23h`       | 330–336                      |
+    // | 15-char quad + `23h 59m`      | 361–369                      |
+    // | **15-char quad + `364d 23h`** | **369** (368 clips 0.7px)    |
+    //
+    // Row 1 is what this threshold was set to first, and the table is why it
+    // moved: of the 40px between, 25 are the two extra address characters and 5
+    // are the exotic lease. The number is driven by the *address format*, which
+    // is what the row exists to show — a lease nobody configured is not what
+    // makes 369 the floor.
+    //
+    // ## Why 369 and not the 368 that "widest failing + 1" gives
+    //
+    // Every other threshold in this file is the widest *failing* width plus one,
+    // where failing means "over `kOverflowTolerancePx`". That derivation puts
+    // this one at 368 — and 368 still clips, by 0.7px, which only the 2.0px
+    // tolerance absorbs. The tolerance exists for rasterizer drift between the
+    // mac and ubuntu font stacks (`overflow_probe.dart:4-15`), so a threshold
+    // set inside it spends the very margin the tolerance is there to provide.
+    // 369 is the narrowest width where the row does not clip at all, which is
+    // the claim a threshold should be making, and it costs 1px.
+    //
+    // ## What the bands buy
+    //
+    // `widthCasesFor` realizes exactly two widths here — 260.500px (the
+    // 4-column floor, @601px screen) and 288.000px (6- and 8-column spans both
+    // clamped to the 4-column mobile grid, @320px). **Both were shipping
+    // broken**: the normal row overflowed by 51.0px and 31.0px against an
+    // unexpired lease, with the duration clipped off the right edge on a real
+    // router. This threshold puts both in compact, and it stays below
+    // `desktopCaseFor` (512.000px) so the side-by-side row is intact wherever
+    // there is room for it.
+    //
+    // The compact form holds **both** operands across the whole band, and it
+    // does so by stacking them rather than dropping either half: at the worst
+    // case above it is clean at 200, 260.5, 288, 330, 350, 367 and 368px in
+    // `en`, and at 367px — the band's top edge — in all 26 locales. The
+    // side-by-side row needs ~126px of trailing slot at the fixture's content
+    // and ~166px at the bound; stacked it needs `max(IP, lease)` ≈ 93px, which
+    // is what makes [200, 369) safe to *declare* rather than a band that happens
+    // to work at the two widths the grid realizes. `DeviceRow.compact`'s 60px is
+    // spent on the same row and is not enough on its own — it clears 252px, not
+    // 200px.
+    //
+    // The cost of the band is one 8px dot per row. `build` filters to
+    // `isOnline == true` before building any lease row, so that dot is always
+    // the success colour: it is the only thing on this row that can be spent
+    // without losing information, which is what makes 369 cheap to declare and
+    // would not be true of a card whose leading slot carried a state.
+    normalAbove: 369,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -746,7 +819,7 @@ abstract class UspWidgetSpecs {
   /// and a content line — and it is deliberately not a *measured* raise: the
   /// compact form is shorter than normal, so a number above what each card
   /// already declares could only be invented, and §2.4 is explicit that an
-  /// unmeasured constant must not be frozen into the code. Every one of the six
+  /// unmeasured constant must not be frozen into the code. Every one of the seven
   /// compact consumers already declares `minHeightRows` of 2 or 3, so today this
   /// floor is the mechanism without the raise; the raise it would apply is real
   /// the moment a card declares less.
@@ -757,10 +830,10 @@ abstract class UspWidgetSpecs {
   ///
   /// [CardDensity.normal] appears only alongside something to return *from* — on
   /// its own it is not a choice, just the status quo with a control attached.
-  /// [CardDensity.compact] appears only for the six cards that read the density
+  /// [CardDensity.compact] appears only for the seven cards that read the density
   /// (`normalAbove != null` is the existing predicate); offered anywhere else it
   /// would render exactly the normal form, which is a control that visibly does
-  /// nothing. Building compact forms for the other twelve is card-own design work
+  /// nothing. Building compact forms for the other eleven is card-own design work
   /// at #1288-#1291's scale and is out of this ticket's scope.
   static List<CardDensity> selectableForms(String id) {
     final spec = getById(id);

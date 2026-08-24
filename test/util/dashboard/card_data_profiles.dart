@@ -44,6 +44,41 @@ import '../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
 /// Non-default profiles get their own allowlist keys (`card|width|tab@profile`),
 /// so the default profile's arithmetic — the number every closed ticket in this
 /// epic quotes — is untouched by anything here.
+///
+/// ## The stronger caveat #1321 found: the *default* profile can also under-render
+///
+/// The paragraph above bounds the gate's coverage in one direction — a card is
+/// unswept on a second data shape until someone adds it. #1321 showed the bound
+/// is wider than that, and in a direction nothing here was watching.
+///
+/// `dhcp_reservations` pinned its lease expiries to `DateTime(2024, 6, 16, ...)`,
+/// and `leaseTimeFormatted` returns the empty string for a lease that is both
+/// expired and active. So from 2024-06-16 onward — on the wall clock, with nobody
+/// touching the fixture — the card's Active Leases rows rendered an IP-only
+/// trailing slot, about 50px narrower than any live router's. The gate was built
+/// after that date, swept the card at 260.5px and 288.0px in 26 locales, and
+/// reported clean. On a real router both widths overflowed, by 51.0px and 31.0px,
+/// with the lease duration clipped off the right edge.
+///
+/// Two things follow, and they are worth separating:
+///
+///  - **"Clean on the default profile" is not the same claim as "clean at the
+///    widths swept."** The gate measures the tree the fixture produces. A fixture
+///    that renders *less* than production makes a coordinate green without
+///    covering it, and no amount of width or locale coverage detects that —
+///    those axes were swept, thoroughly, against the wrong row.
+///  - **`known_overflows.json == {}` is a statement about what the gate
+///    measures, not about the product.** The ratchet is exact about the
+///    coordinates it holds; it is silent about whether those coordinates render
+///    what a user would see. #1321 is the existence proof, found by hand on
+///    hardware rather than by the sweep.
+///
+/// [kDefaultFixtureMarkers] is the mechanism that answers the specific failure —
+/// content the default fixture renders *conditionally* is asserted present, on
+/// the same argument [CardDataProfile.markers] makes for the second profile. It
+/// does not answer the general one: a fixture can still be unrepresentative
+/// without being empty, and only measuring each card against production-shaped
+/// data does that.
 class CardDataProfile {
   /// Short key used in test names and in allowlist keys. Must be stable: it is
   /// part of the ratchet's identity for these cases.
@@ -129,6 +164,67 @@ final sixRadioProfile = CardDataProfile(
   // The fifth radio's channel, which no other profile produces.
   markers: const ['197 (Auto)'],
 );
+
+/// Content the **default** fixture renders only behind a condition, and the card
+/// coordinate it has to reach (#1321).
+///
+/// The distinction from [CardDataProfile.markers] is which fixture is being
+/// checked. That one guards a *layered override* — the risk is that the override
+/// misses and the default fixture renders instead. This one guards the default
+/// fixture itself: the risk is that a `if (x.isNotEmpty)` in the card stops being
+/// true, the row loses a whole operand, and every case the gate pumps measures a
+/// narrower row than production has.
+///
+/// Only conditional content belongs here. A title the card always renders cannot
+/// silently disappear — if it does, the card is broken in a way any test would
+/// catch. The entries are the places where the fixture decides, at render time,
+/// whether the widest thing in a row exists at all.
+class DefaultFixtureMarker {
+  final String cardId;
+  final int tab;
+
+  /// Matched with `find.textContaining`, so a [RegExp] is allowed and is the
+  /// right choice for content whose exact value moves (a duration counts down;
+  /// its shape does not).
+  final Pattern pattern;
+
+  /// How many widgets must match. Pinned rather than `findsWidgets`, because a
+  /// fixture that loses two of three rows is the same class of failure as one
+  /// that loses all three.
+  final int expected;
+
+  /// What is conditional, and what the card renders instead when the condition
+  /// fails — this is the failure message.
+  final String why;
+
+  const DefaultFixtureMarker({
+    required this.cardId,
+    required this.tab,
+    required this.pattern,
+    required this.expected,
+    required this.why,
+  });
+}
+
+final kDefaultFixtureMarkers = <DefaultFixtureMarker>[
+  DefaultFixtureMarker(
+    cardId: 'dhcp_reservations',
+    tab: 0,
+    // `leaseTimeFormatted`'s three buckets: `Nd Nh`, `Nh Nm`, `Nm`. Matched by
+    // shape rather than by value because the fixture is now-relative, so the
+    // literal counts down between the pump and this assertion.
+    pattern: RegExp(r'\b\d{1,2}[dh] \d{1,2}[hm]\b'),
+    expected: 3,
+    why: 'the Active Leases rows render `client.leaseTimeFormatted` behind an '
+        '`if (lease.isNotEmpty)`, and the getter returns the empty string for a '
+        'lease that is both expired and active. Three online clients in '
+        '`testDhcpClients` means three durations. If this fails, the fixture has '
+        'gone stale again (absolute expiry dates walk into the past) and every '
+        'coordinate the gate pumps for this card is measuring an IP-only '
+        'trailing slot ~50px narrower than production\'s — which is exactly how '
+        '#1321 shipped at two swept widths',
+  ),
+];
 
 /// Every non-default sweep the gate runs.
 ///

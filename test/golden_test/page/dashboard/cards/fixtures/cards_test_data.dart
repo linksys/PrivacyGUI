@@ -353,6 +353,40 @@ final testDhcpReservations = [
   ),
 ];
 
+/// Active DHCP leases, with **now-relative** expiries (#1321).
+///
+/// These were `DateTime(2024, 6, 16, ...)`, and that is how #1183's gate came to
+/// sweep this card at two widths it was overflowing at. `leaseTimeFormatted`
+/// returns the empty string for a lease that is both expired and still active
+/// (`dhcp_client_ui_model.dart:44-46`), so every one of these rendered an
+/// IP-only trailing slot — about 50px narrower than any live router's — and the
+/// gate measured a row production does not have. The fixture went dead on
+/// 2024-06-16 on the wall clock, with nobody touching it, and the gate was built
+/// after that date, so it had never once rendered a lease string.
+///
+/// The offsets are width-maximal, not arbitrary. `leaseTimeFormatted` buckets
+/// into `Nd Nh` / `Nh Nm` / `Nm`, and measured as an overflow delta in the
+/// normal form at 300px, `23h 59m` is the widest string the getter can produce —
+/// 5.0px wider than the `days` bucket's own widest (`10d 23h`) and 22.0px wider
+/// than a bare `59m`. The first client carries it so the gate sweeps the worst
+/// case; the other two are shorter on purpose, so a row that only breaks at the
+/// maximum is still distinguishable from one that breaks everywhere.
+///
+/// The trailing `seconds: 59` is load-bearing: without it the few milliseconds
+/// between construction and layout drop `23h 59m` to `23h 58m`, which is a
+/// narrower string, and the fixture would quietly stop measuring the maximum it
+/// was written to measure.
+///
+/// **Known consequence.** A now-relative expiry makes the rendered string change
+/// with the wall clock, so the `card_dhcp_reservations` golden gains a cell that
+/// churns between baseline generation and verification. This is the sibling
+/// fixture's existing behaviour rather than a new class of problem —
+/// `test/golden_test/page/dhcp/fixtures/dhcp_test_data.dart:27` has shipped
+/// `DateTime.now().add(...)` behind a golden that renders `leaseExpiryFormatted`,
+/// an absolute `yyyy-MM-dd HH:mm` stamp, which churns every minute. The systemic
+/// fix is a clock seam (`clock.now()` in the model, `withClock` in the golden
+/// harness) covering both files; it is deliberately not done here, because a
+/// production model change is outside what this ticket measured.
 final testDhcpClients = [
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:02',
@@ -360,7 +394,9 @@ final testDhcpClients = [
     leaseActive: true,
     isOnline: true,
     hostName: 'iPhone-15',
-    leaseExpiry: DateTime(2024, 6, 16, 14, 30),
+    // `23h 59m` — the widest string leaseTimeFormatted can render.
+    leaseExpiry:
+        DateTime.now().add(const Duration(hours: 23, minutes: 59, seconds: 59)),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:03',
@@ -368,7 +404,9 @@ final testDhcpClients = [
     leaseActive: true,
     isOnline: true,
     hostName: 'MacBook-Air',
-    leaseExpiry: DateTime(2024, 6, 16, 10, 00),
+    // `10h 30m`
+    leaseExpiry:
+        DateTime.now().add(const Duration(hours: 10, minutes: 30, seconds: 59)),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:04',
@@ -376,7 +414,9 @@ final testDhcpClients = [
     leaseActive: true,
     isOnline: true,
     hostName: 'Smart-Speaker',
-    leaseExpiry: DateTime(2024, 6, 16, 8, 00),
+    // `6h 15m`
+    leaseExpiry:
+        DateTime.now().add(const Duration(hours: 6, minutes: 15, seconds: 59)),
   ),
 ];
 
@@ -791,7 +831,38 @@ final testFirewallEmptyData = FirewallData(
 // System Monitor
 // ---------------------------------------------------------------------------
 
-final _baseTime = DateTime(2024, 6, 15, 14, 0, 0);
+/// The clock every history series here hangs off — **now-relative, truncated to
+/// the hour** (#1321).
+///
+/// This was `DateTime(2024, 6, 15, 14, 0, 0)`, the second member of the same
+/// class as [testDhcpClients]: a fixture whose renderer compares it against
+/// `DateTime.now()`. `usp_device_analytics_card.dart:350-357` and `:425-431` build
+/// a 24-slot axis ending at the *current* hour and look each slot up by exact
+/// `DateTime` equality, so none of the 12 `hourlyHistory` entries matched any
+/// slot and both the trend chart and the heatmap rendered as all-zero. The gate
+/// swept four tabs of that card against an empty chart.
+///
+/// Unlike the lease row, this one was never a *bug* — 4 tabs × {stale fixture,
+/// now-relative fixture} at 260.5px measure clean either way, because a zero bar
+/// and a full bar occupy the same box. It is a coverage weakness, and it is fixed
+/// here because a fixture that renders nothing is the thing #1321 is about.
+///
+/// **Truncating to the hour is what makes it work**, not a tidiness choice: the
+/// lookup is `==` against `DateTime(now.year, now.month, now.day, now.hour)`, so
+/// a `_baseTime` carrying minutes or seconds would still miss every slot and the
+/// charts would stay empty while looking fixed.
+///
+/// This adds no churn class to the `device_analytics` golden that the card does
+/// not already have. Its heatmap axis renders wall-clock hour labels — `'00'`,
+/// `'06'`, `'12'`, `'18'` at slot positions derived from `DateTime.now()`
+/// (`:448`) — so that image already moves once an hour on its own, regardless of
+/// what this fixture holds.
+final _baseTime = _currentHour();
+
+DateTime _currentHour() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day, now.hour);
+}
 
 final testSystemMonitorWithHistory = SystemMonitorState(
   history: List.generate(

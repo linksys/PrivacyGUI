@@ -89,6 +89,11 @@ List<Locale> get _targetLocales {
 /// drift apart — see [kOverflowTolerancePx] for why it is 2.0 (#1270).
 const double _tolerancePx = kOverflowTolerancePx;
 
+/// The fixture every case in this file pumps, named once so #1319 — which moves
+/// it out of `test/golden_test/` — has one line to change.
+const String _sharedFixturePath =
+    'test/golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+
 Map<String, String> _trackingByCard = {};
 Map<String, Set<String>> _knownOverflowAllowlist = {};
 
@@ -487,11 +492,13 @@ void main() {
   // ─── The normal band (#1318) ──────────────────────────────────────────────
   //
   // The sweep above pumps the widths the grid produces for each span, and claims
-  // that is exhaustive because overflow is monotonic in width. Since #1288/#1290
-  // six cards declare a `normalAbove`, so their narrowest realization renders a
-  // *different form* — popup at 191.4px for all six, compact at 288.0px for the
-  // three whose threshold is above it — and a different form is not a narrower
-  // instance of the same one. For those three **this sweep is the only place the
+  // that is exhaustive because overflow is monotonic in width. Since
+  // #1288/#1290/#1321 seven cards declare a `normalAbove`, so their narrowest
+  // realization renders a *different form* — popup at 191.4px for six of them,
+  // 260.5px compact for `dhcp_reservations`, whose `minColumns: 4` puts its own
+  // floor above `kPopupBelow`; and compact at 288.0px for the four whose threshold
+  // is above it — and a different form is not a narrower instance of the same one.
+  // For those four **this sweep is the only place the
   // grid's own widths reach the normal form at all**; what the gate had otherwise
   // is `dashboard_card_popup_overflow_test`'s two dialog groups, which render it at
   // the fixed `kCardPresentationWidth` (400px, above every threshold), tab 0 only,
@@ -500,7 +507,7 @@ void main() {
   // tab, `de`, 500px, +41px): tab 2 in `de` used to be covered by transitivity from
   // the 191.4px normal case, and #1288 removed that without replacing it.
   //
-  // So each of the six is swept once more, at [normalBandCaseFor] — the narrowest
+  // So each of the seven is swept once more, at [normalBandCaseFor] — the narrowest
   // width the grid produces at or above its own threshold. One width, because
   // monotonicity is intact *within* a form: see that function for the argument, and
   // `the gate's own widths cannot reach the normal band` below for the half of it
@@ -531,18 +538,19 @@ void main() {
   //
   // | # | assertion | mutation | killed by |
   // |---|---|---|---|
-  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3213 other cases carrying the `dashboard-card` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
-  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cases and stays green, which is exactly the silent narrowing they exist to convert into a failure |
-  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cases, plus `each threshold is realizable` |
+  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3258 other cases carrying the `dashboard-card` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
+  // | 2 | `the seven cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 234 → 156 cases and stays green, which is exactly the silent narrowing they exist to convert into a failure |
+  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 234 of 234 sweep cases, plus `each threshold is realizable` |
   // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | `the gate's own widths cannot reach the normal band` alone — `widest` becomes 448.0 |
-  // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | `the six cards that declare a threshold` (8 → 6) |
+  // | 5 | the 9-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | `the seven cards that declare a threshold` (9 → 7) |
   final normalBandSpecs =
       UspWidgetSpecs.all.where((s) => s.normalAbove != null).toList();
 
   group('normal band coverage', () {
     // The inventory, asserted rather than narrated — the counts in the comment
     // above are the whole justification for this sweep's existence and its size.
-    test('the six cards that declare a threshold, at 8 card x tab coordinates',
+    test(
+        'the seven cards that declare a threshold, at 9 card x tab coordinates',
         () {
       expect(
         {for (final s in normalBandSpecs) s.id: s.normalAbove},
@@ -552,6 +560,7 @@ void main() {
           'ethernet_ports': 386.0,
           'connected_devices': 336.0,
           'time_settings': 256.0,
+          'dhcp_reservations': 369.0,
           'network_health': 366.0,
         },
         reason: 'a card that gains or loses a `normalAbove` changes what this '
@@ -560,8 +569,8 @@ void main() {
       );
       expect(
         normalBandSpecs.fold<int>(0, (n, s) => n + tabCountFor(s.id)),
-        8,
-        reason: 'five single-view cards plus network_health\'s three tabs',
+        9,
+        reason: 'six single-view cards plus network_health\'s three tabs',
       );
       // #1183's motivating coordinate, named so a change that drops it is a
       // failure rather than a silent narrowing.
@@ -579,8 +588,8 @@ void main() {
     // generator the main sweep uses tops out at 288.0px, because spans 5 upward all
     // realize 288.0px at the 320px screen floor — a card spanning the whole
     // 4-column mobile grid is full width. So no coordinate `widthCasesFor` can
-    // produce reaches a threshold above 288, and the three cards below are outside
-    // its range by construction rather than by sampling. If a wider realization
+    // produce reaches a threshold above 288, and the four cards below that declare
+    // one are outside its range by construction rather than by sampling. If a wider realization
     // ever appears this fails, instead of the sweep quietly duplicating coverage.
     test('the gate\'s own widths cannot reach the normal band', () {
       // Every span any card declares — the generator's whole domain, taken from
@@ -616,6 +625,10 @@ void main() {
         'ethernet_ports': ['191=popup', '288=compact'],
         'connected_devices': ['191=popup', '288=compact'],
         'time_settings': ['191=popup', '288=normal'],
+        // The one card whose narrowest realization is not the 3-column floor:
+        // `minColumns: 4` keeps it above `kPopupBelow`, so it has no popup form
+        // to reach by width and *both* its realizations go to compact (#1321).
+        'dhcp_reservations': ['261=compact', '288=compact'],
         'network_health': ['191=popup', '288=compact'],
       });
     });
@@ -637,6 +650,7 @@ void main() {
           'ethernet_ports': '386.0@552x3',
           'connected_devices': '336.0@2096x3',
           'time_settings': '256.0@1120x3',
+          'dhcp_reservations': '369.0@401x4',
           'network_health': '366.0@2216x3',
         },
         reason:
@@ -739,6 +753,97 @@ void main() {
   //     from a default-profile one at the same coordinate — a worse outcome than
   //     its absence. Profile sweeps are measured by reading the failure, which
   //     names the profile.
+  // AC6 as a guard rather than an enumeration (#1321).
+  //
+  // A list of "the absolute dates as of today" is a comment that goes stale the
+  // next time someone adds a fixture, which is the failure mode this whole ticket
+  // is about. The property is mechanically checkable instead: no `DateTime(<int>`
+  // literal anywhere in the shared fixture. `DateTime(now.year, …)` is untouched,
+  // because it starts from the clock rather than from a constant — which is the
+  // distinction that matters, not whether the constructor is called.
+  //
+  // Deliberately the whole file, not just the fields a renderer is known to
+  // compare against `DateTime.now()`. Nobody knew `leaseTimeFormatted` did, and
+  // finding out cost a hardware repro; a rule that needs that knowledge up front
+  // is a rule that fails the same way twice.
+  group('the shared fixture pins no absolute date', () {
+    test('$_sharedFixturePath has no DateTime literal', () {
+      final file = File(_sharedFixturePath);
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'the shared fixture is not at $_sharedFixturePath. #1319 moves '
+            'it out of test/golden_test/ — update _sharedFixturePath here, '
+            'which is the only place this suite names the path.',
+      );
+
+      final offenders = <String>[];
+      final lines = file.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final trimmed = lines[i].trimLeft();
+        // Prose about the dates this ticket removed is not a date.
+        if (trimmed.startsWith('//')) continue;
+        if (RegExp(r'DateTime\(\s*\d').hasMatch(lines[i])) {
+          offenders.add('  ${i + 1}: ${lines[i].trim()}');
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'These fixtures pin an absolute date:\n${offenders.join('\n')}\n'
+            'A renderer that compares one against `DateTime.now()` starts '
+            'returning different content on a date nobody chose, and the gate '
+            'keeps reporting the coordinate clean — #1321 shipped an overflow '
+            'at two swept widths that way, and left `device_analytics` sweeping '
+            'an all-zero chart. Use `DateTime.now()`-relative offsets, and if a '
+            'constant genuinely is correct for a fixture, say why in a comment '
+            'on the line above and this check will not see it.',
+      );
+    });
+  });
+
+  // The **default** fixture's conditional content (#1321).
+  //
+  // Every case in this file that pumps a card measures the tree
+  // `kitchenSinkOverrides()` produces, which makes the fixture their silent
+  // premise. When a card renders something behind a condition and the fixture
+  // stops satisfying it, the row loses an operand, the sweep keeps passing, and
+  // the coordinate reads as covered — see `card_data_profiles.dart`'s "the
+  // default profile can also under-render". These assertions turn that into a
+  // failure.
+  //
+  // Deliberately *not* part of the width sweep: this is one pump per card
+  // coordinate at the desktop width, where nothing is absent for a density
+  // reason, in `en` because the patterns are untranslated. It answers "did the
+  // fixture render it", not "does it fit".
+  group('default fixture conditional content', () {
+    for (final marker in kDefaultFixtureMarkers) {
+      final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == marker.cardId);
+
+      testWidgets('${marker.cardId} renders it (tab ${marker.tab})',
+          (tester) async {
+        await probeCardOverflow(
+          tester,
+          cardId: marker.cardId,
+          widthCase: desktopCaseFor(spec),
+          cardHeightRows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+          tabIndex: marker.tab,
+          locale: const Locale('en'),
+        );
+
+        expect(
+          find.textContaining(marker.pattern),
+          findsNWidgets(marker.expected),
+          reason: '${marker.cardId} tab ${marker.tab} did not render '
+              '${marker.expected} matches for ${marker.pattern} — '
+              '${marker.why}.',
+        );
+      });
+    }
+  });
+
   for (final sweep in kCardDataProfileSweeps) {
     final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == sweep.cardId);
     final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;

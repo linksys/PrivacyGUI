@@ -308,14 +308,17 @@ CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
 /// [narrowestRealizationOf]'s doc states the gate's exhaustiveness argument:
 /// overflow is monotonic in width, so the narrowest realization of a span is that
 /// span's worst case. That holds only while the card renders the *same form* at
-/// every width. Since #1288/#1290 six cards declare a `normalAbove`, so their
-/// narrowest realization selects popup or compact — a different layout, not a
+/// every width. Since #1288/#1290/#1321 seven cards declare a `normalAbove`, so
+/// their narrowest realization selects popup or compact — a different layout, not a
 /// narrower instance of the same one — and it no longer dominates the widths where
-/// the normal form renders. Measured: all six select popup at 191.4px, and three of
-/// them (`connected_devices` 336, `network_health` 366, `ethernet_ports` 386) select
+/// the normal form renders. Measured: six of the seven select popup at 191.4px;
+/// `dhcp_reservations` selects compact at 260.5px instead, because `minColumns: 4`
+/// puts its narrowest realization above `kPopupBelow` and it has no popup form to
+/// reach by width at all. Four of the seven (`connected_devices` 336,
+/// `network_health` 366, `dhcp_reservations` 369, `ethernet_ports` 386) select
 /// compact at 288.0px too. [widthCasesFor] cannot reach past that, because spans 5
 /// upward all realize 288.0px at the 320px screen floor — a card spanning the whole
-/// 4-column mobile grid is full width. So for those three the normal form is not
+/// 4-column mobile grid is full width. So for those four the normal form is not
 /// merely unsampled by the gate: it is unreachable by the gate's width generator
 /// (#1318).
 ///
@@ -331,11 +334,11 @@ CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
 /// The smallest realization at or above the threshold, searched over every span in
 /// `minColumns..maxColumns` and the same enumerated screen range
 /// [narrowestRealizationOf] uses — so this is a width the grid genuinely produces,
-/// not the bare threshold value. Measured on this branch, every one of the six
+/// not the bare threshold value. Measured on this branch, every one of the seven
 /// thresholds is *exactly* realizable, at the card's `minColumns`: `lan_info`
 /// 250.0px @ screen 1096, `time_settings` 256.0px @ 1120, `device_info` 262.0px @
 /// 1144, `connected_devices` 336.0px @ 2096, `network_health` 366.0px @ 2216,
-/// `ethernet_ports` 386.0px @ 552. That is a coincidence of the grid's near-continuity
+/// `dhcp_reservations` 369.0px @ 401, `ethernet_ports` 386.0px @ 552. That is a coincidence of the grid's near-continuity
 /// in screen width, not something to rely on — hence the search rather than
 /// `cardWidth: spec.normalAbove!`.
 CardWidthCase? normalBandCaseFor(WidgetSpec spec) {

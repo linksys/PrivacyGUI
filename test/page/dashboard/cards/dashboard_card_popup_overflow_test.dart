@@ -20,11 +20,11 @@ import '../../../util/overflow_probe.dart';
 ///
 /// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
 /// every card selects its own form from the width the grid gives it — which for
-/// 12 of the 18 cards is still always normal, because they declare no
-/// `normalAbove` (#1240 AC 1). The other **six** declare one (#1288-#1291), and
-/// they are the cards a width can put into this form.
+/// 11 of the 18 cards is still always normal, because they declare no
+/// `normalAbove` (#1240 AC 1). The other **seven** declare one (#1288-#1291,
+/// #1321), and they are the cards a width can put into this form.
 ///
-/// The sweep below is wider than those six: it covers the **nine** cards the grid
+/// The sweep below is wider than those seven: it covers the **nine** cards the grid
 /// can render under [kPopupBelow] at all, whether or not they declare a threshold
 /// — see [_canReachPopupBand]. Three of the nine (`network_status`,
 /// `system_status`, `firewall_overview`) reach the band by width but stay normal
@@ -192,7 +192,7 @@ void main() {
       expect(UspWidgetSpecs.all, hasLength(18));
       expect(
         UspWidgetSpecs.all.where((s) => s.normalAbove != null).length,
-        6,
+        7,
         reason: 'the cards a width can put into a degraded form at all',
       );
       expect(
@@ -285,8 +285,8 @@ void main() {
   /// The one thing the fixed presentation width has to be measured against.
   ///
   /// `showCardNormalForm` gives every card the same [kCardPresentationWidth]
-  /// rather than the width its spec declares (250–386 across the six that declare
-  /// one). That is only sound while the fixed width clears all of them: a card
+  /// rather than the width its spec declares (250–386 across the seven that
+  /// declare one). That is only sound while the fixed width clears all of them: a card
   /// declaring more than the presentation offers would be handed back the very
   /// width it said it could not be read at.
   ///
