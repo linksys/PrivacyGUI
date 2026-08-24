@@ -1587,7 +1587,21 @@ costs is measurable the moment it is paired with a second one: with the hook emp
 the normal-band sweep's threshold mutation (row 3) drops from **9 killers to 1**. So
 the density assertion is load-bearing and unprotected, and the honest form of the
 claim is "the framework guarantees the hook runs; whether it asserts anything is the
-family's business". **Filed as #1364**, which is what #1348's last criterion asks for —
+family's business".
+
+**Both halves were re-run after the merge, because the family grew a coordinate.**
+`dhcp_reservations`' new `normalAbove` gave `CardNormalBandFamily` a ninth coordinate,
+so every figure in the paragraph above is a measurement of a smaller sweep than the one
+in the tree. Re-executed on 2026-08-24: the emptied hook is still killed by nothing
+(**102 of 102** card tests green), and paired with row 3 the killers drop from **10 to
+1** — the 9 coordinate tests go quiet, only `each threshold is realizable` notices, and
+**234** cells keep measuring the wrong band. The numbers all moved and the finding did
+not, which is the case for re-running a table instead of adjusting it: had it been
+adjusted, "9 of 9" would have been arithmetic about code that no longer exists, and the
+one figure worth knowing — that the gap widens as the family grows — would have been
+invisible.
+
+**Filed as #1364**, which is what #1348's last criterion asks for —
 and the filing carries one fact the mutation pass turned up on its own: three families
 empty this hook *deliberately* and say why in a doc comment
 (`dashboard_card_family.dart:164` and `:349`, `forced_form_card_family.dart:239`), so
