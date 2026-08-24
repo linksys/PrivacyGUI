@@ -289,13 +289,37 @@ void main() {
   // the one that justifies the sweep's existence rather than its shape: the main
   // width sweep stayed **green** through it.
   //
-  // | # | assertion | mutation | killed by |
+  // **Re-run on 2026-08-22 (#1348), against the ported code rather than the code
+  // these rows were written for.** #1343 turned 1,822 `testWidgets` into 63 declared
+  // coordinates with locale as an inner loop, so a killer the pre-port table counted
+  // in *cells* is counted in *tests* now, and a table carried over unchanged would be
+  // quoting a measurement of code that no longer exists. Every mutation below was
+  // re-applied to the working tree, run, and reverted; "killed by" is the observed
+  // failure set, and the pre-port figure is named wherever the port moved it.
+  //
+  // Two things the re-run found, neither of them predicted. Row 4 caught a coverage
+  // change that grew the sweep — the direction a count pin is usually assumed to be
+  // useless in. And every row that changes what is measured now also trips an
+  // `expectedCellCount`, which is why that parameter is required rather than
+  // defaulted (`sweep.dart` §4): rows 2, 4 and 5 each gained a killer from it,
+  // including row 2, whose pre-port entry argued the count *could not* fail.
+  //
+  // Row 1's counts are read off the **dataset**, not off the failure log, and the
+  // difference is not pedantic: `flutter test` truncates a long `expect` message
+  // mid-list, so the log showed 21 failing locales where the run had 26. A
+  // `OVERFLOW_BASELINE=1` capture under the same mutation states it exactly —
+  // `card.width` 1,638 cells with **0** significant incidents, `card.profile` 52
+  // with 0, `card.normal_band` 26 at one coordinate and 0 at the other seven. That
+  // is the sharpest available form of "large, green and blind": not "the big sweep
+  // passed" but "the big sweep measured 1,638 cells and saw nothing".
+  //
+  // | # | assertion | mutation | killed by (re-run 2026-08-22) |
   // |---|---|---|---|
-  // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cells. Of the 3213 other cases carrying the `layout-gate` tag, the main width sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
-  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cells and stays green *if the pin is edited to match*, which is exactly the silent narrowing they exist to convert into a failure |
-  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cells, plus `each threshold is realizable` |
-  // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | `the gate's own widths cannot reach the normal band` alone — `widest` becomes 448.0 |
-  // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | `the six cards that declare a threshold` (8 → 6) |
+  // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | **7 tests, none of them the main width sweep**: `usp_network_health_density_test`'s four pinned-normal assertions, the two dialog groups in `dashboard_card_popup_overflow_test` (400px — 6 tests pre-port, regrouped by #1344), and one coordinate of *this* sweep, `network_health` tab 0, which was 26 failing `testWidgets` pre-port and is one failing test naming 26 locales now. `card.width` — still the largest thing in the file at 1,638 cells — sees **nothing**, before the port and after |
+  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | **4**: all 3 meta-tests, plus `card.normal_band`'s declared count (208 → 130). The pre-port entry said the sweep "stays green *if the pin is edited to match*" — post-port there is a pin to edit, and it fails first, so the narrowing is a failure rather than a bookkeeping opportunity |
+  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | **9**: all 8 `card.normal_band` coordinates (208 of 208 cells pre-port — same coverage, counted per coordinate now), plus `each threshold is realizable` |
+  // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | **3**, where pre-port it was 1: `the gate's own widths cannot reach the normal band` (`widest` becomes 448.0), plus `card.width` 1,638 → **2,470** and `card.profile` 52 → **78**. Dropping a screen floor makes the generator realize *more* widths, so the sweep silently grows by 858 cells — coverage drift upward, which nothing in the pre-port suite could see |
+  // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | **4**, where pre-port it was 1: `the six cards that declare a threshold` (8 → 6), `card.width` 1,638 → 1,534, `card.normal_band` 208 → 156, and — instead of `network_health still has 3 tabs`, which no longer exists because that loop iterates the registry — `network_health is single-view, so tab 0 is full coverage`, the inverse half written for exactly this case |
   group('normal band coverage', () {
     // The inventory, asserted rather than narrated — the counts in the comment
     // above are the whole justification for this sweep's existence and its size.
