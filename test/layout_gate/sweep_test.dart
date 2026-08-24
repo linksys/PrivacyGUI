@@ -30,8 +30,8 @@ import 'sweep.dart';
 ///
 /// R5's acceptance is that this file's claims are **executed**, not argued, so
 /// every row below was applied to the working tree, run, and reverted on
-/// 2026-08-22 at the R3 tip. "Killed by" is the observed failure set, not the
-/// expected one. Where a mutation only becomes visible in the presence of a real
+/// 2026-08-22 at the R3 tip — F9 on 2026-08-24, once the `dev-2.7.0` merge made it
+/// runnable. "Killed by" is the observed failure set, not the expected one. Where a mutation only becomes visible in the presence of a real
 /// defect, the defect is named and the pair was run together — an invariant whose
 /// removal is invisible on a clean tree is exactly the kind that gets refactored
 /// away.
@@ -49,9 +49,11 @@ import 'sweep.dart';
 /// | F6 | a dead `known_overflows.json` entry (a site nothing overflows at) | the ratchet's close phase, in `tearDownAll`, naming the site and telling the operator to delete the entry and its note. A second variant — `"*"` at a 500px ceiling against a real 104px overflow — is caught by the same phase with the tightening advice, and by *nothing else*: the sweep itself goes fully green, which is what the close phase is for. |
 /// | F7 | empty `CardNormalBandFamily.onCardSettled` (the `expect` that the pumped form really is `normal`) | **Nothing on a clean tree — 99 of 99 green.** Paired with the `normalBandCaseFor` mutation the card table's row 3 uses, the killers drop from **9 to 1**: the 8 coordinate tests all go quiet and only the `each threshold is realizable` meta-test still notices. So the hook is worth 8 of those 9, and 208 cells would otherwise keep measuring the wrong band in silence. This is the executable substitute for "`onCellSettled` omitted", which is compile-enforced (the member is abstract) and so cannot be run as a mutation. **Filed as #1364** — unlike F5b there was no one-line pin available, and three families empty this hook deliberately, so the fix has to distinguish "nothing to assert, and here is why" from "the assertion was deleted". |
 /// | F8 | revert #1328's top-bar fix (`git revert c3cd0bac`) | `chrome.top_bar` at **601, 640 and 700px** — exactly the three swept widths inside the 601–767px band — plus the icon-only presentation test. 600px and 768px, the immediate neighbours, stay clean. The per-width locale counts reproduce the band's shape: 22 of 26 locales at 601px, 13 at 640px, 2 (`nl`, `pl`) at 700px. Note the revert is not applicable as-is: the chrome suite references `kTopNavLabelMinWidth`, so reverting the constant too breaks compilation — a compile-time coupling between the fix and its gate. |
+/// | F9 | revert #1321's DHCP fixture fix: the three `testDhcpClients` expiries back to `DateTime(2024, 6, 16, ...)` | **2 cases, and neither is a swept cell.** `default fixture conditional content dhcp_reservations renders it (tab 0)` (3 duration strings → 0) and `the shared fixture pins no absolute date …` (the source-literal check, naming all three lines). 1,360 of 1,362 pass: **every sweep in the tag goes green on the defect that #1321 was filed for**, because a stale expiry makes `leaseTimeFormatted` return the empty string, the trailing slot renders IP-only ~50px narrower than production's, and narrower never overflows. The density suite is green by construction, not by luck — it builds its own `DateTime.now().add(maxLease)` client and never reads this fixture. So what defends this fixture is one content assertion and one grep of its own source; the 3,616-cell gate cannot see it at all. That is the argument for both meta-tests existing, and the reason a fixture-freshness check is not something a sweep can subsume. |
 ///
-/// One mutation from #1348's list is **not runnable**: #1321's stale DHCP fixture,
-/// because PR #1325 is still open. It stays on the list rather than being dropped.
+/// F9 is the one row #1348 could not run: it needed #1321's fix present to revert,
+/// and PR #1325 was open. It stays measured rather than dropped, and it is the row
+/// that cost the least to run and said the most.
 void main() {
   setUpAll(() async {
     // The invariant tests below measure real overflow in pixels, so the Ahem
