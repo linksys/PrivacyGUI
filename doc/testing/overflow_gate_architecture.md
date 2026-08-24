@@ -2228,8 +2228,8 @@ both ends:
   run's long pole no matter how many cores exist.
 - **Free, at today's size.** The sharpest measurement available is a same-session A/B on
   the whole gate: with the page suite in place, **5,362 tests in 2m43s**; with the file
-  moved aside, **5,343 in 2m44s**. The suite adds **+36s of user CPU** (274.3s → 238.3s)
-  and **−1s of wall** (238.3s → 274.3s user, 2m44s → 2m43s clock), i.e. its wall cost is
+  moved aside, **5,343 in 2m44s**. The suite adds **+36s of user CPU** (238.3s → 274.3s)
+  and **−1s of wall** (2m44s → 2m43s clock), i.e. its wall cost is
   under the ~10% session noise §1.2 measures.
   `flutter test` had 320-odd other suites to fill the cores with and this one filled an
   idle core. Under `--tags layout-gate`, where there is much less to overlap with, the
