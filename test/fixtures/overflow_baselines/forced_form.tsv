@@ -2,8 +2,8 @@
 # sweep forced_form
 # groups forced_form.compact_floor forced_form.popup_tile forced_form.skeleton
 # suite test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart
-# commit d6fa9e27-dirty
-# cells 75
+# commit 25d1b8ed-dirty
+# cells 78
 # incidents 0
 # overflows 0
 # unmeasured 0
@@ -14,6 +14,9 @@ forced_form.compact_floor|card=connected_devices|px=261|rows=3|locale=zh_TW	clea
 forced_form.compact_floor|card=device_info|px=261|rows=2|locale=de	clean	-	-	-	-
 forced_form.compact_floor|card=device_info|px=261|rows=2|locale=en	clean	-	-	-	-
 forced_form.compact_floor|card=device_info|px=261|rows=2|locale=zh_TW	clean	-	-	-	-
+forced_form.compact_floor|card=dhcp_reservations|px=261|rows=3|locale=de	clean	-	-	-	-
+forced_form.compact_floor|card=dhcp_reservations|px=261|rows=3|locale=en	clean	-	-	-	-
+forced_form.compact_floor|card=dhcp_reservations|px=261|rows=3|locale=zh_TW	clean	-	-	-	-
 forced_form.compact_floor|card=ethernet_ports|px=261|rows=2|locale=de	clean	-	-	-	-
 forced_form.compact_floor|card=ethernet_ports|px=261|rows=2|locale=en	clean	-	-	-	-
 forced_form.compact_floor|card=ethernet_ports|px=261|rows=2|locale=zh_TW	clean	-	-	-	-

@@ -1,17 +1,23 @@
 /// The forced-form families: the boxes a #1299 pick produces, which no drag could
 /// (#1344).
 ///
-/// The port of `dashboard_card_forced_form_overflow_test.dart`'s three sweeps — 75
-/// of the gate's 3,587 committed baseline cells — onto [runOverflowSweep]. What
-/// each sweep *is*, and why these two geometries are not dominated by the widths
-/// the grid produces, stays documented where the sweeps are declared; this file is
-/// the enumeration and the premise check, and nothing else.
+/// The port of `dashboard_card_forced_form_overflow_test.dart`'s three sweeps — 78
+/// of the gate's committed baseline cells — onto [runOverflowSweep]. What each
+/// sweep *is*, and why these two geometries are not dominated by the widths the
+/// grid produces, stays documented where the sweeps are declared; this file is the
+/// enumeration and the premise check, and nothing else.
+///
+/// It was 75 at #1344. #1325 gave `dhcp_reservations` a `normalAbove`, which is
+/// the predicate [UspWidgetSpecs.selectableForms] reads, so a seventh card became
+/// pickable-compact and [ForcedCompactFloorFamily] grew by one card × 3 locales.
+/// Nothing here named the card; the pin named the count, and it is what reported
+/// the growth.
 ///
 /// ## Three families, because the dataset already records three groups
 ///
 /// `forced_form.popup_tile`, `forced_form.skeleton` and `forced_form.compact_floor`
 /// — and [OverflowSurfaceFamily.name] *is* that group name, so one class could not
-/// have kept the 75 cell ids where they are. They also differ in the two ways §2
+/// have kept the cell ids where they are. They also differ in the two ways §2
 /// calls essential: the skeleton sweep pumps a widget rather than a card (its axis
 /// is `variant`, not `card`), and the popup and compact sweeps each assert
 /// something different about the tree they pumped.
@@ -30,9 +36,10 @@
 /// ```
 ///
 /// That is a correction rather than lost coverage, and `forced_form.tsv` is
-/// re-captured with it. The other 69 rows are byte-identical, so the diff is six
-/// renamed rows and nothing else — which is small enough to verify by eye, unlike
-/// #1343's 1,898.
+/// re-captured with it. The other 69 rows were byte-identical at #1344, so that
+/// diff was six renamed rows and nothing else — small enough to verify by eye,
+/// unlike #1343's 1,898. The #1325 merge adds three more rows on top of it, all
+/// three `card=dhcp_reservations` under `forced_form.compact_floor`.
 ///
 /// ## No allowlist, and no enumeration gaps
 ///
@@ -102,7 +109,15 @@ final CardWidthCase forcedCompactFloorCase =
 /// `max` of the two, because [UspWidgetSpecs.compactMinHeightRows] is a floor
 /// rather than a pin and every compact consumer already declares 2 or 3. Pumping
 /// the constant alone would measure a shorter card than the floor actually permits
-/// for four of the six.
+/// for the four that declare 3: `connected_devices`, `time_settings`,
+/// `dhcp_reservations` and `network_health`.
+///
+/// Named rather than counted, because the count was wrong in both halves. This
+/// read "four of the six" until the #1325 merge, when there were six consumers and
+/// **three** of them declared 3 — `dhcp_reservations` is the fourth and was not a
+/// consumer yet. The merge makes the numerator true and the denominator false at
+/// the same time, which is exactly the drift a hand-count invites; the four ids are
+/// the form of this claim that cannot drift.
 int forcedCompactFloorRows(WidgetSpec spec) => math.max(
       spec.getConstraints(DisplayMode.normal).minHeightRows,
       UspWidgetSpecs.compactMinHeightRows,
@@ -239,14 +254,21 @@ class ForcedFormSkeletonFamily extends CardOverflowFamily {
   Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }
 
-/// The six cards a user can pick compact for, at the 261px floor the pick creates.
-/// 6 cards × 3 locales = 18 cells.
+/// The seven cards a user can pick compact for, at the 261px floor the pick
+/// creates. 7 cards × 3 locales = 21 cells.
 ///
-/// The gate pumps only each spec's min / preferred / max spans — 3, 6 and 8 for all
-/// six consumers — so the span #1299 makes their floor is pumped by nothing. For two
-/// of the six the automatic rule would not select compact there at all, which is
+/// The gate pumps only each spec's min / preferred / max spans — 3, 6 and 8 for six
+/// of the seven — so the span #1299 makes their floor is pumped by nothing. For two
+/// of the seven the automatic rule would not select compact there at all, which is
 /// what makes this sweep *forced* rather than merely un-pumped; the suite pins which
 /// two.
+///
+/// The seventh is `dhcp_reservations`, and it is the reason the suite's inventory is
+/// a three-way partition rather than an emptiness: its own `minColumns` is 4, so the
+/// gate's min-span case *is* this floor, in the compact form, in all 26 locales. Its
+/// three cells here are duplicates and are kept anyway — see the suite header for
+/// why excluding a card because another sweep happens to reach the same coordinate
+/// opens a hole the moment a `normalAbove` or a `minColumns` moves.
 class ForcedCompactFloorFamily extends CardOverflowFamily {
   const ForcedCompactFloorFamily();
 
@@ -276,7 +298,7 @@ class ForcedCompactFloorFamily extends CardOverflowFamily {
 
   /// The sweep's premise, in the two halves available here.
   ///
-  /// The compact form has no widget of its own to find — each of the six cards
+  /// The compact form has no widget of its own to find — each of the seven cards
   /// arranges its own — so the structural claim is that the card still went through
   /// the template that reads the density, and that it did not fall through to the
   /// popup form instead.

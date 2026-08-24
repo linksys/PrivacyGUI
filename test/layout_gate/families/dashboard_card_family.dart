@@ -1,15 +1,21 @@
 /// The dashboard card families: which card coordinates the gate measures (#1343).
 ///
-/// The port of the gate's largest surface — 1,898 of its 3,587 committed baseline
-/// cells — onto [runOverflowSweep]. What each of the three sweeps *is* remains
-/// documented where it is declared (`dashboard_card_overflow_test.dart`); this file
-/// is the enumeration and the verdict, and nothing else.
+/// The port of the gate's largest surface — 1,924 of its committed baseline cells —
+/// onto [runOverflowSweep]. What each of the three sweeps *is* remains documented
+/// where it is declared (`dashboard_card_overflow_test.dart`); this file is the
+/// enumeration and the verdict, and nothing else.
+///
+/// It was 1,898 at #1343. The #1325 merge added a seventh `normalAbove`, and
+/// [CardNormalBandFamily] enumerates one coordinate per threshold per tab in all 26
+/// locales, so the band grew by 26 and nothing else moved — which is the arithmetic
+/// the `expectedCellCount` pin reported rather than the arithmetic anyone did by
+/// hand.
 ///
 /// ## Three families, one gate
 ///
 /// The dataset already records three groups — `card.width`, `card.normal_band`,
 /// `card.profile` — and [OverflowSurfaceFamily.name] *is* that group name, so one
-/// class could not have kept the 1,898 cell ids byte-identical. They also differ in
+/// class could not have kept the cell ids byte-identical. They also differ in
 /// the two ways §2 calls essential: `card.profile` carries a `profile` axis the
 /// others do not, and `card.normal_band` asserts something about the tree it pumps
 /// (that production still selects the normal form there) which is meaningless for
@@ -182,13 +188,25 @@ class CardWidthFamily extends _CardFamily {
   }
 }
 
-/// The normal band (#1318): the six cards that declare a `normalAbove`, each at the
-/// narrowest width the grid produces at or above its own threshold. 208 cells.
+/// The normal band (#1318): the seven cards that declare a `normalAbove`, each at
+/// the narrowest width the grid produces at or above its own threshold. 234 cells.
 ///
-/// For three of the six this is the only place the grid's own widths reach the
-/// normal form at all — see the sweep's own header in the suite for the
-/// measurement, and [normalBandCaseFor] for why one width per card is exhaustive
-/// within a form.
+/// For four of the seven this is the only place the grid's own widths reach the
+/// normal form at all — the four whose threshold sits above 288.0px, which
+/// `the gate's own widths cannot reach the normal band` pins as the widest width the
+/// main sweep realizes: `ethernet_ports` (386), `dhcp_reservations` (369),
+/// `network_health` (366) and `connected_devices` (336). See the sweep's own header
+/// in the suite for the measurement, and [normalBandCaseFor] for why one width per
+/// card is exhaustive within a form.
+///
+/// `dhcp_reservations` is the one #1325 added, and it inverts what the other two
+/// sweeps measure for that card rather than just adding cells. Its two `card.width`
+/// coordinates (261px and 288px) used to render the normal form, because a card with
+/// no threshold has no other form; 369 puts both of them in the compact band, so
+/// those 52 cells now measure compact and these 26 are the only place the normal
+/// Active Leases row is measured at all. That row is the one #1321 found overflowing
+/// on hardware by 51.0px and 31.0px at exactly those two widths, while the gate
+/// reported them clean.
 class CardNormalBandFamily extends _CardFamily {
   CardNormalBandFamily(super.gate);
 

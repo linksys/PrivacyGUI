@@ -339,8 +339,21 @@ class UspNodeDetailView extends ConsumerWidget {
                             Icon(Icons.wifi,
                                 size: 16, color: colorScheme.onSurfaceVariant),
                             AppGap.xs(),
-                            AppText.labelSmall(loc(context).labelInterface,
-                                color: colorScheme.onSurfaceVariant),
+                            // The caption takes the space the icon leaves
+                            // instead of its natural width: this tile is a
+                            // half-width Expanded, leaving the row 99dp, while
+                            // `fi` needs 102.6dp for `Käyttöliittymä`. The
+                            // interface name is on the line below, so
+                            // shortening the caption loses no information
+                            // (#1302).
+                            Expanded(
+                              child: AppText.labelSmall(
+                                loc(context).labelInterface,
+                                color: colorScheme.onSurfaceVariant,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         AppGap.xs(),
@@ -455,8 +468,22 @@ class UspNodeDetailView extends ConsumerWidget {
                                   size: 16,
                                   color: colorScheme.onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall(loc(context).lastContact,
-                                  color: colorScheme.onSurfaceVariant),
+                              // Same half-width tile, same treatment as the
+                              // interface caption above — and this one does not
+                              // even fit in English: 21 locales overflow the
+                              // 99dp row, `en` by 2.4dp at 1241px and `ru` by
+                              // 39dp. It went unreported in #1302 because no
+                              // fixture set lastContactTime, so the golden
+                              // suite never rendered this row; the
+                              // `slave_backhaul_timing` state now does.
+                              Expanded(
+                                child: AppText.labelSmall(
+                                  loc(context).lastContact,
+                                  color: colorScheme.onSurfaceVariant,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           AppGap.xs(),

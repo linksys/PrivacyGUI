@@ -40,12 +40,23 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 ///
 /// **A forced compact card cannot go below 4 columns**, which realizes at 260.5px.
 /// The #1183 gate pumps only each spec's min / preferred / max spans — 3, 6 and 8
-/// for all six compact consumers — so the span this ticket makes their floor is
-/// pumped by nothing. And for two of the six the automatic rule would not select
-/// compact there at all: 260.5px is above `lan_info`'s 250 and `time_settings`'
-/// 256, so those two render their compact form at that width only because the user
-/// asked, which is exactly the "width the automatic rule would not select" the AC
-/// names. The inventory below pins which two, rather than leaving it as prose.
+/// for six of the seven compact consumers — so the span this ticket makes their
+/// floor is pumped by nothing. And for two of the seven the automatic rule would
+/// not select compact there at all: 260.5px is above `lan_info`'s 250 and
+/// `time_settings`' 256, so those two render their compact form at that width only
+/// because the user asked, which is exactly the "width the automatic rule would
+/// not select" the AC names. The inventory below pins which two, rather than
+/// leaving it as prose.
+///
+/// The seventh is `dhcp_reservations`, and it is the exception that made the
+/// inventory a partition rather than an emptiness. #1321 gave it a threshold, and
+/// its `minColumns` is 4 — so the gate's own min-span case *is* this floor, in the
+/// compact form, in all 26 locales, at the same 3 rows. Its three cases below are
+/// therefore duplicates. They are kept because the sweep is generated from "the
+/// cards a user can pick compact for", which is the honest definition of what this
+/// file covers; excluding a card because another file happens to reach the same
+/// coordinate opens a hole the moment a `normalAbove` or a `minColumns` moves, and
+/// three cases is not a price worth that.
 ///
 /// ## What is deliberately not swept
 ///
@@ -115,7 +126,7 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// ## What this file is, since #1344
 ///
 /// Three [runOverflowSweep] declarations and the five hand-written tests that keep
-/// them honest. The 75 cells the three sweeps measure are enumerated by
+/// them honest. The 78 cells the three sweeps measure are enumerated by
 /// `test/layout_gate/families/forced_form_card_family.dart`; the tolerance filter,
 /// the fresh-subtree key, the surface reset and the failure prose are the shared
 /// runner's, which is what #1344 is for.
@@ -131,6 +142,10 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// runner fixes: 75 per-locale tests become 29 coordinate tests, each looping its
 /// three locales inside one body, plus the three cell-count pins those coordinates
 /// can no longer be counted by eye. 5 + 17 + 6 + 6 + 3 = 37.
+///
+/// **38 since the #1325 merge**, and the +1 is the arithmetic rather than a decision:
+/// `dhcp_reservations` became pickable-compact, so the compact sweep's coordinates go
+/// 6 → 7 and its cells 18 → 21. 5 + 17 + 6 + 7 + 3 = 38.
 ///
 /// One cell **id** changes with the port — the six skeleton cells gain
 /// `|locale=en`, which they were always measured in — and `forced_form.tsv` is
@@ -197,20 +212,75 @@ void main() {
               'instead');
     });
 
-    test('compact\'s new floor is a span the gate never pumps', () {
+    test('compact\'s floor is a span the gate pumps for one card only', () {
+      // This began as `a span the gate never pumps`, which held while every
+      // compact consumer declared min/preferred/max 3/6/8 — the inventory #1299
+      // measured. #1321 broke it: `dhcp_reservations` is the first card to declare
+      // a threshold *and* floor itself at 4 columns, so the gate's min-span case
+      // is this file's compact floor.
+      //
+      // The claim is a three-way partition rather than an emptiness, and every
+      // side is pinned, because which side a card sits on decides what this file
+      // is the *only* coverage for. `notPumped` is exclusive coverage on the width;
+      // `pumpedInNormal` is exclusive coverage on the form (the gate reaches the
+      // width and production renders normal there, so only a pick shows compact);
+      // `pumpedInCompact` is duplicated, and the header says why it is kept.
+      final notPumped = <String>[];
+      final pumpedInCompact = <String>[];
+      final pumpedInNormal = <String>[];
+
       for (final spec in specsOfferingForm(CardDensity.compact)) {
-        expect(
-          widthCasesFor(spec).map((c) => c.columnSpan),
-          isNot(contains(UspWidgetSpecs.compactMinColumns)),
-          reason: '${spec.id}: the gate pumps min/preferred/max spans, and '
-              '#1299 makes ${UspWidgetSpecs.compactMinColumns} columns the '
-              'floor of the compact form. If the spec now declares that span, '
-              'the gate covers this width and the sweep below is redundant',
-        );
+        final spans = widthCasesFor(spec).map((c) => c.columnSpan);
+        if (!spans.contains(UspWidgetSpecs.compactMinColumns)) {
+          notPumped.add(spec.id);
+        } else if (densityForWidth(
+                width: forcedCompactFloorCase.cardWidth,
+                normalAbove: spec.normalAbove) ==
+            CardDensity.compact) {
+          pumpedInCompact.add(spec.id);
+        } else {
+          pumpedInNormal.add(spec.id);
+        }
       }
+
+      expect(
+        notPumped,
+        [
+          'device_info',
+          'lan_info',
+          'ethernet_ports',
+          'connected_devices',
+          'time_settings',
+          'network_health',
+        ],
+        reason: 'these declare no ${UspWidgetSpecs.compactMinColumns}-column '
+            'span, so ${forcedCompactFloorCase.widthKey}px is a width no sweep but this one '
+            'reaches. An id leaving this list has not lost coverage — it has '
+            'moved to one of the two below, and the reason has to be read',
+      );
+      expect(
+        pumpedInCompact,
+        ['dhcp_reservations'],
+        reason:
+            'the gate already pumps these at ${forcedCompactFloorCase.widthKey}px in '
+            'the compact form, so their cases below are duplicates rather than '
+            'coverage. A list growing here is fine; a list growing to include '
+            'every card means this file\'s compact sweep has stopped adding '
+            'anything and should be reconsidered',
+      );
+      expect(
+        pumpedInNormal,
+        isEmpty,
+        reason: 'a card here declares the floor span but sits above its own '
+            'threshold at ${forcedCompactFloorCase.widthKey}px, so the gate measures its '
+            'normal form and only a pick reaches the compact one. Nothing is '
+            'wrong with that — it is the strongest case for this sweep — but it '
+            'is a shape #1299 never measured, so it is pinned rather than '
+            'assumed away',
+      );
     });
 
-    test('and for two of the six the rule there would say normal', () {
+    test('and for two of the seven the rule there would say normal', () {
       // Which cards make this file's compact sweep *forced* rather than merely
       // un-pumped. Named rather than counted: the two are the cards whose
       // threshold sits below the 4-column realization, and a spec edit that moves
@@ -228,7 +298,7 @@ void main() {
           reason: 'at ${forcedCompactFloorCase.widthKey}px these are the cards '
               'production would render in their normal form, so a pick is the '
               'only way to see their compact form at this width — AC 11\'s "a '
-              'width the automatic rule would not select". The other four are '
+              'width the automatic rule would not select". The other five are '
               'already in their compact band here, and are swept for the '
               'geometry alone');
     });
@@ -264,11 +334,15 @@ void main() {
 
   // ─── A forced compact card at its floor ───────────────────────────────────
   //
-  // 6 cards x 3 locales, at the 261px the pick floors them at and the row count
-  // [forcedCompactFloorRows] takes the max of — see it for why the constant alone
-  // would measure a shorter card than the floor permits for four of the six.
+  // 7 cards x 3 locales, at the 261px the pick floors them at and the row count
+  // [forcedCompactFloorRows] takes the max of — see it for the four cards the
+  // constant alone would measure a shorter card than the floor permits for.
+  //
+  // 18 until #1325 gave `dhcp_reservations` a `normalAbove`, which is the predicate
+  // `selectableForms` reads: a threshold added for the normal band's sake made a
+  // seventh card pickable-compact, and this pin is what said so.
   runOverflowSweep(
     family: const ForcedCompactFloorFamily(),
-    expectedCellCount: 18,
+    expectedCellCount: 21,
   );
 }

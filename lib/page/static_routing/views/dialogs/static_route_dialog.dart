@@ -48,6 +48,13 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   late TextEditingController _destIpController;
   late TextEditingController _subnetMaskController;
   late TextEditingController _gatewayController;
+  // Focus node for the (plain-text) name field. Validation runs on focus-loss,
+  // not on every keystroke: assigning _errors in onChanged calls setState →
+  // rebuild → the CanvasKit <input> is torn down mid-edit, dropping focus and
+  // the value being typed (#1332). The three IPv4 fields use AppIpv4TextField's
+  // own onFocusChanged callback (_onIpv4FocusChanged) for the same purpose.
+  // (Same focus-loss pattern as port_forwarding_dialog / usp_local_network_view.)
+  final _nameFocus = FocusNode();
   late String _interfaceName;
   late bool _enabled;
 
@@ -70,6 +77,11 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     // fields are empty, so computing errors immediately would show "required"
     // errors before the user has typed anything (confusing, non-standard UX).
     _errors = _isEdit ? _computeErrors() : {};
+    // Validate the name field when it loses focus (updates the shown errorText)
+    // instead of on every keystroke.
+    _nameFocus.addListener(() {
+      if (!_nameFocus.hasFocus && mounted) _validate();
+    });
   }
 
   @override
@@ -78,6 +90,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     _destIpController.dispose();
     _subnetMaskController.dispose();
     _gatewayController.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
@@ -97,6 +110,20 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     setState(() {
       _errors = _computeErrors();
     });
+  }
+
+  /// Rebuild to re-evaluate the Add-button enable state (_isFormValid) WITHOUT
+  /// surfacing errors mid-edit. Error text is refreshed on focus-loss (via
+  /// _nameFocus / _onIpv4FocusChanged), so it must NOT be assigned here:
+  /// assigning _errors in onChanged → setState → rebuild tears down the
+  /// CanvasKit <input> mid-edit and drops the keystroke (#1332).
+  void _onInputChanged() {
+    setState(() {});
+  }
+
+  /// Validate when focus leaves the entire IPv4 field (not per segment).
+  void _onIpv4FocusChanged(int? index, bool hasFocus) {
+    if (index == null && !hasFocus && mounted) _validate();
   }
 
   /// Convert error key to localized string.
@@ -136,10 +163,11 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
           children: [
             AppTextField(
               controller: _nameController,
+              focusNode: _nameFocus,
               identifier: 'static-route-name',
               hintText: loc(context).routeName,
               errorText: _localizeError(_errors['name']),
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _onInputChanged(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
@@ -147,7 +175,8 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-dest-ip',
               label: loc(context).destinationIp,
               errorText: _localizeError(_errors['destIp']),
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _onInputChanged(),
+              onFocusChanged: _onIpv4FocusChanged,
             ),
             AppGap.lg(),
             AppIpv4TextField(
@@ -155,7 +184,8 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-subnet-mask',
               label: loc(context).subnetMask,
               errorText: _localizeError(_errors['subnetMask']),
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _onInputChanged(),
+              onFocusChanged: _onIpv4FocusChanged,
             ),
             AppGap.lg(),
             AppIpv4TextField(
@@ -163,7 +193,8 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-gateway',
               label: loc(context).gatewayIp,
               errorText: _localizeError(_errors['gateway']),
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _onInputChanged(),
+              onFocusChanged: _onIpv4FocusChanged,
             ),
             AppGap.lg(),
             Row(

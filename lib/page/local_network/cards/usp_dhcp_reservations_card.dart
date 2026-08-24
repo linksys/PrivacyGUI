@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
@@ -27,6 +29,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     // Dashboard shows only online clients (based on Hosts.Active, not DHCP lease).
     final onlineClients = clients.where((c) => c.isOnline == true).toList();
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
+    final compact = CardDensityScope.of(context) == CardDensity.compact;
 
     return DashboardCardTemplate.multiSection(
       title: 'DHCP',
@@ -64,7 +67,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           content: Column(
             children: [
               for (var i = 0; i < onlineClients.length; i++) ...[
-                _buildClientRow(context, onlineClients[i]),
+                _buildClientRow(context, onlineClients[i], compact: compact),
                 if (i < onlineClients.length - 1) AppGap.sm(),
               ],
             ],
@@ -100,12 +103,44 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildClientRow(BuildContext context, DhcpClientUIModel client) {
+  /// The Active Leases row.
+  ///
+  /// **Why this row has a compact form (#1321).** The trailing slot carries an IP
+  /// *and* a lease duration, and `AppListTile` hands `trailing` through
+  /// unconstrained, so the row overflowed by 50.0px at 260.5px and 29.0px at
+  /// 288.0px — both widths the #1183 gate sweeps — with the lease clipped at the
+  /// right edge on a real router. Neither operand can give: the IP is what the row
+  /// exists to show, and an ellipsized `10h…` is the defect that was reported, not
+  /// a fix for it.
+  ///
+  /// So the compact form **stacks** them instead of dropping either. That is the
+  /// half of the fix that matters at the narrow end: [DeviceRow.compact] returns
+  /// 60px (the 44px icon block plus the 16px gap ui_kit adds per occupied slot),
+  /// which alone clears 252px and not the 200px the band starts at. Stacked, the
+  /// slot's demand falls from IP + gap + lease to `max(IP, lease)` — the address
+  /// at every reachable content, since the widest lease a pool can hand out
+  /// (`364d 23h`, capped by `validateLeaseTime`) is narrower than a 15-character
+  /// quad. The band is therefore bounded by the address alone, which is why
+  /// `normalAbove: 369` covers it from 200px up.
+  ///
+  /// The icon the compact form drops is the only part of this row that can go
+  /// without loss: [build] filters to `isOnline == true` before building any row,
+  /// so the dot is **always** the success colour here and the ternary below has
+  /// one reachable branch. It is kept for the normal form because the row is a
+  /// live lease and the dot says so at a glance — it carries no information the
+  /// caller cannot already infer, which is exactly what makes it the right thing
+  /// to spend.
+  Widget _buildClientRow(
+    BuildContext context,
+    DhcpClientUIModel client, {
+    required bool compact,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final appColors = Theme.of(context).extension<AppColorScheme>();
     final lease = client.leaseTimeFormatted;
 
     return DeviceRow(
+      compact: compact,
       icon: Container(
         width: 8,
         height: 8,
@@ -118,16 +153,28 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       ),
       title: client.displayName,
       subtitle: client.hostName.isNotEmpty ? client.mac : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.bodySmall(client.ip, color: colorScheme.onSurfaceVariant),
-          if (lease.isNotEmpty) ...[
-            AppGap.md(),
-            AppText.bodySmall(lease, color: colorScheme.onSurfaceVariant),
-          ],
-        ],
-      ),
+      trailing: compact
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                AppText.bodySmall(client.ip,
+                    color: colorScheme.onSurfaceVariant),
+                if (lease.isNotEmpty)
+                  AppText.bodySmall(lease, color: colorScheme.onSurfaceVariant),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodySmall(client.ip,
+                    color: colorScheme.onSurfaceVariant),
+                if (lease.isNotEmpty) ...[
+                  AppGap.md(),
+                  AppText.bodySmall(lease, color: colorScheme.onSurfaceVariant),
+                ],
+              ],
+            ),
     );
   }
 

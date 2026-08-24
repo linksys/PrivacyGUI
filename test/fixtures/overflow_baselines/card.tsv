@@ -2,8 +2,8 @@
 # sweep card
 # groups card.normal_band card.profile card.profile_data card.single_view card.tab_registry card.width
 # suite test/page/dashboard/cards/dashboard_card_overflow_test.dart
-# commit 4fb1ac5e-dirty
-# cells 1917
+# commit 25d1b8ed-dirty
+# cells 1943
 # incidents 0
 # overflows 0
 # unmeasured 0
@@ -60,6 +60,32 @@ card.normal_band|card=device_info|width=normalAbove|px=262|tab=0|locale=tr	clean
 card.normal_band|card=device_info|width=normalAbove|px=262|tab=0|locale=vi	clean	-	-	-	-
 card.normal_band|card=device_info|width=normalAbove|px=262|tab=0|locale=zh	clean	-	-	-	-
 card.normal_band|card=device_info|width=normalAbove|px=262|tab=0|locale=zh_TW	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=ar	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=da	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=de	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=el	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=en	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=es	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=es_AR	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=fi	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=fr	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=fr_CA	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=id	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=it	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=ja	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=ko	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=nb	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=nl	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=pl	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=pt	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=pt_PT	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=ru	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=sv	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=th	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=tr	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=vi	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=zh	clean	-	-	-	-
+card.normal_band|card=dhcp_reservations|width=normalAbove|px=369|tab=0|locale=zh_TW	clean	-	-	-	-
 card.normal_band|card=ethernet_ports|width=normalAbove|px=386|tab=0|locale=ar	clean	-	-	-	-
 card.normal_band|card=ethernet_ports|width=normalAbove|px=386|tab=0|locale=da	clean	-	-	-	-
 card.normal_band|card=ethernet_ports|width=normalAbove|px=386|tab=0|locale=de	clean	-	-	-	-

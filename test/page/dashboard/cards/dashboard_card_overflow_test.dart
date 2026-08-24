@@ -64,25 +64,33 @@ import '../../../util/overflow_baseline.dart';
 /// ## What this file is, since #1343
 ///
 /// Three [runOverflowSweep] declarations and the hand-written tests that keep them
-/// honest. The 1,898 cells the three sweeps measure are enumerated by
+/// honest. The 1,924 cells the three sweeps measure are enumerated by
 /// `test/layout_gate/families/dashboard_card_family.dart` and judged by
 /// [CardSweepGate]; what used to be ~500 lines of nested loops, ratchet plumbing
 /// and failure prose in this file is now the framework's, shared with the chrome
 /// sweep and — at #1344/#1345 — with the other two.
 ///
-/// The 23 tests that remain here are the ones that are *not* a sweep: 18 for the
+/// The 25 tests that remain here are the ones that are *not* a sweep: 18 for the
 /// tab registry (six cards pinning a tab count, twelve pinning that they are
 /// single-view, which is what decides how many tabs the sweeps cover), 3 for the
-/// normal band's inventory (which decides that sweep's size), and 2 profile guards
-/// — one that the swept tab exists, one that the profile's data reaches the tree —
-/// which decide whether the 52 profile cells are pumping the profile at all. Each
-/// is a measured coordinate in #1337's dataset for the same reason: a port that
-/// dropped one would diff clean while taking the coverage with it.
+/// normal band's inventory (which decides that sweep's size), 2 profile guards —
+/// one that the swept tab exists, one that the profile's data reaches the tree —
+/// which decide whether the 52 profile cells are pumping the profile at all, and 2
+/// fixture guards from #1321 that decide whether the other 1,872 are measuring a
+/// production-shaped tree at all.
 ///
-/// With the three sweeps' 73 coordinate tests and their 3 cell-count pins, that is
-/// the 99 this file declares. The `list all registered dashboard cards` test is not
-/// among them — it exists only under `--dart-define=LIST_CARDS`, where it is the
-/// whole run.
+/// The last two are the ones worth reading, because they guard the sweeps'
+/// unstated premise rather than their size: one asserts the shared fixture pins no
+/// absolute date, the other that the content it renders *conditionally* is
+/// actually there. #1321 is why — an expiry pinned to `DateTime(2024, 6, 16)` made
+/// `leaseTimeFormatted` return the empty string from that date onward, so the gate
+/// measured a row ~50px narrower than production's and called two swept widths
+/// clean while the card overflowed on hardware by 51.0px and 31.0px.
+///
+/// With the three sweeps' 74 coordinate tests and their 3 cell-count pins, that is
+/// the 102 this file declares. The `list all registered dashboard cards` test is
+/// not among them — it exists only under `--dart-define=LIST_CARDS`, where it is
+/// the whole run.
 ///
 /// The sweeps' own reasoning stays with each `runOverflowSweep` call below, in the
 /// section comment above it. The pinned cell counts are the ticket's arithmetic;
@@ -93,6 +101,15 @@ import '../../../util/overflow_baseline.dart';
 /// three families. One per run — see [CardSweepGate] for why it cannot be per
 /// family.
 final CardSweepGate _gate = CardSweepGate();
+
+/// The fixture every card case in this file pumps, named once so #1319 — which
+/// moves it out of `test/golden_test/` — has one line to change.
+///
+/// It survived #1343's port even though the rest of this file's plumbing did not:
+/// the two groups that read it assert something about the fixture *file*, not
+/// about a rendered tree, so there is no cell for a family to enumerate.
+const String _sharedFixturePath =
+    'test/golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
 
 bool get _isListOnly {
   const d = String.fromEnvironment('LIST_CARDS');
@@ -243,11 +260,13 @@ void main() {
   // ─── The normal band (#1318) ──────────────────────────────────────────────
   //
   // The sweep above pumps the widths the grid produces for each span, and claims
-  // that is exhaustive because overflow is monotonic in width. Since #1288/#1290
-  // six cards declare a `normalAbove`, so their narrowest realization renders a
-  // *different form* — popup at 191.4px for all six, compact at 288.0px for the
-  // three whose threshold is above it — and a different form is not a narrower
-  // instance of the same one. For those three **this sweep is the only place the
+  // that is exhaustive because overflow is monotonic in width. Since
+  // #1288/#1290/#1321 seven cards declare a `normalAbove`, so their narrowest
+  // realization renders a *different form* — popup at 191.4px for six of them,
+  // 260.5px compact for `dhcp_reservations`, whose `minColumns: 4` puts its own
+  // floor above `kPopupBelow`; and compact at 288.0px for the four whose threshold
+  // is above it — and a different form is not a narrower instance of the same one.
+  // For those four **this sweep is the only place the
   // grid's own widths reach the normal form at all**; what the gate had otherwise
   // is `dashboard_card_popup_overflow_test`'s two dialog groups, which render it at
   // the fixed `kCardPresentationWidth` (400px, above every threshold), tab 0 only,
@@ -256,7 +275,7 @@ void main() {
   // tab, `de`, 500px, +41px): tab 2 in `de` used to be covered by transitivity from
   // the 191.4px normal case, and #1288 removed that without replacing it.
   //
-  // So each of the six is swept once more, at [normalBandCaseFor] — the narrowest
+  // So each of the seven is swept once more, at [normalBandCaseFor] — the narrowest
   // width the grid produces at or above its own threshold. One width, because
   // monotonicity is intact *within* a form: see that function for the argument, and
   // `the gate's own widths cannot reach the normal band` below for the half of it
@@ -289,41 +308,58 @@ void main() {
   // the one that justifies the sweep's existence rather than its shape: the main
   // width sweep stayed **green** through it.
   //
-  // **Re-run on 2026-08-22 (#1348), against the ported code rather than the code
-  // these rows were written for.** #1343 turned 1,822 `testWidgets` into 63 declared
-  // coordinates with locale as an inner loop, so a killer the pre-port table counted
-  // in *cells* is counted in *tests* now, and a table carried over unchanged would be
-  // quoting a measurement of code that no longer exists. Every mutation below was
-  // re-applied to the working tree, run, and reverted; "killed by" is the observed
-  // failure set, and the pre-port figure is named wherever the port moved it.
+  // **Re-run twice.** #1348 re-ran it on 2026-08-22 against the #1343 port, which
+  // turned 1,822 `testWidgets` into 63 declared coordinates with locale as an inner
+  // loop, so a killer the pre-port table counted in *cells* is counted in *tests*
+  // now. This is the second re-run, on 2026-08-24 against the `dev-2.7.0` merge, for
+  // the same reason: #1325 gave `dhcp_reservations` a `normalAbove`, so every row
+  // that names an inventory names a different one — seven thresholds at 9 card × tab
+  // coordinates and 234 cells, where #1348 measured six at 8 and 208. A table carried
+  // over unchanged would be quoting a measurement of code that no longer exists.
   //
-  // Two things the re-run found, neither of them predicted. Row 4 caught a coverage
+  // **The scope is fixed and stated, which is the other thing that changed.** #1348
+  // counted row 2's killers in this file alone and row 1's across three, so the two
+  // rows were not comparable. Every mutation below was re-applied to the working
+  // tree, run against the same eight paths, and reverted: the three card sweep
+  // suites, the chrome sweep, `usp_network_health_density_test`, both
+  // `dashboard_card_probe` unit suites and `test/layout_gate/` — 427 tests in 27s.
+  // Widening that scope is most of why row 2 goes from 4 killers to 18 and row 4 from
+  // 3 to 17. The eighteen readability and density satellites that also import the
+  // probe are outside it, so every count here is a lower bound.
+  //
+  // Three things the re-runs found, none of them predicted. Row 4 caught a coverage
   // change that grew the sweep — the direction a count pin is usually assumed to be
-  // useless in. And every row that changes what is measured now also trips an
+  // useless in. Every row that changes what is measured also trips an
   // `expectedCellCount`, which is why that parameter is required rather than
   // defaulted (`sweep.dart` §4): rows 2, 4 and 5 each gained a killer from it,
-  // including row 2, whose pre-port entry argued the count *could not* fail.
+  // including row 2, whose pre-port entry argued the count *could not* fail. And row
+  // 4 got deadlier at the merge for a reason nobody chose — `dhcp_reservations` is
+  // the only card whose threshold realizes below a 480px screen (369.0px @ 401), so
+  // raising the floor to 480 now breaks `each threshold is realizable` too, where the
+  // other six all realize at 552 or wider and survived it.
   //
   // Row 1's counts are read off the **dataset**, not off the failure log, and the
   // difference is not pedantic: `flutter test` truncates a long `expect` message
   // mid-list, so the log showed 21 failing locales where the run had 26. A
   // `OVERFLOW_BASELINE=1` capture under the same mutation states it exactly —
   // `card.width` 1,638 cells with **0** significant incidents, `card.profile` 52
-  // with 0, `card.normal_band` 26 at one coordinate and 0 at the other seven. That
+  // with 0, `card.normal_band` 234 with 26 at one coordinate and 0 at the other
+  // eight. That
   // is the sharpest available form of "large, green and blind": not "the big sweep
   // passed" but "the big sweep measured 1,638 cells and saw nothing".
   //
-  // | # | assertion | mutation | killed by (re-run 2026-08-22) |
+  // | # | assertion | mutation | killed by (re-run 2026-08-24) |
   // |---|---|---|---|
-  // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | **7 tests, none of them the main width sweep**: `usp_network_health_density_test`'s four pinned-normal assertions, the two dialog groups in `dashboard_card_popup_overflow_test` (400px — 6 tests pre-port, regrouped by #1344), and one coordinate of *this* sweep, `network_health` tab 0, which was 26 failing `testWidgets` pre-port and is one failing test naming 26 locales now. `card.width` — still the largest thing in the file at 1,638 cells — sees **nothing**, before the port and after |
-  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | **4**: all 3 meta-tests, plus `card.normal_band`'s declared count (208 → 130). The pre-port entry said the sweep "stays green *if the pin is edited to match*" — post-port there is a pin to edit, and it fails first, so the narrowing is a failure rather than a bookkeeping opportunity |
-  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | **9**: all 8 `card.normal_band` coordinates (208 of 208 cells pre-port — same coverage, counted per coordinate now), plus `each threshold is realizable` |
-  // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | **3**, where pre-port it was 1: `the gate's own widths cannot reach the normal band` (`widest` becomes 448.0), plus `card.width` 1,638 → **2,470** and `card.profile` 52 → **78**. Dropping a screen floor makes the generator realize *more* widths, so the sweep silently grows by 858 cells — coverage drift upward, which nothing in the pre-port suite could see |
-  // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | **4**, where pre-port it was 1: `the six cards that declare a threshold` (8 → 6), `card.width` 1,638 → 1,534, `card.normal_band` 208 → 156, and — instead of `network_health still has 3 tabs`, which no longer exists because that loop iterates the registry — `network_health is single-view, so tab 0 is full coverage`, the inverse half written for exactly this case |
+  // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | **7 tests, none of them the main width sweep**: `usp_network_health_density_test`'s four pinned-normal assertions, the two dialog groups in `dashboard_card_popup_overflow_test` (400px — 6 tests pre-port, regrouped by #1344), and one coordinate of *this* sweep, `network_health` tab 0, which was 26 failing `testWidgets` pre-port and is one failing test naming 26 locales now. The only row the merge left alone, and the only one whose killers #1348 already counted outside this file. `card.width` — still the largest thing in the file at 1,638 cells — sees **nothing**, before the port and after |
+  // | 2 | `the seven cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | **18**, of which 4 are in this file: all 3 meta-tests plus `card.normal_band`'s declared count (234 → 156; 208 → 130 at #1348, which counted only these). The other 14 are what a card losing its threshold actually costs: 10 in `usp_network_health_density_test`, because a card with no threshold has no compact *or* popup band and every form that suite pins disappears; 2 in `dashboard_card_popup_overflow_test`'s inventory; and 2 in `dashboard_card_forced_form_overflow_test`, where `forced_form.compact_floor` falls 21 → 18 and its partition test loses an id — `selectableForms` reads `normalAbove`, so a card without one is not pickable-compact. Those last two were killable at #1348's re-run and were simply not run. The pre-port entry said the sweep "stays green *if the pin is edited to match*"; there are now count pins in two files, and both fail first |
+  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | **10**: all 9 `card.normal_band` coordinates (234 of 234 cells — 8 and 208 of 208 at #1348, the same total coverage either way), plus `each threshold is realizable`. The count pin does **not** fire, and that is the honest half of this row: the mutation moves every `px=` in the sweep and changes no cell count, so it is `./tool/overflow_baseline.sh check card` that reports it and not something an `expectedCellCount` can see |
+  // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | **17**, where pre-port it was 1 and #1348 counted 3. Four here: `the gate's own widths cannot reach the normal band` (`widest` becomes 448.0), `each threshold is realizable` (new at the merge — `dhcp_reservations` realizes at screen 401, so a 480 floor pushes it to 818), and both count pins, `card.width` 1,638 → **2,470** and `card.profile` 52 → **78**. Dropping a screen floor makes the generator realize *more* widths, so the sweep silently grows by 858 cells — coverage drift upward, which nothing in the pre-port suite could see. Ten more are `narrowestRealizationOf`'s own unit tests and 3 are in the density suite. `dashboard_card_forced_form_overflow_test` stays **green** while every box it measures moves, exactly as its family header predicts: its spans are fixed constants, so a floor changes `px=` without changing how many cells there are, and the baseline diff is the only thing that reports it |
+  // | 5 | the 9-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | **4**, where pre-port it was 1 — the one row the wider scope and the merge both leave alone: `the seven cards that declare a threshold` (9 → 7), `card.width` 1,638 → 1,534, `card.normal_band` 234 → 182, and — instead of `network_health still has 3 tabs`, which no longer exists because that loop iterates the registry — `network_health is single-view, so tab 0 is full coverage`, the inverse half written for exactly this case |
   group('normal band coverage', () {
     // The inventory, asserted rather than narrated — the counts in the comment
     // above are the whole justification for this sweep's existence and its size.
-    test('the six cards that declare a threshold, at 8 card x tab coordinates',
+    test(
+        'the seven cards that declare a threshold, at 9 card x tab coordinates',
         () {
       expect(
         {for (final s in normalBandSpecs) s.id: s.normalAbove},
@@ -333,6 +369,7 @@ void main() {
           'ethernet_ports': 386.0,
           'connected_devices': 336.0,
           'time_settings': 256.0,
+          'dhcp_reservations': 369.0,
           'network_health': 366.0,
         },
         reason: 'a card that gains or loses a `normalAbove` changes what this '
@@ -341,8 +378,8 @@ void main() {
       );
       expect(
         normalBandSpecs.fold<int>(0, (n, s) => n + tabCountFor(s.id)),
-        8,
-        reason: 'five single-view cards plus network_health\'s three tabs',
+        9,
+        reason: 'six single-view cards plus network_health\'s three tabs',
       );
       // #1183's motivating coordinate, named so a change that drops it is a
       // failure rather than a silent narrowing.
@@ -360,8 +397,8 @@ void main() {
     // generator the main sweep uses tops out at 288.0px, because spans 5 upward all
     // realize 288.0px at the 320px screen floor — a card spanning the whole
     // 4-column mobile grid is full width. So no coordinate `widthCasesFor` can
-    // produce reaches a threshold above 288, and the three cards below are outside
-    // its range by construction rather than by sampling. If a wider realization
+    // produce reaches a threshold above 288, and the four cards below that declare
+    // one are outside its range by construction rather than by sampling. If a wider realization
     // ever appears this fails, instead of the sweep quietly duplicating coverage.
     test('the gate\'s own widths cannot reach the normal band', () {
       // Every span any card declares — the generator's whole domain, taken from
@@ -397,6 +434,10 @@ void main() {
         'ethernet_ports': ['191=popup', '288=compact'],
         'connected_devices': ['191=popup', '288=compact'],
         'time_settings': ['191=popup', '288=normal'],
+        // The one card whose narrowest realization is not the 3-column floor:
+        // `minColumns: 4` keeps it above `kPopupBelow`, so it has no popup form
+        // to reach by width and *both* its realizations go to compact (#1321).
+        'dhcp_reservations': ['261=compact', '288=compact'],
         'network_health': ['191=popup', '288=compact'],
       });
     });
@@ -418,6 +459,7 @@ void main() {
           'ethernet_ports': '386.0@552x3',
           'connected_devices': '336.0@2096x3',
           'time_settings': '256.0@1120x3',
+          'dhcp_reservations': '369.0@401x4',
           'network_health': '366.0@2216x3',
         },
         reason:
@@ -431,8 +473,99 @@ void main() {
 
   runOverflowSweep(
     family: CardNormalBandFamily(_gate),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
+
+  // AC6 as a guard rather than an enumeration (#1321).
+  //
+  // A list of "the absolute dates as of today" is a comment that goes stale the
+  // next time someone adds a fixture, which is the failure mode this whole ticket
+  // is about. The property is mechanically checkable instead: no `DateTime(<int>`
+  // literal anywhere in the shared fixture. `DateTime(now.year, …)` is untouched,
+  // because it starts from the clock rather than from a constant — which is the
+  // distinction that matters, not whether the constructor is called.
+  //
+  // Deliberately the whole file, not just the fields a renderer is known to
+  // compare against `DateTime.now()`. Nobody knew `leaseTimeFormatted` did, and
+  // finding out cost a hardware repro; a rule that needs that knowledge up front
+  // is a rule that fails the same way twice.
+  group('the shared fixture pins no absolute date', () {
+    test('$_sharedFixturePath has no DateTime literal', () {
+      final file = File(_sharedFixturePath);
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'the shared fixture is not at $_sharedFixturePath. #1319 moves '
+            'it out of test/golden_test/ — update _sharedFixturePath here, '
+            'which is the only place this suite names the path.',
+      );
+
+      final offenders = <String>[];
+      final lines = file.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final trimmed = lines[i].trimLeft();
+        // Prose about the dates this ticket removed is not a date.
+        if (trimmed.startsWith('//')) continue;
+        if (RegExp(r'DateTime\(\s*\d').hasMatch(lines[i])) {
+          offenders.add('  ${i + 1}: ${lines[i].trim()}');
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'These fixtures pin an absolute date:\n${offenders.join('\n')}\n'
+            'A renderer that compares one against `DateTime.now()` starts '
+            'returning different content on a date nobody chose, and the gate '
+            'keeps reporting the coordinate clean — #1321 shipped an overflow '
+            'at two swept widths that way, and left `device_analytics` sweeping '
+            'an all-zero chart. Use `DateTime.now()`-relative offsets, and if a '
+            'constant genuinely is correct for a fixture, say why in a comment '
+            'on the line above and this check will not see it.',
+      );
+    });
+  });
+
+  // The **default** fixture's conditional content (#1321).
+  //
+  // Every case in this file that pumps a card measures the tree
+  // `kitchenSinkOverrides()` produces, which makes the fixture their silent
+  // premise. When a card renders something behind a condition and the fixture
+  // stops satisfying it, the row loses an operand, the sweep keeps passing, and
+  // the coordinate reads as covered — see `card_data_profiles.dart`'s "the
+  // default profile can also under-render". These assertions turn that into a
+  // failure.
+  //
+  // Deliberately *not* part of the width sweep: this is one pump per card
+  // coordinate at the desktop width, where nothing is absent for a density
+  // reason, in `en` because the patterns are untranslated. It answers "did the
+  // fixture render it", not "does it fit".
+  group('default fixture conditional content', () {
+    for (final marker in kDefaultFixtureMarkers) {
+      final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == marker.cardId);
+
+      testWidgets('${marker.cardId} renders it (tab ${marker.tab})',
+          (tester) async {
+        await probeCardOverflow(
+          tester,
+          cardId: marker.cardId,
+          widthCase: desktopCaseFor(spec),
+          cardHeightRows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+          tabIndex: marker.tab,
+          locale: const Locale('en'),
+        );
+
+        expect(
+          find.textContaining(marker.pattern),
+          findsNWidgets(marker.expected),
+          reason: '${marker.cardId} tab ${marker.tab} did not render '
+              '${marker.expected} matches for ${marker.pattern} — '
+              '${marker.why}.',
+        );
+      });
+    }
+  });
 
   // ─── Named data profiles (#1267) ──────────────────────────────────────────
   //

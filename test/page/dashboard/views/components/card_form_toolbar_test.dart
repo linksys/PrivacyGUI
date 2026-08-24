@@ -414,7 +414,7 @@ void main() {
 
       expect(chipForms(tester), ['Normal', 'Popup'],
           reason: 'topology declares no threshold, so no compact form was ever '
-              'built for it. #1299 is explicit that building the other twelve '
+              'built for it. #1299 is explicit that building the other eleven '
               'is out of scope — so the toolbar must not offer a form that does '
               'not exist.');
     });

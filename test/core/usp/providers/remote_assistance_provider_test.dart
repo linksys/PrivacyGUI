@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockAuthNotifier extends Mock implements AuthNotifier {}
@@ -37,6 +38,16 @@ void main() {
       );
 
       expect(config.clientTypeId, 'client-type-456');
+    });
+
+    test('guardianOrigin prefixes the Guardian API host with https', () {
+      const config = RemoteAssistanceConfig(
+        guardianBaseUrl: 'qa.guardian.tools',
+        sessionId: 'session-123',
+        temporaryAccessToken: 'token-abc',
+      );
+
+      expect(config.guardianOrigin, 'https://qa.guardian.tools');
     });
 
     test('uspEndpoint returns correct path format', () {
@@ -177,16 +188,40 @@ void main() {
       expect(state.config, isNull);
     });
 
-    test('deactivate resets state to inactive', () {
+    test('deactivate resets state to inactive', () async {
       // First manually set an active state via notifier
       final notifier = container.read(remoteAssistanceProvider.notifier);
 
-      // Call deactivate
-      notifier.deactivate();
+      // Must be awaited — deactivate() resets state only after the GetIt swap
+      // completes inside the mutation lock.
+      await notifier.deactivate();
 
       final state = container.read(remoteAssistanceProvider);
       expect(state.isActive, false);
       expect(state.config, isNull);
+    });
+
+    test('deactivate invalidates uspClientProvider', () async {
+      var builds = 0;
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => mockAuthNotifier),
+          uspClientProvider.overrideWith((ref) {
+            builds++;
+            return null;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(uspClientProvider);
+      expect(builds, 1);
+
+      await container.read(remoteAssistanceProvider.notifier).deactivate();
+      container.read(uspClientProvider);
+
+      // Rebuilt after the swap — consumers must not keep the pre-swap client.
+      expect(builds, 2);
     });
 
     // activate() requires web platform and WASM — test the platform check
@@ -274,7 +309,7 @@ void main() {
       expect(identical(state1, state2), isTrue);
     });
 
-    test('notifier updates trigger state changes', () {
+    test('notifier updates trigger state changes', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -286,7 +321,7 @@ void main() {
       );
 
       final notifier = container.read(remoteAssistanceProvider.notifier);
-      notifier.deactivate();
+      await notifier.deactivate();
 
       // Initial state + state after deactivate
       expect(states.length, greaterThanOrEqualTo(1));

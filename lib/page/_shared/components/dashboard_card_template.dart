@@ -494,6 +494,15 @@ class DashboardCardTemplate extends StatelessWidget {
               // row still fits (#1227).
               Flexible(
                 child: Semantics(
+                  // The grid item that wraps every card is a semantics boundary
+                  // (sliver_dashboard's `Semantics(container: true)`), so
+                  // without a boundary of our own this button's tap action and
+                  // `button` flag are absorbed *up* into it — and that node's
+                  // rect is the whole card. Release web builds keep the
+                  // semantics tree alive for E2E, and clicks there route through
+                  // the DOM overlay, so the absorbed action makes the entire
+                  // card navigate (#1301).
+                  container: true,
                   button: true,
                   label: label,
                   child: InkWell(
