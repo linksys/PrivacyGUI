@@ -14,7 +14,7 @@ mechanism turns the claim into a plain diff.
 | Emitter (runs inside the sweeps) | [`test/util/overflow_baseline.dart`](../../test/util/overflow_baseline.dart) |
 | Screenshot dump (runs inside the sweeps) | [`test/layout_gate/screenshot.dart`](../../test/layout_gate/screenshot.dart) |
 | Extractor / differ / reporter | [`test_scripts/overflow_baseline.dart`](../../test_scripts/overflow_baseline.dart) |
-| Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.{md,html}` — a `shoot`'s own report is `<sweep>.shoot.{md,html}` |
+| Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.baseline.{md,html}` from `render`, `<sweep>.shoot.{md,html}` from `shoot` — named after whose rows they hold |
 | Screenshots (gitignored) | `build/overflow_baseline/shots/<sweep>/` |
 | Architecture it serves | [overflow_gate_architecture.md](overflow_gate_architecture.md) §9.2 R3, R5 |
 
@@ -65,10 +65,11 @@ inheriting the gate asks first. `render` turns a committed `.tsv` into a report:
 ./tool/overflow_baseline.sh render
 
 # One sweep, then read it
-./tool/overflow_baseline.sh render page && open build/overflow_baseline/report/page.html
+./tool/overflow_baseline.sh render page && open build/overflow_baseline/report/page.baseline.html
 ```
 
-Reports land in `build/overflow_baseline/report/<sweep>.{md,html}` (gitignored).
+Reports land in `build/overflow_baseline/report/<sweep>.baseline.{md,html}`
+(gitignored).
 Each one recounts the dataset and states, in this order: where the rows came from,
 the summary counts, coverage per group, coverage per axis with its denominator, and
 the findings keyed the way `known_overflows.json` is keyed — so a real failure set
@@ -168,7 +169,15 @@ gallery linking each one. The gallery's prose is recounted from the rows, so it 
 which of the two shoots produced it rather than trusting the pattern it was given.
 The frame is the whole surface the sweep pumped rather than a crop of the widget
 under test, so a card cell shows the card in its grid slot and the empty page beside
-it is real.
+it is real. A shoot **opens** its report when it finishes rather than printing the
+path; `NO_OPEN=1` (or no TTY, or no `open`) falls back to printing it.
+
+Both suffixes are load-bearing. `render` writes `<sweep>.baseline.{md,html}` and
+`shoot` writes `<sweep>.shoot.{md,html}`, named after **whose rows they hold** — and
+neither name is bare, because a bare `<sweep>.html` was the shorter thing to type
+*and* the one that is green whatever the working tree does, so opening it after a red
+shoot reads as "nothing failed". `render` deletes a pre-rename `<sweep>.html` if it
+finds one, for the same reason.
 
 Four properties are worth knowing before trusting one:
 
@@ -176,10 +185,18 @@ Four properties are worth knowing before trusting one:
   the dump, extracts the records to `build/overflow_baseline/<sweep>.shoot.tsv`, and
   renders *that* — never `test/fixtures/`. So an image cannot be orphaned by rows
   taken at another commit, and `failed` can be believed. The cost is the one
-  `capture` pays: the records go to stdout, so the run is silent. A plain
-  `render <sweep>` still reads the committed dataset and still links the same shots
-  folder with no extra flag, and *there* the two halves are two trees — which is why
-  the orphan warning exists at all.
+  `capture` pays: the records go to stdout, so the run is silent.
+
+  **This property is `shoot`'s alone.** A later `render <sweep>` reads the committed
+  dataset and still links the same shots folder with no extra flag, so its two halves
+  are two trees — and the orphan warning does *not* reliably catch that, because it
+  fires on an image whose cell id the dataset lacks. The ordinary case has the id
+  present as a `clean` row, so nothing warns and the gallery prose calls it a cell
+  that passed while the picture shows the overflow stripes. Measured: after
+  `shoot page failed` on a tree with #1349's fix removed, `render page` linked all
+  three broken images under "a verdict above says no `RenderFlex` overflowed", in
+  silence. Read a `.baseline` report's gallery as "images from some run", and a
+  `.shoot` report's as "images from this one".
 - **Selection is by cell id, or by this run's own verdicts.** `failed`, `all`, or a
   substring. Reserved words rather than a flag beside a pattern, so there is one
   input to explain and one rule per run.

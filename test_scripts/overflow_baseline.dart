@@ -1050,7 +1050,7 @@ class ScreenshotIndex {
 /// How a report written to [fromFile] must spell the directory [toDir].
 ///
 /// The manifest sits beside its images in `build/…/shots/<sweep>/` and the report
-/// is written to `build/…/report/<sweep>.md`, so an href copied from either path
+/// is written to `build/…/report/<sweep>.shoot.md`, so an href copied from either path
 /// alone resolves to nothing — and clicking is the one thing a reader does with a
 /// gallery. Both paths must be relative to the same place, or `toDir` is returned
 /// unchanged: two spellings of "where" cannot be reconciled by guessing.

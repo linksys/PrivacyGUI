@@ -74,7 +74,7 @@ Examples:
   ./tool/overflow_baseline.sh check chrome
 
   # Read what a sweep covers, without running it (seconds, no flutter)
-  ./tool/overflow_baseline.sh render page && open $REPORT_DIR/page.html
+  ./tool/overflow_baseline.sh render page && open $REPORT_DIR/page.baseline.html
 
   # A sweep went red: photograph exactly the cells that failed
   ./tool/overflow_baseline.sh shoot page failed
@@ -98,7 +98,14 @@ per matching cell into $SHOT_ROOT/<sweep>/, and reports on that
 same run — the records and the images come out of one execution, so the rows and
 the pictures always describe one tree and an image can never be orphaned by rows
 taken elsewhere. Nothing it writes goes near $BASELINE_DIR/,
-and nothing about a shoot changes a verdict.
+and nothing about a shoot changes a verdict. It opens its report when it finishes;
+set NO_OPEN=1 to be told the path instead.
+
+The two reports are named after whose rows they hold, and neither name is bare:
+$REPORT_DIR/<sweep>.baseline.{md,html} is 'render' reading the
+committed dataset, and <sweep>.shoot.{md,html} is a shoot reading its own run. A
+baseline report is green whenever the committed rows are green — which is always,
+today — so opening the wrong one after a red shoot reads as "nothing failed".
 
 <pat> is required, because the only defensible default is 'all' and that is 1,943
 images on the card sweep. It is one of:
@@ -264,6 +271,20 @@ render_sweep() {
     shot_args=(--shots "$shots")
   fi
 
+  # Transitional, and self-deleting: until the rename below, 'render' wrote
+  # `<sweep>.html`, so every build directory still holds one — an all-clean report
+  # of the *committed* rows, sitting beside `<sweep>.shoot.html` under the shorter
+  # and more obvious name. Opening it after a red shoot reads as "no errors", which
+  # is the exact confusion the suffixes exist to remove. Removed by either mode,
+  # since neither writes that name any more.
+  for format in md html; do
+    if [ "$out_prefix" != "$REPORT_DIR/$sweep" ] &&
+       [ -f "$REPORT_DIR/$sweep.$format" ]; then
+      rm -f "$REPORT_DIR/$sweep.$format"
+      echo "  (removed $REPORT_DIR/$sweep.$format — pre-rename, and green whatever this tree does)"
+    fi
+  done
+
   for format in md html; do
     # The format name doubles as the extension, so the two reports land beside
     # each other as <prefix>.md and <prefix>.html.
@@ -291,7 +312,15 @@ for sweep in "${TARGETS[@]}"; do
   if [ "$MODE" = "render" ]; then
     echo ""
     echo "▶ $sweep — $baseline"
-    if ! render_sweep "$sweep" "$baseline" "$REPORT_DIR/$sweep"; then
+    # `.baseline`, not a bare `$sweep`: a report of the committed rows and a report
+    # of this tree used to differ by one suffix, one of them absent, and the shorter
+    # name was both the easier one to type and the one that is green no matter what
+    # the working tree does. Named after where its *rows* came from — which is the
+    # distinction that misleads — rather than after the mode, so `shoot`'s
+    # `.shoot` and this `.baseline` read as the same kind of label. Deliberately
+    # not `.check`: `check` writes no report at all, and a name promising one
+    # would send the next reader looking for a file that is never there.
+    if ! render_sweep "$sweep" "$baseline" "$REPORT_DIR/$sweep.baseline"; then
       FAILED+=("$sweep")
     fi
     continue
@@ -413,9 +442,10 @@ echo ""
 echo "======================================================="
 if [ "$MODE" = "render" ]; then
   if [ ${#FAILED[@]} -eq 0 ]; then
-    echo " ✅ Reports in $REPORT_DIR/: ${TARGETS[*]}"
+    echo " ✅ Reports in $REPORT_DIR/: ${TARGETS[*]/%/.baseline}"
     echo "    Each one describes the commit stamped in its own header, not this"
     echo "    tree — re-capture before reading one as a statement about today."
+    echo "    A report of this tree is what 'shoot' writes, as <sweep>.shoot.html."
     exit 0
   fi
   echo " ❌ Rendered, but these disagree with their own headers: ${FAILED[*]}"
@@ -427,12 +457,30 @@ fi
 if [ "$MODE" = "shoot" ]; then
   sweep="${TARGETS[0]}"
   echo " 📸 Shot '$PATTERN' → $SHOT_ROOT/$sweep/"
-  echo "    open $REPORT_DIR/$sweep.shoot.html"
   echo ""
   echo "    Both halves are of this working tree at $COMMIT: the rows come from the"
   echo "    same run that took the images, not from $BASELINE_DIR/."
   echo "    So they cannot disagree — and nothing here touched a committed baseline"
   echo "    or changed a verdict. To compare the two trees, run 'check $sweep'."
+  echo ""
+  # Opened rather than printed. A shoot's entire output is a document with images
+  # in it, so the last step is always to open one — and the run that produced it
+  # took minutes, which is long enough to have moved on. Unlike
+  # `run_overflow_test.sh`, where the report is a by-product and `-o` is opt-in.
+  #
+  # Three ways out, because none of them is a browser: no `open` (not macOS), no
+  # terminal on stdout (CI, or a pipe into `tail`), or NO_OPEN set by someone who
+  # just wants the path. Each of them falls back to printing it, which is what this
+  # line said before.
+  report_html="$REPORT_DIR/$sweep.shoot.html"
+  if [ -n "${NO_OPEN:-}" ] || [ ! -t 1 ] || ! command -v open &> /dev/null; then
+    echo "    open $report_html"
+  else
+    echo "    opening $report_html"
+    # Never fatal: a failure to open is not a failure to shoot, and the exit code
+    # below is about the dataset.
+    open "$report_html" || echo "    (could not open it — the path above still works)"
+  fi
   if [ ${#FAILED[@]} -ne 0 ]; then
     echo ""
     echo " ❌ …but $RUN_DIR/$sweep.shoot.tsv disagrees with its own header — see above."

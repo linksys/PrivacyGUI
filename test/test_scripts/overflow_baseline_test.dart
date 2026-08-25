@@ -1340,9 +1340,9 @@ void main() {
 
     test('states the href relative to the report, not the shoot', () {
       // The manifest lives beside the images in `build/…/shots/<sweep>/` and the
-      // report is written to `build/…/report/<sweep>.md`, so an href copied from
-      // either path alone resolves to nothing in a browser. The one thing a reader
-      // does with this document is click.
+      // report is written to `build/…/report/<sweep>.shoot.md`, so an href copied
+      // from either path alone resolves to nothing in a browser. The one thing a
+      // reader does with this document is click.
       final shots = ScreenshotIndex.parse(
         manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'}),
         source: 'index.tsv',
@@ -1353,7 +1353,7 @@ void main() {
           '../shots/page/a.png');
       expect(
         screenshotHref(
-          fromFile: 'build/overflow_baseline/report/page.md',
+          fromFile: 'build/overflow_baseline/report/page.shoot.md',
           toDir: 'build/overflow_baseline/shots/page',
         ),
         '../shots/page',

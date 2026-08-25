@@ -286,7 +286,7 @@ the only report that works for all five sweeps (`run_overflow_test.sh`'s `DUMP=2
 report is card-shaped by construction):
 
 ```bash
-./tool/overflow_baseline.sh render page   # → build/overflow_baseline/report/page.{md,html}
+./tool/overflow_baseline.sh render page   # → build/overflow_baseline/report/page.baseline.{md,html}
 ```
 
 Coverage per group, coverage per axis with its denominator, and any findings keyed
@@ -301,14 +301,20 @@ plausible lie.
 **A sweep just went red.** Shoot the failures — no ids to copy, no pattern to guess:
 
 ```bash
-./tool/overflow_baseline.sh shoot page failed
-open build/overflow_baseline/report/page.shoot.html
+./tool/overflow_baseline.sh shoot page failed   # opens report/page.shoot.html itself
 ```
 
 `failed` is the sweep's own bar (an overflow past the 2.0px tolerance, or a pump that
 threw — a sub-tolerance `noise` row is a cell that *passed*), and on a green sweep it
 writes nothing at all. The report comes out of the same run that took the pictures,
 so the red rows and the images cannot disagree.
+
+**Open the `.shoot` report, not the `.baseline` one.** The two suffixes name whose
+rows the report holds, and a `.baseline` report is green whenever the committed rows
+are — which is always, today. Worse, `render` links whatever is in the shots folder,
+and the orphan warning only catches an image whose cell id the dataset *lacks*: a
+`clean` row with a broken picture beside it passes in silence. `shoot` opening its own
+report is how that stops being a thing to remember (`NO_OPEN=1` to just get the path).
 
 **A sweep is green and you want to see it anyway.** `clean` means one thing: no
 `RenderFlex` overflowed. It does not mean legible, and the card sweep's own PNGs
