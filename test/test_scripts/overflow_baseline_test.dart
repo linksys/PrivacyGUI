@@ -1303,6 +1303,41 @@ void main() {
               'a gallery is a subset of the dataset, and says which subset');
     });
 
+    test('says whether it is showing failures or cells that passed', () {
+      // The gallery's own prose is the only thing telling a reader which of the two
+      // shoots produced it, and the two mean opposite things: `shoot page locale=ar`
+      // photographs cells the rows call clean (the #1240 AC1 blind spot), while
+      // `shoot page failed` photographs exactly the rows marked `overflow`. A
+      // gallery that always claimed the first would, on a red sweep, invite someone
+      // to read three pictures of an overflow as evidence that it fits.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'}),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final clean = renderReportMarkdown(reportOf(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        shots: shots,
+      ));
+      final failed = renderReportMarkdown(reportOf(
+        [
+          marked('page.dhcp|screen_px=320|locale=ar', [
+            incident(
+                px: '113.0',
+                side: 'right',
+                significant: true,
+                file: 'lib/a.dart',
+                line: 31),
+          ]),
+        ],
+        shots: shots,
+      ));
+
+      expect(clean, contains('says nothing about whether the result can be read'));
+      expect(clean, isNot(contains('every one of them a failure')));
+      expect(failed, contains('every one of them a failure'));
+    });
+
     test('states the href relative to the report, not the shoot', () {
       // The manifest lives beside the images in `build/…/shots/<sweep>/` and the
       // report is written to `build/…/report/<sweep>.md`, so an href copied from

@@ -59,7 +59,7 @@ Usage:
   ./tool/overflow_baseline.sh check   [sweep...]      Compare a fresh run against the committed baselines
   ./tool/overflow_baseline.sh diff    [sweep...]      Alias for check
   ./tool/overflow_baseline.sh render  [sweep...]      Render the committed baselines as MD + HTML
-  ./tool/overflow_baseline.sh shoot   <sweep> <pat>   Photograph the cells matching <pat>, then render
+  ./tool/overflow_baseline.sh shoot   <sweep> <pat>   Photograph <pat>'s cells and report on that run
 
 Sweeps: ${SWEEPS[*]} (default: all five, except 'shoot' which takes exactly one)
 
@@ -76,6 +76,9 @@ Examples:
   # Read what a sweep covers, without running it (seconds, no flutter)
   ./tool/overflow_baseline.sh render page && open $REPORT_DIR/page.html
 
+  # A sweep went red: photograph exactly the cells that failed
+  ./tool/overflow_baseline.sh shoot page failed
+
   # Look at what a green cell actually renders as: every Arabic page cell
   ./tool/overflow_baseline.sh shoot page locale=ar
 
@@ -90,13 +93,22 @@ describes the commit stamped in its own header and not this working tree. That i
 said again at the top of every report, because it is the one way a report here
 can mislead.
 
-'shoot' is the opposite: it runs the sweep against the working tree and writes one
-PNG per matching cell into $SHOT_ROOT/<sweep>/, then renders the
-committed baseline with those images linked. So the pictures are of today's code
-and the rows are of the commit in the header — the report says so, and lists any
-image whose coordinate those rows do not hold. <pat> is a substring of a cell id,
-or the word 'all'; there is no default, because 'all' on the card sweep is 1,943
-images. Nothing about a shoot changes a verdict or a baseline.
+'shoot' is the opposite: it runs the sweep against the working tree, writes one PNG
+per matching cell into $SHOT_ROOT/<sweep>/, and reports on that
+same run — the records and the images come out of one execution, so the rows and
+the pictures always describe one tree and an image can never be orphaned by rows
+taken elsewhere. Nothing it writes goes near $BASELINE_DIR/,
+and nothing about a shoot changes a verdict.
+
+<pat> is required, because the only defensible default is 'all' and that is 1,943
+images on the card sweep. It is one of:
+
+  failed             the cells this run judged as failures — an overflow past the
+                     2px tolerance, or a pump that threw. What you want when a
+                     sweep goes red, and it writes nothing at all on a green one.
+  all                every measured cell.
+  <substring>        any cell id containing it: 'locale=ar', 'px=191',
+                     'card=lan_info', or a whole id copied from a report.
 
 A 'check' failure is not automatically a regression — read the diff. Cells
 reported as "no longer measured" are the dangerous ones: a port that drops a
@@ -147,9 +159,13 @@ PATTERN=""
 if [ "$MODE" = "shoot" ]; then
   # Parsed apart from the loop below, which reads every positional as a sweep
   # name. A shoot takes one sweep and one pattern, both required: the pattern is
-  # the only thing deciding which cells are photographed, so a default would be a
-  # second rule — and the only defensible default, 'all', is 1,943 images on the
-  # card sweep.
+  # what selects the cells — either by id, or, as 'failed', by this run's own
+  # verdicts — so a default would be a second rule, and the only defensible
+  # default, 'all', is 1,943 images on the card sweep.
+  #
+  # Not validated against a list of legal patterns: 'failed' and 'all' are reserved
+  # words in a space where everything else is a substring of a cell id, and a
+  # pattern that matches nothing is reported after the run with the count.
   for arg in "$@"; do
     case "$arg" in -h|--help) show_help ;; esac
   done
@@ -157,7 +173,7 @@ if [ "$MODE" = "shoot" ]; then
   suite_for "$1" > /dev/null
   TARGETS=("$1")
   shift
-  [ $# -ge 1 ] || die "shoot needs a pattern: a substring of a cell id, or 'all'"
+  [ $# -ge 1 ] || die "shoot needs a pattern: 'failed', 'all', or a substring of a cell id"
   PATTERN="$1"
   shift
   [ $# -eq 0 ] || die "shoot takes one sweep and one pattern, and got '$1' as well"
@@ -221,21 +237,25 @@ if [ "$MODE" = "shoot" ]; then
 fi
 echo "======================================================="
 
-# Renders one sweep's committed baseline as MD + HTML. Returns 1 when the file
-# disagrees with its own header, which is what FAILED means in these two modes.
+# Renders one dataset as MD + HTML. Returns 1 when the file disagrees with its own
+# header, which is what FAILED means in these two modes.
 #
 # Shared by 'render' and 'shoot' because a shoot's whole output is a rendered
 # report with its images linked — two copies of this loop would be two places for
-# the gallery to be forgotten.
+# the gallery to be forgotten. The dataset and the output prefix are arguments
+# rather than derived from $sweep, because that is the whole difference between the
+# two callers: 'render' reads the committed .tsv, and 'shoot' reads the one its own
+# run just produced.
 render_sweep() {
   local sweep="$1"
-  local baseline="$BASELINE_DIR/$sweep.tsv"
+  local baseline="$2"
+  local out_prefix="$3"
   local shots="$SHOT_ROOT/$sweep"
   local shot_args=()
   local rc=0
   local format code
 
-  [ -f "$baseline" ] || die "no committed baseline at $baseline — run 'capture' first"
+  [ -f "$baseline" ] || die "no dataset at $baseline — run 'capture' first"
   # Linked whenever a shoot has left a directory there, so a plain 'render' after a
   # 'shoot' needs no extra flag. Passing the directory rather than testing for the
   # manifest keeps its name in one program: the renderer says so if it is missing,
@@ -246,11 +266,11 @@ render_sweep() {
 
   for format in md html; do
     # The format name doubles as the extension, so the two reports land beside
-    # each other as <sweep>.md and <sweep>.html.
+    # each other as <prefix>.md and <prefix>.html.
     set +e
     $DART run "$EXTRACTOR" render \
       --baseline "$baseline" --format "$format" \
-      --out "$REPORT_DIR/$sweep.$format" "${shot_args[@]+"${shot_args[@]}"}"
+      --out "$out_prefix.$format" "${shot_args[@]+"${shot_args[@]}"}"
     code=$?
     set -e
     case $code in
@@ -271,7 +291,7 @@ for sweep in "${TARGETS[@]}"; do
   if [ "$MODE" = "render" ]; then
     echo ""
     echo "▶ $sweep — $baseline"
-    if ! render_sweep "$sweep"; then
+    if ! render_sweep "$sweep" "$baseline" "$REPORT_DIR/$sweep"; then
       FAILED+=("$sweep")
     fi
     continue
@@ -280,6 +300,8 @@ for sweep in "${TARGETS[@]}"; do
   if [ "$MODE" = "shoot" ]; then
     suite="$(suite_for "$sweep")"
     shots="$SHOT_ROOT/$sweep"
+    report="$RUN_DIR/$sweep.shoot.json"
+    dataset="$RUN_DIR/$sweep.shoot.tsv"
 
     echo ""
     echo "▶ $sweep — $suite"
@@ -291,35 +313,51 @@ for sweep in "${TARGETS[@]}"; do
     rm -rf "$shots"
     mkdir -p "$shots"
 
+    # OVERFLOW_BASELINE=1 as well as the dump, so this one run produces both halves
+    # of the report: the rows and the images then describe the same tree by
+    # construction, an image can never be orphaned by rows taken at another commit,
+    # and `failed` can be believed — the cells it photographed are the cells the
+    # rows beside them call failures. The cost is the same one 'capture' pays: the
+    # records go to stdout, so stdout is the dataset and the run is silent.
+    #
     # The same scrub 'capture' does, for a related reason: LOCALE or MIN_SCREEN
     # left exported would narrow which cells are enumerated, and the shoot would
-    # then be a subset of the pattern without saying so. The pattern is the only
-    # thing that decides what gets photographed. DUMP is cleared too, so the card
-    # sweep's own report PNGs are not written beside these.
+    # then be a subset of the pattern without saying so. DUMP is cleared too, so the
+    # card sweep's own report PNGs are not written beside these.
+    echo "  (silent — this run's records are the dataset: $report)"
     set +e
     env -u LOCALE -u locale -u MIN_SCREEN -u min_screen -u DUMP -u DUMP_MODE \
         -u dump -u dump_mode -u LIST_CARDS -u list_cards \
+        OVERFLOW_BASELINE=1 \
         OVERFLOW_PNG="$PATTERN" OVERFLOW_PNG_DIR="$shots" \
-        $FLUTTER test "$suite"
+        $FLUTTER test "$suite" --reporter json > "$report"
     test_exit=$?
     set -e
     if [ $test_exit -ne 0 ]; then
       # Not fatal, and not unexpected: a red sweep is exactly when a picture is
       # worth having. The images are written per cell as it settles, so a failing
       # coordinate still has one.
-      echo "  (the sweep exited $test_exit — its images were still written)"
+      echo "  (the sweep exited $test_exit — its images and records were still written)"
     fi
 
+    $DART run "$EXTRACTOR" extract \
+      --reporter "$report" --sweep "$sweep" --commit "$COMMIT" --out "$dataset"
+
     shot_count=$(find "$shots" -name '*.png' -type f | wc -l | tr -d ' ')
-    if [ "$shot_count" -eq 0 ]; then
+    if [ "$shot_count" -eq 0 ] && [ "$PATTERN" = "failed" ]; then
+      # The good outcome, and worth saying out loud rather than leaving as an empty
+      # folder: 'failed' shooting nothing means the sweep had nothing to shoot.
+      echo "  ✅ nothing failed, so there was nothing to photograph."
+      echo "     The report below is the same all-clean dataset a 'check' would diff."
+    elif [ "$shot_count" -eq 0 ]; then
       echo "  ⚠ no cell id matched '$PATTERN', so nothing was photographed."
-      echo "    A pattern is a plain substring of a cell id — try 'all', or copy"
-      echo "    an id out of $REPORT_DIR/$sweep.md."
+      echo "    A pattern is a plain substring of a cell id — try 'all' or 'failed',"
+      echo "    or copy an id out of $REPORT_DIR/$sweep.shoot.md."
     else
       echo "  📸 $shot_count image(s) in $shots"
     fi
 
-    if ! render_sweep "$sweep"; then
+    if ! render_sweep "$sweep" "$dataset" "$REPORT_DIR/$sweep.shoot"; then
       FAILED+=("$sweep")
     fi
     continue
@@ -389,15 +427,16 @@ fi
 if [ "$MODE" = "shoot" ]; then
   sweep="${TARGETS[0]}"
   echo " 📸 Shot '$PATTERN' → $SHOT_ROOT/$sweep/"
-  echo "    open $REPORT_DIR/$sweep.html"
+  echo "    open $REPORT_DIR/$sweep.shoot.html"
   echo ""
-  echo "    The images are of this working tree at $COMMIT; the rows beside them"
-  echo "    are of the commit in the baseline's header. An image whose coordinate"
-  echo "    those rows do not hold is listed in the report rather than linked, and"
-  echo "    that is the signal to re-capture. Nothing here changed a verdict."
+  echo "    Both halves are of this working tree at $COMMIT: the rows come from the"
+  echo "    same run that took the images, not from $BASELINE_DIR/."
+  echo "    So they cannot disagree — and nothing here touched a committed baseline"
+  echo "    or changed a verdict. To compare the two trees, run 'check $sweep'."
   if [ ${#FAILED[@]} -ne 0 ]; then
     echo ""
-    echo " ❌ …but $BASELINE_DIR/$sweep.tsv disagrees with its own header — see above."
+    echo " ❌ …but $RUN_DIR/$sweep.shoot.tsv disagrees with its own header — see above."
+    echo "    That is this script's own arithmetic failing, not the sweep's: report it."
     exit 1
   fi
   exit 0

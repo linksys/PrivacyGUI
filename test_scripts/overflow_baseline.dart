@@ -717,6 +717,7 @@ class BaselineReport {
     required this.axes,
     required this.sites,
     required this.findings,
+    required this.failedCells,
     required this.headerDisagreements,
     required this.shots,
     required this.shotWarnings,
@@ -760,6 +761,15 @@ class BaselineReport {
   /// Every row that is not clean, as its six fields, sorted.
   final List<List<String>> findings;
 
+  /// The coordinates this dataset calls failures: an overflow past the tolerance,
+  /// or a pump that did not finish.
+  ///
+  /// Not every non-clean cell — a `noise` row is a sub-tolerance incident, which the
+  /// sweep passed — so this is the same bar `measureOverflowCell` applies when
+  /// `shoot … failed` decides what to photograph. Two programs, one definition of
+  /// failure, or the gallery and the rows would disagree at the margin.
+  final Set<String> failedCells;
+
   /// Ways the header's own counts contradict the rows. Empty is the normal case.
   final List<String> headerDisagreements;
 
@@ -789,6 +799,7 @@ class BaselineReport {
     final axisValues = <String, Map<String, _Tally>>{};
     final sites = <String, _Tally>{};
     final findings = <List<String>>[];
+    final failedCells = <String>{};
     final total = _Tally();
 
     for (final entry in file.cells.entries) {
@@ -809,6 +820,9 @@ class BaselineReport {
         }
         if (verdict == verdictNoise || verdict == verdictOverflow) {
           sites.putIfAbsent(fields[_colSite], _Tally.new).add(cell, verdict);
+        }
+        if (verdict == verdictOverflow || verdict == verdictError) {
+          failedCells.add(cell);
         }
         if (verdict != verdictClean) findings.add(fields);
       }
@@ -864,6 +878,7 @@ class BaselineReport {
           .toList(),
       sites: siteTallies,
       findings: findings,
+      failedCells: failedCells,
       headerDisagreements: _headerDisagreements(file, total),
       shots: linked,
       shotWarnings: [
@@ -1451,9 +1466,7 @@ List<_Block> _galleryBlocks(BaselineReport report) {
       ..add(_Para(
         'Images for ${report.shots.length} of the ${report.cells} coordinates '
         'above, taken by `./tool/overflow_baseline.sh shoot ${report.sweep}` and '
-        'linked by cell id. A verdict above says no `RenderFlex` overflowed; it '
-        'says nothing about whether the result can be read — which is what these '
-        'are for.',
+        'linked by cell id. ${_gallerySubject(report)}',
       ))
       ..add(_Gallery(report.shots));
   }
@@ -1469,6 +1482,33 @@ List<_Block> _galleryBlocks(BaselineReport report) {
       ..add(_Bullets(report.shotWarnings));
   }
   return blocks;
+}
+
+/// What the gallery is a gallery *of*, recounted from the rows.
+///
+/// The two shoots mean opposite things and the pictures cannot say which they are:
+/// `shoot <sweep> locale=ar` photographs cells these rows call clean — the blind
+/// spot the feature exists for, four cards passing at 191px rendering unreadably
+/// (#1240 AC1) — while `shoot <sweep> failed` photographs exactly the rows marked
+/// `overflow`. Claiming the first unconditionally would, on a red sweep, invite a
+/// reader to take three pictures of an overflow as evidence that it fits.
+///
+/// Derived here rather than passed in from the runner, because a report that quoted
+/// the pattern would be trusting an argument instead of the data — the same mistake
+/// as quoting a header over its own rows.
+String _gallerySubject(BaselineReport report) {
+  final failed = report.shots.keys.where(report.failedCells.contains).length;
+  if (failed == 0) {
+    return 'A verdict above says no `RenderFlex` overflowed; it says nothing about '
+        'whether the result can be read — which is what these are for.';
+  }
+  if (failed == report.shots.length) {
+    return 'These are the coordinates this run failed, every one of them a failure '
+        'above: an overflow past the tolerance, or a pump that did not finish.';
+  }
+  return '$failed of them failed above; the other ${report.shots.length - failed} '
+      'passed, and a verdict that a cell passed says nothing about whether the '
+      'result can be read.';
 }
 
 List<String> _tallyRow(ReportTally tally, {required bool unrecognised}) => [
