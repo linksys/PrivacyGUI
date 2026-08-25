@@ -17,6 +17,7 @@ mechanism turns the claim into a plain diff.
 | Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.baseline.{md,html}` from `render`, `<sweep>.shoot.{md,html}` from `shoot` — named after whose rows they hold |
 | Screenshots (gitignored) | `build/overflow_baseline/shots/<sweep>/` |
 | Architecture it serves | [overflow_gate_architecture.md](overflow_gate_architecture.md) §9.2 R3, R5 |
+| If you only want to run the gate | [overflow_gate_usage.md](overflow_gate_usage.md) — the operator's guide. Nothing on this page is needed to find an overflow; `capture`/`check` matter only when the coordinate set changes. |
 
 ---
 
