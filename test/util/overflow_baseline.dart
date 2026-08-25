@@ -216,7 +216,7 @@ String overflowBaselineRecordLine(
           // The extractor renders every column through `'$value'`
           // (`test_scripts/overflow_baseline.dart:_field`), so `120` and `"120"`
           // both reach the `site` column as `120` — the type is invisible past
-          // the JSON. And all 4,032 rows across the five frozen baselines are
+          // the JSON. And all 5,072 rows across the five frozen baselines are
           // `clean` with `-` in every incident column, so no committed row
           // exercises these keys at all.
           //

@@ -39,12 +39,13 @@ tags:
   # a tight loop; use the tag when a sixth sweep must not be missed — the fifth
   # arrived on the day this comment last said "fifth", which is the argument.
   #
-  # 296, not the 590 this said after #1343 nor the 2,412 before it: every sweep
-  # now loops its locales inside one test per coordinate, so the same 4,032 cells
-  # are declared by 296 tests (card 102, popup 80, chrome 57, forced-form 38,
-  # page 19 — 18 of them cells, the nineteenth a readability guard that pumps
-  # 52 trees and names none). Cells are what the gate measures; the test count is
-  # how they are named.
+  # 342, not the 296 before #1377, the 590 after #1343 nor the 2,412 before it:
+  # every sweep loops its locales inside one test per coordinate, so 5,072 cells
+  # are declared by 342 tests (card 102, popup 80, chrome 57, forced-form 38,
+  # page 65 — 63 of them cells, the other two readability guards that pump 52
+  # trees each and name none). Cells are what the gate measures; the test count is
+  # how they are named. Wave 1 of #1369 moved both numbers: five pages at 208
+  # cells and 9 tests each.
   #
   # +4 tests and +29 cells at the merge, and no sweep was edited for either:
   # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal

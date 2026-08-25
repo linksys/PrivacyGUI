@@ -15,19 +15,21 @@
 #
 # The tag costs load time, and it is not small. `@Tags` is discovered by loading
 # the suite, so `--tags overflow` compiles all 325 test files and then skips 320
-# of them: re-measured 2026-08-24 for #1349, the same 296 tests
-# take 2m03s under the tag and 32.1s when the five files are named (shell clock;
-# `flutter test`'s own is 1m48s and 25s). The test count fell from 2,386 to 296
+# of them: re-measured 2026-08-26 for #1377, the same 342 tests
+# take 2m11s under the tag and 55s when the five files are named (shell clock;
+# `flutter test`'s own is 1m55s and 49s). The test count fell from 2,386 to 296
 # without losing a cell — #1344 and #1343 regrouped each sweep's locales inside
-# one test per coordinate, so 4,032 cells are named by 295 of those tests, the
-# 296th being #1349's readability guard, which pumps 52 trees and names no cell.
+# one test per coordinate, so 5,072 cells are named by 340 of those tests, the
+# other two being the readability guards (#1349's and #1377's), which pump 52
+# trees each and name no cell.
 # Correctness is identical — the selection is
 # exactly those five either way — so the tag is right for a pre-commit run and
 # for this script, whose job is to be complete.
 #
 # One consequence of being complete: the page sweep ignores `-L` and `-m`, the way
 # the chrome sweep already does (its widths and its 26 locales are the coverage
-# claim, not a filter), so a narrowed debugging run still pays its ~20s. `-c` is
+# claim, not a filter), so a narrowed debugging run still pays its ~46s — it was
+# ~20s until #1377 took it from two pages to seven. `-c` is
 # unaffected — it is a `--name` filter, and no page cell matches a card id. For a tight inner loop on one
 # card, name the file and skip the discovery pass:
 #

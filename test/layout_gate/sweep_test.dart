@@ -927,7 +927,7 @@ void main() {
       // The gate's default. Read from the environment on first use, and
       // `tool/overflow_baseline.sh` only sets `OVERFLOW_PNG` in its `shoot` mode —
       // so every capture, check and PR-gate run allocates no key and writes no
-      // file. A dump mode that were on by default would put 4,032 PNGs and
+      // file. A dump mode that were on by default would put 5,072 PNGs and
       // several minutes of encoding into the PR gate.
       expect(OverflowScreenshotDump.off().enabled, isFalse);
       expect(OverflowScreenshotDump.off().wants('fake|screen_px=100|locale=en'),
@@ -1172,7 +1172,7 @@ void main() {
       // The one behaviour that makes this safe to leave in the runner at all. A
       // capture happens after the measurement and before the judge, so anything it
       // raises would otherwise be attributed to the cell by invariant 3 — and a
-      // mistyped `OVERFLOW_PNG_DIR` would turn a green sweep into 4,032 cells that
+      // mistyped `OVERFLOW_PNG_DIR` would turn a green sweep into 5,072 cells that
       // "threw". The verdict below is the same one the same cell reports with the
       // dump off.
       final blocker = Directory.systemTemp.createTempSync('overflow-shots-bad');
