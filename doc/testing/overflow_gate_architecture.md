@@ -178,7 +178,9 @@ Measured on this branch 2026-08-20, every row re-measured 2026-08-21, again
 2026-08-22 after #1343, again the same day after #1344/#1345, once more the same
 day for **#1348's acceptance**, again on **2026-08-24 at the `dev-2.7.0` merge**, and
 every row once more the same day for **#1349's page pilot** (§11) — the table below is
-that last run, and the parenthesised figures are what each row read before it:
+that last run, and the parenthesised figures are what each row read before it. The last
+two rows are newer: they are **#1382's** run on 2026-08-25 (§11.5), measured both before
+and after that change, which is how the +3 / +25 they had already drifted was found.
 
 | Suite | `flutter test` tests | Pumped cells | Wall clock | Per cell |
 |---|---|---|---|---|
@@ -189,8 +191,8 @@ that last run, and the parenthesised figures are what each row read before it:
 | **Page sweep (one file, new at #1349)** | **19** | 416 + 52 guard pumps | 15s (**20s** wall) | **33–38ms** |
 | The five overflow sweeps (5 files, named) | **296** (277 pre-#1349, 273 pre-merge) | 4,032 rows † | 25s (**32s** wall) | — |
 | The same five via `--tags overflow` | **296** | 4,032 rows † | 1m48s (**2m03s** wall) | — |
-| Whole `layout-gate` family (46 files) | **1,440** (1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m06s (2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,405** (5,410 pre-#1339 — *down* 5, see below; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m49s (2m52s pre-#1339) | — |
+| Whole `layout-gate` family (47 files) | **1,476** (1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 1m58s / **2m07s** wall (2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,463** (5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m08s / **3m13s** wall (2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -242,6 +244,40 @@ that falls is normally the shape of lost coverage, and here it is the shape of a
 duplicate that no longer needs pinning twice — the 27 are accounted for one by one
 in §3.5, and `--tags overflow` stays **296** with all five baselines identical
 because nothing a sweep enumerates was touched.
+
+**#1382 moved both rows by the same +33, and found them already stale by +3 / +25**
+(measured 2026-08-25). The ticket said *re-measure, do not copy* the figures it quoted,
+and that instruction paid: measured on `6f8ce5ed` **before touching anything**, the gate
+read **1,443** and the suite **5,430**, where this table said 1,440 and 5,405. The drift
+is two commits that landed after the #1349 run and reconciles exactly, which is the only
+reason it is worth a paragraph rather than a silent overwrite:
+
+| Commit | Test declarations added | `layout-gate` | Suite |
+|---|---|---|---|
+| `a41243fa` (report write order) | +21 −1 in `test/test_scripts/overflow_details_test.dart`, +1 in `overflow_record_test.dart` | +0 | **+21** |
+| `51a8bc71` (three advisory paths) | +1 each in `ratchet_test.dart`, `sweep_test.dart`, `util/overflow_probe_test.dart` — and +1 in `test/test_scripts/overflow_details_test.dart` | **+3** | **+4** |
+| | | **+3** | **+25** |
+
+Both columns land on the measured drift with nothing left over. The rule that makes it
+readable is the one §3.5 states for baselines and it holds for counts too: a test file
+under `test/test_scripts/` is untagged, so it moves the suite and not the gate — the
+gate's whole +3 is three files that carry `layout-gate`.
+
+Then #1382's own contribution: 1,443 → **1,476** and 5,430 → **5,463**, +33 on both,
+all of it `test/layout_gate/page_roster_test.dart`. Both rows moving by the same amount
+is the expected shape for a new `layout-gate` carrier, because the tag is not excluded
+from `./run_tests.sh` — a new gate file that moved only one of these two rows would be a
+finding about the other. **The clock did not move and this row's clock should not be read
+as if it did**: the oracle's own file reports `00:00` on `flutter test`'s clock, and the
+gate measured *faster* after the change than before it (2m20s → 2m07s wall) purely
+because the earlier run shared the machine. One directory walk, 45 `readAsLinesSync`
+calls for the join and 45 `existsSync` checks cannot be timed against a 4,300-cell
+sweep. The spread measured across this session's runs is the reason to say so out
+loud: the gate 2m07s–2m27s wall and the PR gate 2m59s–3m13s, all four of them *after*
+the change, so the noise floor is ±14s — an order of magnitude more than the whole
+oracle. Read this row's test count; the clock column is context. `--tags overflow`
+stays **296**, all five baselines stay byte-identical, and no cell count moves: the
+roster records what the gate covers and pumps nothing.
 
 **The whole table moved at #1343, and only the test-count column.** The pumped
 cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917
@@ -1110,7 +1146,7 @@ and all four record-shape cases) are among them. The first draft of this section
 said 22, and the error surfaced only when the suite measured **5,404** against a
 predicted 5,409 — the gap closing exactly at `5,410 + 11 − 27 + 10`. A count that
 reconciles is worth more than a count that is merely plausible, and this one only
-reconciled after the recount. (The committed figure is **5,405**: the recount is
+reconciled after the recount. (The figure committed at #1339 was **5,405**: the recount is
 what turned up the third porting gap below, and porting it added the twelfth
 oracle case.)
 
@@ -1216,10 +1252,10 @@ name as well as the comment:
 
 ```yaml
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 46 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 47 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
-  # page-family oracle, render-parity and overflow. […]
+  # page-family oracle, page-roster oracle, render-parity and overflow. […]
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
@@ -1228,13 +1264,13 @@ name as well as the comment:
 
 (Abridged — the file also records *when* each count moved, so that a file arriving
 with the wrong tag is noticed rather than merged in silence. It read 39 when this
-section was written, 44 at the merge and 46 since #1349.)
+section was written, 44 at the merge, 46 since #1349 and 47 since #1382.)
 
 Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 46 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `layout-gate` | all 47 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
 | `overflow` | the sweep files only, as `@Tags(['layout-gate', 'overflow'])` | the fast pre-commit selector |
 
 **The split is checked by arithmetic, not by inspection** (#1342): `--tags overflow`
@@ -2501,3 +2537,118 @@ de-duplication the abstraction made unavoidable, one bug with its readability gu
 and a twelve-file comment sweep that carries no behaviour. Nothing in the runner's
 logic — and the reason that sentence can be trusted is that the previous version of
 it said something stronger and was wrong.
+
+### 11.5 The roster and its oracle (#1382, landed 2026-08-25)
+
+**What it is.** `test/fixtures/page_roster.tsv` — one row per page view,
+`path <TAB> disposition <TAB> ms_per_cell`, where disposition is `swept`, `queued`
+or `excluded:<reason>`. It is read by `test/layout_gate/page_roster.dart` and
+asserted by `test/layout_gate/page_roster_test.dart`, which carries `layout-gate`
+and not `overflow`.
+
+**Why it exists, in one sentence.** The five baselines record *what was measured*, so
+a page never onboarded appears in none of them and **"not yet onboarded" reads
+exactly like "does not exist"** — the mirror of the risk #1371 names, and the gap
+under which a page view added after #1369 closes would escape the gate silently and
+permanently. `families/page_surface_family_test.dart:60` pins `['dhcp',
+'wifi_settings']`, which is a *change* guard and not a progress record; a queue
+posted as an issue comment rots and is not readable from the repo.
+
+**Initial state, and it is deliberately mostly empty.** 45 rows: **2 `swept`**
+carrying §11.2's per-page figures (`usp_dhcp_detail_view` 44.8ms,
+`usp_wifi_settings_view` 29.2ms — *not* the 37.7ms mean, which describes neither
+page because the bracket inverted) and **43 `queued`** with `-` for ms/cell. `-`
+parses to null, meaning **not measured**: #1370 fills them, and an interpolated
+figure here would be a fabricated measurement in the epic's own record. `excluded`
+is a valid disposition from day one with nothing using it — the five candidates
+(`usp_sliver_dashboard_view`, `usp_dashboard_view`, `usp_test_console_view`,
+`router_assistant_view`, `pnp_complete_view`) get written verdicts in their own
+waves.
+
+#### The three assertions
+
+1. **Every page view has a roster row**, where a page view is **a file named
+   `*_view.dart` sitting directly inside a `views/` directory, at any depth under
+   `lib/page/`**. That is **45**, and the count is *pinned* on top of the set
+   comparison because the rule has three spellings that give three answers
+   (re-measured on `6f8ce5ed`):
+
+   | Spelling | Count | Verdict |
+   |---|---:|---|
+   | `lib/page/*/views/*_view.dart` (one level) | 44 | **too narrow** — misses `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` |
+   | directly inside a `views/` dir, any depth | **45** | correct; what `discoverPageViews` implements |
+   | `find -path '*/views/*_view.dart'` | 49 | **too wide** — `*` crosses `/` in `find` |
+
+   The four false positives are all composed widgets in
+   `lib/page/unified_diagnostics/views/widgets/` (`diagnostic_start_view`,
+   `diagnostic_running_view`, `diagnostic_results_view`,
+   `diagnostic_manual_tools_view`); none of the four classes appears anywhere under
+   `lib/route/`, so demanding rows for them would make the roster claim 49 pages
+   exist and permanently block "45 of 45". The rule is enforced twice: the walk
+   compares the parent directory's name to `views` outright, so `views/widgets/`
+   fails it structurally, and the reader rejects a *row* whose path fails the same
+   predicate.
+2. **Every roster row names a file that exists.** A deleted or renamed view
+   otherwise leaves a row claiming coverage of nothing — and a `swept` row claiming
+   coverage of nothing still counts toward "45 of 45".
+3. **`swept` ⟺ present in `kPageSurfaceCases`, both directions.** This is what stops
+   the roster becoming decorative, and it is the failure #1380's AC guards against
+   at 45 of 45 made checkable at 2.
+
+**The join for assertion 3 is resolved from the source, and the obvious spelling is
+wrong.** A case's `id` is a sweep group name, not a file — `instant_setup` alone
+holds ten views. Snake-casing the pumped widget's type name reads like this repo's
+convention and is already false: `lib/page/instant_safety/views/instant_safety_view.dart`
+declares **`UspInstantSafetyView`**, so a name-derived join would look for
+`usp_instant_safety_view.dart`, find nothing, and — because the empty set is a
+subset of everything — **satisfy the ⟺ assertion vacuously** in whichever direction
+was written as a subset check. `pageViewPathsDeclaring` therefore greps the 45
+sources for the class declaration, and the oracle asserts each case resolves to
+**exactly one** file *before* it checks either direction.
+
+#### Red before green, and it was watched
+
+All three were observed red against the committed fixture, one mutation at a time,
+then green on restore with the fixture byte-identical to pre-mutation:
+
+| Mutation | Fires | Message names |
+|---|---|---|
+| delete the `dhcp` row (header corrected to 44) | assertion 1 | `lib/page/dhcp/views/usp_dhcp_detail_view.dart` |
+| add a row for `lib/page/aaa_ghost/views/aaa_ghost_view.dart` | assertion 2 | the phantom path |
+| mark `usp_admin_view` `swept` | assertion 3 | `lib/page/admin/views/usp_admin_view.dart` |
+
+The permanent half is the `each assertion can fail` group, which drives the same
+three checks over rosters built from `PageRosterRow.line` and broken in exactly one
+way — so the assertions cannot decay into tautologies the way three emptied
+`requires` lists did in #1364/#1366. A hand check that happened once in August is
+not a guard.
+
+Two structural notes came out of watching it, both worth keeping:
+
+- The oracle reads the fixture in **`setUpAll`, not at declaration time**. The first
+  draft did the latter, and a malformed roster then failed the suite to *load* —
+  `Failed to load page_roster_test.dart` against no test name — which is the same
+  unreadable red this gate keeps rediscovering. From `setUpAll` the exception is
+  attributed to every test with its message intact.
+- The reader **refuses** rather than tolerates: a two-field row, an empty ms/cell
+  (a trailing tab is invisible in a diff and any hook that strips trailing
+  whitespace turns it into a two-field row), a `swept` row with no measurement, a
+  non-swept row *with* one, an `excluded` with no reason, a duplicate path, rows out
+  of path order, and a `# pages` header that disagrees with the row count. Each is a
+  way the record could claim something untrue while parsing cleanly, which is the
+  only failure mode a coverage record has.
+
+#### Cost, and why #1371 must not move it
+
+**+33 tests, and no measurable wall time**: one directory walk, 45 small reads and
+one parse, at 00:00 on `flutter test`'s own clock. Measured on both rows of §1.2's
+table — the gate 1,443 → **1,476** and the PR gate 5,430 → **5,463**, the same +33 in
+each because a `layout-gate` carrier is not excluded from `./run_tests.sh` — while the
+wall clock moved *down* (2m20s → 2m07s), which is machine load, not a speedup, and is
+the paragraph in §1.2 that says not to read this row's clock. So none of #1371's reasoning about
+where 8,944 page cells run applies here, and the file must stay tagged `layout-gate`
+and inside `./run_tests.sh` — **an oracle that runs on a schedule cannot stop a page
+added this afternoon from escaping this afternoon.**
+
+Nothing in `test/fixtures/overflow_baselines/` moved; all five are byte-identical.
+This ticket adds a record, not a measurement.

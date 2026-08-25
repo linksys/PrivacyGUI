@@ -36,8 +36,8 @@ and the gate is tagged `layout-gate`, so it already runs on every PR.
 |---|---|---|---|
 | naming the five sweep files (below) | 296 | 25s / 32s | inner loop while fixing |
 | `fvm flutter test --tags overflow` | 296 | 1m48s / 2m03s | before committing |
-| `fvm flutter test --tags layout-gate` | 1,440 | 2m06s / 2m21s | the whole PR-blocking gate |
-| `./run_tests.sh` | 5,405 | — / 2m49s | what CI runs |
+| `fvm flutter test --tags layout-gate` | 1,476 | 1m58s / 2m07s | the whole PR-blocking gate |
+| `./run_tests.sh` | 5,463 | 3m08s / 3m13s | what CI runs |
 
 The first two select **exactly the same tests**. `@Tags` is only readable by
 loading a suite, so the tag compiles every test file in the repo to then skip all
@@ -227,8 +227,11 @@ You do not have to remember any of this. The gate tells you.
 ### Adding a sweep
 
 Only when the overflow is on a surface nothing currently renders. Not covered
-today: the other ~40 page views, dialogs, bottom sheets. You write a *family* —
-which coordinates exist, and how one becomes a widget — and declare it once:
+today: **43 of the 45 page views** — named one per line in
+[`test/fixtures/page_roster.tsv`](../../test/fixtures/page_roster.tsv) since #1382,
+so "~40" is no longer an estimate — plus dialogs and bottom sheets. You write a
+*family* — which coordinates exist, and how one becomes a widget — and declare it
+once:
 
 ```dart
 runOverflowSweep(family: MyDialogFamily(), expectedCellCount: 208);
@@ -238,6 +241,11 @@ Naming, the locale inner loop, one fresh tree per cell, viewport restore, the
 dataset row and the cell-count pin all come with it. #1349 added two pages this
 way and changed nothing in the engine — a page is a `PageSurfaceCase` data entry,
 not a class.
+
+**Onboarding a page also moves its roster row** from `queued` to `swept`, with the
+ms/cell the run measured. You will not forget: the roster oracle asserts `swept` and
+`kPageSurfaceCases` agree in both directions, so a page added to the sweep without
+its row goes red naming the path. See the architecture doc §11.5.
 
 ### Updating the register
 

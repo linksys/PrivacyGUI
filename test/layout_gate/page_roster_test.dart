@@ -1,0 +1,520 @@
+@Tags(['layout-gate'])
+library;
+
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+import 'families/page_surface_cases.dart';
+import 'page_roster.dart';
+
+/// The roster's oracle (#1382).
+///
+/// `layout-gate` and **not** `overflow`, like the four oracles before it
+/// (`ratchet_test.dart`, `sweep_test.dart`, `dashboard_card_gate_test.dart`,
+/// `page_surface_family_test.dart`): the `overflow` tag means "pumps cells and
+/// asserts zero overflow", and this file pumps nothing at all — it is one
+/// directory walk and one file parse.
+///
+/// **That is also why #1371 must not be able to move it.** Whatever that ticket
+/// decides about where the page family's cells run, it does not apply here: an
+/// oracle that runs on a schedule cannot stop a page added this afternoon from
+/// escaping this afternoon. The tag stays `layout-gate` and the file stays inside
+/// `./run_tests.sh`, which excludes `golden||loc||ui` and therefore includes this.
+///
+/// ## The three assertions, and what each one alone would let through
+///
+/// 1. **Every page view has a roster row.** Without it, a page view added to the
+///    app appears nowhere and "not yet onboarded" reads exactly like "does not
+///    exist". The discovered count is pinned at [kPageViewCount] on top of the
+///    set comparison, because the rule has three plausible spellings that give
+///    44, 45 and 49 — so a change to the walk that narrowed the roster's
+///    obligation would otherwise satisfy the set comparison trivially.
+/// 2. **Every roster row names a file that exists.** Without it, a deleted or
+///    renamed view leaves a row claiming coverage of nothing — and a `swept` row
+///    claiming coverage of nothing still counts toward "45 of 45".
+/// 3. **`swept` ⟺ declared in `kPageSurfaceCases`, both directions.** Without it
+///    the roster is decorative: a row marked `swept` while no case declares it is
+///    a record claiming more than the gate covers, which is the precise failure
+///    the epic's final AC guards against at 45 of 45 — made checkable here at 2.
+///
+/// ## Red before green, permanently
+///
+/// This repo has been burned twice by a guard nobody watched fail: `flutter test
+/// --tags dashboard-card` returned "No tests ran" after #1336 renamed the tag — a
+/// pass-shaped result for an unrun gate — and a drifted fixture renders
+/// `AppLoader()`, which cannot overflow at any width in any locale, so 208 cells
+/// went green over a spinner (#1364/#1366).
+///
+/// So each assertion was watched red against the committed fixture, one at a time,
+/// by hand (the PR records it). The hand check proves the wiring once; the
+/// `each assertion can fail` group below is what keeps proving it, by driving the
+/// same three checks over synthetic rosters that are wrong in exactly one way. A
+/// hand check that happened last August is not a guard.
+void main() {
+  // Read in `setUpAll` and not at declaration time, deliberately. A malformed
+  // roster throws, and a throw out here fails the suite to *load* — "Failed to
+  // load page_roster_test.dart: PageRosterFormatException" against no test name,
+  // which is a shape this gate has twice found unreadable. From `setUpAll` the
+  // same exception is attributed to every test below with its message intact.
+  late final List<String> discovered;
+  late final PageRoster roster;
+
+  /// Sweep name → the widget type that sweep pumps. The type is what a case
+  /// unambiguously determines; its `id` is a sweep group name and not a file
+  /// (`instant_setup` alone holds ten views).
+  late final Map<String, String> typeBySweep;
+
+  /// ...and where each of those types is declared. Resolved from the source rather
+  /// than snake-cased from the type name, because one page already breaks that
+  /// convention — see `the swept-case join is resolved from the source` below.
+  late final Map<String, List<String>> declaringPaths;
+  late final Set<String> declaredPaths;
+
+  setUpAll(() {
+    discovered = discoverPageViews();
+    roster = PageRoster.fromFixture();
+    typeBySweep = {
+      for (final page in kPageSurfaceCases)
+        page.sweepName: page.view().runtimeType.toString(),
+    };
+    declaringPaths = pageViewPathsDeclaring(typeBySweep.values, discovered);
+    declaredPaths = declaringPaths.values.expand((p) => p).toSet();
+  });
+
+  group('assertion 1: every page view has a roster row', () {
+    test('the rule finds exactly $kPageViewCount page views', () {
+      expect(
+        discovered,
+        hasLength(kPageViewCount),
+        reason: 'the count is pinned because the rule has three spellings and '
+            'they disagree: `lib/page/*/views/*_view.dart` finds 44 (it misses '
+            '`lib/page/login/auto_parent/views/auto_parent_first_login_view.dart`), '
+            'a file directly inside a `views/` dir at any depth finds 45, and '
+            '`find -path \'*/views/*_view.dart\'` finds 49 because `*` crosses '
+            '`/` there. If this moved because the app gained a page, add its row '
+            'and move kPageViewCount. If it moved because discoverPageViews '
+            'changed, say why here — a wider rule would demand rows for the four '
+            'composed widgets in unified_diagnostics/views/widgets/ and make '
+            '"45 of 45" unreachable; a narrower one would let a page escape.',
+      );
+    });
+
+    test('the four composed widgets one level deeper are not page views', () {
+      // The concrete false positives, named. A rule that admitted these would
+      // claim 49 pages exist; none of the four classes appears anywhere under
+      // `lib/route/`, so none of them is a page.
+      for (final widget in const [
+        'diagnostic_start_view',
+        'diagnostic_running_view',
+        'diagnostic_results_view',
+        'diagnostic_manual_tools_view',
+      ]) {
+        final path = 'lib/page/unified_diagnostics/views/widgets/$widget.dart';
+        expect(File(path).existsSync(), isTrue,
+            reason: '$path was the point of this test; if it moved, re-derive '
+                'the false-positive list rather than deleting the test');
+        expect(isPageViewPath(path), isFalse);
+        expect(discovered, isNot(contains(path)));
+      }
+    });
+
+    test('the 45th page — the one a one-level glob misses — is discovered', () {
+      expect(
+        discovered,
+        contains(
+          'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
+        ),
+        reason: 'this is the file that makes the difference between 44 and 45, '
+            'and it sits two levels under lib/page/ rather than one. It is also '
+            'exactly the kind of page a coverage record forgets.',
+      );
+    });
+
+    test('no discovered page view is absent from the roster', () {
+      expect(
+        roster.unrecordedPages(discovered),
+        isEmpty,
+        reason: 'a page view the roster has never heard of is a page that can '
+            'never be reported as queued, swept or excluded — it simply is not '
+            'in the epic. Add a row with disposition `queued` and `-` for '
+            'ms/cell, and move the `# pages` header.',
+      );
+    });
+
+    test('the roster holds one row per discovered page view and no others', () {
+      // The reverse direction. A row for something the rule does not find would
+      // inflate the denominator of "45 of 45" without anything ever sweeping it.
+      expect(roster.undiscoveredRows(discovered), isEmpty);
+      expect(roster.rows, hasLength(kPageViewCount));
+      expect(roster.paths, discovered.toSet());
+    });
+  });
+
+  group('assertion 2: every roster row names a file that exists', () {
+    test('no row claims coverage of a file that is not on disk', () {
+      expect(
+        roster.phantomRows(),
+        isEmpty,
+        reason: 'a deleted or renamed view leaves a row claiming coverage of '
+            'nothing — and a `swept` row claiming coverage of nothing still '
+            'counts toward "45 of 45". If a page was deleted, delete its row and '
+            'move both the `# pages` header and kPageViewCount; if it was '
+            'renamed, rename the row.',
+      );
+    });
+  });
+
+  group('assertion 3: swept <-> declared in kPageSurfaceCases, both ways', () {
+    test('every case resolves to exactly one page view file', () {
+      // Checked before the two directions below, because a type that resolved to
+      // nothing would make both of them pass vacuously — the empty set is a
+      // subset of everything. This is the assertion that makes the join a join.
+      for (final entry in typeBySweep.entries) {
+        expect(
+          declaringPaths[entry.value],
+          hasLength(1),
+          reason: '${entry.key} pumps a ${entry.value}, and exactly one page '
+              'view file must declare that class. Zero means the case pumps a '
+              'widget that is not a page view under this roster\'s rule — and '
+              'an unresolved type turns both directions below into vacuous '
+              'subset checks. Two means the join is a coin flip.',
+        );
+      }
+    });
+
+    test('every swept row is declared by a case', () {
+      expect(
+        roster.sweptPaths.difference(declaredPaths),
+        isEmpty,
+        reason: 'a row marked `swept` while no case declares its view is a '
+            'record claiming more than the gate covers. This is the assertion '
+            'that stops the roster becoming decorative: without it, 45 rows '
+            'could read swept while two pages are measured. Declared today: '
+            '${typeBySweep.keys.join(', ')}.',
+      );
+    });
+
+    test('every case has a swept row', () {
+      expect(
+        declaredPaths.difference(roster.sweptPaths),
+        isEmpty,
+        reason: 'the other direction, and the one a wave gets wrong: a page '
+            'onboarded into kPageSurfaceCases without its roster row moving from '
+            '`queued` to `swept` is progress the record does not show, so the '
+            'epic under-reports itself and the next wave re-does the work. '
+            'Move the row and give it the ms/cell the run measured.',
+      );
+    });
+  });
+
+  group('the swept-case join is resolved from the source, not from a name', () {
+    test('one page already breaks the file-name-matches-class convention', () {
+      // The concrete reason `pageViewPathsDeclaring` reads sources instead of
+      // snake-casing the type name. If this page is ever renamed the join does
+      // not care — but the argument in that function's doc would need a new
+      // example, and a reader who found none would be entitled to simplify it
+      // back into the bug.
+      const path = 'lib/page/instant_safety/views/instant_safety_view.dart';
+      expect(discovered, contains(path));
+      expect(
+        File(path).readAsStringSync(),
+        contains('class UspInstantSafetyView'),
+        reason: 'the file is instant_safety_view.dart and the class is '
+            'UspInstantSafetyView, so a name-derived join would look for '
+            'usp_instant_safety_view.dart',
+      );
+      expect(
+        discovered,
+        isNot(contains(
+            'lib/page/instant_safety/views/usp_instant_safety_view.dart')),
+        reason:
+            'the file a name-derived join would look for does not exist, so '
+            'that join resolves this page to nothing — and nothing is a subset '
+            'of everything, which is how the assertion would have passed',
+      );
+      expect(
+        pageViewPathsDeclaring(const ['UspInstantSafetyView'], discovered),
+        {
+          'UspInstantSafetyView': [path]
+        },
+        reason: 'the source-resolved join finds it anyway',
+      );
+    });
+
+    test('a state class is not mistaken for its view', () {
+      // `\b` in the pattern, asserted: `UspDhcpDetailView` must not match
+      // `_UspDhcpDetailViewState` or any other prefix-sharing declaration.
+      final resolved =
+          pageViewPathsDeclaring(const ['UspDhcpDetailVie'], discovered);
+      expect(
+        resolved['UspDhcpDetailVie'],
+        isEmpty,
+        reason: 'a prefix must not resolve, or a case pumping one widget could '
+            'be joined to the file of another',
+      );
+    });
+
+    test('a class named only in a comment is not a declaration', () {
+      // The pattern is anchored at the line start. `page_surface_cases.dart`
+      // references [UspDhcpDetailView] in prose; a page view file could equally
+      // mention another page's class in its own header.
+      final resolved =
+          pageViewPathsDeclaring(const ['PageSurfaceCase'], discovered);
+      expect(resolved['PageSurfaceCase'], isEmpty);
+    });
+  });
+
+  group('the record is honest about what was measured', () {
+    test('the two swept rows carry section 11.2\'s per-page figures', () {
+      // Not 37.7ms. That is the mean of these two over one combined run, and
+      // section 11.2's second finding is that the bracket *inverted* — the page
+      // picked as the cheap end costs 1.5x the one picked as expensive — so the
+      // mean describes neither page and predicts no third one.
+      // Keyed on the full path, not the file name: nothing stops two features
+      // from each having a `views/x_view.dart`, and a map keyed on the name would
+      // silently collapse them and check whichever row came last.
+      final byPath = {for (final r in roster.rows) r.path: r};
+      expect(
+        byPath['lib/page/dhcp/views/usp_dhcp_detail_view.dart']!.msPerCell,
+        44.8,
+      );
+      expect(
+        byPath['lib/page/wifi_settings/views/usp_wifi_settings_view.dart']!
+            .msPerCell,
+        29.2,
+      );
+    });
+
+    test('nothing but a swept row carries a number', () {
+      // Enforced by the parser in both directions; asserted here over the
+      // committed fixture because #1382 ships the empty register on purpose and
+      // an interpolated ms/cell would be a fabricated measurement in the epic's
+      // own record.
+      for (final row in roster.rows) {
+        if (row.disposition == PageRosterDisposition.swept) {
+          expect(row.msPerCell, isNotNull, reason: row.path);
+        } else {
+          expect(row.msPerCell, isNull, reason: row.path);
+        }
+      }
+    });
+
+    test('the register starts at 2 swept, 43 queued, 0 excluded', () {
+      expect(roster.withDisposition(PageRosterDisposition.swept), hasLength(2));
+      expect(
+          roster.withDisposition(PageRosterDisposition.queued), hasLength(43));
+      expect(
+        roster.withDisposition(PageRosterDisposition.excluded),
+        isEmpty,
+        reason: '`excluded:<reason>` is a valid disposition from day one with '
+            'nothing using it. The five candidates — usp_sliver_dashboard_view, '
+            'usp_dashboard_view, usp_test_console_view, router_assistant_view, '
+            'pnp_complete_view — get written verdicts in their own waves, and '
+            '#1382 deliberately decides none of them. When one is excluded, this '
+            'number moves and the reason is in the file.',
+      );
+    });
+  });
+
+  group('each assertion can fail', () {
+    // The permanent half of "red before green". Each case takes the committed
+    // roster, breaks it in exactly one way, and drives the same check the group
+    // above drives — so the three assertions cannot decay into three tautologies
+    // the way three emptied `requires` lists did in #1364/#1366.
+    //
+    // The mutations are built from `roster.rows` through [PageRosterRow.line]
+    // rather than by searching the file's text, and the header is recomputed from
+    // the row count, so a mutation fails for the reason under test rather than at
+    // the parser. `the committed fixture round-trips through the row writer`
+    // below is what says those rows really are the committed file.
+    //
+    // Nothing here runs at group-declaration time. It did in the first draft — a
+    // `firstWhere` over the file's lines — and a deleted row then failed the whole
+    // suite to *load* rather than failing the assertion under test, which is the
+    // same shape of unhelpful red the gate keeps learning about.
+    const dhcpPath = 'lib/page/dhcp/views/usp_dhcp_detail_view.dart';
+    const adminPath = 'lib/page/admin/views/usp_admin_view.dart';
+
+    String rosterOf(Iterable<String> rowLines) {
+      final rows = rowLines.toList();
+      return ['# page-roster 1', '# pages ${rows.length}', ...rows].join('\n');
+    }
+
+    test('assertion 1 goes red when a row is deleted', () {
+      final without = PageRoster.parse(rosterOf(
+        roster.rows.where((r) => r.path != dhcpPath).map((r) => r.line),
+      ));
+      expect(without.unrecordedPages(discovered), [dhcpPath]);
+      // And the same check over the real fixture is empty, so the mutation is
+      // what produced the finding rather than the check always producing one.
+      expect(roster.unrecordedPages(discovered), isEmpty);
+    });
+
+    test('assertion 2 goes red on a row naming a file that does not exist', () {
+      // `aaa_` so the row still sorts first and the ordering rule is not what
+      // fails; `queued` so the swept assertions are not what fails either.
+      const gone = 'lib/page/aaa_deleted/views/aaa_deleted_view.dart';
+      expect(File(gone).existsSync(), isFalse);
+      final withPhantom = PageRoster.parse(rosterOf([
+        '$gone\tqueued\t-',
+        ...roster.rows.map((r) => r.line),
+      ]));
+      expect(withPhantom.phantomRows(), [gone]);
+      expect(roster.phantomRows(), isEmpty);
+    });
+
+    test('assertion 3 goes red when a queued page is marked swept', () {
+      // admin is queued and no case declares it. Marked swept it needs an
+      // ms/cell to get past the parser at all, which is the point: the number is
+      // fabricated, and this is the assertion that catches the claim anyway.
+      final mutated = PageRoster.parse(rosterOf(roster.rows.map(
+          (r) => r.path == adminPath ? '$adminPath\tswept\t44.8' : r.line)));
+      expect(mutated.sweptPaths.difference(declaredPaths), {adminPath});
+      expect(roster.sweptPaths.difference(declaredPaths), isEmpty);
+    });
+
+    test('assertion 3 goes red in the other direction too', () {
+      // A case declared while its row still reads `queued` — the shape a wave
+      // produces when it onboards a page and forgets the record.
+      final mutated = PageRoster.parse(rosterOf(roster.rows
+          .map((r) => r.path == dhcpPath ? '$dhcpPath\tqueued\t-' : r.line)));
+      expect(declaredPaths.difference(mutated.sweptPaths), {dhcpPath});
+      expect(declaredPaths.difference(roster.sweptPaths), isEmpty);
+    });
+  });
+
+  group('the reader refuses a roster that would read as well-formed', () {
+    // Every rejection here is a way the record could claim something untrue while
+    // parsing cleanly, which is the only failure mode a coverage record has.
+    const good = 'lib/page/dhcp/views/usp_dhcp_detail_view.dart';
+    String one(String row, {int pages = 1}) => '# pages $pages\n$row';
+
+    test('a row for a composed widget one level deeper is rejected', () {
+      expect(
+        () => PageRoster.parse(one(
+          'lib/page/unified_diagnostics/views/widgets/diagnostic_start_view.dart\tqueued\t-',
+        )),
+        throwsA(isA<PageRosterFormatException>()),
+        reason:
+            'the shape check is the structural half of holding the roster to '
+            '45; without it the count pin is the only thing standing between the '
+            'record and a 49-page denominator',
+      );
+    });
+
+    test('a missing ms/cell field is rejected, not read as unmeasured', () {
+      expect(
+        () => PageRoster.parse(one('$good\tqueued')),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('an empty ms/cell field is rejected in favour of `-`', () {
+      // A trailing tab is invisible in a diff and any hook that strips trailing
+      // whitespace turns this row into the two-field row above.
+      expect(
+        () => PageRoster.parse(one('$good\tqueued\t')),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('a swept row with no measurement is rejected', () {
+      expect(
+        () => PageRoster.parse(one('$good\tswept\t-')),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('a queued row carrying a number is rejected', () {
+      expect(
+        () => PageRoster.parse(one('$good\tqueued\t37.7')),
+        throwsA(isA<PageRosterFormatException>()),
+        reason:
+            'this is the fabricated-measurement case stated as a parse rule: '
+            '37.7ms is the mean of two pages and describes neither',
+      );
+    });
+
+    test('an unknown disposition is rejected', () {
+      expect(
+        () => PageRoster.parse(one('$good\tdone\t-')),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('`excluded` is a valid disposition and carries its reason', () {
+      final parsed =
+          PageRoster.parse(one('$good\texcluded:no route reaches it\t-'));
+      expect(parsed.rows.single.disposition, PageRosterDisposition.excluded);
+      expect(parsed.rows.single.exclusionReason, 'no route reaches it');
+      expect(parsed.rows.single.msPerCell, isNull);
+    });
+
+    test('`excluded` with no reason is rejected', () {
+      expect(
+        () => PageRoster.parse(one('$good\texcluded:\t-')),
+        throwsA(isA<PageRosterFormatException>()),
+        reason:
+            'an exclusion without a written reason is indistinguishable from '
+            'a page someone forgot, which is the state this roster ends',
+      );
+    });
+
+    test('a duplicated path is rejected', () {
+      expect(
+        () => PageRoster.parse(
+            one('$good\tqueued\t-\n$good\tqueued\t-', pages: 2)),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('rows out of path order are rejected', () {
+      expect(
+        () => PageRoster.parse(one(
+          'lib/page/wifi_settings/views/usp_wifi_settings_view.dart\tqueued\t-\n'
+          '$good\tqueued\t-',
+          pages: 2,
+        )),
+        throwsA(isA<PageRosterFormatException>()),
+        reason: 'path order keeps adding a page a one-line diff and keeps two '
+            'waves from colliding on the same line',
+      );
+    });
+
+    test('a `# pages` header that disagrees with the rows is rejected', () {
+      expect(
+        () => PageRoster.parse(one('$good\tqueued\t-', pages: 45)),
+        throwsA(isA<PageRosterFormatException>()),
+        reason: 'a record whose own header disagrees with it is the shape of '
+            'every stale count in this epic',
+      );
+    });
+
+    test('a roster with no `# pages` header is rejected', () {
+      expect(
+        () => PageRoster.parse('$good\tqueued\t-'),
+        throwsA(isA<PageRosterFormatException>()),
+      );
+    });
+
+    test('an absent fixture is an error, not an empty roster', () {
+      expect(
+        () => PageRoster.fromFixture('test/fixtures/_absent_roster.tsv'),
+        throwsA(isA<PageRosterFormatException>()),
+        reason: 'an absent roster read as empty would make the <-> assertion '
+            'vacuous in one direction, which is the pass-shaped result for an '
+            'unrun guard this gate has already shipped twice',
+      );
+    });
+
+    test('the committed fixture round-trips through the row writer', () {
+      // Cheap, and it is what says the parser understood the file rather than
+      // tolerating it: a field the reader silently dropped would not come back.
+      final body = File(kPageRosterFixturePath)
+          .readAsLinesSync()
+          .where((l) => !l.startsWith('#') && l.trim().isNotEmpty);
+      expect(roster.rows.map((r) => r.line), body);
+    });
+  });
+}

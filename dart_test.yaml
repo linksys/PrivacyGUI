@@ -3,15 +3,22 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 46 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 47 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
-  # page-family oracle, render-parity and overflow. 41 until the `dev-2.7.0` merge
-  # on 2026-08-24 brought three files written against the retired `dashboard-card`
-  # name (two detail-view sweeps from #1302 and a density suite from #1321);
-  # renaming their tag is what enrolled them, and the count is here so the next
-  # such file is noticed rather than merged in silence. 44 until #1349's page pilot
-  # the same day added two: the page sweep and its oracle.
+  # page-family oracle, page-roster oracle, render-parity and overflow. 41 until
+  # the `dev-2.7.0` merge on 2026-08-24 brought three files written against the
+  # retired `dashboard-card` name (two detail-view sweeps from #1302 and a density
+  # suite from #1321); renaming their tag is what enrolled them, and the count is
+  # here so the next such file is noticed rather than merged in silence. 44 until
+  # #1349's page pilot the same day added two: the page sweep and its oracle.
+  # 46 until #1382's roster oracle (`test/layout_gate/page_roster_test.dart`),
+  # which is the one carrier here that measures no cell at all: it reads the
+  # committed coverage roster and asserts every page view has a row. Whatever
+  # #1371 decides about where the page family's 8,944 cells run does not apply to
+  # it — one directory walk, no pumping — and it must not be carried out of the PR
+  # gate by accident, because an oracle that runs on a schedule cannot stop a page
+  # added this afternoon from escaping this afternoon.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
