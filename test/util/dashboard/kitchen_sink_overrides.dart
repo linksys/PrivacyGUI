@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../mocks/test_data/scenes/cards_scene_data.dart';
 
 /// A single "kitchen-sink" override list that feeds *every* dashboard card its
 /// with-data fixture at once.

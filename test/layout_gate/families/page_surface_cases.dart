@@ -60,8 +60,8 @@ import 'package:ui_kit_library/ui_kit.dart' show AppLoader;
 
 import '../../mocks/provider_overrides/mock_dhcp.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
-import '../../mocks/test_data/scenes/dhcp_test_data.dart';
-import '../../mocks/test_data/scenes/wifi_settings_test_data.dart';
+import '../../mocks/test_data/scenes/dhcp_scene_data.dart';
+import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
 import 'page_surface_family.dart';
 
 /// `page.dhcp` — the plain-form end of the bracket.

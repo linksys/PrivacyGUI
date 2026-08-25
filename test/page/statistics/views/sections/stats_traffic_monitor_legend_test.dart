@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 
 import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/overflow_probe.dart';
 import '../../../../util/statistics/stats_section_probe.dart';

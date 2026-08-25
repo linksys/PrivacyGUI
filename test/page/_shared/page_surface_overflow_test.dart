@@ -89,6 +89,18 @@ void main() {
   // of 17 collector calls name a cell" stays true: this test does not install the
   // collector at all, because its oracle is not "did a RenderFlex overflow".
   group('readability at the site the pilot fixed', () {
+    /// How many lines the reservations title may wrap onto before the wrap stops
+    /// being the better trade.
+    ///
+    /// One line of headroom over the deepest coordinate measured (`ar`, four lines
+    /// at both widths — the counts beside the `wrapped` assertion below were
+    /// re-measured against this ceiling and still hold), which is the whole design:
+    /// tight enough that a real regression trips it, loose enough that a one-line
+    /// drift from an ARB edit does not send someone to a fixture they did not
+    /// break. It is not a design token — nothing in the app enforces it — so
+    /// raising it is a deliberate act with the new number recorded here.
+    const kTitleLineCeiling = 5;
+
     testWidgets('the reservations title stays whole where the Flexible wraps',
         (tester) async {
       final failures = <String>[];
@@ -142,6 +154,18 @@ void main() {
               'string '
               '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px'
               ' — "$label"';
+          // The third verdict, and the one that bounds the dimension the fix
+          // actually moved. `lines` was measured into `wrapped` and then only
+          // checked for being non-empty, so a wrap of any depth passed: `ar`
+          // takes four lines today, and an ARB edit, a font-fallback change or a
+          // fixture change that pushed it to twelve — pushing the rest of the card
+          // off the visible surface — would leave `failures` empty and this suite
+          // green. A wrap is the better trade than an overflow only up to a point,
+          // and this is the point.
+          if (lines > kTitleLineCeiling) {
+            failures.add('$tag @${width.toInt()}px: wrapped onto $lines lines, '
+                'past the $kTitleLineCeiling-line ceiling — $numbers');
+          }
           if (tester.isTextClipped(title)) {
             failures.add('$tag @${width.toInt()}px: ellipsized — $numbers');
           } else if (tester.hasSplitToken(title)) {
@@ -161,6 +185,10 @@ void main() {
       // and `el` `ja` `ko` `ru` `th` `zh` `zh_TW` onto two — `ru` onto *three* at
       // 601px, which is the narrower-content-at-a-wider-screen step showing up in
       // the readability data as well as in the overflow data.
+      //
+      // The floor only. [kTitleLineCeiling] is the other end, checked per
+      // coordinate above: this list being non-empty says the wrap was measured, and
+      // says nothing about how deep it went.
       expect(
         wrapped,
         isNotEmpty,

@@ -1128,6 +1128,45 @@ void main() {
       expect(manifest.any((line) => line.startsWith('# commit')), isFalse);
     });
 
+    testWidgets(
+        'a second suite of the same run adds rows rather than replacing',
+        (tester) async {
+      // `OVERFLOW_PNG=all OVERFLOW_PNG_DIR=… flutter test --tags overflow` is five
+      // sweep suites as five concurrent processes over **one** directory. The
+      // header used to be written whenever `written.length == 1`, which is "the
+      // first row of the run" only while a run is one process — so each suite
+      // truncated the others' rows away and left their PNGs in the folder
+      // unlisted, from the very file that exists to say which cells were shot.
+      //
+      // A second dump instance is the faithful model: the state that decided to
+      // truncate was per-instance, so a fresh one reproduces the old bug exactly
+      // without forking a test runner.
+      final first = install(kOverflowScreenshotAll);
+      await measure(tester, screenPx: '100', locale: 'ar');
+
+      overflowScreenshotDump = OverflowScreenshotDump(
+        pattern: kOverflowScreenshotAll,
+        dir: first.dir,
+      );
+      await measure(tester, screenPx: '200', locale: 'en');
+
+      final manifest = File(first.manifestPath).readAsLinesSync();
+      expect(manifest.first, '# $kOverflowScreenshotManifestFormat');
+      expect(
+        manifest.where((line) => line.startsWith('# ')),
+        hasLength(1),
+        reason: 'a second header line is a malformed row to the reader',
+      );
+      expect(
+        manifest.skip(1).map((line) => line.split('\t').first),
+        containsAll(<String>[
+          'fake|screen_px=100|locale=ar',
+          'fake|screen_px=200|locale=en',
+        ]),
+        reason: 'both suites of one run must be listed',
+      );
+    });
+
     testWidgets('a shoot that cannot write does not change the verdict',
         (tester) async {
       // The one behaviour that makes this safe to leave in the runner at all. A

@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_status_card.dart';
 import '../../../../golden_framework/golden_runner.dart';
 import '../../../../golden_framework/golden_test_config.dart';
 import '../../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../../mocks/test_data/scenes/cards_scene_data.dart';
 
 void main() {
   // ─────────────────────────────────────────────────────────────────────────

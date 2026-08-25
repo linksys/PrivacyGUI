@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../../util/dashboard/text_readability_probe.dart';

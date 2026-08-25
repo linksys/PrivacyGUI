@@ -109,7 +109,7 @@ final CardSweepGate _gate = CardSweepGate();
 /// the two groups that read it assert something about the fixture *file*, not
 /// about a rendered tree, so there is no cell for a family to enumerate.
 const String _sharedFixturePath =
-    'test/mocks/test_data/scenes/cards_test_data.dart';
+    'test/mocks/test_data/scenes/cards_scene_data.dart';
 
 bool get _isListOnly {
   const d = String.fromEnvironment('LIST_CARDS');

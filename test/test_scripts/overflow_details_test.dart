@@ -156,10 +156,15 @@ void main() {
     });
 
     test('returns no details when the report file is absent', () {
+      final report =
+          loadOverflowReport(path: '${tempDir.path}/does_not_exist.json');
+
+      expect(report.byGolden, isEmpty);
       expect(
-        loadOverflowReport(path: '${tempDir.path}/does_not_exist.json')
-            .byGolden,
-        isEmpty,
+        report.unreadable,
+        isNull,
+        reason: 'no file is the runner saying nothing overflowed — '
+            '_writeOverflowReport returns early rather than writing []',
       );
     });
 
@@ -169,6 +174,37 @@ void main() {
       file.writeAsStringSync('[{"golden": "x",');
 
       expect(loadOverflowReport(path: file.path).byGolden, isEmpty);
+    });
+
+    test('says so when the file existed and could not be read', () {
+      // The gap the degrade-to-empty left, and the only one the collapsing
+      // invariant could not cover: `combine_results.dart` sets `hasOverflow` from
+      // `sites.isNotEmpty`, so an empty report marks **every** golden clean, and
+      // golden CI's triage agent keys on that flag alone. A run whose overflows
+      // could not be read then publishes as a run that had none.
+      //
+      // Both shapes a bad file arrives in, because the guard covers the whole
+      // parse and not just the decode: truncated JSON, and well-formed JSON whose
+      // fields are the wrong type (a hand-edited numeric `line`, which the
+      // `as String?` cast turns into a TypeError).
+      final truncated = File('${tempDir.path}/truncated.json')
+        ..writeAsStringSync('[{"golden": "x",');
+      final mistyped = File('${tempDir.path}/mistyped.json')
+        ..writeAsStringSync(jsonEncode([
+          {
+            'golden': 'g',
+            'message': 'A RenderFlex overflowed by 4 pixels on the right.',
+            'file': 'lib/x.dart',
+            'line': 414,
+          }
+        ]));
+
+      for (final file in [truncated, mistyped]) {
+        final report = loadOverflowReport(path: file.path);
+        expect(report.byGolden, isEmpty);
+        expect(report.unreadable, isNotNull, reason: file.path);
+        expect(report.unreadable, contains(file.path));
+      }
     });
 
     test('skips records carrying no golden name', () {

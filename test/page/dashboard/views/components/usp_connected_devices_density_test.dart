@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/devices/cards/usp_connected_devices_card.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 
-import '../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../mocks/test_data/devices_test_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';

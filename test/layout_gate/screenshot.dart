@@ -155,6 +155,18 @@ class OverflowScreenshotDump {
   /// this map, appended to as it grows.
   final Map<String, String> written = {};
 
+  /// The reservation ledger [overflowScreenshotFileName] mutates — every name it
+  /// has handed out this run, whether or not the bytes reached the disk.
+  ///
+  /// Not [written]'s values, which is what [capture] used to pass as a throwaway
+  /// copy: that satisfied the helper's "reserved, not merely checked" contract only
+  /// by accident, because [written] happened to already hold every prior name. A
+  /// name is chosen *before* the write and recorded only after it succeeds, so the
+  /// two sets are not the same set — and a capture that failed to write would
+  /// otherwise hand its name to the next cell, which is the one thing the suffixing
+  /// exists to prevent. Burning a name on a failed write costs a `~2`.
+  final Set<String> _reserved = {};
+
   bool get enabled => pattern.isNotEmpty && dir.isNotEmpty;
 
   /// Whether the run is selecting by verdict rather than by cell id.
@@ -198,10 +210,7 @@ class OverflowScreenshotDump {
     required String cellId,
     required GlobalKey boundaryKey,
   }) async {
-    final name = overflowScreenshotFileName(
-      cellId,
-      taken: written.values.toSet(),
-    );
+    final name = overflowScreenshotFileName(cellId, taken: _reserved);
     final bytes = await writeBoundaryPng(
       tester,
       boundaryKey: boundaryKey,
@@ -217,27 +226,98 @@ class OverflowScreenshotDump {
     _appendToManifest(cellId, name);
   }
 
-  /// Truncated on the first row of a run, appended after.
+  /// Headed once per manifest *file*, appended to for every row after.
   ///
   /// Appending rather than collecting and flushing at the end, because there is no
   /// end: [runOverflowSweep] declares tests and owns no `tearDownAll`, and a run
   /// killed halfway through should still leave the images it took readable.
+  ///
+  /// ## Why the header is keyed on the file and not on this process
+  ///
+  /// It used to be written whenever `written.length == 1`, which reads as "the
+  /// first row of the run" only while a run is one process. It is not:
+  /// `OVERFLOW_PNG=all OVERFLOW_PNG_DIR=… flutter test --tags overflow` is the five
+  /// sweep suites running concurrently over **one** dump directory, and each of them
+  /// truncated the file on its own first capture — leaving one header plus only the
+  /// rows written after the last truncation, while the PNGs of the other four sweeps
+  /// sat in the directory unlisted. A reader would conclude those cells were never
+  /// captured, from the very file that exists to say which were.
+  ///
+  /// Emptying the directory at the start of a run is the caller's job, not this
+  /// method's, and `tool/overflow_baseline.sh` already does it (`rm -rf "$shots"`) —
+  /// which is also why it never hit this: it passes one suite per directory.
+  ///
+  /// A row appended twice — a re-shoot into a directory nobody emptied — is not a
+  /// defect here: the PNG is overwritten by the same rule, and `ScreenshotIndex`
+  /// reads the rows into a map keyed on cell id, so the last one wins and matches
+  /// the image on disk. What it cannot do is invent a row for a PNG it was never
+  /// told about, which is what the truncation cost it.
+  ///
+  /// [File.createSync] with `exclusive: true` rather than an `existsSync` test, so
+  /// "am I first" is one `O_EXCL` syscall. Two suites racing a check-then-write
+  /// would both write a header, and a duplicated format line is a malformed row to
+  /// the reader.
   void _appendToManifest(String cellId, String name) {
     try {
       final file = File(manifestPath);
-      if (written.length == 1) {
+      var isFirst = false;
+      try {
+        file.createSync(recursive: true, exclusive: true);
+        isFirst = true;
+      } on FileSystemException {
+        // Another suite of the same run created it. Its header stands for both.
+      }
+      if (isFirst) {
+        // Header and first row in one write, so no other suite can land a row
+        // between them. The reader demands the format line on line 1 and rejects
+        // the whole file otherwise, so an interleaved row there would lose the
+        // manifest — a worse outcome than the truncation this replaced.
+        //
         // The stamp is omitted, not written empty, when there is none: a reader
         // must be able to tell "no tree was recorded" from "the tree is the empty
         // string", and only one of those is a state a dump can be in.
-        file.writeAsStringSync('# $kOverflowScreenshotManifestFormat\n'
-            '${commit.isEmpty ? '' : '# commit $commit\n'}');
+        file.writeAsStringSync(
+          '# $kOverflowScreenshotManifestFormat\n'
+          '${commit.isEmpty ? '' : '# commit $commit\n'}'
+          '$cellId\t$name\n',
+          mode: FileMode.append,
+        );
+        return;
       }
+      // The loser waits for the winner's header rather than appending into an
+      // empty file, for the same reason. The gap is one `writeAsStringSync` wide
+      // and the wait is bounded: a row is worth a moment, never a hang, and this
+      // whole path is allowed to give up (it prints and the sweep carries on).
+      _awaitHeader(file);
       file.writeAsStringSync('$cellId\t$name\n', mode: FileMode.append);
     } catch (error) {
       // ignore: avoid_print
       print('[PNG DUMP] could not write $manifestPath: $error');
     }
   }
+
+  /// Blocks until [file] has the bytes the winner of the exclusive create writes,
+  /// giving up after [_headerWaitAttempts] sleeps.
+  ///
+  /// A synchronous sleep because [_appendToManifest] is called from
+  /// [OverflowScreenshotDump.capture] inside the sweep's own `try` and an `await`
+  /// there would let the next cell's pump interleave with this one's bookkeeping.
+  /// Sleeping in a test process is only defensible because the wait is a
+  /// sub-millisecond gap in practice and never taken at all in the single-suite
+  /// runs `tool/overflow_baseline.sh` drives.
+  void _awaitHeader(File file) {
+    for (var attempt = 0; attempt < _headerWaitAttempts; attempt++) {
+      if (file.lengthSync() > 0) return;
+      sleep(_headerWaitInterval);
+    }
+    // ignore: avoid_print
+    print('[PNG DUMP] $manifestPath still has no header after '
+        '${_headerWaitAttempts * _headerWaitInterval.inMilliseconds}ms; '
+        'appending anyway');
+  }
+
+  static const int _headerWaitAttempts = 50;
+  static const Duration _headerWaitInterval = Duration(milliseconds: 20);
 }
 
 /// The dump [measureOverflowCell] consults.

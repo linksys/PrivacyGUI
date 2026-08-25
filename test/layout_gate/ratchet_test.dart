@@ -204,6 +204,58 @@ void main() {
       }
     });
 
+    test('every key an incident can offer is a key this fixture accepts', () {
+      // The two definitions of "absolute" have to be the same definition. This
+      // side is `_absolutePattern` (`^([/\\]|[A-Za-z]:)`); the other is
+      // `_isMachineIndependentPath` in `incident.dart`, which withholds
+      // `OverflowIncident.site` for exactly the paths this rejects. They
+      // disagreed on one input: a leading backslash, which the incident admitted
+      // and this refused. The gate's failure message would then tell the operator
+      // to paste `"\src\lib\page\x.dart:12"` into `known_overflows.json` and the
+      // fixture would refuse the value the gate had just handed out, with nothing
+      // on either side explaining the contradiction.
+      //
+      // Asserted as a round trip rather than by comparing the two regexes,
+      // because the contract is about the keys that actually flow between them,
+      // not about how each spells its test.
+      const absolute = [
+        '/src/lib/page/x.dart',
+        r'\src\lib\page\x.dart',
+        'C:/src/lib/page/x.dart',
+        r'C:\src\lib\page\x.dart',
+        '/C:/src/lib/page/x.dart',
+      ];
+      for (final path in absolute) {
+        expect(overflowSiteKey(path, 12), isNull,
+            reason: '"$path" must never become a key at all');
+      }
+
+      const relative = [
+        'lib/page/x.dart',
+        'packages/ui_kit_library/lib/x.dart'
+      ];
+      for (final path in relative) {
+        final key = overflowSiteKey(path, 12);
+        expect(key, isNotNull);
+        expect(
+          () => OverflowRatchet.fromJson({
+            // Both sections, because an exemption without its note is a separate
+            // (and correct) rejection — the property under test is only that the
+            // *key* is admissible.
+            'tracking': {key!: 'deferred by #1369'},
+            'allowlist': {
+              key: {
+                'locales': ['de'],
+                'maxOverflowPx': 41,
+              },
+            },
+          }),
+          returnsNormally,
+          reason: 'the gate told the operator to paste "$key"',
+        );
+      }
+    });
+
     test('a bare card id in "tracking" is rejected', () {
       // `tracking` was card-keyed until #1341. A leftover card-id note is the
       // same hazard as a leftover coordinate key: it looks like documentation

@@ -448,8 +448,30 @@ String? overflowSiteKey(String? file, int? line) {
 /// ability to grandfather an overflow found under a relocated cache — which was
 /// never really there, since the entry could not have worked for a second
 /// machine.
+///
+/// ## It must agree with the fixture's own reading of the same word
+///
+/// `OverflowRatchet._absolutePattern` is `^([/\\]|[A-Za-z]:)`, and a key this
+/// function admits but that pattern rejects is worse than either rule alone: the
+/// gate's failure message tells the operator to paste `"\src\lib\page\x.dart:12"`
+/// into `known_overflows.json` and the fixture then refuses it as absolute, with
+/// nothing on either side explaining the contradiction. So the leading separator
+/// is tested as a *set* — both spellings, matching the ratchet character for
+/// character — rather than as `/` alone.
+///
+/// The two rules stay two rules on purpose: `test/layout_gate/ratchet.dart`
+/// validates a string a person typed and this validates one a parser produced, so
+/// they take different inputs and give different diagnostics. What they may not do
+/// is disagree on which strings are absolute, which is what `ratchet_test.dart`'s
+/// round-trip cross-check pins ("every key an incident can offer is a key this
+/// fixture accepts").
 bool _isMachineIndependentPath(String file) =>
-    !file.startsWith('/') && !_driveLetterPattern.hasMatch(file);
+    !_leadingSeparatorPattern.hasMatch(file) &&
+    !_driveLetterPattern.hasMatch(file);
+
+/// The leading-separator half of the absolute-path test, in both spellings a
+/// normalised path can arrive in.
+final RegExp _leadingSeparatorPattern = RegExp(r'^[/\\]');
 
 /// Matches a Windows drive at the start of a path (`C:/src/…`), with the leading
 /// slash a `file://` URI puts in front of it (`/C:/src/…`) optional.
@@ -485,11 +507,22 @@ String _toComparablePath(String path) {
 /// [Uri.decodeFull] throw. This runs inside `FlutterError.onError`, where an
 /// escaping throw would turn a diagnostic into a test failure — so an
 /// undecodable path is passed through untouched instead.
+///
+/// [Uri.decodeFull] has **two** ways to refuse, and catching one of them was the
+/// bug: `%zz` is malformed hex and throws [ArgumentError], while an escape whose
+/// hex is well-formed but whose bytes are not valid UTF-8 (`%C3` alone, as a
+/// checkout under `.../a%C3b/` produces) reaches the decoder and throws
+/// [FormatException]. Both spellings of "this is not encoded text" have to land
+/// here, or a run directory nobody thinks twice about fails goldens that merely
+/// *reported* an overflow — `buildOverflowRecord` calls the normaliser outside its
+/// own guards precisely because this one is supposed to hold.
 String _decodePathOrSelf(String path) {
   if (!path.contains('%')) return path;
   try {
     return Uri.decodeFull(path);
   } on ArgumentError {
+    return path;
+  } on FormatException {
     return path;
   }
 }

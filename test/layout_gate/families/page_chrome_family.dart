@@ -44,6 +44,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
 import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
@@ -305,7 +306,7 @@ Widget chromeTopBarHost({required Locale locale, String? cellKey}) {
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
+      theme: _localizedTheme(locale),
       routerConfig: GoRouter(
         initialLocation: '/',
         routes: [
@@ -356,7 +357,7 @@ Widget chromeHeaderHost({
     locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
+    theme: _localizedTheme(locale),
     home: Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,6 +386,24 @@ Widget chromeHeaderHost({
     ),
   );
 }
+
+/// The app's own theme call, per locale — `lib/app.dart`'s, not a copy of its body
+/// (#1285), and the same one `pageSurfaceHost` makes.
+///
+/// Both hosts used to hand `MaterialApp` the bare `createLightTheme()`.
+/// `loadAppFonts()` installs [FallbackFontResolver] into ui_kit's resolver, so
+/// `AppText` — most of the chrome — already picked its per-locale fallback up;
+/// what did not was every string that inherits from `ThemeData.textTheme`
+/// instead, which under `ja`/`ko`/`zh` measures against a font the app never
+/// renders them in. The two hosts and the page host now differ in what they
+/// build, not in how they are themed.
+ThemeData _localizedTheme(Locale locale) =>
+    FallbackFontResolver.withFallbackFont(_baseTheme, locale);
+
+/// Built once per test process, not once per pump: `createLightTheme()` walks the
+/// whole JSON config, and this family pumps 1,248 cells through it. Same reason as
+/// `page_surface_family.dart`'s `_baseTheme`, which is the twin of this line.
+final _baseTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
 
 /// `GeneralSettingsWidget` inside the top bar reads `package_info` during build,
 /// which has no platform implementation under `flutter test`.

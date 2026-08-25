@@ -15,7 +15,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
 import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../../util/overflow_probe.dart';

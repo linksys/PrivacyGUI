@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../mocks/test_data/scenes/cards_scene_data.dart';
 
 /// The overflow gate's **second data profile** and the cards it is swept on
 /// (#1267).

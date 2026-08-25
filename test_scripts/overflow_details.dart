@@ -144,7 +144,31 @@ class OverflowReport {
   /// Distinct diagnostics dumps, indexed by [OverflowDetail.logIndex].
   final List<String> logs;
 
-  const OverflowReport({required this.byGolden, required this.logs});
+  /// Why this report is empty for a reason other than "nothing overflowed", or
+  /// null when the file was read as written.
+  ///
+  /// The one thing the collapsing invariant above could not cover. A parse or read
+  /// failure degrades to an empty report — a diagnostic aside must never take a
+  /// report generator down — and an empty report makes `combine_results.dart` write
+  /// `hasOverflow: false` on **every** golden in the run. That is the invariant's
+  /// own failure mode applied to all rows at once, and golden CI's triage agent
+  /// keys on nothing else, so a run full of overflows publishes as all-fixed.
+  ///
+  /// Recorded rather than fixed, because degrading is still right: the file is
+  /// written by an unlocked, unatomic read-modify-write from concurrent suites
+  /// (`golden_runner.dart`'s `_writeOverflowReport`), so a truncated one is a
+  /// tolerable state and a failing report generator is not. What was missing is any
+  /// way to tell "no overflows" from "could not read the overflows" — an absent
+  /// file is genuinely the former (the runner writes nothing when it collected
+  /// nothing), a malformed one is the latter, and they used to produce identical
+  /// output. Also printed to stderr where it is set.
+  final String? unreadable;
+
+  const OverflowReport({
+    required this.byGolden,
+    required this.logs,
+    this.unreadable,
+  });
 
   static const empty = OverflowReport(byGolden: {}, logs: []);
 }
@@ -260,8 +284,14 @@ int _compareNumeric(Object? a, Object? b) {
 /// Reads `goldens/overflow_warnings.json` into collapsed sites plus the table
 /// of distinct raw dumps they point into.
 ///
-/// Returns [OverflowReport.empty] when the file is absent or malformed: a
-/// diagnostic aside must never take a report generator down.
+/// Returns an empty report when the file is absent or malformed: a diagnostic
+/// aside must never take a report generator down.
+///
+/// The two empties are not the same empty. An absent file means the run collected
+/// no overflows — `_writeOverflowReport` returns early rather than writing `[]`. A
+/// malformed one means the overflows are unknown, and that report carries
+/// [OverflowReport.unreadable] so a downstream generator can say so instead of
+/// publishing every golden as clean.
 OverflowReport loadOverflowReport({
   String path = 'goldens/overflow_warnings.json',
 }) {
@@ -274,8 +304,16 @@ OverflowReport loadOverflowReport({
   // function promises.
   try {
     return _parseReport(jsonDecode(file.readAsStringSync()));
-  } catch (_) {
-    return OverflowReport.empty;
+  } catch (error) {
+    final reason = '$path exists but could not be read as an overflow report '
+        '($error), so no golden in this run can be called clean on the strength '
+        'of it';
+    // Loud, because the silence was the defect. Whatever consumes the report may
+    // or may not render `unreadable`; a line on stderr reaches whoever ran it
+    // either way.
+    stderr.writeln('[OVERFLOW REPORT] $reason');
+    return OverflowReport(
+        byGolden: const {}, logs: const [], unreadable: reason);
   }
 }
 

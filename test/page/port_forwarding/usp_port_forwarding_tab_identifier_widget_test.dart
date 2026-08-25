@@ -13,7 +13,7 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_port_forwarding.dart';
-import '../../mocks/test_data/scenes/port_forwarding_test_data.dart';
+import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart';
 
 /// Verifies that the three Port Forwarding tabs carry the stable E2E
 /// identifiers added in issue #1246 and that each is locatable via

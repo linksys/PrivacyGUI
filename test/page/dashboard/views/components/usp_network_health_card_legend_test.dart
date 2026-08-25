@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/dashboard/views/components/usp_network_health_c
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
-import '../../../../mocks/test_data/scenes/cards_test_data.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,

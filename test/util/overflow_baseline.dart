@@ -138,13 +138,19 @@ String overflowBaselineCellId(OverflowCell cell) {
   return parts.join('|');
 }
 
-/// Keeps the row and field separators out of a value.
+/// Keeps the row, field and pair separators out of a value.
 ///
 /// The dataset is one TSV row per incident and the cell id is pipe-delimited, so
 /// a value carrying either would split one row into two — and a diff cannot tell
 /// that apart from a coverage change. The chrome family already names its header
 /// modes in prose, so this is not hypothetical.
-String _sanitize(String value) => value.replaceAll(RegExp(r'[|\t\r\n]'), '_');
+///
+/// `=` is the third separator and the quietest: each axis is written `key=value`
+/// and read back by splitting on the *first* `=`
+/// (`test_scripts/overflow_baseline.dart` `_axesOf`), so an axis key holding one
+/// would come back renamed with the rest of the key glued onto the front of the
+/// value — a coordinate that still parses, still diffs, and names the wrong axis.
+String _sanitize(String value) => value.replaceAll(RegExp(r'[|=\t\r\n]'), '_');
 
 /// Builds the record for one measured cell.
 ///

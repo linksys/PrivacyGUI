@@ -28,26 +28,35 @@ List<Override> commonOverrides() {
 /// Safe to call multiple times.
 void _ensureGetItDefaults() {
   final getIt = GetIt.instance;
-  final config = ThemeJsonConfig.defaultConfig();
 
   if (!getIt.isRegistered<ThemeJsonConfig>()) {
-    getIt.registerSingleton<ThemeJsonConfig>(config);
+    getIt.registerSingleton<ThemeJsonConfig>(_defaultConfig);
   }
 
   if (!getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')) {
     getIt.registerSingleton<ThemeData>(
-      config.createLightTheme(),
+      _defaultConfig.createLightTheme(),
       instanceName: 'lightThemeData',
     );
   }
 
   if (!getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
     getIt.registerSingleton<ThemeData>(
-      config.createDarkTheme(),
+      _defaultConfig.createDarkTheme(),
       instanceName: 'darkThemeData',
     );
   }
 }
+
+/// Parsed once per test process, and only if a guard above actually needs it —
+/// a top-level `final` initialises lazily, on first read.
+///
+/// It used to be a local built before the three `isRegistered` guards, so every
+/// `commonOverrides()` call parsed the whole JSON config and then, in the normal
+/// case, dropped it: the gate calls this once per cell, so a sweep paid for it
+/// thousands of times to register nothing. Same instance for all three
+/// registrations, which is what the singletons were already promising.
+final _defaultConfig = ThemeJsonConfig.defaultConfig();
 
 class _FixedAuthNotifier extends AuthNotifier {
   @override

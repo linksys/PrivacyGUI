@@ -7,7 +7,7 @@ import 'package:ui_kit_library/ui_kit.dart' show AppIconButton;
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../../mocks/provider_overrides/mock_dhcp.dart';
-import '../../../../mocks/test_data/scenes/dhcp_test_data.dart';
+import '../../../../mocks/test_data/scenes/dhcp_scene_data.dart';
 
 void main() {
   runViewGoldenTests(

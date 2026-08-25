@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
 import '../../../mocks/provider_overrides/mock_topology.dart';
-import '../../../mocks/test_data/scenes/topology_test_data.dart';
+import '../../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';

@@ -338,6 +338,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
   <h1>Golden Test Verification Report</h1>
   <p class="subtitle">Version $version &mdash; Generated $timestamp</p>
 
+  <!-- Hidden unless `overflowReportUnreadable` is set, i.e. the file existed and
+       did not parse. A run that overflowed nothing writes no file at all and is
+       not this case. -->
+  <div id="overflowUnreadable" style="display:none;margin:0 0 12px;padding:10px 14px;border-left:4px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:4px"></div>
+
   <div class="panels">
     <div class="panel">
       <h2>Test Summary</h2>
@@ -443,7 +448,21 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
-      document.getElementById('overflowCount').textContent = DATA.overflowCount || 0;
+      // A '?' rather than a 0 when the overflow report could not be read. Zero is
+      // a measurement and this is the absence of one, and the two used to render
+      // identically — a run full of overflows read as all-clean off this tile.
+      const overflowUnknown = !!DATA.overflowReportUnreadable;
+      const overflowTile = document.getElementById('overflowCount');
+      overflowTile.textContent = overflowUnknown ? '?' : (DATA.overflowCount || 0);
+      overflowTile.title = overflowUnknown
+        ? DATA.overflowReportUnreadable
+        : '';
+      const banner = document.getElementById('overflowUnreadable');
+      banner.style.display = overflowUnknown ? 'block' : 'none';
+      if (overflowUnknown) {
+        banner.textContent =
+          'Overflow detail unavailable: ' + DATA.overflowReportUnreadable;
+      }
       drawDonut(c.success, c.fail);
     }
 

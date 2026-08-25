@@ -468,6 +468,31 @@ The overflowing RenderFlex has an orientation of Axis.horizontal.
       expect(incident.line, 12);
     });
 
+    test('leaves a path whose escapes are hex but not UTF-8 alone', () {
+      // The other way `Uri.decodeFull` refuses, and the one the guard used to
+      // miss: `%zz` is malformed hex and throws ArgumentError, while `%C3` alone
+      // is well-formed hex whose bytes are an incomplete UTF-8 sequence and
+      // throws FormatException ("Missing extension byte"). Only the first was
+      // caught, so a checkout under a directory like this turned a golden that
+      // merely *reported* an overflow into a failing test —
+      // `buildOverflowRecord` calls the dump normaliser outside its own guards
+      // on the strength of this function not throwing.
+      //
+      // Same premise as the test above — a raw, unencoded `%` reaching the parser
+      // in the dump — so this is exactly as reachable as that case, and differs
+      // only in which exception the decoder picks.
+      final incident = incidentAt(
+        'Row:file:///Users/dev/a%C3b/x.dart:12:5',
+        runDirectory: '/Users/dev/work/PrivacyGUI',
+      );
+
+      expect(incident.file, '/Users/dev/a%C3b/x.dart');
+      expect(incident.line, 12);
+      expect(incident.pixels, 41.0,
+          reason:
+              'an undecodable path costs the location, never the measurement');
+    });
+
     test('returns a path that matches nothing unchanged', () {
       // Better a long path than none: an unrecognised location is still a lead,
       // and dropping it would leave the incident unjoinable for no gain.

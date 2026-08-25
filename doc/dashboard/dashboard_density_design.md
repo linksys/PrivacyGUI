@@ -1763,7 +1763,7 @@ Four further findings, all about method:
    never varies. Worth a grep pass over the remaining Track A sites: an
    abbreviation is the one defect this epic's instrument is structurally blind to.
 2. **Two `testWifiData` fixtures exist and only one reaches the gate.** The
-   dashboard gate reads `test/mocks/test_data/scenes/cards_test_data.dart` (via
+   dashboard gate reads `test/mocks/test_data/scenes/cards_scene_data.dart` (via
    `kitchenSinkOverrides()`; it was under `test/golden_test/` until #1361 moved it
    out); the Statistics page reads
    `test/golden_test/page/statistics/fixtures/statistics_test_data.dart`. Editing
