@@ -16,7 +16,7 @@ out.
 |---|---|
 | [dashboard_framework_overflow_investigation.md](dashboard_framework_overflow_investigation.md) | How the framework turns a spec constraint into a real `BoxConstraints`. Its data-flow mapping is the reference; several of its inferences are superseded here (it carries a pointer). |
 | [dashboard_custom_layout_comprehensive_report_en.md](dashboard_custom_layout_comprehensive_report_en.md) | Architecture, providers, persistence, presets. |
-| [.claude/skills/dashboard-overflow-gate/SKILL.md](../../.claude/skills/dashboard-overflow-gate/SKILL.md) | How to operate the gate and edit the allowlist. |
+| [.claude/skills/layout-gate/SKILL.md](../../.claude/skills/layout-gate/SKILL.md) | How to operate the gate and edit the allowlist. Renamed from `dashboard-overflow-gate` 2026-08-25. |
 
 ---
 

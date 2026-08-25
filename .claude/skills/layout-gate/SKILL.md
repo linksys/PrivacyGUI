@@ -1,9 +1,29 @@
 ---
-name: dashboard-overflow-gate
-description: Operate and maintain the `layout-gate`-tagged RenderFlex-overflow PR gate — run the #1183 card sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new overflow probe for a surface that is not a card (page chrome, dialogs). Use when a layout-gate test fails, when adding/removing a card or a locale, when reading/generating the overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
+name: layout-gate
+description: Operate and maintain the `layout-gate`-tagged PR gate — 46 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 4,032 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
-# Dashboard Overflow Gate — Operate & Maintain
+# Layout Gate — Operate & Maintain
+
+> **Renamed from `dashboard-overflow-gate`, 2026-08-25.** The gate has covered
+> page chrome since #1314/#1328 and whole pages since #1349, so a `dashboard-`
+> prefix named three of the five sweeps and none of the other 41 suites. The name
+> now matches the two things that already exist in the code: the tag that makes a
+> suite PR-blocking, and the engine directory
+> [test/layout_gate/](../../../test/layout_gate/). Closes architecture doc §10
+> open question 3.
+
+## Where this fits
+
+Four documents, four jobs. Land in the wrong one and you read 2,000 lines to find
+a command.
+
+| If you want to | Read |
+|---|---|
+| **just run the gate**, read a failure, see a picture of what broke | [doc/testing/overflow_gate_usage.md](../../../doc/testing/overflow_gate_usage.md) — the operator's guide, and the shortest path if this is your first failure |
+| **operate and extend** it — triage, allowlist, new card, new page, new probe | **this file** |
+| know **why** it is shaped this way — the golden-CI gap, guard vs scout, the cost model | [doc/testing/overflow_gate_architecture.md](../../../doc/testing/overflow_gate_architecture.md) |
+| know what the **coverage register** is for and why no test reads it | [doc/testing/overflow_baselines.md](../../../doc/testing/overflow_baselines.md) |
 
 ## Purpose
 
@@ -125,8 +145,10 @@ below may drift:
    calls, the hand-written guards, and the two hooks. What each sweep *is* stays
    documented there; *which cells* and *what a verdict means* moved to
    [test/layout_gate/families/dashboard_card_family.dart](../../../test/layout_gate/families/dashboard_card_family.dart)
-   (enumeration: `CardWidthFamily` 1,638 · `CardNormalBandFamily` 208 ·
-   `CardProfileFamily` 52) and
+   (enumeration: `CardWidthFamily` 1,638 · `CardNormalBandFamily` 234 ·
+   `CardProfileFamily` 52 — the band was 208 until #1364 moved the density premise
+   from an `onCardSettled` body to a declared `expectedDensity`, same coverage,
+   more cells) and
    [test/layout_gate/families/dashboard_card_gate.dart](../../../test/layout_gate/families/dashboard_card_gate.dart)
    (the ratchet consult, the failure prose, the report row, the PNG pair, the
    coverage counters — read this one before editing a failure message). Its oracle
@@ -176,7 +198,7 @@ card_data_profiles.dart ────────────┤  (#1267: the rou
                                     ▼
     layout_gate/sweep.dart  runOverflowSweep(CardWidthFamily(gate)) × 3
       • since #1343: ONE testWidgets per card×width×tab, looping all 26 locales
-        inside it, plus one `cell count` test per family pinning 1638/208/52
+        inside it, plus one `cell count` test per family pinning 1638/234/52
       • families/dashboard_card_family.dart enumerates the cells
       • families/dashboard_card_gate.dart judges them — everything below is its
         judgeCell/close, shared by all three card families
@@ -409,8 +431,8 @@ Key grammar — `<file>:<line>`:
   **or** contains `"*"`. An empty array, a non-string tag, `"*"` mixed with
   explicit tags, and an unknown top-level key are all parse errors — the loader
   fails the run once as `(setUpAll)` instead of printing a warning nobody reads
-  inside a 1,900-test run (99 tests since #1343, and the argument is unchanged: a
-  warning is not a verdict).
+  inside a 1,900-test run (102 tests since #1343, measured 2026-08-25, and the
+  argument is unchanged: a warning is not a verdict).
 
 ## The Ratchet — How the Gate Reacts to Edits
 
