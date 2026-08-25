@@ -249,12 +249,28 @@ void main() {
       );
     });
 
-    test('the two coordinates golden CI shares are in the list', () {
+    test('every width golden CI is recorded sweeping is in the list', () {
       // §8's join key is `file:line`, but the join is only *checkable* where both
-      // sides measured the same screen. 480 and 1280 are the golden pipeline's
-      // phone and desktop widths; dropping either leaves "the gate found what CI
-      // missed" an unfalsifiable claim.
-      expect(kPageSweepWidths, containsAll(<double>[480, 1280]));
+      // sides measured the same screen, so every coordinate golden CI visits has
+      // to be here or the overlap is smaller than §8 claims.
+      //
+      // **Four, not two (#1370).** This test read "the two coordinates golden CI
+      // shares", which conflated two different sets: `GoldenDevice.defaults` is
+      // two (`phone480`, `desktop1280`, `golden_test_config.dart:33`), but golden
+      // CI synthesises a device per `--dart-define=screens=<width>`
+      // (`golden_runner.dart:43`) and §1.3 records it sweeping four. All four are
+      // asserted here.
+      //
+      // `screen1080` arrived on 2026-08-24 (§5's note) and is **not** in the list;
+      // it is the one real gap in §8's comparability and it is #1372's input, so it
+      // is named here rather than asserted — a test cannot pin a width the sweep
+      // does not visit without going red on a known, ticketed gap.
+      expect(
+        kPageSweepWidths,
+        containsAll(<double>[320, 480, 1241, 1280]),
+        reason: 'dropping any of these leaves "the gate found what golden CI '
+            'missed" unfalsifiable at that width',
+      );
     });
 
     test('the product floor is the floor the card sweep enumerates from', () {

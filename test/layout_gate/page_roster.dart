@@ -79,13 +79,16 @@ const int kPageViewCount = 45;
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).
 ///
-/// #1382's AC asks for `ms/cell` to be *empty* on every queued row, and the value
-/// this parses to is exactly that — `null`, meaning **not measured**, which is what
-/// the AC protects: an interpolated number here would be a fabricated measurement
-/// in the epic's own record. What is rejected is the *literal* empty field, because
-/// a trailing tab is invisible in a diff and any editor or pre-commit hook that
-/// strips trailing whitespace silently turns a three-column row into a two-column
-/// one. `-` is a value that survives being looked at.
+/// It parses to `null`, meaning **not measured** — and after #1370 that is a
+/// finding rather than a default. #1370 ran all 45 pages through the page sweep's
+/// own geometry once, so a `-` on a queued row today says *no fixture gets this
+/// view past its loader yet*, which is the fixture debt the epic has left. 16 rows
+/// carry it for that reason.
+///
+/// What is rejected is the *literal* empty field, because a trailing tab is
+/// invisible in a diff and any editor or pre-commit hook that strips trailing
+/// whitespace silently turns a three-column row into a two-column one. `-` is a
+/// value that survives being looked at.
 const String kNotMeasured = '-';
 
 /// The header key that restates the row count inside the file.
@@ -110,14 +113,20 @@ enum PageRosterDisposition {
   /// A sweep declares this page and it is at zero. Carries a measured ms/cell.
   swept('swept'),
 
-  /// Not onboarded yet. `ms/cell` is absent, because nothing measured it.
+  /// Not onboarded yet. May carry an ms/cell — #1370's inventory run measured 25
+  /// of these — and a `-` then means the run could not get the view past its
+  /// loader. Cost and coverage are orthogonal facts about a page, and the column
+  /// says which one this is.
   queued('queued'),
 
-  /// Deliberately out of the gate, with a written reason. A **valid** disposition
-  /// from day one with nothing using it: the five candidates
-  /// (`usp_sliver_dashboard_view`, `usp_dashboard_view`, `usp_test_console_view`,
-  /// `router_assistant_view`, `pnp_complete_view`) get written verdicts in their
-  /// own waves, and #1382 deliberately decides none of them.
+  /// Deliberately out of the gate, with a written reason. #1370 decided two of the
+  /// five candidates on its reachability check — `pnp_complete_view` (no route
+  /// builds it and nothing constructs it) and `speed_test_view` (its only route is
+  /// commented out). The other three — `usp_sliver_dashboard_view`,
+  /// `usp_dashboard_view`, `usp_test_console_view`, plus `router_assistant_view` —
+  /// still get their verdicts in #1380. Note `usp_sliver_dashboard_view` is *not*
+  /// routed and still not excludable: `usp_dashboard_view.dart:64` constructs it,
+  /// so a user reaches it. Routed and reachable are different questions.
   excluded('excluded');
 
   const PageRosterDisposition(this.token);
@@ -142,14 +151,22 @@ class PageRosterRow {
 
   final PageRosterDisposition disposition;
 
-  /// Measured milliseconds per swept cell, or **null** for "not measured".
+  /// Measured milliseconds per cell of this page's 208 coordinates, or **null** for
+  /// "not measured".
   ///
-  /// Null is the only honest value for a queued page and the parser enforces that
-  /// in both directions: a queued or excluded row may not carry a number, and a
-  /// `swept` row may not omit one. A page cannot be swept without a run having
-  /// happened, and §11.2's inverted bracket — the page picked as the cheap end
-  /// costs 1.5× the one picked as expensive — is the argument that the number
-  /// cannot be inferred from the page's shape and so has to be recorded per page.
+  /// Always a measurement on §11.2's basis and never an interpolation, which is the
+  /// invariant the parser holds in three directions: a `swept` row may not omit a
+  /// number, an `excluded` row may not carry one (a page out of the gate has no
+  /// cost to plan against), and a `queued` row may carry one only because something
+  /// really measured it.
+  ///
+  /// #1370 is why `queued` may. It ran every page through the same 8 widths × 26
+  /// locales a real sweep pumps and recorded 25 figures for pages nothing has swept
+  /// — and those figures are the whole reason the column exists, because §11.2's
+  /// bracket inverted and #1370 then found the spread is 7.6ms to 315.4ms with a
+  /// median of 27.4. A number cannot be inferred from a page's shape, and the
+  /// parser cannot tell a measured one from an invented one, so the file's `# basis`
+  /// header states what a figure here had to come from.
   final double? msPerCell;
 
   /// Why this page is out of the gate. Non-null exactly when [disposition] is
@@ -305,12 +322,14 @@ class PageRoster {
         '— so the cost cannot be inferred from the page and has to be recorded.',
       );
     }
-    if (disposition != PageRosterDisposition.swept && msPerCell != null) {
+    if (disposition == PageRosterDisposition.excluded && msPerCell != null) {
       throw PageRosterFormatException(
-        '$source:$lineNumber gives `$path` an ms/cell of $msPerCell while its '
-        'disposition is `$token`. Nothing has swept this page, so that number '
-        'was not measured — and an interpolated figure in the epic\'s own record '
-        'is a fabricated measurement.',
+        '$source:$lineNumber gives `$path` an ms/cell of $msPerCell while it is '
+        'excluded from the gate. Nothing will pump this page, so the figure is '
+        'not a cost anything can plan against — and a number on an excluded row '
+        'makes the remaining-work total read high by however many pages carry '
+        'one. A `queued` row may carry a measured figure; an excluded one may '
+        'not.',
       );
     }
 
@@ -370,7 +389,55 @@ class PageRoster {
         'shape of every stale count in this epic.',
       );
     }
+
+    for (final entry in _countedHeaders(rows).entries) {
+      final value = headers[entry.key];
+      if (value == null) continue;
+      if (int.tryParse(value.trim()) != entry.value) {
+        throw PageRosterFormatException(
+          '$source declares `# ${entry.key} $value` and holds ${entry.value} '
+          'such rows. Either the header or the rows are stale; the rows are the '
+          'record, so the header is what moves.',
+        );
+      }
+    }
   }
+
+  /// The five counted headers besides `# pages`, and what the rows make each one.
+  ///
+  /// Checked the same way and for the same reason as `# pages`: #1370 moved two of
+  /// them (`queued` 43 → 41, `excluded` 0 → 2) and added two (`measured`,
+  /// `needs_fixture`) in one diff, which is exactly the edit that leaves a count
+  /// stale.
+  ///
+  /// **Checked only when present, which is weaker than `# pages` on purpose.** The
+  /// oracle's synthetic rosters are deliberately two lines long, and demanding five
+  /// more headers of them would make every mutation in `each assertion can fail`
+  /// fail at the parser instead of at the assertion under test. The gap that leaves
+  /// — deleting a header disables its check — is closed where it matters rather
+  /// than here: [countedHeaderKeys] is what lets the oracle require the *committed*
+  /// file to declare all six, so the parser's rule is about arbitrary rosters and
+  /// the oracle's is about ours.
+  static Map<String, int> _countedHeaders(List<PageRosterRow> rows) => {
+        for (final d in PageRosterDisposition.values)
+          d.token: rows.where((r) => r.disposition == d).length,
+        'measured': rows.where((r) => r.msPerCell != null).length,
+        // The fixture debt, spelled in the header because it is the number #1369's
+        // waves estimate against and it is not derivable from the other four.
+        'needs_fixture': rows
+            .where((r) =>
+                r.disposition == PageRosterDisposition.queued &&
+                r.msPerCell == null)
+            .length,
+      };
+
+  /// Every header key whose value is a count the rows can falsify.
+  ///
+  /// Derived from [_countedHeaders] rather than listed, so a sixth count cannot be
+  /// added to the parser and forgotten here — which is the same staleness this
+  /// whole mechanism exists to catch, one level up.
+  static List<String> get countedHeaderKeys =>
+      [_pagesHeaderKey, ..._countedHeaders(const []).keys];
 
   Iterable<PageRosterRow> withDisposition(PageRosterDisposition d) =>
       rows.where((r) => r.disposition == d);
@@ -381,6 +448,22 @@ class PageRoster {
   /// Paths of the rows marked swept — the left side of the ⟺ assertion.
   Set<String> get sweptPaths =>
       withDisposition(PageRosterDisposition.swept).map((r) => r.path).toSet();
+
+  /// Queued pages nothing has measured — the epic's remaining **fixture** debt,
+  /// as distinct from its remaining sweep debt.
+  ///
+  /// #1370 is what makes this readable: before it, every queued row was unmeasured
+  /// and the two debts were one number. After it, a queued row with a figure needs
+  /// only declaring and a queued row with `-` needs a fixture written first, so
+  /// this list is the count #1369's waves are actually estimating against — 16 of
+  /// the 41 queued pages, not 41 and not the 37 the epic inferred.
+  ///
+  /// In path order, because [rows] is: `_rejectUnsorted` refuses a roster that is
+  /// not, so re-sorting here would be a no-op dressed as a guarantee.
+  List<String> get needsFixture => withDisposition(PageRosterDisposition.queued)
+      .where((r) => r.msPerCell == null)
+      .map((r) => r.path)
+      .toList();
 
   /// **Assertion 1.** Discovered page views with no roster row.
   ///

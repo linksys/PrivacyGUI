@@ -10,9 +10,11 @@ took the framework's first surface outside the dashboard** (2026-08-24): two who
 parameterised family, 416 cells, a fifth baseline, and **the runner needed no change at
 all** (§11.4). What the pilot was for was the number, and the number is **37.7ms per
 cell** — neither of §10 Q5's two candidate profiles, ~6× a chrome cell and ~4.5× cheaper
-than a golden full-page pump — so **these two pages graduate into the PR gate and pages do
-not graduate as a class** (§11.3): the 42 remaining page-view files are 5m29s of pump CPU
-— more than twice the whole gate's current wall clock — landing between 1.6× and 3.0× on it. The pilot also
+than a golden full-page pump; **#1370 then measured 26 more pages and found 7.6–315.4ms,
+median 27.4, so read 37.7 as those two pages' mean and not as a rate** (§11.6) — so
+**these two pages graduate into the PR gate and pages do
+not graduate as a class** (§11.3): the 43 remaining page-view files are 5m37s of pump CPU
+— more than twice the whole gate's current wall clock — landing between 1.7× and 3.1× on it. The pilot also
 found a real defect on its way in, at 320px and 601px in `ar`/`ru`, which golden CI
 structurally cannot see because it sweeps 480 and 1280 where the card is clean (§8).
 
@@ -580,9 +582,22 @@ than the local defaults, which declare no `locales:` at all and fall back to
 `[Locale('en')]` at `golden_test_config.dart:85`), and it has already produced
 roughly 135 ticketed coordinates:
 
-- **#1302** (open): 15 coordinates collapsing to **5 source locations** across
-  devices / shared / statistics / topology, every one locale-driven (`fr`,
-  `fr_CA`, `fi`).
+- **#1302** (closed 2026-08-21): 15 coordinates collapsing to **5 source
+  locations** across devices / shared / statistics / topology, every one
+  locale-driven (`fr`, `fr_CA`, `fi`).
+
+  **#1370 re-checked four of the five from this side and they are clean**: the
+  devices pair (`usp_device_detail_view`, `usp_device_list_view`) and the topology
+  pair (`usp_topology_view`, `usp_node_detail_view`) each ran 208 cells — 8 widths
+  × all 26 locales, `fr` / `fr_CA` / `fi` included — with zero incidents. The
+  fifth, `statistics`, is **unverified from here**: its populated fixture lives
+  inside `test/golden_test/` and #1361 forbids importing it, so the page never got
+  past its loader (see §11.6).
+
+  Read that as evidence and not as proof. Golden CI's coordinates are four devices
+  at golden heights; the page sweep is 8 widths at 1600px. The two are different
+  geometries, and §1.3's whole point is that they cannot be joined — so "clean
+  here" says the debt does not reproduce on *these* coordinates.
 - **120 further coordinates** in admin, all at `firmware_update_card.dart:77`
   across 10 locales.
 - One site is in ui_kit (`app_dialog.dart:95`) and therefore not fixable from
@@ -1699,7 +1714,7 @@ second allowlist into existence, which is precisely what the empty
 **The rule now has a second, independent justification, and it is a price** (#1349,
 §11). It was written as a purity constraint — one ratchet, not two. The page pilot
 measured what the constraint happens to buy: a whole page costs **7.8s** in the gate,
-so the 42 remaining page views cost **5m29s** against a PR gate that is under three
+so the 43 remaining page views cost **5m37s** against a PR gate that is under three
 minutes. Graduating a class of surfaces at once is not affordable at any level of
 tidiness, so a per-surface opt-in is the only shape available — and the graduation
 rule is what orders the queue. The two rules therefore compose rather than compete:
@@ -2242,7 +2257,7 @@ surface blocks, because otherwise that step has no verification signal of its ow
    cell**, ~6× a chrome cell and ~4.5× *cheaper* than golden's full-page pump. The
    answer is therefore split, and the split is the affordability answer rather than a
    hedge: **the two pilot pages graduate into the PR gate; pages do not graduate as a
-   class.** One page is 7.8s and all 42 remaining are 5m29s, which is twice the whole
+   class.** One page is 7.8s and all 43 remaining are 5m37s, which is twice the whole
    2m43s gate's clock. The pilot also found a real overflow at 320px and 601px that
    golden CI structurally cannot see, which is what makes graduating worth 7.8s a
    page. *Blocks nothing; §11.3 carries the budget to re-read when a third page is
@@ -2266,9 +2281,9 @@ Recorded so they can be reversed cheaply now rather than discovered later.
 | **A group's name comes from the cell's axes, not from parsing the coordinate label** (`overflowSweepNames`) — a label is prose and an axis value may contain spaces | §3.3 | inline it back, and re-accept that a spaced value splits a group name |
 | **A family with no axes still declares**, under a `(no axes)` group, rather than throwing while naming groups — the count test is what reports the problem, and a throw at load stops that report from running | §3.3 | one ternary |
 | **One family class parameterised by a `PageSurfaceCase`, where chrome has one class per widget** — the exception to the row above, and it does not weaken it: two pages share a host and an axis, and what differs (route, fixture, premise) are *values*. Each instance still carries its own `name` and its own pinned count, which is what that row protects | §11.1 | split into one class per page, and the two `enumerateCells` bodies become copies of each other |
-| **`kPageSweepWidths` is a literal list** — ui_kit's four margin step-ups, the 320px product floor, and golden CI's two coordinates. Content width is *not* monotone in screen width for a page, so there is no "narrowest realization" to derive it from; the list is pinned against `AppLayoutConfig.margin` by `page_surface_family_test.dart` instead | §11.1 | re-derive the list; every width added is 26 cells per page |
+| **`kPageSweepWidths` is a literal list** — ui_kit's four margin step-ups, the 320px product floor, the last width before the 906px step down, and the repo's two **committed** golden coordinates (`GoldenDevice.defaults`; "golden CI's two coordinates" was the wrong phrase and #1370 corrects it in §11.6 — golden CI synthesises more, and 1080 is the one this list lacks). Content width is *not* monotone in screen width for a page, so there is no "narrowest realization" to derive it from; the list is pinned against `AppLayoutConfig.margin` by `page_surface_family_test.dart` instead | §11.1 | re-derive the list; every width added is 26 cells per page |
 | **The page family's premise is `requires`/`forbids` on the case, not an assertion in `onCellSettled`'s body** — both pilot pages fall back to a loader, and a loader cannot overflow, so an emptied premise is 208 green cells over a spinner | §11.1 | the two lists move into the hook and become deletable in silence again |
-| **Pages graduate one at a time, not as a class** — 7.8s each, 5m29s for all 42 remaining | §11.3 | none; it is a budget, to be re-read each time a page is added |
+| **Pages graduate one at a time, not as a class** — 7.8s each, 5m37s for all 43 remaining (#1370's counts; filed as 5m29s for 42) | §11.3 | none; it is a budget, to be re-read each time a page is added |
 | **`pageSurfaceHost` is the one whole-page host, and `probeViewOverflow` delegates to it** rather than keeping the copy it had — the duplication its own header warned about had become real | §11.4 | re-inline the tree into `detail_view_probe.dart` and re-accept two copies |
 
 ---
@@ -2351,10 +2366,16 @@ subtraction reconciles to within 2%.
 reads 33.2ms**, and the difference is the session, not the code: `--plain-name "lays out
 cleanly"` selects exactly the 16 coordinate tests and their 416 cells at 17.04s against a
 3.22s control (medians of 3 again), where the first pass read 19.10s against 3.41s. So the
-honest figure is a **band, 33–38ms**, and §11.3 plans against the top of it — every CPU
-projection there is an upper bound rather than a best estimate. The band is also why the
-per-page comparison in this section survives it: both pages were measured inside one
-session, and it is their *ratio* that carries the finding below.
+honest figure is a **band, 33–38ms**, and §11.3 plans against the top of it. The band is
+also why the per-page comparison in this section survives it: both pages were measured
+inside one session, and it is their *ratio* that carries the finding below.
+
+**Read the band as session noise on these two pages and not as a ceiling on any page**
+(#1370, §11.6). It was originally written as one — "every CPU projection in §11.3 is an
+upper bound rather than a best estimate" — and 26 more pages falsified that: **8 of the 28
+measured exceed 38ms** and the worst is 315.4ms, 8× the top of the band. What the band
+bounds is how much the *instrument* moves between sessions on a fixed page; what it does
+not bound is the next page.
 
 The guard itself costs **3.57s for 52 pumps — 68.7ms each**, twice a swept cell, and the
 reason is which coordinates it pumps: 320px and 601px are the two narrowest content boxes
@@ -2402,28 +2423,51 @@ argument in §11.1 is entirely about — the page overflowed *more* at 601px tha
 and each card's box is narrower than the full-width one. A width list derived from
 "narrowest screen" would have found the 320px instance and missed the worse one.
 
-**What it would cost to graduate the class.** There are **44** files matching
-`lib/page/*/views/*_view.dart`, of which **37** are reachable from a `LinksysRoute`
-builder in `lib/route/`. Two are swept. So:
+**What it would cost to graduate the class.** There are **45** page views under the
+roster's rule — a file named `*_view.dart` directly inside a `views/` directory at
+any depth under `lib/page/`. The `lib/page/*/views/*_view.dart` glob this section
+first used finds only 44; it misses
+`lib/page/login/auto_parent/views/auto_parent_first_login_view.dart`, which sits one
+level deeper (#1382, `page_roster.dart`). Two are swept, and **#1370's reachability
+check found 42 of the 45 routed** — not 37:
 
 | Scope | Pages | Cells | Added pump CPU | Serial bound on the gate | Interpolated at 0.32 wall-s/CPU-s |
 |---|---|---|---|---|---|
 | One more page | 1 | 208 | 7.8s | 2m51s | 2m46s |
 | Five more | 5 | 1,040 | 39s | 3m22s (+24%) | 2m56s (+8%) |
 | Eight more | 8 | 1,664 | 1m03s | 3m46s (+39%) | 3m03s (+12%) |
-| Every remaining page-view file | 42 | 8,736 | 5m29s | **8m12s (3.0×)** | 4m28s (1.6×) |
-| Every remaining *routed* view | 35 | 7,280 | 4m34s | 7m17s (2.7×) | 4m11s (1.5×) |
+| Every remaining page-view file | 43 | 8,944 | 5m37s | **8m20s (3.1×)** | 4m31s (1.7×) |
+| Every remaining *routed* view | 40 | 8,320 | 5m14s | 7m57s (2.9×) | 4m23s (1.6×) |
+| Measured — 25 of the 43, §11.6 | 25 | 5,200 | **3m23s** | 6m06s (2.2×) | 3m48s (1.4×) |
+
+**The routed-only lane is dead as a cost lever.** It was worth a row when the count
+read 37 of 44; at 42 of 45 it drops **3 pages / 624 cells / 23s** out of 5m37s — 7%,
+inside the noise the two right-hand columns already carry. And two of the three it
+would drop are excluded outright by #1370 for the same reason, so the lane's real
+saving over the roster's own bookkeeping is **one page**
+(`usp_sliver_dashboard_view`, which is not routed and is still reachable —
+`usp_dashboard_view.dart:64` constructs it). #1369's "not routed" exclusion lane is
+empty; scope the epic by fixture cost instead, which is what §11.6 does.
+
+**Only the third row's CPU is measured; the first two are still 37.7ms × cells.** The
+measured row is the one to plan against, and it comes out **3% above** the interpolation
+for the same pages — 25 pages at 37.7ms is 3m16s and they really cost 3m23s. That looks
+like agreement and is not: the spread behind the average is 7.6ms to 315.4ms and one page
+carries a third of the total (§11.6). The 43-page and 40-page rows above stay
+interpolations because 16 of the 43 have never been measured, and #1370's rule was not to
+invent a figure for a page it could not pump — so read them as "what the record can say
+today", not as forecasts that got more solid.
 
 **Read the two right-hand columns as bounds and an interpolation, not as a forecast,
-because the measurements bracket a factor of eight.** The CPU column is measured and
-solid: 37.7ms per cell — the top of §11.2's 33–38ms band, so it is an upper bound — and
-it is what a machine has to spend. Both wall columns are added to the gate's measured
+because the measurements bracket a factor of eight.** The CPU column is what a machine has
+to spend, but 37.7ms per cell is a **mean of two pages and not a ceiling**: #1370 measured
+26 more and 8 of the 28 exceed the top of §11.2's 33–38ms band (§11.6). Both wall columns are added to the gate's measured
 2m43s. They are models of how that CPU lands, and this pilot's own 416 cells calibrate
 both ends:
 
 - **Serial bound** — the added CPU appended whole. That is what a single-core CI box
   pays, and it is also what *this* file will pay internally, since one suite runs its own
-  tests in sequence: at 42 pages the page file alone is 5m29s of pumps and becomes the
+  tests in sequence: at 43 pages the page file alone is 5m37s of pumps and becomes the
   run's long pole no matter how many cores exist.
 - **Free, at today's size.** The sharpest measurement available is a same-session A/B on
   the whole gate: with the page suite in place, **5,362 tests in 2m43s**; with the file
@@ -2435,15 +2479,15 @@ both ends:
   same work costs **+14s** — a ratio near 0.8, close to serial.
 - So the ratio is a property of the *selection*, and the interpolation column's 0.32 is a
   middle value between a measured ~0 and a measured ~0.8, not itself a measurement. It
-  also has to decay upward as pump time approaches the rest of the run's — 8,736 cells
+  also has to decay upward as pump time approaches the rest of the run's — 8,944 cells
   cannot stay free when they exceed the whole current gate — which is exactly why the
   decision below is taken against the CPU column.
 
 **So: the two pilot pages graduate into the PR gate, and pages do not graduate as a
 class.** That decision does not depend on which bound is right, which is why it is
-safe to take now: wholesale graduation costs **5m29s of CPU — more than twice the entire
+safe to take now: wholesale graduation costs **5m37s of CPU — more than twice the entire
 gate's current wall clock** — to buy coverage of surfaces most of which are not at
-zero yet anyway, and it lands somewhere between 1.6× and 3.0× on the clock. Per page
+zero yet anyway, and it lands somewhere between 1.7× and 3.1× on the clock. Per page
 it is cheap under every model, and the graduation rule already forces the queue to be
 walked one surface at a time.
 
@@ -2565,6 +2609,12 @@ is a valid disposition from day one with nothing using it — the five candidate
 `router_assistant_view`, `pnp_complete_view`) get written verdicts in their own
 waves.
 
+> **Superseded by #1370 (2026-08-25):** the register now reads **2 swept / 41 queued
+> / 2 excluded**, with 25 queued rows carrying a measured ms/cell and 16 carrying `-`.
+> The rule that *only* a `swept` row may carry a number went with it — see §11.6's
+> "What the record had to change to hold this". §11.5's initial state is kept above
+> as history; the file is the current state.
+
 #### The three assertions
 
 1. **Every page view has a roster row**, where a page view is **a file named
@@ -2632,11 +2682,12 @@ Two structural notes came out of watching it, both worth keeping:
   attributed to every test with its message intact.
 - The reader **refuses** rather than tolerates: a two-field row, an empty ms/cell
   (a trailing tab is invisible in a diff and any hook that strips trailing
-  whitespace turns it into a two-field row), a `swept` row with no measurement, a
-  non-swept row *with* one, an `excluded` with no reason, a duplicate path, rows out
-  of path order, and a `# pages` header that disagrees with the row count. Each is a
-  way the record could claim something untrue while parsing cleanly, which is the
-  only failure mode a coverage record has.
+  whitespace turns it into a two-field row), a `swept` row with no measurement, an
+  **`excluded` row *with* one** (#1370 narrowed this from "any non-swept row", §11.6),
+  an `excluded` with no reason, a duplicate path, rows out of path order, and any
+  `# pages` / `# swept` / `# queued` / `# measured` / `# needs_fixture` / `# excluded`
+  header that disagrees with the rows. Each is a way the record could claim something
+  untrue while parsing cleanly, which is the only failure mode a coverage record has.
 
 #### Cost, and why #1371 must not move it
 
@@ -2652,3 +2703,292 @@ added this afternoon from escaping this afternoon.**
 
 Nothing in `test/fixtures/overflow_baselines/` moved; all five are byte-identical.
 This ticket adds a record, not a measurement.
+
+### 11.6 The pages inventory and the onboarding queue (#1370, run 2026-08-25)
+
+**What was run, and what was deliberately not kept.** All 45 page views were declared
+as `PageSurfaceCase`s on a scratch branch and swept once at the page family's own
+geometry — `kPageSweepWidths` × all 26 locales, 208 cells each, **9,360 cells**. The
+harness recorded instead of asserting: a failed premise, a build exception and an
+overflow were all data. **The branch and its two files are deleted**; nothing was
+tagged `overflow` or `layout-gate`, no baseline record was emitted (every
+`runWithOverflowCollection` passed `cell: null`), and **no page was flipped to
+`swept`**. What survives is this section and the roster diff.
+
+The point of running it rather than reasoning about it: #1369 inferred "2 swept · 6
+ready-and-unswept · 37 needing a fixture" from which `List<Override>` builders exist
+in `test/mocks/provider_overrides/`. **Every part of that split was wrong**, in both
+directions.
+
+| Question | #1369 inferred | #1370 measured |
+|---|---|---|
+| Pages | 44 | **45** (the roster's rule; §11.5) |
+| Routed | 37 of 44 | **42 of 45** |
+| Render under the shared mock | 8 | **28** |
+| Need a fixture written | 37 | **16** |
+| Ready builders that work | 6 | **5** — `statisticsOverrides` does not |
+| Cost per cell | 37.7ms (or the 33–38ms band) | **7.6ms – 315.4ms**, median 27.4 |
+
+#### The queue
+
+Ordered by **at zero? · fixture ready? · routed? · measured cost**, which is the
+order in which a page is cheapest to put in the gate. `ms/cell` is on §11.2's basis
+(an isolated `--plain-name` run's wall clock minus the no-pump control, over 208
+cells); the instrument reproduces §11.2 within ±7% on the two swept controls —
+`dhcp` 43.4 against the committed 44.8 (−3.1%), `wifi_settings` 31.3 against 29.2
+(+7.2%). Widgets is `tester.allWidgets.length` at 1280px in `en`.
+
+| # | Page | At zero? | Fixture | Routed | ms/cell | Widgets | Wave |
+|--:|---|---|---|---|--:|--:|--:|
+| 1 | `topology/views/usp_topology_view.dart` | at zero | ready | yes | 28.7 | 918 | #1377 |
+| 2 | `topology/views/usp_node_detail_view.dart` | at zero | ready | yes | 33.5 | 971 | #1377 |
+| 3 | `devices/views/usp_device_detail_view.dart` | at zero | ready | yes | 33.7 | 959 | #1377 |
+| 4 | `devices/views/usp_device_list_view.dart` | at zero | ready | yes | 49.5 | 2394 | #1377 |
+| 5 | `instant_setup/views/pnp_no_internet_view.dart` | at zero | — | yes | 12.5 | 505 | #1378 |
+| 6 | `instant_setup/views/pnp_modem_lights_off_view.dart` | at zero | — | yes | 13.2 | 400 | #1378 |
+| 7 | `remote_assistance/views/remote_assistance_confirm_view.dart` | at zero | — | yes | 13.3 | 372 | #1380 |
+| 8 | `instant_setup/views/pnp_isp_settings_view.dart` | at zero | — | yes | 13.7 | 468 | #1378 |
+| 9 | `landing/views/home_view.dart` | at zero | — | yes | 13.8 | 367 | #1379 |
+| 10 | `instant_setup/views/pnp_pppoe_view.dart` | at zero | — | yes | 16.3 | 522 | #1378 |
+| 11 | `instant_setup/views/pnp_unplug_modem_view.dart` | at zero | — | yes | 18.1 | 400 | #1378 |
+| 12 | `login/views/local_router_recovery_view.dart` | at zero | — | yes | 21.6 | 650 | #1379 |
+| 13 | `login/views/login_local_view.dart` | at zero | — | yes | 23.3 | 649 | #1379 |
+| 14 | `login/views/local_reset_router_password_view.dart` | at zero | — | yes | 26.2 | 904 | #1379 |
+| 15 | `instant_setup/views/pnp_static_ip_view.dart` | at zero | — | yes | 36.5 | 1327 | #1378 |
+| 16 | `instant_setup/views/pnp_entry_view.dart` | at zero | — | yes | 38.6 | 352 | #1378 |
+| 17 | `menu/views/usp_menu_view.dart` | at zero | — | yes | 40.1 | 882 | #1379 |
+| 18 | `support/views/usp_support_view.dart` | at zero | — | yes | 41.0 | 640 | #1380 |
+| 19 | `dashboard/views/usp_sliver_dashboard_view.dart` | at zero | — | **no** | 315.4 | 1632 | #1380 |
+| 20 | `port_forwarding/views/usp_port_forwarding_detail_view.dart` | 9 cells | ready | yes | 22.5 | 1017 | #1377 |
+| 21 | `advanced_settings/views/usp_advanced_settings_view.dart` | 4 cells | — | yes | 16.9 | 626 | #1380 |
+| 22 | `unified_diagnostics/views/unified_diagnostics_view.dart` | 9 cells | — | yes | 17.8 | 647 | #1380 |
+| 23 | `ai_assistant/views/router_assistant_view.dart` | 7 cells | — | yes | 31.9 | 495 | #1380 |
+| 24 | `firmware_update/views/firmware_update_view.dart` | 2 cells | — | yes | 46.4 | 594 | #1380 |
+| 25 | `test_console/views/usp_test_console_view.dart` | 52 cells | — | yes | 53.4 | 2438 | #1380 |
+| 26 | `statistics/views/usp_statistics_view.dart` | **needs a fixture** | ready | yes | _—_ | 854 | #1380 |
+| 27 | `instant_setup/views/pnp_waiting_modem_view.dart` | **needs a fixture** | — | yes | _—_ | 346 | #1378 |
+| 28 | `internet_settings/views/usp_internet_settings_view.dart` | **needs a fixture** | — | yes | _—_ | 481 | #1380 |
+| 29 | `dashboard/views/usp_dashboard_view.dart` | **needs a fixture** | — | yes | _—_ | 338 | #1380 |
+| 30 | `instant_setup/views/pnp_setup_view.dart` | **needs a fixture** | — | yes | _—_ | 294 | #1378 |
+| 31 | `login/auto_parent/views/auto_parent_first_login_view.dart` | **needs a fixture** | — | yes | _—_ | 345 | #1379 |
+| 32 | `local_network/views/usp_local_network_view.dart` | **needs a fixture** | — | yes | _—_ | 514 | #1380 |
+| 33 | `instant_safety/views/instant_safety_view.dart` | **needs a fixture** | — | yes | _—_ | 482 | #1380 |
+| 34 | `apps/views/usp_apps_view.dart` | **needs a fixture** | — | yes | _—_ | 475 | #1380 |
+| 35 | `system_log/views/usp_system_log_view.dart` | **needs a fixture** | — | yes | _—_ | 476 | #1380 |
+| 36 | `static_routing/views/usp_static_routing_view.dart` | **needs a fixture** | — | yes | _—_ | 430 | #1380 |
+| 37 | `dmz/views/usp_dmz_view.dart` | **needs a fixture** | — | yes | _—_ | 462 | #1380 |
+| 38 | `instant_privacy/views/instant_privacy_view.dart` | **needs a fixture** | — | yes | _—_ | 476 | #1380 |
+| 39 | `ipv6_port_service/views/usp_ipv6_port_service_view.dart` | **needs a fixture** | — | yes | _—_ | 430 | #1380 |
+| 40 | `admin/views/usp_admin_view.dart` | **needs a fixture** | — | yes | _—_ | 482 | #1380 |
+| 41 | `firewall/views/usp_firewall_view.dart` | **needs a fixture** | — | yes | _—_ | 482 | #1380 |
+
+Plus **2 excluded**, which is the ticket's one disposition flip and rests on the
+routed check rather than on judgement:
+
+| Page | Reason |
+|---|---|
+| `instant_setup/views/pnp_complete_view.dart` | not reachable; no route builds it and **nothing under `lib/` constructs it**. It renders fine (7.6ms, at zero) — it is simply dead. #1378's AC asked for exactly this verdict, naming this check. |
+| `unified_diagnostics/views/speed_test_view.dart` | not reachable; its only route is **commented out** at `lib/route/route_usp_dashboard.dart:223`, and the only other mention of `SpeedTestView` in the repo is a doc comment at `usp_speed_test_card.dart:15`. |
+
+**`usp_sliver_dashboard_view.dart` is the third non-routed page and is *not*
+excludable**, which is the distinction worth carrying: `usp_dashboard_view.dart:64`
+constructs it, so a user reaches it every time the dashboard loads. Routed and
+reachable are different questions, and only the second one licenses an exclusion.
+It is also the most expensive page in the app.
+
+#### The routed count, and the lane it kills
+
+**42 of 45**, from a two-step check and not a grep: a balanced-paren parse of every
+`LinksysRoute(` under `lib/route/` — comments blanked first, since
+`// Reset bars visibility (including pop back)` derails a paren walker — attributing
+each `builder:` to the route that owns it with nested `routes:` children cut out of
+the parent's body, then reachability of each top-level route final from `appRoutes`,
+the list `routerProvider` hands its `GoRouter`. A view is routed iff some reachable
+route's own builder constructs it. The join is on **class declaration, not file
+name** (`router_assistant_view.dart`'s first class is `BedrockModel`), so all
+top-level classes per file are collected.
+
+A loose `grep -c LinksysRoute lib/route/` returns 44. The three-way difference is
+worth recording because each is a real thing: **42** routes, **+1** the constructor's
+own declaration at `route_model.dart:47`, **+1** the commented-out `SpeedTestView`
+route. §11.3's table now carries the corrected counts, and the conclusion is that
+**#1369's "not routed" exclusion lane is empty** — it saves one page.
+
+#### Six pages render and are not at zero, so §8 blocks them
+
+These are finds, not blockers. Every one is a real overflow at a real coordinate on a
+page nothing has ever swept, and per §8 each must be **fixed before its page is
+declared** — not allowlisted.
+
+| Page | Site | Cells | Worst | Widths | Locales |
+|---|---|--:|--:|---|---|
+| `test_console` | `usp_test_console_view.dart:1147` | 52 | +109px | 320, 480 | **all 26** |
+| `port_forwarding` | `components/usp_single_port_tab.dart:30` | 9 | +70px | 320 | da, de, fi, fr, nb, pl, pt, pt_PT, ru |
+| `unified_diagnostics` | `views/widgets/diagnostic_start_view.dart:125` | 9 | +74px | 320 | es, es_AR, fr, fr_CA, id, pl, pt, pt_PT, ru |
+| `ai_assistant` | `router_assistant_view.dart:409` | 7 | +89px | 320 | ar, es, es_AR, pt, pt_PT, ru, tr |
+| `advanced_settings` | `usp_advanced_settings_view.dart:110` | 4 | +43px | 320, **601** | fr_CA, pt_PT, ru |
+| `firmware_update` | `firmware_update_view.dart:546` | 2 | +15px | 320 | fr, fr_CA |
+
+Two things to read off it. **`test_console` is the only site that breaks in `en`** —
+every other one of the five is invisible without the locale axis, which is §11.1's
+argument arriving for the sixth time. And `advanced_settings` breaks at **601px**,
+the first margin step-up, which is the non-monotonicity argument arriving again: a
+width list derived from "narrowest screen" finds four of its cells and misses two.
+
+`port_forwarding` is the notable one: it is a **wave 1** page with a ready builder,
+so #1377 is not the pure declaration exercise it was scoped as. Its own AC already
+says the fix is that wave's work.
+
+#### The 16 that need a fixture, and what each one is missing
+
+The count that matters most, because it is #1369's binding cost. **16, not 37** — the
+shared `commonOverrides()` alone carries **21 unfixtured pages** past their loader
+(28 render; 7 of those have a dedicated builder, and 8 builders exist), which is why
+the ticket insisted a builder that exists is not a builder that gets *this* view past
+`if (status.isLoading) return AppLoader()`. Exactly **one** of the 16 is a page whose
+builder does exist: `statistics`.
+
+Their ms/cell is deliberately **absent from the roster and from the table above**. The
+harness did time them, and the numbers are meaningless in a way worth naming: they
+time an error or loader path, not a page. That is why the unfixtured USP pages read
+*highest* of all — `firewall` 78.5, `admin` 69.8, `ipv6_port_service` 67.1 — a
+`ServiceErrorView` after a failed provider fetch costs more than most real pages. An
+ms/cell column filled from those runs would have ranked the queue almost exactly
+backwards.
+
+| Page | What the premise found |
+|---|---|
+| `statistics/views/usp_statistics_view.dart` | no `StatsHealthScoreSection`. `statisticsOverrides()` exists but its populated state lives in `test/golden_test/`, which **#1361 forbids importing**; the all-defaulted builder is the golden `network_empty` state. |
+| `dmz`, `ipv6_port_service`, `static_routing`, `pnp_setup`, `auto_parent_first_login` | leak **`AppLoader`** — the exact failure mode #1364/#1366 named: a centred spinner cannot overflow at any width in any locale, so 208 cells would have gone green over nothing. |
+| `admin`, `apps`, `dashboard`, `firewall`, `instant_privacy`, `instant_safety`, `internet_settings`, `local_network`, `system_log` | leak **`ServiceErrorView`** — the provider fetch failed rather than pending. |
+| `pnp_waiting_modem` | no `CircularCountdownWidget`; needs a PnP step state. |
+
+`dashboard` is a special case worth flagging to #1380: it misses
+`UspSliverDashboardView`, i.e. its `.data` branch never ran — so **the page-level
+probe #1380 has to decide on is measuring the wrapper's error state, not the
+dashboard**. The sliver view underneath it renders fine at 208 cells, at zero, and
+costs 315.4ms.
+
+#### Does cost track widget count?
+
+**Monotonically but too loosely to plan with: Spearman ρ = 0.67 across the 28 pages
+that render (0.65 excluding the outlier), Pearson r = 0.39 (0.69 excluding it), and
+per-widget cost varies 12× — 16.4 to 193.3 ms per 1,000 widgets, median 32.6.** So
+widget count *orders* pages roughly and predicts no individual page's cost.
+`wifi_settings` lays out 1,910 widgets for 31.3ms while `firmware_update` lays out
+594 for 46.4ms; `sliver_dashboard`'s 1,632 cost 315.4ms.
+
+That is the same lesson §11.2 drew from a bracket of two, now at N=28: **the cost has
+to be recorded per page**, which is what the roster's third column is for.
+
+**The 28 points, so the correlation is re-derivable from this document.** 25 of them are
+the queue table's `ms/cell` × `Widgets` columns. The other three are off that table
+because the table lists only queued pages: `dhcp` 43.4ms / 1,383 widgets and
+`wifi_settings` 31.3ms / 1,910 (the two swept controls, at this run's timings rather than
+the roster's committed 44.8 and 29.2), and `pnp_complete` 7.6ms / 236 — measured before it
+was excluded, and the cheapest page in the app.
+
+The distribution also retires 37.7ms as a planning constant. Only **3 of 28** pages
+fall inside the 33–38ms band; 17 are below 33 and 8 above 38. Min 7.6, **median
+27.4**, mean 37.9, max 315.4. The mean agrees with 37.7 and describes nothing:
+`sliver_dashboard` alone is 66s of the measured 3m23s, a third of it in one page.
+
+#### Reconciling against the four waves
+
+Total unchanged at 43; two pages become exclusions and one moves wave.
+
+| Wave | Filed | Now | At zero | Overflows | Needs a fixture | Coverage after |
+|---|--:|--:|--:|--:|--:|---|
+| #1377 ready builders | 6 | **5** | 4 | 1 | 0 | 7 of 45 |
+| #1378 `instant_setup` | 10 | **9** | 7 | 0 | 2 | 16 of 45 |
+| #1379 entry surfaces | 6 | 6 | 5 | 0 | 1 | 22 of 45 |
+| #1380 the rest | 21 | 21 | 3 | 5 | 13 | **43 of 45** + 2 excluded |
+
+Three moves, each with its reason:
+
+- **`statistics` leaves #1377 for #1380.** #1377's premise is "zero new fixtures" and
+  this page needs one — either #1361's move of the golden fixture out of
+  `test/golden_test/`, or a new scene. Its own AC anticipated this: a page that drops
+  out is "re-queued with a fixture scope attached". Wave 1 becomes 5 pages, and its
+  work is 4 declarations plus one fix (`port_forwarding`), not 6 declarations.
+- **`pnp_complete` leaves #1378 as an exclusion**, which its AC asked for by name.
+- **`speed_test` leaves #1380 as an exclusion.**
+
+**#1378's premise is wrong in the cheap direction and should be re-scoped, not
+re-planned.** It was filed on "one fixture shape reused with different step states"
+for ten pages. In fact **7 of the 10 need no fixture at all** — they render at zero
+under `commonOverrides()` alone — one is excluded, and the fixture work is exactly
+two pages (`pnp_setup`, `pnp_waiting_modem`). Its cost estimate is also high by a
+factor of two: those seven measure **31s** of pumps in total against the filed
+1m09s–1m18s for ten, because five of them are under 20ms/cell. The PnP flow is the
+cheapest area in the app on both axes.
+
+#### What the record had to change to hold this
+
+The roster's parser rejected a number on any non-`swept` row, on the argument that
+nothing had measured it and an interpolated figure would be a fabricated measurement.
+#1370 falsified the premise rather than the argument: 25 queued pages now carry
+figures that were really measured, on the same basis as the two swept rows. So the
+rule was **narrowed, not dropped** —
+
+- `swept` **must** carry a number (unchanged).
+- `queued` **may**; a `-` there is now the finding "no fixture renders this yet", and
+  `PageRoster.needsFixture` exposes the 16 as a list.
+- `excluded` **must not**. `pnp_complete` really costs 7.6ms/cell and nothing will
+  ever pump it, so carrying the figure would inflate the remaining-work total by a
+  page per exclusion.
+
+The parser cannot tell a measured figure from an invented one, so the file's `# basis`
+header states what a figure here had to come from, and the **five** counted headers
+besides `# pages` (`# swept`, `# queued`, `# excluded`, `# measured`, `# needs_fixture`)
+are now checked against the rows for the same reason `# pages` always was — #1370 moved
+two of them and added two in one diff, which is the edit that leaves a count stale.
+
+One asymmetry is deliberate and one is a hole that had to be plugged. `# pages` is
+**required**; the five are checked **only when present**, because the oracle's synthetic
+rosters are two lines long and demanding six headers of each would make every mutation
+fail at the parser instead of at the assertion under test. That tolerance is a fail-open —
+delete `# swept 2` and its check goes quiet rather than red — so it is closed at the only
+place it matters: `PageRoster.countedHeaderKeys` is derived from the same map the parser
+counts, and the oracle asserts the *committed* file declares all six. The parser's rule is
+about arbitrary rosters; the oracle's is about ours.
+
+#### Four harness findings the waves will hit, one of them a production defect
+
+The run's exceptions are not noise; nine pages threw while their cell data recorded,
+in four classes:
+
+1. **A real defect in `pnp_setup_view.dart`.** Four `late final TextEditingController`
+   fields (`:32-35`) are assigned only inside `_initControllers(WizardConfiguring)`
+   (`:137`), while `dispose()` (`:111-115`) disposes all four unconditionally — so
+   leaving the page before the wizard reaches `WizardConfiguring` throws
+   `LateInitializationError` **in production**, not just under test. It also leaks
+   into the next test in file order, which is why `pnp_static_ip` shows the same
+   stack. This is #1378's first find and it is not an overflow.
+2. **Async provider throw after test completion** — `Null check operator used on a
+   null value` from `_svc` in `usp_dmz_notifier.dart:38`,
+   `usp_ipv6_port_service_notifier.dart:39`, `usp_static_routing_notifier.dart:39`,
+   and `FirmwareBanksDataNotifier._fetch` at `firmware_banks_data_provider.dart:61`.
+   These are the same pages that leak `AppLoader`; a fixture that satisfies the
+   premise will likely also silence this.
+3. **`unknown route name: dashboardHome`** for `auto_parent_first_login`, because the
+   page navigates on load and `pageSurfaceHost` mounts a single `test_root` route.
+   #1379 needs either a second route in the host or a state that does not navigate.
+   `login_local` throws differently — `ServiceNotInitializedError` from
+   `SessionService._fetchUspDeviceInfo` (`session_service.dart:65`) — while still
+   rendering at zero.
+4. **Pending timers** for `ai_assistant`: a 10s and a 5s `Future.timeout` from
+   `AwsCredentialsStore._serialize` and `readWithin`
+   (`aws_credentials_store.dart:118`, `:181`), reached from
+   `RouterAssistantView.initState` (`:94`) — it calls `_restoreSavedCredentials()`
+   at `:102`, which awaits `store.readWithin(_restoreTimeout)` at
+   `router_assistant_view.dart:180`. A page that starts wall-clock timers in
+   `initState` cannot be swept 208 times without either a fake clock or an injected
+   store.
+
+One more, from the premise discipline itself: `device_list`'s first premise named
+`UspDeviceFilterChipBar` and **failed at exactly half the widths** — present at
+320/480/601/905, absent at 1241/1280/1441/1681. The component is responsive, and a
+`requires` list is per *case*, not per *cell*. The premise was cut to
+`UspDeviceListTile`. #1377 should expect the same trap on any page whose chrome
+changes at a breakpoint.

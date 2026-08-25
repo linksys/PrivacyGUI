@@ -44,12 +44,23 @@
 ///   | **1441**| 256   | **929** | 111px narrower than 1440px                  |
 ///   | **1681**| 352   | **977** | 191px narrower than 1680px                  |
 ///
-/// [kPageSweepWidths] is that table's four step-ups, its floor, and golden CI's
-/// two coordinates — a literal list, because there is nothing to derive it from
-/// and a derived "worst case" would be wrong four times over. #1302 measured the
-/// 1241px pinch as the worst *desktop* case for the device-detail page (`fr`
-/// +30px, against +20px at 1280px), which is the same arithmetic reaching a
-/// different page.
+/// [kPageSweepWidths] is that table's four step-ups (601, 1241, 1441, 1681), its
+/// floor (320), the last width before the 906px step *down* (905), and the two
+/// **committed** golden coordinates (480, 1280) — a literal list, because there is
+/// nothing to derive it from and a derived "worst case" would be wrong four times
+/// over. #1302 measured the 1241px pinch as the worst *desktop* case for the
+/// device-detail page (`fr` +30px, against +20px at 1280px), which is the same
+/// arithmetic reaching a different page.
+///
+/// **"Golden CI's two coordinates" was wrong and is corrected here (#1370).** Two
+/// is the count of `GoldenDevice.defaults` in this repo — `phone480` and
+/// `desktop1280` at `golden_test_config.dart:33`. Golden CI runs more, because
+/// `golden_runner.dart:43` synthesises a device from
+/// `--dart-define=screens=<width>`: §1.3 records it sweeping four (`phone320`,
+/// `phone480`, `desktop1241`, `desktop1280`) and §5's note records `screen1080`
+/// arriving on 2026-08-24. All four of the first set are in this list; **1080 is
+/// not**, and that is the one real gap in §8's `file:line` comparability — #1372's
+/// input, not a defect here.
 ///
 /// Locale is a first-class axis for the same reason it is everywhere else in this
 /// family: #1302's row was clean in `en` at every width it broke in `fr`.
@@ -69,18 +80,22 @@ import '../sweep.dart';
 
 /// Screen widths swept per locale — see the library header's table.
 ///
-/// Eight, not twelve: every width here is either a margin step-up (the four the
-/// content box narrows at), the product floor, or one of golden CI's two
-/// coordinates, which are what make the `file:line` join of §8 comparable. A
-/// ninth width would cost 26 cells per page and answer a question one of these
-/// already answers.
+/// Eight, not twelve: four are margin step-ups (the widths the content box narrows
+/// at), one is the product floor, one is the last width before the 906px step
+/// *down*, and two are the repo's **committed** golden coordinates, which are what
+/// make the `file:line` join of §8 comparable. A ninth width would cost 26 cells
+/// per page and answer a question one of these already answers.
+///
+/// The header explains why "golden CI's two coordinates" was the wrong phrase for
+/// the last pair: two is `GoldenDevice.defaults`, and golden CI synthesises further
+/// widths — of which 1080 is the one this list does not hold.
 const kPageSweepWidths = <double>[
-  320, // product floor; content 288 — narrowest the app ever lays out
-  480, // golden CI's phone coordinate
+  320, // product floor; content 288 — narrowest the app ever lays out. Also golden CI's phone320
+  480, // committed golden coordinate (GoldenDevice.phone480)
   601, // margin 16 → 32: content 537, narrower than 600px's 568
   905, // last width of the 32px margin; content 841
-  1241, // margin 24 → 200: content 841, the #1302 desktop pinch
-  1280, // golden CI's desktop coordinate
+  1241, // margin 24 → 200: content 841, the #1302 desktop pinch. Also golden CI's desktop1241
+  1280, // committed golden coordinate (GoldenDevice.desktop1280)
   1441, // margin 200 → 256: content 929
   1681, // margin 256 → 352: content 977
 ];

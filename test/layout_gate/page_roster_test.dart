@@ -286,34 +286,128 @@ void main() {
       );
     });
 
-    test('nothing but a swept row carries a number', () {
-      // Enforced by the parser in both directions; asserted here over the
-      // committed fixture because #1382 ships the empty register on purpose and
-      // an interpolated ms/cell would be a fabricated measurement in the epic's
-      // own record.
+    test('every swept row carries a number and no excluded row does', () {
+      // #1382 shipped this as "nothing but a swept row carries a number", which
+      // was true of a register in which nothing had been measured. #1370 then
+      // measured 25 queued pages on §11.2's own basis, so the invariant is not
+      // "only swept rows have costs" — it is that **a figure here was measured**.
+      // The parser holds the two ends it can hold, and this asserts them over the
+      // committed file.
+      //
+      // Yes, the parser already rejects both, so this cannot fail against a roster
+      // that parsed — and it is kept anyway, because the mutation it guards is the
+      // one #1370 just performed: **narrowing the parser rule**. Half of what this
+      // asserted stopped being enforced upstream this ticket, and an assertion over
+      // the committed file is what would have noticed if the wrong half had gone.
+      // The falsifiable versions are the synthetic rosters below.
       for (final row in roster.rows) {
-        if (row.disposition == PageRosterDisposition.swept) {
-          expect(row.msPerCell, isNotNull, reason: row.path);
-        } else {
-          expect(row.msPerCell, isNull, reason: row.path);
+        switch (row.disposition) {
+          case PageRosterDisposition.swept:
+            expect(row.msPerCell, isNotNull, reason: row.path);
+          case PageRosterDisposition.excluded:
+            expect(row.msPerCell, isNull, reason: row.path);
+          case PageRosterDisposition.queued:
+            break; // measured or not; the next test but one pins which.
         }
       }
     });
 
-    test('the register starts at 2 swept, 43 queued, 0 excluded', () {
+    test('25 queued pages are measured and 16 still need a fixture', () {
+      // The distinction #1370 bought, and the one the waves estimate against. The
+      // epic inferred "37 of 44 need a fixture written" from which builders exist
+      // in test/mocks/provider_overrides/; the run found the shared mock alone
+      // carries 21 unfixtured pages past their loader, so the real fixture debt is
+      // 16 — and one of those 16 is a page whose builder *does* exist.
+      final measured = roster
+          .withDisposition(PageRosterDisposition.queued)
+          .where((r) => r.msPerCell != null);
+      expect(measured, hasLength(25));
+      expect(roster.needsFixture, hasLength(16));
+      expect(
+        roster.needsFixture,
+        contains('lib/page/statistics/views/usp_statistics_view.dart'),
+        reason: 'statisticsOverrides() exists, which is why #1377 counted this '
+            'page as fixture-free — but its populated state lives in '
+            'test/golden_test/, which #1361 forbids importing from here, and the '
+            'all-defaulted builder renders no StatsHealthScoreSection. A builder '
+            'that exists is not a builder that gets this view past its loader.',
+      );
+      expect(
+        roster.rows
+            .firstWhere((r) =>
+                r.path ==
+                'lib/page/dashboard/views/usp_sliver_dashboard_view.dart')
+            .msPerCell,
+        315.4,
+        reason:
+            'the most expensive page in the app by 6x, and the reason 37.7ms '
+            'is a mean rather than a planning constant: 208 cells of this one '
+            'page is 66s, a third of every measured queued page combined',
+      );
+    });
+
+    test('the register reads 2 swept, 41 queued, 2 excluded', () {
       expect(roster.withDisposition(PageRosterDisposition.swept), hasLength(2));
       expect(
-          roster.withDisposition(PageRosterDisposition.queued), hasLength(43));
+          roster.withDisposition(PageRosterDisposition.queued), hasLength(41));
       expect(
-        roster.withDisposition(PageRosterDisposition.excluded),
-        isEmpty,
-        reason: '`excluded:<reason>` is a valid disposition from day one with '
-            'nothing using it. The five candidates — usp_sliver_dashboard_view, '
-            'usp_dashboard_view, usp_test_console_view, router_assistant_view, '
-            'pnp_complete_view — get written verdicts in their own waves, and '
-            '#1382 deliberately decides none of them. When one is excluded, this '
-            'number moves and the reason is in the file.',
+        roster
+            .withDisposition(PageRosterDisposition.excluded)
+            .map((r) => r.path)
+            .toList(),
+        const [
+          'lib/page/instant_setup/views/pnp_complete_view.dart',
+          'lib/page/unified_diagnostics/views/speed_test_view.dart',
+        ],
+        reason: '#1382 shipped 0 excluded on purpose and #1370 decided exactly '
+            'two of the five candidates on its reachability check: '
+            'pnp_complete_view (no route builds it and nothing under lib/ '
+            'constructs it) and speed_test_view (its only route is commented out '
+            'at lib/route/route_usp_dashboard.dart:223). The other three plus '
+            'router_assistant_view are #1380\'s — and note that '
+            'usp_sliver_dashboard_view is NOT routed and still not excludable, '
+            'because usp_dashboard_view.dart:64 constructs it and so a user '
+            'reaches it. Routed and reachable are different questions, which is '
+            'why the check that decided these two is named in the reason column.',
       );
+      for (final row
+          in roster.withDisposition(PageRosterDisposition.excluded)) {
+        expect(row.exclusionReason, contains('not reachable'),
+            reason: row.path);
+        expect(row.exclusionReason, contains('#1370'), reason: row.path);
+      }
+    });
+
+    test('the committed roster declares every count the parser can check', () {
+      // Closes the one place the header check is deliberately weaker than
+      // `# pages`: the parser skips an absent count, so deleting `# swept 2` from
+      // the fixture would disable its check in silence rather than fail. It is
+      // optional there for the synthetic rosters' sake and required here, which is
+      // where the count anyone reads actually lives.
+      final text = File(kPageRosterFixturePath).readAsStringSync();
+      for (final key in PageRoster.countedHeaderKeys) {
+        expect(
+          RegExp('^# $key \\d+\$', multiLine: true).hasMatch(text),
+          isTrue,
+          reason:
+              'test/fixtures/page_roster.tsv has no `# $key <n>` header, so '
+              'PageRoster._rejectStaleHeader silently checks nothing for it. '
+              'Every count in the header block has to be falsifiable by the rows '
+              'or it is decoration — and a count that only used to be checked is '
+              'worse than one that never was.',
+        );
+      }
+    });
+
+    test('no page was flipped to swept by the inventory run', () {
+      // #1370's own AC, kept as a repo fact. The run pumped 45 pages and 22 of
+      // them were at zero across all 208 cells; none of that is a sweep, because
+      // nothing about it is committed, declared in kPageSurfaceCases, or capable
+      // of failing a PR. `swept` means the gate covers the page.
+      expect(roster.sweptPaths, {
+        'lib/page/dhcp/views/usp_dhcp_detail_view.dart',
+        'lib/page/wifi_settings/views/usp_wifi_settings_view.dart',
+      });
     });
   });
 
@@ -426,14 +520,67 @@ void main() {
       );
     });
 
-    test('a queued row carrying a number is rejected', () {
+    test('a queued row may carry a measured number', () {
+      // #1382 rejected this, on the argument that a number on an unswept page was
+      // necessarily fabricated. #1370 falsified the premise by measuring 25 of
+      // them on §11.2's basis, and the figures are the ticket's whole output — so
+      // the rule now bites where the parser can still tell truth from fiction
+      // (below), and the file's `# basis` header carries the provenance the parser
+      // cannot check.
+      final parsed = PageRoster.parse(one('$good\tqueued\t22.5'));
+      expect(parsed.rows.single.disposition, PageRosterDisposition.queued);
+      expect(parsed.rows.single.msPerCell, 22.5);
+      expect(parsed.needsFixture, isEmpty);
+    });
+
+    test('a queued row with no number is the fixture-debt marker', () {
+      final parsed = PageRoster.parse(one('$good\tqueued\t-'));
+      expect(parsed.rows.single.msPerCell, isNull);
+      expect(parsed.needsFixture, [good],
+          reason: 'after #1370 a `-` on a queued row is a finding — no fixture '
+              'gets that view past its loader — and not merely a default');
+    });
+
+    test('an excluded row carrying a number is rejected', () {
       expect(
-        () => PageRoster.parse(one('$good\tqueued\t37.7')),
+        () => PageRoster.parse(one('$good\texcluded:not reachable\t7.6')),
         throwsA(isA<PageRosterFormatException>()),
         reason:
-            'this is the fabricated-measurement case stated as a parse rule: '
-            '37.7ms is the mean of two pages and describes neither',
+            'pnp_complete_view really does cost 7.6ms/cell — the run measured '
+            'it before deciding it — but nothing will ever pump it, so carrying '
+            'the figure would make the remaining-work total read high by one page '
+            'per exclusion',
       );
+    });
+
+    test('a header count that disagrees with the rows is rejected', () {
+      // Every counted header besides `# pages`, driven red one at a time rather
+      // than a sample of them: `needs_fixture` is the newest and the one whose
+      // predicate is not a plain disposition count, so a sample that skipped it
+      // would be a sample that skipped the fragile one. The row below is queued
+      // with no figure — one page, zero swept, one queued, zero excluded, zero
+      // measured, one needing a fixture — so every claim here is off by one.
+      for (final key
+          in PageRoster.countedHeaderKeys.where((k) => k != 'pages')) {
+        final wrong = '# $key 9';
+        expect(
+          () => PageRoster.parse('# pages 1\n$wrong\n$good\tqueued\t-'),
+          // The message has to name the header that disagreed, not merely throw:
+          // every mutation here is one line away from a well-formed roster, and a
+          // bare `throwsA` would pass just as happily on a parse error somewhere
+          // else in the synthetic file.
+          throwsA(isA<PageRosterFormatException>()
+              .having((e) => e.message, 'message', contains('# $key 9'))),
+          reason: '`$wrong` disagrees with the single row and parsed anyway',
+        );
+      }
+      // Absent is fine — the synthetic rosters above are two lines long, and
+      // demanding five more headers of them would make every mutation in `each
+      // assertion can fail` fail at the parser instead of at its assertion. What
+      // stops that tolerance from reaching the committed file is `the committed
+      // roster declares every count the parser can check`, above.
+      expect(
+          PageRoster.parse('# pages 1\n$good\tqueued\t-').rows, hasLength(1));
     });
 
     test('an unknown disposition is rejected', () {

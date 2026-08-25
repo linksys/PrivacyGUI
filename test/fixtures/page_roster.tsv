@@ -5,58 +5,62 @@
 #
 # rule a file named *_view.dart directly inside a views/ directory, at any depth under lib/page/
 # dispositions swept | queued | excluded:<reason>
-# ms_per_cell measured milliseconds per swept cell; `-` means NOT MEASURED, and only a swept row may carry a number
+# ms_per_cell measured milliseconds per cell of this page's 8 widths x 26 locales; `-` means NOT MEASURED
+# fixture_debt a `-` on a queued row is #1370's finding that no fixture gets that view past its loader yet
+# basis section 11.2's: an isolated --plain-name run's wall clock, minus the no-pump control, over 208 cells
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
-# doc doc/testing/overflow_gate_architecture.md section 11.5
+# doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
 # swept 2
-# queued 43
-# excluded 0
+# queued 41
+# measured 27
+# needs_fixture 16
+# excluded 2
 # columns path	disposition	ms_per_cell
 lib/page/admin/views/usp_admin_view.dart	queued	-
-lib/page/advanced_settings/views/usp_advanced_settings_view.dart	queued	-
-lib/page/ai_assistant/views/router_assistant_view.dart	queued	-
+lib/page/advanced_settings/views/usp_advanced_settings_view.dart	queued	16.9
+lib/page/ai_assistant/views/router_assistant_view.dart	queued	31.9
 lib/page/apps/views/usp_apps_view.dart	queued	-
 lib/page/dashboard/views/usp_dashboard_view.dart	queued	-
-lib/page/dashboard/views/usp_sliver_dashboard_view.dart	queued	-
-lib/page/devices/views/usp_device_detail_view.dart	queued	-
-lib/page/devices/views/usp_device_list_view.dart	queued	-
+lib/page/dashboard/views/usp_sliver_dashboard_view.dart	queued	315.4
+lib/page/devices/views/usp_device_detail_view.dart	queued	33.7
+lib/page/devices/views/usp_device_list_view.dart	queued	49.5
 lib/page/dhcp/views/usp_dhcp_detail_view.dart	swept	44.8
 lib/page/dmz/views/usp_dmz_view.dart	queued	-
 lib/page/firewall/views/usp_firewall_view.dart	queued	-
-lib/page/firmware_update/views/firmware_update_view.dart	queued	-
+lib/page/firmware_update/views/firmware_update_view.dart	queued	46.4
 lib/page/instant_privacy/views/instant_privacy_view.dart	queued	-
 lib/page/instant_safety/views/instant_safety_view.dart	queued	-
-lib/page/instant_setup/views/pnp_complete_view.dart	queued	-
-lib/page/instant_setup/views/pnp_entry_view.dart	queued	-
-lib/page/instant_setup/views/pnp_isp_settings_view.dart	queued	-
-lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	queued	-
-lib/page/instant_setup/views/pnp_no_internet_view.dart	queued	-
-lib/page/instant_setup/views/pnp_pppoe_view.dart	queued	-
+lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
+lib/page/instant_setup/views/pnp_entry_view.dart	queued	38.6
+lib/page/instant_setup/views/pnp_isp_settings_view.dart	queued	13.7
+lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	queued	13.2
+lib/page/instant_setup/views/pnp_no_internet_view.dart	queued	12.5
+lib/page/instant_setup/views/pnp_pppoe_view.dart	queued	16.3
 lib/page/instant_setup/views/pnp_setup_view.dart	queued	-
-lib/page/instant_setup/views/pnp_static_ip_view.dart	queued	-
-lib/page/instant_setup/views/pnp_unplug_modem_view.dart	queued	-
+lib/page/instant_setup/views/pnp_static_ip_view.dart	queued	36.5
+lib/page/instant_setup/views/pnp_unplug_modem_view.dart	queued	18.1
 lib/page/instant_setup/views/pnp_waiting_modem_view.dart	queued	-
 lib/page/internet_settings/views/usp_internet_settings_view.dart	queued	-
 lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	queued	-
-lib/page/landing/views/home_view.dart	queued	-
+lib/page/landing/views/home_view.dart	queued	13.8
 lib/page/local_network/views/usp_local_network_view.dart	queued	-
 lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	queued	-
-lib/page/login/views/local_reset_router_password_view.dart	queued	-
-lib/page/login/views/local_router_recovery_view.dart	queued	-
-lib/page/login/views/login_local_view.dart	queued	-
-lib/page/menu/views/usp_menu_view.dart	queued	-
-lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	queued	-
-lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	queued	-
+lib/page/login/views/local_reset_router_password_view.dart	queued	26.2
+lib/page/login/views/local_router_recovery_view.dart	queued	21.6
+lib/page/login/views/login_local_view.dart	queued	23.3
+lib/page/menu/views/usp_menu_view.dart	queued	40.1
+lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	queued	22.5
+lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	queued	13.3
 lib/page/static_routing/views/usp_static_routing_view.dart	queued	-
 lib/page/statistics/views/usp_statistics_view.dart	queued	-
-lib/page/support/views/usp_support_view.dart	queued	-
+lib/page/support/views/usp_support_view.dart	queued	41.0
 lib/page/system_log/views/usp_system_log_view.dart	queued	-
-lib/page/test_console/views/usp_test_console_view.dart	queued	-
-lib/page/topology/views/usp_node_detail_view.dart	queued	-
-lib/page/topology/views/usp_topology_view.dart	queued	-
-lib/page/unified_diagnostics/views/speed_test_view.dart	queued	-
-lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	queued	-
+lib/page/test_console/views/usp_test_console_view.dart	queued	53.4
+lib/page/topology/views/usp_node_detail_view.dart	queued	33.5
+lib/page/topology/views/usp_topology_view.dart	queued	28.7
+lib/page/unified_diagnostics/views/speed_test_view.dart	excluded:not reachable; its only route is commented out at lib/route/route_usp_dashboard.dart:223 (#1370)	-
+lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	queued	17.8
 lib/page/wifi_settings/views/usp_wifi_settings_view.dart	swept	29.2
