@@ -217,10 +217,15 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
               spec: const MascotSpec(
                 renderer: LinksysMascotRenderer(),
               ),
-              // Nothing to wrap now that the page is a sibling. The overlay
-              // still lays its own children out against the full shell, and an
-              // empty box does not hit-test, so taps reach the page below.
-              child: const SizedBox.shrink(),
+              // Nothing to wrap now that the page is a sibling; the overlay
+              // still lays its own children out against the full shell.
+              //
+              // An empty box would not hit-test anyway, but `StackFit.expand`
+              // inside the overlay stretches whatever is here across the whole
+              // shell — so the pass-through is structural rather than a
+              // property of `SizedBox`, and survives someone putting a real
+              // widget here later.
+              child: const IgnorePointer(child: SizedBox.shrink()),
             ),
           ),
       ],
