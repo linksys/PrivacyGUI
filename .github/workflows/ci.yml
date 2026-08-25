@@ -1,28 +1,11 @@
 name: PrivacyGUI CI/CD
 
 on:
+  # Only `pull_request`, and see the note at the bottom of this file for why: the
+  # golden jobs that `push`, `workflow_dispatch` and `schedule` existed for are
+  # not in this repo.
   pull_request:
     branches: [ "main", "dev-*" ]
-  # Every job below is gated on `pull_request`, so a push to main produced a
-  # workflow run with no jobs in it. Retired with STAGE B, which was the only job
-  # that ever ran on it.
-  # push:
-  #   branches: [ "main" ]
-  # Golden snapshot generation moved to the linksys/PrivacyGUI-golden-ci
-  # orchestration repo, which owns the baseline PNGs this repo cannot commit
-  # (.gitignore: test/**/goldens/*, snapshots/*). The manual trigger and its
-  # only choice went with it — see STAGE B below.
-  # workflow_dispatch:
-  #   inputs:
-  #     job:
-  #       description: 'Select job to run'
-  #       required: true
-  #       default: 'main_snapshot_baseline'
-  #       type: choice
-  #       options:
-  #         - main_snapshot_baseline
-  # schedule:
-  #   - cron: '0 0 * * *' # Nightly run at midnight UTC
 
 # Cancel previous runs if a new commit is pushed to the same branch
 concurrency:
@@ -31,10 +14,13 @@ concurrency:
 
 jobs:
   # ========================================================================
-  # STAGE A: Pull Request Checks (Fast Fail)
+  # Pull Request Checks (Fast Fail)
   # ------------------------------------------------------------------------
   # Focus: Logic, Syntax, Compilation
   # Trigger: Pull Request
+  #
+  # The only job in this repo. It was "STAGE A" of three until #1346 deleted the
+  # commented-out remains of the other two — see the note at the bottom.
   # ========================================================================
   pr_quality_check:
     name: 🛡️ Quality & Logic (PR)
@@ -88,101 +74,28 @@ jobs:
         run: flutter build web --release --no-pub
 
   # ========================================================================
-  # STAGE B: Main Branch Baseline (Retired)
+  # Golden / snapshot jobs are deliberately not in this repo
   # ------------------------------------------------------------------------
-  # Golden baselines are owned by the linksys/PrivacyGUI-golden-ci
-  # orchestration repo, which clones this repo and runs
-  # run_generate_loc_snapshots.sh / run_golden_verify.sh itself. Generating a
-  # baseline is a human judgement ("this rendering is correct — freeze it"), so
-  # it lives on a manual trigger there rather than firing on every push to main.
+  # They live in linksys/PrivacyGUI-golden-ci, which clones this repo and runs
+  # its scripts itself: run_generate_loc_snapshots.sh to generate baselines,
+  # run_golden_verify.sh to verify against them.
   #
-  # This job also never produced anything: it uploaded snapshots/, a path
-  # run_generate_loc_snapshots.sh does not write (the golden runner writes
-  # test/golden_test/**/goldens/ instead).
+  # The reason is ownership of the baseline PNGs. This repo gitignores them
+  # (.gitignore: test/**/goldens/*, snapshots/*), so a job here would have
+  # nothing to compare against — and blessing a rendering as correct is a human
+  # judgement, not something to fire on every push.
   #
-  # Retired rather than deleted so the SSH / env-template / pub-get preamble
-  # stays on hand if a golden job is ever brought back in-repo.
+  # Two commented-out jobs stood here until #1346. They are deleted rather than
+  # kept as a starting point, because neither ever worked:
+  #
+  #  * main_snapshot_baseline (push to main / workflow_dispatch) uploaded
+  #    snapshots/, a path run_generate_loc_snapshots.sh does not write — the
+  #    golden runner writes test/golden_test/**/goldens/. It produced empty
+  #    artifacts for as long as it ran.
+  #  * nightly_deep_check (schedule) ran `dart tools/run_screenshot_tests.dart`.
+  #    That script does still exist; what the job lacked was the baselines.
+  #
+  # Their push:, workflow_dispatch: and schedule: triggers went with them, which
+  # is why `on:` above lists only pull_request: every job here is gated on that
+  # event, so the other three produced workflow runs with no jobs in them.
   # ========================================================================
-  # main_snapshot_baseline:
-  #   name: 📸 Generate Baseline Snapshots (Main)
-  #   if: |
-  #     (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-  #     (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'main_snapshot_baseline')
-  #   # Note: If pixel-perfect consistency with local Mac dev is required,
-  #   # change this to 'macos-latest'. Keeping ubuntu-latest for cost efficiency.
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 45
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Setup Flutter
-  #       uses: subosito/flutter-action@v2
-  #       with:
-  #         channel: 'stable'
-  #         cache: true
-  #
-  #     # Setup SSH for private dependencies (Deploy Key approach)
-  #     - name: 🔑 Setup SSH for Private Deps
-  #       uses: webfactory/ssh-agent@v0.9.0
-  #       with:
-  #         ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
-  #
-  #     # Force git to use SSH instead of HTTPS
-  #     - name: 🔄 Configure Git to use SSH
-  #       run: git config --global url."git@github.com:".insteadOf "https://github.com/"
-  #
-  #     - name: 📋 Setup Environment File
-  #       run: cp assets/agents/env.template assets/agents/.env
-  #
-  #     - name: Install Dependencies
-  #       run: flutter pub get
-  #
-  #     # Generate new snapshots (No failure on diff, just generation)
-  #     - name: 📸 Generate Localization Snapshots
-  #       run: sh run_generate_loc_snapshots.sh
-  #
-  #     # Save the generated snapshots as artifacts
-  #     - name: 💾 Upload Snapshot Artifacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: privacygui-goldens-main
-  #         path: snapshots/
-  #         retention-days: 7
-
-  # ========================================================================
-  # STAGE C: Nightly Deep Check (Commented Out)
-  # ------------------------------------------------------------------------
-  # Focus: Full Golden Diff, Heavy Integration Tests
-  # Trigger: Schedule
-  # ========================================================================
-  # nightly_deep_check:
-  #   name: 🦉 Nightly Deep Check
-  #   if: github.event_name == 'schedule'
-  #   # Recommended: Use macOS for consistent font rendering with local dev
-  #   runs-on: macos-latest 
-  #   timeout-minutes: 60
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Setup Flutter
-  #       uses: subosito/flutter-action@v2
-  #       with:
-  #         channel: 'stable'
-  #         cache: true
-  #
-  #     - name: Install Dependencies
-  #       run: flutter pub get
-  #
-  #     # Run Full Screenshot Tests with Diff Verification
-  #     - name: 🖼️ Run Full Golden Tests
-  #       # Assuming tools/run_screenshot_tests.dart or similar is used here
-  #       run: dart tools/run_screenshot_tests.dart
-  #
-  #     - name: 🚨 Upload Failure Diffs
-  #       if: failure()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: golden-failures
-  #         path: failures/ # Adjust path based on your script output

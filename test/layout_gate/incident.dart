@@ -155,12 +155,10 @@ class OverflowIncident {
   /// The third check is [_isMachineIndependentPath], and it is why this is no
   /// longer a one-line getter — see that function for which paths reach here
   /// absolute and what committing one costs.
-  String? get site {
-    final path = file;
-    if (path == null || line == null) return null;
-    if (!_isMachineIndependentPath(path)) return null;
-    return '$path:$line';
-  }
+  ///
+  /// The rule itself lives in [overflowSiteKey], because the golden report has to
+  /// spell the key identically and does not have an incident to ask (#1346).
+  String? get site => overflowSiteKey(file, line);
 
   /// Matches one `"<n> pixels on the <side>"` clause.
   ///
@@ -395,6 +393,31 @@ final RegExp _objectIdPattern = RegExp(r'(?<=\w)#[0-9a-f]{5}\b');
 /// explains an overflow (`constraints:`, `size:`) is untouched.
 String stripOverflowObjectIds(String diagnosticsDump) =>
     diagnosticsDump.replaceAll(_objectIdPattern, '');
+
+/// The `file:line` string an overflow at [file]:[line] is keyed by, or null when
+/// that pair cannot be a key.
+///
+/// The rule of [OverflowIncident.site], lifted out of the getter so the two
+/// reports that have to agree on it share one definition rather than two copies
+/// (#1346). The gate reaches it through that getter; the golden report's loader
+/// (`test_scripts/overflow_details.dart`) calls this directly, because it holds
+/// decoded JSON and has no incident to ask. A second copy is the failure this is
+/// shaped to prevent: the gate would report a site the golden report spelled
+/// differently, and the join the key exists for would silently miss — the same
+/// class of bug #1339 removed from the parsing side.
+///
+/// Null in three cases, all of them "this incident cannot participate in the
+/// join", never "this incident does not count":
+///
+/// * no [file] — nothing resolved a creation location;
+/// * no [line] — a file without a line is not half a key; `'lib/x.dart:null'`
+///   would read as resolved and join to nothing;
+/// * a [file] that is not machine-independent — see [_isMachineIndependentPath].
+String? overflowSiteKey(String? file, int? line) {
+  if (file == null || line == null) return null;
+  if (!_isMachineIndependentPath(file)) return null;
+  return '$file:$line';
+}
 
 /// Whether [file] is a path every machine spells the same way.
 ///

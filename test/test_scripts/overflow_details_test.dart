@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_scripts/overflow_details.dart';
+import '../layout_gate/incident.dart';
 
 /// Guards the shared loader both golden reports use to render overflow detail.
 ///
@@ -11,6 +13,21 @@ import '../../test_scripts/overflow_details.dart';
 /// Flutter reports an overflow per RenderObject, so a list of N identical rows
 /// writes N identical records. Two report generators diverging on how they
 /// collapse them would show two different counts for the same run (#1197).
+///
+/// Since #1346 it also guards the loader's *normalisation*, which exists because
+/// `goldens/overflow_warnings.json` is not a reproducible file — see the
+/// `normalization` group.
+
+/// The real `goldens/overflow_warnings.json` checked in for #1339, decoded.
+///
+/// Used here as the normalisation input rather than a hand-written one because
+/// the property under test is about a file the runner actually produced: 16
+/// records over 4 locales, sharing 6 dumps between them, with `logIndex` values
+/// assigned in arrival order. Its provenance block forbids regenerating it.
+Map<String, dynamic> readCapturedReport() => jsonDecode(
+      File('test/fixtures/golden_overflow_warnings.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+
 void main() {
   late Directory tempDir;
 
@@ -283,9 +300,10 @@ void main() {
       );
     });
 
-    test('reuses the first log when a site collapses duplicate records', () {
+    test('offers one log for a site that collapsed duplicate records', () {
       // Sibling rows report the same overflow N times with near-identical
-      // dumps. The site is one site, so it gets one button.
+      // dumps. The site is one site, so it gets one button — see the
+      // `normalization` group for which of the N dumps ends up behind it.
       final report = loadReport([
         record(log: 'dump for row 1'),
         record(log: 'dump for row 2'),
@@ -293,7 +311,8 @@ void main() {
 
       final site = report.byGolden['admin-data-phone480-de']!.single;
       expect(site.occurrences, 2);
-      expect(report.logs[site.logIndex!], 'dump for row 1');
+      expect(report.logs, hasLength(1));
+      expect(site.logIndex, 0);
     });
 
     test('leaves logIndex null when the record carries no log', () {
@@ -462,6 +481,386 @@ void main() {
             'logs': ['orphaned']
           }).byGolden,
           isEmpty);
+    });
+  });
+
+  group('normalization', () {
+    // The loader's input is not a reproducible file, and this group is the
+    // consequence (#1346). `golden_runner`'s `_writeOverflowReport` appends
+    // read-modify-write, once per locale, so for unchanged code:
+    //
+    // * record order is suite-completion order, which varies between runs;
+    // * `logIndex` is an insertion counter, so a shift in order changes what an
+    //   index means.
+    //
+    // Neither is worth fixing in the runner — it is the advisory scout, and its
+    // early return is deliberate. So the report layer normalises at read time
+    // instead: resolve every `logIndex` back to its dump, key sites on their
+    // source location, and order both the rows and the dump table by content.
+    // What comes out is then a function of the run, not of the write order.
+    late Map<String, dynamic> captured;
+
+    setUpAll(() => captured = readCapturedReport());
+
+    /// Writes the runner's object form and loads it back.
+    OverflowReport loadJson(Map<String, dynamic> json) {
+      final file = File('${tempDir.path}/overflow_warnings.json');
+      file.writeAsStringSync(jsonEncode(json));
+      return loadOverflowReport(path: file.path);
+    }
+
+    /// Everything the loader hands its two report generators, as one string.
+    ///
+    /// Encoded rather than compared field by field because `jsonEncode` preserves
+    /// insertion order: this notices a reordered golden, a reordered site and a
+    /// shifted `logIndex` — the three things that actually move — where a set or
+    /// an unordered comparison would read all three as equal.
+    String canonical(OverflowReport report) => jsonEncode({
+          'byGolden': {
+            for (final entry in report.byGolden.entries)
+              entry.key: [for (final site in entry.value) site.toJson()],
+          },
+          'logs': report.logs,
+        });
+
+    /// Rewrites [json]'s records into [order] and reverses its dump table,
+    /// repointing every `logIndex` at the dump it named before.
+    ///
+    /// Both halves are needed. Reordering the records alone leaves each index
+    /// meaning what it meant, so a loader that simply trusted the numbers would
+    /// still look correct; reversing the table is what makes index 0 a different
+    /// dump. Together they are the two ways a second run of unchanged code
+    /// differs from the first.
+    Map<String, dynamic> permute(Map<String, dynamic> json, List<int> order) {
+      final records = List<Map<String, dynamic>>.from(json['records'] as List);
+      final logs = List<String>.from(json['logs'] as List);
+      return {
+        'records': [
+          for (final index in order)
+            {
+              ...records[index],
+              if (records[index]['logIndex'] != null)
+                'logIndex':
+                    logs.length - 1 - (records[index]['logIndex'] as int),
+            },
+        ],
+        'logs': logs.reversed.toList(),
+      };
+    }
+
+    test('a real report reads the same with its records reversed', () {
+      final order =
+          List.generate((captured['records'] as List).length, (i) => i);
+
+      expect(canonical(loadJson(permute(captured, order.reversed.toList()))),
+          canonical(loadJson(captured)));
+    });
+
+    test('...and the same under a shuffle that renumbers every logIndex', () {
+      final identity =
+          List.generate((captured['records'] as List).length, (i) => i);
+      // Seeded so a failure is reproducible, and checked so a shuffle that
+      // happened to return the input order cannot pass by asserting nothing.
+      final order = identity.toList()..shuffle(Random(1346));
+      expect(order, isNot(identity));
+
+      expect(canonical(loadJson(permute(captured, order))),
+          canonical(loadJson(captured)));
+    });
+
+    test('orders goldens by name rather than by first appearance', () {
+      // Stated absolutely, not only as "the same both ways": a symmetric
+      // comparison passes just as happily on two identically-wrong orders, and
+      // this order is what the dump table below is interned in.
+      final keys = loadJson(captured).byGolden.keys.toList();
+
+      expect(keys, keys.toList()..sort());
+    });
+
+    test('interns the dump table in the order the rows reference it', () {
+      // `logs` is addressed by `logIndex`, so its order is part of the report.
+      // Following the sorted rows is what makes it independent of the file's.
+      final report = loadJson(captured);
+      final referenced = [
+        for (final sites in report.byGolden.values)
+          for (final site in sites) site.logIndex,
+      ].whereType<int>().toList();
+
+      expect(referenced, isNotEmpty);
+      // First use of each dump ascends: a table built in row order can only hand
+      // out an index it has not handed out before.
+      var highest = -1;
+      for (final index in referenced) {
+        expect(index, lessThanOrEqualTo(highest + 1));
+        highest = max(highest, index);
+      }
+      expect(highest, report.logs.length - 1);
+    });
+
+    test('orders two sites that differ only in side', () {
+      // The comparator has to be total over surviving sites, not merely
+      // agreeable: `sort` leaves ties in input order, so any pair the key tells
+      // apart but the comparator does not is a row order that follows the file.
+      final records = [
+        record(side: 'right', pixels: '20'),
+        record(side: 'bottom', pixels: '20'),
+      ];
+
+      expect(
+        load(records)['admin-data-phone480-de']!.map((d) => d.side),
+        ['bottom', 'right'],
+      );
+      expect(canonical(loadReport(records.reversed.toList())),
+          canonical(loadReport(records)));
+    });
+
+    test('orders two sites that differ only in widget', () {
+      final records = [
+        record(widget: 'Row'),
+        record(widget: 'Column'),
+      ];
+
+      expect(
+        load(records)['admin-data-phone480-de']!.map((d) => d.widget),
+        ['Column', 'Row'],
+      );
+      expect(canonical(loadReport(records.reversed.toList())),
+          canonical(loadReport(records)));
+    });
+
+    test('orders two unresolved sites by the only text they have', () {
+      // With no location, the message is both what keeps them apart and the only
+      // thing left to order them by.
+      final records = [
+        {'golden': 'g', 'message': 'A RenderFlex overflowed right.'},
+        {'golden': 'g', 'message': 'A RenderFlex overflowed left.'},
+      ];
+
+      expect(
+        load(records)['g']!.map((d) => d.message),
+        ['A RenderFlex overflowed left.', 'A RenderFlex overflowed right.'],
+      );
+    });
+
+    test('picks the same one of a collapsed site\'s dumps either way round',
+        () {
+      // A site key drops nothing but the message once a location resolved, so N
+      // records collapsing into one row still carry N dumps — and only one of
+      // them gets the row's button. Choosing "whichever arrived first" made that
+      // a function of suite-completion order.
+      final records = [record(log: 'dump B'), record(log: 'dump A')];
+
+      expect(loadReport(records).logs, ['dump A']);
+      expect(loadReport(records.reversed.toList()).logs, ['dump A']);
+    });
+
+    test('prefers a dump over none when collapsing a site', () {
+      // Not arbitrary, unlike the choice between two dumps: for a row nothing
+      // else resolved the dump is the only lead there is, so a dumpless duplicate
+      // must not take the button away.
+      final records = [
+        record(log: 'the only diagnostic left'),
+        record(),
+      ];
+
+      for (final order in [records, records.reversed.toList()]) {
+        final report = loadReport(order);
+        expect(report.logs, ['the only diagnostic left']);
+        expect(report.byGolden['admin-data-phone480-de']!.single.logIndex, 0);
+      }
+    });
+
+    test('picks the same message for a site two records spell differently', () {
+      // The message is not part of the key once a location resolved: one
+      // overflow, two SDK spellings, one row. Which spelling the row shows still
+      // has to be the same every run.
+      final records = [
+        {...record(), 'message': 'B — overflowed by 74 pixels on the right.'},
+        {...record(), 'message': 'A — overflowed by 74 pixels on the right.'},
+      ];
+
+      for (final order in [records, records.reversed.toList()]) {
+        expect(
+          load(order)['admin-data-phone480-de']!.single.message,
+          startsWith('A —'),
+        );
+      }
+    });
+
+    test('orders a line the runner could not have written', () {
+      // Lines compare numerically so '30' precedes '200', which makes every
+      // non-numeric line compare equal to every other. A hand-edited file is the
+      // only source of one, and it must still come out in one fixed order.
+      final records = [
+        record(line: 'unknown'),
+        record(line: 'elsewhere'),
+      ];
+
+      expect(
+        load(records)['admin-data-phone480-de']!.map((d) => d.line),
+        ['elsewhere', 'unknown'],
+      );
+    });
+  });
+
+  group('hasOverflow', () {
+    // `combine_results.dart:178` sets a row's `hasOverflow` from
+    // `sites.isNotEmpty`, and that flag is the *only* thing golden CI's triage
+    // agent keys its overflow diff on (`triage-agent/collector.py:190-191` in
+    // linksys/PrivacyGUI-golden-ci, which never reads `overflowSites` at all).
+    //
+    // So collapsing may merge sites within a row and must never empty one: a row
+    // whose overflows all failed to resolve — the ~120 admin cases of #1197 —
+    // would otherwise leave the agent's set and be published as *fixed* while
+    // still overflowing (#1346).
+    test('a golden whose only site is unresolved still has one', () {
+      final details = load([
+        {'golden': 'g', 'message': 'A RenderFlex overflowed.'},
+      ]);
+
+      expect(details['g'], hasLength(1));
+      expect(details['g']!.single.file, isNull);
+      expect(details['g']!.single.site, isNull,
+          reason: 'the row carries no join key, which is exactly the case that '
+              'must not become no row');
+    });
+
+    test('a golden mixing an unresolved site with a resolved one keeps both',
+        () {
+      final details = load([
+        record(),
+        {
+          'golden': 'admin-data-phone480-de',
+          'message': 'A RenderFlex overflowed.'
+        },
+      ]);
+
+      expect(details['admin-data-phone480-de'], hasLength(2));
+    });
+
+    test('every golden named by a real record survives the collapse', () {
+      final captured = readCapturedReport();
+      final named = {
+        for (final entry in captured['records'] as List)
+          (entry as Map)['golden'] as String,
+      };
+      final file = File('${tempDir.path}/overflow_warnings.json');
+      file.writeAsStringSync(jsonEncode(captured));
+
+      final byGolden = loadOverflowReport(path: file.path).byGolden;
+
+      expect(byGolden.keys.toSet(), named);
+      expect(byGolden.values.map((sites) => sites.length),
+          everyElement(greaterThan(0)));
+    });
+  });
+
+  group('site', () {
+    // The whole point of #1346: the gate's rows and the scout's rows name the
+    // same overflow with the same string, so the two reports join with no manual
+    // reconciliation. Both spellings come from `overflowSiteKey` in
+    // `test/layout_gate/incident.dart`, and these tests are what would notice if
+    // one side grew its own copy.
+    test('spells a resolved location the way the gate spells it', () {
+      final detail = load([record()])['admin-data-phone480-de']!.single;
+
+      expect(detail.site,
+          'lib/page/firmware_update/views/firmware_update_card.dart:77');
+      expect(
+        detail.site,
+        OverflowIncident(
+          pixels: 74,
+          side: 'right',
+          message: 'A RenderFlex overflowed by 74 pixels on the right.',
+          file: detail.file,
+          line: int.parse(detail.line!),
+        ).site,
+      );
+    });
+
+    test('withholds a key when the location did not resolve', () {
+      expect(
+        load([
+          {'golden': 'g', 'message': 'A RenderFlex overflowed.'},
+        ])['g']!
+            .single
+            .site,
+        isNull,
+      );
+    });
+
+    test('withholds a key for an absolute path, as the gate does', () {
+      // A path the normaliser could not reduce carries someone's home directory
+      // or a runner's workspace, so it names a different site on every machine.
+      // The gate withholds it rather than committing it; a report that did not
+      // would offer a join key that joins to nothing.
+      final detail = load([
+        record(file: '/Users/someone/checkout/lib/page/admin/views/x.dart'),
+      ])['admin-data-phone480-de']!
+          .single;
+
+      expect(detail.site, isNull);
+      expect(detail.file, isNotNull,
+          reason: 'the path is still the only lead a person reading the row '
+              'has; it is the *key* that is withheld');
+    });
+
+    test('reaches the report JSON, so the join is a column and not a lookup',
+        () {
+      expect(
+          load([record()])['admin-data-phone480-de']!.single.toJson()['site'],
+          'lib/page/firmware_update/views/firmware_update_card.dart:77');
+    });
+
+    test('collapses a real report onto its source locations', () {
+      // The design claim, executable rather than asserted. Sixteen rows over
+      // four locales are two places in the source — the same two that #1368's 53
+      // rows were resolved to by hand on 2026-08-24, which is the measurement
+      // this ticket asks to be recorded.
+      final file = File('${tempDir.path}/overflow_warnings.json');
+      file.writeAsStringSync(jsonEncode(readCapturedReport()));
+
+      final rows = <String, int>{};
+      for (final sites in loadOverflowReport(path: file.path).byGolden.values) {
+        for (final site in sites) {
+          rows[site.site!] = (rows[site.site!] ?? 0) + 1;
+        }
+      }
+
+      expect(rows, {
+        'lib/page/firmware_update/views/firmware_update_card.dart:77': 12,
+        'lib/page/dashboard/views/usp_sliver_dashboard_view.dart:414': 4,
+      });
+    });
+  });
+
+  group('the script boundary', () {
+    test('the shared key definition stays runnable outside flutter test', () {
+      // #1346 gave `test_scripts/overflow_details.dart` an import into the test
+      // tree, which is the price of one definition of the join key. That import
+      // carries a constraint nothing else in this suite would notice being
+      // broken: golden CI runs the report generators with `dart run`, not
+      // `flutter test`, so a `package:flutter_test` import anywhere in their
+      // graph stops report generation in the other repo — while every test here
+      // keeps passing, because under `flutter test` that package resolves fine.
+      //
+      // Checked as a property of the file rather than by shelling out to `dart
+      // run`, so the failure names the cause instead of an exit code.
+      final source =
+          File('test/layout_gate/incident.dart').readAsLinesSync().where(
+                (line) =>
+                    line.startsWith('import ') || line.startsWith('export '),
+              );
+
+      expect(source, isNotEmpty,
+          reason: 'a file with no imports at all would mean this test is '
+              'reading the wrong path and checking nothing');
+      for (final line in source) {
+        expect(line, contains("'dart:"),
+            reason: 'incident.dart is reached by `dart run` through '
+                'test_scripts/overflow_details.dart, so it may only depend on '
+                'the SDK: $line');
+      }
     });
   });
 }

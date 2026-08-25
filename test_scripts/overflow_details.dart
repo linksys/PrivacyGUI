@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../test/layout_gate/incident.dart' show overflowSiteKey;
+
 /// Loads and collapses the overflow records written by the golden runner, so
 /// both report generators render the same detail from the same code (#1197).
 ///
@@ -10,6 +12,30 @@ import 'dart:io';
 /// collapsing them differently would show two different counts for one run —
 /// which is what happened before this file existed, where the gallery counted
 /// distinct goldens and the verify report counted raw records.
+///
+/// ## This loader normalises; it does not trust its input (#1346)
+///
+/// `goldens/overflow_warnings.json` is not a reproducible file.
+/// `golden_runner`'s `_writeOverflowReport` appends read-merge-append-write, once
+/// per locale, so two runs of unchanged code differ in two ways: record order is
+/// suite-completion order, and `logIndex` is an insertion counter, so a shift in
+/// order changes what an index means.
+///
+/// Neither is fixed upstream, deliberately. The runner is the advisory *scout* —
+/// it records and returns rather than failing, which is the right setting for it
+/// and the wrong one for the gate (`doc/testing/overflow_gate_architecture.md`
+/// §8). So the normalisation happens here, at read time: every `logIndex` is
+/// resolved back to its dump and re-interned, sites are keyed on their source
+/// location, and both the rows and the dump table are ordered by content. What
+/// leaves this file is then a function of the run, not of the write order — which
+/// is what lets the published report be diffed day over day.
+///
+/// One invariant constrains all of it: **collapsing must never empty a
+/// non-empty row.** `combine_results.dart` sets each row's `hasOverflow` from
+/// `sites.isNotEmpty`, and that flag alone is what golden CI's triage agent keys
+/// its overflow diff on (`triage-agent/collector.py:190-191`, which does not read
+/// [OverflowDetail] at all). Dropping a record whose location did not resolve
+/// would publish a still-overflowing golden as fixed.
 
 /// One overflow site within a golden, with the number of times it was reported.
 class OverflowDetail {
@@ -51,6 +77,20 @@ class OverflowDetail {
     this.logIndex,
   });
 
+  /// The `file:line` this row joins to the layout gate's rows on, or null when
+  /// this row cannot participate in that join (#1346).
+  ///
+  /// Delegated to [overflowSiteKey] rather than spelled here, so the two reports
+  /// cannot drift apart on what counts as a key: the gate's `site` column
+  /// (`test/util/overflow_baseline.dart`) and its `known_overflows.json` keys come
+  /// out of the same function. Its three null cases — no file, no line, and a
+  /// path that is not machine-independent — are documented there.
+  ///
+  /// A null is a row that has to be read rather than joined, not a row that does
+  /// not count. Nothing downstream may filter on this: see the library comment on
+  /// why an empty row is the one outcome collapsing must never produce.
+  String? get site => overflowSiteKey(file, int.tryParse(line ?? ''));
+
   /// A one-line summary for the report badge.
   ///
   /// Uses the file's basename to stay readable in a narrow badge; [file] keeps
@@ -71,11 +111,17 @@ class OverflowDetail {
   }
 
   /// Serializes the fields the report JavaScript reads.
+  ///
+  /// [site] is carried as a column rather than left to be recomputed from [file]
+  /// and [line] downstream: recomputing it is where a second spelling of the join
+  /// key would come from, and one of the consumers is JavaScript, which could not
+  /// call [overflowSiteKey] even if it wanted to.
   Map<String, dynamic> toJson() => {
         'label': label,
         'widget': widget,
         'file': file,
         'line': line,
+        'site': site,
         'pixels': pixels,
         'side': side,
         'message': message,
@@ -120,6 +166,97 @@ String _siteKey(Map<String, dynamic> record) => [
       // makes git treat this source file as binary.
     ].join('\u0000');
 
+/// One site mid-collapse: the record that represents it, that record's resolved
+/// diagnostics dump, and how many records have folded into it so far.
+typedef _Collapsed = ({
+  Map<String, dynamic> record,
+  String? dump,
+  int count,
+});
+
+/// Folds [found] into the site [collapsed] already stands for.
+///
+/// The count is the sum. Which record *represents* the site is then decided by
+/// content, because two records sharing a site key can still differ in what a
+/// reader sees: [_siteKey] drops the message once a location resolved — two
+/// spellings of one overflow are one site — and every record carries its own
+/// dump. Keeping "whichever arrived first" made the collapsed row's message, and
+/// the dump behind its button, a function of suite-completion order (#1346).
+///
+/// Never the count: a fold is one row in, one row out, so this cannot empty a
+/// non-empty golden. That is the invariant the library comment is about.
+_Collapsed _mergeSite(_Collapsed collapsed, _Collapsed found) {
+  final keep = _representsBetter(collapsed, found) ? collapsed : found;
+  return (
+    record: keep.record,
+    dump: keep.dump,
+    count: collapsed.count + found.count,
+  );
+}
+
+/// Whether [a] is the better of two records standing for one site.
+///
+/// Having a dump beats not having one — for a site nothing else resolved, it is
+/// the only lead there is, and one site gets one button. Beyond that the choice
+/// is arbitrary and only has to be the same choice every run, so it falls to the
+/// smaller dump and then the smaller message.
+bool _representsBetter(_Collapsed a, _Collapsed b) {
+  if ((a.dump == null) != (b.dump == null)) return a.dump != null;
+  final byDump = _compareText(a.dump, b.dump);
+  if (byDump != 0) return byDump < 0;
+  return _compareText(a.record['message'], b.record['message']) <= 0;
+}
+
+/// Orders two collapsed sites of one golden, so their order is a function of
+/// what they are rather than of when they were written (#1346).
+///
+/// Total over anything [_siteKey] tells apart, and that is the requirement rather
+/// than a nicety: `List.sort` leaves ties in input order, so every pair the key
+/// separates but the comparator does not is a pair whose order still follows the
+/// file. Each of the key's components therefore appears here — file, line,
+/// amount, side, widget, and the message the key falls back to when nothing
+/// resolved.
+///
+/// File, line then amount because that is the order a person reads a report in:
+/// which file, where in it, how bad. The rest are tie-breakers and their relative
+/// order carries no meaning.
+int _compareSites(Map<String, dynamic> a, Map<String, dynamic> b) {
+  var result = _compareText(a['file'], b['file']);
+  if (result != 0) return result;
+  result = _compareNumeric(a['line'], b['line']);
+  if (result != 0) return result;
+  result = _compareNumeric(a['pixels'], b['pixels']);
+  if (result != 0) return result;
+  result = _compareText(a['side'], b['side']);
+  if (result != 0) return result;
+  result = _compareText(a['widget'], b['widget']);
+  if (result != 0) return result;
+  return _compareText(a['message'], b['message']);
+}
+
+/// Compares two optional string fields, treating anything absent as empty.
+///
+/// Absent sorts first, which collects the rows that resolved nothing at the top
+/// of their golden rather than scattering them through it — those are the rows
+/// whose only lead is the raw dump, so they are the ones worth finding.
+int _compareText(Object? a, Object? b) =>
+    (a is String ? a : '').compareTo(b is String ? b : '');
+
+/// Compares two numeric-looking fields by value, falling back to their text.
+///
+/// By value because '30' must precede '200' rather than sort as text. The
+/// fallback is what keeps the order total: every parse failure collapses to 0, so
+/// without it two unparseable values would tie. The runner writes only digits,
+/// but a hand-edited file is exactly the input this loader promises not to
+/// misread.
+int _compareNumeric(Object? a, Object? b) {
+  final textA = a is String ? a : '';
+  final textB = b is String ? b : '';
+  final byValue =
+      (double.tryParse(textA) ?? 0).compareTo(double.tryParse(textB) ?? 0);
+  return byValue != 0 ? byValue : textA.compareTo(textB);
+}
+
 /// Reads `goldens/overflow_warnings.json` into collapsed sites plus the table
 /// of distinct raw dumps they point into.
 ///
@@ -159,9 +296,29 @@ OverflowReport _parseReport(Object? decoded) {
     writtenLogs = const [];
   }
 
-  // golden name -> site key -> (first record seen, count)
-  final grouped =
-      <String, Map<String, ({Map<String, dynamic> record, int count})>>{};
+  /// Resolves a record's diagnostics dump, from either file format.
+  ///
+  /// An index outside the table degrades to "no dump": a truncated or
+  /// hand-edited file must not take the generator down. Read as [num] rather
+  /// than [int] so a re-serialized file carrying `1.0` still resolves.
+  ///
+  /// Resolving to the text here, instead of carrying the number downstream, is
+  /// the first half of the normalisation. `logIndex` counts insertions into a
+  /// file that is appended to once per locale, so the number means nothing apart
+  /// from the table it was written beside — and a report that passed it through
+  /// would inherit that (#1346).
+  String? dumpOf(Map<String, dynamic> record) {
+    final index = (record['logIndex'] as num?)?.toInt();
+    final log = index == null
+        ? record['log']
+        : (index >= 0 && index < writtenLogs.length
+            ? writtenLogs[index]
+            : null);
+    return log is String && log.isNotEmpty ? log : null;
+  }
+
+  // golden name -> site key -> the collapsed site
+  final grouped = <String, Map<String, _Collapsed>>{};
 
   for (final entry in list) {
     if (entry is! Map) continue;
@@ -172,72 +329,48 @@ OverflowReport _parseReport(Object? decoded) {
     final sites = grouped.putIfAbsent(golden, () => {});
     final key = _siteKey(record);
     final existing = sites[key];
-    sites[key] = existing == null
-        ? (record: record, count: 1)
-        : (record: existing.record, count: existing.count + 1);
+    final found = (record: record, dump: dumpOf(record), count: 1);
+    sites[key] = existing == null ? found : _mergeSite(existing, found);
   }
 
-  // Rebuilt rather than passed through, so the report carries only the logs its
-  // records reference. Appending across suites can leave an orphaned entry, and
-  // a flat-list file has no table at all.
+  // Rebuilt rather than passed through, so the report carries only the dumps its
+  // rows reference, in the order they reference them. Appending across suites can
+  // leave an orphaned entry, and a flat-list file has no table at all.
   final logs = <String>[];
   final logIndexes = <String, int>{};
 
-  /// Interns [log] and returns its index, or null when there is nothing to show.
-  int? indexOfLog(Object? log) {
-    if (log is! String || log.isEmpty) return null;
-    return logIndexes.putIfAbsent(log, () {
-      logs.add(log);
+  /// Interns [dump] and returns its index, or null when there is nothing to show.
+  int? indexOfDump(String? dump) {
+    if (dump == null) return null;
+    return logIndexes.putIfAbsent(dump, () {
+      logs.add(dump);
       return logs.length - 1;
     });
   }
 
-  /// Resolves a record's log, from either file format.
-  ///
-  /// An index outside the table degrades to "no log": a truncated or
-  /// hand-edited file must not take the generator down. Read as [num] rather
-  /// than [int] so a re-serialized file carrying `1.0` still resolves.
-  int? logForRecord(Map<String, dynamic> record) {
-    final index = (record['logIndex'] as num?)?.toInt();
-    if (index != null) {
-      return index >= 0 && index < writtenLogs.length
-          ? indexOfLog(writtenLogs[index])
-          : null;
-    }
-    return indexOfLog(record['log']);
+  // Goldens in name order, sites in site order, and only then the dumps interned
+  // — in that sequence, because each step is what makes the next reproducible.
+  // `logs` is addressed by index, so interning in arrival order would leave the
+  // numbering, and every `logIndex` naming it, a function of exactly the write
+  // order this file exists to normalise away (#1346).
+  final byGolden = <String, List<OverflowDetail>>{};
+  for (final golden in grouped.keys.toList()..sort()) {
+    final sites = grouped[golden]!.values.toList()
+      ..sort((a, b) => _compareSites(a.record, b.record));
+    byGolden[golden] = [
+      for (final site in sites)
+        OverflowDetail(
+          widget: site.record['widget'] as String?,
+          file: site.record['file'] as String?,
+          line: site.record['line'] as String?,
+          pixels: site.record['pixels'] as String?,
+          side: site.record['side'] as String?,
+          message: site.record['message'] as String? ?? '',
+          occurrences: site.count,
+          logIndex: indexOfDump(site.dump),
+        ),
+    ];
   }
-
-  final byGolden = grouped.map((golden, sites) {
-    final details = sites.values
-        .map((site) => OverflowDetail(
-              widget: site.record['widget'] as String?,
-              file: site.record['file'] as String?,
-              line: site.record['line'] as String?,
-              pixels: site.record['pixels'] as String?,
-              side: site.record['side'] as String?,
-              message: site.record['message'] as String? ?? '',
-              occurrences: site.count,
-              // The first record's dump represents the collapsed site: sibling
-              // rows differ only in their own geometry, and one site gets one
-              // button.
-              logIndex: logForRecord(site.record),
-            ))
-        .toList();
-
-    // Sort so a report regenerated from the same data reads the same way. Line
-    // numbers compare numerically — '30' must precede '200'.
-    details.sort((a, b) {
-      final byFile = (a.file ?? '').compareTo(b.file ?? '');
-      if (byFile != 0) return byFile;
-      final byLine = (int.tryParse(a.line ?? '') ?? 0)
-          .compareTo(int.tryParse(b.line ?? '') ?? 0);
-      if (byLine != 0) return byLine;
-      return (double.tryParse(a.pixels ?? '') ?? 0)
-          .compareTo(double.tryParse(b.pixels ?? '') ?? 0);
-    });
-
-    return MapEntry(golden, details);
-  });
 
   return OverflowReport(byGolden: byGolden, logs: logs);
 }

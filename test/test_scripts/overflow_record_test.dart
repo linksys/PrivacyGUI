@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../test_scripts/overflow_details.dart';
 import '../golden_test/golden_framework/overflow_record.dart';
 import '../layout_gate/incident.dart';
 
@@ -338,6 +339,91 @@ void main() {
           log,
         );
       }
+    });
+  });
+
+  group('the join to the gate', () {
+    // #1346's end-to-end criterion. The guard keys its ratchet and its baselines
+    // on `file:line` (`OverflowIncident.site`); the scout now publishes the same
+    // string in the same spelling, so a row of one report names a row of the other
+    // with no manual reconciliation — which is the work #1368 did by hand for 53
+    // rows on 2026-08-24.
+    //
+    // Demonstrated from one real `FlutterErrorDetails` and carried through the
+    // whole report layer rather than compared as two strings: that is what makes
+    // a divergence in either pipeline show up here as two keys for one overflow.
+    // Both sides read the same location out of the same dump today, and this is
+    // what would notice if one of them stopped.
+    late Directory tempDir;
+
+    setUp(() =>
+        tempDir = Directory.systemTemp.createTempSync('overflow_join_test'));
+
+    tearDown(() => tempDir.deleteSync(recursive: true));
+
+    testWidgets('one overflow reaches both reports under the same key', (
+      tester,
+    ) async {
+      FlutterErrorDetails? captured;
+      final original = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('overflowed')) {
+          captured ??= details;
+          return;
+        }
+        original?.call(details);
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Column(
+            children: const [
+              SizedBox(
+                width: 100,
+                child: Row(children: [SizedBox(width: 150, height: 10)]),
+              ),
+            ],
+          ),
+        ),
+      );
+      FlutterError.onError = original;
+
+      final details = captured!;
+      final runDirectory = Directory.current.path;
+
+      // The guard's key, as the ratchet and the baselines spell it.
+      final gate = OverflowIncident.parse(
+        details.exceptionAsString(),
+        fullLog: details.toDiagnosticsNode().toStringDeep(),
+        runDirectory: runDirectory,
+      ).site;
+
+      // The scout's key, through every layer that stands between the error and a
+      // published row: the record the golden runner writes, the file it writes it
+      // into, and the loader both report generators read it back with.
+      final report = File('${tempDir.path}/overflow_warnings.json');
+      report.writeAsStringSync(jsonEncode({
+        'records': [
+          buildOverflowRecord(
+            goldenName: 'demo-data-phone480-fr',
+            details: details,
+            runDirectory: runDirectory,
+          ),
+        ],
+      }));
+      final scout = loadOverflowReport(path: report.path)
+          .byGolden['demo-data-phone480-fr']!
+          .single;
+
+      expect(gate, isNotNull,
+          reason: 'a null on the guard side would make the comparison below '
+              'pass on two absent keys, which is the one way this test could '
+              'read green while joining nothing');
+      expect(scout.site, gate);
+      expect(scout.site,
+          startsWith('test/test_scripts/overflow_record_test.dart:'),
+          reason: 'the shared key has to be the repo-relative path both '
+              'reports are read against, not a machine-local one');
     });
   });
 }
