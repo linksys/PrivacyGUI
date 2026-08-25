@@ -289,6 +289,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.smartMode2:
       break;
+    case JNAPService.smartQoS:
+      break;
     case JNAPService.selectableWAN:
       break;
     case JNAPService.storage:
@@ -520,6 +522,14 @@ void initBetterActions() {
       _JNAPActionValue.runHealthCheck.value;
   _betterActionMap[JNAPAction.stopHealthCheck] =
       _JNAPActionValue.stopHealthCheck.value;
+  _betterActionMap[JNAPAction.getSmartQoSSettings] =
+      _JNAPActionValue.getSmartQoSSettings.value;
+  _betterActionMap[JNAPAction.setSmartQoSSettings] =
+      _JNAPActionValue.setSmartQoSSettings.value;
+  _betterActionMap[JNAPAction.getSmartQoSRecommendation] =
+      _JNAPActionValue.getSmartQoSRecommendation.value;
+  _betterActionMap[JNAPAction.storeSmartQoSSpeedTestResult] =
+      _JNAPActionValue.storeSmartQoSSpeedTestResult.value;
   _betterActionMap[JNAPAction.getLocalTime] =
       _JNAPActionValue.getLocalTime.value;
   _betterActionMap[JNAPAction.getTimeSettings] =

@@ -146,6 +146,7 @@ enum JNAPService {
   setup11(value: 'http://linksys.com/jnap/nodes/setup/Setup11'),
   smartMode(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode'),
   smartMode2(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode2'),
+  smartQoS(value: 'http://linksys.com/jnap/smartqos/SmartQoS'),
   selectableWAN(value: 'http://linksys.com/jnap/nodes/setup/SelectableWAN'),
   // TODO - Checking for the reference
   storage(value: 'http://linksys.com/jnap/storage/Storage'),
