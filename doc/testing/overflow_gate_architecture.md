@@ -193,8 +193,8 @@ and after that change, which is how the +3 / +25 they had already drifted was fo
 | **Page sweep (one file, new at #1349)** | **19** | 416 + 52 guard pumps | 15s (**20s** wall) | **33–38ms** |
 | The five overflow sweeps (5 files, named) | **296** (277 pre-#1349, 273 pre-merge) | 4,032 rows † | 25s (**32s** wall) | — |
 | The same five via `--tags overflow` | **296** | 4,032 rows † | 1m48s (**2m03s** wall) | — |
-| Whole `layout-gate` family (47 files) | **1,476** (1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 1m58s / **2m07s** wall (2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,463** (5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m08s / **3m13s** wall (2m49s pre-#1382, 2m52s pre-#1339) | — |
+| Whole `layout-gate` family (47 files) | **1,482** (1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m10s / **2m19s** wall (2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,469** (5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m51s / **2m58s** wall (3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -280,6 +280,32 @@ the change, so the noise floor is ±14s — an order of magnitude more than the 
 oracle. Read this row's test count; the clock column is context. `--tags overflow`
 stays **296**, all five baselines stay byte-identical, and no cell count moves: the
 roster records what the gate covers and pumps nothing.
+
+**#1370 moved both rows by the same +6, and the first figure published for it was
+wrong** (measured 2026-08-25). 1,476 → **1,482** and 5,463 → **5,469**, and it
+reconciles by declaration:
+
+| File | Test declarations | `layout-gate` | Suite |
+|---|---|---|---|
+| `test/layout_gate/page_roster_test.dart` | 33 → **39**, i.e. +9 −3 (three of the removals are renames of a narrowed rule, six are new) | **+6** | **+6** |
+| `test/layout_gate/families/page_surface_family_test.dart` | 12 → **12**: one test renamed and its assertion changed from golden CI's "two coordinates" to `containsAll([320, 480, 1241, 1280])` | +0 | +0 |
+| | | **+6** | **+6** |
+
+Both rows moving by the same +6 is the expected shape again, for the same reason as
+#1382: both changed files carry `layout-gate` and neither is under
+`test/test_scripts/`. **The reason this paragraph exists is the error, not the
+delta.** The gate figure first written for #1370 was **1,476** — #1382's
+post-landing number, carried forward on the assumption that an inventory ticket
+whose output is a `.tsv` and a doc could not have added tests. It added six, in the
+parser oracle, because narrowing a rule needs more cases than the rule it replaced.
+This is the same lesson as the +3 / +25 drift above, one ticket later and with the
+stale number authored here rather than inherited: **re-measure both rows in the
+session that edits this table.** The suite row was measured **twice in the same
+session and reproduced 5,469 both times** (test clock 2m51s and 2m52s, wall 2m58s) —
+which is the check worth copying, because a count that reproduces is the only kind
+that can be reconciled against a declaration diff. `--tags overflow` stays **296**, all five baselines
+stay byte-identical, and no cell count moves — #1370's 9,360-cell sweep ran on a
+scratch branch that is deleted by design (§11.6).
 
 **The whole table moved at #1343, and only the test-count column.** The pumped
 cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917
