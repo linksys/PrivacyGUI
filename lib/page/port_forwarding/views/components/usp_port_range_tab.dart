@@ -29,8 +29,14 @@ class UspPortRangeTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(
-                '${loc(context).portRangeForwarding} (${rules.length})'),
+            // Same unconstrained header the page sweep caught on
+            // `usp_single_port_tab.dart:30` — see the comment there. This tab sits
+            // behind a `TabController` the sweep does not tap, so the constraint is
+            // here by inspection rather than by a red cell.
+            Expanded(
+              child: AppText.titleMedium(
+                  '${loc(context).portRangeForwarding} (${rules.length})'),
+            ),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               identifier: 'pf-add-port-range',

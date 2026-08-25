@@ -30,8 +30,18 @@ class UspSinglePortTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(
-                '${loc(context).singlePortForwarding} (${rules.length})'),
+            // `Expanded`, not a bare `AppText`: the title sized itself to its
+            // natural width and pushed the add button off the right edge in 9 of
+            // the page sweep's 208 cells — all at the 320px product floor, worst
+            // `pl` +70px, and `pt_PT` `ru` `pt` `fr` `da` `fi` `nb` `de` behind it
+            // (#1370's finding, fixed for #1377). The gate's page sweep measures
+            // this tab only; `usp_port_range_tab` and `usp_port_triggering_tab`
+            // carry the same header shape behind a `TabController` the sweep does
+            // not tap, and were given the same constraint by inspection.
+            Expanded(
+              child: AppText.titleMedium(
+                  '${loc(context).singlePortForwarding} (${rules.length})'),
+            ),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               identifier: 'pf-add-single-port',
