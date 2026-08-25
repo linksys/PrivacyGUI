@@ -370,14 +370,23 @@ void main() {
     // boot every one of them has that frame.
     //
     // So the variants are pumped directly, one test each: the input is a
-    // [CardSkeleton] under a popup scope, which is a fact about six widgets and
+    // [CardSkeleton] under a popup scope, which is a fact about five widgets and
     // has nothing to do with locale or card data. The two card cases above are
     // what prove production puts the skeleton under that scope at all.
+    //
+    // `stats` was a sixth entry until #1367. It never belonged: `stats_panel` is
+    // the one widget with no popup path at all (`cardsWithoutPopupForm`) because
+    // its `minColumns: 6` floors its narrowest realization above [kPopupBelow],
+    // so no width the grid produces put that skeleton under a popup scope — this
+    // case was measuring a box production never gave it. #1367 then replaced the
+    // row-wide skeleton with a per-tile one and left `CardSkeleton.stats()` with
+    // no production callers, so the variant is gone and this entry with it. The
+    // panel's own loading state is now swept at the widths it really gets, in the
+    // group below.
     //
     // `rows` is the largest count production asks each variant for, since the
     // pre-fix overflow grew with it.
     const variants = <String, CardSkeleton>{
-      'stats': CardSkeleton.stats(),
       'info': CardSkeleton.info(rows: 5),
       'list': CardSkeleton.list(rows: 4),
       'chart': CardSkeleton.chart(),

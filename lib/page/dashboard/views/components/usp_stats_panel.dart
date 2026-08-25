@@ -95,9 +95,12 @@ class UspStatsPanel extends ConsumerWidget {
               final ptCount = ptAsync.requireValue.ruleModels.length;
               return '${pfCount + ptCount}';
             },
+            // Only the side that actually failed is re-fetched. Invalidating
+            // both spent a request re-fetching a healthy provider, and every
+            // request here queues at the same single-threaded bridge.
             onRetry: () {
-              ref.invalidate(portForwardingDataProvider);
-              ref.invalidate(portTriggeringDataProvider);
+              if (pfAsync.hasError) ref.invalidate(portForwardingDataProvider);
+              if (ptAsync.hasError) ref.invalidate(portTriggeringDataProvider);
             },
           ),
         ),
@@ -109,18 +112,48 @@ class UspStatsPanel extends ConsumerWidget {
   /// shown, a spinner is shown, or an error affordance is shown. Unlike
   /// `valueOrNull`, this keeps error distinct from loading so a failed provider
   /// no longer looks like it is still loading (#1367).
+  ///
+  /// [AsyncValue.hasValue] is tested *first*, and the order is the whole point:
+  /// riverpod's `AsyncError.copyWithPrevious` carries the previous value over
+  /// (`riverpod/lib/src/common.dart`), so "had data, then a refresh failed" is a
+  /// state where `hasValue` and `hasError` are both true. That state is the
+  /// normal refresh path, not an edge case — `devicesDataProvider` re-fetches on
+  /// every SSE `connectedDevices` change, `DashboardOrchestrator.refreshAll()`
+  /// invalidates every domain provider, and `_scheduleProviderRetry()` re-runs
+  /// failed ones on a backoff. Checking `hasError` first meant a transient
+  /// bridge 503 wiped numbers the tile still held. A stale figure beats a blank
+  /// one; the error affordance is for a first load that has no value to show.
+  ///
+  /// [AsyncValue.isLoading] is tested before [AsyncValue.hasError] for the
+  /// second half of the same problem: `ref.invalidate` on a provider whose state
+  /// is an error emits `AsyncError(isLoading: true)`, not `AsyncLoading`, so with
+  /// `hasError` first the tile stayed on the error glyph for the whole retry and
+  /// the loading branch was unreachable from a tap. Tapping produced a
+  /// byte-identical frame — no acknowledgement, and a user who cannot tell the
+  /// tap registered taps again, each one another request at the single-threaded
+  /// bridge. Reading in-flight as loading both answers the tap and removes the
+  /// tap target while the retry runs, which is the in-flight guard.
   _CellStatus _statusOf(AsyncValue<Object?> async) {
-    if (async.hasError) return _CellStatus.error;
     if (async.hasValue) return _CellStatus.data;
+    if (async.isLoading) return _CellStatus.loading;
+    if (async.hasError) return _CellStatus.error;
     return _CellStatus.loading;
   }
 
-  /// Combined status for a tile backed by two providers (Port Rules). Error
-  /// wins over loading, which wins over data.
+  /// Combined status for a tile backed by two providers (Port Rules).
+  ///
+  /// Data wins, for the reason [_statusOf] gives: this tile's value is the sum
+  /// of both rule counts, so it can be rendered as soon as both sides have a
+  /// value — stale or not. Otherwise the two sides are collapsed through
+  /// [_statusOf] so each carries the same in-flight and stale-value rules, and
+  /// the worse of the two decides: a side still loading (including one retrying)
+  /// keeps the tile on the skeleton, and only a side that has failed with nothing
+  /// to show puts it on the error affordance.
   _CellStatus _combine(AsyncValue<Object?> a, AsyncValue<Object?> b) {
-    if (a.hasError || b.hasError) return _CellStatus.error;
     if (a.hasValue && b.hasValue) return _CellStatus.data;
-    return _CellStatus.loading;
+    final statuses = {_statusOf(a), _statusOf(b)};
+    if (statuses.contains(_CellStatus.loading)) return _CellStatus.loading;
+    return _CellStatus.error;
   }
 }
 
@@ -155,9 +188,26 @@ class _StatCell extends StatelessWidget {
       // Keep the title mounted and turn the value into a tappable error glyph
       // that re-invalidates just this tile's provider — so the user can tell
       // which widget failed and recover it without a full page reload.
+      //
+      // `excludeSemantics: true` drops the child's own nodes so the announcement
+      // is this label alone. Left on, the node's text concatenated with the tile's
+      // ("Router, Retry / — / Router") and read the title out twice. Excluding
+      // them also drops the tap action [StatTile]'s `InkWell` contributes, which
+      // is why `onTap` is declared here too: without it the node reads as a
+      // button that assistive technology cannot activate, and a pointer tap
+      // would be the only way in.
+      //
+      // Declaring `onTap` also keeps the action *here* rather than letting the
+      // dashboard grid item's `Semantics(container: true, ...)` absorb it — the
+      // failure #1301 documents, where the absorbed node's rect is the whole card
+      // so a click anywhere on it fires the action. No `container: true` is needed
+      // for that: an annotation carrying a label and an action already forms its
+      // own node, verified against the real grid boundary in the panel's tests.
       _CellStatus.error => Semantics(
           button: true,
+          excludeSemantics: true,
           label: '$label, ${loc(context).retry}',
+          onTap: onRetry,
           child: StatTile(
             icon: icon,
             value: '—',
