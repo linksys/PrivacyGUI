@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -20,8 +20,8 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart
 // file needs the client model's. Only `AppLoader` is wanted from ui_kit here.
 import 'package:ui_kit_library/ui_kit.dart' hide ConnectionType;
 
-import '../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../golden_test/golden_framework/mocks/mock_statistics.dart';
+import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../mocks/provider_overrides/mock_statistics.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/dashboard_card_probe.dart';
 import '../../util/overflow_probe.dart';
@@ -313,9 +313,11 @@ void main() {
     // Overflows are not collected here, so any the fixture caused would fail the
     // test as an unhandled Flutter error — which is the behaviour wanted.
     final surface = Size(narrowest.screenWidth, height);
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    // Through the shared primitive since #1340. This suite collects no
+    // overflows, but it sizes a viewport the same way the sweeps do, and it had
+    // no reset either — the card-sized surface stayed installed for the next
+    // parity case.
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(buildDashboardCardApp(
       cardId: cardId,
       locale: locale,

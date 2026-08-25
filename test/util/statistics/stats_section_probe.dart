@@ -18,8 +18,10 @@ import '../overflow_probe.dart';
 /// deep and `sectionWidthFor` was character-identical in two of them, so the rule
 /// of three was met and #1270 folded them here.
 ///
-/// The split against `overflow_probe.dart`: that file owns the *mechanism* (installing
-/// the collector, parsing Flutter's report, settling). This file owns the
+/// The split against the gate's measurement spine (`test/layout_gate/`, reached
+/// through `overflow_probe.dart`'s re-export): that layer owns the *mechanism*
+/// (installing the collector, parsing Flutter's report, settling, and since
+/// #1340 setting and restoring the test surface). This file owns the
 /// Statistics page's *geometry and scaffolding* — the margin arithmetic, the
 /// theme+locale wiring `lib/app.dart` does, and the one-pump rule. It sits beside
 /// `test/util/dashboard/dashboard_card_probe.dart`, which does the same job for
@@ -142,9 +144,11 @@ Future<List<OverflowIncident>> probeSectionOverflow(
   final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
 
   return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    // Through the shared primitive since #1340, like every other measuring path
+    // in the gate. This one had no reset at all before that: a section-sized
+    // viewport outlived the test that asked for it, so whatever ran next in the
+    // same file measured at this width without saying so.
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,

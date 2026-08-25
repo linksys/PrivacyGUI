@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_v
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import '../../golden_test/golden_framework/mocks/mock_common.dart';
+import '../../mocks/provider_overrides/mock_common.dart';
 
 /// Verifies that the Advanced Settings entry cards carry the stable E2E
 /// identifiers added in issue #1218 and that each is locatable via

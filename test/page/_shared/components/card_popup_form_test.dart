@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -152,13 +152,16 @@ Future<List<OverflowIncident>> _pump(
 }) {
   final surface = Size(screenWidth, _kScreenHeight);
   return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() async {
-      tester.view.reset();
-      await tester.binding.setSurfaceSize(null);
-    });
+    // Through the shared primitive since #1340. This file already reset, so the
+    // port buys one thing rather than the leak fix the other call sites got:
+    // `_pump` runs several times in some tests and registered a teardown on each
+    // call, so the restore piled up once per pump to do work that is idempotent
+    // after the first. `setLayoutSurface` registers once per test.
+    //
+    // `tester.view.reset()` became the two targeted resets. Same effect here —
+    // this file only ever set `physicalSize` and `devicePixelRatio`, which is
+    // all the targeted pair puts back.
+    await setLayoutSurface(tester, surface);
 
     await tester.pumpWidget(
       ProviderScope(

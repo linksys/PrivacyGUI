@@ -1,3 +1,23 @@
+// Composed scenes, not builders — see `test/mocks/test_data/` one directory up.
+//
+// The two are different kinds of fixture and used to be different kinds of file
+// with the same name: `wifi_settings_test_data.dart` existed here and there with
+// different contents, and `devices_test_data.dart` did too. CLAUDE.md documents
+// exactly one location for test data, so an author autocompleting the wrong import
+// got a fixture that did not match the provider overrides it was paired with —
+// which for a page- or card-family cell renders `AppLoader` instead of the page,
+// the failure `PageSurfaceCase.requires` exists to catch and which reads as green
+// in any suite that does not use it.
+//
+// The split, as the names now say it:
+//
+// * `test_data/<feature>_test_data.dart` — a class of static factory methods over
+//   USP codegen models, parameterised with defaults (constitution Article I
+//   §1.6.2). What a unit test calls to build the one object it is about.
+// * `test_data/scenes/<feature>_scene_data.dart` — top-level finals holding whole
+//   composed states, ready to hand to a provider override. What a golden, a
+//   density test or a layout-gate cell pumps a real page with.
+
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';

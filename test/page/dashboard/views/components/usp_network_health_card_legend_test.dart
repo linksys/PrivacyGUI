@@ -7,8 +7,8 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/usp_network_health_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,

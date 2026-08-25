@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -131,9 +131,13 @@ void main() {
     // The #1225 no-op claim (density design §1.6): enumerating the range finds
     // exactly what the retired 19-width sample found, for all 12 spans. These
     // literals are the committed baseline's geometry — they are here to detect a
-    // shift in what the gate pumps, not to re-derive it. If one changes, the
-    // allowlist in known_overflows.json is expected to move with it, and that
-    // shift must be explained rather than re-baselined silently.
+    // shift in what the gate pumps, not to re-derive it. If one changes, the set
+    // of cells the sweep measures changes with it, and that shift must be
+    // explained rather than re-baselined silently. Since #1341 it no longer
+    // *rewrites* known_overflows.json: allowlist keys are the overflow's
+    // `file:line`, so a width that moved cannot invalidate an entry's key — it
+    // can only make an entry dead (the closing check reports that) or surface a
+    // new site.
     const baseline = <int, ({double screen, double width})>{
       1: (screen: 601.0, width: 53.125),
       2: (screen: 601.0, width: 122.25),

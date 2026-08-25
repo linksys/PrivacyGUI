@@ -89,6 +89,7 @@ lib/page/               # Feature-specific pages and screens
 ### Testing Structure
 - **Unit Tests**: `test/` directory with comprehensive coverage
 - **Test Data Builders**: `test/mocks/test_data/[feature]_test_data.dart` — centralized USP codegen model factories (constitution Article I §1.6.2)
+- **Composed Scenes**: `test/mocks/test_data/scenes/[feature]_scene_data.dart` — top-level finals holding whole composed states, ready to hand to a provider override; what goldens, density tests and layout-gate cells pump a real page with. Distinct from the builders above, and named `_scene_data` rather than `_test_data` so the two cannot be confused by autocomplete: importing the wrong one yields a fixture that does not match its provider overrides, which renders `AppLoader` instead of the page.
 - **Golden Tests**: Screenshot testing with localization support
 - **Test Categories**: Tagged system (golden, loc, ui, functional)
 

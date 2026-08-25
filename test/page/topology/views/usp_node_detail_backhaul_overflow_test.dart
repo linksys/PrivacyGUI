@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -8,8 +8,8 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
-import '../../../golden_test/golden_framework/mocks/mock_topology.dart';
-import '../../../golden_test/page/topology/fixtures/topology_test_data.dart';
+import '../../../mocks/provider_overrides/mock_topology.dart';
+import '../../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';
@@ -35,9 +35,12 @@ import '../../../util/overflow_probe.dart';
 /// last-contact one, whose absence is why that overflow was missing from #1302's
 /// report — but it cannot gate either: it compares byte-equal against a baseline
 /// PNG with the overflow stripe already baked in, and it runs neither of the
-/// widths that overflow. Hence a test, and hence the `dashboard-card` tag:
+/// widths that overflow. Hence a test, and hence the `layout-gate` tag:
 /// `run_tests.sh` excludes `golden||loc||ui`, so a `ui`-tagged test would not
-/// block a PR.
+/// block a PR. (Written as `dashboard-card`, which is what the tag was called on
+/// `dev-2.7.0`; #1336 renamed it to say in the name what it is, and the merge on
+/// 2026-08-24 left this file naming a tag `dart_test.yaml` no longer declares —
+/// so it blocked a PR by luck rather than by selection.)
 ///
 /// ## The Ethernet branch is out of scope, and measured safe
 ///

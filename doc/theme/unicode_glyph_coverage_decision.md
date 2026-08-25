@@ -147,7 +147,7 @@ for duplicate information.
 
 - `test/page/_shared/components/layout_blocks/maps_to_row_test.dart` asserts no
   rendered `Text` contains U+2192, that the arrow is an `Icon`, and that long
-  operands ellipsize without overflow. Tagged `dashboard-card` (not `ui`) so
+  operands ellipsize without overflow. Tagged `layout-gate` (not `ui`) so
   `run_tests.sh` includes it. Mutation-checked: reverting `MapsToRow` to a
   character arrow fails 3 of its 5 tests.
 - `test/page/_shared/components/layout_blocks/toggle_row_test.dart` covers the

@@ -175,6 +175,11 @@ void main(List<String> args) {
     final locale = test['locale'] as String? ?? '';
     final goldenName = '$tsName-$deviceType-$locale';
     final sites = overflowDetails[goldenName] ?? const [];
+    // `false` here is read by golden CI's triage agent as "this golden is clean"
+    // and by nothing else (`triage-agent/collector.py`, which never looks at
+    // `overflowSites`). When the report could not be read, that reading is not
+    // available for any row — see `overflowReportUnreadable` below, which is the
+    // flag a consumer has to check before believing this one.
     test['hasOverflow'] = sites.isNotEmpty;
     // Carry the site detail so the row can name the culprit instead of only
     // flagging that something overflowed (#1197).
@@ -199,6 +204,13 @@ void main(List<String> args) {
   // culprit appears in every golden that renders it, and a dump runs 2-4KB
   // (#1197).
   resultObj['overflowLogs'] = overflowReport.logs;
+  // Present only when the overflow half of this report is unknown, so a reader
+  // that does not know the key still sees nothing surprising, and one that checks
+  // it can tell "0 overflows" from "0 overflows readable". Absent is the normal
+  // case, including a run that genuinely overflowed nothing.
+  if (overflowReport.unreadable != null) {
+    resultObj['overflowReportUnreadable'] = overflowReport.unreadable;
+  }
   resultObj['version'] = version;
   resultObj['timestamp'] = DateTime.now().toIso8601String();
 

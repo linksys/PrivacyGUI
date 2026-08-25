@@ -17,6 +17,55 @@ else
   echo "Using system flutter"
 fi
 
+# Run the PR-blocking suite and leave one JSON reporter event per line in $1.
+# Returns the test command's own exit code.
+#
+# `--reporter json` redirected, not `--file-reporter json:$1`: the file sink
+# interleaves writes and leaves 16KB runs of NUL bytes mid-stream, and every event
+# inside a hole is simply gone — a truncated report that reads as a smaller, clean
+# run. See "WHY NOT --file-reporter" in tool/overflow_baseline.sh, whose extractor
+# rejects NUL for the same reason. One writer on the stream is the whole fix.
+run_tests_to_json() {
+  local dest="$1"
+  local raw="${dest}.raw"
+  $FLUTTER test --reporter json --exclude-tags="golden||loc||ui" > "$raw"
+  local exit_code=$?
+  # The flutter tool's own notices ("The following plugins do not support…") share
+  # stdout with the events, and one of them in front of `jq -s` — or of the legacy
+  # parser's unguarded jsonDecode — fails the whole parse. `-a` so a NUL, if one
+  # ever reappears, does not turn this into "binary file matches".
+  grep -a '^{' "$raw" > "$dest"
+  if [ $exit_code -ne 0 ]; then
+    # The redirect silenced the live run, and a compile failure never becomes an
+    # event: it is one of the lines just filtered out. Say it here or lose it.
+    grep -av '^{' "$raw" >&2
+  fi
+  rm -f "$raw"
+  return $exit_code
+}
+
+# Name the failures the redirect silenced. generate_report counts them; this is
+# the only place the run says which test and why. `.error` only — the stack trace
+# stays in the JSON, and this is a summary.
+print_failures() {
+  local json_file="$1"
+  cat "$json_file" | jq -rs '
+  (map(select(.type == "suite")) | map({(.suite.id | tostring): .suite.path}) | add // {}) as $suites |
+  (map(select(.type == "testStart")) | map({(.test.id | tostring): {
+    name: .test.name,
+    suite: ($suites[(.test.suiteID | tostring)] // "unknown")
+  }}) | add // {}) as $tests |
+  (map(select(.type == "error"))) as $errors |
+  [.[] | select(.type == "testDone" and .hidden == false and (.result == "failure" or .result == "error")) | (.testID | tostring)] |
+  if length == 0 then empty else
+    map(. as $id |
+      "✗ \($tests[$id].suite // "unknown") › \($tests[$id].name // $id)" +
+      ([$errors[] | select((.testID | tostring) == $id) | "\n  \(.error)"] | join(""))
+    ) | join("\n\n")
+  end
+  '
+}
+
 # Generate categorized test report from JSON output
 generate_report() {
   local json_file="$1"
@@ -77,13 +126,19 @@ if [ "$reportPath" == "--report" ]; then
   # Generate markdown report
   echo "*********************Running Tests********************"
   JSON_FILE="/tmp/test_results_$$.json"
-  $FLUTTER test --file-reporter json:$JSON_FILE --exclude-tags="golden||loc||ui"
+  run_tests_to_json "$JSON_FILE"
   TEST_EXIT=$?
 
   echo ""
   echo "*********************Test Report**********************"
   generate_report "$JSON_FILE"
   echo ""
+
+  if [ $TEST_EXIT -ne 0 ]; then
+    echo "*********************Failures*************************"
+    print_failures "$JSON_FILE"
+    echo ""
+  fi
 
   rm -f "$JSON_FILE"
   exit $TEST_EXIT
@@ -93,7 +148,8 @@ elif [ -z "$reportPath" ]; then
 else
   # When a report path is given, run tests and generate a report (legacy HTML mode).
   echo "*********************Running Tests********************"
-  $FLUTTER test --file-reporter json:$reportPath/tests.json --exclude-tags="golden||loc||ui"
+  mkdir -p "$reportPath"
+  run_tests_to_json "$reportPath/tests.json"
 
   if ! $DART test_scripts/test_result_parser.dart $reportPath/tests.json $reportPath/app-test-reports.html; then
     echo 'Test failed!******************************************'

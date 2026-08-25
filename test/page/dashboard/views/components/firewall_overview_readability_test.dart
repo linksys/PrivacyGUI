@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'dart:math' as math;
@@ -83,7 +83,7 @@ import '../../../../util/text_run_metrics.dart';
 /// `minHeightRows` only, and at that height both #1230 sites are suppressed, so
 /// the height where they actually render would otherwise be measured by nothing.
 ///
-/// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing.
 void main() {
   setUpAll(() async {

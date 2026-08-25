@@ -4,7 +4,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 
-import '../../../../golden_test/page/dhcp/fixtures/dhcp_test_data.dart';
+import '../../../../mocks/test_data/scenes/dhcp_scene_data.dart';
 import 'dhcp_card_test_harness.dart';
 
 /// Widget tests for [UspDhcpActiveLeasesCard] mobile layout (#1140).

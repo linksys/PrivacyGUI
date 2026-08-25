@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -20,6 +18,8 @@ import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../layout_gate/screenshot.dart';
+import '../overflow_baseline.dart';
 import '../overflow_probe.dart';
 import 'kitchen_sink_overrides.dart';
 
@@ -383,9 +383,26 @@ CardWidthCase? normalBandCaseFor(WidgetSpec spec) {
 /// The point is that it is a read and not a pin: a sweep that pinned the form it
 /// wanted would keep passing after a threshold moved out from under it, measuring a
 /// form production no longer shows at that width (#1318).
-CardDensity selectedCardDensity(WidgetTester tester) {
+///
+/// Absence answers `normal`, which is a convenience for the readability suites that
+/// pump a form directly and have no host. It is also indistinguishable from a host
+/// that *selected* normal, so anything asserting the normal band's premise wants
+/// [publishedCardDensity] instead — see its header.
+CardDensity selectedCardDensity(WidgetTester tester) =>
+    publishedCardDensity(tester) ?? CardDensity.normal;
+
+/// The [CardDensity] the pumped tree published, or null when it published no
+/// [CardDensityScope] at all.
+///
+/// The distinction [selectedCardDensity] cannot make, and the reason it matters is
+/// #1364's own subject one level down: that function's absence fallback is `normal`,
+/// which is the one value [CardNormalBandFamily] declares — so a card that stopped
+/// being wrapped in a [CardDensityHost] would satisfy the band's premise *vacuously*,
+/// which is the shape of assertion that ticket exists to remove. `null` here is a
+/// third answer rather than a form, so `checkCardDensityPremise` can fail on it.
+CardDensity? publishedCardDensity(WidgetTester tester) {
   final finder = find.byType(CardDensityScope);
-  if (finder.evaluate().isEmpty) return CardDensity.normal;
+  if (finder.evaluate().isEmpty) return null;
   return tester.widget<CardDensityScope>(finder.first).density;
 }
 
@@ -684,6 +701,12 @@ Widget buildDashboardCardApp({
 /// it would be reported with no handler installed and lost. It does not pump a
 /// second widget tree, so the one-pump-per-test property above still holds: the
 /// dialog's render objects are new, and the card's are untouched.
+///
+/// [cell] names the coordinate this pump measures, for the sweep baselines
+/// (#1337). Every measurement a port has to reproduce declares one; a pump that
+/// is not a sweep coordinate — reaching a dialog to measure its height, re-pumping
+/// a recommended geometry for the report — leaves it null and stays out of the
+/// dataset. See [runWithOverflowCollection].
 Future<List<OverflowIncident>> probeCardOverflow(
   WidgetTester tester, {
   required String cardId,
@@ -697,6 +720,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   int? screenHeightRows,
   List<Override> extraOverrides = const [],
   Future<void> Function(WidgetTester tester)? after,
+  OverflowCell? cell,
 }) {
   // The viewport is the card's own box unless a case says otherwise, which keeps
   // every existing sweep measuring exactly the space the grid gives the card.
@@ -710,10 +734,8 @@ Future<List<OverflowIncident>> probeCardOverflow(
     widthCase.screenWidth,
     dashboardCardHeight(screenHeightRows ?? cardHeightRows),
   );
-  return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+  return runWithOverflowCollection(cell: cell, (sink) async {
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(
       buildDashboardCardApp(
         cardId: cardId,
@@ -735,41 +757,34 @@ Future<List<OverflowIncident>> probeCardOverflow(
 }
 
 /// Saves the widget rendered under [repaintKey] to a PNG file at [path].
+///
+/// The card sweep's **report** PNG: the pair `dashboard_card_gate.dart` writes for
+/// a cell that already failed, one as-is and one re-pumped at the recommended
+/// geometry. `skipIfExists` is what makes the second of those a keep rather than an
+/// overwrite, and is this function's own policy — the layout gate's cell dump
+/// (`test/layout_gate/screenshot.dart`) deliberately overwrites, so a re-shoot after
+/// a layout change cannot leave two trees in one folder.
+///
+/// The encoding itself moved to [writeBoundaryPng] at the point the spine grew a
+/// dump of its own; the printed lines are unchanged, because a `DUMP=2` run's output
+/// is read by people who have been reading it since #1183.
 Future<void> saveCardScreenshot(
   WidgetTester tester,
   GlobalKey repaintKey,
   String path, {
   double pixelRatio = 2.0,
 }) async {
-  await tester.binding.runAsync(() async {
-    try {
-      final file = File(path);
-      if (file.existsSync()) return;
-
-      final boundary = repaintKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
-        // ignore: avoid_print
-        print('[PNG DUMP FAILED] boundary is null for $path');
-        return;
-      }
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData != null) {
-        await file.parent.create(recursive: true);
-        await file.writeAsBytes(byteData.buffer.asUint8List());
-        // ignore: avoid_print
-        print(
-            '[PNG DUMP SUCCESS] Saved $path (${byteData.lengthInBytes} bytes)');
-      } else {
-        // ignore: avoid_print
-        print('[PNG DUMP FAILED] byteData is null for $path');
-      }
-    } catch (e, st) {
-      // ignore: avoid_print
-      print('[PNG DUMP EXCEPTION] Failed to save $path: $e\n$st');
-    }
-  });
+  final bytes = await writeBoundaryPng(
+    tester,
+    boundaryKey: repaintKey,
+    path: path,
+    pixelRatio: pixelRatio,
+    skipIfExists: true,
+  );
+  if (bytes != null) {
+    // ignore: avoid_print
+    print('[PNG DUMP SUCCESS] Saved $path ($bytes bytes)');
+  }
 }
 
 /// Calculates the grid rows needed to fit a target logical height.
@@ -799,9 +814,7 @@ Future<List<OverflowIncident>> captureAdjustedCardScreenshot(
     math.max(recHeight + 32, 400.0),
   );
   return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(
       buildDashboardCardApp(
         cardId: cardId,
