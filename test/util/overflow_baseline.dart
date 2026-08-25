@@ -8,8 +8,10 @@ import 'dart:io';
 // through the probe would therefore put this file in a two-library cycle —
 // legal in Dart, and pointless, because [OverflowIncident] and
 // [kOverflowTolerancePx] are defined in `incident.dart` and the probe only
-// forwards them. The golden framework's `overflow_diagnostics.dart` import is
-// gone (#1351); see the record builder below.
+// forwards them. This file's own import of the golden framework's second parser
+// went in #1351, and #1339 deleted that parser outright — so `incident.dart` is
+// now the only overflow parser anything in the repo can reach. See the record
+// builder below.
 import '../layout_gate/incident.dart';
 
 /// Capture side of the sweep baselines (#1337).

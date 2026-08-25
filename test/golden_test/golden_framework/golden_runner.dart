@@ -15,7 +15,7 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
-import 'overflow_diagnostics.dart';
+import 'overflow_record.dart';
 
 // Re-export so every test file that imports golden_runner.dart gets the shared
 // interaction helpers (switchToTab, settleWithTimeout) without a separate line.

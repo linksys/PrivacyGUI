@@ -1,17 +1,18 @@
 import 'dart:io';
 
-/// The one parser of Flutter's RenderFlex overflow report (#1338).
+/// The one parser of Flutter's RenderFlex overflow report — written by #1338,
+/// sole since #1339.
 ///
 /// ## Why this file exists
 ///
 /// The #1183 gate family grew two independent parsers of the same string, and
 /// each had what the other lacked: `test/util/overflow_probe.dart` took the
 /// **worst** side, applied the shared 2.0px tolerance and failed loudly on a
-/// string it could not read; `test/golden_test/golden_framework/overflow_diagnostics.dart`
-/// took the first side, applied no tolerance, was failure-tolerant — and was the
-/// only one of the two that resolved the incident's **`file:line`**. This file is
-/// the merge: the loud-failure behaviour, the worst side, the tolerance, and the
-/// source location.
+/// string it could not read; `golden_framework/overflow_diagnostics.dart` (deleted
+/// by #1339) took the first side, applied no tolerance, was failure-tolerant —
+/// and was the only one of the two that resolved the incident's **`file:line`**.
+/// This file is the merge: the loud-failure behaviour, the worst side, the
+/// tolerance, and the source location.
 ///
 /// `file:line` is not decoration. It is the correct ratchet key — a
 /// coordinate-keyed allowlist invalidates wholesale whenever a layout is
@@ -21,20 +22,27 @@ import 'dart:io';
 /// something a person has to watch into something a diff computes. See
 /// `doc/testing/overflow_gate_architecture.md` §3.5 and §8.
 ///
-/// ## The duplication below is deliberate
+/// ## One parser, since #1339
 ///
-/// The path-normalisation logic here is a copy of `overflow_diagnostics.dart`'s,
-/// carried verbatim rather than shared, and the names are distinct
-/// ([normalizeOverflowSourcePath] versus `normalizeSourcePath`) so that both
+/// The path normalisation below used to be a verbatim copy of
+/// `overflow_diagnostics.dart`'s, carried rather than shared so that both
 /// libraries could be imported into one file while the overlap lasted.
-/// `test/util/overflow_baseline.dart` was that one file; **#1351 ended it on the
-/// gate side**, and nothing outside the golden framework and its own tests now
-/// calls the copy. **#1339 retires the copy itself and points
-/// `golden_runner.dart` here**; #1338 deliberately left that file untouched so the
-/// swap is one reviewable change with its own verification against CI artifacts.
-/// Keeping the logic byte-identical for now is what lets #1339 attribute every
-/// remaining difference in `overflow_warnings.json` to first-side → worst-side
-/// and to nothing else.
+/// `test/util/overflow_baseline.dart` was that one file; **#1351 ended the import
+/// and #1339 deleted the copy**, so this file is now the repo's only reader of
+/// Flutter's overflow report.
+///
+/// The golden framework builds its advisory record from here too
+/// (`golden_framework/overflow_record.dart`), which is why two functions that
+/// read like golden-report concerns live below: [normalizeOverflowDumpPaths] and
+/// [stripOverflowObjectIds]. They are transforms of the same string, they need
+/// the same pattern and the same normalisation rules, and hosting them is what
+/// keeps [_locationPattern] private — exporting a regex is how the second parse
+/// gets written next time.
+///
+/// The two parsers disagreed on more than loudness, and #1339 resolved the
+/// disagreement rather than averaging it: this one reports the **worst** side,
+/// the copy reported the first. [pixelsText] exists because of the other half of
+/// that swap — see its doc.
 ///
 /// ## Files do not move
 ///
@@ -70,6 +78,26 @@ class OverflowIncident {
   /// Direction of the overflow: 'right', 'bottom', 'left', 'top', or 'unknown'.
   final String side;
 
+  /// [pixels] exactly as Flutter spelled it, or null when no clause parsed.
+  ///
+  /// The same measurement as [pixels] and not a substitute for it: nothing should
+  /// compare or threshold on this. It exists for one caller — the golden
+  /// framework's advisory record (#1339), whose `pixels` field is a **String**
+  /// that reaches a report badge and a site key verbatim
+  /// (`test_scripts/overflow_details.dart:61,110`).
+  ///
+  /// Re-formatting `pixels` there would rewrite user-visible text: Flutter's
+  /// `_formatPixels` picks its precision from the *unrounded* value (`>10` →
+  /// no decimals, `>1` → one, else three significant digits), so `18` must not
+  /// become `18.0` — and no mirror of that function can be round-trip safe,
+  /// because `10.04` prints as `10` and re-formats as `10.0`. Carrying the matched
+  /// text is the only way the swap changes nothing a person reads; all 16 records
+  /// in `test/fixtures/golden_overflow_warnings.json` would otherwise differ.
+  ///
+  /// Null exactly when [pixels] is [unparseablePixels], so a caller that wants
+  /// "the amount, or nothing" can test this one field.
+  final String? pixelsText;
+
   /// The raw Flutter error string (first line), kept for diagnostics.
   final String message;
 
@@ -103,6 +131,7 @@ class OverflowIncident {
     required this.pixels,
     required this.side,
     required this.message,
+    this.pixelsText,
     this.fullLog = '',
     this.file,
     this.line,
@@ -191,11 +220,16 @@ class OverflowIncident {
     final firstLine = errorString.split('\n').first.trim();
     var worst = -1.0;
     var worstSide = '';
+    String? worstText;
     for (final m in _re.allMatches(errorString)) {
       final pixels = double.tryParse(m.group(1)!);
       if (pixels != null && pixels > worst) {
         worst = pixels;
         worstSide = m.group(2)!.toLowerCase();
+        // The clause's own digits, not a re-rendering of `pixels` — see
+        // [pixelsText]. Captured here because this is the only place that still
+        // knows which clause won.
+        worstText = m.group(1)!;
       }
     }
     final log = fullLog.isNotEmpty ? fullLog : errorString;
@@ -203,6 +237,7 @@ class OverflowIncident {
     return OverflowIncident(
       pixels: worst < 0 ? unparseablePixels : worst,
       side: worst < 0 ? 'unknown' : worstSide,
+      pixelsText: worstText,
       message: firstLine,
       fullLog: log,
       file: location?.file,
@@ -265,11 +300,12 @@ bool isOverflowError(String exceptionAsString) =>
 /// [OverflowIncident.site] withholds the key for anything still absolute; see
 /// [_isMachineIndependentPath] for the two shapes that get that far.
 ///
-/// Named apart from `overflow_diagnostics.dart`'s `normalizeSourcePath` on
-/// purpose: `test/util/overflow_baseline.dart` imported both while the overlap
-/// lasted, and a shared name would have made that an ambiguity error. #1351
-/// ended that import, so nothing imports the two libraries together any more;
-/// the distinct names stay until #1339 retires the copy itself.
+/// The `Overflow` in the name is a leftover with a use: it was needed while
+/// `overflow_diagnostics.dart`'s `normalizeSourcePath` still existed and
+/// `test/util/overflow_baseline.dart` imported both (a shared name would have
+/// been an ambiguity error). #1339 deleted that copy, and the name stays because
+/// this library is imported unprefixed by 20-odd files and `normalizeSourcePath`
+/// is too general a name to take from them.
 String normalizeOverflowSourcePath(
   String absolutePath, {
   required String runDirectory,
@@ -310,6 +346,55 @@ String normalizeOverflowSourcePath(
 
   return path;
 }
+
+/// Rewrites **every** absolute source path inside a diagnostics dump.
+///
+/// [OverflowIncident.parse] reads one location out of a dump — the culprit's.
+/// This rewrites all of them, because a dump kept whole (the golden framework's
+/// `log` field, #1197) names a creation location for every widget in the
+/// `creator:` chain, each carrying the directory the run happened in. Left
+/// as-is, a report built on CI embeds the runner's workspace and two machines
+/// produce different text for the same overflow.
+///
+/// Note what it drops: the whole match is rebuilt as `Widget:path:line:col`, so
+/// the `file://` scheme goes with it. That is the pre-#1339 behaviour, kept
+/// deliberately — the strings are compared against a stored real report, and the
+/// scheme is not information once the path is repo-relative.
+///
+/// [_toComparablePath] is applied here and was not applied by the golden copy.
+/// On POSIX every clause of it is a no-op, so the stored corpus is unaffected;
+/// on Windows it is the difference between a collapsed path and a leaked one,
+/// and leaving the two functions disagreeing about the same path in the same
+/// record was the more expensive choice.
+String normalizeOverflowDumpPaths(
+  String diagnosticsDump, {
+  required String runDirectory,
+}) {
+  final root = _toComparablePath(runDirectory);
+  return diagnosticsDump.replaceAllMapped(
+    _locationPattern,
+    (match) => '${match.group(1)}:'
+        '${normalizeOverflowSourcePath(_toComparablePath(match.group(2)!), runDirectory: root)}'
+        ':${match.group(3)}:${match.group(4)}',
+  );
+}
+
+/// Matches the short hash Flutter appends to a diagnosable object's name, e.g.
+/// the `#4195b` in `RenderFlex#4195b` or `GlobalKey#18e2d`.
+///
+/// Anchored on an identifier character so a `#` in ordinary text — a reservation
+/// number in a rendered string, say — is left alone.
+final RegExp _objectIdPattern = RegExp(r'(?<=\w)#[0-9a-f]{5}\b');
+
+/// Removes the per-run object ids Flutter embeds in a diagnostics dump.
+///
+/// The ids are allocation details, reassigned on every run. Left in, the same
+/// overflow yields different text each time: the recorded JSON churns, and the
+/// reports cannot tell that one culprit explains many goldens — a single card
+/// reported in 24 goldens stayed 24 distinct logs. The geometry that actually
+/// explains an overflow (`constraints:`, `size:`) is untouched.
+String stripOverflowObjectIds(String diagnosticsDump) =>
+    diagnosticsDump.replaceAll(_objectIdPattern, '');
 
 /// Whether [file] is a path every machine spells the same way.
 ///
@@ -357,11 +442,13 @@ final RegExp _driveLetterPattern = RegExp(r'^/?([A-Za-z]):');
 /// separator, on the leading slash and on the drive case independently. On POSIX
 /// every clause is a no-op.
 ///
-/// It lives here rather than inside [normalizeOverflowSourcePath] deliberately:
-/// that function is a verbatim copy of `overflow_diagnostics.dart`'s, and keeping
-/// the two byte-identical is what lets #1339 attribute every remaining
-/// difference in `overflow_warnings.json` to first-side → worst-side and to
-/// nothing else.
+/// It stays out of [normalizeOverflowSourcePath] for a reason that outlived its
+/// original one. It began as a separate step because that function was a verbatim
+/// copy of the golden parser's and had to stay byte-identical to it; #1339 deleted
+/// the copy, and it is still separate because the two callers need different
+/// amounts of it — [_parseSourceLocation] converts both sides of the comparison,
+/// [normalizeOverflowDumpPaths] converts the run directory once and each of many
+/// paths as it goes. Folding it in would convert the run directory per match.
 String _toComparablePath(String path) {
   final slashed = path.replaceAll(r'\', '/');
   final drive = _driveLetterPattern.firstMatch(slashed);

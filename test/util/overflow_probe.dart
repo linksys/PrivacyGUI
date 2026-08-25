@@ -7,6 +7,7 @@
 /// | symbol | now defined in |
 /// |---|---|
 /// | [OverflowIncident], [kOverflowTolerancePx], [isOverflowError], [normalizeOverflowSourcePath] | `../layout_gate/incident.dart` (#1338) |
+/// | [normalizeOverflowDumpPaths], [stripOverflowObjectIds] | the same file, since #1339 folded the golden framework's parser into it |
 /// | [runWithOverflowCollection], [collectOverflow], [settleIgnoringAnimations] | `../layout_gate/collector.dart` (#1340) |
 /// | [setLayoutSurface] | `../layout_gate/surface.dart` (#1340) |
 ///

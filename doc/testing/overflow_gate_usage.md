@@ -36,8 +36,8 @@ and the gate is tagged `layout-gate`, so it already runs on every PR.
 |---|---|---|---|
 | naming the five sweep files (below) | 296 | 25s / 32s | inner loop while fixing |
 | `fvm flutter test --tags overflow` | 296 | 1m48s / 2m03s | before committing |
-| `fvm flutter test --tags layout-gate` | 1,428 | 2m12s / 2m21s | the whole PR-blocking gate |
-| `./run_tests.sh` | 5,410 | — / 2m52s | what CI runs |
+| `fvm flutter test --tags layout-gate` | 1,440 | 2m06s / 2m21s | the whole PR-blocking gate |
+| `./run_tests.sh` | 5,405 | — / 2m49s | what CI runs |
 
 The first two select **exactly the same tests**. `@Tags` is only readable by
 loading a suite, so the tag compiles every test file in the repo to then skip all

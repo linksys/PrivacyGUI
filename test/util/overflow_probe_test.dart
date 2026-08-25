@@ -239,6 +239,83 @@ void main() {
       expect(incident.message, reportOf('41 pixels on the right'));
       expect(incident.fullLog, 'full details');
     });
+
+    test('refuses a malformed amount instead of reading part of it', () {
+      // Ported from the golden parser #1339 deleted, which spelled the number as
+      // `\d+(?:\.\d+)?` and so matched nothing here. This one spells it `[\d.]+`
+      // — deliberately looser, to reach the exponent form above — so `1.2.3`
+      // *matches* and the rejection has to come from `double.tryParse` instead.
+      // Same outcome, different mechanism, which is exactly the kind of thing
+      // that stops being obvious once the two parsers are one.
+      final incident = OverflowIncident.parse(
+        reportOf('1.2.3 pixels on the right'),
+      );
+
+      expect(incident.pixelsText, isNull);
+      expect(incident.pixels, OverflowIncident.unparseablePixels,
+          reason:
+              'a number nobody can read is louder than a wrong one: a badge '
+              'reading "1.2.3px" sorts as 0 and hides the overflow');
+      expect(incident.side, 'unknown');
+    });
+  });
+
+  group('OverflowIncident.pixelsText', () {
+    // The field exists for one caller — the golden framework's advisory record,
+    // whose `pixels` is a String that reaches a report badge and a site key
+    // verbatim. Re-rendering the double there would rewrite user-visible text
+    // for every record, because Flutter picks its precision from the unrounded
+    // value and no mirror of that choice is round-trip safe (#1339).
+    test('carries the clause exactly as Flutter spelled it', () {
+      // Every shape `_formatPixels` can emit, against what the parsed double
+      // renders as: no decimals above 10px, one decimal in (1, 10], three
+      // significant digits at or below 1px, exponent notation for the very
+      // small. Three of the four disagree, and `18` → `18.0` is the one that
+      // would have rewritten all 16 records in
+      // `test/fixtures/golden_overflow_warnings.json`.
+      const spellings = {
+        '18': '18.0',
+        '0.500': '0.5',
+        '1.00e-7': '1e-7',
+        '5.5':
+            '5.5', // the one that round-trips, kept so the list is the format
+      };
+
+      for (final entry in spellings.entries) {
+        final incident =
+            OverflowIncident.parse(reportOf('${entry.key} pixels on the top'));
+
+        expect(incident.pixelsText, entry.key);
+        expect('${incident.pixels}', entry.value,
+            reason: 'if the double now renders as something else, the gap this '
+                'field bridges has moved and the golden report will churn');
+      }
+    });
+
+    test('is the worst clause, not the first', () {
+      // The one sanctioned behavioural difference between the two parsers, in the
+      // field that carries it: the deleted copy took the first clause.
+      final incident = OverflowIncident.parse(
+        reportOf('10.0 pixels on the bottom and 41 pixels on the right'),
+      );
+
+      expect(incident.pixelsText, '41');
+      expect(incident.side, 'right');
+    });
+
+    test('is null exactly when the amount is unparseable', () {
+      // The contract the advisory caller opts out through: one null check, and
+      // it cannot disagree with the loud default about *whether* the message was
+      // read — only about what to do next.
+      final unreadable =
+          OverflowIncident.parse(reportOf('lots of pixels on the right'));
+      expect(unreadable.pixelsText, isNull);
+      expect(unreadable.pixels, OverflowIncident.unparseablePixels);
+
+      final readable = OverflowIncident.parse(reportOf('41 pixels on the top'));
+      expect(readable.pixelsText, isNotNull);
+      expect(readable.pixels, lessThan(OverflowIncident.unparseablePixels));
+    });
   });
 
   group('OverflowIncident source location', () {
@@ -344,6 +421,38 @@ The overflowing RenderFlex has an orientation of Axis.horizontal.
       );
 
       expect(incident.file, 'lib/page/admin/x.dart');
+    });
+
+    test('collapses a pub-cache path that is itself percent-encoded', () {
+      // Ported from the golden parser #1339 deleted, and the one case of its 27
+      // that nothing here covered even indirectly: the space and the pub-cache
+      // collapse were each tested alone, never together. They interact through
+      // ordering — the decode has to happen *before* the `/.pub-cache/git/`
+      // marker is looked for, or a developer whose home directory has a space in
+      // it gets the SHA-carrying absolute path as a key.
+      final incident = incidentAt(
+        'Row:file:///Users/John%20Smith/.pub-cache/git/privacyGUI-UI-kit-'
+        '628f62fd51c9dd39b127843d41fcb4c9c07c937f/lib/src/x.dart:12:5',
+        runDirectory: '/Users/John Smith/dev/PrivacyGUI',
+      );
+
+      expect(incident.file, 'privacyGUI-UI-kit/lib/src/x.dart');
+      expect(incident.site, 'privacyGUI-UI-kit/lib/src/x.dart:12');
+    });
+
+    test('decodes a non-ASCII run directory', () {
+      // Ported from the golden parser #1339 deleted. Not the same case as the
+      // space above: `%20` is one byte and CJK is three per character, so a
+      // decoder that worked byte-wise or gave up outside ASCII would pass that
+      // test and fail this one. Cheap to keep, and the developers whose home
+      // directory is not ASCII are the ones who would never see the gate work.
+      final incident = incidentAt(
+        'Row:file:///Users/dev/%E4%B8%AD%E6%96%87/PrivacyGUI/lib/x.dart:12:5',
+        runDirectory: '/Users/dev/中文/PrivacyGUI',
+      );
+
+      expect(incident.file, 'lib/x.dart');
+      expect(incident.site, 'lib/x.dart:12');
     });
 
     test('leaves a path carrying a literal percent sign alone', () {
@@ -543,6 +652,90 @@ Exception caught by rendering library
 
       expect(defaulted.file, 'lib/page/admin/x.dart');
       expect(defaulted.file, incident.file);
+    });
+  });
+
+  group('the dump transforms', () {
+    // Hosted in `incident.dart` since #1339 although only the golden report's
+    // record calls them, because they are transforms of the same string, need the
+    // same normalisation rules, and hosting them is what keeps the location
+    // regex private — exporting a regex is how the second parser gets written
+    // next time. These cases came with them from the deleted copy.
+    group('normalizeOverflowDumpPaths', () {
+      test('rewrites every location in the dump, not just the culprit\'s', () {
+        // The difference from `parse`, which reads one location: a dump kept
+        // whole names a creation location for every widget in the creator chain,
+        // and each one carries the directory the run happened in. Left in, a
+        // report built on CI embeds the runner's workspace.
+        const dump = '''
+The relevant error-causing widget was:
+  Row:file:///repo/lib/page/dhcp/leases_card.dart:101:12
+  creator: Column:file:///repo/lib/page/dhcp/dhcp_view.dart:7:3
+  creator: Padding:file:///Users/dev/.pub-cache/git/privacyGUI-UI-kit-628f62fd51c9dd39b127843d41fcb4c9c07c937f/lib/src/x.dart:9:1
+''';
+
+        final normalized =
+            normalizeOverflowDumpPaths(dump, runDirectory: '/repo');
+
+        expect(
+            normalized, contains('Row:lib/page/dhcp/leases_card.dart:101:12'));
+        expect(normalized, contains('Column:lib/page/dhcp/dhcp_view.dart:7:3'));
+        expect(normalized,
+            contains('Padding:privacyGUI-UI-kit/lib/src/x.dart:9:1'));
+        expect(normalized, isNot(contains('file://')),
+            reason: 'the scheme goes with the absolute path — pre-#1339 '
+                'behaviour, kept because the stored corpus is compared verbatim');
+        expect(normalized, isNot(contains('/Users/dev')));
+      });
+
+      test('leaves everything that is not a location alone', () {
+        // The geometry is what explains an overflow, and a transform that reached
+        // it would corrupt the only useful part of the dump.
+        const line =
+            '     constraints: BoxConstraints(w=398.0, 0.0<=h<=Infinity)';
+
+        expect(normalizeOverflowDumpPaths(line, runDirectory: '/repo'), line);
+      });
+    });
+
+    group('stripOverflowObjectIds', () {
+      test('removes the object hash Flutter appends to render object names',
+          () {
+        // The id is a per-object allocation detail: the same overflow reported in
+        // 24 goldens carried 24 different ids, so nothing downstream could tell
+        // that one culprit explained them all, and the recorded JSON changed on
+        // every run.
+        expect(
+          stripOverflowObjectIds(
+            'The specific RenderFlex in question is: '
+            'RenderFlex#4195b relayoutBoundary=up14 OVERFLOWING:',
+          ),
+          'The specific RenderFlex in question is: '
+          'RenderFlex relayoutBoundary=up14 OVERFLOWING:',
+        );
+      });
+
+      test('removes ids from the creator chain', () {
+        expect(
+          stripOverflowObjectIds(
+              'creator: Row ← RepaintBoundary-[GlobalKey#18e2d] ← Column'),
+          'creator: Row ← RepaintBoundary-[GlobalKey] ← Column',
+        );
+      });
+
+      test('leaves the geometry that explains the overflow intact', () {
+        // Sibling rows legitimately differ here, and that difference is the
+        // diagnostic — it must survive.
+        const line = '     size: Size(398.0, 532.0)';
+
+        expect(stripOverflowObjectIds(line), line);
+      });
+
+      test('leaves text that merely looks like an id alone', () {
+        // Only a '#' directly following an identifier is an object id.
+        expect(stripOverflowObjectIds('Reservation #12345 for host'),
+            'Reservation #12345 for host');
+      });
     });
   });
 

@@ -149,7 +149,28 @@ report row, the PNG pair, the coverage counters and the failure prose. Ten of th
 table's rows are that file — `Ratchet`, `Report`, `Locale filter`, `Tolerance`,
 `Failure surface`, `cell↔test mapping`, `Fresh render tree`, `Overflow
 collection`, `Surface set`, `Surface reset` — which is why the card port was
-sequenced last and alone. The golden column is unchanged (#1339).
+sequenced last and alone.
+
+**The golden column changed in exactly one row, at #1339: its parser.** Everything
+else about it — no tolerance, no ratchet, pass/fail discarded, one report file
+appended per suite — is by design and untouched, because it is a scout and not a
+gate. What went is the *second reading of the string*: the box on the right of the
+diagram above no longer exists, `golden_runner.dart` calls the box on the left, and
+what is left in its place (`golden_framework/overflow_record.dart`) decides the
+record's shape and parses nothing. So "the only sharing" in that diagram is now the
+whole of the parse, and the diagram's `+ file:line ◄── UNIQUE` has been true of the
+left box since #1338.
+
+The swap kept the golden report byte-identical except where it was meant not to.
+Two differences, both attributed: a two-sided overflow now reports its **worst**
+side rather than its first (the reason the merge happened at all — a 41px right
+overflow was being recorded as 0.5px bottom), and a sub-pixel amount in exponent
+form now parses instead of being dropped. Verified offline against a real captured
+report, `test/fixtures/golden_overflow_warnings.json` — 16 records over 6 dumps, all
+unchanged — with the two-sided case pinned separately against a live SDK string,
+since no record in the corpus names two sides. Byte-identity was deliberately not
+the criterion: §3.5's rule is that every difference is attributable, and an
+unattributable one is a defect.
 
 ### 1.2 The measured cost model
 
@@ -168,8 +189,8 @@ that last run, and the parenthesised figures are what each row read before it:
 | **Page sweep (one file, new at #1349)** | **19** | 416 + 52 guard pumps | 15s (**20s** wall) | **33–38ms** |
 | The five overflow sweeps (5 files, named) | **296** (277 pre-#1349, 273 pre-merge) | 4,032 rows † | 25s (**32s** wall) | — |
 | The same five via `--tags overflow` | **296** | 4,032 rows † | 1m48s (**2m03s** wall) | — |
-| Whole `layout-gate` family (46 files) | **1,428** (1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m12s (2m06s pre-`shoot`, 1m52s pre-#1349, **2m21s** wall) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,410** (5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m52s (2m43s before `shoot`, 2m44s without the page suite, **2m49s** wall) | — |
+| Whole `layout-gate` family (46 files) | **1,440** (1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m06s (2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,405** (5,410 pre-#1339 — *down* 5, see below; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m49s (2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -209,6 +230,18 @@ arithmetic** for a day and it should have read 1,426 — the estimate added one 
 was right. Both are now measured. `--tags overflow` stays **296** and all five baselines
 stay identical: a dump that is off by default cannot change what a sweep enumerates, and
 a `failed` shoot reproduced all 4,032 rows to prove it.
+
+**#1339 is the first entry that moves the PR-gate row *down*** (measured
+2026-08-25): the gate goes 1,428 → **1,440** while the suite goes 5,410 → **5,405**.
+Deleting a parser deletes its oracle, and the deleted oracle was larger than what
+replaced it: `+12 −27 +10`. The **+12** is `overflow_probe_test.dart`, which carries
+`layout-gate` — so all of the gate's gain and none of its loss lands there, which is
+why the two rows move in opposite directions. The **−27** and **+10** are both in
+`test/test_scripts/`, which is untagged. Read the sign, not the size: a suite count
+that falls is normally the shape of lost coverage, and here it is the shape of a
+duplicate that no longer needs pinning twice — the 27 are accounted for one by one
+in §3.5, and `--tags overflow` stays **296** with all five baselines identical
+because nothing a sweep enumerates was touched.
 
 **The whole table moved at #1343, and only the test-count column.** The pumped
 cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917
@@ -954,8 +987,12 @@ provider scope per cell, is the one that will use it.
 
 ### 3.5 One parser
 
-Two independent parsers of the same string exist today, and each has what the
-other lacks:
+**Closed 2026-08-25 by #1339 — one parser, repo-wide.** The table and the
+narrative below are kept as the diagnosis, not rewritten to the current tree; the
+landing notes at the end of the section say what is now true.
+
+Two independent parsers of the same string existed, and each had what the other
+lacked:
 
 | | `test/util/overflow_probe.dart` | `golden_framework/overflow_diagnostics.dart` (#1197) |
 |---|---|---|
@@ -1023,6 +1060,79 @@ So the epic's "exactly one parser of Flutter's overflow string exists in the rep
 is now met **inside the gate family** — one parser is canonical and one runs — and
 partially met repo-wide: `golden_runner.dart` still uses the copy, which is what
 #1339 finishes.
+
+**The golden side landed 2026-08-25 (#1339), and the criterion is now met
+repo-wide.** `overflow_diagnostics.dart` is deleted. `golden_runner.dart` imports
+`golden_framework/overflow_record.dart`, which builds the report record — which
+keys, in which order, which omitted — and parses nothing;
+`grep -rn 'RegExp' test/golden_test/ test/util/ test/layout_gate/ | grep -i 'pixels\|overflowed'`
+returns `incident.dart` and nothing else.
+
+Four things about the swap are worth carrying, because none of them was visible
+from the ticket:
+
+1. **The verification data did not exist and had to be made.** #1339 asked for the
+   comparison to run offline against a real `overflow_warnings.json`, without
+   saying where one comes from — and the two committed golden coordinates
+   (`phone480`, `desktop1280`) produce **zero** overflows, so there was nothing to
+   compare. `golden_runner.dart:43` takes `--dart-define=screens=<width>` and
+   synthesises a device from it, which is how golden CI got `screen1080` on
+   2026-08-24; the same define captured 16 records over 6 dumps locally, now frozen
+   at `test/fixtures/golden_overflow_warnings.json` with its provenance. It must
+   never be regenerated: it is the *old* parser's output, and regenerating it with
+   the new one would compare the new parser against itself.
+2. **The corpus cannot exercise the difference the ticket is about.** All 16
+   messages name exactly one side, so first-side → worst-side cannot arise in any
+   of them. That is the finding, not a gap — it says the swap is invisible on real
+   data — and the attribution rule is still written as executable code over the
+   corpus, with the two-sided case pinned separately against a live SDK string
+   (`ConstraintsTransformBox`, the one shifted box carrying
+   `DebugOverflowIndicatorMixin`; `Stack` and `OverflowBox` report nothing).
+3. **`pixels` in that report is a *String*, and that decided the design.**
+   `test_scripts/overflow_details.dart:61,110` renders it verbatim into a badge and
+   into a site key, so `"18"` becoming `"18.0"` is user-visible churn on every
+   record. A mirror of Flutter's `_formatPixels` cannot fix it — precision is
+   chosen from the *unrounded* value, so `10.04` prints `10` and re-formats as
+   `10.0` — which is why `OverflowIncident.pixelsText` carries the matched clause's
+   own text. A field on the shared parser for the benefit of the advisory caller
+   was the cheaper of the two honest options.
+4. **The advisory opt-out is a null check, deliberately.** The shared default for
+   an unreadable message is loud (`unparseablePixels` = ∞, which survives every
+   tolerance). The report judges nothing, so it omits the amount instead — spelled
+   as `if (incident.pixelsText != null)` at the one call site, not as a tolerance
+   argument or a lenient mode. A future gate-side caller cannot inherit the
+   leniency by omission; it has to write the same three lines and own them.
+
+The deleted parser's oracle held **27 tests** — and counting them is the fifth
+finding, because the obvious count is wrong. `grep -c "test("` says 22; five of
+the cases are `testWidgets`, and the two that matter most (the real-dump parse,
+and all four record-shape cases) are among them. The first draft of this section
+said 22, and the error surfaced only when the suite measured **5,404** against a
+predicted 5,409 — the gap closing exactly at `5,410 + 11 − 27 + 10`. A count that
+reconciles is worth more than a count that is merely plausible, and this one only
+reconciled after the recount. (The committed figure is **5,405**: the recount is
+what turned up the third porting gap below, and porting it added the twelfth
+oracle case.)
+
+None of the 27 was deleted with the parser. **15 were already covered case for
+case** by `overflow_probe_test.dart`. Of the other 12: **4 moved** there with the
+dump transforms they exercise (`stripEphemeralIds` → `stripOverflowObjectIds`),
+**3 were ported** there because nothing covered them — a malformed `1.2.3` amount,
+a percent-encoded non-ASCII run directory, and a pub-cache path that is *itself*
+percent-encoded; that last one is an ordering case (the decode has to precede the
+`/.pub-cache/git/` lookup, or a developer whose home directory has a space in it
+gets a SHA-carrying absolute path as an allowlist key), and the space and the
+pub-cache collapse had each been tested alone but never together. **1 was
+superseded** by the behaviour change: `keeps the first side when one overflow
+reports two` is now false on purpose, so it was replaced by the assertion that the
+worst side wins rather than retired quietly. The remaining **4** stayed behind as
+`overflow_record_test.dart` — the record's shape, the key order, the opt-out, and
+the fixture comparison.
+
+Counting them before deciding is what kept the swap from arriving with a 27-test
+hole or 27 duplicated tests. Recounting them *after* is what found the third gap,
+which a coverage number alone would never have shown: the case existed, it was
+deliberate, and it was about to be deleted as redundant.
 
 `file:line` is not decoration, and it earns its place here for **one** reason: it
 is the correct ratchet key. A coordinate-keyed allowlist invalidates wholesale
@@ -1814,9 +1924,12 @@ would invite back the sampled scan #1225 retired.
 **What the move is verified not to have changed.** `./run_tests.sh` **5,327**,
 `--tags layout-gate` **1,379**, all four baselines `check`-identical at card 1,943 ·
 popup 347 · forced_form 78 · chrome 1,248 = **3,616**, `dart analyze test` 0 errors /
-0 warnings. The AC2 grep now returns **ten comment lines across six files and exactly
-one import** — `test/test_scripts/overflow_diagnostics_test.dart:6`, the golden parser
-#1339 will retire. Nothing else under `test/` reaches into the golden suite. One of the
+0 warnings. The AC2 grep returned, at the time of this move, **ten comment lines across
+six files and exactly one import** — `test/test_scripts/overflow_diagnostics_test.dart:6`,
+the golden parser #1339 has since retired (§3.5), which took that last import to
+**zero**: the one remaining edge from `test/` into the golden suite is
+`overflow_record_test.dart`'s import of the record builder, and the builder no longer
+parses. Nothing else under `test/` reaches into the golden suite. One of the
 comments is worth
 keeping: `dashboard_card_overflow_test.dart` names the shared fixture's path in exactly
 one place (`_sharedFixturePath`), which is why the F9 meta-tests that read the *file*
