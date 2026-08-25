@@ -92,6 +92,11 @@ enum JNAPAction {
   getSupportedHealthCheckModules,
   runHealthCheck,
   stopHealthCheck,
+  // smartQoS (dark until platform qualification and product gates pass)
+  getSmartQoSSettings,
+  setSmartQoSSettings,
+  getSmartQoSRecommendation,
+  storeSmartQoSSpeedTestResult,
   // locale
   getLocalTime,
   getTimeSettings,
