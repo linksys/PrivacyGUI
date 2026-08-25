@@ -93,6 +93,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.edit, size: 18),
         semanticLabel: loc(context).editTimeSettings,
+        identifier: 'admin-time-settings-edit',
         onTap: isLoading ? null : () => _editTimezone(context, ref, time),
       ),
       detailRoute: RouteNamed.uspAdmin,
