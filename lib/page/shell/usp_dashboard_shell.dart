@@ -189,23 +189,42 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
               child: ThemeStudioPanel(),
             ),
           ),
+        // The mascot is a sibling layer, not a wrapper, and it is deliberately
+        // last.
+        //
+        // Wrapping the shell in it crashed the app every time the Show Mascot
+        // switch was flipped. `widget.child` above is the `ShellRoute`'s
+        // Navigator, held by the `uspShellNavigatorKey` global key, so
+        // inserting or removing anything above it does not rebuild that
+        // subtree — the framework deactivates and reactivates it at its new
+        // depth. Reactivation re-attaches the Navigator's overlay children,
+        // and that `markNeedsLayout` lands inside a `LayoutBuilder`'s
+        // `performLayout`, which the framework asserts against: "A
+        // _RenderLayoutBuilder was mutated in _RenderLayoutBuilder.performLayout".
+        //
+        // As a sibling appended at the end, toggling it leaves every earlier
+        // child's index untouched, so the Navigator never moves. Staying a
+        // sibling is what keeps this fixed: reintroducing a wrapper around
+        // page content — mascot or otherwise — brings the crash back.
+        //
+        // `GlobalConfig.remote.mascotEnabled` excludes remote assistance and
+        // E2E mock builds (kept in sync with the General Settings toggle).
+        if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled)
+          Positioned.fill(
+            child: MascotOverlay(
+              controller: mascotController,
+              dialogProvider: dialogProvider,
+              spec: const MascotSpec(
+                renderer: LinksysMascotRenderer(),
+              ),
+              // Nothing to wrap now that the page is a sibling. The overlay
+              // still lays its own children out against the full shell, and an
+              // empty box does not hit-test, so taps reach the page below.
+              child: const SizedBox.shrink(),
+            ),
+          ),
       ],
     );
-
-    // Wrap with MascotOverlay only when the user preference is on, the
-    // dashboard is ready, and the mascot is enabled for this build —
-    // GlobalConfig.remote.mascotEnabled excludes remote assistance and E2E
-    // mock builds (kept in sync with the General Settings toggle). (P0-2)
-    if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled) {
-      content = MascotOverlay(
-        controller: mascotController,
-        dialogProvider: dialogProvider,
-        spec: const MascotSpec(
-          renderer: LinksysMascotRenderer(),
-        ),
-        child: content,
-      );
-    }
 
     // Wrap with RemoteAssistanceSessionGuard for client-side session recovery
     // (shows blocking dialog if ACTIVE session exists after page refresh)
