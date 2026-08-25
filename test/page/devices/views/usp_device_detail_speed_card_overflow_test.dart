@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -7,8 +7,8 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
-import '../../../golden_test/golden_framework/mocks/mock_devices.dart';
-import '../../../golden_test/page/devices/fixtures/devices_test_data.dart';
+import '../../../mocks/provider_overrides/mock_devices.dart';
+import '../../../mocks/test_data/scenes/devices_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';
@@ -31,8 +31,11 @@ import '../../../util/overflow_probe.dart';
 /// is baked into the baseline PNG and compares clean forever after — so without
 /// this file the fix is guarded by nothing that blocks a PR.
 ///
-/// Tagged `dashboard-card` so it does block one: `run_tests.sh` excludes
-/// `golden||loc||ui`, and a `ui`-tagged regression test would gate nothing.
+/// Tagged `layout-gate` so it does block one: `run_tests.sh` excludes
+/// `golden||loc||ui`, and a `ui`-tagged regression test would gate nothing. (The
+/// tag was `dashboard-card` when this file was written on `dev-2.7.0`; #1336
+/// renamed it, and the 2026-08-24 merge is where the old name stopped selecting
+/// anything.)
 ///
 /// The card is shared with the node-detail page's backhaul throughput row, which
 /// pumps it at its own widths — see `usp_node_detail_backhaul_overflow_test.dart`

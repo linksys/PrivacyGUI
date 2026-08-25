@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -31,7 +31,7 @@ import '../../../../util/text_run_metrics.dart';
 /// below read the one paragraph instead, and locate the operands inside it by
 /// offset.
 ///
-/// Tagged `dashboard-card`, not `ui`: `run_tests.sh` excludes `ui`, and this
+/// Tagged `layout-gate`, not `ui`: `run_tests.sh` excludes `ui`, and this
 /// guards two gate-probed cards (port_forwarding, firewall_overview).
 void main() {
   setUpAll(() async {

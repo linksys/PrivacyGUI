@@ -1,4 +1,20 @@
-@Tags(['dashboard-card'])
+// `layout-gate` because the overflow group below is a PR-blocking layout check:
+// `run_tests.sh` excludes `golden||loc||ui`, so any of those tags would let it
+// leave the PR command in silence. Not `overflow` as well — that tag is the
+// pre-commit selector for the five *registered* sweeps, each of which owns a
+// frozen baseline under `test/fixtures/overflow_baselines/`. This group pumps
+// `probeCardOverflow` directly rather than through `runOverflowSweep`, so it has no
+// baseline row and `./tool/overflow_baseline.sh` does not know it; carrying the tag
+// would make `--tags overflow` mean two different things. Same choice, for the same
+// reason, as the two detail-view overflow files under `test/page/topology/` and
+// `test/page/devices/`.
+//
+// Written as `dashboard-card` on `gate/fix-1367`, which is what this tag was called
+// on `dev-2.7.0`; #1336 renamed it and the merge would otherwise have left this file
+// naming a tag `dart_test.yaml` no longer declares — blocking a PR by luck rather
+// than by selection, which is exactly what `dart_test.yaml`'s own note predicts for
+// the next such file.
+@Tags(['layout-gate'])
 library;
 
 import 'dart:async';

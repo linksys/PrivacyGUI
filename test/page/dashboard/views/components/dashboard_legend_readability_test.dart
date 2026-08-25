@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///
 /// — so they need assertions on the rendered tree, not on overflow.
 ///
-/// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing. (The older
 /// `usp_network_health_card_legend_test.dart` is `ui`-tagged for that reason —
 /// it covers label *composition* from #1145, not degradation.)

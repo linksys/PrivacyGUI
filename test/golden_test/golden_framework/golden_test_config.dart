@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../util/test_viewports.dart';
+
 /// Shell wrapper type for pumping the view.
 enum ShellType {
   /// Wraps in UiKitPageView.withSliver — used by most settings pages.
@@ -15,14 +17,19 @@ enum ShellType {
 }
 
 /// Device screen definition for golden tests.
+///
+/// The two sizes come from `test/util/test_viewports.dart` rather than being written
+/// here, because a non-golden widget test measures against the same mobile viewport
+/// and used to import this file to get it (#1361). The names stay here — they are
+/// golden filename components and mean nothing outside this suite.
 class GoldenDevice {
   final String name;
   final Size size;
 
   const GoldenDevice(this.name, this.size);
 
-  static const phone480 = GoldenDevice('phone480', Size(480, 800));
-  static const desktop1280 = GoldenDevice('desktop1280', Size(1280, 800));
+  static const phone480 = GoldenDevice('phone480', kPhoneViewportSize);
+  static const desktop1280 = GoldenDevice('desktop1280', kDesktopViewportSize);
   static const defaults = [phone480, desktop1280];
 }
 

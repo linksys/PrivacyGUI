@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -22,7 +22,7 @@ import '../../../../util/overflow_probe.dart';
 /// rather than a case for a compact form. So the default-layout widths need their
 /// own coverage, or the specific breakage that motivated the fix stays unpinned.
 ///
-/// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block anything.
 void main() {
   setUpAll(() async {

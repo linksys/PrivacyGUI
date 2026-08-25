@@ -62,10 +62,23 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                   loc(context).appTitle,
                   color: colorScheme.onSurface,
                 ),
-                MenuHolder(
-                  type: MenuDisplay.top,
-                  controllerProvider:
-                      widget.controllerProvider ?? uspMenuController,
+                // The one child of this row that can yield (#1328). All three
+                // used to be inflexible, so the row simply overflowed once the
+                // nav chips appeared at 601px. The nav is the right one to bound:
+                // the title is "Linksys Now" in all 26 locales and the trailing
+                // icons are fixed-size, so the nav is both the widest and the
+                // only child with a narrower form to fall back on.
+                //
+                // `Flexible` alone would not be enough — `AppChipGroup` wraps by
+                // default, and a wrap inside this fixed 64px surface is a
+                // vertical overflow. `TopNavigationMenu` passes `wrap: false` for
+                // exactly this reason; the two changes only work together.
+                Flexible(
+                  child: MenuHolder(
+                    type: MenuDisplay.top,
+                    controllerProvider:
+                        widget.controllerProvider ?? uspMenuController,
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,

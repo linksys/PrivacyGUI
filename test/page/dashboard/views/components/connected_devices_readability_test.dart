@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -105,7 +105,7 @@ import '../../../../util/overflow_probe.dart';
 /// Nothing here re-measures overflow — that is the gate's job, and both
 /// `connected_devices` keys are gone from `known_overflows.json`.
 ///
-/// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing.
 void main() {
   setUpAll(() async {

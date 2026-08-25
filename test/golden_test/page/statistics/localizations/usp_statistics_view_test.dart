@@ -2,7 +2,7 @@ import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
-import '../../../golden_framework/mocks/mock_statistics.dart';
+import '../../../../mocks/provider_overrides/mock_statistics.dart';
 import '../fixtures/statistics_test_data.dart';
 
 void main() {

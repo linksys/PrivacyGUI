@@ -196,6 +196,19 @@ String _generateHtml(
 
   final timestamp = DateTime.now().toIso8601String();
 
+  // "0 overflows" and "0 overflows readable" used to render identically here, and
+  // the second is the state a truncated `overflow_warnings.json` leaves — written
+  // by an unlocked read-modify-write from concurrent suites. So the tile reads `?`
+  // and a banner says why, rather than the gallery publishing a run full of
+  // overflows as clean. Absent file is not this case: it means nothing overflowed.
+  final overflowUnreadable = overflowReport.unreadable;
+  final overflowTile =
+      overflowUnreadable == null ? '${overflowDetails.length}' : '?';
+  final overflowBanner = overflowUnreadable == null
+      ? ''
+      : '<div class="overflow-unreadable">Overflow detail unavailable: '
+          '${_escapeHtml(overflowUnreadable)}</div>';
+
   final buffer = StringBuffer();
   buffer.writeln('''<!DOCTYPE html>
 <html lang="en">
@@ -239,6 +252,14 @@ String _generateHtml(
     .summary-item { text-align: center; }
     .summary-value { font-size: 1.5rem; font-weight: 700; color: var(--color-accent); }
     .summary-label { font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; }
+    /* Emitted only when the overflow report existed and did not parse — see
+       _generateHtml. Amber rather than red: the goldens themselves are still
+       reported, it is only the overflow column that is unknown. */
+    .overflow-unreadable {
+      margin: 0 0 1rem; padding: 0.625rem 0.875rem;
+      border-left: 4px solid #f59e0b; border-radius: 0.25rem;
+      background: #fffbeb; color: #92400e; font-size: 0.875rem;
+    }
     .toolbar {
       display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;
       margin-bottom: 1.5rem; padding: 0.75rem 1rem;
@@ -465,13 +486,14 @@ String _generateHtml(
 <body>
   <h1>Golden Gallery Report</h1>
   <p class="subtitle">Version $version &mdash; Generated $timestamp</p>
+  $overflowBanner
 
   <div class="summary">
     <div class="summary-item"><div class="summary-value">${entries.length}</div><div class="summary-label">Total Images</div></div>
     <div class="summary-item"><div class="summary-value">${sortedFeatures.length}</div><div class="summary-label">Features</div></div>
     <div class="summary-item"><div class="summary-value">${sortedLocales.length}</div><div class="summary-label">Locales</div></div>
     <div class="summary-item"><div class="summary-value">${sortedDevices.length}</div><div class="summary-label">Devices</div></div>
-    <div class="summary-item"><div class="summary-value" style="color:#f59e0b">${overflowDetails.length}</div><div class="summary-label">Overflow</div></div>
+    <div class="summary-item"><div class="summary-value" style="color:#f59e0b">$overflowTile</div><div class="summary-label">Overflow</div></div>
   </div>
 
   <div class="toolbar">

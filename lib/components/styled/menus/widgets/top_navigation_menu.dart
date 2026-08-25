@@ -43,20 +43,41 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
         : getIt.get<ThemeData>(instanceName: 'darkThemeData');
     final selectedIndex =
         widget.items.indexOf(widget.selected ?? widget.items.first);
+    // Icon-only below the measured label width (#1328). Read from the screen
+    // rather than from this widget's own constraints on purpose: the chips sit
+    // in a `Flexible` in the top bar, so the width handed down here is whatever
+    // the title and the trailing icons left over — a number that says nothing
+    // about whether the labels would have fit.
+    final labelled = MediaQuery.sizeOf(context).width >= kTopNavLabelMinWidth;
 
     return Theme(
       data: darkTheme,
       child: AppChipGroup(
         key: ValueKey('top-nav-chip-group-$selectedIndex-$_syncToken'),
+        // Bounded-and-scrollable, not wrapping. `wrap` defaults to true, but the
+        // top bar is a fixed 64px-high `AppSurface`: a second run of chips would
+        // trade the horizontal overflow for a vertical one. The horizontal
+        // `SingleChildScrollView` this selects is what makes the row safe at
+        // every width in every locale, including the 19 this was never measured
+        // in — worst case the nav scrolls, which with icon-only chips (~140px for
+        // all three) it never has to. See PrivacyGUI#1328.
+        wrap: false,
         chips: widget.items
             .map((type) => ChipItem(
-                  label: type.resloveLabel(context),
+                  label: labelled ? type.resloveLabel(context) : '',
                   icon: type.resolveIcon(),
+                  // Always the real label, so dropping the visible text does not
+                  // also drop the destination's name: this is what a screen
+                  // reader announces, and what an E2E `getByRole(name:)` matches,
+                  // once `label` is empty.
+                  semanticLabel: type.resloveLabel(context),
                   enabled: true,
                   // Layout-neutral test hook: the primary-nav destinations
                   // render as top chips on desktop and a bottom bar on mobile;
                   // both emit the same `nav-<home|menu|support>` identifier so
                   // E2E targeting is breakpoint-agnostic. See PrivacyGUI#1172.
+                  // The icon-only form keeps it too — it hides the labels, not
+                  // the destinations.
                   identifier: 'nav-${type.name}',
                 ))
             .toList(),

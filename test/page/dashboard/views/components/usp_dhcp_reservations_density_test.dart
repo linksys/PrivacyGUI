@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'dart:math' as math;
@@ -14,8 +14,8 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
-import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../../util/overflow_probe.dart';
@@ -84,23 +84,41 @@ import '../../../../util/overflow_probe.dart';
 /// ## Mutation ledger
 ///
 /// Each mutation applied alone, reverted before the next, and run against this
-/// file and the full `dashboard-card` tag:
+/// file and the full `layout-gate` tag (1,362 tests, 2m22s). **Re-measured
+/// 2026-08-24**, when this file was merged onto the branch carrying epic #1335: the
+/// tag was called `dashboard-card` where these mutations were first run, and only
+/// row A's tag figure moved.
 ///
 ///   | mutation                                                  | this file | the tag |
 ///   |-----------------------------------------------------------|-----------|---------|
-///   | A `normalAbove: 369` deleted from the spec                 | 9 fail    | 66 fail |
+///   | A `normalAbove: 369` deleted from the spec                 | 9 fail    | 18 fail |
 ///   | B `normalAbove: 369` → `329` (the fixture-measured floor)  | 1 fail    | 3 fail  |
 ///   | C the trailing's `compact` branch removed (side by side)   | 4 fail    | 4 fail  |
 ///   | D `DeviceRow` ignores `compact`, always builds the icon    | 4 fail    | 10 fail |
 ///
 /// **A** is the loud one and belongs to the gate: without a threshold the card has
-/// no compact form, so #1183 pumps the original defect again — 52 of its 55
-/// failures are 260.5px and 288.0px across all 26 locales, the exact coordinates
-/// #1321 was filed for. The other 3 there, plus 1 in the popup file and 1 in the
-/// forced-form file, are inventory meta-tests noticing the card left the set.
+/// no compact form, so #1183 pumps the original defect again — and the two tests
+/// that catch it are `card.width card=dhcp_reservations px=261 tab=0` and `px=288
+/// tab=0`, the exact coordinates #1321 was filed for. **They are the gate seeing
+/// something it once reported clean.** Before #1321 made the lease fixture
+/// now-relative, `leaseTimeFormatted` returned the empty string for those rows, the
+/// trailing slot rendered IP-only ~50px narrower than production's, and both widths
+/// passed. The fixture fix is what turned this mutation from survivable into loud.
+///
+/// **18, where the first run of this row said 66**, and none of the difference is
+/// coverage. R3 (#1343–#1345) ported all four sweeps onto `runOverflowSweep`, which
+/// loops the 26 locales *inside* one test per coordinate: 52 failing per-locale
+/// cases became 2 failing coordinate tests, each naming its 26 locales in one
+/// message. The rest of the card file's 6 are meta — `card.normal_band enumerates
+/// 234 cells`, `the seven cards that declare a threshold`, `each threshold is
+/// realizable`, `the gate's own widths cannot reach the normal band` — and the last
+/// 3 are inventory pins in the forced-form (2) and popup (1) files noticing the card
+/// left a set. Two of those are new since the first run: deleting a `normalAbove`
+/// un-picks the card from `selectableForms(compact)`, so
+/// `forced_form.compact_floor` falls 21 → 18 and its partition test loses an id.
 ///
 /// **B is the row worth reading.** 329 is a real measurement — of the fixture — and
-/// the gate's 1698-case sweep stays green under it, because the gate pumps that same
+/// the card sweep's 1,943 cells stay green under it, because the gate pumps that same
 /// fixture. Its 3 failures are `@329.0px` here plus the two pinned-threshold maps in
 /// `dashboard_card_overflow_test.dart`, and those maps only record the number, they
 /// do not check it. So one assertion in this file — the worst-case pair at the
@@ -114,7 +132,9 @@ import '../../../../util/overflow_probe.dart';
 /// `usp_connected_devices_density_test.dart`, which shares `DeviceRow`) — and
 /// under D no width in this file overflows, because the row's own title is
 /// unbounded and absorbs the 60px the icon takes back. The icon is spent for
-/// clarity; the stacking is what makes 200px declarable.
+/// clarity; the stacking is what makes 200px declarable. Both are unmoved by the
+/// merge — C is 4/4 and D 4/10 exactly as first measured, because neither touches a
+/// threshold, a sweep or a count.
 void main() {
   setUpAll(() async {
     // Real fonts: under Ahem every glyph is one square em, so an address measured

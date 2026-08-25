@@ -1,20 +1,16 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate', 'overflow'])
 library;
 
 import 'dart:math' as math;
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
-import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
-import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
-import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
+import '../../../layout_gate/families/forced_form_card_family.dart';
+import '../../../layout_gate/sweep.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 
@@ -85,15 +81,17 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// file adds is the geometry and the card list, not the string table. So it takes
 /// the same three the popup file's second pump takes, for the same reason: English
 /// as the baseline, German for the longest Latin compounds, Traditional Chinese for
-/// the widest glyphs.
+/// the widest glyphs. Since #1344 that set is `kCardTextBoundingLocales`, shared
+/// with the file it borrowed the argument from.
 ///
 /// ## No allowlist
 ///
-/// `known_overflows.json` baselines the normal form's inherited debt at widths the
-/// grid chose. Nothing here is inherited — these boxes did not exist before this
-/// ticket — so a failure is this ticket's regression and there is nothing to
-/// grandfather. AC 10 is the other half of that: the fixture is unchanged, and the
-/// #1183 gate stays green.
+/// `known_overflows.json` baselines the normal form's inherited debt — since #1341
+/// keyed on the overflow's `file:line`, so an exemption is a source location rather
+/// than a coordinate the grid chose. Nothing here is inherited — these boxes did
+/// not exist before this ticket — so a failure is this ticket's regression and
+/// there is nothing to grandfather. AC 10 is the other half of that: the fixture is
+/// unchanged, and the #1183 gate stays green.
 ///
 /// ## Mutation table
 ///
@@ -109,74 +107,66 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// | 3 | `_buildPopup` drops the `Flexible` around the value line | **survived** — equivalent today |
 ///
 /// Row 1 is the measurement behind the fix: 94.0px over on `connected_devices`,
-/// 6.0px on `wifi_performance`, and 4 of the 6 variants over on their own. Row 2 is
+/// 6.0px on `wifi_performance`, and 4 of the 5 variants over on their own. Row 2 is
 /// there because row 1 alone would also pass with the branch applied to a single
 /// variant — the popup form is card-independent, and so is its placeholder.
+///
+/// The kill counts are unchanged by #1367 deleting the `stats` variant, and the
+/// reason is worth recording: that variant was a subclass overriding `build`
+/// outright, so it never reached the popup branch these rows mutate and was killed
+/// by neither. The denominator above was 6 and is now 5; the numerator never
+/// included it.
 ///
 /// Row 3 survives because the popup skeleton's content is 48px inside an 86px box,
 /// so nothing is ever asked to shrink. The `Flexible` is kept anyway: it mirrors
 /// `CardPopupForm`'s own shape, which is what keeps the placeholder and the form it
 /// resolves into from jumping. Recorded rather than removed, and recorded rather
 /// than left to look covered.
-
-/// Locale identity, matching the other sweeps' key so test names line up.
-String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
-    ? l.languageCode
-    : '${l.languageCode}_${l.countryCode}';
-
-/// Same tolerance the #1183 gate uses, for the same reason: sub-pixel shaping
-/// differences between the mac and ubuntu rasterizers.
-const double _tolerancePx = 2.0;
-
-/// The three locales that bound the text. See the header.
-const List<Locale> _locales = [
-  Locale('en'),
-  Locale('de'),
-  Locale('zh', 'TW'),
-];
-
-/// The box a picked form collapses a card to, as a width case the probe accepts.
 ///
-/// Derived from [UspWidgetSpecs.popupColumns] / [UspWidgetSpecs.compactMinColumns]
-/// through the same enumeration the gate uses, so the widths here move with the
-/// constants and with the grid rather than being restated. Null only when a
-/// `MIN_SCREEN` filter has excluded the whole range, matching [widthCasesFor].
-CardWidthCase? _caseForSpan(int span, String label) {
-  final narrowest = narrowestRealizationOf(span);
-  if (narrowest == null) return null;
-  return CardWidthCase(
-    screenWidth: narrowest.screenWidth,
-    cardWidth: narrowest.cardWidth,
-    columnSpan: span,
-    label: label,
-  );
-}
-
-/// The height a forced compact card is floored at, in rows.
+/// The row counts are per-*locale* tests, which is what this file used to declare;
+/// since #1344 the same mutation is killed by the coordinate test that carries
+/// those locales. Row 2 is the one to read twice: 4 killed tests becomes 2 (the
+/// `list` variant, and `connected_devices` across its three locales in one test),
+/// and the mutation is no less dead for it.
 ///
-/// `max` of the two, because [UspWidgetSpecs.compactMinHeightRows] is a floor
-/// rather than a pin and every compact consumer already declares 2 or 3. Pumping
-/// the constant alone would measure a shorter card than the floor actually permits
-/// for four of the seven (`connected_devices`, `time_settings`,
-/// `dhcp_reservations`, `network_health`, all at 3).
-int _compactFloorRows(WidgetSpec spec) => math.max(
-      spec.getConstraints(DisplayMode.normal).minHeightRows,
-      UspWidgetSpecs.compactMinHeightRows,
-    );
-
-/// The cards a user can pick [density] for.
-List<WidgetSpec> _specsOffering(CardDensity density) => UspWidgetSpecs.all
-    .where((s) => UspWidgetSpecs.selectableForms(s.id).contains(density))
-    .toList();
+/// ## What this file is, since #1344
+///
+/// Three [runOverflowSweep] declarations and the five hand-written tests that keep
+/// them honest. The 77 cells the three sweeps measure are enumerated by
+/// `test/layout_gate/families/forced_form_card_family.dart`; the tolerance filter,
+/// the fresh-subtree key, the surface reset and the failure prose are the shared
+/// runner's, which is what #1344 is for.
+///
+/// The five that remain are the inventory: which cards can be picked into each
+/// form (both sweep sizes are entirely a function of those two lists), that the
+/// tile is narrower and shorter than anything the grid produces, that the mobile
+/// rule does not undercut it, that the compact floor is a span the gate never
+/// pumps, and which two cards make the compact sweep *forced*. None of them pumps a
+/// card, which is why none of them is in #1337's dataset.
+///
+/// **80 tests before, 37 after**, and the whole difference is the grouping the
+/// runner fixes: 75 per-locale tests become 29 coordinate tests, each looping its
+/// three locales inside one body, plus the three cell-count pins those coordinates
+/// can no longer be counted by eye. 5 + 17 + 6 + 6 + 3 = 37.
+///
+/// **38 since the #1325 merge**, and the +1 is the arithmetic rather than a decision:
+/// `dhcp_reservations` became pickable-compact, so the compact sweep's coordinates go
+/// 6 → 7 and its cells 18 → 21. 5 + 17 + 6 + 7 + 3 = 38.
+///
+/// **37 since #1367**, and this one *is* a decision: the `stats` skeleton variant is
+/// deleted, so the skeleton sweep's coordinates go 6 → 5 and its cells with them.
+/// 5 + 17 + 5 + 7 + 3 = 37. It is the same count #1344 landed at by coincidence, and
+/// the three cell-count pins are what tell the two apart.
+///
+/// One cell **id** changes with the port — the skeleton cells gain
+/// `|locale=en`, which they were always measured in — and `forced_form.tsv` is
+/// re-captured for it. The family header has the before/after and the argument;
+/// the other 69 rows are byte-identical.
 
 void main() {
   setUpAll(() async {
     await loadAppFonts();
   });
-
-  final popupCase = _caseForSpan(UspWidgetSpecs.popupColumns, 'popup')!;
-  final compactCase =
-      _caseForSpan(UspWidgetSpecs.compactMinColumns, 'compact floor')!;
 
   group('what this file sweeps', () {
     test('is every card that can be picked into popup', () {
@@ -185,7 +175,7 @@ void main() {
       // silently lost coverage here; the list appearing shorter than
       // `UspWidgetSpecs.all` minus one means a card stopped offering the form.
       expect(
-        _specsOffering(CardDensity.popup).map((s) => s.id).toList(),
+        specsOfferingForm(CardDensity.popup).map((s) => s.id).toList(),
         UspWidgetSpecs.all
             .map((s) => s.id)
             .where((id) => !UspWidgetSpecs.cardsWithoutPopupForm.contains(id))
@@ -203,9 +193,10 @@ void main() {
           .map((cases) => cases.first.cardWidth)
           .reduce(math.min);
 
-      expect(popupCase.cardWidth, lessThan(narrowestGridWidth),
-          reason: 'a picked popup tile is ${popupCase.widthKey}px against the '
-              'grid\'s narrowest ${narrowestGridWidth.toStringAsFixed(1)}px');
+      expect(forcedPopupTileCase.cardWidth, lessThan(narrowestGridWidth),
+          reason: 'a picked popup tile is ${forcedPopupTileCase.widthKey}px '
+              'against the grid\'s narrowest '
+              '${narrowestGridWidth.toStringAsFixed(1)}px');
       expect(
         UspWidgetSpecs.popupHeightRows,
         lessThanOrEqualTo(UspWidgetSpecs.all
@@ -226,7 +217,7 @@ void main() {
       expect(mobileColumns, UspLayoutEnvelope.mobileSlotCount);
       final mobileWidth = cardWidthAt(mobileScreen, mobileColumns);
 
-      expect(mobileWidth, greaterThan(popupCase.cardWidth),
+      expect(mobileWidth, greaterThan(forcedPopupTileCase.cardWidth),
           reason: 'if the mobile rule ever produces a narrower tile than the '
               'collapse, it is the worst case and this file must sweep it '
               'instead');
@@ -249,12 +240,13 @@ void main() {
       final pumpedInCompact = <String>[];
       final pumpedInNormal = <String>[];
 
-      for (final spec in _specsOffering(CardDensity.compact)) {
+      for (final spec in specsOfferingForm(CardDensity.compact)) {
         final spans = widthCasesFor(spec).map((c) => c.columnSpan);
         if (!spans.contains(UspWidgetSpecs.compactMinColumns)) {
           notPumped.add(spec.id);
         } else if (densityForWidth(
-                width: compactCase.cardWidth, normalAbove: spec.normalAbove) ==
+                width: forcedCompactFloorCase.cardWidth,
+                normalAbove: spec.normalAbove) ==
             CardDensity.compact) {
           pumpedInCompact.add(spec.id);
         } else {
@@ -273,14 +265,15 @@ void main() {
           'network_health',
         ],
         reason: 'these declare no ${UspWidgetSpecs.compactMinColumns}-column '
-            'span, so ${compactCase.widthKey}px is a width no sweep but this one '
+            'span, so ${forcedCompactFloorCase.widthKey}px is a width no sweep but this one '
             'reaches. An id leaving this list has not lost coverage — it has '
             'moved to one of the two below, and the reason has to be read',
       );
       expect(
         pumpedInCompact,
         ['dhcp_reservations'],
-        reason: 'the gate already pumps these at ${compactCase.widthKey}px in '
+        reason:
+            'the gate already pumps these at ${forcedCompactFloorCase.widthKey}px in '
             'the compact form, so their cases below are duplicates rather than '
             'coverage. A list growing here is fine; a list growing to include '
             'every card means this file\'s compact sweep has stopped adding '
@@ -290,7 +283,7 @@ void main() {
         pumpedInNormal,
         isEmpty,
         reason: 'a card here declares the floor span but sits above its own '
-            'threshold at ${compactCase.widthKey}px, so the gate measures its '
+            'threshold at ${forcedCompactFloorCase.widthKey}px, so the gate measures its '
             'normal form and only a pick reaches the compact one. Nothing is '
             'wrong with that — it is the strongest case for this sweep — but it '
             'is a shape #1299 never measured, so it is pinned rather than '
@@ -303,176 +296,70 @@ void main() {
       // un-pumped. Named rather than counted: the two are the cards whose
       // threshold sits below the 4-column realization, and a spec edit that moves
       // a threshold across it changes the meaning of the sweep.
-      final ruleSaysNormal = _specsOffering(CardDensity.compact)
+      final ruleSaysNormal = specsOfferingForm(CardDensity.compact)
           .where((s) =>
               densityForWidth(
-                  width: compactCase.cardWidth, normalAbove: s.normalAbove) ==
+                  width: forcedCompactFloorCase.cardWidth,
+                  normalAbove: s.normalAbove) ==
               CardDensity.normal)
           .map((s) => s.id)
           .toList();
 
       expect(ruleSaysNormal, ['lan_info', 'time_settings'],
-          reason: 'at ${compactCase.widthKey}px these are the cards production '
-              'would render in their normal form, so a pick is the only way to '
-              'see their compact form at this width — AC 11\'s "a width the '
-              'automatic rule would not select". The other five are already in '
-              'their compact band here, and are swept for the geometry alone');
+          reason: 'at ${forcedCompactFloorCase.widthKey}px these are the cards '
+              'production would render in their normal form, so a pick is the '
+              'only way to see their compact form at this width — AC 11\'s "a '
+              'width the automatic rule would not select". The other five are '
+              'already in their compact band here, and are swept for the '
+              'geometry alone');
     });
   });
 
-  group('a forced popup tile', () {
-    for (final spec in _specsOffering(CardDensity.popup)) {
-      for (final locale in _locales) {
-        final tag = _localeTag(locale);
-        testWidgets(
-            '${spec.id} is clean at ${popupCase.widthKey}x'
-            '${UspWidgetSpecs.popupHeightRows} ($tag)', (tester) async {
-          final incidents = await probeCardOverflow(
-            tester,
-            cardId: spec.id,
-            widthCase: popupCase,
-            cardHeightRows: UspWidgetSpecs.popupHeightRows,
-            tabIndex: 0,
-            locale: locale,
-            density: CardDensity.popup,
-          );
+  // ─── A forced popup tile ──────────────────────────────────────────────────
+  //
+  // Every card a user can pick popup for, in the 122x1 box the pick produces.
+  // 17 cards x 3 locales. The count is pinned because the grouping hides a
+  // narrowing: 17 coordinates report the same green whether each ran 3 locales or
+  // 1 — and this sweep's size is a function of `selectableForms`, which the
+  // inventory test above pins from the other side.
+  runOverflowSweep(
+    family: const ForcedPopupTileFamily(),
+    expectedCellCount: 51,
+  );
 
-          expect(
-            find.byType(CardPopupForm),
-            findsOneWidget,
-            reason: '${spec.id} did not render the popup form. Eight of these '
-                'cards had no reachable popup form before #1299 — one that '
-                'bypasses the template would keep its full form inside a '
-                '${popupCase.widthKey}px box, which is the overflow the parent '
-                'epic exists to prevent',
-          );
+  // ─── The loading state at the picked box ──────────────────────────────────
+  //
+  // Found by the sweep above, and a separate sweep rather than part of it: a card
+  // only renders its skeleton in the frames before its data arrives, and the
+  // shared fixture resolves most cards' data immediately, so 13 of the 15 cards
+  // that return a skeleton were covered by fixture timing rather than by a test.
+  // The variants are therefore pumped directly, in `en` alone — the input is a
+  // widget under a popup scope, which has nothing to do with locale or card data.
+  //
+  // These cells are the ones whose ids change at #1344, gaining the `|locale=en`
+  // the runner appends to every cell by construction. See the family header.
+  //
+  // 6 until #1367 deleted the `stats` variant. It was the one cell here measuring a
+  // box production never produced — `stats_panel` is the single card with no popup
+  // path at all, which is why the inventory test above excludes it — and #1367 left
+  // `CardSkeleton.stats()` with no production caller. The family header has the
+  // argument; this pin is what makes the removal a number rather than prose.
+  runOverflowSweep(
+    family: const ForcedFormSkeletonFamily(),
+    expectedCellCount: 5,
+  );
 
-          final significant =
-              incidents.where((i) => i.pixels > _tolerancePx).toList();
-          expect(
-            significant,
-            isEmpty,
-            reason: '${spec.id} popup form overflowed the picked box '
-                '($tag):\n${significant.join('\n')}',
-          );
-        });
-      }
-    }
-  });
-
-  group('the loading state at the picked box', () {
-    // Found by the sweep above, and the reason this group exists rather than
-    // being covered by it: a card only renders its skeleton in the frames before
-    // its data arrives, and the shared fixture resolves most cards' data
-    // immediately. Only `connected_devices` and `wifi_performance` had a loading
-    // frame to catch (94px and 6px over), so 13 of the 15 cards that return a
-    // skeleton were covered by fixture timing rather than by the test. On a cold
-    // boot every one of them has that frame.
-    //
-    // So the variants are pumped directly, one test each: the input is a
-    // [CardSkeleton] under a popup scope, which is a fact about five widgets and
-    // has nothing to do with locale or card data. The two card cases above are
-    // what prove production puts the skeleton under that scope at all.
-    //
-    // `stats` was a sixth entry until #1367. It never belonged: `stats_panel` is
-    // the one widget with no popup path at all (`cardsWithoutPopupForm`) because
-    // its `minColumns: 6` floors its narrowest realization above [kPopupBelow],
-    // so no width the grid produces put that skeleton under a popup scope — this
-    // case was measuring a box production never gave it. #1367 then replaced the
-    // row-wide skeleton with a per-tile one and left `CardSkeleton.stats()` with
-    // no production callers, so the variant is gone and this entry with it. The
-    // panel's own loading state is now swept at the widths it really gets, in the
-    // group below.
-    //
-    // `rows` is the largest count production asks each variant for, since the
-    // pre-fix overflow grew with it.
-    const variants = <String, CardSkeleton>{
-      'info': CardSkeleton.info(rows: 5),
-      'list': CardSkeleton.list(rows: 4),
-      'chart': CardSkeleton.chart(),
-      'topology': CardSkeleton.topology(),
-      'status': CardSkeleton.status(),
-    };
-
-    variants.forEach((name, skeleton) {
-      testWidgets('$name fits the ${popupCase.widthKey}px tile',
-          (tester) async {
-        final incidents = await probeCardOverflow(
-          tester,
-          // The id only keys the harness's geometry and tab pinning; the widget
-          // under test is the override. The scope is built by hand rather than
-          // through `density:` because that parameter drives
-          // `cardDensityOverrideProvider`, which only the factory-built
-          // `CardDensityHost` reads — and a `cardOverride` replaces the factory.
-          cardId: 'connected_devices',
-          cardOverride: CardDensityScope(
-            density: CardDensity.popup,
-            child: skeleton,
-          ),
-          widthCase: popupCase,
-          cardHeightRows: UspWidgetSpecs.popupHeightRows,
-          tabIndex: 0,
-          locale: const Locale('en'),
-        );
-
-        final significant =
-            incidents.where((i) => i.pixels > _tolerancePx).toList();
-        expect(
-          significant,
-          isEmpty,
-          reason: 'the $name skeleton overflowed the picked box:\n'
-              '${significant.join('\n')}',
-        );
-      });
-    });
-  });
-
-  group('a forced compact card at its floor', () {
-    for (final spec in _specsOffering(CardDensity.compact)) {
-      final rows = _compactFloorRows(spec);
-      for (final locale in _locales) {
-        final tag = _localeTag(locale);
-        testWidgets(
-            '${spec.id} is clean at ${compactCase.widthKey}x$rows ($tag)',
-            (tester) async {
-          final incidents = await probeCardOverflow(
-            tester,
-            cardId: spec.id,
-            widthCase: compactCase,
-            cardHeightRows: rows,
-            tabIndex: 0,
-            locale: locale,
-            density: CardDensity.compact,
-          );
-
-          // The compact form has no widget of its own to find — each of the
-          // seven cards arranges its own — so the structural claim available here is
-          // that the card still went through the template that reads the density.
-          expect(
-            find.byType(DashboardCardTemplate),
-            findsOneWidget,
-            reason: '${spec.id} must render through the card template; the '
-                'density scope it reads is what selects the compact form',
-          );
-          expect(
-            find.byType(CardPopupForm),
-            findsNothing,
-            reason:
-                '${spec.id}: compact is the middle band. Falling through to '
-                'the popup form would satisfy every overflow assertion here '
-                'while losing the card\'s content',
-          );
-
-          final significant =
-              incidents.where((i) => i.pixels > _tolerancePx).toList();
-          expect(
-            significant,
-            isEmpty,
-            reason: '${spec.id} compact form overflowed at its floor '
-                '($tag):\n${significant.join('\n')}',
-          );
-        });
-      }
-    }
-  });
+  // ─── A forced compact card at its floor ───────────────────────────────────
+  //
+  // 7 cards x 3 locales, at the 261px the pick floors them at and the row count
+  // [forcedCompactFloorRows] takes the max of — see it for the four cards the
+  // constant alone would measure a shorter card than the floor permits for.
+  //
+  // 18 until #1325 gave `dhcp_reservations` a `normalAbove`, which is the predicate
+  // `selectableForms` reads: a threshold added for the normal band's sake made a
+  // seventh card pickable-compact, and this pin is what said so.
+  runOverflowSweep(
+    family: const ForcedCompactFloorFamily(),
+    expectedCellCount: 21,
+  );
 }

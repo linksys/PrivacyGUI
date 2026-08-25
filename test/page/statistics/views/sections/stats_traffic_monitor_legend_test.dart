@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -8,8 +8,8 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 
-import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
-import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../../mocks/test_data/scenes/cards_scene_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/overflow_probe.dart';
 import '../../../../util/statistics/stats_section_probe.dart';
@@ -34,7 +34,7 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// with `spaceBetween`) clean at the narrow widths the Statistics page produces,
 /// in the widest locales, and verify the byte totals are never dropped.
 ///
-/// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block anything.
 ///
 /// ## Mutation ledger

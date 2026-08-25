@@ -1,0 +1,881 @@
+/// The overflow allowlist ("ratchet"), keyed on `file:line` (#1341).
+///
+/// ## Why the key changed
+///
+/// Until #1341 the allowlist was keyed on the card sweep's own coordinates —
+/// `card|widthLabel|tab`, optionally `@profile`. That key is a description of
+/// *where the sweep was standing*, not of the defect, so every entry became
+/// meaningless the moment a layout was rearranged: a card that gains a column
+/// span, a threshold that moves, a tab that is added all invalidate the fixture
+/// wholesale while the underlying overflow is untouched. A source location
+/// survives all of it, and it is also the join column that makes golden CI's
+/// advisory findings and this gate's verdicts one dataset
+/// (`doc/testing/overflow_gate_architecture.md` §3.5 and §8).
+///
+/// The key is [OverflowIncident.site]. An incident whose creation location did
+/// not resolve — or resolved to a path that could not be made
+/// machine-independent (#1356) — has a **null** site and therefore **can never be
+/// exempted**, no matter what the fixture says: `"*"` on every site in the file
+/// does not cover it. That is a deliberate consequence of the key choice and it
+/// is the safe direction: a location the operator cannot act on, or one that
+/// means something different on the next machine, would otherwise be an overflow
+/// tolerated by accident. The remedy is to fix the layout, or to make the
+/// location resolve (widget creation tracking is on by default under
+/// `flutter test`).
+///
+/// ## What an entry says
+///
+/// A site key is portable, and portability is exactly what makes it broad: one
+/// `file:line` is rendered by every cell that reaches the line. So the value
+/// carries two bounds rather than a locale list alone — see [OverflowExemption]
+/// for why a `"maxOverflowPx"` is not optional (#1356).
+///
+/// ## What it is called
+///
+/// The architecture doc's §3.3 sketch writes `Ratchet.fromFixture(...)`. The
+/// implementation is [OverflowRatchet], matching [OverflowIncident] and
+/// `OverflowCell`: `Ratchet` alone is a very generic name to put in the test
+/// tree's flat import namespace.
+///
+/// ## No version marker
+///
+/// A `"schemaVersion"` field was considered and rejected: the only thing it
+/// could detect is a fixture written under an older shape, and the data says that
+/// itself — [_validateSiteKey] for a pre-#1341 coordinate key, [_parseExemption]
+/// for a pre-#1356 bare locale list, each with a message naming the offending
+/// entry. A marker would be a second thing to keep in sync and a reader that
+/// trusted it would still have to validate the entries anyway. The
+/// committed fixture is therefore byte-unchanged by #1341 — it holds
+/// `{"tracking": {}, "allowlist": {}}`, and an empty allowlist means what it has
+/// always meant: zero tolerance.
+///
+/// ## Loud, not silent
+///
+/// Every rejection below exists because the alternative — reading a key the
+/// ratchet does not understand as "not allowlisted" — is how a stale exemption
+/// becomes invisible: the gate stays green on the coordinate the author believed
+/// they had exempted, and the dead-entry sweep never mentions the entry because
+/// it never understood it. The old reader wrapped the whole load in
+/// `catch (e) { print(...) }`; a printed warning in a 1,898-test run is not a
+/// signal.
+library;
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'incident.dart';
+
+/// Where the committed fixture lives, relative to the app root that
+/// `flutter test` runs in.
+const String kKnownOverflowsFixturePath = 'test/fixtures/known_overflows.json';
+
+/// The locale-set wildcard: "this site overflows in every locale", i.e. the
+/// overflow is structural rather than text-length dependent.
+const String kAnyLocale = '*';
+
+/// Printed in place of a tracking note when a site has none.
+///
+/// The old default was `'baseline #1183'`, which was defensible while every
+/// entry *was* #1183's debt and the key was a card. Under a site key a new
+/// exemption can come from anywhere, and attributing it to #1183 by default
+/// would be a fabricated citation.
+const String kUntrackedNote = 'no "tracking" note in the fixture';
+
+/// A fixture the ratchet refuses to read.
+///
+/// Separate from [FormatException] so a caller (and a test) can tell "the
+/// allowlist is wrong" apart from any other parse failure in the same run.
+class OverflowRatchetFormatException implements Exception {
+  OverflowRatchetFormatException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'OverflowRatchetFormatException: $message';
+}
+
+/// One allowlist entry: which locales it exempts, and **how bad** it lets the
+/// overflow get.
+///
+/// ## Why the ceiling exists (#1356)
+///
+/// The old coordinate key bounded an exemption by construction:
+/// `connected_devices|min|0` exempted one card at one width, so a regression
+/// anywhere else was a new coordinate and the gate failed on it. Re-keying to
+/// `file:line` (#1341) bought portability with that bound — one location is
+/// rendered by many cells (anything in `ui_kit_library`, any shared row widget),
+/// so a single entry now speaks for every cell that reaches the line. Without a
+/// magnitude the entry written for the +2.5px this sweep measured also absorbs a
+/// +400px clipped row in the next cell, in the next card, next quarter — reported
+/// as tracked debt, under a "tracking" note that describes a much smaller defect.
+///
+/// So an exemption states two bounds, and neither is optional: *where and when*
+/// (`locales`) and *how much* ([maxOverflowPx]).
+///
+/// ## The slack, and why it is the gate's own tolerance
+///
+/// [coversMagnitude] allows [kOverflowTolerancePx] on top of the stated ceiling.
+/// An exemption written at exactly the measured magnitude would otherwise be a
+/// hair trigger: a sub-pixel shaping difference between the mac and ubuntu
+/// rasterizers — the very thing that constant exists to absorb everywhere else in
+/// this gate — would fail the run, and the only move available to whoever is
+/// paged is to inflate the number. One noise floor, stated once, applied here
+/// too: below it nothing is a signal, above it the defect measurably got worse.
+/// Failure messages print the allowance so it is not a surprise found in source.
+class OverflowExemption {
+  const OverflowExemption({required this.locales, required this.maxOverflowPx});
+
+  /// Locale tags this entry exempts, or `{'*'}` for every locale.
+  final Set<String> locales;
+
+  /// The worst overflow, in logical pixels, this entry tolerates — across every
+  /// locale in [locales], since it is one figure for the entry.
+  ///
+  /// Always finite and positive: an infinite ceiling is the unbounded exemption
+  /// this field replaces, and it would additionally cover
+  /// [OverflowIncident.unparseablePixels], which is the one incident whose real
+  /// magnitude nobody knows.
+  final double maxOverflowPx;
+
+  bool coversLocale(String localeTag) =>
+      locales.contains(kAnyLocale) || locales.contains(localeTag);
+
+  bool coversMagnitude(double pixels) =>
+      pixels <= maxOverflowPx + kOverflowTolerancePx;
+
+  /// What the failure and the fixture both call this allowance.
+  String get allowanceLabel =>
+      '${_formatPx(maxOverflowPx)}px (+${_formatPx(kOverflowTolerancePx)}px '
+      'shaping tolerance)';
+}
+
+/// `26.0`, and `Infinity` rather than a crash for the unparseable measurement.
+String _formatPx(double pixels) =>
+    pixels.isFinite ? pixels.toStringAsFixed(1) : '$pixels';
+
+/// The allowlist, plus the liveness it accumulates over one run.
+///
+/// Two responsibilities, and they are one object on purpose:
+///
+/// 1. **Consult** — is this incident, in this locale, exempt? ([consultCell])
+/// 2. **Close** — did every exemption earn its keep? ([deadEntryFailure])
+///
+/// The second cannot be answered per cell, which is the whole design problem
+/// #1341 had to solve. Under the old coordinate key it could: the exemption and
+/// the cell were the same thing, so a clean cell whose own coordinate was listed
+/// was provably a dead entry, and `_failIfDeadExemption` said so from inside that
+/// cell. A site key breaks that identity — one site can be rendered by many
+/// cells (anything in `ui_kit_library`, any shared row widget), so a site that
+/// this cell renders cleanly may overflow in the next one. Judging deadness per
+/// cell would therefore fail a clean cell for an entry that is alive elsewhere,
+/// which is worse than not checking at all: it would push operators to delete
+/// live exemptions.
+///
+/// So the verdict is taken **once, after the whole run**, over the union of every
+/// site that overflowed anywhere — see [deadEntryFailure] for the guard that
+/// keeps a *filtered* run from taking it, and for the one check this design
+/// gives up.
+class OverflowRatchet {
+  OverflowRatchet._(this._allowlist, this._tracking, this.source);
+
+  /// An allowlist that exempts nothing — zero tolerance.
+  factory OverflowRatchet.empty({String source = _inMemorySource}) =>
+      OverflowRatchet._(const {}, const {}, source);
+
+  /// Reads the fixture at [path], or fails **closed** when it is absent.
+  ///
+  /// Absent means "nothing is exempt", which is the strict direction: every
+  /// overflow fails, and no entry can be reported dead because there are none.
+  /// It is also indistinguishable from today's committed fixture, so this cannot
+  /// mask an exemption that exists. The path is still printed, because a wrong
+  /// working directory otherwise looks exactly like a green gate.
+  ///
+  /// Content that *is* there but cannot be read throws — see
+  /// [OverflowRatchetFormatException].
+  factory OverflowRatchet.fromFixture([
+    String path = kKnownOverflowsFixturePath,
+  ]) {
+    final file = File(path);
+    if (!file.existsSync()) {
+      // ignore: avoid_print
+      print(
+        '⚠️ No overflow allowlist at "$path" (cwd ${Directory.current.path}); '
+        'running with zero tolerance and no dead-entry detection.',
+      );
+      return OverflowRatchet.empty(source: path);
+    }
+    return OverflowRatchet.fromJsonString(file.readAsStringSync(),
+        source: path);
+  }
+
+  /// Parses [content] as the fixture document.
+  ///
+  /// Injected the same way and for the same reason as
+  /// [OverflowIncident.parse]'s `runDirectory`: the ratchet's whole behaviour is
+  /// then a pure function of a string, so #1341's oracle needs no checkout, no
+  /// fixture file and no sweep.
+  factory OverflowRatchet.fromJsonString(
+    String content, {
+    String source = _inMemorySource,
+  }) {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(content);
+    } on FormatException catch (e) {
+      throw OverflowRatchetFormatException(
+        '$source is not readable JSON: ${e.message}',
+      );
+    }
+    if (decoded is! Map<String, Object?>) {
+      throw OverflowRatchetFormatException(
+        '$source must hold a JSON object with "tracking" and "allowlist" keys, '
+        'not ${decoded.runtimeType}.',
+      );
+    }
+    return OverflowRatchet.fromJson(decoded, source: source);
+  }
+
+  /// Builds a ratchet from an already-decoded document.
+  factory OverflowRatchet.fromJson(
+    Map<String, Object?> json, {
+    String source = _inMemorySource,
+  }) {
+    final unknown = json.keys.where((k) => !_knownSections.contains(k)).toList()
+      ..sort();
+    if (unknown.isNotEmpty) {
+      throw OverflowRatchetFormatException(
+        '$source has unrecognised top-level key(s) ${_quoteAll(unknown)}. Only '
+        '${_quoteAll(_knownSections)} are read, so anything else — a typo\'d '
+        '"allow_list", a section from an older schema — is an exemption the '
+        'gate silently would not honour.',
+      );
+    }
+
+    final tracking = <String, String>{};
+    final trackingSection = _sectionOf(json, 'tracking', source);
+    for (final entry in trackingSection.entries) {
+      _validateSiteKey(entry.key, section: 'tracking', source: source);
+      final note = entry.value;
+      if (note is! String || note.isEmpty) {
+        throw OverflowRatchetFormatException(
+          '$source: the "tracking" note for \'${entry.key}\' must be a '
+          'non-empty string.',
+        );
+      }
+      tracking[entry.key] = note;
+    }
+
+    final allowlist = <String, OverflowExemption>{};
+    final allowSection = _sectionOf(json, 'allowlist', source);
+    for (final entry in allowSection.entries) {
+      _validateSiteKey(entry.key, section: 'allowlist', source: source);
+      allowlist[entry.key] =
+          _parseExemption(entry.value, key: entry.key, source: source);
+    }
+
+    _validateKeySymmetry(tracking.keys.toSet(), allowlist.keys.toSet(), source);
+
+    return OverflowRatchet._(allowlist, tracking, source);
+  }
+
+  /// `file:line` → the locales that overflow there and the magnitude allowed.
+  final Map<String, OverflowExemption> _allowlist;
+
+  /// `file:line` → why this exemption exists.
+  ///
+  /// Re-keyed on the site along with the allowlist, deliberately, rather than
+  /// left card-keyed. Three reasons, in order of how much they cost to learn the
+  /// hard way:
+  ///
+  /// * A site can be reached from several cards — anything in `ui_kit_library`,
+  ///   any shared row — so a card-keyed note prints a *different* ticket
+  ///   depending on which card happened to hit it, and the same defect gets two
+  ///   notes that disagree.
+  /// * "Remove the entry and its tracking note" is one lookup only if both hang
+  ///   off one key. With two key spaces the note is what gets left behind, and a
+  ///   note pointing at nothing is the dead entry the ratchet was built to
+  ///   prevent, one level up. One key space is necessary but not sufficient for
+  ///   that — the two maps can still drift within it — so the pairing is enforced
+  ///   at load by [_validateKeySymmetry].
+  /// * The card sweep's is not the only family that will read this fixture
+  ///   (#1342 onwards). `card` is not an axis the chrome family has.
+  final Map<String, String> _tracking;
+
+  /// Where this ratchet was loaded from, for messages: the fixture path, or
+  /// [_inMemorySource] for a hand-built one.
+  final String source;
+
+  /// `file:line` → the locale tags that were *observed* overflowing there.
+  ///
+  /// Only significant incidents reach here, because only those can be exempted —
+  /// see [consultCell].
+  final Map<String, Set<String>> _observed = {};
+
+  /// `file:line` → the worst overflow measured there, in logical pixels.
+  ///
+  /// One figure per site, matching [OverflowExemption.maxOverflowPx]'s own shape:
+  /// the entry states a single ceiling for every locale it lists, so the run's
+  /// answer to "is that ceiling still earned?" is a single maximum.
+  final Map<String, double> _observedMaxPx = {};
+
+  static const String _inMemorySource = '<in-memory allowlist>';
+  static const List<String> _knownSections = ['tracking', 'allowlist'];
+  static const List<String> _entryFields = ['locales', 'maxOverflowPx'];
+
+  /// A `file:line` key: a repo- or package-relative path ending in `.dart`, then
+  /// a 1-based line.
+  ///
+  /// Loose about the path shape (a normalised path can be almost anything) and
+  /// strict about its form, which is what tells a site apart from a leftover
+  /// coordinate key. Line 0 is rejected because lines are 1-based: a `:0` would
+  /// be a key that joins to nothing.
+  ///
+  /// Three exclusions, none of them decoration:
+  ///
+  /// * `|` — the pre-#1341 coordinate's delimiter, diagnosed by name in
+  ///   [_validateSiteKey].
+  /// * whitespace — a hand-indented JSON key, which would join to nothing while
+  ///   reading as correct.
+  /// * a leading `/` or `X:` — an **absolute** path. This is the half that
+  ///   matches what an incident can actually produce: since #1356
+  ///   [OverflowIncident.site] withholds the key for a path
+  ///   [normalizeOverflowSourcePath] could not make machine-independent, so an
+  ///   absolute key in the fixture cannot match any incident on any machine. It
+  ///   used to be accepted, which made "exempt the overflow you can see" work on
+  ///   the machine that wrote it and nowhere else.
+  ///
+  /// `@` is deliberately *not* excluded: it is legal in a path.
+  static final RegExp _sitePattern =
+      RegExp(r'^(?![/\\])(?![A-Za-z]:)[^|\s]+\.dart:[1-9]\d*$');
+
+  /// The absolute-path half of [_sitePattern], on its own so [_validateSiteKey]
+  /// can say *which* rule a key broke.
+  static final RegExp _absolutePattern = RegExp(r'^([/\\]|[A-Za-z]:)');
+
+  /// The sites this fixture exempts, sorted for deterministic messages.
+  List<String> get sites => _allowlist.keys.toList()..sort();
+
+  int get entryCount => _allowlist.length;
+
+  bool get isEmpty => _allowlist.isEmpty;
+
+  /// Whether an overflow of [pixels] at [site] is exempt in [localeTag].
+  ///
+  /// [pixels] is required rather than optional because the incomplete question —
+  /// "is this site listed?" — is the one #1356 found being asked in place of this
+  /// one, and an optional parameter leaves it askable. Where the answer genuinely
+  /// is about the locale set alone (classifying a breach for a failure message),
+  /// [ceilingBreaches] gives it a name that says so.
+  ///
+  /// Null [site] is never exempt — see the library comment for why that is the
+  /// safe direction.
+  bool isAllowlisted(
+    String? site,
+    String localeTag, {
+    required double pixels,
+  }) {
+    final entry = exemptionFor(site);
+    if (entry == null) return false;
+    return entry.coversLocale(localeTag) && entry.coversMagnitude(pixels);
+  }
+
+  /// The entry covering [site], or null when nothing exempts it.
+  OverflowExemption? exemptionFor(String? site) =>
+      site == null ? null : _allowlist[site];
+
+  /// The incidents blocked **only** because they outgrew their entry's ceiling.
+  ///
+  /// A separate bucket because the two need opposite advice, and giving the wrong
+  /// one is worse than giving none: an unlisted site needs an entry, while a site
+  /// whose entry already names this locale needs the layout fixed or the ceiling
+  /// raised. Told to "add the tag", whoever is holding the failure would look at
+  /// the fixture, find the tag already there, and conclude the gate is broken.
+  List<OverflowIncident> ceilingBreaches(
+    Iterable<OverflowIncident> incidents,
+    String localeTag,
+  ) =>
+      incidents.where((incident) {
+        final entry = exemptionFor(incident.site);
+        return entry != null &&
+            entry.coversLocale(localeTag) &&
+            !entry.coversMagnitude(incident.pixels);
+      }).toList();
+
+  /// The note explaining why [site] is exempt, or [kUntrackedNote].
+  String trackingNote(String? site) =>
+      (site == null ? null : _tracking[site]) ?? kUntrackedNote;
+
+  /// Records every incident in [incidents] as live debt and returns the ones
+  /// that are **not** exempt.
+  ///
+  /// Empty return = the cell is tolerated. A cell is only tolerated when *every*
+  /// incident in it is exempt: "any" would let one known site launder a new
+  /// overflow standing next to it, which is precisely the regression the gate
+  /// exists to block.
+  ///
+  /// Recording and consulting are one call so they cannot diverge. Callers pass
+  /// the **significant** incidents (above [kOverflowTolerancePx]) only —
+  /// sub-tolerance noise is not something anyone exempts, and counting it as
+  /// liveness would keep an entry alive on shaping jitter.
+  List<OverflowIncident> consultCell(
+    Iterable<OverflowIncident> incidents,
+    String localeTag,
+  ) {
+    final blocking = <OverflowIncident>[];
+    for (final incident in incidents) {
+      final site = incident.site;
+      if (site != null) {
+        (_observed[site] ??= <String>{}).add(localeTag);
+        // Recorded for every incident at the site, exempt or not: this is what
+        // [deadEntryFailure] compares a ceiling against, and an entry that a
+        // breach already failed the run on still has to be reported as too loose
+        // rather than left for the next reader to discover.
+        final worst = _observedMaxPx[site];
+        if (worst == null || incident.pixels > worst) {
+          _observedMaxPx[site] = incident.pixels;
+        }
+      }
+      if (!isAllowlisted(site, localeTag, pixels: incident.pixels)) {
+        blocking.add(incident);
+      }
+    }
+    return blocking;
+  }
+
+  /// The dead-entry verdict for a finished run, or null when there is none.
+  ///
+  /// Call this **once, after the last cell** — the whole run is the unit of
+  /// judgement, because one site can be rendered by many cells.
+  ///
+  /// [localesCovered] is the locale tag set the run actually pumped.
+  /// [coverageGaps] is every reason this run measured less than the full sweep,
+  /// in the operator's own vocabulary (`--dart-define=LOCALE=…`, `MIN_SCREEN`,
+  /// `run_overflow_test.sh --card`, a cell that threw before measuring). **A
+  /// non-empty [coverageGaps] means no verdict at all**: a partial run cannot
+  /// tell "this defect is fixed" from "this cell was not measured", and calling a
+  /// live entry dead would send someone to delete a real exemption on the
+  /// strength of a run that never looked. The guard lives here rather than at the
+  /// call site so it cannot be forgotten by the next family to adopt the ratchet;
+  /// [coverageSkipNote] is what tells the operator the closing direction was
+  /// skipped.
+  ///
+  /// Five complaints, all falsifiable from what a full run observed:
+  ///
+  /// * **the whole entry** — no gated cell overflowed at that site;
+  /// * **a listed locale tag** — the site still overflows, but not in that
+  ///   locale;
+  /// * **a ceiling nothing came close to** — the site still overflows, by much
+  ///   less than [OverflowExemption.maxOverflowPx] allows. The magnitude bound
+  ///   ratchets for the same reason the locale list does: a partial fix that
+  ///   leaves the allowance where it was has quietly pre-approved the regression
+  ///   back to it;
+  /// * **an over-broad `"*"`** — the site overflowed in a strict subset of the
+  ///   locales the run covered, so the overflow is text-dependent, not
+  ///   structural. This one rests on an assumption worth naming: that a widget's
+  ///   *existence* in the tree does not depend on the locale, only its text
+  ///   width does. That holds for every card in this sweep, and the message
+  ///   prints the observed set so an operator can see the data rather than trust
+  ///   the inference.
+  /// * plus a locale tag the sweep does not run at all (`zh-TW` for `zh_TW`),
+  ///   which is otherwise an exemption that can never match and can never die.
+  ///
+  /// ## What the old per-cell check caught and this does not
+  ///
+  /// `_failIfDeadExemption` fired on the **clean** path, so it could see a
+  /// coordinate rendering cleanly. A site key cannot: the only thing an
+  /// instrument built on `FlutterError.onError` observes is an overflow, so
+  /// "site S was rendered here and fitted" is unobservable, and absence of an
+  /// incident at S is indistinguishable from S never having been in the tree.
+  /// Two consequences, both accepted:
+  ///
+  /// * **Granularity.** The old check named the exact clean coordinate; this one
+  ///   names the site and the locales, and triage has to run
+  ///   `./tool/run_overflow_test.sh -c <card> -d 2` to find which coordinate it
+  ///   was. Deadness is no longer a property of a coordinate, so that is the
+  ///   honest shape of the answer.
+  /// * **Timing.** The old check failed the first clean cell, so it fired under a
+  ///   single-card filtered run too. This one only fires on a full sweep. A
+  ///   developer who fixes a card and re-runs `-c <card>` gets green and learns
+  ///   about the leftover entry from the full gate (locally via
+  ///   `flutter test --tags overflow`, or in CI). That is a later signal for the
+  ///   same fact — and the alternative is a false "dead" verdict on a partial
+  ///   run, which is a strictly worse error.
+  String? deadEntryFailure({
+    required Set<String> localesCovered,
+    List<String> coverageGaps = const [],
+  }) {
+    if (coverageGaps.isNotEmpty) return null;
+    if (_allowlist.isEmpty) return null;
+
+    final complaints = <String>[];
+    for (final site in sites) {
+      final entry = _allowlist[site]!;
+      final listed = entry.locales;
+      final seen = _observed[site] ?? const <String>{};
+
+      if (seen.isEmpty) {
+        complaints.add(
+          '$site — no gated cell overflowed there in this run. Delete the '
+          'entry and its "tracking" note.',
+        );
+        continue;
+      }
+
+      // The ceiling ratchets too, for the same reason the locale list does: an
+      // allowance nobody tightens after a partial fix is an exemption for a
+      // regression that has not happened yet. Slack is [kOverflowTolerancePx],
+      // the same figure [OverflowExemption.coversMagnitude] grants, so a ceiling
+      // written at the measured magnitude never reports itself.
+      final worst = _observedMaxPx[site];
+      if (worst != null &&
+          entry.maxOverflowPx > worst + kOverflowTolerancePx &&
+          worst.isFinite) {
+        complaints.add(
+          '$site is exempt up to ${entry.allowanceLabel} but the worst overflow '
+          'measured there in this run is ${_formatPx(worst)}px. Tighten '
+          '"maxOverflowPx" to ${_formatPx(worst)} — the gap is room for a '
+          'regression that would be reported as this ticket\'s known debt.',
+        );
+      }
+
+      final unknownTags = listed
+          .where((tag) => tag != kAnyLocale && !localesCovered.contains(tag))
+          .toList()
+        ..sort();
+      if (unknownTags.isNotEmpty) {
+        complaints.add(
+          '$site lists ${_quoteAll(unknownTags)}, which this sweep does not '
+          'run. Locale tags are `_localeTag` form — `zh_TW`, `es_AR`, `pt_PT` — '
+          'so a hyphenated or unknown tag exempts nothing and can never be '
+          'reported dead either.',
+        );
+      }
+
+      if (listed.contains(kAnyLocale)) {
+        // Which locales are missing, not how many were seen. The two sets are
+        // not drawn from one vocabulary: `localesCovered` is what the sweep
+        // declares it pumped, `seen` is what `consultCell` was actually handed,
+        // and a single tag observed outside the declared set makes the counts
+        // equal while a covered locale never overflowed at all — an over-broad
+        // "*" that survives on arithmetic. The tags are what the operator has to
+        // edit anyway, so the message may as well name them.
+        final missing = _sorted(localesCovered.difference(seen));
+        if (missing.isNotEmpty) {
+          // Restricted to the covered set, because that is what the operator can
+          // write: `unknownTags` above rejects a listed tag this sweep does not
+          // run, so a replacement list quoting an undeclared observation would
+          // fail the very next run.
+          final hit = _sorted(seen.intersection(localesCovered));
+          complaints.add(
+            '$site is marked "*" — overflows in every locale — but nothing '
+            'overflowed there in ${_quoteAll(missing)} (${hit.length} of '
+            '${localesCovered.length} covered locales did), so the overflow is '
+            'text-dependent, not structural. '
+            '${hit.isEmpty ? 'It overflowed only in ${_quoteAll(_sorted(seen))}, which this run does not report as covered — the sweep\'s locale list and the `localesCovered` it passes disagree, so fix that before editing the fixture.' : 'Replace "*" with: ${hit.join(', ')}.'}',
+          );
+        }
+        continue;
+      }
+
+      final dead = listed.difference(seen).intersection(localesCovered);
+      if (dead.isNotEmpty) {
+        complaints.add(
+          '$site — nothing overflowed there in ${_quoteAll(_sorted(dead))} '
+          '(still overflowing in: ${_sorted(seen).join(', ')}). Remove those '
+          'tags; delete the entry and its "tracking" note once the list '
+          'empties.',
+        );
+      }
+    }
+
+    if (complaints.isEmpty) return null;
+    return [
+      'Dead exemption(s) in $source.',
+      '',
+      'This run measured every gated cell the sweep declares, so an exemption it '
+          'cannot justify — a site nothing overflowed at, a locale that no longer '
+          'does, an allowance nothing came close to — is debt this gate has '
+          'stopped carrying:',
+      '',
+      for (final complaint in complaints) '  * $complaint',
+      '',
+      'An exemption that outlives its defect is indistinguishable from tracked '
+          'debt, which is how 46 stale coordinates came to be retired by hand '
+          '(#1273) — so fixing a layout includes deleting its entry in the same '
+          'change.',
+      '',
+      'Keys are `<file>:<line>`: the source location each incident\'s own report '
+          'ends in ("… at lib/page/foo/bar.dart:47").',
+    ].join('\n');
+  }
+
+  /// What to print when [coverageGaps] stopped [deadEntryFailure] from running,
+  /// or null when there is nothing to say.
+  ///
+  /// Silent for an empty allowlist, which is the committed state: a green
+  /// filtered run must stay as quiet as it is today, or the note becomes noise
+  /// every `-c <card>` run prints and nobody reads.
+  String? coverageSkipNote(List<String> coverageGaps) {
+    if (coverageGaps.isEmpty || _allowlist.isEmpty) return null;
+    return [
+      'Dead-exemption detection skipped: this run measured less than the full '
+          'sweep, so a site that did not overflow here may still overflow in a '
+          'cell it left out.',
+      for (final gap in coverageGaps) '  * $gap',
+      '$entryCount allowlist entr${entryCount == 1 ? 'y' : 'ies'} went '
+          'unchecked in the closing direction. Run the full sweep before '
+          'deleting anything from $source.',
+    ].join('\n');
+  }
+
+  /// The locale tags observed overflowing at [site] so far. Diagnostics.
+  Set<String> observedLocalesAt(String site) =>
+      Set.unmodifiable(_observed[site] ?? const <String>{});
+
+  static Map<String, Object?> _sectionOf(
+    Map<String, Object?> json,
+    String name,
+    String source,
+  ) {
+    final section = json[name];
+    if (section == null) return const {};
+    if (section is! Map<String, Object?>) {
+      throw OverflowRatchetFormatException(
+        '$source: "$name" must be a JSON object, not ${section.runtimeType}.',
+      );
+    }
+    return section;
+  }
+
+  /// Throws unless [key] is a `file:line` site.
+  ///
+  /// The legacy shape gets its own message because it is the one an operator is
+  /// most likely to be holding: `card|widthLabel|tab[@profile]` was the key from
+  /// #1183 to #1341, and every closed ticket in that range quotes counts of it.
+  static void _validateSiteKey(
+    String key, {
+    required String section,
+    required String source,
+  }) {
+    if (_sitePattern.hasMatch(key)) return;
+    // The tell is `|` alone, not `|` or `@`: every pre-#1341 key was
+    // pipe-delimited (`card|widthLabel|tab`, the `@profile` only ever a suffix
+    // on the last axis), whereas `@` on its own is legal in a file path. Keying
+    // the paragraph on `@` made a rejected path print an accusation of being a
+    // coordinate when it plainly was not.
+    final diagnosis = key.contains('|')
+        ? ' It is the pre-#1341 coordinate shape '
+            '(`card|widthLabel|tab[@profile]`), which no longer matches '
+            'anything: the ratchet keys on where the overflowing widget was '
+            'created, not on where the sweep was standing when it saw it.'
+        // An absolute key is the mistake an operator makes by copying what they
+        // see, so name what it would have done rather than only rejecting it.
+        : _absolutePattern.hasMatch(key)
+            ? ' It is an absolute path, which carries the machine it was '
+                'captured on. Since #1356 an incident whose path could not be '
+                'made machine-independent has no site at all, so this key '
+                'cannot match anything, anywhere — not even here. Sites are '
+                'repo-relative ("lib/…", "test/…") or package-relative '
+                '("privacyGUI-UI-kit/lib/…"); a path that stays absolute in a '
+                'failure message means the file is outside the checkout and '
+                'outside the pub cache (a relocated PUB_CACHE, a `path:` '
+                'override), and that layout has to be fixed rather than '
+                'exempted.'
+            // Whitespace is named rather than left to the reader to spot,
+            // because the way it gets in is invisible: a hand-indented JSON key
+            // reads as correct and joins to nothing.
+            : key.contains(RegExp(r'\s'))
+                ? ' The key contains whitespace, which a site key may not — if '
+                    'it is padding, remove it.'
+                : '';
+    throw OverflowRatchetFormatException(
+      '$source: "$section" key \'$key\' is not a `file:line` source location.'
+      '$diagnosis '
+      'Expected e.g. \'lib/page/dashboard/views/components/foo_card.dart:47\' — '
+      'the location the failing incident\'s own report ends in '
+      '("… at <file>:<line>"). Re-derive the entries from a full sweep rather '
+      'than translating the old keys by hand; a coordinate does not carry which '
+      'widget inside the card overflowed.',
+    );
+  }
+
+  /// Throws unless `"tracking"` and `"allowlist"` name exactly the same sites.
+  ///
+  /// One entry in this fixture is two halves — the exemption and the reason for
+  /// it — and nothing but the shared key holds them together, so each direction
+  /// is its own way for the pairing to rot:
+  ///
+  /// * **A note with no exemption** is the dead entry, one level up. It reads as
+  ///   documentation of debt the gate is not carrying, so anyone asking "what are
+  ///   we still deferring?" is answered with a site that is already clean — and
+  ///   no other check can catch it, because a note is never consulted unless
+  ///   something exempted the site. This is the failure the [_tracking] comment
+  ///   predicts if the two sections are ever allowed to drift apart.
+  /// * **An exemption with no note** prints [kUntrackedNote] and leaves the
+  ///   reader unable to tell deferred debt from an accidental commit, which is
+  ///   the one judgement the allowlist exists to record. Refusing it here is the
+  ///   other half of why [kUntrackedNote] is not a ticket number: an
+  ///   unattributed entry is rejected rather than attributed to a guess.
+  ///
+  /// Deliberately last, after both sections have parsed, so a malformed key or
+  /// locale list is still diagnosed by its own message and this one only ever
+  /// fires on two key sets that are individually valid.
+  static void _validateKeySymmetry(
+    Set<String> tracked,
+    Set<String> exempted,
+    String source,
+  ) {
+    final unexempted = _sorted(tracked.difference(exempted));
+    final untracked = _sorted(exempted.difference(tracked));
+    if (unexempted.isEmpty && untracked.isEmpty) return;
+    throw OverflowRatchetFormatException([
+      '$source: "tracking" and "allowlist" must name the same sites — an entry '
+          'is one exemption plus the reason for it.',
+      if (unexempted.isNotEmpty)
+        '  * ${_quoteAll(unexempted)} '
+            '${unexempted.length == 1 ? 'has a "tracking" note' : 'have "tracking" notes'} '
+            'but no "allowlist" entry, so nothing is exempt there and the note '
+            'documents debt this gate is not carrying. Delete the note, or add '
+            'the exemption it describes.',
+      if (untracked.isNotEmpty)
+        '  * ${_quoteAll(untracked)} '
+            '${untracked.length == 1 ? 'is' : 'are'} exempt with no "tracking" '
+            'note, so nothing says whether this is deferred debt or an accident. '
+            'Add the note, naming the ticket that will delete the entry.',
+    ].join('\n'));
+  }
+
+  /// Reads one `"allowlist"` value: `{"locales": [...], "maxOverflowPx": N}`.
+  ///
+  /// Both fields are required. The alternative — a ceiling that may be omitted —
+  /// is the shape this whole change exists to remove, and an optional bound is
+  /// the one nobody writes: the first entry authored under a deadline would omit
+  /// it, and every later one would copy that entry.
+  static OverflowExemption _parseExemption(
+    Object? value, {
+    required String key,
+    required String source,
+  }) {
+    if (value is List) {
+      // Named as the old shape rather than as a type error, because it *was*
+      // correct until #1356 and every closed ticket in this epic quotes it.
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' maps to a bare locale list, which is the pre-#1356 '
+        'entry shape. An entry is an object now:\n'
+        '  "$key": {"locales": ${jsonEncode(value)}, "maxOverflowPx": <the px '
+        'figure the failure printed>}\n'
+        'A site key says where the defect is and the locales say when; neither '
+        'says how bad it may get, and one `file:line` is rendered by many cells, '
+        'so an unbounded entry written for a +2.5px overflow also absorbs a '
+        '+400px one at the same line — reported as tracked debt.',
+      );
+    }
+    if (value is! Map<String, Object?>) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' must map to an object with "locales" and '
+        '"maxOverflowPx", not ${value.runtimeType}.',
+      );
+    }
+    final unknown = value.keys.where((k) => !_entryFields.contains(k)).toList()
+      ..sort();
+    if (unknown.isNotEmpty) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has unrecognised field(s) ${_quoteAll(unknown)}. Only '
+        '${_quoteAll(_entryFields)} are read, so a misspelling is an entry that '
+        'reads as bounded and is not.',
+      );
+    }
+    return OverflowExemption(
+      locales: _parseLocaleSet(value['locales'], key: key, source: source),
+      maxOverflowPx:
+          _parseCeiling(value['maxOverflowPx'], key: key, source: source),
+    );
+  }
+
+  /// Reads `"maxOverflowPx"`: a finite, positive number of logical pixels.
+  static double _parseCeiling(
+    Object? value, {
+    required String key,
+    required String source,
+  }) {
+    if (value == null) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' states no "maxOverflowPx", so it exempts an overflow '
+        'of any size at that line. Write the px figure the failure printed; '
+        '${_formatPx(kOverflowTolerancePx)}px of shaping slack is allowed on top '
+        'of it, so the number does not have to be padded by hand.',
+      );
+    }
+    if (value is! num) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a non-numeric "maxOverflowPx" ($value). It is a '
+        'count of logical pixels, as printed in the failure.',
+      );
+    }
+    final pixels = value.toDouble();
+    if (!pixels.isFinite) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a "maxOverflowPx" of $pixels. A ceiling is a '
+        'finite count of pixels: an infinite one is the unbounded exemption this '
+        'field replaces, and it would additionally be the only thing able to '
+        'cover an incident whose overflow message could not be parsed at all '
+        '(OverflowIncident.unparseablePixels) — the one measurement nobody knows '
+        'the size of.',
+      );
+    }
+    if (pixels <= 0) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a "maxOverflowPx" of ${_formatPx(pixels)}, which '
+        'exempts nothing: the ratchet is only consulted about incidents already '
+        'above the ${_formatPx(kOverflowTolerancePx)}px tolerance. Delete the '
+        'entry instead of writing one that cannot fire.',
+      );
+    }
+    return pixels;
+  }
+
+  static Set<String> _parseLocaleSet(
+    Object? value, {
+    required String key,
+    required String source,
+  }) {
+    if (value is! List) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' → "locales" must be a JSON array of locale tags (or '
+        '["*"]), not ${value.runtimeType}.',
+      );
+    }
+    final tags = <String>{};
+    for (final tag in value) {
+      if (tag is! String || tag.isEmpty) {
+        throw OverflowRatchetFormatException(
+          '$source: \'$key\' holds a non-string locale tag ($tag). Tags are '
+          '`_localeTag` strings — `de`, `zh_TW` — or the single wildcard "*".',
+        );
+      }
+      tags.add(tag);
+    }
+    if (tags.isEmpty) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' exempts no locale. An empty array is an entry that '
+        'can only ever read as an exemption that is not one — delete the entry '
+        'instead.',
+      );
+    }
+    if (tags.contains(kAnyLocale) && tags.length > 1) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' mixes "*" with explicit tags '
+        '(${_quoteAll(_sorted(tags))}). "*" already covers every locale, so the '
+        'explicit tags are either redundant or the "*" is wrong — and the '
+        'over-broad check cannot tell which was meant. Pick one.',
+      );
+    }
+    return tags;
+  }
+
+  static List<String> _sorted(Iterable<String> values) =>
+      values.toList()..sort();
+
+  static String _quoteAll(Iterable<String> values) =>
+      values.map((v) => '"$v"').join(', ');
+}

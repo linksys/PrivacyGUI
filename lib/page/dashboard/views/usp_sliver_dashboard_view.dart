@@ -4,6 +4,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
+import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -189,111 +190,47 @@ class _UspSliverDashboardViewState
   // ---------------------------------------------------------------------------
 
   Widget _buildHeader(BuildContext context) {
-    final isRemoteMode = GlobalConfig.remote.isActive;
-    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
+    // Layout and the responsive narrow form live in [DashboardHeaderBar]; this
+    // stays the wiring — what the actions do, and the two pieces of state that
+    // decide which set of them applies (#1314).
+    return DashboardHeaderBar(
+      isEditMode: ref.watch(dashboardEditModeProvider).isEditing,
+      isRemoteMode: GlobalConfig.remote.isActive,
+      onOptimizeLayout: () {
+        final controller = ref.read(uspSliverDashboardControllerProvider);
+        controller.optimizeLayout();
+        ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc(context).layoutOptimized),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      },
+      onLayoutSettings: () => _openLayoutSettings(context),
+      onCancelEdit: _cancelEditMode,
+      onCommitEdit: _commitEditMode,
+      onPrint: () async {
+        final orchState = ref.read(dashboardOrchestratorProvider).valueOrNull;
+        if (orchState == null) return;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        AppText.headlineSmall(loc(context).uspDashboard),
-        Row(
-          children: [
-            if (isEditMode) ...[
-              AppIconButton(
-                identifier: 'dashboard-optimize-layout',
-                semanticLabel: loc(context).optimizeLayout,
-                tooltip: loc(context).optimizeLayout,
-                icon: AppIcon.font(Icons.auto_fix_high),
-                onTap: () {
-                  final controller =
-                      ref.read(uspSliverDashboardControllerProvider);
-                  controller.optimizeLayout();
-                  ref
-                      .read(uspSliverDashboardControllerProvider.notifier)
-                      .saveLayout();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(loc(context).layoutOptimized),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                },
-              ),
-              AppGap.sm(),
-              AppIconButton(
-                identifier: 'dashboard-layout-settings',
-                semanticLabel: loc(context).settings,
-                tooltip: loc(context).settings,
-                icon: AppIcon.font(Icons.tune),
-                onTap: () => _openLayoutSettings(context),
-              ),
-              AppGap.sm(),
-              AppIconButton(
-                identifier: 'dashboard-edit-cancel',
-                semanticLabel: loc(context).cancel,
-                tooltip: loc(context).cancel,
-                icon: AppIcon.font(Icons.close),
-                onTap: _cancelEditMode,
-              ),
-              AppGap.sm(),
-              AppIconButton(
-                identifier: 'dashboard-edit-commit',
-                semanticLabel: loc(context).done,
-                tooltip: loc(context).done,
-                icon: AppIcon.font(Icons.check),
-                onTap: _commitEditMode,
-              ),
-            ] else ...[
-              AppIconButton(
-                identifier: 'dashboard-print',
-                semanticLabel: loc(context).print,
-                tooltip: loc(context).print,
-                icon: AppIcon.font(Icons.print),
-                onTap: () async {
-                  final orchState =
-                      ref.read(dashboardOrchestratorProvider).valueOrNull;
-                  if (orchState == null) return;
+        // Ensure polling providers have data before generating PDF.
+        await _ensurePollingData();
 
-                  // Ensure polling providers have data before generating PDF.
-                  await _ensurePollingData();
+        if (!context.mounted) return;
 
-                  if (!context.mounted) return;
-
-                  final reportData = ref.read(pdfReportDataProvider);
-                  if (reportData == null) return;
-                  doSomethingWithSpinner(
-                    context,
-                    UspPdfService.generatePdf(reportData),
-                  );
-                },
-              ),
-              AppGap.sm(),
-              AppIconButton(
-                identifier: 'dashboard-refresh',
-                semanticLabel: loc(context).refresh,
-                tooltip: loc(context).refresh,
-                icon: AppIcon.font(Icons.refresh),
-                onTap: () => ref
-                    .read(dashboardOrchestratorProvider.notifier)
-                    .refreshAll(),
-              ),
-              // Hide edit button in remote mode
-              if (!isRemoteMode) ...[
-                AppGap.sm(),
-                AppIconButton(
-                  identifier: 'dashboard-edit',
-                  semanticLabel: loc(context).edit,
-                  tooltip: loc(context).edit,
-                  icon: AppIcon.font(Icons.edit),
-                  onTap: _enterEditMode,
-                ),
-              ],
-            ],
-          ],
-        ),
-      ],
+        final reportData = ref.read(pdfReportDataProvider);
+        if (reportData == null) return;
+        doSomethingWithSpinner(
+          context,
+          UspPdfService.generatePdf(reportData),
+        );
+      },
+      onRefresh: () =>
+          ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
+      onEdit: _enterEditMode,
     );
   }
 
