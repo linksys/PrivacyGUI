@@ -21,9 +21,18 @@
 ///   `PageSurfaceFamily` had to decline the per-cell readability assertion in
 ///   writing and guard the one changed site instead.
 ///
-/// Both are green. So this dump is selected by a **pattern over cell ids**, not by
-/// a verdict, and it lives here rather than in a family because all five sweeps
-/// need it and none of them owns the pump.
+/// Both are green. So this dump can be selected by a **pattern over cell ids**,
+/// which no verdict-driven dump could offer, and it lives here rather than in a
+/// family because all five sweeps need it and none of them owns the pump.
+///
+/// The other selector, [kOverflowScreenshotFailed], is the one a person reaches for
+/// when a sweep goes red — the failing ids are precisely what they do not want to
+/// retype, and `all` on the page sweep is 416 images to find three in. It costs one
+/// thing the pattern modes do not: a boundary has to be in place *before* the pump,
+/// when no verdict exists yet, so `failed` wraps every cell and throws most of the
+/// wrappers away. A `RepaintBoundary` adds a layer and not a constraint, so this
+/// changes no geometry — asserted in `sweep_test.dart` per cell, and provable at
+/// dataset scale by running `check` after a shoot.
 ///
 /// What it frames is therefore the **whole surface the family pumped**, not a crop
 /// of the widget under test: a card cell photographs the card in its grid slot at
@@ -50,6 +59,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The pattern value that shoots every measured cell.
 const String kOverflowScreenshotAll = 'all';
+
+/// The pattern value that shoots the cells the sweep judged as failures — an
+/// overflow past the tolerance, or a pump that threw.
+///
+/// A reserved pattern value rather than a flag alongside a pattern, so there is
+/// exactly one input to explain and one rule per run. `failed` *within* a subset
+/// (`failed:locale=ar`) is a composition this deliberately does not have yet: no
+/// one has needed it, and the cost of shooting the failures of a whole sweep is
+/// bounded by how many failures there are.
+const String kOverflowScreenshotFailed = 'failed';
 
 /// The manifest's name inside the dump directory.
 const String kOverflowScreenshotManifest = 'index.tsv';
@@ -97,7 +116,8 @@ class OverflowScreenshotDump {
   static String _read(String key, String define) =>
       define.isNotEmpty ? define : (Platform.environment[key] ?? '');
 
-  /// Empty is off; [kOverflowScreenshotAll] is every cell; anything else is a
+  /// Empty is off; [kOverflowScreenshotAll] is every cell;
+  /// [kOverflowScreenshotFailed] is every cell the sweep failed; anything else is a
   /// substring of the cell id.
   ///
   /// A substring rather than a glob because the ids it selects from are already
@@ -117,16 +137,36 @@ class OverflowScreenshotDump {
 
   bool get enabled => pattern.isNotEmpty && dir.isNotEmpty;
 
-  /// Whether [cellId] gets a photograph.
+  /// Whether the run is selecting by verdict rather than by cell id.
+  bool get shootsFailures => enabled && pattern == kOverflowScreenshotFailed;
+
+  /// Whether the **pattern** names [cellId].
   ///
-  /// **The pattern is the only input.** Shooting failures too was considered and
-  /// left out: the output would then depend on the verdicts as well as the
-  /// pattern, which is a second rule to state and a second rule to get wrong,
-  /// while a failing cell's id is already printed in both the failure and the
-  /// report — copy it, the way an allowlist key is copied (#1341).
+  /// False for the whole of [kOverflowScreenshotFailed] mode, where the pattern is
+  /// a reserved word and not a substring to look for. Nothing stops an axis *value*
+  /// from carrying the word — axis prose is family knowledge — and a mode that also
+  /// matched ids would then shoot cells for two unrelated reasons at once.
   bool wants(String cellId) =>
       enabled &&
+      !shootsFailures &&
       (pattern == kOverflowScreenshotAll || cellId.contains(pattern));
+
+  /// Whether [cellId] must be pumped inside a boundary — decided **before** the
+  /// pump, so before any verdict exists.
+  ///
+  /// This is why [kOverflowScreenshotFailed] wraps every cell: the only way to
+  /// photograph a failure is to have been ready for one. The wrappers of the cells
+  /// that pass are then discarded unphotographed.
+  bool needsBoundary(String cellId) => shootsFailures || wants(cellId);
+
+  /// Whether the cell just measured keeps its photograph.
+  ///
+  /// [failed] is the sweep's own verdict — an overflow past the tolerance, or a
+  /// pump that threw — and not "any incident was collected". A sub-tolerance
+  /// incident is not a failure, and a gallery that showed one would disagree with
+  /// the report rows beside it.
+  bool shouldCapture(String cellId, {required bool failed}) =>
+      shootsFailures ? failed : wants(cellId);
 
   String get manifestPath => '$dir/$kOverflowScreenshotManifest';
 
@@ -234,33 +274,44 @@ Future<int?> writeBoundaryPng(
   bool skipIfExists = false,
 }) async {
   int? written;
-  // `toImage` is asynchronous work the test binding will not otherwise run.
-  await tester.binding.runAsync(() async {
-    try {
-      final file = File(path);
-      if (skipIfExists && file.existsSync()) return;
+  // Two nested guards, for two different throws. The inner one catches the capture
+  // itself, and has to be inside the callback because `runAsync` runs it in a zone
+  // whose unhandled errors are reported as test failures rather than thrown back
+  // here. The outer one catches `runAsync` — which throws when it is called at a
+  // moment the binding forbids, and this dump is now also called from
+  // `measureOverflowCell`'s `catch`, i.e. after a cell has already thrown.
+  try {
+    // `toImage` is asynchronous work the test binding will not otherwise run.
+    await tester.binding.runAsync(() async {
+      try {
+        final file = File(path);
+        if (skipIfExists && file.existsSync()) return;
 
-      final boundary = boundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
+        final boundary = boundaryKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+        if (boundary == null) {
+          // ignore: avoid_print
+          print('[PNG DUMP FAILED] boundary is null for $path');
+          return;
+        }
+        final image = await boundary.toImage(pixelRatio: pixelRatio);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData == null) {
+          // ignore: avoid_print
+          print('[PNG DUMP FAILED] byteData is null for $path');
+          return;
+        }
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(byteData.buffer.asUint8List());
+        written = byteData.lengthInBytes;
+      } catch (error, stack) {
         // ignore: avoid_print
-        print('[PNG DUMP FAILED] boundary is null for $path');
-        return;
+        print('[PNG DUMP EXCEPTION] Failed to save $path: $error\n$stack');
       }
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) {
-        // ignore: avoid_print
-        print('[PNG DUMP FAILED] byteData is null for $path');
-        return;
-      }
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(byteData.buffer.asUint8List());
-      written = byteData.lengthInBytes;
-    } catch (error, stack) {
-      // ignore: avoid_print
-      print('[PNG DUMP EXCEPTION] Failed to save $path: $error\n$stack');
-    }
-  });
+    });
+  } catch (error) {
+    // ignore: avoid_print
+    print('[PNG DUMP EXCEPTION] Could not run the capture for $path: $error');
+  }
   return written;
 }

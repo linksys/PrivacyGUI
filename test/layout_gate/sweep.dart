@@ -502,8 +502,13 @@ Future<OverflowCellVerdict> measureOverflowCell(
   // Read once, so a dump swapped mid-cell cannot photograph a boundary that was
   // never allocated. Null is both "not wanted" and "nothing to capture", which is
   // why the pump below can branch on the key rather than re-ask the dump.
+  //
+  // `needsBoundary` and not `shouldCapture`: whether to *keep* an image can depend
+  // on the verdict, but whether one is possible cannot — it is decided here, before
+  // the pump. In `failed` mode that means every cell is wrapped and most of the
+  // wrappers are discarded unphotographed.
   final dump = overflowScreenshotDump;
-  final boundaryKey = dump.wants(id) ? GlobalKey() : null;
+  final boundaryKey = dump.needsBoundary(id) ? GlobalKey() : null;
   try {
     final incidents = await runWithOverflowCollection(
       cell: baselineCell,
@@ -538,23 +543,44 @@ Future<OverflowCellVerdict> measureOverflowCell(
         return sink;
       },
     );
+    // Hoisted above the capture because `failed` mode selects on it. The tolerance
+    // filter, not `incidents.isNotEmpty`: a sub-tolerance incident is not a failure,
+    // and photographing one would put a cell in the gallery that the report rows
+    // beside it call clean.
+    final significant =
+        incidents.where((i) => i.pixels > tolerancePx).toList(growable: false);
     // Photographed after the collection closes and before the family judges: the
     // tree is still mounted, `onCellSettled` has already opened whatever
     // presentation this family opens (so a popup cell is a photograph of the
     // dialog, not of the 122px tile behind it — #1366), and the record for this
     // cell is already written, so nothing here can reach the dataset.
-    if (boundaryKey != null) {
+    //
+    // Before the family judges, so the selection is the tolerance filter's verdict
+    // and not the family's: a card whose overflow is allowlisted is still a cell
+    // that overflowed, and looking at it is the point of shooting it.
+    if (boundaryKey != null &&
+        dump.shouldCapture(id, failed: significant.isNotEmpty)) {
       await dump.capture(tester, cellId: id, boundaryKey: boundaryKey);
     }
     return OverflowCellVerdict(
       cellId: id,
       incidents: incidents,
-      significant: incidents
-          .where((i) => i.pixels > tolerancePx)
-          .toList(growable: false),
+      significant: significant,
       tolerancePx: tolerancePx,
     );
   } catch (error) {
+    // A cell that did not finish is a failure too, and its photograph is Flutter's
+    // red error box — worth having when the throw came from a family's
+    // `onCellSettled` rather than from a build. Both selectors reach this: the
+    // capture in the `try` above is unreachable for a cell that threw, so without
+    // this line even `all` would skip precisely the cells worth looking at.
+    //
+    // This is the one capture that could plausibly damage what it documents, so
+    // `writeBoundaryPng` guards the `runAsync` call itself and not merely its body:
+    // a dump that threw here would replace the cell's real error with its own.
+    if (boundaryKey != null && dump.shouldCapture(id, failed: true)) {
+      await dump.capture(tester, cellId: id, boundaryKey: boundaryKey);
+    }
     // INVARIANT 3. The collector has already emitted this cell's baseline record
     // flagged `threw`, so the dataset says "measured, and it did not finish"
     // rather than "measured, and it fits".

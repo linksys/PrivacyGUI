@@ -898,10 +898,15 @@ void main() {
           OverflowScreenshotDump(pattern: pattern, dir: dir.path);
     }
 
+    /// [childWidth] against a 100px surface is what decides the verdict: 50 fits,
+    /// 101 overflows by one pixel (under the 2px tolerance, so not a failure), and
+    /// 300 overflows by 200.
     Future<OverflowCellVerdict> measure(
       WidgetTester tester, {
       required String screenPx,
       String locale = 'en',
+      double childWidth = 50,
+      Widget Function()? build,
     }) {
       return measureOverflowCell(
         tester,
@@ -910,7 +915,7 @@ void main() {
           axes: {'screen_px': screenPx},
           locale: Locale(locale),
           surfaceSize: const Size(100, 200),
-          build: () => _overflowingRow(childWidth: 50),
+          build: build ?? () => _overflowingRow(childWidth: childWidth),
         ),
       );
     }
@@ -952,10 +957,10 @@ void main() {
 
     testWidgets('shoots the cells the pattern names, and no others',
         (tester) async {
-      // One rule, and only one: the pattern decides. A dump that also shot every
-      // failing cell would make its own output depend on the verdicts as well as
-      // the pattern, which is a second rule to document and a second rule to get
-      // wrong. A failing cell's id is printed in the report — copy it.
+      // The pattern is the whole selector: no verdict is consulted, so this mode
+      // photographs cells that *passed* — which is the case the gate is blind to by
+      // construction (four cards pass at 191px rendering unreadably, #1240 AC1) and
+      // the reason the dump exists at all.
       final dump = install('locale=ar');
 
       await measure(tester, screenPx: '100', locale: 'ar');
@@ -974,6 +979,97 @@ void main() {
       for (final name in dump.written.values) {
         expect(File('${dump.dir}/$name').lengthSync(), greaterThan(0));
       }
+    });
+
+    testWidgets('`failed` shoots what overflowed and nothing that fitted',
+        (tester) async {
+      // The second selector, and the one a person actually reaches for when a
+      // sweep goes red: the failures are what they want to look at, and their ids
+      // are exactly what they do not want to retype. `all` on the page sweep is 416
+      // images to find three in.
+      //
+      // It costs one thing the pattern modes do not: the boundary must be in place
+      // *before* the pump, when no verdict exists yet, so `failed` wraps every cell
+      // and throws most of the wrappers away. The claim that this moves nothing is
+      // pinned by the case below and, at dataset scale, by `check` after a shoot.
+      final dump = install(kOverflowScreenshotFailed);
+
+      final fitted = await measure(tester, screenPx: '100');
+      final overflowed = await measure(tester, screenPx: '200', childWidth: 300);
+
+      expect(fitted.significant, isEmpty);
+      expect(overflowed.significant, hasLength(1));
+      expect(dump.written.keys, ['fake|screen_px=200|locale=en']);
+      expect(
+        File('${dump.dir}/${dump.written.values.single}').lengthSync(),
+        greaterThan(0),
+      );
+    });
+
+    testWidgets('`failed` on a green sweep writes nothing at all',
+        (tester) async {
+      // Which is what makes it safe to leave on: the common case is a green tree,
+      // and there the mode must leave no trace — not even a manifest, since an
+      // empty index reads the same as a run whose images were deleted.
+      final dump = install(kOverflowScreenshotFailed);
+
+      await measure(tester, screenPx: '100');
+      await measure(tester, screenPx: '200');
+
+      expect(dump.written, isEmpty);
+      expect(Directory(dump.dir).listSync(), isEmpty);
+    });
+
+    testWidgets('`failed` uses the verdict\'s own bar, not "any incident"',
+        (tester) async {
+      // A one-pixel overflow is an incident and not a failure — `kOverflowTolerance`
+      // absorbs mac↔CI sub-pixel shaping. If the dump read `incidents` instead of
+      // `significant` it would photograph cells the report calls clean, and the
+      // gallery would disagree with the rows beside it.
+      final dump = install(kOverflowScreenshotFailed);
+
+      final verdict = await measure(tester, screenPx: '100', childWidth: 101);
+
+      expect(verdict.incidents, hasLength(1));
+      expect(verdict.significant, isEmpty);
+      expect(dump.written, isEmpty);
+    });
+
+    testWidgets('`failed` photographs a cell that threw', (tester) async {
+      // A cell whose pump died is a failure too, and the picture of it is Flutter's
+      // red error box naming the throw — which is worth having when the throw is
+      // some family's `onCellSettled` rather than a build error. The capture runs in
+      // the `catch` branch, so it must not be able to replace the error it is
+      // documenting: the verdict below still carries the original throw.
+      final dump = install(kOverflowScreenshotFailed);
+
+      final verdict = await measure(
+        tester,
+        screenPx: '100',
+        build: _hostThatThrowsWhileBuilding,
+      );
+
+      expect(verdict.error, isA<StateError>());
+      expect(verdict.error.toString(), contains('no fixture'));
+      expect(dump.written.keys, ['fake|screen_px=100|locale=en']);
+    });
+
+    testWidgets('wrapping every cell for `failed` measures the same pixels',
+        (tester) async {
+      // The cost of the pre-pump boundary, stated as a test. A `RepaintBoundary`
+      // adds a layer, not a constraint, so the geometry under it is unchanged — but
+      // "unchanged" is the entire premise of shooting a dataset and comparing it to
+      // a committed one, so it is asserted rather than assumed.
+      overflowScreenshotDump = OverflowScreenshotDump.off();
+      final bare = await measure(tester, screenPx: '100', childWidth: 300);
+
+      install(kOverflowScreenshotFailed);
+      final wrapped = await measure(tester, screenPx: '100', childWidth: 300);
+
+      expect(bare.significant.single.pixels, 200.0);
+      expect(wrapped.significant.single.pixels, bare.significant.single.pixels);
+      expect(wrapped.significant.single.side, bare.significant.single.side);
+      expect(wrapped.significant.single.site, bare.significant.single.site);
     });
 
     testWidgets('records what it wrote in a manifest keyed by cell id',
