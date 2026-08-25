@@ -49,6 +49,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
+                    identifier: 'dhcp-reservation-add',
                     onTap: isSaving ? null : () => _showAddDialog(context, ref),
                   ),
                 ],
@@ -118,6 +119,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit_outlined, size: 18),
+              identifier: 'dhcp-reservation-edit-${reservation.mac}',
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, reservation),
@@ -125,6 +127,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              identifier: 'dhcp-reservation-delete-${reservation.mac}',
               onTap: isSaving
                   ? null
                   : () => _confirmDelete(context, ref, reservation),
