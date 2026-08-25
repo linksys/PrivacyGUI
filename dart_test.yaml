@@ -3,7 +3,7 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 46 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 47 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
   # page-family oracle, render-parity and overflow. 41 until the `dev-2.7.0` merge
@@ -11,7 +11,10 @@ tags:
   # name (two detail-view sweeps from #1302 and a density suite from #1321);
   # renaming their tag is what enrolled them, and the count is here so the next
   # such file is noticed rather than merged in silence. 44 until #1349's page pilot
-  # the same day added two: the page sweep and its oracle.
+  # the same day added two: the page sweep and its oracle. 46 until #1367 — whose
+  # branch predates the rename and arrived carrying `dashboard-card` for the fourth
+  # time, which is this note working as intended: `usp_stats_panel_test.dart` is
+  # renamed and enrolled, making it **47**.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.

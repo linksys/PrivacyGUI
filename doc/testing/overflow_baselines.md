@@ -57,7 +57,7 @@ permanent.
 
 ### Reading one without running it — `render`
 
-A baseline is 4,032 sorted rows across five files. `check` answers "did it move";
+A baseline is 4,031 sorted rows across five files. `check` answers "did it move";
 it does not answer "what does this sweep cover", which is the question anyone
 inheriting the gate asks first. `render` turns a committed `.tsv` into a report:
 
@@ -482,7 +482,7 @@ exemption now carries a `maxOverflowPx` ceiling beside its locale list, and the
 two sections must name the same sites — see
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §3), but an empty
 map is an empty map under either shape, and all five baselines still `check`
-identical. What is being frozen is the *coverage*: **4,032**
+identical. What is being frozen is the *coverage*: **4,031**
 coordinates that are measured and clean today (3,587 at capture, 3,616 after the
 merge, plus #1349's 416). Against an all-clean baseline the
 only difference a port can produce is a lost cell, a new overflow, or a cell that

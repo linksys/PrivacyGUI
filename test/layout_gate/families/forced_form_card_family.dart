@@ -1,7 +1,7 @@
 /// The forced-form families: the boxes a #1299 pick produces, which no drag could
 /// (#1344).
 ///
-/// The port of `dashboard_card_forced_form_overflow_test.dart`'s three sweeps — 78
+/// The port of `dashboard_card_forced_form_overflow_test.dart`'s three sweeps — 77
 /// of the gate's committed baseline cells — onto [runOverflowSweep]. What each
 /// sweep *is*, and why these two geometries are not dominated by the widths the
 /// grid produces, stays documented where the sweeps are declared; this file is the
@@ -26,15 +26,15 @@
 ///
 /// ## The one cell id this port changes
 ///
-/// The six skeleton cells were the gate's only coordinate whose id did not name its
+/// The skeleton cells were the gate's only coordinate whose id did not name its
 /// locale. They are pumped in `en` and always were — the id simply never said so —
 /// and the runner appends the locale to every cell id by construction
 /// ([overflowSweepBaselineCell], which is deliberate: locale is a field on the cell,
 /// not an axis a family may respell). So they re-key:
 ///
 /// ```
-/// forced_form.skeleton|variant=stats|px=122|rows=1             ← #1337's capture
-/// forced_form.skeleton|variant=stats|px=122|rows=1|locale=en    ← from #1344 on
+/// forced_form.skeleton|variant=chart|px=122|rows=1             ← #1337's capture
+/// forced_form.skeleton|variant=chart|px=122|rows=1|locale=en    ← from #1344 on
 /// ```
 ///
 /// That is a correction rather than lost coverage, and `forced_form.tsv` is
@@ -134,10 +134,20 @@ List<WidgetSpec> specsOfferingForm(CardDensity density) => UspWidgetSpecs.all
     .where((s) => UspWidgetSpecs.selectableForms(s.id).contains(density))
     .toList();
 
-/// The six placeholders a card can show before its data arrives, at the largest
+/// The placeholders a card can show before its data arrives, at the largest
 /// row count production asks each for — the pre-fix overflow grew with it.
+///
+/// `stats` was a sixth entry until #1367. It never belonged here: `stats_panel` is
+/// the one widget with no popup path at all
+/// ([UspWidgetSpecs.cardsWithoutPopupForm]) because `minColumns: 6` floors its
+/// narrowest realization at 288px, above [kPopupBelow] — so no width the grid
+/// produces put that skeleton under a popup scope, and this cell measured a box
+/// production never gave it. #1367 then replaced the panel's row-wide skeleton with
+/// a per-tile one and left `CardSkeleton.stats()` with no production callers at all,
+/// so the variant is gone and this entry with it. The panel's own loading and error
+/// branches are swept at the 288px box the grid really gives it, in
+/// `usp_stats_panel_test.dart`.
 const Map<String, CardSkeleton> kForcedFormSkeletonVariants = {
-  'stats': CardSkeleton.stats(),
   'info': CardSkeleton.info(rows: 5),
   'list': CardSkeleton.list(rows: 4),
   'chart': CardSkeleton.chart(),
@@ -233,7 +243,7 @@ class ForcedPopupTileFamily extends CardOverflowFamily {
   Future<void> onCardSettled(WidgetTester tester, CardSweepCell card) async {}
 }
 
-/// The six loading placeholders in the same tile, in `en` alone. 6 cells.
+/// The five loading placeholders in the same tile, in `en` alone. 5 cells.
 ///
 /// Pumped directly rather than reached through a card, and that is the whole reason
 /// this is a second family: a card only renders its skeleton in the frames before
@@ -243,7 +253,7 @@ class ForcedPopupTileFamily extends CardOverflowFamily {
 /// fixture timing rather than by a test. On a cold boot every one of them has that
 /// frame.
 ///
-/// The input is a [CardSkeleton] under a popup scope, which is a fact about six
+/// The input is a [CardSkeleton] under a popup scope, which is a fact about five
 /// widgets and has nothing to do with locale or card data — hence one locale, and
 /// hence `variant` as the axis where the other two families have `card`. The two
 /// card cases in [ForcedPopupTileFamily] are what prove production puts the

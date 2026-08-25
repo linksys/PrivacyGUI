@@ -1,6 +1,6 @@
 ---
 name: layout-gate
-description: Operate and maintain the `layout-gate`-tagged PR gate — 46 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 4,032 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
+description: Operate and maintain the `layout-gate`-tagged PR gate — 47 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 4,031 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
 # Layout Gate — Operate & Maintain
@@ -37,13 +37,13 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **46 suites carry `layout-gate` today**, and most
+a re-export of it since #1340. **47 suites carry `layout-gate` today**, and most
 of them are not overflow sweeps at all — they are density, readability, form and
 gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Five of the 46 additionally carry `overflow`**, the pre-commit selector.
+**Five of the 47 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else:
 
 | Sweep | What it pumps |
@@ -63,7 +63,7 @@ being package resolution and build). Identical selection either way, so name the
 and use the tag when a sixth sweep must not be silently missed — the fifth arrived on
 the day this line last said "fifth". **296 — 277 before #1349, 590 after
 #1343, 2,412 before it**: all five sweeps aggregate their locales inside one
-test per coordinate, so 295 of those tests declare 4,032 cells (card 102, popup 80,
+test per coordinate, so 294 of those tests declare 4,031 cells (card 102, popup 80,
 chrome 57, forced-form 38, page 18) and the 296th is #1349's readability guard, which
 pumps 52 trees and names no cell. The cells are what the gate measures; the test
 count is only how they are named.
@@ -286,7 +286,7 @@ Raw `flutter test` knobs (the script wraps these as `--dart-define`):
 ### Before and after a refactor — `tool/overflow_baseline.sh`
 
 `run_overflow_test.sh` answers "is the gate green". It cannot answer "does the
-gate still measure the same 4,032 coordinates", and a refactor that stops
+gate still measure the same 4,031 coordinates", and a refactor that stops
 enumerating a coordinate is green for exactly that reason. So when you are about
 to restructure a sweep rather than fix a card:
 

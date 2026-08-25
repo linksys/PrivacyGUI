@@ -21,7 +21,7 @@ are for people maintaining the gate itself:
 fvm flutter test --tags overflow
 ```
 
-That runs every overflow sweep in the repo: **4,032 coordinates**, each one a
+That runs every overflow sweep in the repo: **4,031 coordinates**, each one a
 screen × width × tab × locale combination, pumped as its own widget tree and
 asked one question — did a `RenderFlex` overflow?
 
@@ -147,7 +147,7 @@ The names in this subsystem mislead in a specific way, so:
 | **family** | The declaration of one sweep: which coordinates exist, and how one coordinate becomes a widget. Five sweeps, nine families. |
 | **cell** | One coordinate. A `clean` cell is a recorded row, **not** an absence. |
 | **ratchet** / **allowlist** | [known_overflows.json](../../test/fixtures/known_overflows.json). A tolerance list that *weakens* the verdict. **Currently empty**, so nothing is exempt. See §6. |
-| **baseline** (`.tsv`) | A coverage register — a record of *which* 4,032 coordinates were measured. It judges nothing. See §5. |
+| **baseline** (`.tsv`) | A coverage register — a record of *which* 4,031 coordinates were measured. It judges nothing. See §5. |
 | `sweep_test.dart`, `ratchet_test.dart` | **Not sweeps.** Unit tests of the framework itself. You never run them deliberately. |
 
 The two easiest mistakes: thinking `sweep` is an auxiliary check on top of the
@@ -205,8 +205,8 @@ Coverage today, per sweep:
 | `chrome` | 1,248 | top bar and dashboard header at screen width × locale × action mode |
 | `popup` | 347 | the same cards pinned into the popup form |
 | `page` | 416 | `page.dhcp` and `page.wifi_settings`, 8 widths × 26 locales |
-| `forced_form` | 78 | the boxes a user's forced-size pick produces, which no drag could |
-| | **4,032** | |
+| `forced_form` | 77 | the boxes a user's forced-size pick produces, which no drag could |
+| | **4,031** | |
 
 ---
 
@@ -327,7 +327,7 @@ Both are why `shoot` exists. When a cell's verdict matters, look at the picture.
 
 ```bash
 # ── run ─────────────────────────────────────────────────────────────────────
-fvm flutter test --tags overflow          # the five sweeps, 4,032 cells
+fvm flutter test --tags overflow          # the five sweeps, 4,031 cells
 fvm flutter test --tags layout-gate       # the whole PR-blocking gate
 ./run_tests.sh                            # what CI runs (includes the above)
 

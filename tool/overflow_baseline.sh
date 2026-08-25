@@ -17,8 +17,8 @@
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
 #   All five sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 4,032 coordinates that are measured and clean — card 1,943,
-#   popup 347, forced_form 78, chrome 1,248, re-checked at the `dev-2.7.0` merge on
+#   freeze is coverage: 4,031 coordinates that are measured and clean — card 1,943,
+#   popup 347, forced_form 77, chrome 1,248, re-checked at the `dev-2.7.0` merge on
 #   2026-08-24, where +29 cells arrived from a production spec change (#1325's
 #   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 416 from
 #   #1349's pilot the same day (the fifth sweep, and the first one registered here

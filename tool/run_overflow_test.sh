@@ -19,7 +19,7 @@
 # take 2m03s under the tag and 32.1s when the five files are named (shell clock;
 # `flutter test`'s own is 1m48s and 25s). The test count fell from 2,386 to 296
 # without losing a cell — #1344 and #1343 regrouped each sweep's locales inside
-# one test per coordinate, so 4,032 cells are named by 295 of those tests, the
+# one test per coordinate, so 4,031 cells are named by 295 of those tests, the
 # 296th being #1349's readability guard, which pumps 52 trees and names no cell.
 # Correctness is identical — the selection is
 # exactly those five either way — so the tag is right for a pre-commit run and
