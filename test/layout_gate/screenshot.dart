@@ -78,7 +78,13 @@ const String kOverflowScreenshotManifest = 'index.tsv';
 /// Versioned like the baseline dataset's own header for the same reason: the
 /// reader is a different program, shipped in the same commit today and not
 /// necessarily tomorrow.
-const String kOverflowScreenshotManifestFormat = 'overflow-screenshots 1';
+///
+/// Format 2 added the optional `# commit` line below it. The version moved even
+/// though no row changed, for two reasons: a version-1 reader meets that line as a
+/// malformed row, and every version-1 manifest sitting in `build/` becomes
+/// unreadable — which is the right outcome, since those are precisely the files
+/// whose tree nothing recorded.
+const String kOverflowScreenshotManifestFormat = 'overflow-screenshots 2';
 
 /// Where a cell's PNG goes, and which cells get one.
 ///
@@ -89,6 +95,7 @@ class OverflowScreenshotDump {
   OverflowScreenshotDump({
     required this.pattern,
     required this.dir,
+    this.commit = '',
     this.pixelRatio = 2.0,
   });
 
@@ -96,8 +103,8 @@ class OverflowScreenshotDump {
   factory OverflowScreenshotDump.off() =>
       OverflowScreenshotDump(pattern: '', dir: '');
 
-  /// Reads `OVERFLOW_PNG` and `OVERFLOW_PNG_DIR`, as a `--dart-define` or from the
-  /// environment.
+  /// Reads `OVERFLOW_PNG`, `OVERFLOW_PNG_DIR` and `OVERFLOW_PNG_COMMIT`, as a
+  /// `--dart-define` or from the environment.
   ///
   /// Both spellings, in that order, because that is how every other knob in this
   /// family is read (`DUMP`, `LOCALE`, `MIN_SCREEN`) and because
@@ -109,6 +116,10 @@ class OverflowScreenshotDump {
       dir: _read(
         'OVERFLOW_PNG_DIR',
         const String.fromEnvironment('OVERFLOW_PNG_DIR'),
+      ),
+      commit: _read(
+        'OVERFLOW_PNG_COMMIT',
+        const String.fromEnvironment('OVERFLOW_PNG_COMMIT'),
       ),
     );
   }
@@ -128,6 +139,15 @@ class OverflowScreenshotDump {
 
   /// The directory PNGs and the manifest are written to.
   final String dir;
+
+  /// The tree being photographed, as `tool/overflow_baseline.sh` stamps its
+  /// datasets — empty when nobody said.
+  ///
+  /// Passed in rather than read from `git` here, because the honest answer for a
+  /// hand-driven dump is "unknown" and a sha resolved in-process would claim a
+  /// clean tree while photographing a dirty one. The shell already computes this
+  /// string, `-dirty` suffix and all, for the dataset half of the same run.
+  final String commit;
 
   final double pixelRatio;
 
@@ -206,7 +226,11 @@ class OverflowScreenshotDump {
     try {
       final file = File(manifestPath);
       if (written.length == 1) {
-        file.writeAsStringSync('# $kOverflowScreenshotManifestFormat\n');
+        // The stamp is omitted, not written empty, when there is none: a reader
+        // must be able to tell "no tree was recorded" from "the tree is the empty
+        // string", and only one of those is a state a dump can be in.
+        file.writeAsStringSync('# $kOverflowScreenshotManifestFormat\n'
+            '${commit.isEmpty ? '' : '# commit $commit\n'}');
       }
       file.writeAsStringSync('$cellId\t$name\n', mode: FileMode.append);
     } catch (error) {

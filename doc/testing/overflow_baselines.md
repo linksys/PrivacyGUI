@@ -95,8 +95,12 @@ Three things about it are deliberate:
   copy from `/tmp` and the report says `/tmp`, which is the report naming what it
   read rather than volatility.
 
-Exit codes match the rest of the tool: **0** clean, **1** the file disagrees with
-its own header, **2** bad input (an unknown `--format`, a missing baseline).
+Exit codes match the rest of the tool: **0** clean, **1** a contradiction — the file
+disagrees with its own header, or the images linked beside its rows were photographed
+on another tree (*What both modes write*, below) — **2** bad input (an unknown
+`--format`, a missing baseline).
+Both 1s are the same fact in two places: two readings of one subject that do not
+agree, so nothing in the document should be quoted until someone has looked.
 
 ### Photographing cells — `shoot`
 
@@ -187,16 +191,26 @@ Four properties are worth knowing before trusting one:
   taken at another commit, and `failed` can be believed. The cost is the one
   `capture` pays: the records go to stdout, so the run is silent.
 
-  **This property is `shoot`'s alone.** A later `render <sweep>` reads the committed
-  dataset and still links the same shots folder with no extra flag, so its two halves
-  are two trees — and the orphan warning does *not* reliably catch that, because it
-  fires on an image whose cell id the dataset lacks. The ordinary case has the id
-  present as a `clean` row, so nothing warns and the gallery prose calls it a cell
-  that passed while the picture shows the overflow stripes. Measured: after
+  **This property is `shoot`'s alone, and a later `render` now says so.** A
+  `render <sweep>` reads the committed dataset and still links the same shots folder
+  with no extra flag, so its two halves are two trees. The orphan warning does *not*
+  catch that — it fires on an image whose cell id the dataset lacks, and the ordinary
+  case has the id present as a `clean` row. Measured before the fix: after
   `shoot page failed` on a tree with #1349's fix removed, `render page` linked all
   three broken images under "a verdict above says no `RenderFlex` overflowed", in
-  silence. Read a `.baseline` report's gallery as "images from some run", and a
-  `.shoot` report's as "images from this one".
+  silence.
+
+  So **each half names its tree and `render` compares them** — the manifest carries
+  `# commit <sha>` exactly as the dataset header does, stamped from the same
+  `$COMMIT` in the same run. Different shas: a paragraph *above* the gallery saying
+  whose images these are, the same line on stderr, and **exit 1**, the code a header
+  that contradicts its own rows gets, because it is the same class of fact. Equal
+  shas: nothing at all — a caveat printed on the good path is one that gets ignored
+  on the bad one, so every `shoot` report is silent here. Either side unstamped
+  (a dump driven by hand has no commit to pass): the paragraph, but exit 0, since
+  nothing was claimed and so nothing is contradicted. Re-measured after the fix:
+  the same broken-tree shoot then made `render page` print the mismatch and exit 1,
+  while `shoot` itself stayed silent.
 - **Selection is by cell id, or by this run's own verdicts.** `failed`, `all`, or a
   substring. Reserved words rather than a flag beside a pattern, so there is one
   input to explain and one rule per run.
@@ -218,10 +232,15 @@ Four properties are worth knowing before trusting one:
 
 The mechanism is two programs that cannot import each other — `test_scripts/` runs
 under a bare `dart run` — so the folder carries a manifest, `index.tsv`, headed
-`# overflow-screenshots 1` with one `cell id<TAB>file name` row per image, appended
-as each shot lands so a killed run still leaves a readable index. Both sides keep
-their own copy of that version string on purpose; the pair is pinned by tests on
-both sides.
+`# overflow-screenshots 2`, then `# commit <sha>` when the run was told one, then one
+`cell id<TAB>file name` row per image, appended as each shot lands so a killed run
+still leaves a readable index. Both sides keep their own copy of that version string
+on purpose; the pair is pinned by tests on both sides. The version moved to 2 for the
+`# commit` line even though no row changed, and the second reason is the useful one:
+every version-1 manifest already sitting in `build/` is now unreadable, and those are
+exactly the files whose tree nothing recorded. A refused manifest links no images and
+says why — it is a warning, not an exit code, because a stale `build/` folder is not
+a corrupt dataset.
 
 ## 2. What is in a baseline
 

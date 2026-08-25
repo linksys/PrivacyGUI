@@ -349,6 +349,12 @@ for sweep in "${TARGETS[@]}"; do
     # rows beside them call failures. The cost is the same one 'capture' pays: the
     # records go to stdout, so stdout is the dataset and the run is silent.
     #
+    # OVERFLOW_PNG_COMMIT is the same $COMMIT the dataset below is stamped with, so
+    # the manifest records the tree too. It is what makes the property above
+    # *checkable* rather than merely true here: `render` reads the committed rows
+    # against whatever images are in build/, and those two halves are the pair that
+    # can silently differ.
+    #
     # The same scrub 'capture' does, for a related reason: LOCALE or MIN_SCREEN
     # left exported would narrow which cells are enumerated, and the shoot would
     # then be a subset of the pattern without saying so. DUMP is cleared too, so the
@@ -359,6 +365,7 @@ for sweep in "${TARGETS[@]}"; do
         -u dump -u dump_mode -u LIST_CARDS -u list_cards \
         OVERFLOW_BASELINE=1 \
         OVERFLOW_PNG="$PATTERN" OVERFLOW_PNG_DIR="$shots" \
+        OVERFLOW_PNG_COMMIT="$COMMIT" \
         $FLUTTER test "$suite" --reporter json > "$report"
     test_exit=$?
     set -e
@@ -448,10 +455,17 @@ if [ "$MODE" = "render" ]; then
     echo "    A report of this tree is what 'shoot' writes, as <sweep>.shoot.html."
     exit 0
   fi
-  echo " ❌ Rendered, but these disagree with their own headers: ${FAILED[*]}"
-  echo "    The counts in a header are written at capture time and the rows were"
-  echo "    recounted, so the file has been edited by hand or by another version."
-  echo "    Re-capture it rather than quoting the report."
+  # Two facts land here and the shell cannot tell which: the line on stderr above
+  # says, and so does the report. Naming only the header — as this did until the
+  # manifest carried a commit — sent a reader to re-capture a file whose counts
+  # were never in question.
+  echo " ❌ Rendered, but these do not hold together: ${FAILED[*]}"
+  echo "    Either a header disagrees with its own rows (they are written at capture"
+  echo "    time and recounted here, so the file was hand-edited or written by"
+  echo "    another version — re-capture it), or the images under $SHOT_ROOT/"
+  echo "    were photographed on a different tree than the rows describe, which"
+  echo "    makes a picture beside a verdict no evidence for it. Run 'shoot' to get"
+  echo "    both halves from one run. The stderr line above says which it was."
   exit 1
 fi
 if [ "$MODE" = "shoot" ]; then

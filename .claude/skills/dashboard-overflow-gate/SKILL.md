@@ -311,10 +311,14 @@ so the red rows and the images cannot disagree.
 
 **Open the `.shoot` report, not the `.baseline` one.** The two suffixes name whose
 rows the report holds, and a `.baseline` report is green whenever the committed rows
-are — which is always, today. Worse, `render` links whatever is in the shots folder,
-and the orphan warning only catches an image whose cell id the dataset *lacks*: a
-`clean` row with a broken picture beside it passes in silence. `shoot` opening its own
-report is how that stops being a thing to remember (`NO_OPEN=1` to just get the path).
+are — which is always, today. `render` also links whatever is in the shots folder, and
+the orphan warning only catches an image whose cell id the dataset *lacks*, so a
+`clean` row with a broken picture beside it used to pass in silence. Two things stop
+that now: `shoot` opens its own report (`NO_OPEN=1` for just the path), and both
+halves are stamped with the tree they were taken on — a `render` whose images come
+from elsewhere says so above the gallery and exits 1. If you see that paragraph, the
+pictures are of another tree; `shoot` is the command that gives you both halves from
+one run.
 
 **A sweep is green and you want to see it anyway.** `clean` means one thing: no
 `RenderFlex` overflowed. It does not mean legible, and the card sweep's own PNGs

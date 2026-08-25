@@ -163,8 +163,8 @@ that last run, and the parenthesised figures are what each row read before it:
 | **Page sweep (one file, new at #1349)** | **19** | 416 + 52 guard pumps | 15s (**20s** wall) | **33–38ms** |
 | The five overflow sweeps (5 files, named) | **296** (277 pre-#1349, 273 pre-merge) | 4,032 rows † | 25s (**32s** wall) | — |
 | The same five via `--tags overflow` | **296** | 4,032 rows † | 1m48s (**2m03s** wall) | — |
-| Whole `layout-gate` family (46 files) | **1,414** (1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m06s (1m52s pre-#1349, **2m14s** wall) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,384** (5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m43s (2m44s without the page suite, **2m49s** wall) | — |
+| Whole `layout-gate` family (46 files) | **1,428** (1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 4,300 | 2m12s (2m06s pre-`shoot`, 1m52s pre-#1349, **2m21s** wall) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,410** (5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 2m52s (2m43s before `shoot`, 2m44s without the page suite, **2m49s** wall) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -186,11 +186,24 @@ stays 416 rows and the 20 above stays 20.
 [overflow_baselines.md](overflow_baselines.md) §1): +22 tests in
 `test/test_scripts/overflow_baseline_test.dart`, which is a plain script test —
 strings in, strings out, no binding and no pump. So `--tags overflow` stays **296**,
-`layout-gate` stays **1,414**, every cell count is untouched, and the clock column is
-left as the quiet-session figures above rather than replaced by the 3m04s the
-verifying run measured under contention. A reporter that reads a committed dataset
-cannot change what the gate measures; if any row but the last one had moved, that
-would have been the finding.
+`layout-gate` was unmoved by it at **1,414**, every cell count is untouched, and the
+clock column is left as the quiet-session figures above rather than replaced by the
+3m04s the verifying run measured under contention. A reporter that reads a committed
+dataset cannot change what the gate measures; if any row but the last one had moved,
+that would have been the finding.
+
+**`shoot` then moved the gate and PR-gate rows and nothing else** (measured
+2026-08-25): 1,414 → **1,428** and 5,384 → **5,410**. The gate's +14 is all in
+`test/layout_gate/sweep_test.dart`, which carries `layout-gate` and not `overflow`:
+twelve cases with the dump itself (7 in `83e90159`, 5 in `58a0b245`) and two with the
+manifest's commit stamp. The suite's +26 is those plus twelve script-test cases in
+`test/test_scripts/overflow_baseline_test.dart` (7 + 1 with the dump, 4 with the stamp),
+which is untagged. Worth stating because the epic record carried the gate as **1,419 by
+arithmetic** for a day and it should have read 1,426 — the estimate added one of the two
+`shoot` commits and missed the other, while the suite's arithmetic over the same commits
+was right. Both are now measured. `--tags overflow` stays **296** and all five baselines
+stay identical: a dump that is off by default cannot change what a sweep enumerates, and
+a `failed` shoot reproduced all 4,032 rows to prove it.
 
 **The whole table moved at #1343, and only the test-count column.** The pumped
 cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917

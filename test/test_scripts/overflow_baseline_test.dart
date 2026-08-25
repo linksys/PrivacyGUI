@@ -1243,21 +1243,28 @@ void main() {
 
   group("render's screenshot gallery", () {
     /// The manifest `test/layout_gate/screenshot.dart` writes, as text.
+    ///
+    /// [commit] is omitted from the text when null, which is what a dump run by
+    /// hand rather than by `tool/overflow_baseline.sh` writes.
     String manifest(Map<String, String> rows,
-            {String format = 'overflow-screenshots 1'}) =>
-        ['# $format', ...rows.entries.map((e) => '${e.key}\t${e.value}')]
-            .join('\n');
+            {String format = 'overflow-screenshots 2', String? commit}) =>
+        [
+          '# $format',
+          if (commit != null) '# commit $commit',
+          ...rows.entries.map((e) => '${e.key}\t${e.value}')
+        ].join('\n');
 
     BaselineReport reportOf(
       List<String> records, {
       ScreenshotIndex shots = ScreenshotIndex.none,
+      String commit = '69079cb0',
     }) =>
         BaselineReport.of(
           BaselineFile.parse(
             renderBaseline(
               extractBaseline(reporter(records), sweep: 'page'),
               suite: 'test/page/_shared/page_surface_overflow_test.dart',
-              commit: '69079cb0',
+              commit: commit,
             ),
             source: 'test/fixtures/overflow_baselines/page.tsv',
           ),
@@ -1333,7 +1340,8 @@ void main() {
         shots: shots,
       ));
 
-      expect(clean, contains('says nothing about whether the result can be read'));
+      expect(
+          clean, contains('says nothing about whether the result can be read'));
       expect(clean, isNot(contains('every one of them a failure')));
       expect(failed, contains('every one of them a failure'));
     });
@@ -1433,7 +1441,7 @@ void main() {
       // A truncated append — the manifest is written a row at a time, so a killed
       // shoot really can leave a half-written line.
       final shots = ScreenshotIndex.parse(
-        '# overflow-screenshots 1\n'
+        '# overflow-screenshots 2\n'
         'page.dhcp|screen_px=320|locale=ar\ta.png\n'
         'page.dhcp|screen_px=601|locale=a',
         source: 'index.tsv',
@@ -1442,6 +1450,103 @@ void main() {
 
       expect(shots.images, hasLength(1));
       expect(shots.warnings.single, contains('1 row'));
+    });
+
+    test('reads the tree the images were photographed on', () {
+      // Format 2's whole reason to exist. The rows carry a `# commit` header and
+      // the images did not, so the one question a gallery raises — are these
+      // pictures of these rows — had no answer in the file.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'},
+            commit: '7c5318ee-dirty'),
+        source: 'index.tsv',
+        href: 'shots',
+      );
+
+      expect(shots.commit, '7c5318ee-dirty');
+      expect(shots.images, hasLength(1),
+          reason: 'a header line is not a row, and must not be counted as one');
+      expect(shots.warnings, isEmpty);
+    });
+
+    test('a gallery from another tree is said so above the pictures', () {
+      // The defect this closes, in the order it happened: `shoot page failed` on a
+      // tree with #1349's fix removed left three images of a real overflow, the fix
+      // went back in, and `render page` then linked all three under the *committed*
+      // rows — which are clean, and say so in prose. The orphan check cannot catch
+      // it: those cell ids are all present, as `clean` rows. Only the stamp can.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'},
+            commit: 'deadbeef-dirty'),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final report = reportOf(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        shots: shots,
+        commit: '69079cb0',
+      );
+      final text = renderReportMarkdown(report);
+
+      expect(report.shotsFromAnotherTree, isTrue);
+      expect(report.shotProvenance,
+          allOf(contains('deadbeef-dirty'), contains('69079cb0')));
+      // Still linked, and deliberately: the pictures are the evidence that the two
+      // trees differ, so removing them would remove the finding. What changes is
+      // that the document says whose they are.
+      expect(text, contains('../shots/page/a.png'));
+      expect(text.indexOf('deadbeef-dirty'), lessThan(text.indexOf('a.png')),
+          reason: 'a caveat under the images is a caveat nobody scrolls to');
+      // The same exit code a header disagreement gets: two files that describe
+      // different trees is the same class of fact as one file disagreeing with
+      // itself, and silence is what made this a defect in the first place.
+      expect(reportExitCode(report, stderr: StringBuffer()), 1);
+    });
+
+    test('the same stamp on both halves says nothing at all', () {
+      // What every `shoot` produces, since one run stamps both. A caveat printed on
+      // the good path is a caveat that gets ignored on the bad one — and `-dirty`
+      // needs no second mention here, the header block above already says the sha
+      // will not reproduce these rows.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'},
+            commit: '7c5318ee-dirty'),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final report = reportOf(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        shots: shots,
+        commit: '7c5318ee-dirty',
+      );
+
+      expect(report.shotsFromAnotherTree, isFalse);
+      expect(report.shotProvenance, isNull);
+      expect(reportExitCode(report, stderr: StringBuffer()), 0);
+    });
+
+    test(
+        'an unstamped manifest is unverifiable, and says that rather than nothing',
+        () {
+      // A dump driven by hand (`OVERFLOW_PNG=… flutter test …`) has no commit to
+      // stamp, so it writes none. That is not a disagreement — nothing is claimed —
+      // but it is not a match either, and reading it as one is the whole defect.
+      final shots = ScreenshotIndex.parse(
+        manifest({'page.dhcp|screen_px=320|locale=ar': 'a.png'}),
+        source: 'index.tsv',
+        href: '../shots/page',
+      );
+      final report = reportOf(
+        [marked('page.dhcp|screen_px=320|locale=ar', const [])],
+        shots: shots,
+      );
+
+      expect(shots.commit, isNull);
+      expect(report.shotsFromAnotherTree, isFalse,
+          reason: 'unknown is not a mismatch');
+      expect(report.shotProvenance, contains('no commit'));
+      expect(renderReportMarkdown(report), contains('no commit'));
+      expect(reportExitCode(report, stderr: StringBuffer()), 0);
     });
   });
 

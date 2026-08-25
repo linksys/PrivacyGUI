@@ -721,6 +721,8 @@ class BaselineReport {
     required this.headerDisagreements,
     required this.shots,
     required this.shotWarnings,
+    required this.shotProvenance,
+    required this.shotsFromAnotherTree,
   });
 
   /// The dataset this describes.
@@ -784,6 +786,24 @@ class BaselineReport {
   /// the exit code, because a gallery is decoration and a stale `build/` folder is
   /// not a corrupt dataset.
   final List<String> shotWarnings;
+
+  /// What the images and the rows each say about which tree they came from, or
+  /// null when both name the same one.
+  ///
+  /// Deliberately **not** a [shotWarnings] entry, though it is the same kind of
+  /// fact: that section's prose ends "Nothing below is linked", and these images
+  /// are linked — they are the evidence. A note filed under a heading that
+  /// misdescribes it is a note a reader learns to skip.
+  ///
+  /// Null on the matching case and non-null on the unverifiable one, because
+  /// "these agree" is the state a reader assumes and does not need told, while
+  /// "nobody recorded" is the state that looks identical to agreement and is not.
+  final String? shotProvenance;
+
+  /// Whether the two halves name **different** trees — the one branch of
+  /// [shotProvenance] that is a contradiction rather than a gap, and so the one
+  /// that reaches the exit code.
+  final bool shotsFromAnotherTree;
 
   /// The same one-line shape [ExtractedBaseline.summary] prints.
   String get summary =>
@@ -885,7 +905,42 @@ class BaselineReport {
         ...shots.warnings,
         if (orphans.isNotEmpty) _orphanWarning(shots.source, orphans),
       ],
+      shotProvenance: _shotProvenance(file, shots),
+      shotsFromAnotherTree: shots.images.isNotEmpty &&
+          shots.commit != null &&
+          file.commit != null &&
+          shots.commit != file.commit,
     );
+  }
+
+  /// Whether the pictures are pictures of these rows.
+  ///
+  /// Three answers, and the middle one is the reason this exists. **Different
+  /// stamps** is a contradiction and reads as one. **The same stamp** is the only
+  /// state that needs no sentence, and gets none — a caveat that prints on the good
+  /// path is a caveat that is ignored on the bad one. **Either side unstamped** is
+  /// neither: nothing is claimed, so nothing is contradicted, but it must not be
+  /// rendered as agreement, because that silence is precisely what let a green
+  /// report show three overflow-striped images under a verdict of clean.
+  static String? _shotProvenance(BaselineFile file, ScreenshotIndex shots) {
+    // Judged on what the manifest listed, not on what linked: an image whose
+    // coordinate these rows do not hold is the strongest evidence of two trees
+    // there is, and it is the one that ends up in [shots] empty.
+    if (shots.images.isEmpty) return null;
+    final rows = file.commit;
+    final pictures = shots.commit;
+    if (pictures == null || rows == null) {
+      return 'The images name '
+          '${pictures == null ? 'no commit' : '`$pictures`'} and the rows name '
+          '${rows == null ? 'no commit' : '`$rows`'}, so nothing here says the '
+          'two halves were measured on the same code. A `shoot` stamps both from '
+          'one run; a dump driven by hand stamps neither.';
+    }
+    if (pictures == rows) return null;
+    return 'The images were taken on `$pictures` and these rows were measured on '
+        '`$rows`. They are two different trees, so a picture beside a verdict is '
+        'not evidence for it — and the verdict is the half that is out of date '
+        'only if the rows are older, which the two shas do not say.';
   }
 
   /// Every orphan named, up to a stated limit.
@@ -959,7 +1014,12 @@ class BaselineReport {
 /// ship in one commit forever: this one runs under a bare `dart run` and so cannot
 /// import `test/`, which is also why the *file name* is carried in a manifest at
 /// all rather than derived from the cell id twice.
-const String overflowScreenshotManifestFormat = 'overflow-screenshots 1';
+/// Format 2 added the `# commit` line. The version had to move with it even
+/// though the row shape did not: a version-1 reader meeting that line calls it a
+/// malformed row, and — more usefully — every version-1 manifest already on disk
+/// in `build/` becomes unreadable, which is exactly right. Those are the files
+/// whose provenance nothing recorded.
+const String overflowScreenshotManifestFormat = 'overflow-screenshots 2';
 const String overflowScreenshotManifestName = 'index.tsv';
 
 /// The images a shoot took, as hrefs a report can link.
@@ -972,6 +1032,7 @@ class ScreenshotIndex {
     required this.images,
     required this.warnings,
     required this.source,
+    this.commit,
   });
 
   /// No manifest: what four of the five sweeps are rendered with.
@@ -1010,8 +1071,17 @@ class ScreenshotIndex {
     }
 
     final entries = <String, String>{};
+    String? commit;
     var malformed = 0;
     for (final line in lines.skip(1)) {
+      // The one header line that may follow the format line. Read here rather
+      // than at a fixed index because it is written only when the shoot had a
+      // commit to name, and a reader that demanded line 2 would reject the
+      // hand-driven dumps that legitimately have none.
+      if (line.startsWith('# commit ')) {
+        commit = line.substring('# commit '.length).trim();
+        continue;
+      }
       final fields = line.split('\t');
       if (fields.length != 2 || fields.any((f) => f.trim().isEmpty)) {
         malformed++;
@@ -1027,6 +1097,7 @@ class ScreenshotIndex {
     final sorted = entries.keys.toList()..sort();
     return ScreenshotIndex._(
       images: {for (final cell in sorted) cell: entries[cell]!},
+      commit: commit != null && commit.isNotEmpty ? commit : null,
       warnings: [
         if (malformed > 0)
           '$source: skipped $malformed row${malformed == 1 ? '' : 's'} that is '
@@ -1042,6 +1113,16 @@ class ScreenshotIndex {
 
   /// Why this index is smaller than the file it was read from. Empty is normal.
   final List<String> warnings;
+
+  /// The tree the images were photographed on, or null when the manifest names
+  /// none.
+  ///
+  /// The dataset has carried this since `capture` was written; the manifest did
+  /// not, and that asymmetry is the whole defect format 2 closes. A picture and a
+  /// row joined only by cell id say nothing about being the same code, and the
+  /// ordinary case — a `clean` row and an image of that very coordinate
+  /// overflowing — reconciles perfectly on every other check there is.
+  final String? commit;
 
   /// The manifest's path, for the warnings a report adds of its own.
   final String source;
@@ -1458,9 +1539,23 @@ List<_Block> _reportBlocks(BaselineReport report) {
 /// green, both visible only in a picture.
 List<_Block> _galleryBlocks(BaselineReport report) {
   final blocks = <_Block>[];
-  if (report.shots.isEmpty && report.shotWarnings.isEmpty) return blocks;
+  if (report.shots.isEmpty &&
+      report.shotWarnings.isEmpty &&
+      report.shotProvenance == null) {
+    return blocks;
+  }
 
   blocks.add(_Heading(2, 'Screenshots'));
+  // Above the pictures, not below them: this is the sentence that decides whether
+  // anything under it is evidence, and a caveat under a grid of images is a caveat
+  // nobody scrolls to.
+  if (report.shotProvenance case final provenance?) {
+    blocks.add(_Para(
+      report.shotsFromAnotherTree
+          ? '**These images are not of this dataset\'s tree.** $provenance'
+          : '**Nothing records which tree these images are of.** $provenance',
+    ));
+  }
   if (report.shots.isNotEmpty) {
     blocks
       ..add(_Para(
@@ -1818,10 +1913,10 @@ int _diffCommand(Map<String, String> options, StringSink out) {
 
 /// Turns a committed baseline into something a human reads.
 ///
-/// Exits 1 when the file's own header contradicts its rows — the same code a
-/// differing diff uses, and for the same reason: two readings of one dataset do
-/// not agree, so nothing in the document should be quoted until someone has
-/// looked. The document is still written, because it is what says what the
+/// Exits 1 on a contradiction — see [reportExitCode] for which ones — the same
+/// code a differing diff uses, and for the same reason: two readings of one
+/// subject do not agree, so nothing in the document should be quoted until someone
+/// has looked. The document is still written, because it is what says what the
 /// disagreement is.
 int _renderCommand(
   Map<String, String> options,
@@ -1847,16 +1942,38 @@ int _renderCommand(
   }
 
   _writeOrPrint(text, summary: report.summary, options: options, out: out);
+  return reportExitCode(report, stderr: err);
+}
+
+/// What `render` exits with, having said why on [stderr].
+///
+/// A function of the report and nothing else, so the rule is stated once and can
+/// be read without a file on disk — the document and the exit code must agree, and
+/// two copies of "is this trustworthy" would eventually not.
+///
+/// Two facts fail it, and both are contradictions rather than gaps: a header that
+/// disagrees with its own rows, and rows that describe a different tree from the
+/// images beside them. Both mean two readings of one subject do not agree, so
+/// nothing in the document should be quoted until someone has looked.
+int reportExitCode(BaselineReport report, {required StringSink stderr}) {
   for (final disagreement in report.headerDisagreements) {
-    err.writeln(disagreement);
+    stderr.writeln(disagreement);
+  }
+  // Only when it is a mismatch. The unstamped case is in the document, where a
+  // reader deciding what a picture proves will see it, and out of the exit code,
+  // where it would fail every hand-driven dump for lacking a commit it never had.
+  if (report.shotsFromAnotherTree) {
+    stderr.writeln('${report.file.source}: ${report.shotProvenance}');
   }
   // Printed, and deliberately not part of the exit code: `--shots` points at
   // `build/`, which survives a re-capture, so a stale image folder must not make a
   // green dataset read as a failed check. The document says the same thing.
   for (final warning in report.shotWarnings) {
-    err.writeln(warning);
+    stderr.writeln(warning);
   }
-  return report.headerDisagreements.isEmpty ? 0 : 1;
+  return report.headerDisagreements.isEmpty && !report.shotsFromAnotherTree
+      ? 0
+      : 1;
 }
 
 /// The gallery `render` was asked for, or [ScreenshotIndex.none].

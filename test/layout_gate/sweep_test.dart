@@ -888,14 +888,17 @@ void main() {
     /// The runner reads a library-level variable rather than the environment
     /// directly, which is what makes this observable at all: `OVERFLOW_PNG` is set
     /// by `tool/overflow_baseline.sh` and a test cannot set it for itself.
-    OverflowScreenshotDump install(String pattern) {
+    OverflowScreenshotDump install(String pattern, {String commit = ''}) {
       final dir = Directory.systemTemp.createTempSync('overflow-shots');
       addTearDown(() {
         overflowScreenshotDump = OverflowScreenshotDump.off();
         if (dir.existsSync()) dir.deleteSync(recursive: true);
       });
-      return overflowScreenshotDump =
-          OverflowScreenshotDump(pattern: pattern, dir: dir.path);
+      return overflowScreenshotDump = OverflowScreenshotDump(
+        pattern: pattern,
+        dir: dir.path,
+        commit: commit,
+      );
     }
 
     /// [childWidth] against a 100px surface is what decides the verdict: 50 fits,
@@ -995,7 +998,8 @@ void main() {
       final dump = install(kOverflowScreenshotFailed);
 
       final fitted = await measure(tester, screenPx: '100');
-      final overflowed = await measure(tester, screenPx: '200', childWidth: 300);
+      final overflowed =
+          await measure(tester, screenPx: '200', childWidth: 300);
 
       expect(fitted.significant, isEmpty);
       expect(overflowed.significant, hasLength(1));
@@ -1091,6 +1095,37 @@ void main() {
         'fake|screen_px=100|locale=ar\t'
         '${dump.written['fake|screen_px=100|locale=ar']}',
       );
+    });
+
+    testWidgets('stamps the tree it photographed, when it was told one',
+        (tester) async {
+      // The other half of the format-2 fix, and the half that makes the reader's
+      // check possible at all. `render` links images by cell id, and a `clean` row
+      // and an image of that same coordinate overflowing reconcile on every other
+      // check there is — so the only thing that can separate them is each half
+      // naming its tree. The dataset has always named its own.
+      final dump = install(kOverflowScreenshotAll, commit: '7c5318ee-dirty');
+
+      await measure(tester, screenPx: '100', locale: 'ar');
+
+      final manifest = File(dump.manifestPath).readAsLinesSync();
+      expect(manifest[1], '# commit 7c5318ee-dirty');
+      expect(manifest[2], startsWith('fake|screen_px=100|locale=ar\t'),
+          reason: 'a header line must not displace a row');
+    });
+
+    testWidgets('writes no stamp it would have to invent', (tester) async {
+      // `OVERFLOW_PNG=… fvm flutter test …` by hand has no commit to pass, and
+      // guessing one from `git rev-parse` here would be a lie in exactly the case
+      // that matters: an uncommitted tree. The reader treats a missing stamp as
+      // unverifiable rather than as agreement, which is the honest reading.
+      final dump = install(kOverflowScreenshotAll);
+
+      await measure(tester, screenPx: '100', locale: 'ar');
+
+      final manifest = File(dump.manifestPath).readAsLinesSync();
+      expect(manifest, hasLength(2));
+      expect(manifest.any((line) => line.startsWith('# commit')), isFalse);
     });
 
     testWidgets('a shoot that cannot write does not change the verdict',
