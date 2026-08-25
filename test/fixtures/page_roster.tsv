@@ -7,14 +7,20 @@
 # dispositions swept | queued | excluded:<reason>
 # ms_per_cell measured milliseconds per cell of this page's 8 widths x 26 locales; `-` means NOT MEASURED
 # fixture_debt a `-` on a queued row is #1370's finding that no fixture gets that view past its loader yet
-# basis section 11.2's: an isolated --plain-name run's wall clock, minus the no-pump control, over 208 cells
+# basis section 11.2's: an isolated --plain-name run, its 8 coordinate tests only, over 208 cells
+# basis-note #1377 took the same quantity from --reporter json's per-test durations instead of
+# basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
+# basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
+# basis-note Cross-checked on the five pages it re-measured; four agreed with #1370 within 6%.
+# basis-note So the 20 queued figures still carry #1370's wall-clock-minus-control reading and
+# basis-note the 7 swept ones carry the durations; the agreement above is why one column holds both.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
-# swept 2
-# queued 41
+# swept 7
+# queued 36
 # measured 27
 # needs_fixture 16
 # excluded 2
@@ -25,8 +31,8 @@ lib/page/ai_assistant/views/router_assistant_view.dart	queued	31.9
 lib/page/apps/views/usp_apps_view.dart	queued	-
 lib/page/dashboard/views/usp_dashboard_view.dart	queued	-
 lib/page/dashboard/views/usp_sliver_dashboard_view.dart	queued	315.4
-lib/page/devices/views/usp_device_detail_view.dart	queued	33.7
-lib/page/devices/views/usp_device_list_view.dart	queued	49.5
+lib/page/devices/views/usp_device_detail_view.dart	swept	33.4
+lib/page/devices/views/usp_device_list_view.dart	swept	44.0
 lib/page/dhcp/views/usp_dhcp_detail_view.dart	swept	44.8
 lib/page/dmz/views/usp_dmz_view.dart	queued	-
 lib/page/firewall/views/usp_firewall_view.dart	queued	-
@@ -52,15 +58,15 @@ lib/page/login/views/local_reset_router_password_view.dart	queued	26.2
 lib/page/login/views/local_router_recovery_view.dart	queued	21.6
 lib/page/login/views/login_local_view.dart	queued	23.3
 lib/page/menu/views/usp_menu_view.dart	queued	40.1
-lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	queued	22.5
+lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	swept	21.6
 lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	queued	13.3
 lib/page/static_routing/views/usp_static_routing_view.dart	queued	-
 lib/page/statistics/views/usp_statistics_view.dart	queued	-
 lib/page/support/views/usp_support_view.dart	queued	41.0
 lib/page/system_log/views/usp_system_log_view.dart	queued	-
 lib/page/test_console/views/usp_test_console_view.dart	queued	53.4
-lib/page/topology/views/usp_node_detail_view.dart	queued	33.5
-lib/page/topology/views/usp_topology_view.dart	queued	28.7
+lib/page/topology/views/usp_node_detail_view.dart	swept	31.6
+lib/page/topology/views/usp_topology_view.dart	swept	28.0
 lib/page/unified_diagnostics/views/speed_test_view.dart	excluded:not reachable; its only route is commented out at lib/route/route_usp_dashboard.dart:223 (#1370)	-
 lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	queued	17.8
 lib/page/wifi_settings/views/usp_wifi_settings_view.dart	swept	29.2

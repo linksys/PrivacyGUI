@@ -4,9 +4,15 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -36,8 +42,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when two pages fit. It is *also*
-/// green when two pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when seven pages fit. It is *also*
+/// green when seven pages never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -56,16 +62,47 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  group('the pilot swept two pages, and which two is a decision', () {
-    test('kPageSurfaceCases holds exactly the two pages #1349 scoped', () {
+  group('the gate sweeps seven pages, and which seven is a decision', () {
+    test('kPageSurfaceCases holds the pilot two plus the five of wave 1', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
-        ['dhcp', 'wifi_settings'],
-        reason: 'the pilot is two pages by design — a plain form page and a '
-            'provider-heavy one, bracketing the cost range §1.2 records. A third '
-            'case here is not a bigger pilot, it is a graduated gate: §8 wants the '
-            'cost number and the recommendation in §11 revisited first, and the '
-            'page it adds has to be at zero before it arrives.',
+        [
+          'dhcp',
+          'wifi_settings',
+          'device_list',
+          'device_detail',
+          'topology',
+          'node_detail',
+          'port_forwarding',
+        ],
+        // Updated by #1377, and the wording is the point of the test. This pin is
+        // the epic's per-wave checkpoint: it goes red on every wave *by design*, so
+        // that the wave has to say here which pages it added and on what grounds.
+        // Trimming the list to whatever `kPageSurfaceCases` happens to hold is how
+        // the checkpoint stops existing.
+        //
+        // **The pilot's two (#1349)**: a plain form page and a provider-heavy one,
+        // bracketing the cost range §1.2 records.
+        //
+        // **Wave 1's five (#1377)**: every page whose `List<Override>` builder
+        // already existed, so the wave's fixture cost is zero and what it buys is
+        // the wave *process* at the lowest price the epic can pay. Six were
+        // candidates; `usp_statistics_view` has a builder that does not get the
+        // view past its loader, so it is re-queued into #1380 with a fixture scope
+        // — which is `requires` making exactly the distinction it exists for.
+        //
+        // §8's graduation rule is paid, not repealed: four of the five were already
+        // at zero, and `port_forwarding` was fixed in the widget
+        // (`usp_single_port_tab.dart:30`, 9 cells, worst +70px) *before* it was
+        // added here. No page in this list arrives carrying debt, and
+        // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
+        //
+        // The 38 that remain are in `test/fixtures/page_roster.tsv`, not here.
+        reason: 'a wave adds pages to this list on purpose, so a mismatch is '
+            'either a wave that has not updated its own checkpoint or a page '
+            'that left the gate without one. Read the comment above before '
+            'editing the expectation: the rule is fix to zero, then declare, '
+            'then capture — never declare then allowlist.',
       );
     });
 
@@ -89,10 +126,11 @@ void main() {
         expect(
           page.requires,
           isNotEmpty,
-          reason: 'both pilot pages open with `if (isLoading) return '
-              'AppLoader()`. A loader is a centred box that cannot overflow at '
-              'any width in any locale, so an empty `requires` does not turn the '
-              'sweep red — it turns 208 cells green over nothing.',
+          reason: 'a page opens with `if (isLoading) return AppLoader()`, or — '
+              'worse for this gate — with a `SizedBox.shrink()` or a not-found '
+              'column. Every one of those fits at any width in any locale, so an '
+              'empty `requires` does not turn the sweep red; it turns 208 cells '
+              'green over nothing.',
         );
       });
 
@@ -137,6 +175,93 @@ void main() {
             'the page shell would hold against a shell with no cards in it.',
       );
     });
+
+    // Wave 1's five (#1377). One pin per page, each naming the thing that would
+    // otherwise be free to disappear — not a restatement of the list, which the
+    // generic half above already covers.
+
+    test('page.device_list requires both of its providers to have arrived', () {
+      expect(
+        kDeviceListPageCase.requires,
+        containsAll(<Type>[UspDeviceListTile, UspDeviceStatusSegmented]),
+        reason: 'the tile comes from `filteredDeviceListProvider` and the '
+            'segmented filter from `deviceFilterOptionsProvider`. Requiring only '
+            'the tile leaves the filter row free to vanish while the list still '
+            'renders, which is a page measured at the wrong height in all 208 '
+            'cells.',
+      );
+      expect(
+        kDeviceListPageCase.requires,
+        isNot(contains(UspDeviceFilterPanel)),
+        reason: 'the panel is the desktop half of an `AppResponsiveLayout` and '
+            '`UspDeviceFilterChipBar` is the mobile half, so neither can hold at '
+            'all eight widths. A `requires` entry that is width-conditional turns '
+            'the premise into a second, hidden width list — the failure would say '
+            '"this page did not render" about a page that rendered correctly.',
+      );
+    });
+
+    test('page.device_detail requires the two-card geometry #1302 needed', () {
+      expect(
+        kDeviceDetailPageCase.requires,
+        containsAll(<Type>[UspSignalStrengthIndicator, DetailSpeedCard]),
+        reason:
+            'this page is the one place the gate reproduces #1302: a fixture '
+            'with both an uplink and a downlink rate renders two speed cards at '
+            'half width each, and a single-rate fixture renders one full-width '
+            'card that cannot overflow. Dropping `DetailSpeedCard` from the '
+            'premise is how that regression becomes invisible again — and this '
+            'view has no `AppLoader` at all, so `forbids` cannot catch it.',
+      );
+    });
+
+    test('page.topology requires the tree, not the page that would hold it',
+        () {
+      expect(
+        kTopologyPageCase.requires,
+        contains(AppTopology),
+        reason: '`usp_topology_view.dart` returns `SizedBox.shrink()` when '
+            '`systemInfoDataProvider` has no model — a zero-sized tree, which is '
+            'greener than a loader and reports as clean at every width. Requiring '
+            'the topology widget is what makes a dropped override fail instead of '
+            'sweeping 208 empty cells.',
+      );
+    });
+
+    test('page.node_detail requires one widget per card its fixture unlocks',
+        () {
+      expect(
+        kNodeDetailPageCase.requires,
+        containsAll(<Type>[BackhaulSignalIndicator, UspDeviceListTile]),
+        reason: 'the backhaul card exists only for a slave node with a signal '
+            'strength, and the connected-devices card only with clients. Two '
+            'cards, two chances to notice the fixture went thin.',
+      );
+      expect(
+        kNodeDetailPageCase.requires,
+        isNot(contains(DetailSpeedCard)),
+        reason: 'not an omission — the throughput row is gated on '
+            '`uplinkRate != null || downlinkRate != null` '
+            '(`usp_node_detail_view.dart:400`), and no existing '
+            '`UspNodeDetailState` carries either rate, so no speed card renders '
+            'on this page in any of the 208 cells. Requiring it fails all 26 '
+            'locales of the first width, which is how #1377 found the assumption. '
+            'Adding it back needs a fixture with rates first — that is a later '
+            'wave\'s scope, and this pin is where the gap is recorded.',
+      );
+    });
+
+    test('page.port_forwarding requires the tab it can actually reach', () {
+      expect(
+        kPortForwardingPageCase.requires,
+        contains(UspSinglePortTab),
+        reason: 'tab 0 is the only tab the sweep measures — the other two are '
+            'behind a `TabController` and would each need a tap per cell. So this '
+            'is both the premise and the surface under measurement, and it is on '
+            'the loaded path only: `_buildTabContent` returns an `AppLoader` '
+            'while loading and a `ServiceErrorView` on error.',
+      );
+    });
   });
 
   group('the premise is an assertion, not coverage', () {
@@ -147,7 +272,7 @@ void main() {
     // animates forever and that is the point of it.
     testWidgets('a page that never left its loader is measured, and fails',
         (tester) async {
-      // Deliberately not one of the two real cases: this is the tree a drifted
+      // Deliberately not one of the seven real cases: this is the tree a drifted
       // fixture produces, and it has to be constructible without a drifted
       // fixture. `requires` is dhcp's, so the failure names a real card.
       final stuckOnLoader = PageSurfaceCase(
@@ -181,7 +306,7 @@ void main() {
         reason:
             'the premise is what turns a clean-but-meaningless cell red. If '
             'this passes with a null error, `onCellSettled` has stopped '
-            'asserting and both real sweeps are green over whatever renders.',
+            'asserting and all seven real sweeps are green over whatever renders.',
       );
       expect(
         verdict.error.toString(),
@@ -286,15 +411,15 @@ void main() {
 
   group('each page pins its own cell count', () {
     // The pins live in the suite, as `runOverflowSweep` requires. What is checkable
-    // here is the arithmetic behind them: the suite says 208 twice, and 208 is
-    // 8 widths × 26 locales — so a locale added to the app fails the suite's pin
+    // here is the arithmetic behind them: the suite says 208 seven times, and 208 is
+    // 8 widths × 26 locales — so a locale added to the app fails the suite's pins
     // and this test says why.
-    test('208 is 8 widths x 26 locales, for both pages', () {
+    test('208 is 8 widths x 26 locales, for every page in the list', () {
       expect(
         kPageSweepWidths.length * AppLocalizations.supportedLocales.length,
         208,
-        reason: 'the two pins in page_surface_overflow_test.dart are this '
-            'product spelled as a literal. If the app ships another locale, both '
+        reason: 'every pin in page_surface_overflow_test.dart is this product '
+            'spelled as a literal. If the app ships another locale, all seven '
             'pins move together — and that is a coverage change worth an '
             'explicit edit, which is why the pin is a literal in the first place.',
       );

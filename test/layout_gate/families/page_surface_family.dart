@@ -1,25 +1,29 @@
 /// The page surface family: whole pages, on the shared runner (#1349).
 ///
 /// The gate's third family, and the one the #1335 refactor was sequenced to make
-/// possible — adding it to two frameworks would have produced three. It is a
+/// possible — adding it to two frameworks would have produced three. It began as a
 /// **pilot**: two pages, whose deliverable is a per-cell cost number and the
 /// decision that number supports (`doc/testing/overflow_gate_architecture.md` §8
-/// and §10 Q5), not merely two green suites.
+/// and §10 Q5), not merely two green suites. The number came in and the decision it
+/// supports was "pages graduate one at a time, not as a class" (§11.3), so #1377's
+/// wave 1 took it to **seven** cases and epic #1369 takes the remaining 38 in
+/// waves. Which pages, and why those, is `page_surface_cases.dart`.
 ///
-/// ## Why one class with two instances, where chrome has two classes
+/// ## Why one class with N instances, where chrome has two classes
 ///
 /// §3.2's recorded decision is "one family class per widget, not per suite", and
 /// `ChromeTopBarFamily` / `ChromeHeaderFamily` are two classes because those two
-/// widgets have **unrelated hosts and different axes**. Two pages do not: a page
+/// widgets have **unrelated hosts and different axes**. Pages do not: a page
 /// is hosted exactly one way — the app's own route scaffolding, [pageSurfaceHost]
 /// — and swept on exactly one axis, the screen width. What differs between
-/// `page.dhcp` and `page.wifi_settings` is the route, the fixture and the premise,
+/// `page.dhcp` and `page.port_forwarding` is the route, the fixture and the premise,
 /// which are *values*. So the shape is one family parameterised by a
 /// [PageSurfaceCase], and each instance still carries its own [name] and its own
 /// pinned cell count, which is what §3.2's decision is actually protecting
-/// (a widget discriminator never becomes an axis).
+/// (a widget discriminator never becomes an axis). Wave 1 is the evidence the shape
+/// was right: five pages arrived as five values and this file was not edited.
 ///
-/// Reversal cost, recorded per §10.1: split into one class per page and the two
+/// Reversal cost, recorded per §10.1: split into one class per page and the seven
 /// `enumerateCells` bodies become copies of each other.
 ///
 /// ## Overflow is **not** monotone in screen width here, and the reason is sharp

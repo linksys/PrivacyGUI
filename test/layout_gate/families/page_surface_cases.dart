@@ -1,14 +1,21 @@
-/// The two pages the #1349 pilot swept, and why those two.
+/// The pages the gate sweeps: the #1349 pilot's two, plus #1377's wave 1 five.
 ///
 /// ## The rule that constrained the choice
 ///
 /// §8's graduation rule: **a surface earns a local probe only after it has been
 /// fixed to zero.** A probe on a page that still carries debt would force a second
 /// allowlist into existence, which is exactly what the empty
-/// `test/fixtures/known_overflows.json` exists to avoid. That rules out every area
-/// holding the ~135 coordinates golden CI reports — devices, `_shared`, statistics,
-/// topology, and admin's firmware-update page — regardless of how interesting they
-/// would be to measure.
+/// `test/fixtures/known_overflows.json` exists to avoid. That is what ruled out
+/// every area holding the ~135 coordinates golden CI reports — devices, `_shared`,
+/// statistics, topology, and admin's firmware-update page — *for the pilot*.
+///
+/// **Wave 1 (#1377) does not repeal that rule; it pays it.** Five of those pages
+/// enter here, and the rule is why four of the five are one-line additions and the
+/// fifth came with a widget fix: #1370's inventory re-checked #1302's five sites
+/// and found four still clean, while the sweep it ran turned up a *different* site
+/// — `usp_single_port_tab.dart:30`, 9 cells, worst +70px. It was fixed in the
+/// widget before this list grew, so no page below arrives carrying debt. See
+/// [kPortForwardingPageCase].
 ///
 /// ## Why these two, and not one of them twice
 ///
@@ -50,17 +57,38 @@
 /// from being quietly emptied.
 library;
 
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
+import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
+import 'package:privacy_gui/page/devices/views/usp_device_list_view.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
-import 'package:ui_kit_library/ui_kit.dart' show AppLoader;
+import 'package:ui_kit_library/ui_kit.dart' show AppLoader, AppTopology;
 
+import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_port_forwarding.dart';
+import '../../mocks/provider_overrides/mock_topology.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
-import '../../mocks/test_data/scenes/dhcp_scene_data.dart';
+import '../../mocks/test_data/scenes/devices_scene_data.dart';
+// Both scene files export a top-level `dataState`, so both are prefixed rather
+// than one — a bare `dataState()` beside a `pf.dataState()` reads as the same
+// fixture twice, and picking the wrong one is exactly the confusion the
+// `_scene_data` naming convention exists to prevent (CLAUDE.md, testing structure).
+import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
+import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
 import 'page_surface_family.dart';
 
@@ -79,9 +107,9 @@ final kDhcpPageCase = PageSurfaceCase(
   id: 'dhcp',
   view: () => const UspDhcpDetailView(),
   overrides: () => dhcpDetailOverrides(
-    reservationState: dataState(),
-    lanInfo: testLanInfo,
-    clients: testClients,
+    reservationState: dhcp.dataState(),
+    lanInfo: dhcp.testLanInfo,
+    clients: dhcp.testClients,
   ),
   requires: const [
     UspDhcpServerInfoCard,
@@ -117,11 +145,174 @@ final kWifiSettingsPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
-/// Every case the pilot swept, in sweep order.
+// ===========================================================================
+// Wave 1 (#1377) — the five pages whose fixture was already written
+// ===========================================================================
+//
+// Why these five and not five others: each is a `List<Override>` builder that
+// already existed in `test/mocks/provider_overrides/`, so the wave's fixture cost
+// is zero and what it validates is the wave *process* at the lowest price the epic
+// can pay. #1370 then measured all six candidates through this family's own
+// geometry, and `usp_statistics_view` dropped out — its builder exists and does not
+// get that view past its loader, which is precisely the distinction `requires`
+// exists to make. It is re-queued into #1380 with a fixture scope attached.
+//
+// Each fixture below is the *widest* state its builder offers, for the reason
+// `kDhcpPageCase` states: an empty-list state renders a placeholder row and
+// under-measures the page it is standing in for.
+
+/// `page.device_list` — the most expensive page in the wave (49.5ms/cell, #1370).
+///
+/// `allDevices`, not `[]`: the empty state renders one [DetailEmptyBlock] where the
+/// populated one renders a [UspDeviceListTile] per device, and the tile is the
+/// widget that responds to width.
+///
+/// The premise names two widgets on two different providers. [UspDeviceListTile]
+/// comes from `filteredDeviceListProvider` and [UspDeviceStatusSegmented] from
+/// `deviceFilterOptionsProvider`, so requiring only the first would leave the
+/// filter row free to vanish while the list still rendered.
+///
+/// Neither [UspDeviceFilterPanel] (desktop) nor `UspDeviceFilterChipBar` (mobile)
+/// can be a premise here, and the reason generalises to every responsive page in
+/// this family: a `requires` entry has to hold at **all eight** widths, and those
+/// two are on opposite sides of the `AppResponsiveLayout` breakpoint.
+final kDeviceListPageCase = PageSurfaceCase(
+  id: 'device_list',
+  view: () => const UspDeviceListView(),
+  overrides: () => devicesListOverrides(devices: allDevices),
+  requires: const [UspDeviceListTile, UspDeviceStatusSegmented],
+  forbids: const [AppLoader],
+);
+
+/// `page.device_detail` — 33.7ms/cell (#1370).
+///
+/// `wifiDetailNoReservation` is the fixture `usp_device_detail_speed_card_overflow_test.dart`
+/// picked and for the same reason: it carries **both** a downlink and an uplink
+/// rate, so the page renders two [DetailSpeedCard]s side by side at half width
+/// each. A single-rate fixture renders one full-width card that cannot overflow,
+/// which is the shape that made #1302 invisible to the golden suite.
+///
+/// So this page's premise doubles as the regression guard for that fix: both
+/// required widgets live in the Wi-Fi details card, which the view builds only when
+/// `device.shouldShowWifiDetails`, and both are absent from the `device == null`
+/// path. That path is why `forbids: [AppLoader]` is the weaker of the two
+/// directions here — this view has no loader at all; its degenerate tree is a
+/// centred "device not found" column. [PageSurfaceCase.requires] is what catches
+/// it.
+final kDeviceDetailPageCase = PageSurfaceCase(
+  id: 'device_detail',
+  view: () => UspDeviceDetailView(mac: wifiDetailNoReservation.device!.mac),
+  overrides: () => deviceDetailOverrides(detail: wifiDetailNoReservation),
+  requires: const [UspSignalStrengthIndicator, DetailSpeedCard],
+  forbids: const [AppLoader],
+);
+
+/// `page.topology` — 28.7ms/cell (#1370).
+///
+/// `meshNetworkDevicesData`, not `singleNodeDevicesData`: the mesh state renders a
+/// gateway plus extenders plus their clients, so the tree the ui_kit [AppTopology]
+/// lays out is the wider of the two the golden suite covers.
+///
+/// [AppTopology] is the premise, and this is the page where a premise earns its
+/// keep most visibly. `usp_topology_view.dart:57` returns `SizedBox.shrink()` when
+/// `systemInfoDataProvider` has no model — a *zero-sized* tree, which is even more
+/// reliably green than a loader. Requiring the topology widget is what makes a
+/// dropped `systemInfoData` override fail instead of sweeping 208 empty cells.
+final kTopologyPageCase = PageSurfaceCase(
+  id: 'topology',
+  view: () => const UspTopologyView(),
+  overrides: () => topologyViewOverrides(
+    devicesData: meshNetworkDevicesData,
+    systemInfoData: testSystemInfoData,
+  ),
+  requires: const [AppTopology],
+  forbids: const [AppLoader],
+);
+
+/// `page.node_detail` — 33.5ms/cell (#1370).
+///
+/// `slaveNodeWithBackhaulTiming`, the widest of the seven states the golden suite
+/// covers: a **slave** node is what gets the backhaul card built at all
+/// (`node is SlaveNode`), a Wi-Fi `mediaType` plus a `signalStrength` is what gets
+/// its two-tile interface row instead of the single ethernet block, a non-zero
+/// `phyRate` builds the PHY-rate tile and a `lastContactTime` builds the tile beside
+/// it. `masterNodeWithDevices` skips the backhaul card entirely and
+/// `nodeNotFoundState` renders the not-found column.
+///
+/// It is a getter over `DateTime.now()` rather than a fixed date, and that is
+/// load-bearing here for a different reason than in the golden suite: the tile
+/// renders through `DateFormatUtils.formatRelativeTime`, whose `Just now` branch is
+/// the only one whose *string length* does not drift day to day — and a string
+/// length that drifts is a width that drifts, in 26 locales.
+///
+/// **What this fixture does not reach, recorded rather than papered over.** The
+/// backhaul throughput row is `if (uplinkRate != null || downlinkRate != null)`
+/// (`usp_node_detail_view.dart:400`) — *not* `phyRate`, which is what an earlier
+/// draft of this case assumed. No existing `UspNodeDetailState` carries either
+/// rate, so no [DetailSpeedCard] renders on this page in any of the 208 cells, and
+/// #1377 may not write a fixture that would (its own out-of-scope list). So the
+/// row stays unmeasured here and is a later wave's fixture scope. The premise
+/// caught the assumption at all 26 locales of the first width, which is the
+/// argument for `requires` being a value stated up front.
+///
+/// The premise therefore takes one widget from each card the fixture *does* unlock:
+/// [BackhaulSignalIndicator] (the backhaul card's signal tile) and
+/// [UspDeviceListTile] (the connected-devices card). Two cards, two chances to
+/// notice the fixture went thin.
+final kNodeDetailPageCase = PageSurfaceCase(
+  id: 'node_detail',
+  view: () =>
+      UspNodeDetailView(deviceId: slaveNodeWithBackhaulTiming.node!.deviceId),
+  overrides: () => nodeDetailOverrides(slaveNodeWithBackhaulTiming),
+  requires: const [BackhaulSignalIndicator, UspDeviceListTile],
+  forbids: const [AppLoader],
+);
+
+/// `page.port_forwarding` — the cheapest page in the wave (22.5ms/cell, #1370) and
+/// the only one that did **not** arrive at zero.
+///
+/// #1370's sweep found `usp_single_port_tab.dart:30` over by up to 70px in 9 of the
+/// 208 cells: the tab's header `Row` gave its title no flex constraint, so a locale
+/// whose `singlePortForwarding` is long pushed the add-button off the right edge.
+/// §8 admits a page only at zero and forbids opening an allowlist entry for one, so
+/// the title was wrapped in an `Expanded` **in the widget** and this case landed
+/// with the fix, not beside it — the same order #1349 took for
+/// `usp_dhcp_reservations_detail_card.dart`.
+///
+/// `dataState()` over `emptyDataState`: it carries two single-port rules, so the
+/// rule rows are measured rather than a [DetailEmptyBlock] standing in for them.
+/// Not `dirtyState()` — a dirty page also renders the bottom save bar, which is
+/// page chrome the #1314/#1328 sweep already owns.
+///
+/// Only tab 0 is measured, for the reason `kWifiSettingsPageCase` gives about its
+/// own second tab: the other two tabs are behind a `TabController` and would each
+/// need a tap per cell, which is a second axis this wave does not buy.
+/// [UspSinglePortTab] is therefore both the premise and the tab under measurement,
+/// and it is on the loaded path only — `_buildTabContent` returns an [AppLoader]
+/// while `status.isLoading` and a `ServiceErrorView` on error.
+final kPortForwardingPageCase = PageSurfaceCase(
+  id: 'port_forwarding',
+  view: () => const UspPortForwardingDetailView(),
+  overrides: () => portForwardingOverrides(pf.dataState()),
+  requires: const [UspSinglePortTab],
+  forbids: const [AppLoader],
+);
+
+/// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
+///
+/// The order is the order the pages were onboarded, and the oracle pins it exactly.
+/// That pin is the epic's per-wave checkpoint: it goes red on every wave by design,
+/// and the reason string it carries is where the wave says which pages it added and
+/// why. A wave that empties the list to get green has deleted the checkpoint.
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
+  kDeviceListPageCase,
+  kDeviceDetailPageCase,
+  kTopologyPageCase,
+  kNodeDetailPageCase,
+  kPortForwardingPageCase,
 ];

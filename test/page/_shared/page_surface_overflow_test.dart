@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 
 import '../../layout_gate/collector.dart';
 import '../../layout_gate/families/page_surface_cases.dart';
@@ -15,13 +16,18 @@ import '../../layout_gate/sweep.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
-/// The overflow gate's page sweep — the #1349 pilot.
+/// The overflow gate's page sweep — the #1349 pilot, plus #1377's wave 1.
 ///
-/// Two whole pages × 8 screen widths × 26 locales, declared through the shared
+/// Seven whole pages × 8 screen widths × 26 locales, declared through the shared
 /// runner. Everything about *which* cells exist and *how* one is hosted lives in
-/// `test/layout_gate/families/page_surface_family.dart`; which two pages, and why
-/// those two, lives in `page_surface_cases.dart`. This file is the declaration and
-/// the two pins.
+/// `test/layout_gate/families/page_surface_family.dart`; which seven pages, and why
+/// those seven, lives in `page_surface_cases.dart`. This file is the declaration,
+/// the seven pins, and the two readability guards that sit beside the two fixes
+/// this family has prompted so far.
+///
+/// The epic (#1369) takes the remaining 38 in waves; `test/fixtures/page_roster.tsv`
+/// is the register of which page is where, and is the file to read before assuming
+/// a page absent from this list is a page with nothing wrong with it.
 ///
 /// ## Why the pins are literals
 ///
@@ -70,9 +76,15 @@ void main() {
     }
   });
 
-  // 8 widths × 26 locales. Both pages sweep the same axis, so both pins are the
+  // 8 widths × 26 locales. Every page sweeps the same axis, so every pin is the
   // same number — which is a fact about the axis, not a copy: a page that ever
   // needs its own width list changes only its own pin.
+  //
+  // Seven `runOverflowSweep` calls and not a loop over `kPageSurfaceCases`, which
+  // is the same argument the literal pin rests on one level down. A loop would make
+  // the *inventory* of swept pages derived too, so deleting a case would delete its
+  // sweep and this file would stay green in less time. Written out, a page leaving
+  // the gate is a deletion someone has to perform here, in a diff that names it.
   runOverflowSweep(
     family: PageSurfaceFamily(kDhcpPageCase),
     expectedCellCount: 208,
@@ -83,11 +95,40 @@ void main() {
     expectedCellCount: 208,
   );
 
+  // Wave 1 (#1377): five pages whose fixture was already written. See
+  // `page_surface_cases.dart` for why these five, and `test/fixtures/page_roster.tsv`
+  // for what is still queued.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDeviceListPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDeviceDetailPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kTopologyPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kNodeDetailPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortForwardingPageCase),
+    expectedCellCount: 208,
+  );
+
   // The readability assertion rule 4 of the skill requires beside an overflow
-  // assertion, aimed at the one site this pilot changed. It names no cell, so the
-  // committed `page` baseline stays 416 rows and `overflow_baselines.md` §5's "17
-  // of 17 collector calls name a cell" stays true: this test does not install the
-  // collector at all, because its oracle is not "did a RenderFlex overflow".
+  // assertion, aimed at the one site this pilot changed. Neither this group nor
+  // wave 1's below names a cell, so the committed `page` baseline counts the seven
+  // sweeps and nothing else, and `overflow_baselines.md` §5's "every collector call
+  // names a cell" stays true: these two tests do not install the collector at all,
+  // because their oracle is not "did a RenderFlex overflow".
   group('readability at the site the pilot fixed', () {
     /// How many lines the reservations title may wrap onto before the wrap stops
     /// being the better trade.
@@ -205,6 +246,122 @@ void main() {
             'the #1349 fix traded an overflow for a wrap, and a wrap is only '
             'the better trade while the title stays readable:\n'
             '${failures.join('\n')}',
+      );
+    });
+  });
+
+  // The same guard for the site wave 1 fixed, and it is here for the same reason
+  // rather than by symmetry: `usp_single_port_tab.dart:30` traded an overflow for
+  // a wrap too, so the nine cells it stopped failing are now nine cells whose
+  // *content* nothing checks. Rule 4 of the skill — an overflow assertion needs a
+  // readability assertion beside it — is what makes those nine a fix rather than a
+  // relocation of the defect into a dimension the sweep cannot see.
+  group('readability at the site wave 1 fixed', () {
+    /// As [kTitleLineCeiling] above, and deliberately a separate constant: this
+    /// title is a different string in a different box, and one number covering both
+    /// would move for reasons belonging to the other site.
+    ///
+    /// Same rule for the number — one line over the deepest coordinate measured,
+    /// which here is `ru` at four lines at 320px (240.0px of box). Not a design
+    /// token; raising it is a deliberate act with the new number recorded here.
+    const kTabTitleLineCeiling = 5;
+
+    testWidgets(
+        'the single-port tab title stays whole where the Expanded wraps',
+        (tester) async {
+      final failures = <String>[];
+      final wrapped = <String>[];
+
+      // 320px is where all nine of #1370's overflowing cells were, and 601px is
+      // the same narrower-content-at-a-wider-screen check the group above makes —
+      // the page's margin steps up at 600px, so the tab's box does not simply grow
+      // with the screen.
+      for (final width in const [320.0, 601.0]) {
+        for (final locale in AppLocalizations.supportedLocales) {
+          final tag = localeTag(locale);
+          await setLayoutSurface(tester, Size(width, kPageSweepHeight));
+          await tester.pumpWidget(KeyedSubtree(
+            key: ValueKey('pf-title-$tag-${width.toInt()}'),
+            child: pageSurfaceHost(
+              view: kPortForwardingPageCase.view(),
+              locale: locale,
+              overrides: kPortForwardingPageCase.overrides(),
+            ),
+          ));
+          await settleIgnoringAnimations(tester);
+
+          final label = localizationsByTag[tag]!.singlePortForwarding;
+          // `textContaining` scoped to the tab, not an exact string: the widget
+          // renders the label with a live rule count appended, and pinning the
+          // count here would make this guard fail on a fixture edit that changed
+          // nothing about readability. The scope is what keeps it unambiguous —
+          // the same label is also the tab bar's own text, one level up in
+          // `UspPortForwardingDetailView`.
+          final title = find.descendant(
+            of: find.byType(UspSinglePortTab),
+            matching: find.textContaining(label),
+          );
+          if (title.evaluate().length != 1) {
+            failures.add('$tag @${width.toInt()}px: the title resolved to '
+                '${title.evaluate().length} widgets, so nothing was measured');
+            continue;
+          }
+
+          final paragraph = tester.paragraphOf(title);
+          final lines = tester.textLineCount(title);
+          if (lines > 1) wrapped.add('$tag@${width.toInt()}px:${lines}L');
+          final numbers = 'granted '
+              '${paragraph.size.width.toStringAsFixed(1)}px on '
+              '$lines line(s), widest token '
+              '${tester.widestTokenWidth(title).toStringAsFixed(1)}px, whole '
+              'string '
+              '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px'
+              ' — "$label"';
+          if (lines > kTabTitleLineCeiling) {
+            failures.add('$tag @${width.toInt()}px: wrapped onto $lines lines, '
+                'past the $kTabTitleLineCeiling-line ceiling — $numbers');
+          }
+          if (tester.isTextClipped(title)) {
+            failures.add('$tag @${width.toInt()}px: ellipsized — $numbers');
+          } else if (tester.hasSplitToken(title)) {
+            failures
+                .add('$tag @${width.toInt()}px: broken mid-word — $numbers');
+          }
+        }
+      }
+
+      // The premise, as a value rather than a hope — the same argument the group
+      // above makes. Every assertion in the loop passes trivially against a title
+      // that fitted on one line, so without this the guard would report the trade
+      // as covered while measuring nothing about it.
+      //
+      // 26 of the 52 coordinates wrap today: 17 at 320px and 9 at 601px. `ru` is
+      // the deepest at **four** lines at 320px — the same locale that was +58px
+      // over before the fix — and every other wrapping coordinate takes two. The
+      // nine that still wrap at 601px are `ar` `el` `ja` `ko` `ru` `th` `vi` `zh`
+      // `zh_TW`, so a wider screen does not simply resolve this: the tab's box
+      // grows to 489.0px but the eight overflow locales that stop wrapping there
+      // are the Latin ones.
+      //
+      // The floor only. [kTabTitleLineCeiling] is the other end, checked per
+      // coordinate above.
+      expect(
+        wrapped,
+        isNotEmpty,
+        reason:
+            'no locale wrapped this title at 320px or 601px, so nothing here '
+            'measured the wrap the #1377 fix introduced — and if it does not '
+            'wrap, the nine cells #1370 recorded as overflowing cannot be '
+            'reproduced either, so check the fixture and the widths before '
+            'deleting this guard:\n${wrapped.join(', ')}',
+      );
+
+      expect(
+        failures,
+        isEmpty,
+        reason: 'the #1377 fix traded an overflow for a wrap on the nine cells '
+            '#1370 found, and a wrap is only the better trade while the title '
+            'stays readable:\n${failures.join('\n')}',
       );
     });
   });

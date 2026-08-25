@@ -36,7 +36,9 @@ import 'page_roster.dart';
 /// 3. **`swept` ⟺ declared in `kPageSurfaceCases`, both directions.** Without it
 ///    the roster is decorative: a row marked `swept` while no case declares it is
 ///    a record claiming more than the gate covers, which is the precise failure
-///    the epic's final AC guards against at 45 of 45 — made checkable here at 2.
+///    the epic's final AC guards against at 45 of 45 — made checkable here at 2,
+///    and first exercised for real by #1377's wave 1, which flipped five rows and
+///    had to declare five cases to keep this green.
 ///
 /// ## Red before green, permanently
 ///
@@ -190,7 +192,7 @@ void main() {
         reason: 'a row marked `swept` while no case declares its view is a '
             'record claiming more than the gate covers. This is the assertion '
             'that stops the roster becoming decorative: without it, 45 rows '
-            'could read swept while two pages are measured. Declared today: '
+            'could read swept while seven pages are measured. Declared today: '
             '${typeBySweep.keys.join(', ')}.',
       );
     });
@@ -266,11 +268,13 @@ void main() {
   });
 
   group('the record is honest about what was measured', () {
-    test('the two swept rows carry section 11.2\'s per-page figures', () {
-      // Not 37.7ms. That is the mean of these two over one combined run, and
+    test('every swept row carries the figure its own ticket measured', () {
+      // Not 37.7ms. That is the mean of the pilot's two over one combined run, and
       // section 11.2's second finding is that the bracket *inverted* — the page
       // picked as the cheap end costs 1.5x the one picked as expensive — so the
-      // mean describes neither page and predicts no third one.
+      // mean describes neither page and predicts no third one. Wave 1's five bear
+      // that out: they span 21.6 to 44.0 and four of the five come in under the
+      // mean.
       // Keyed on the full path, not the file name: nothing stops two features
       // from each having a `views/x_view.dart`, and a map keyed on the name would
       // silently collapse them and check whichever row came last.
@@ -284,6 +288,32 @@ void main() {
             .msPerCell,
         29.2,
       );
+
+      // Wave 1's five, re-measured by #1377 on this file's own basis rather than
+      // copied from #1370 — the memory rule is that a ticket's counts expire, so
+      // the figure committed here is the one this ticket observed. #1370's numbers
+      // are in the comment so the drift stays readable: 49.5 / 33.7 / 28.7 / 33.5
+      // / 22.5, against which four of five landed inside the ±7% noise floor and
+      // `device_list` came in 11% *cheaper*. Cheaper is not a scope risk, and
+      // #1370's finding that there is no cost ceiling stands either way.
+      expect(
+          byPath['lib/page/devices/views/usp_device_list_view.dart']!.msPerCell,
+          44.0); // #1370: 49.5, -11.1%
+      expect(
+          byPath['lib/page/devices/views/usp_device_detail_view.dart']!
+              .msPerCell,
+          33.4); // #1370: 33.7, -0.9%
+      expect(
+          byPath['lib/page/topology/views/usp_topology_view.dart']!.msPerCell,
+          28.0); // #1370: 28.7, -2.4%
+      expect(
+          byPath['lib/page/topology/views/usp_node_detail_view.dart']!
+              .msPerCell,
+          31.6); // #1370: 33.5, -5.7%
+      expect(
+          byPath['lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart']!
+              .msPerCell,
+          21.6); // #1370: 22.5, -4.0%
     });
 
     test('every swept row carries a number and no excluded row does', () {
@@ -312,16 +342,22 @@ void main() {
       }
     });
 
-    test('25 queued pages are measured and 16 still need a fixture', () {
+    test('20 queued pages are measured and 16 still need a fixture', () {
       // The distinction #1370 bought, and the one the waves estimate against. The
       // epic inferred "37 of 44 need a fixture written" from which builders exist
       // in test/mocks/provider_overrides/; the run found the shared mock alone
       // carries 21 unfixtured pages past their loader, so the real fixture debt is
       // 16 — and one of those 16 is a page whose builder *does* exist.
+      //
+      // 25 when #1370 landed, 20 after #1377: wave 1 took five *measured* queued
+      // pages, which is what "the fixture is already written" selected for. So this
+      // count falls as waves land while `needsFixture` does not move at all — the
+      // 16 are the debt no wave can spend its way out of, and #1380 is where the
+      // first of them (`usp_statistics_view`) gets a fixture written.
       final measured = roster
           .withDisposition(PageRosterDisposition.queued)
           .where((r) => r.msPerCell != null);
-      expect(measured, hasLength(25));
+      expect(measured, hasLength(20));
       expect(roster.needsFixture, hasLength(16));
       expect(
         roster.needsFixture,
@@ -346,10 +382,14 @@ void main() {
       );
     });
 
-    test('the register reads 2 swept, 41 queued, 2 excluded', () {
-      expect(roster.withDisposition(PageRosterDisposition.swept), hasLength(2));
+    test('the register reads 7 swept, 36 queued, 2 excluded', () {
+      // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
+      // swept and nothing else. The excluded pair is #1370's and is not a number a
+      // wave may move — a wave onboards pages, and deciding a page unreachable is a
+      // separate judgement with its own reason column.
+      expect(roster.withDisposition(PageRosterDisposition.swept), hasLength(7));
       expect(
-          roster.withDisposition(PageRosterDisposition.queued), hasLength(41));
+          roster.withDisposition(PageRosterDisposition.queued), hasLength(36));
       expect(
         roster
             .withDisposition(PageRosterDisposition.excluded)
@@ -399,13 +439,28 @@ void main() {
       }
     });
 
-    test('no page was flipped to swept by the inventory run', () {
-      // #1370's own AC, kept as a repo fact. The run pumped 45 pages and 22 of
-      // them were at zero across all 208 cells; none of that is a sweep, because
-      // nothing about it is committed, declared in kPageSurfaceCases, or capable
-      // of failing a PR. `swept` means the gate covers the page.
+    test('swept is the pilot two plus wave 1, and nothing the inventory found',
+        () {
+      // #1370's own AC, kept as a repo fact and now the sharper half of this test.
+      // That run pumped 45 pages and 22 of them were at zero across all 208 cells,
+      // and it flipped **none** of them: nothing about it was committed, declared
+      // in kPageSurfaceCases, or capable of failing a PR. `swept` means the gate
+      // covers the page, which is a claim only a declaration can make.
+      //
+      // So the five #1377 added are here for a different reason than "the inventory
+      // said they were clean". Each is a `PageSurfaceCase` with a premise, each is
+      // pinned at 208 cells in the suite, and each is in the committed `page`
+      // coverage baseline — and the one of the five that was *not* at zero was
+      // fixed in the widget before it arrived. The set below is the join assertion
+      // 3 checks both directions of, so this is the roster half of it stated by
+      // name.
       expect(roster.sweptPaths, {
+        'lib/page/devices/views/usp_device_detail_view.dart',
+        'lib/page/devices/views/usp_device_list_view.dart',
         'lib/page/dhcp/views/usp_dhcp_detail_view.dart',
+        'lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart',
+        'lib/page/topology/views/usp_node_detail_view.dart',
+        'lib/page/topology/views/usp_topology_view.dart',
         'lib/page/wifi_settings/views/usp_wifi_settings_view.dart',
       });
     });
