@@ -43,7 +43,7 @@ adding a third family to two frameworks would produce three.
 
 | Document | Role |
 |---|---|
-| [overflow_baselines.md](overflow_baselines.md) | **#1337, landed.** The mechanism R3 and R5 compare against: `./tool/overflow_baseline.sh check <sweep>`. Baselines for the four dashboard-and-chrome sweeps are captured at `4fb1ac5e-dirty`, before any port — `chrome` re-captured at `785c6f67-dirty` for #1356's cell-id fixes, all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge, and a fifth (`page`, 416 cells) captured at `69079cb0-dirty` for #1349. Also **`render <sweep>`**, which reads a committed baseline into an MD/HTML coverage report without running anything — the only report that works for all five sweeps, since §5's card report is card-shaped — and **`shoot <sweep> <pattern>`**, which photographs cells by cell-id pattern and links them into that report, the only way to see what a cell the gate calls `clean` actually renders as (§7). |
+| [overflow_baselines.md](overflow_baselines.md) | **#1337, landed.** The mechanism R3 and R5 compare against: `./tool/overflow_baseline.sh check <sweep>`. Baselines for the four dashboard-and-chrome sweeps are captured at `4fb1ac5e-dirty`, before any port — `chrome` re-captured at `785c6f67-dirty` for #1356's cell-id fixes, all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge, and a fifth (`page`, 416 cells) captured at `69079cb0-dirty` for #1349. Also **`render <sweep>`**, which reads a committed baseline into an MD/HTML coverage report without running anything — the only report that works for all five sweeps, since §5's card report is card-shaped — and **`shoot <sweep> <pattern>`**, which photographs cells and links them into a report of its own run — by cell-id pattern, the only way to see what a cell the gate calls `clean` actually renders as, or as `shoot <sweep> failed`, exactly the cells that run failed (§7). |
 | [../dashboard/dashboard_density_design.md](../dashboard/dashboard_density_design.md) | How the card family's 560 → 27 → 0 allowlist was eliminated; the measurements the card axes rest on. |
 | [../dashboard/dashboard_framework_overflow_investigation.md](../dashboard/dashboard_framework_overflow_investigation.md) | How a declared spec constraint becomes a real `BoxConstraints`. |
 | [../../.claude/skills/dashboard-overflow-gate/SKILL.md](../../.claude/skills/dashboard-overflow-gate/SKILL.md) | How to operate the gate today. Its "adding a new probe" section is superseded by §3 here once R3 lands. |
@@ -1454,13 +1454,21 @@ family again.
   green tree yields zero images and there was nothing to *look at* for a cell that
   passed. `./tool/overflow_baseline.sh shoot <sweep> <pattern>` (#1337's fourth
   subcommand, [overflow_baselines.md](overflow_baselines.md) §1) photographs cells
-  by cell-id pattern rather than by verdict, and links them into the rendered
-  report: `shoot card 'px=191|tab=0|locale=en'` is the four unreadable cards in nine
-  images. It asserts nothing and changes nothing — the capture sits between the
+  by cell-id pattern rather than by verdict, and links them into a report of the
+  same run: `shoot card 'px=191|tab=0|locale=en'` is the four unreadable cards in
+  nine images. It asserts nothing and changes nothing — the capture sits between the
   measurement and `judgeCell`, inside a `RepaintBoundary` *outside* the per-cell
   `KeyedSubtree`, and swallows its own errors because invariant 3 would otherwise
   attribute a mistyped directory to every cell. So it does not close #1240 AC1;
   it makes the manual half of that work possible at all.
+
+  The verdict-driven selector, `shoot <sweep> failed`, is the same mechanism pointed
+  the other way, and it is what a red sweep wants: exactly the cells that failed,
+  photographed, beside the rows that failed them. It is worth naming here because it
+  is the one mode that pays a structural cost — the boundary must exist before the
+  pump, when no verdict does, so every cell is wrapped and most wrappers are
+  discarded. That the wrapping moves nothing is not assumed: a `failed` shoot of all
+  five sweeps at `83e90159-dirty` reproduced all 4,032 committed rows exactly.
 
 ---
 

@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`. A third subcommand, **`render`**, was added the same day so the committed rows can be read as a report without running anything (§1), and a fourth, **`shoot`**, photographs the cells a pattern names and links them into that report — the first thing in the whole family that can show what a *passing* cell renders as, which is where #1240 AC1 and #1349's wrap both live (§1).
+**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`. A third subcommand, **`render`**, was added the same day so the committed rows can be read as a report without running anything (§1), and a fourth, **`shoot`**, photographs cells — either the ones a cell-id pattern names, which is the first thing in the whole family that can show what a *passing* cell renders as (#1240 AC1, #1349's wrap), or, as `shoot <sweep> failed`, exactly the cells that run judged as failures. It reports on its own run, so the rows and the images are always one tree (§1).
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -14,7 +14,7 @@ mechanism turns the claim into a plain diff.
 | Emitter (runs inside the sweeps) | [`test/util/overflow_baseline.dart`](../../test/util/overflow_baseline.dart) |
 | Screenshot dump (runs inside the sweeps) | [`test/layout_gate/screenshot.dart`](../../test/layout_gate/screenshot.dart) |
 | Extractor / differ / reporter | [`test_scripts/overflow_baseline.dart`](../../test_scripts/overflow_baseline.dart) |
-| Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.{md,html}` |
+| Rendered reports (gitignored) | `build/overflow_baseline/report/<sweep>.{md,html}` — a `shoot`'s own report is `<sweep>.shoot.{md,html}` |
 | Screenshots (gitignored) | `build/overflow_baseline/shots/<sweep>/` |
 | Architecture it serves | [overflow_gate_architecture.md](overflow_gate_architecture.md) §9.2 R3, R5 |
 
@@ -97,7 +97,34 @@ Three things about it are deliberate:
 Exit codes match the rest of the tool: **0** clean, **1** the file disagrees with
 its own header, **2** bad input (an unknown `--format`, a missing baseline).
 
-### Seeing what a *passing* cell renders as — `shoot`
+### Photographing cells — `shoot`
+
+`shoot` runs one sweep against the working tree, writes a PNG per selected cell, and
+reports on **that same run** — so the rows and the images always describe one tree.
+It answers two different questions depending on how the cells are selected.
+
+#### `shoot <sweep> failed` — a picture of what went red
+
+The first thing to reach for when a sweep fails, because the ids of the failures are
+exactly what you do not want to retype:
+
+```bash
+./tool/overflow_baseline.sh shoot page failed && open build/overflow_baseline/report/page.shoot.html
+```
+
+`failed` means what the sweep means by it: an overflow past the 2.0px tolerance, or
+a pump that threw — not "any incident was collected", since a sub-tolerance `noise`
+row is a cell that passed. On a green sweep it writes **nothing at all**, not even a
+manifest, and says so.
+
+It costs one thing the pattern modes below do not. A boundary has to be in place
+*before* the pump, when no verdict exists yet, so `failed` wraps **every** cell and
+discards the wrappers of the ones that passed. A `RepaintBoundary` adds a layer and
+not a constraint, so this moves no geometry: measured over all five sweeps at
+`83e90159-dirty`, a `failed` shoot reproduces all **4,032** committed rows exactly,
+and `sweep_test.dart` asserts the same thing per cell.
+
+#### `shoot <sweep> <pattern>` — a picture of what the gate calls clean
 
 Every row in all five datasets says `clean`, and that word means one thing only:
 no `RenderFlex` reported an overflow. It does not mean the coordinate is legible.
@@ -111,11 +138,11 @@ Two findings already live in that gap:
 
 Neither is reachable from a verdict, and the card sweep's own PNG pair cannot help:
 it is written downstream of `if (significant.isEmpty) return null`, so a green tree
-produces **zero** images. `shoot` photographs cells the gate is happy with:
+produces **zero** images. A pattern selects cells by id, whatever their verdict:
 
 ```bash
 # Every Arabic page cell — 16 images, then the report that links them
-./tool/overflow_baseline.sh shoot page locale=ar && open build/overflow_baseline/report/page.html
+./tool/overflow_baseline.sh shoot page locale=ar && open build/overflow_baseline/report/page.shoot.html
 
 # One coordinate, the id copied out of the report
 ./tool/overflow_baseline.sh shoot page 'page.dhcp|screen_px=601|locale=ru'
@@ -124,43 +151,53 @@ produces **zero** images. `shoot` photographs cells the gate is happy with:
 ./tool/overflow_baseline.sh shoot card 'px=191|tab=0|locale=en'
 ```
 
+A pattern is a plain substring of a cell id, or the word `all`. There is no default,
+because the only defensible one is `all` and that is 1,943 images on the card sweep.
+
+The third command answers #1240 AC1 in nine images: at 191px the Network Health card
+renders as the number `70` and its title, gauge and legend gone, and the dataset
+calls that cell `clean` — correctly, because nothing overflowed.
+
+#### What both modes write
+
 Images land in `build/overflow_baseline/shots/<sweep>/` (gitignored), named after
 the coordinate — `page.dhcp|screen_px=320|locale=ar` becomes
-`page.dhcp__screen_px-320__locale-ar.png` — and the report grows a **Screenshots**
-gallery linking each one. A later `render <sweep>` picks the same folder up with no
-extra flag; `--shots <dir>` is there for a copy kept elsewhere. The frame is the
-whole surface the sweep pumped rather than a crop of the widget under test, so a
-card cell shows the card in its grid slot and the empty page beside it is real.
-
-The third command above answers #1240 AC1 in nine images: at 191px the Network
-Health card renders as the number `70` and its title, gauge and legend gone, and
-the dataset calls that cell `clean` — correctly, because nothing overflowed.
+`page.dhcp__screen_px-320__locale-ar.png` — and the run's own report,
+`build/overflow_baseline/report/<sweep>.shoot.{md,html}`, grows a **Screenshots**
+gallery linking each one. The gallery's prose is recounted from the rows, so it says
+which of the two shoots produced it rather than trusting the pattern it was given.
+The frame is the whole surface the sweep pumped rather than a crop of the widget
+under test, so a card cell shows the card in its grid slot and the empty page beside
+it is real.
 
 Four properties are worth knowing before trusting one:
 
-- **The pictures are of the working tree; the rows are of the header's commit.**
-  `shoot` runs the sweep, `render` reads the committed `.tsv`, and those are two
-  different trees whenever the baseline is older than your edits. An image whose
-  coordinate the dataset does not hold is therefore **listed as a warning rather
-  than linked**, in the document and on stderr — that is the signal to re-capture,
-  not something to work around.
-- **Selection is by pattern over cell ids, never by verdict.** A substring, or the
-  word `all`; there is no default, because `all` on the card sweep is 1,943 images.
-  Shooting failures automatically was considered and left out: the output would then
-  depend on the verdicts as well as the pattern, while a failing cell already prints
-  its id — copy it, the way an allowlist key is copied.
+- **Both halves come from one run.** `shoot` sets `OVERFLOW_BASELINE=1` as well as
+  the dump, extracts the records to `build/overflow_baseline/<sweep>.shoot.tsv`, and
+  renders *that* — never `test/fixtures/`. So an image cannot be orphaned by rows
+  taken at another commit, and `failed` can be believed. The cost is the one
+  `capture` pays: the records go to stdout, so the run is silent. A plain
+  `render <sweep>` still reads the committed dataset and still links the same shots
+  folder with no extra flag, and *there* the two halves are two trees — which is why
+  the orphan warning exists at all.
+- **Selection is by cell id, or by this run's own verdicts.** `failed`, `all`, or a
+  substring. Reserved words rather than a flag beside a pattern, so there is one
+  input to explain and one rule per run.
 - **A shoot changes nothing.** No verdict, no baseline, no row. The capture happens
-  after the measurement and before the family judges, so a popup cell photographs
-  the dialog rather than the tile behind it, and it is wrapped in a
-  `RepaintBoundary` *outside* the per-cell `KeyedSubtree` — so a shot run and an
-  unshot run pump the same subtree. `check` after a `shoot` is byte-identical, which
-  is the point of doing it in that order.
+  after the measurement and before the family judges — so a popup cell photographs
+  the dialog rather than the tile behind it, and an allowlisted overflow is still
+  shot, because looking at it is the point. The boundary goes *outside* the per-cell
+  `KeyedSubtree`, so a shot run and an unshot run pump the same subtree: `check`
+  after a `shoot` is byte-identical, which is why the order is that way round.
 - **It cannot fail a sweep.** The dump swallows and prints its own errors
   (`[PNG DUMP …]`), because a capture runs inside `measureOverflowCell`'s `try`
   where invariant 3 would attribute a raised exception to the *cell* — one mistyped
-  directory would turn a green sweep into thousands of cells that "threw". A row
-  reaches the manifest only after its bytes land, so the gallery can never link a
-  404. `test/layout_gate/sweep_test.dart` pins both halves.
+  directory would turn a green sweep into thousands of cells that "threw". It also
+  runs in the `catch`, where a cell that threw is photographed as Flutter's red error
+  box, so the guard is around the whole capture and not merely its body: a dump that
+  raised there would replace the error it exists to document. A row reaches the
+  manifest only after its bytes land, so the gallery can never link a 404.
+  `test/layout_gate/sweep_test.dart` pins all of it.
 
 The mechanism is two programs that cannot import each other — `test_scripts/` runs
 under a bare `dart run` — so the folder carries a manifest, `index.tsv`, headed

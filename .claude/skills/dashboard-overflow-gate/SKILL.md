@@ -296,12 +296,25 @@ counts are recounted from the rows and cross-checked against the header, so a
 hand-edited baseline reports the disagreement and exits 1 rather than rendering a
 plausible lie.
 
-### Looking at a cell the gate calls clean — `shoot`
+### Photographing cells — `shoot`
 
-`clean` means one thing: no `RenderFlex` overflowed. It does not mean legible, and
-the card sweep's own PNGs cannot show you the difference — they are written only for
-a cell with a significant incident, so a green tree produces **zero** images. Nine
-of them, on the other hand, are what #1240 AC1 is about:
+**A sweep just went red.** Shoot the failures — no ids to copy, no pattern to guess:
+
+```bash
+./tool/overflow_baseline.sh shoot page failed
+open build/overflow_baseline/report/page.shoot.html
+```
+
+`failed` is the sweep's own bar (an overflow past the 2.0px tolerance, or a pump that
+threw — a sub-tolerance `noise` row is a cell that *passed*), and on a green sweep it
+writes nothing at all. The report comes out of the same run that took the pictures,
+so the red rows and the images cannot disagree.
+
+**A sweep is green and you want to see it anyway.** `clean` means one thing: no
+`RenderFlex` overflowed. It does not mean legible, and the card sweep's own PNGs
+cannot show you the difference — they are written only for a cell with a significant
+incident, so a green tree produces **zero** images. Nine of them, on the other hand,
+are what #1240 AC1 is about:
 
 ```bash
 ./tool/overflow_baseline.sh shoot card 'px=191|tab=0|locale=en'   # the four unreadable cards
@@ -310,19 +323,24 @@ of them, on the other hand, are what #1240 AC1 is about:
 ```
 
 One sweep, one pattern, both required (`all` is a valid pattern and 1,943 images on
-`card`). Selection is by **cell id, never by verdict** — a failing cell prints its
-id, so copy it the way an allowlist key is copied. Images go to
-`build/overflow_baseline/shots/<sweep>/` named after the coordinate, and the
-rendered report grows a gallery linking them; a later `render <sweep>` picks the
-folder up with no flag.
+`card`). A pattern is a plain substring of a cell id; `failed` and `all` are the two
+reserved words. Images go to `build/overflow_baseline/shots/<sweep>/` named after the
+coordinate, the report is `build/overflow_baseline/report/<sweep>.shoot.{md,html}`,
+and its gallery says which of the two shoots produced it — recounted from the rows,
+not taken from the pattern.
 
-It asserts nothing and changes nothing: `check` after a `shoot` is byte-identical,
-the capture sits between the measurement and `judgeCell` (so a popup cell
-photographs the dialog, not the tile), and it swallows its own errors — a dump that
-threw would be attributed to the *cell* by invariant 3, turning one mistyped
-directory into thousands of cells that "threw". The pictures are of your working
-tree while the rows beside them are of the header's commit, so an image whose
-coordinate the dataset does not hold is **listed as a warning rather than linked**.
+It asserts nothing and changes nothing: nothing it writes goes near
+`test/fixtures/`, `check` after a `shoot` is byte-identical (a `failed` shoot of all
+five sweeps reproduced all 4,032 committed rows), the capture sits between the
+measurement and `judgeCell` (so a popup cell photographs the dialog, not the tile,
+and an allowlisted overflow is still shot), and it swallows its own errors — a dump
+that threw would be attributed to the *cell* by invariant 3, turning one mistyped
+directory into thousands of cells that "threw".
+
+A plain `render <sweep>` still picks up the same shots folder with no flag, and
+*there* the pictures are of your working tree while the rows are of the header's
+commit — so an image whose coordinate that dataset does not hold is **listed as a
+warning rather than linked**.
 
 ## Fixture Format — `known_overflows.json`
 
