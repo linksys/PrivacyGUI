@@ -528,6 +528,9 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           value: _selectedModel,
           items: BedrockModel.models,
           itemAsString: (m) => m.displayName,
+          identifier: 'assistant-model',
+          itemIdentifier: (m) =>
+              'assistant-model-${m.id.split('/').last.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-')}',
           onChanged: _isRestoring
               ? null
               : (value) {

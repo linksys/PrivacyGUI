@@ -131,6 +131,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           if (isEditing)
             AppDropdown<UspWanConnectionType>(
               identifier: 'internet-connection-type',
+              itemIdentifier: (type) => 'connection-type-${type.name}',
               label: loc(context).connectionType,
               items: UspWanConnectionType.values,
               value: form.connectionType,

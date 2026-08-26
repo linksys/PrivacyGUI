@@ -466,13 +466,15 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         title: Text(loc(context).changeNetworkSettingsTitle),
         content: Text(loc(context).changeNetworkSettingsDesc),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(loc(context).cancel),
+          AppButton.text(
+            identifier: 'network-change-cancel',
+            label: loc(context).cancel,
+            onTap: () => Navigator.of(ctx).pop(false),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(loc(context).textContinue),
+          AppButton.text(
+            identifier: 'network-change-continue',
+            label: loc(context).textContinue,
+            onTap: () => Navigator.of(ctx).pop(true),
           ),
         ],
       ),
