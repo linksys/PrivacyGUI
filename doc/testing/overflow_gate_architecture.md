@@ -1362,10 +1362,11 @@ name as well as the comment:
 
 ```yaml
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 47 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 48 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
-  # page-family oracle, page-roster oracle, render-parity and overflow. […]
+  # page-family oracle, page-roster oracle, page-sweep register, render-parity
+  # and overflow. […]
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
