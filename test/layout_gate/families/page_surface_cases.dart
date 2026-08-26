@@ -1,5 +1,5 @@
-/// The pages the gate sweeps: the #1349 pilot's two, #1377's wave 1 five, and
-/// #1378's wave 2 nine.
+/// The pages the gate sweeps: the #1349 pilot's two, #1377's wave 1 five,
+/// #1378's wave 2 nine, and #1379's wave 3 six.
 ///
 /// ## The rule that constrained the choice
 ///
@@ -58,7 +58,9 @@
 /// from being quietly emptied.
 library;
 
+import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
+import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
@@ -79,6 +81,12 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
+import 'package:privacy_gui/page/landing/views/home_view.dart';
+import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
+import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
+import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
@@ -88,17 +96,23 @@ import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_car
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart'
     show
+        AppBadge,
         AppButton,
         AppCard,
+        AppExpansionPanel,
         AppIpv4TextField,
         AppLoader,
         AppPasswordInput,
+        AppPinInput,
         AppStepper,
         AppTextField,
+        AppTextFormField,
         AppTopology;
 
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_login.dart';
+import '../../mocks/provider_overrides/mock_menu.dart';
 import '../../mocks/provider_overrides/mock_pnp.dart';
 import '../../mocks/provider_overrides/mock_port_forwarding.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
@@ -109,6 +123,7 @@ import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // fixture twice, and picking the wrong one is exactly the confusion the
 // `_scene_data` naming convention exists to prevent (CLAUDE.md, testing structure).
 import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
+import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
@@ -121,6 +136,14 @@ import 'page_surface_family.dart';
 /// reservation list plus active leases, which is the widest of the three states
 /// that page has (`empty` renders one placeholder row and would under-measure the
 /// table).
+///
+/// ## The one exemption from the loader rule
+///
+/// Every case below forbids [AppLoader] except the one named in
+/// [kPagesWhoseLoaderIsContent] — see there. The exemption is a value for the same
+/// reason the premises are: `page_surface_family_test.dart` drives both branches off
+/// it and pins its membership, so widening it is an edit someone has to make in a
+/// named diff rather than a `forbids` list that quietly lost an entry.
 ///
 /// All three cards are required, not just one. They are three independent
 /// presentations — an info grid, a lease table and a reservation table — and each
@@ -537,8 +560,238 @@ final kPnpSetupPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
+// ===========================================================================
+// Wave 3 (#1379) — the six entry surfaces
+// ===========================================================================
+//
+// A third kind of wave. Wave 1's five were destinations that fetch; wave 2's nine
+// were the screens of one state machine. These six are what a user sees **before**
+// there is a session: the landing page, the three local-login pages, the menu the
+// dashboard hands off to, and the first-login firmware screen. What they have in
+// common is that four of the six read a provider that is a **USP-mode stub** —
+// `routerPasswordProvider` and `autoParentFirstLoginProvider` return hardcoded
+// values today — so a fixture here pins a *branch* rather than a payload, and two of
+// the four pages have no loading state at all.
+//
+// **The prediction #1379 was filed on was falsified, and that is the wave's main
+// finding.** #1370's inventory said to expect finds here, on the grounds that login
+// pages are narrow-column forms in 26 locales. It then swept the five measurable
+// ones and found all five at zero across every width and locale, and this wave
+// re-confirms that at 9 widths: **no widget fix landed with these six.** So wave 3
+// is five declarations and one fixture, and the cost of a wave is not predictable
+// from how form-like its pages look.
+//
+// **The sixth is the 45th file.** `auto_parent_first_login_view.dart` sits one
+// directory deeper than the roster's other login pages and was the one page #1370
+// could not measure. It needed the wave's only new *behavioural* fixture and it is
+// the one page in the whole family whose loader is content — see
+// [kAutoParentFirstLoginPageCase] and [kPagesWhoseLoaderIsContent].
+
+/// `page.home` — the landing page, and the cheapest page in the family
+/// (13.8ms/cell, #1370).
+///
+/// No overrides at all, and unlike [kPnpIspSettingsPageCase] that is not a claim
+/// about a provider's initial state: this view watches nothing. Its `_isLoading` is a
+/// `final bool = false`, so its `AppFullScreenLoader` branch is dead code — which is
+/// exactly why `forbids: [AppLoader]` is worth stating here. `AppFullScreenLoader`
+/// *contains* an [AppLoader], so the blanket rule catches that branch coming back to
+/// life without this case naming a second type.
+///
+/// The premise is the two halves of the page, which are structurally unrelated: the
+/// [SvgPicture] is the wordmark that is the entire body, and the [AppButton] is the
+/// footer's login button. The footer also carries a `FutureBuilder` over
+/// `getVersion()` whose `initialData` is `'-'`, so the version line renders in every
+/// cell whether the plugin resolves or not — no type of its own to require, and
+/// nothing to wait for either.
+final kHomePageCase = PageSurfaceCase(
+  id: 'home',
+  view: () => const HomeView(),
+  overrides: () => const [],
+  requires: const [SvgPicture, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.login_local` — the local login form, on a router that has a password hint
+/// (23.3ms/cell, #1370).
+///
+/// Two overrides doing two different jobs, and only one of them is about layout.
+///
+/// `sessionProvider` is what makes the cell measurable at all. `initState` calls
+/// `session.fetchDeviceInfoAndInitializeServices()`, which on the real notifier
+/// reaches `sessionServiceProvider` and throws
+/// `Service not initialized: USP service not available` — an exception, so the cell
+/// fails rather than under-measures. Nothing the view renders depends on the result.
+///
+/// `authProvider` is the layout half, and it is a *sharpening* of
+/// `commonOverrides()`'s shared default rather than a duplicate of it: that one is
+/// fixed at `AuthState.empty()`, whose null `localPasswordHint` drops the
+/// [AppExpansionPanel] from the card entirely. A hintless router is a real state, but
+/// it is the narrower one, so [localLoginWithHintState] is the fixture for the same
+/// reason [kDhcpPageCase] takes a populated list over an empty one.
+///
+/// The panel is therefore in `requires`, where it does double duty: it is a widget on
+/// the loaded path, and it is the assertion that this case's own override reached the
+/// view. Drop it and 234 cells measure a card one row shorter with nothing failing.
+///
+/// The `error:` branch of `state.when` is not measured and is not a gap this wave can
+/// close: it calls `setErrorMessage` — a `setState` — *during build*, and pinning it
+/// would mean measuring 234 cells of a tree that rebuilds itself while being laid
+/// out.
+final kLoginLocalPageCase = PageSurfaceCase(
+  id: 'login_local',
+  view: () => const LoginLocalView(),
+  overrides: () => loginLocalOverrides(
+    authState: localLoginWithHintState,
+    deviceInfo: testLoginDeviceInfo,
+  ),
+  requires: const [AppPasswordInput, AppExpansionPanel, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.local_router_recovery` — the recovery-key page, showing its error paragraph
+/// (21.6ms/cell, #1370).
+///
+/// A page with no loading state and no loader, like [kDeviceDetailPageCase]: the
+/// whole card is built unconditionally, so `forbids: [AppLoader]` is the weak
+/// direction here and [AppPinInput] plus [AppButton] are what actually stand between
+/// a measured page and a green empty one.
+///
+/// The fixture's job is the one thing on this page that *is* conditional:
+/// `if (state.remainingErrorAttempts != null)` adds a two-line error paragraph under
+/// the pin field. [routerRecoveryTwoAttemptsLeftState] pins it present, and which of
+/// `_getErrorString`'s three branches is measured is argued at the scene rather than
+/// here.
+///
+/// No type-level premise can see that paragraph — it is an `AppText` like the
+/// description above it — so the pin lives in the scene file and in
+/// `page_surface_family_test.dart`, which asserts the scene's field is non-null. That
+/// is the honest shape for a premise a widget type cannot express, and stating it
+/// beats requiring `AppText` and calling the page pinned.
+final kLocalRouterRecoveryPageCase = PageSurfaceCase(
+  id: 'local_router_recovery',
+  view: () => const LocalRouterRecoveryView(),
+  overrides: () => routerPasswordOverrides(routerRecoveryTwoAttemptsLeftState),
+  requires: const [AppPinInput, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.local_reset_router_password` — the new-password form (26.2ms/cell, #1370).
+///
+/// The widest form in the wave: two [AppPasswordInput]s and an [AppTextFormField],
+/// each with its own localized label, above a save button. All three are required
+/// because they are three different widgets with three different intrinsic widths,
+/// and the retype field sits inside a `Focus` wrapper that a refactor could drop
+/// without touching the first.
+///
+/// Like [kLocalRouterRecoveryPageCase] this view has no loader at all.
+/// [routerPasswordValidState] pins the save button's enabled branch; the scene file
+/// records both why that is pinned and the one part of this form the sweep does not
+/// reach — the seven password rules, which ui_kit renders only on focus.
+final kLocalResetRouterPasswordPageCase = PageSurfaceCase(
+  id: 'local_reset_router_password',
+  view: () => const LocalResetRouterPasswordView(),
+  overrides: () => routerPasswordOverrides(routerPasswordValidState),
+  requires: const [AppPasswordInput, AppTextFormField, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.menu` — the ten-card menu grid, badges included (40.1ms/cell, #1370 — but
+/// **23.0 measured**, and the wave's dearest page is the reset form at 26.4).
+///
+/// The one case in this file whose #1370 figure did not survive its own fixture. The
+/// inventory measured this page with no overrides, where both providers below land in
+/// `AsyncError`, and an error path costs a throw, a stack capture and a log line per
+/// cell — so 40.1 was 234 cells paying for two failures each, not a heavy grid.
+/// §11.11 draws the general rule out of it: a queued figure taken without a fixture is
+/// an upper bound on the swept one, never a prediction of it.
+///
+/// Ten cards, not nine: the tenth is `if (kDebugMode)`'s usp-console item, and
+/// `kDebugMode` is **true** under `flutter test`. So this sweep measures a grid one
+/// row taller than a release build renders, which is the conservative direction and
+/// worth knowing when a cell's height is read off a report.
+///
+/// The grid is the page's width story. `crossAxisCount` is 3 above the mobile
+/// breakpoint and 1 below it, with a fixed `mainAxisExtent` either way — so a card's
+/// content box is roughly a third of the content width on six of this family's nine
+/// widths and all of it on the other three, and its title row has to hold a localized
+/// title plus a badge in both shapes.
+///
+/// Which is why both providers are overridden. Each feeds one badge and each renders
+/// it only when its own value is non-null; unoverridden, both `build()`s reach a USP
+/// service, land in `AsyncError`, and the page renders ten cards with two of them
+/// silently missing an [AppBadge]. [AppBadge] is in `requires` to make that a failure
+/// rather than a slightly narrower measurement — see `mock_menu.dart`.
+final kMenuPageCase = PageSurfaceCase(
+  id: 'menu',
+  view: () => const UspMenuView(),
+  // `dhcp.testLanInfo` rather than a LAN fixture of the menu's own: the view reads
+  // exactly one field off it (`dnsServers`), so a second composed `LanInfoUIModel`
+  // would be eight lines restating a fixture that already exists to say the same
+  // thing. The scene stays where its own page's cases can see it.
+  overrides: () =>
+      menuOverrides(lanInfo: dhcp.testLanInfo, privacyEnabled: true),
+  requires: const [AppMenuCard, AppBadge],
+  forbids: const [AppLoader],
+);
+
+/// `page.auto_parent_first_login` — the firmware-check screen, and the roster's 45th
+/// file.
+///
+/// The one page #1370 could not measure, for two reasons it recorded as one. It is a
+/// directory deeper than the other login views, so the inventory's glob found it and
+/// its `-` in the roster meant *no fixture gets this past its opening state*. And the
+/// opening state is the only state: this screen exists to say "we are installing
+/// firmware, do not unplug the router".
+///
+/// **So this is the family's one loader-is-content page**, and the exemption it takes
+/// from the blanket `forbids: [AppLoader]` rule is declared in
+/// [kPagesWhoseLoaderIsContent] rather than by omitting an entry here. [AppLoader] is
+/// in `requires` instead, which is the same fact stated in the direction that can
+/// fail: on this page a spinner is not the sign that a fixture went thin, it is the
+/// page.
+///
+/// [AppCard] is the premise that does the work. The two localized paragraphs beside
+/// the loader have no type of their own, and the card is what a cell that lost this
+/// page would lack — which is a live risk here rather than a theoretical one. The
+/// real `checkAndAutoInstallFirmware()` returns **false**, and false makes the view
+/// call `finishFirstTimeLogin` and then `context.goNamed(RouteNamed.dashboardHome)`,
+/// a route this family's single-route host does not have. `firmwareAvailable: true`
+/// is what keeps the page mounted; `mock_login.dart` argues why that is the honest
+/// branch and not merely the convenient one.
+final kAutoParentFirstLoginPageCase = PageSurfaceCase(
+  id: 'auto_parent_first_login',
+  view: () => const AutoParentFirstLoginView(),
+  overrides: () => autoParentFirstLoginOverrides(firmwareAvailable: true),
+  requires: const [AppLoader, AppCard],
+  forbids: const [],
+);
+
+/// The page ids whose [AppLoader] is content rather than a loading state.
+///
+/// `page_surface_family_test.dart` asserts that every case forbids [AppLoader],
+/// because on a page that opens with `if (isLoading) return AppLoader()` a spinner is
+/// the single most likely thing a broken fixture measures — 234 cells of a centred
+/// 48px box, green at every width in every locale. That rule holds for 21 of the 22
+/// cases.
+///
+/// It cannot hold for `auto_parent_first_login`, whose loader is the subject of the
+/// screen rather than a stand-in for it. The exemption is a set here, and not an
+/// omitted `forbids` entry there, so that:
+///
+/// 1. the oracle drives **both** branches off one value — an exempt case must *require*
+///    [AppLoader], which is the claim "the loader is this page's content" written as
+///    an assertion rather than as a gap;
+/// 2. the membership is pinned. Adding an id is then an edit to a named set with a
+///    reason attached, where dropping `AppLoader` from a `forbids` list is the exact
+///    silent narrowing #1364/#1366 found three times.
+///
+/// A second entry here should be argued hard. "This page always shows a spinner" is
+/// usually a fixture that has not been written yet, which is what a `-` in
+/// `test/fixtures/page_roster.tsv` is for.
+const kPagesWhoseLoaderIsContent = <String>{'auto_parent_first_login'};
+
 /// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five,
-/// then wave 2's nine.
+/// then wave 2's nine, then wave 3's six.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
@@ -572,4 +825,14 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // list read as though wave 2 had declared nine pages in one go, which is the one
   // thing the record of this page should not say.
   kPnpSetupPageCase,
+  // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
+  // local-login pages, then the menu, then the first-login firmware screen. Unlike
+  // wave 2 this order is also the onboarding order — none of the six waited on
+  // anything — so the two readings of this list agree here.
+  kHomePageCase,
+  kLoginLocalPageCase,
+  kLocalRouterRecoveryPageCase,
+  kLocalResetRouterPasswordPageCase,
+  kMenuPageCase,
+  kAutoParentFirstLoginPageCase,
 ];

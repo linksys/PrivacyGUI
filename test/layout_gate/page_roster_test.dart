@@ -60,6 +60,25 @@ import 'page_roster.dart';
 /// `each assertion can fail` group below is what keeps proving it, by driving the
 /// same three checks over synthetic rosters that are wrong in exactly one way. A
 /// hand check that happened last August is not a guard.
+///
+/// **Re-confirmed at #1379's close** — the wave's last AC, because this oracle is the
+/// only thing standing between "45 of 45" and a number nobody re-checks. Deleting
+/// `auto_parent_first_login_view.dart`'s row from the committed fixture and *also*
+/// correcting `# pages`, `# swept` and `# measured` to match — the shape a deletion
+/// takes when someone tidies the header after it, and the only shape that gets past
+/// `_rejectStaleHeader` — turned **7** tests red, assertion 1's set comparison first:
+///
+/// ```
+/// assertion 1 ... no discovered page view is absent from the roster [E]
+///   Expected: empty
+///     Actual: ['lib/page/login/auto_parent/views/auto_parent_first_login_view.dart']
+/// ```
+///
+/// Assertion 3 caught it from the other side (a declared case with no swept row), and
+/// the `kPageViewCount` pin caught the narrowed denominator. Leaving the header at 45
+/// is caught one layer earlier still, in `setUpAll` — `declares '# pages 45' and holds
+/// 44 rows` — which is why both spellings were run. The fixture was restored and
+/// checksummed identical afterwards.
 void main() {
   // Read in `setUpAll` and not at declaration time, deliberately. A malformed
   // roster throws, and a throw out here fails the suite to *load* — "Failed to
@@ -368,7 +387,8 @@ void main() {
       expect(
         byPath['$pnp/pnp_setup_view.dart']!.disposition,
         PageRosterDisposition.swept,
-        reason: 'this row read `queued` for one day. If it reads `queued` again, a '
+        reason:
+            'this row read `queued` for one day. If it reads `queued` again, a '
             'page left the gate — which is a deletion from kPageSurfaceCases that '
             'assertion 3 below would also catch, and one nobody should be able to '
             'make quietly.',
@@ -401,7 +421,7 @@ void main() {
       }
     });
 
-    test('13 queued pages are measured and 14 still need a fixture', () {
+    test('8 queued pages are measured and 13 still need a fixture', () {
       // The distinction #1370 bought, and the one the waves estimate against. The
       // epic inferred "37 of 44 need a fixture written" from which builders exist
       // in test/mocks/provider_overrides/; the run found the shared mock alone
@@ -411,20 +431,41 @@ void main() {
       //
       // Both counts have moved since, and they are different counts:
       // `measured` (queued pages a fixture already gets past their loader) went
-      // 25 → 20 → 14 → 13, and `needsFixture` went 16 → 16 → 14 → 14. Wave 1 took
-      // five *measured* queued pages, which is what "the fixture is already written"
-      // selected for, so it moved the first and left the second alone. Wave 2 is
-      // the first wave to move both: it took seven measured pages **and wrote a
-      // fixture**, so the debt fell 16 → 14 — `pnp_waiting_modem` was swept with
-      // the phase it needed, and `pnp_setup` spent a day measured-but-queued on a
-      // ui_kit defect rather than unmeasured for want of a fixture. The bump to
-      // ui_kit v2.40.2 then swept `pnp_setup`, which is why `measured` fell one more
-      // and `needsFixture` did not move at all: that page was never in it.
+      // 25 → 20 → 14 → 13 → 8, and `needsFixture` went 16 → 16 → 14 → 14 → 13.
+      // Wave 1 took five *measured* queued pages, which is what "the fixture is
+      // already written" selected for, so it moved the first and left the second
+      // alone. Wave 2 is the first wave to move both: it took seven measured pages
+      // **and wrote a fixture**, so the debt fell 16 → 14 — `pnp_waiting_modem` was
+      // swept with the phase it needed, and `pnp_setup` spent a day
+      // measured-but-queued on a ui_kit defect rather than unmeasured for want of a
+      // fixture. The bump to ui_kit v2.40.2 then swept `pnp_setup`, which is why
+      // `measured` fell one more and `needsFixture` did not move at all: that page
+      // was never in it.
+      //
+      // Wave 3 (#1379) took the largest bite out of `measured` yet — five of its six
+      // pages were in it — and paid down exactly one unit of debt:
+      // `auto_parent_first_login_view`, the register's 45th file and the one row
+      // #1370 could not measure at all. It needed the wave's only new *behavioural*
+      // fixture (`checkAndAutoInstallFirmware()` returns false on the real notifier,
+      // and false navigates the page away), which is what the difference between
+      // these two counts is for: five pages that cost nothing to onboard, and one
+      // that cost a fixture.
       final measured = roster
           .withDisposition(PageRosterDisposition.queued)
           .where((r) => r.msPerCell != null);
-      expect(measured, hasLength(13));
-      expect(roster.needsFixture, hasLength(14));
+      expect(measured, hasLength(8));
+      expect(roster.needsFixture, hasLength(13));
+      expect(
+        roster.needsFixture,
+        isNot(contains(
+            'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart')),
+        reason:
+            'the one row wave 3 moved out of the debt column. #1370\'s glob '
+            'found this file one directory deeper than the other login views and '
+            'its `-` meant no fixture got the view past its opening state — which '
+            'was literal here, since the opening state is the only state the page '
+            'has. It is swept, so it is not debt.',
+      );
       expect(
         roster.needsFixture,
         isNot(contains(
@@ -436,7 +477,8 @@ void main() {
       expect(
         roster.needsFixture,
         isNot(contains('lib/page/instant_setup/views/pnp_setup_view.dart')),
-        reason: 'the other half of the same correction, and the subtler one: this '
+        reason:
+            'the other half of the same correction, and the subtler one: this '
             'page was queued for a day, so it was *sweep* debt — but its fixture '
             'was written and got all 208 cells past the loader, so counting it as '
             'fixture debt would have made #1369 budget for work already done. It is '
@@ -467,16 +509,17 @@ void main() {
       );
     });
 
-    test('the register reads 16 swept, 27 queued, 2 excluded', () {
+    test('the register reads 22 swept, 21 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
-      // swept and wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
-      // after, when ui_kit v2.40.2 unblocked it — and nothing else in either. The
-      // excluded pair is #1370's and is not a number a wave may move: a wave onboards
-      // pages, and deciding a page unreachable is a separate judgement with its own
-      // reason column.
-      expect(roster.withDisposition(PageRosterDisposition.swept), hasLength(16));
+      // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
+      // after, when ui_kit v2.40.2 unblocked it — and wave 3 (#1379) six, and
+      // nothing else in any of the three. The excluded pair is #1370's and is not a
+      // number a wave may move: a wave onboards pages, and deciding a page
+      // unreachable is a separate judgement with its own reason column.
       expect(
-          roster.withDisposition(PageRosterDisposition.queued), hasLength(27));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(22));
+      expect(
+          roster.withDisposition(PageRosterDisposition.queued), hasLength(21));
       expect(
         roster
             .withDisposition(PageRosterDisposition.excluded)
@@ -562,13 +605,28 @@ void main() {
       );
     });
 
-    test('swept is the pilot two, wave 1 and wave 2 — not the inventory\'s 22',
-        () {
+    test(
+        'swept is the pilot two and waves 1-3 — not the inventory\'s 22, which '
+        'happens to be the same number', () {
       // #1370's own AC, kept as a repo fact and now the sharper half of this test.
       // That run pumped 45 pages and 22 of them were at zero across all 208 cells,
       // and it flipped **none** of them: nothing about it was committed, declared
       // in kPageSurfaceCases, or capable of failing a PR. `swept` means the gate
       // covers the page, which is a claim only a declaration can make.
+      //
+      // **Since wave 3 the two numbers are both 22, and that is a coincidence, not
+      // convergence.** Only **18** of the set below is from the inventory's clean 22
+      // (§11.6's queue rows 1-19, plus the pilot's two, plus `pnp_complete_view`).
+      // Three of that 22 are still queued — `remote_assistance_confirm_view`,
+      // `usp_support_view` and `usp_sliver_dashboard_view` — and a fourth,
+      // `pnp_complete_view`, is excluded as unreachable: at zero and dead. The other
+      // four here were **not** clean in the inventory at all:
+      // `usp_port_forwarding_detail_view` overflowed 9 cells and was fixed by #1377,
+      // while `pnp_waiting_modem_view`, `pnp_setup_view` and
+      // `auto_parent_first_login_view` were all unmeasurable for want of a fixture.
+      // Reading "22 = 22" as "the inventory has been consumed" is exactly the
+      // inference this test exists to block, so the set is written out below rather
+      // than counted.
       //
       // So the five #1377 added and the nine #1378 added are here for a different
       // reason than "the inventory said they were clean". Each is a
@@ -587,6 +645,12 @@ void main() {
       // (`linksys/privacyGUI-UI-kit#70`, v2.40.2), which is the same rule met from
       // outside the repo: `pnp_setup` entered the day the overflow reached zero, not
       // the day it was measurable.
+      //
+      // Wave 3's six are the pre-session surfaces, and they arrived the way §8 asks:
+      // all five measurable ones were already at zero at nine widths, so no widget
+      // fix and no allowlist entry landed with them. The wave was filed predicting
+      // finds — narrow-column forms in 26 locales — and the prediction being wrong is
+      // the finding it recorded.
       expect(roster.sweptPaths, {
         'lib/page/devices/views/usp_device_detail_view.dart',
         'lib/page/devices/views/usp_device_list_view.dart',
@@ -600,6 +664,12 @@ void main() {
         'lib/page/instant_setup/views/pnp_static_ip_view.dart',
         'lib/page/instant_setup/views/pnp_unplug_modem_view.dart',
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',
+        'lib/page/landing/views/home_view.dart',
+        'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
+        'lib/page/login/views/local_reset_router_password_view.dart',
+        'lib/page/login/views/local_router_recovery_view.dart',
+        'lib/page/login/views/login_local_view.dart',
+        'lib/page/menu/views/usp_menu_view.dart',
         'lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart',
         'lib/page/topology/views/usp_node_detail_view.dart',
         'lib/page/topology/views/usp_topology_view.dart',

@@ -16,17 +16,18 @@ import '../../layout_gate/sweep.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
-/// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1 and #1378's
-/// wave 2.
+/// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2
+/// and #1379's wave 3.
 ///
-/// Sixteen whole pages × 9 screen widths × 26 locales, declared through the shared
+/// Twenty-two whole pages × 9 screen widths × 26 locales, declared through the shared
 /// runner. Everything about *which* cells exist and *how* one is hosted lives in
-/// `test/layout_gate/families/page_surface_family.dart`; which sixteen pages, and
-/// why those sixteen, lives in `page_surface_cases.dart`. This file is the
-/// declaration, the sixteen pins, and the two readability guards that sit beside the
-/// two fixes this family has prompted so far.
+/// `test/layout_gate/families/page_surface_family.dart`; which twenty-two pages, and
+/// why those, lives in `page_surface_cases.dart`. This file is the declaration, the
+/// twenty-two pins, and the two readability guards that sit beside the two fixes this
+/// family has prompted so far.
 ///
-/// The epic (#1369) takes the remaining 29 in waves; `test/fixtures/page_roster.tsv`
+/// The epic (#1369) takes the remaining 21 in waves — 23 rows are not here, and two
+/// of those are `excluded`, which no wave takes; `test/fixtures/page_roster.tsv`
 /// is the register of which page is where, and is the file to read before assuming
 /// a page absent from this list is a page with nothing wrong with it.
 ///
@@ -42,7 +43,8 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// adding 1080 — golden CI's third coordinate, and the only width in the list that
 /// renders a content box wider than 977px. Fifteen literals moved in one edit,
 /// which is the shape the ticket wanted: a coverage change nobody can make while
-/// looking away. `pnp_setup` brought the sixteenth later the same day.
+/// looking away. `pnp_setup` brought the sixteenth later the same day, and wave 3's
+/// six brought the count to twenty-two.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -184,6 +186,42 @@ void main() {
   // graduation rule asks for: fix to zero, then declare, then capture.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpSetupPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Wave 3 (#1379): the six entry surfaces — what a user sees before there is a
+  // session. All six arrived at zero, so no widget fix landed with this wave; the
+  // prediction it was filed on ("expect finds in narrow-column login forms") is
+  // falsified in `page_surface_cases.dart`'s wave 3 header. Five needed only a
+  // declaration; `auto_parent_first_login` needed the wave's one new fixture, and it
+  // is the family's only loader-is-content page.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kHomePageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kLoginLocalPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kLocalRouterRecoveryPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kLocalResetRouterPasswordPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kMenuPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAutoParentFirstLoginPageCase),
     expectedCellCount: 234,
   );
 

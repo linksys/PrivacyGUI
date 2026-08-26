@@ -2,8 +2,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
+import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
@@ -18,6 +20,7 @@ import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indic
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../util/dashboard/dashboard_card_probe.dart'
     show kMinSupportedScreenWidth;
 import '../sweep.dart';
@@ -44,8 +47,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when sixteen pages fit. It is *also*
-/// green when sixteen pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when twenty-two pages fit. It is *also*
+/// green when twenty-two pages never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -64,10 +67,11 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  group('the gate sweeps sixteen pages, and which sixteen is a decision', () {
+  group('the gate sweeps twenty-two pages, and which twenty-two is a decision',
+      () {
     test(
-        'kPageSurfaceCases holds the pilot two, wave 1\'s five and wave 2\'s nine',
-        () {
+        'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine '
+        'and wave 3\'s six', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -87,8 +91,15 @@ void main() {
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
           'pnp_setup',
+          'home',
+          'login_local',
+          'local_router_recovery',
+          'local_reset_router_password',
+          'menu',
+          'auto_parent_first_login',
         ],
-        // Updated by #1377 and #1378, and the wording is the point of the test.
+        // Updated by #1377, #1378 and #1379, and the wording is the point of the
+        // test.
         // This pin is the epic's per-wave checkpoint: it goes red on every wave
         // *by design*, so that the wave has to say here which pages it added and
         // on what grounds. Trimming the list to whatever `kPageSurfaceCases`
@@ -132,7 +143,24 @@ void main() {
         // empty incident list on the bump and was deleted. `pnp_complete_view` is
         // the flow's tenth view and stays excluded as unreachable.
         //
-        // The 29 that remain are in `test/fixtures/page_roster.tsv`, not here.
+        // **Wave 3's six (#1379)**: the pre-session surfaces — the landing page, the
+        // three local-login pages, the menu, and the first-login firmware screen.
+        // The wave was filed expecting finds ("narrow-column forms in 26 locales")
+        // and found none: all five measurable pages were already at zero at nine
+        // widths, so §8's graduation rule cost nothing here and
+        // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`. The
+        // prediction being wrong is the finding — a wave's cost is not readable off
+        // how form-like its pages look.
+        //
+        // What the wave did cost is fixtures: five of the six need one, and
+        // `login_local` needs a `sessionProvider` that does not reach a USP service
+        // (its `initState` throws otherwise, so that cell fails rather than
+        // under-measures). `auto_parent_first_login` is the roster's 45th file, the
+        // one page #1370 could not measure, and the family's only loader-is-content
+        // page — declared, not excluded, with its exemption pinned in
+        // `kPagesWhoseLoaderIsContent` below.
+        //
+        // The 23 that remain are in `test/fixtures/page_roster.tsv`, not here.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -169,7 +197,37 @@ void main() {
         );
       });
 
-      test('page.${page.id} forbids the loading path outright', () {
+      test('page.${page.id} states its rule for the loading path', () {
+        // Two branches off one value (#1379), which is why the name says "states its
+        // rule" and not "forbids the loader": for a loader-is-content page this test
+        // asserts the *opposite* of forbidding, and a name that claimed otherwise
+        // would misreport which branch ran. The exemption is a declared set, so a
+        // page cannot leave this rule by quietly dropping `AppLoader` from its
+        // `forbids` list — which is the silent narrowing #1364/#1366 found three
+        // times over.
+        if (kPagesWhoseLoaderIsContent.contains(page.id)) {
+          expect(
+            page.forbids,
+            isNot(contains(AppLoader)),
+            reason:
+                'page.${page.id} is declared loader-is-content, so forbidding '
+                'the loader would fail all 234 of its cells. If this page has '
+                'grown a real loading state, take it out of '
+                'kPagesWhoseLoaderIsContent rather than forbidding a loader it '
+                'still renders.',
+          );
+          expect(
+            page.requires,
+            contains(AppLoader),
+            reason:
+                'the exemption is only honest in the direction that can fail: '
+                'a page whose loader is its content must *require* it. Without '
+                'this, "exempt" would mean "this page says nothing about its '
+                'spinner" — and a fixture that drifted to a genuine loading state '
+                'would sweep 234 green cells looking exactly like success.',
+          );
+          return;
+        }
         expect(
           page.forbids,
           contains(AppLoader),
@@ -179,6 +237,29 @@ void main() {
         );
       });
     }
+
+    test('exactly one page is exempt from the loader rule, and it is named',
+        () {
+      // The membership pin. The two-branch test above is satisfied by *any*
+      // exemption set — including one that grew an entry because a fixture was hard
+      // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
+      // warns about. A page that always shows a spinner is usually a page whose
+      // fixture does not exist yet, and that belongs in the roster as a `-`.
+      expect(
+        kPagesWhoseLoaderIsContent,
+        const {'auto_parent_first_login'},
+        reason: 'auto_parent_first_login exists to say "we are installing '
+            'firmware, do not unplug the router" — the spinner is the subject of '
+            'the screen. A second entry here needs the same argument made in the '
+            'case doc, not just a passing sweep.',
+      );
+      expect(
+        kPageSurfaceCases.map((c) => c.id),
+        containsAll(kPagesWhoseLoaderIsContent),
+        reason: 'an exempt id that names no case is an exemption nothing is '
+            'checking, and it would keep passing after the page left the gate',
+      );
+    });
 
     // The specific half: the lists themselves, by name. This is the assertion that
     // fails when a `requires` is quietly narrowed to one cheap widget — which is
@@ -306,7 +387,8 @@ void main() {
     // else, and a phase pinned on a page that never reads one. `pnp_setup` gets a
     // pin of its own below, for a third reason neither of those covers.
 
-    test('the three ISP-form pages forbid the overlay, not just the loader', () {
+    test('the three ISP-form pages forbid the overlay, not just the loader',
+        () {
       // None of these three renders an `AppLoader` while saving. `PnpIspSettingsView`
       // and both forms hand the whole surface to `PnpIspSavingProgress` — a
       // full-page progress screen that lays out clean at every width, so a cell
@@ -394,7 +476,8 @@ void main() {
       expect(
         unpinned,
         const ['pnp_isp_settings', 'pnp_unplug_modem', 'pnp_modem_lights_off'],
-        reason: 'these three read no `pnpProvider` state on the path this sweep '
+        reason:
+            'these three read no `pnpProvider` state on the path this sweep '
             'measures — the ISP hub watches it only while `_dhcpSaving`, and the '
             'two modem-restart steps are plain StatelessWidgets. Any *other* page '
             'appearing here is a phase that stopped being pinned, and the page it '
@@ -408,7 +491,8 @@ void main() {
       expect(
         kPnpSetupPageCase.requires,
         containsAll(<Type>[AppStepper, AppTextField, AppPasswordInput]),
-        reason: 'AppStepper is doing two jobs here that no other premise in this '
+        reason:
+            'AppStepper is doing two jobs here that no other premise in this '
             'file does. It pins that the wizard has more than one step — '
             '`_buildStepperForm` renders no stepper at all when `totalSteps == 1`, '
             'which is the single-step fixture #1378 forbade as a way to make this '
@@ -419,6 +503,122 @@ void main() {
             'and step 0 is the only one with a form on it, three bands deep because '
             'the fixture is split-mode. Dropping them would leave this premise '
             'holding against a wizard whose step content had gone missing.',
+      );
+    });
+
+    // Wave 3's six (#1379). What is worth pinning about this wave is the inverse of
+    // wave 2's: five of the six pages have **no reachable loading state**, so the
+    // blanket `forbids: [AppLoader]` above is inert on them and `requires` is the
+    // whole guard. `local_router_recovery`, `local_reset_router_password` and
+    // `usp_menu_view` render no loader anywhere in the file; `home_view`'s
+    // `AppFullScreenLoader` sits behind `final bool _isLoading = false`, i.e. dead
+    // code; and `auto_parent_first_login`'s loader is the content. Only
+    // `login_local_view` has a live one (`loading:`, and `data:` while `_p != null`).
+    //
+    // That is the case #1366 made in general, arriving here as five pages at once: a
+    // premise that is only a loader-forbid is a premise that cannot fail. Two of the
+    // pins below are therefore about the *scene* rather than the widget list, because
+    // the conditional row they pin has no type of its own.
+
+    test('page.home requires both halves of a page with no loading state', () {
+      expect(
+        kHomePageCase.requires,
+        containsAll(<Type>[SvgPicture, AppButton]),
+        reason:
+            'the wordmark is the whole body and the button is the footer, and '
+            'they are fed by nothing — this view watches no provider, so there is '
+            'no override to drift and no live loader branch to catch it if one '
+            'did. These two types are the only thing standing between 234 '
+            'measured cells and 234 cells of whatever a broken HomeView renders.',
+      );
+    });
+
+    test('page.login_local requires the row its own override adds', () {
+      expect(
+        kLoginLocalPageCase.requires,
+        contains(AppExpansionPanel),
+        reason: 'the hint panel renders only for a router with a '
+            '`localPasswordHint`, and `commonOverrides()` supplies '
+            '`AuthState.empty()`, which has none. So this entry does a second job '
+            'beyond naming loaded-path content: it asserts that the case\'s own '
+            '`authProvider` override reached the view at all. Drop it and a lost '
+            'override measures a card one row shorter, in every cell, green.',
+      );
+      expect(
+        localLoginWithHintState.localPasswordHint,
+        isNotEmpty,
+        reason: 'the requires entry above is only satisfiable while the scene '
+            'carries a hint. An empty string renders no panel, which would fail '
+            'all 234 cells — loudly, which is fine — but it would fail them for a '
+            'reason nothing here states, and the next reader would look for a '
+            'broken view.',
+      );
+    });
+
+    test(
+        'page.local_router_recovery pins its error row in the scene, not the '
+        'widget list', () {
+      expect(
+        routerRecoveryTwoAttemptsLeftState.remainingErrorAttempts,
+        isNotNull,
+        reason: 'this is the wave\'s clearest case of a premise a widget type '
+            'cannot express. `if (state.remainingErrorAttempts != null)` adds a '
+            'two-line localized paragraph under the pin field, and the paragraph '
+            'is an `AppText` like the description above it — so `requires` cannot '
+            'tell the two states apart and this assertion is the only thing that '
+            'can. Null here is a page measured shorter than the one a user who '
+            'mistyped a recovery key sees.',
+      );
+    });
+
+    test('page.local_reset_router_password requires three field types, not one',
+        () {
+      expect(
+        kLocalResetRouterPasswordPageCase.requires,
+        containsAll(<Type>[AppPasswordInput, AppTextFormField, AppButton]),
+        reason: 'three widgets with three different intrinsic widths, and the '
+            'retype field sits inside a `Focus` wrapper a refactor could drop '
+            'without touching the first. `AppPasswordInput` alone would hold '
+            'against a form that had lost the hint field entirely. The seven '
+            '`AppPasswordRule`s are the part of this form the sweep does not '
+            'reach — ui_kit renders them on focus only — and that gap is recorded '
+            'in the scene file rather than papered over with an `AppText`.',
+      );
+    });
+
+    test('page.menu requires the badge, not just the ten cards', () {
+      expect(
+        kMenuPageCase.requires,
+        containsAll(<Type>[AppMenuCard, AppBadge]),
+        reason:
+            'both of this page\'s overrides exist for the badges alone: each '
+            'renders only while its provider has a value, and unoverridden both '
+            '`build()`s reach a USP service and land in `AsyncError`, whose '
+            '`valueOrNull` is null. The page still renders, ten cards still '
+            'render, and two title rows are quietly a badge narrower — in all 234 '
+            'cells, with nothing failing. `AppMenuCard` alone cannot see that; '
+            '`AppBadge` is what makes it a failure.',
+      );
+    });
+
+    test(
+        'page.auto_parent_first_login requires more than the spinner it is '
+        'exempt for', () {
+      // The loader half is pinned by the exemption branch above. This is the other
+      // half: `requires: [AppLoader]` on its own would hold against *any* centred
+      // spinner — including the `Center(child: AppLoader())` the loader-only control
+      // below pumps deliberately — so the one page allowed to show a loader is the
+      // page that most needs a second premise.
+      expect(
+        kAutoParentFirstLoginPageCase.requires,
+        contains(AppCard),
+        reason:
+            'the two localized paragraphs beside the loader have no type of '
+            'their own, so the card is what a cell that lost this page would '
+            'lack. And losing it is live rather than theoretical: the real '
+            '`checkAndAutoInstallFirmware()` returns false, which makes the view '
+            'call `goNamed(RouteNamed.dashboardHome)` — a route this family\'s '
+            'single-route host does not have.',
       );
     });
   });
@@ -586,7 +786,8 @@ void main() {
       expect(
         _contentWidth(1240),
         1192.0,
-        reason: 'the widest content box below the 1241px pinch, and 160px wider '
+        reason:
+            'the widest content box below the 1241px pinch, and 160px wider '
             'than anything the sweep renders',
       );
       expect(

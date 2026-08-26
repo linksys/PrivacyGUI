@@ -17,14 +17,17 @@
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
 #   All five sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 5,072 coordinates that are measured and clean — card 1,943,
+#   freeze is coverage: 8,764 coordinates that are measured and clean — card 1,943,
 #   popup 347, forced_form 78, chrome 1,248, re-checked at the `dev-2.7.0` merge on
 #   2026-08-24, where +29 cells arrived from a production spec change (#1325's
-#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 1,456 —
-#   416 from #1349's pilot the same day (the fifth sweep, and the first one
-#   registered here after the framework existed: two lines, see `suite_for`) and
-#   +1,040 from #1377's wave 1 on 2026-08-26, five more whole pages at 208 cells
-#   each with the pilot's 416 rows byte-identical beside them. The test run
+#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 5,148 —
+#   twenty-two whole pages at 9 widths x 26 locales. That last figure has moved five
+#   times and only `page` ever moves: 416 at #1349's pilot (the fifth sweep, and the
+#   first one registered here after the framework existed: two lines, see
+#   `suite_for`), 1,456 at #1377's wave 1, 3,120 at #1378's wave 2, 3,510 when #1372
+#   added the 1080 width to all fifteen groups then swept, 3,744 when wave 2's ninth
+#   page landed a day late, and 5,148 at #1379's wave 3 — every one of those a purely
+#   additive diff with no row removed and none changed. The test run
 #   is nonetheless allowed to exit non-zero — a sweep can go red at any time, and
 #   its records are still the right input for a diff. What must never be tolerated
 #   is a *truncated* run, which the extractor rejects on its own.

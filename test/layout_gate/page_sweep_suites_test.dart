@@ -25,7 +25,7 @@ import 'page_sweep_suites.dart';
 /// #1371 asked where the page cells should run and measured the answer instead of
 /// assuming it: the page sweep **stays one file**, because four cost-balanced shards
 /// cost +14.7s on `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen
-/// pages of the day it was measured — sixteen now (§11.10). So this oracle is not the bookkeeping a split needed — it
+/// pages of the day it was measured — twenty-two now (§11.10). So this oracle is not the bookkeeping a split needed — it
 /// is the hole that was already open with one file, and would have stayed open if
 /// the split had shipped:
 ///
@@ -37,8 +37,8 @@ import 'page_sweep_suites.dart';
 /// - `page.tsv` would notice, as 234 rows reading `no longer measured`, and nothing
 ///   in the PR gate runs that diff.
 ///
-/// Delete one of the sixteen calls today and every record above still calls the page
-/// covered. That is what assertion 2 is for.
+/// Delete one of the twenty-two calls today and every record above still calls the
+/// page covered. That is what assertion 2 is for.
 ///
 /// ## The five checks — four assertions and one report
 ///
@@ -56,7 +56,7 @@ import 'page_sweep_suites.dart';
 ///    lighter than that is hidden inside it and costs only CPU, and a heavier one is
 ///    the run's long pole where every second is a second on the gate. This shipped as
 ///    an assertion and **Austin downgraded it to a print the same day** (§11.10's
-///    amendment): the 43-page end state is already known to be 2.27× the floor, so a
+///    amendment): the 43-page end state is already known to be 2.14× the floor, so a
 ///    red at wave 4 would block a PR to report something already written down, and it
 ///    would demand the split that #1371 measured as a net loss at today's size. The
 ///    number is in front of whoever takes the decision — which happens once, at the
@@ -120,12 +120,14 @@ void main() {
   });
 
   group('assertion 1: the suites exist and each one runs in the gate', () {
-    test('$kPageSweepSuiteRoot holds exactly $kPageSweepSuiteCount page sweep '
+    test(
+        '$kPageSweepSuiteRoot holds exactly $kPageSweepSuiteCount page sweep '
         'suite(s)', () {
       expect(
         suites.map((s) => s.path).toList(),
         hasLength(kPageSweepSuiteCount),
-        reason: 'kPageSweepSuiteCount is pinned because the number is a decision '
+        reason:
+            'kPageSweepSuiteCount is pinned because the number is a decision '
             'taken against a measurement (§11.10), not a property of the tree. '
             'Found: ${suites.map((s) => s.path).join(', ')}. If a suite was added '
             'deliberately, move the constant and read check 5 — it prints what '
@@ -139,7 +141,8 @@ void main() {
         expect(
           suite.tags,
           containsAll(<String>['layout-gate', 'overflow']),
-          reason: '${suite.path} lists ${suite.tags}. `layout-gate` is what makes '
+          reason:
+              '${suite.path} lists ${suite.tags}. `layout-gate` is what makes '
               'it PR-blocking (run_tests.sh excludes golden||loc||ui and neither '
               'is here) and `overflow` is what puts it in the pre-commit '
               'selector. A suite missing either still holds its pages, so every '
@@ -177,7 +180,8 @@ void main() {
       expect(
         membership.duplicated,
         isEmpty,
-        reason: 'these pages are swept more than once, which emits the same cell '
+        reason:
+            'these pages are swept more than once, which emits the same cell '
             'ids twice — rejected by the baseline extractor as "measured twice", '
             'but only at capture time, and nothing in the PR gate captures: '
             '${membership.duplicated.entries.map((e) => '${e.key} in ${e.value.join(' and ')}').join(', ')}',
@@ -247,7 +251,8 @@ void main() {
           expect(
             msPerCellByIdentifier,
             contains(identifier),
-            reason: '$identifier is swept by ${suite.label} and has no measured '
+            reason:
+                '$identifier is swept by ${suite.label} and has no measured '
                 'ms/cell in ${roster.source}. A `swept` row cannot omit the '
                 'figure — page_roster.dart rejects that — so this is a join that '
                 'broke rather than a page that is free.',
@@ -256,7 +261,8 @@ void main() {
       }
     });
 
-    test('every suite is within '
+    test(
+        'every suite is within '
         '${(kPageSweepBalanceTolerance * 100).round()}% of the mean', () {
       // Trivially satisfied at one suite — one suite is its own mean — and written
       // now so the split needs no new assertion on the day it happens.
@@ -300,8 +306,9 @@ void main() {
     // Austin's call, 2026-08-26, and it reversed what #1371 shipped: this used to
     // fail the build once a suite outgrew the floor. Three reasons, and none of them
     // is that the number is wrong. (1) The end state is already known — the next
-    // test projects 43 pages at 2.27x the floor — so an assertion that fires at
-    // wave 4 is an alarm clock set for a time we can already read, not a warning.
+    // test projects 43 pages at 2.14x the floor (2.27x at #1371) — so an
+    // assertion that fires at wave 4 is an alarm clock set for a time we can
+    // already read, not a warning.
     // (2) #1371 measured splitting as a bad trade at today's size (+14.7s gate,
     // +60.8s suite, x2.36 CPU), so a red that says "split now" would be advice
     // against its own evidence. (3) The floor is a laptop measurement whose divisor
@@ -313,7 +320,8 @@ void main() {
     // assertions 1-4 — a page silently losing its `runOverflowSweep` call is a
     // coverage loss no other test in the PR gate can see, which is a different class
     // of fact from a suite being slow.
-    test('reports each suite\'s projected weight against the '
+    test(
+        'reports each suite\'s projected weight against the '
         '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor', () {
       for (final suite in suites) {
         // Still called, not just printed: `pageSweepSuiteWeightMs` throws on a page
@@ -438,14 +446,16 @@ void main() {
           .writeAsStringSync("void main() { test('x', () {}); }");
       expect(
         () => discoverPageSweepSuites(root: temp.path),
-        throwsA(isA<PageSweepSuiteFormatException>().having((e) => e.message,
-            'message', contains('calls PageSurfaceFamily'))),
+        throwsA(isA<PageSweepSuiteFormatException>().having(
+            (e) => e.message, 'message', contains('calls PageSurfaceFamily'))),
       );
     });
 
     test('assertion 2 sees a declared page that nothing sweeps', () {
       final membership = pageSweepMembership(
-        suites: [suiteOf(cases: const ['kDhcpPageCase'])],
+        suites: [
+          suiteOf(cases: const ['kDhcpPageCase'])
+        ],
         idByIdentifier: const {
           'kDhcpPageCase': 'dhcp',
           'kWifiSettingsPageCase': 'wifi_settings',
@@ -476,7 +486,8 @@ void main() {
       expect(membership.unswept, isEmpty);
     });
 
-    test('assertion 3 sees an unregistered guard, a misplaced one, and one that '
+    test(
+        'assertion 3 sees an unregistered guard, a misplaced one, and one that '
         'runs nowhere', () {
       final faults = pageSweepGuardFaults(
         [
@@ -510,35 +521,51 @@ void main() {
           msPerCellByIdentifier: const {'kDhcpPageCase': 21.6},
           cellsPerPage: 234,
         ),
-        throwsA(isA<PageSweepSuiteFormatException>().having((e) => e.message,
-            'message', contains('nothing measured it'))),
+        throwsA(isA<PageSweepSuiteFormatException>().having(
+            (e) => e.message, 'message', contains('nothing measured it'))),
       );
     });
 
     test('the crossover is where §11.10 says it is', () {
-      // 26 pages at the measured 26.2ms/cell median: 159s against a 149.8s floor.
-      // The arithmetic §11.10 calls "roughly 23 pages", driven rather than asserted
-      // in prose. This outlived the assertion it used to drive: the ceiling is
-      // reported now, but the report is only worth reading if the arithmetic under it
-      // is pinned, and this is the only place the over-the-floor branch runs at all.
+      // 29 pages at the measured 22.4ms/cell median: 152.0s against a 149.8s floor.
+      // The arithmetic §11.10 calls "about 27 pages" — that figure carries the two
+      // readability guards' 7.1s and this drive does not, which is the whole gap
+      // between 27 and 29. Driven rather than asserted in prose. This outlived the
+      // assertion it used to drive: the ceiling is reported now, but the report is
+      // only worth reading if the arithmetic under it is pinned, and this is the only
+      // place the over-the-floor branch runs at all.
+      //
+      // The median is 22.4 and not #1371's 26.2 because wave 3 added six cheap entry
+      // surfaces to 24 heavier pages, which moved the crossover *out* rather than in
+      // (§11.11). 22.4 is the mean of the two middle rows of an even 30 — 21.8 and
+      // 23.0 — and taking the upper one instead reads 23.0, which is a page's own
+      // figure and looks equally plausible. #1371's 26.2 was an exact middle element
+      // on an odd 29, so nothing in the number's shape says which convention it used.
+      // A median is a moving quantity either way, so this test pins the arithmetic
+      // and check 5's print carries the number anyone should act on.
       final heavy = suiteOf(
-          cases: List.generate(26, (i) => 'kPage${i}Case'), guards: const []);
+          cases: List.generate(29, (i) => 'kPage${i}Case'), guards: const []);
       final weight = pageSweepSuiteWeightMs(
         heavy,
         msPerCellByIdentifier: {
-          for (final identifier in heavy.caseIdentifiers) identifier: 26.2
+          for (final identifier in heavy.caseIdentifiers) identifier: 22.4
         },
         cellsPerPage: 234,
       );
       expect(weight, greaterThan(kGateFloorWithoutPagesMs));
 
-      // ...and today's sixteen, at the same median, are comfortably under it.
-      final today = suiteOf(cases: List.generate(16, (i) => 'kPage${i}Case'));
+      // ...and today's twenty-two, at the same median, are still under it — 115.3s
+      // against 149.8s. The real figure is heavier than the median projection here
+      // (check 5 prints 134.8s, 15.0s of headroom) because the pages actually swept
+      // are dearer than the roster's median, which now includes 13 unmeasured rows
+      // weighed at it. Wave 3 moved this literal from 16; wave 4 is where the ceiling
+      // is crossed either way.
+      final today = suiteOf(cases: List.generate(22, (i) => 'kPage${i}Case'));
       expect(
         pageSweepSuiteWeightMs(
           today,
           msPerCellByIdentifier: {
-            for (final identifier in today.caseIdentifiers) identifier: 26.2
+            for (final identifier in today.caseIdentifiers) identifier: 22.4
           },
           cellsPerPage: 234,
         ),

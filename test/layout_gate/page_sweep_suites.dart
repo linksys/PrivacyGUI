@@ -43,7 +43,8 @@
 /// what #1371 shipped. The oracle prints each suite's projection and its headroom on
 /// every run and fails on neither, and the split decision is taken **once, at the end
 /// of #1380**, with all 45 pages measured. Three reasons: the 43-page end state is
-/// already known (2.27× the floor), so a red at wave 4 would be an alarm set for a
+/// already known (2.14× the floor, 2.27× when #1371 wrote this), so a red at wave 4
+/// would be an alarm set for a
 /// time already readable; splitting was *measured* as a bad trade at today's size, so
 /// a red advising a split would contradict its own evidence; and the floor is a
 /// laptop figure whose divisor is the rest of the test tree, so it rises as the suite

@@ -16,8 +16,8 @@
 # basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
 # basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
 # basis-note Cross-checked on the five pages it re-measured; four agreed with #1370 within 6%.
-# basis-note So the 13 queued figures still carry #1370's wall-clock-minus-control reading and
-# basis-note the 16 swept ones carry the durations; the agreement above is why one column holds both.
+# basis-note So the 8 queued figures still carry #1370's wall-clock-minus-control reading and
+# basis-note the 22 swept ones carry the durations; the agreement above is why one column holds both.
 # basis-note #1378 kept that basis and added a rule: three runs, median committed. Four passes over
 # basis-note pnp_entry read 21.2, 18.5, 11.6 and 10.9 ms/cell, because the first coordinate test of a
 # basis-note run absorbs the font load and the first pump, and that fixed cost is most of a cheap
@@ -27,6 +27,28 @@
 # basis-note (36.5 -> 59.6) is a fixture difference — this wave's state expands the DNS rows, so five
 # basis-note IPv4 fields render where #1370's default state rendered three. So read any figure under
 # basis-note ~20ms/cell as +/-40%, and re-measure before planning against one.
+# basis-note #1379 kept the same basis and rule (three runs, median) and re-measured its five
+# basis-note comparable pages. 2 of 5 inside #1377's +/-7% floor: local_reset_router_password +0.8%
+# basis-note (26.2 -> 26.4) and login_local -6.4% (23.3 -> 21.8). The other three all moved DOWN —
+# basis-note home -20.3% (13.8 -> 11.0), local_router_recovery -11.6% (21.6 -> 19.1) and
+# basis-note usp_menu_view -42.6% (40.1 -> 23.0). Two of those are inside the +/-40% band the note
+# basis-note above warns about for sub-20ms figures; the menu's is not, and it is a harness finding
+# basis-note rather than noise. Same class of cause as pnp_static_ip's +63%, in the opposite
+# basis-note direction: #1370 measured this page with no overrides, where lanDataProvider and
+# basis-note uspInstantPrivacyProvider both reach a USP service and land in AsyncError, and an error
+# basis-note path costs a throw, a stack capture and a log line per cell. Wave 3's fixture returns
+# basis-note both values, so 234 cells stopped paying for two failures each. The rule that falls out:
+# basis-note a queued figure taken WITHOUT a fixture is not a prediction of the swept figure, and
+# basis-note where it differs it reads high — so #1380 should treat the queued column as an upper
+# basis-note bound for every row whose fixture does not exist yet.
+# basis-note auto_parent_first_login_view's 19.9 is a FIRST measurement, not a drift: it was #1370's
+# basis-note one unmeasurable row (its `-` meant no fixture got the view past its opening state).
+# median Everything §11.10 projects "at the median" is the median of this column's non-`-` rows.
+# median It is 22.4 today: 30 rows is even, so it is the mean of the 15th and 16th (21.8 and 23.0).
+# median #1379 first published 23.0 by taking the upper middle instead, and it read as plausible
+# median because 23.0 is also usp_menu_view's own new figure. #1371's 26.2 was an exact middle
+# median element on an odd 29, so no published figure's shape tells you which convention made it.
+# median Take it with statistics.median, and re-derive every figure downstream of it in one pass.
 # unblocked pnp_setup_view was the one row this register has carried as measured-but-queued, and it is
 # unblocked kept here because the distinction is the useful part: it was never fixture debt.
 # unblocked pnpWizardConfiguringState in test/mocks/test_data/scenes/pnp_scene_data.dart got it past its
@@ -45,10 +67,10 @@
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
-# swept 16
-# queued 27
-# measured 29
-# needs_fixture 14
+# swept 22
+# queued 21
+# measured 30
+# needs_fixture 13
 # excluded 2
 # columns path	disposition	ms_per_cell
 lib/page/admin/views/usp_admin_view.dart	queued	-
@@ -77,13 +99,13 @@ lib/page/instant_setup/views/pnp_unplug_modem_view.dart	swept	13.5
 lib/page/instant_setup/views/pnp_waiting_modem_view.dart	swept	11.7
 lib/page/internet_settings/views/usp_internet_settings_view.dart	queued	-
 lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	queued	-
-lib/page/landing/views/home_view.dart	queued	13.8
+lib/page/landing/views/home_view.dart	swept	11.0
 lib/page/local_network/views/usp_local_network_view.dart	queued	-
-lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	queued	-
-lib/page/login/views/local_reset_router_password_view.dart	queued	26.2
-lib/page/login/views/local_router_recovery_view.dart	queued	21.6
-lib/page/login/views/login_local_view.dart	queued	23.3
-lib/page/menu/views/usp_menu_view.dart	queued	40.1
+lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	swept	19.9
+lib/page/login/views/local_reset_router_password_view.dart	swept	26.4
+lib/page/login/views/local_router_recovery_view.dart	swept	19.1
+lib/page/login/views/login_local_view.dart	swept	21.8
+lib/page/menu/views/usp_menu_view.dart	swept	23.0
 lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	swept	21.6
 lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	queued	13.3
 lib/page/static_routing/views/usp_static_routing_view.dart	queued	-
