@@ -3613,9 +3613,18 @@ it, which is why every number above carries one.
 **Decision: every page stays in the PR gate, the page sweep stays one file, and the
 split has a measured trigger instead of a plan.** No page is moved to a nightly lane,
 no selection is narrowed, and nothing about wave 3 or wave 4 changes. What is new is a
-ceiling — a page suite may not be projected heavier than the gate takes *without* any
-page cells in it — and a test that checks it, so the file splits on the day the
-measurement says to and not on the day someone's intuition says to.
+ceiling — a page suite projected heavier than the gate takes *without* any page cells
+in it has become the run's long pole — and a test that computes it every run, so the
+file splits against a measurement and not against someone's intuition.
+
+> **Amended 2026-08-26 (same day, Austin's call): the ceiling is reported, not
+> enforced.** As shipped, `page_sweep_suites_test.dart` failed the build once a suite
+> outgrew the floor. It now prints the projection and the headroom and fails on
+> neither, and the split decision is taken **once, at the end of #1380**, with all 45
+> pages measured. The reasoning is in [The ceiling is reported, not
+> enforced](#the-ceiling-is-reported-not-enforced-amended-2026-08-26) below;
+> everything else in this section — the arms, the rule, the crossover, the weighting,
+> the membership register — stands as measured.
 
 #### The premise the ticket was filed on, and it did not survive contact
 
@@ -3680,8 +3689,8 @@ spread either arm has ever shown here, and it points the same way.
 
 Today: **106.4s ≤ 149.8s**, so one file — 98.4s until `pnp_setup` became the sixteenth
 swept page (§11.8). The figure is not this paragraph's arithmetic —
-`page_sweep_suites_test.dart` computes it from the roster every run and prints it when
-it fails, which is why the ceiling is a test and not a note. (It reads ~30% above the 82s
+`page_sweep_suites_test.dart` computes it from the roster every run and prints it, which
+is why the ceiling is a test and not a note. (It reads ~30% above the 82s
 the sixteen-page file measured, and read 10% above the 89.66s #1371 measured at fifteen,
 because it weighs every page at its own measured
 `ms_per_cell` and those were measured one page at a time; a conservative model is the
@@ -3722,11 +3731,49 @@ projection (§11.6). 234 cells of one page are a single `runOverflowSweep` call,
 smallest possible suite containing it is 73.8s. That fits under the 149.8s ceiling with
 room to spare, which is the reassuring answer: at 43 pages three suites of ~113s each
 are achievable *and* the heavy page fits in one of them. If a future measurement ever
-pushed a single page past the ceiling, the ceiling would be unsatisfiable and the
-answer would have to be a cheaper fixture, not a smaller bin —
-`page_sweep_suites_test.dart` exempts a solo page above the mean from the balance
-check for exactly this reason, and deliberately does **not** exempt it from the
-ceiling.
+pushed a single page past the ceiling, no bin could satisfy it and the answer would
+have to be a cheaper fixture, not a smaller bin — `page_sweep_suites_test.dart` exempts
+a solo page above the mean from the balance check for exactly this reason, and
+deliberately does **not** exempt it from the projection it reports.
+
+#### The ceiling is reported, not enforced (amended 2026-08-26)
+
+The ceiling shipped as an assertion: `page_sweep_suites_test.dart` failed once a
+suite's projection passed 149.8s. Austin reversed that the same day, and the objection
+was that the assertion is an alarm set for a time that can already be read off this
+page. Three facts, all of them already in this section:
+
+- **The end state is known, not discovered.** 43 pages project to 339.8s, 2.27× the
+  floor, so the ceiling will certainly be crossed at wave 4. A test that goes red then
+  reports something this section already states, at the cost of blocking whichever PR
+  happens to add the 23rd page.
+- **A red would contradict its own evidence.** The three arms measured splitting as a
+  **net loss** at today's size (+14.7s on the gate, +60.8s on `./run_tests.sh`, ×2.36
+  user CPU). The remedy the assertion would demand is the one the same ticket measured
+  as the wrong trade until the crossover — and the crossover is a projection, not an
+  observation.
+- **The bound loosens with age.** 149.8s is a laptop figure whose divisor is *the rest
+  of the test tree*: it is what the page suite hides inside. That tree grows every
+  wave, so the floor rises, so the honest reading of a red is "re-measure the floor"
+  at least as often as "split the file" — which is a poor thing to put on a PR gate.
+
+So the projection is printed on every run, today as
+
+    [page sweep] page_surface_overflow_test.dart: 16 pages project to 106.4s of serial
+    pumping against a 149.8s floor — 43.3s of headroom. Reported only; #1380 decides.
+
+and over the floor it prints the overshoot and how many suites of similar weight that
+implies. The split decision is taken **once, at the end of #1380**, when all 45 pages
+carry a measured figure and the three arms can be re-run against the real thing instead
+of against a median.
+
+**What stays enforced is membership.** A page that silently loses its
+`runOverflowSweep` call is a coverage loss no other PR-gate test can see (the three
+records above all stay green, and `page.tsv` would show it but nothing in the gate runs
+that diff). That is a different class of fact from a suite being slow: a slow suite is
+visible in the run it slows, a missing page is visible nowhere. The balance check, the
+guard pairing, the suite-count pin and the discovery-by-content all keep their teeth;
+only the wall-clock projection was downgraded.
 
 #### The weighting rule, and what a `-` row does when it gains a figure
 
@@ -3737,8 +3784,8 @@ A suite's weight is the sum of its pages' **measured** `ms_per_cell` from
 - **No page is ever weighed by a guess.** `page_roster.dart` rejects a `swept` row with
   no figure, so a page is measured before it can be declared, and it carries its own
   measurement from its first green run. `pageSweepSuiteWeightMs` throws rather than
-  counting a missing figure as zero — the one direction the ceiling cannot catch is a
-  suite reading lighter than it is.
+  counting a missing figure as zero — a reported number that understates itself is
+  worse than one that is absent.
 - **A `-` row gaining a figure moves the projection, never a suite's weight.** The 14
   unmeasured rows are queued, not swept; they contribute to the 339.8s end-state
   estimate at the median and to nothing else. When #1379 measures one and onboards it,
@@ -3773,9 +3820,11 @@ the session noise on the wall clock and flat on CPU (§1.2) — discovering page
 *content* (any `*_test.dart` under `test/page` calling `PageSurfaceFamily`) so a second
 suite cannot arrive unregistered. Each of its five assertions was watched red against
 the real tree before it was green — dropped tag, count pinned wrong, a page swept
-twice, a page swept by nothing, a guard's group title reworded, and the ceiling
-crossed — and the `each assertion can fail` group keeps driving the same checks over
-synthetic registers, because a hand check that happened this afternoon is not a guard.
+twice, a page swept by nothing, a guard's group title reworded, and (while it was still
+an assertion) the ceiling crossed — and the `each assertion can fail` group keeps
+driving the same checks over synthetic registers, because a hand check that happened
+this afternoon is not a guard. The ceiling's red-drive outlived the assertion it drove
+and is kept as the crossover's own test: it is what says the number is 23 pages.
 
 **What was given up is one thing, and it is stated in the usage doc too**
 ([overflow_gate_usage.md](overflow_gate_usage.md) §1): that oracle carries

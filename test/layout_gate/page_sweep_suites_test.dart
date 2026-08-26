@@ -40,7 +40,7 @@ import 'page_sweep_suites.dart';
 /// Delete one of the sixteen calls today and every record above still calls the page
 /// covered. That is what assertion 2 is for.
 ///
-/// ## The five assertions
+/// ## The five checks — four assertions and one report
 ///
 /// 1. **Exactly [kPageSweepSuiteCount] suites, and each is tagged.** A suite with no
 ///    `layout-gate` runs in no selection while its pages read as swept everywhere
@@ -51,11 +51,16 @@ import 'page_sweep_suites.dart';
 ///    no edit on the day, and because a reworded group title must fail somewhere.
 /// 4. **No suite's weight is guessed, and suites stay balanced** once there is more
 ///    than one, from the roster's own `ms_per_cell` column.
-/// 5. **One suite is still under the measured ceiling.** The gate spends 149.79s
-///    with no page cells in it; a page suite lighter than that is hidden inside it
-///    and costs only CPU, and a heavier one is the run's long pole where every
-///    second is a second on the gate. This is the assertion that says *split now*,
-///    at roughly 23 pages, instead of leaving a future wave to re-derive #1371.
+/// 5. **Each suite's projection against the measured ceiling — printed, not
+///    asserted.** The gate spends 149.79s with no page cells in it; a page suite
+///    lighter than that is hidden inside it and costs only CPU, and a heavier one is
+///    the run's long pole where every second is a second on the gate. This shipped as
+///    an assertion and **Austin downgraded it to a print the same day** (§11.10's
+///    amendment): the 43-page end state is already known to be 2.27× the floor, so a
+///    red at wave 4 would block a PR to report something already written down, and it
+///    would demand the split that #1371 measured as a net loss at today's size. The
+///    number is in front of whoever takes the decision — which happens once, at the
+///    end of #1380 — rather than taking it for them.
 ///
 /// ## Red before green, permanently
 ///
@@ -123,9 +128,9 @@ void main() {
         reason: 'kPageSweepSuiteCount is pinned because the number is a decision '
             'taken against a measurement (§11.10), not a property of the tree. '
             'Found: ${suites.map((s) => s.path).join(', ')}. If a suite was added '
-            'deliberately, move the constant and read assertion 5 — the count '
-            'follows the ceiling. If one appeared by accident, it is a second '
-            'sweep of pages nobody registered.',
+            'deliberately, move the constant and read check 5 — it prints what '
+            'each suite is projected to cost. If one appeared by accident, it is '
+            'a second sweep of pages nobody registered.',
       );
     });
 
@@ -291,41 +296,57 @@ void main() {
     });
   });
 
-  group('assertion 5: one suite is still under the measured ceiling', () {
-    test('no page suite is heavier than the gate without pages '
-        '(${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s)', () {
+  group('check 5: the ceiling is reported, not enforced', () {
+    // Austin's call, 2026-08-26, and it reversed what #1371 shipped: this used to
+    // fail the build once a suite outgrew the floor. Three reasons, and none of them
+    // is that the number is wrong. (1) The end state is already known — the next
+    // test projects 43 pages at 2.27x the floor — so an assertion that fires at
+    // wave 4 is an alarm clock set for a time we can already read, not a warning.
+    // (2) #1371 measured splitting as a bad trade at today's size (+14.7s gate,
+    // +60.8s suite, x2.36 CPU), so a red that says "split now" would be advice
+    // against its own evidence. (3) The floor is a laptop measurement whose divisor
+    // is the rest of the test tree, so it *rises* as the suite grows — it gets
+    // looser with age, which is the wrong direction for a gate.
+    //
+    // So the projection is printed on every run and the split decision is made once,
+    // at the end of #1380, with all 45 pages measured. What stays enforced is
+    // assertions 1-4 — a page silently losing its `runOverflowSweep` call is a
+    // coverage loss no other test in the PR gate can see, which is a different class
+    // of fact from a suite being slow.
+    test('reports each suite\'s projected weight against the '
+        '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor', () {
       for (final suite in suites) {
+        // Still called, not just printed: `pageSweepSuiteWeightMs` throws on a page
+        // nothing measured (assertion 4), so this line remains the check that every
+        // page in the register carries a real figure.
         final weight = pageSweepSuiteWeightMs(
           suite,
           msPerCellByIdentifier: msPerCellByIdentifier,
           cellsPerPage: cellsPerPage,
         );
+        expect(weight, greaterThan(0));
+
+        final headroom = kGateFloorWithoutPagesMs - weight;
         final needed = (weight / kGateFloorWithoutPagesMs).ceil();
-        expect(
-          weight,
-          lessThanOrEqualTo(kGateFloorWithoutPagesMs),
-          reason: '${suite.label} projects to '
-              '${(weight / 1000).toStringAsFixed(0)}s of serial pumping over '
-              '${suite.caseIdentifiers.length} pages, and `--tags layout-gate` '
-              'takes ${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s '
-              'with no page cells in it (measured 2026-08-26, #1371). Past that '
-              'floor the suite stops hiding inside the rest of the run and '
-              'becomes its long pole, so splitting starts to buy wall clock '
-              'instead of only spending CPU — which is the one condition §11.10 '
-              'set for splitting. Split it into about $needed suites of similar '
-              'measured weight, keep each guard with its page, raise '
-              'kPageSweepSuiteCount, and record the new figures in §11.10.',
-        );
+        // ignore: avoid_print
+        print('[page sweep] ${suite.label}: '
+            '${suite.caseIdentifiers.length} pages project to '
+            '${(weight / 1000).toStringAsFixed(1)}s of serial pumping against a '
+            '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(1)}s floor — '
+            '${headroom >= 0 ? '${(headroom / 1000).toStringAsFixed(1)}s of '
+                'headroom' : 'over by ${(-headroom / 1000).toStringAsFixed(1)}s, '
+                'which would be about $needed suites of similar weight'}. '
+            'Reported only; #1380 decides.');
       }
     });
 
     test('the 43-page end state still needs more than one suite', () {
-      // Not a tautology and not decoration: if this ever goes the other way, every
-      // page the epic will ever onboard fits under the ceiling, and §11.10's split
-      // rule is dead rather than pending — which is a paragraph to delete, not a
-      // number to edit. It is also where a queued `-` row gaining a large figure
-      // shows up: the projection moves, this stays red, and the ceiling assertion
-      // above is what eventually trips.
+      // This one stays an assertion, because it cannot fire as a nuisance: it goes
+      // red only if the pages turn out *cheap* enough that the whole split question
+      // is moot — which is news worth a red, and a paragraph to delete rather than a
+      // number to edit. It is also what carries the end-state figure the deferred
+      // decision will be made on, so the projection is recorded on every run whether
+      // or not anyone is looking for it.
       final inScope = roster.rows
           .where((r) => r.disposition != PageRosterDisposition.excluded)
           .toList();
@@ -350,8 +371,9 @@ void main() {
         reason: 'at ${inScope.length} pages the sweep projects to '
             '${(projectedMs / 1000).toStringAsFixed(0)}s against a '
             '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor — '
-            'that is why §11.10 keeps a split rule at all rather than declaring '
-            'one file permanent. ${measured.length} of ${inScope.length} rows are '
+            'that is why §11.10 keeps a split *question* open rather than '
+            'declaring one file permanent, even though the ceiling above no '
+            'longer fails the build. ${measured.length} of ${inScope.length} rows are '
             'measured; the rest are projected at the ${median}ms/cell median, and '
             'the heaviest measured page alone is '
             '${(measured.last * cellsPerPage / 1000).toStringAsFixed(0)}s and '
@@ -493,10 +515,12 @@ void main() {
       );
     });
 
-    test('assertion 5 trips once a suite outgrows the ceiling', () {
+    test('the crossover is where §11.10 says it is', () {
       // 26 pages at the measured 26.2ms/cell median: 159s against a 149.8s floor.
       // The arithmetic §11.10 calls "roughly 23 pages", driven rather than asserted
-      // in prose.
+      // in prose. This outlived the assertion it used to drive: the ceiling is
+      // reported now, but the report is only worth reading if the arithmetic under it
+      // is pinned, and this is the only place the over-the-floor branch runs at all.
       final heavy = suiteOf(
           cases: List.generate(26, (i) => 'kPage${i}Case'), guards: const []);
       final weight = pageSweepSuiteWeightMs(

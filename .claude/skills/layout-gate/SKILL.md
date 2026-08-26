@@ -660,7 +660,12 @@ constraints come with it, both from the architecture doc §11/§8:
   196.89s without). Splitting the file *before* the ceiling costs, it does not save:
   four shards read +14.7s on the tag and +60.8s on the suite, at ×2.36 user CPU.
   The crossover is **≈23 pages** — seven more than today; at the roster's 43 the
-  projection is 339.8s and needs at least three suites.
+  projection is 339.8s and needs at least three suites. **The ceiling is reported, not
+  enforced** (Austin's call, 2026-08-26, amending §11.10): `page_sweep_suites_test.dart`
+  prints each suite's projection and headroom on every run and fails on neither, so
+  crossing it does not block a PR — the split is decided once, at the end of #1380,
+  with all 45 pages measured. What that oracle still *asserts* is membership, which is
+  the next bullet but one.
 - **A page earns a probe only once it is already at zero** — fix it, then pin it.
   A new sweep must not arrive with an allowlist entry, which is what would turn the
   ratchet back into a to-do list.

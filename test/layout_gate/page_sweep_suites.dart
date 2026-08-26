@@ -32,12 +32,24 @@
 /// suites re-pay fonts, JIT and isolate startup four times (user CPU 88s → 207s,
 /// sys 17s → 71s) on cores the rest of the run already wants.
 ///
-/// So the rule is a *ceiling on the critical path*, not a shard count:
-/// **no page suite may be projected heavier than [kGateFloorWithoutPagesMs].**
+/// So the model is a *ceiling on the critical path*, not a shard count: a page suite
+/// projected heavier than [kGateFloorWithoutPagesMs] has become the run's long pole.
 /// At sixteen pages the one suite models to 106.4s against a 149.8s floor, so one
 /// suite is right. The crossover lands near **23 pages**, and
-/// `page_sweep_suites_test.dart` is what says so on the day a wave reaches it —
-/// with the roster's own figures, not with this paragraph's arithmetic.
+/// `page_sweep_suites_test.dart` computes it from the roster's own figures rather
+/// than from this paragraph's arithmetic.
+///
+/// **The ceiling is reported, not enforced — Austin's call, 2026-08-26**, reversing
+/// what #1371 shipped. The oracle prints each suite's projection and its headroom on
+/// every run and fails on neither, and the split decision is taken **once, at the end
+/// of #1380**, with all 45 pages measured. Three reasons: the 43-page end state is
+/// already known (2.27× the floor), so a red at wave 4 would be an alarm set for a
+/// time already readable; splitting was *measured* as a bad trade at today's size, so
+/// a red advising a split would contradict its own evidence; and the floor is a
+/// laptop figure whose divisor is the rest of the test tree, so it rises as the suite
+/// grows — a bound that loosens with age. What stays enforced is membership: a page
+/// that silently loses its `runOverflowSweep` call is a coverage loss nothing else in
+/// the PR gate can see, which is a different class of fact from a suite being slow.
 ///
 /// ## How a suite is found
 ///
@@ -65,8 +77,8 @@
 /// reached* — never a page's own contribution, which was always its own
 /// measurement. 14 rows still carry `-`; §11.10 weighs them at the measured median
 /// (26.2ms) when it projects the 43-page end state, and labels it as a projection.
-/// The assertion in the oracle uses no median at all: it adds up what is measured
-/// and compares that to the floor, so it cannot be moved by a guess.
+/// What the oracle prints uses no median at all: it adds up what is measured and
+/// compares that to the floor, so the reported headroom cannot be moved by a guess.
 library;
 
 import 'dart:io';
@@ -91,18 +103,20 @@ const String kPageSurfaceCasesPath =
 /// should be an edit that says so rather than a number the tree can change by
 /// accident.
 ///
-/// **One, and one until the ceiling below is reached.** #1371 measured the
-/// alternative rather than assuming it: four cost-balanced shards cost +14.7s on
+/// **One, and one until #1380 decides otherwise.** #1371 measured the alternative
+/// rather than assuming it: four cost-balanced shards cost +14.7s on
 /// `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen pages of the
 /// day it was measured,
 /// because the page sweep's 90s of serial pumping already fits inside the 149.8s
 /// the rest of that selection takes. Raising this number is only correct once
-/// [kGateFloorWithoutPagesMs] is the binding constraint — see §11.10, and expect
-/// the oracle to tell you before you have to work it out.
+/// [kGateFloorWithoutPagesMs] is the binding constraint — see §11.10. The oracle
+/// prints the projection and the headroom on every run so the number is in front of
+/// whoever takes that decision, but it will not fail the build to force it: the call
+/// is taken once, at the end of #1380, with all 45 pages measured.
 const int kPageSweepSuiteCount = 1;
 
 /// The wall clock `--tags layout-gate` spends with no page cells in it, in
-/// milliseconds — the ceiling a page suite's serial time must stay under.
+/// milliseconds — the ceiling a page suite's serial time is reported against.
 ///
 /// **Measured 2026-08-26 for #1371**, three arms in one session on an idle box:
 /// with the page suite and its oracle held aside the gate is 1,500 tests in
@@ -460,8 +474,8 @@ PageSweepGuardFaults pageSweepGuardFaults(
 ///
 /// [msPerCellByIdentifier] comes from the roster, keyed the way a suite names its
 /// pages. A missing key throws rather than counting as zero: a page whose cost is
-/// unknown would make its suite read lighter than it is, which is the one direction
-/// the ceiling assertion cannot catch.
+/// unknown would make its suite read lighter than it is, and a reported number that
+/// understates itself is worse than one that is absent.
 double pageSweepSuiteWeightMs(
   PageSweepSuite suite, {
   required Map<String, double> msPerCellByIdentifier,
