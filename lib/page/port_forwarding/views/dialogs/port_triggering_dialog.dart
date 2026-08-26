@@ -214,13 +214,15 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'port-triggering-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.primary(
+          identifier: 'port-triggering-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _submit,
         ),
       ],
     );

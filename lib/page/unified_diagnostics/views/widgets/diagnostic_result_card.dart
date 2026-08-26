@@ -99,9 +99,10 @@ class DiagnosticResultCard extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(loc(context).close),
+          AppButton.text(
+            identifier: 'diagnostic-result-close',
+            label: loc(context).close,
+            onTap: () => Navigator.of(context).pop(),
           ),
         ],
       ),
