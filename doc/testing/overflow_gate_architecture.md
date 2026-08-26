@@ -24,21 +24,24 @@ way in, `usp_single_port_tab.dart:30` over by up to 70px in 9 of 208 cells, fixe
 widget before the case was declared, so `known_overflows.json` is still empty.
 
 **#1378 then ran the second wave** (2026-08-26, §11.8): the nine reachable `instant_setup`
-page views, of which **eight are declared and the ninth is measured and left `queued`** —
-so the gate holds **fifteen** pages and 3,120 page cells, and the committed dataset is
-6,736 rows. All eight arrived at zero. Two defects came with them and only one is ours:
+page views, **all nine of them now declared** — so the gate holds **sixteen** pages and
+3,744 page cells, and the committed dataset is 7,360 rows. All nine arrived at zero. Two
+defects came with them and only one is ours:
 `pnp_setup_view.dart`'s four `late final` controllers threw `LateInitializationError` on
 teardown from every phase but `WizardConfiguring` **in production** (fixed in the widget,
-with an untagged regression test so `run_tests.sh` cannot skip it), while the ninth page is
-blocked by **ui_kit v2.40.1's `AppStepper`**, whose bar variant overflows by `stepCount × 4`
-at every width in every locale — 208 of the 208 cells that existed then, at +12.0px. That
-one is a PR against `ui_kit_library` plus a bump here, so §8's graduation rule keeps the
-page out and a tripwire test holds the arithmetic until it lands. `known_overflows.json` is
-still empty.
+with an untagged regression test so `run_tests.sh` cannot skip it), while the ninth page was
+blocked for a day by **ui_kit v2.40.1's `AppStepper`**, whose bar variant overflowed by
+`stepCount × 4` at every width in every locale — 208 of the 208 cells that existed then, at
++12.0px. That one was a PR against `ui_kit_library` plus a bump here, so §8's graduation
+rule kept the page out and a tripwire test held the arithmetic until it landed:
+`linksys/privacyGUI-UI-kit#70` was fixed by `936c1da6` and released as **v2.40.2**, the
+tripwire went red with an *empty incident list* — which is the signal it was written to
+give — and `pnp_setup` was declared, swept and captured in the same commit that deleted it.
+`known_overflows.json` is still empty.
 
 **#1372 then closed the width list** (2026-08-26, §11.9): **1080 joins `kPageSweepWidths`
-and nothing is cut**, so a page is 9 × 26 = **234** cells and the fifteen swept pages are
-**3,510**. The decision does not rest on #1368's 53 `screen1080` flags — the two sites in
+and nothing is cut**, so a page is 9 × 26 = **234** cells and the fifteen pages swept at
+the time were **3,510** (**3,744** once `pnp_setup` joined them). The decision does not rest on #1368's 53 `screen1080` flags — the two sites in
 this repo's own committed capture of such a run are a *loading* skeleton and an *edit-mode*
 drop target, neither of which any of the five baselines has ever rendered at any width. It
 rests on the geometry: before 1080, the widest content box the sweep ever laid a page out
@@ -129,7 +132,7 @@ runner a `zh-TW` would silently match no entry and read as "not deferred". Now
 `localeTag()` in `test/layout_gate/locale_tag.dart`, imported by all four — and by
 `sweep.dart`, which reaches it rather than `Locale.toLanguageTag()` for exactly
 this reason. `sweep_test.dart` pins the `zh_TW` spelling so that "simplifying" it
-back is a red test rather than a silent re-key of 7,126 rows.
+back is a red test rather than a silent re-key of 7,360 rows.
 
 ```
   dashboard_card_overflow_test.dart      page_chrome_overflow_test.dart      golden_runner.dart
@@ -233,16 +236,16 @@ which is impossible on a quiet box and is the cheapest contention check this tab
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **38** (37 pre-merge, 80 pre-#1344) | 78 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **152** (137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 3,510 + 104 guard pumps | 1m27s, median of {1m18s, 1m27s, 2m03s} — the spread is wider than #1372's whole delta, so read the per-cell figure and not the difference | **24.8ms** (23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **429** (414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 7,126 rows † | 1m17s (**1m24s** wall) | — |
-| The same five via `--tags overflow` | **429** | 7,126 rows † | 2m21s (**2m39s** wall) | — |
-| Whole `layout-gate` family (48 files) | **1,672** (1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 7,300 | 2m49s / **2m57s** wall (2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,666** (5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m02s / **3m08s** wall (3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
+| **Page sweep (one file, new at #1349)** | **162** (152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 3,744 + 104 guard pumps | 1m22s, against readings of {1m18s, 1m27s, 2m03s} at fifteen pages — the spread is wider than a whole page's delta, so read the per-cell figure and not the difference | **21.9ms** (24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| The five overflow sweeps (5 files, named) | **439** (429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 7,360 rows † | 1m24s (**1m30s** wall) | — |
+| The same five via `--tags overflow` | **439** | 7,360 rows † | 2m28s (**2m46s** wall) | — |
+| Whole `layout-gate` family (48 files) | **1,685** (1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 7,530 | 3m21s / **3m29s** wall (2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,678** (5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m00s / **3m08s** wall (3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
-baselines hold 1,943 + 347 + 78 + 1,248 + 3,510 = 7,126 rows, of which the *sweeps* pump
-7,106 and **20 are hand-written guards that pump a real card and record their coordinate
+baselines hold 1,943 + 347 + 78 + 1,248 + 3,744 = 7,360 rows, of which the *sweeps* pump
+7,340 and **20 are hand-written guards that pump a real card and record their coordinate
 anyway** — `card.tab_registry` (6), `card.single_view` (12), `card.profile_data` (1) and
 `popup.exempt` (1). Each is in the dataset for the same stated reason, and it is the
 reason this column is rows: they are what decides how much the sweeps cover (which tabs
@@ -253,7 +256,7 @@ sweep adds no guard *of this kind* — its premise is a *value* on the case, pin
 oracle outside the `overflow` tag (§11.4), which is the #1364/#1366 shape rather than
 this footnote's. Its hand-written tests — one at #1349, a second at #1377 — are
 **readability** guards (§7), and they deliberately name no cell: they never install the
-collector, so the `page` baseline is exactly 15 × 234 and the 20 above stays 20.
+collector, so the `page` baseline is exactly 16 × 234 and the 20 above stays 20.
 
 **Only the gate row moved for the baseline reporter** (`overflow_baseline.sh render`,
 [overflow_baselines.md](overflow_baselines.md) §1): +22 tests in
@@ -3227,16 +3230,18 @@ aggregate.**
   7 swept, 36 queued, 2 excluded when this wave landed, and it is the file to read before
   assuming a page outside `kPageSurfaceCases` is a page with nothing wrong with it.
 
-### 11.8 Wave 2: eight pages onboarded, one blocked on ui_kit (#1378, landed 2026-08-26)
+### 11.8 Wave 2: nine pages onboarded, the ninth a day behind the other eight (#1378, landed 2026-08-26)
 
-The nine reachable `instant_setup` pages, and the first wave that does not land what it
-was filed for: **eight are declared, the ninth is measured and left `queued`**. The gate
-now sweeps **fifteen** pages, `page` held **3,120** cells the day this wave landed, and
-the committed dataset was **6,736** rows. The filed figure was 9 × 208 = 1,872 cells and
-a 3,328-row dataset; the delivered one is 1,664 and 3,120, and the missing page is the
-subject of the second finding below. (§11.9 widened every page by one width later the
-same day, so the same fifteen pages are **3,510** cells and the dataset **7,126** rows
-today; every count in this section is the 208-cell page it was measured on.)
+The nine reachable `instant_setup` pages — and the first wave that did not land what it
+was filed for *on the day it landed*: **eight were declared and the ninth was measured and
+left `queued`**, because its only overflow belonged to `ui_kit_library`. That page joined a
+day later, on the bump that carried the upstream fix, so wave 2 closed at **nine of nine**.
+The gate sweeps **sixteen** pages, `page` holds **3,744** cells and the committed dataset
+is **7,360** rows. The filed figure was 9 × 208 = 1,872 cells and a 3,328-row dataset; what
+eight pages delivered was 1,664 and 3,120, and the ninth added 234 after §11.9 had widened
+every page. (§11.9 widened all fifteen pages swept at the time later on the same day, so
+every count in this section is the 208-cell page it was measured on unless it says
+otherwise.)
 
 | Page | Arrived at | Phase pinned | Work |
 |---|---|---|---|
@@ -3248,12 +3253,13 @@ today; every count in this section is the 208-cell page it was measured on.)
 | `pnp_unplug_modem` | zero | — | one case, one declaration |
 | `pnp_modem_lights_off` | zero | — | one case, one declaration |
 | `pnp_waiting_modem` | zero | `pnpNoInternetState` | a fixture #1370 said it needed, then the case |
-| `pnp_setup` | **208 of 208 over, +12.0px** | `pnpWizardConfiguringState` | the widget fixed, the fixture written, the page **not** declared |
+| `pnp_setup` | **208 of 208 over, +12.0px** — then zero on ui_kit v2.40.2 | `pnpWizardConfiguringState` | the widget fixed, the fixture written, the page declared a day later at **234** cells |
 
-**All eight arrived at zero, which is the one #1370 prediction that held exactly.** No
-widget was touched for an overflow in this wave, `known_overflows.json` is still
-`{"tracking": {}, "allowlist": {}}`, and the `page` baseline grew by 1,664 rows that are
-every one of them `clean` with none removed and none changed.
+**All eight arrived at zero, which is the one #1370 prediction that held exactly**, and
+the ninth arrived at zero too once the defect under it was fixed upstream. No widget in
+*this* repo was touched for an overflow in this wave, `known_overflows.json` is still
+`{"tracking": {}, "allowlist": {}}`, and the `page` baseline grew by 1,664 rows and then
+234 more, every one of them `clean` with none removed and none changed at either step.
 
 #### The production defect, fixed in the widget and not in the fixture
 
@@ -3273,11 +3279,11 @@ past. Seven tests: one per loader-rendering phase including `WizardError` (the c
 the page was visibly useful and still could not be torn down), one from
 `WizardConfiguring` so the fix cannot become "make `dispose` conditional and dispose
 nothing", one on the prefill the eager initialisation must not lose, and the tripwire
-below.
+below — which was deleted when the second finding was fixed upstream, leaving six.
 
-#### The second finding: the blocked page is blocked in ui_kit, and that is why it stays out
+#### The second finding: the ninth page was blocked in ui_kit, and that is why it stayed out for a day
 
-`pnp_setup` renders `AppStepper`, and `AppStepper`'s bar variant overflows **at every
+`pnp_setup` renders `AppStepper`, and `AppStepper`'s bar variant overflowed **at every
 width in every locale**. `_buildBarStepper` sizes its bars by dividing the width it was
 given — `barWidth = (totalWidth - totalGaps) / stepCount` — while each bar is wrapped in
 `AppInteractionSensor` → `AppFocusIndicator`, which pads `EdgeInsets.all(ringOffset)`
@@ -3292,32 +3298,57 @@ Measured, not inferred: a scratch declaration of this page over
 right at `app_stepper.dart:239`** — 3 steps, because that state carries split-band Wi-Fi
 and two mesh nodes.
 
-Three consequences, and they are why the page is `queued` rather than declared:
+Three consequences, and they are why the page stayed `queued` for a day rather than being
+declared with the other eight:
 
-1. **It cannot be fixed here.** `AppStepper` has exactly one call site in this app
+1. **It could not be fixed here.** `AppStepper` has exactly one call site in this app
    (`pnp_setup_view.dart:257`) and `ui_kit_library` is a tag-pinned git dependency
-   (`ref: v2.40.1`), so the fix is a PR there plus a bump here — outside this ticket's
-   scope and outside this repo.
-2. **It cannot be fixed in the fixture.** The one wizard shape that lays out clean is a
+   (`ref: v2.40.1` at the time), so the fix was a PR there plus a bump here — outside this
+   ticket's scope and outside this repo.
+2. **It could not be fixed in the fixture.** The one wizard shape that lays out clean is a
    single-step one, because `_buildStepperForm` renders no `AppStepper` at all when
    `totalSteps == 1` — i.e. the fixture that hides the widget under test. #1378's own
    order of work forbids exactly that move: *fix the widget, then the fixture, then the
    page; do not work around it in the fixture.*
-3. **So §8's graduation rule decides it.** Declaring the page would put 208 cells of
-   known debt into the gate and force a second allowlist into existence, which is the
+3. **So §8's graduation rule decided it.** Declaring the page would have put 208 cells of
+   known debt into the gate and forced a second allowlist into existence, which is the
    whole substance of that rule. Wave 1 paid the rule by fixing `port_forwarding` first;
-   wave 2 pays it by declining to declare.
+   wave 2 paid it by declining to declare, and then by declaring once the defect was zero.
 
-The claim is pinned rather than described. The last test in
-`test/page/instant_setup/views/pnp_setup_view_test.dart` asserts the arithmetic at two
+The claim was pinned rather than described. A tripwire test at the bottom of
+`test/page/instant_setup/views/pnp_setup_view_test.dart` asserted the arithmetic at two
 steps — `incidents.map((i) => i.pixels)` equals `[steps * 4.0]` and
 `incidents.single.file` contains `app_stepper.dart`, so an overflow of the same size from
-one of our own `Row`s cannot pass as this known one. **When ui_kit is fixed that test goes
-red**, which is the intended signal: declare `kPnpSetupPageCase` over
-`pnpOverrides(pnpWizardConfiguringState)` requiring `AppStepper` and forbidding
-`AppLoader`, flip the roster row to `swept`, then delete the test, in that order. The
-roster's `# blocked` header block says the same thing in the file a later wave will
-actually open.
+one of our own `Row`s could not pass as this known one. **When ui_kit was fixed that test
+went red**, which is the signal it was written to give, and the shape of the redness is the
+part worth keeping: the incident list came back **empty**, not a different pixel count. An
+empty list is the only failure that says the overflow is gone rather than moved, and the
+test told its reader to require exactly that before acting.
+
+#### How it closed
+
+`linksys/privacyGUI-UI-kit#70` was fixed by `936c1da6` — the bar row is divided with
+`Expanded` instead of a measured width, so the focus ring's unconditional 4px no longer
+competes with arithmetic — and released as **v2.40.2**. Downstream that was:
+
+1. **Bump both refs, and check the breaking change first.** `ui_kit_library` and
+   `generative_ui` are pinned to the same tag, so both moved to `v2.40.2`. That release
+   also carries ui-kit **#71**, which adds seven `required` parameters to `StepperStyle` —
+   source-breaking in general and unexercised here, confirmed by `dart analyze` at 0 errors
+   and 0 warnings before any test file was touched.
+2. **Run the tripwire and read *how* it fails.** Empty incident list, as above.
+3. **Then the prescribed order**: declare `kPnpSetupPageCase` over
+   `pnpOverrides(pnpWizardConfiguringState)` requiring `AppStepper`, `AppTextField` and
+   `AppPasswordInput` and forbidding `AppLoader`; add its `runOverflowSweep` call at 234
+   cells; flip the roster row from `queued` to `swept` with its measured 34.3ms/cell; then
+   delete the tripwire. The three oracles caught every bookkeeping consequence — the
+   family's exact case list, the roster's swept set, its measured-`queued` count and the
+   register's 16/27/2 — which is the design working: five red tests, none of them a page.
+4. **Capture, and read the diff.** `page` 3,510 → **3,744**, +234 additive `clean` rows and
+   nothing removed or changed (`overflow_baselines.md` §5).
+
+Golden baselines shift with any ui_kit bump, and that drift is only visible in the private
+`golden-ci` repo; it is accepted here rather than chased.
 
 #### The fixture story #1370 got right for the wrong question
 
@@ -3421,15 +3452,16 @@ it stays true is for something to re-read the repo.
 
 #### What this wave deliberately leaves unmeasured
 
-- **`pnp_setup`'s 208 cells** (234 since §11.9), until ui_kit's `AppStepper` is fixed. The
-  fixture exists, the tripwire is written, and the roster carries the figure — so the work
-  left is a dependency bump, not an investigation.
+- **`pnp_setup`'s 208 cells** — for one day, until ui_kit's `AppStepper` was fixed. The
+  fixture existed, the tripwire was written and the roster carried the figure, so the work
+  left was a dependency bump and not an investigation; v2.40.2 landed it and the page is
+  swept at **234** cells.
 - **The other phases of the pages that pin one.** Each declared case pins exactly one
   phase; the PnP flow's other branches are a second axis, the same decision
   `port_forwarding` took on tabs (§11.7).
 - **`pnp_complete`**, still an exclusion, now re-checked by a test rather than by a
   reading.
-- **30 page views**, in waves #1379 / #1380. The roster reads 15 swept, 28 queued,
+- **29 page views**, in waves #1379 / #1380. The roster reads 16 swept, 27 queued,
   2 excluded.
 
 ---
@@ -3437,7 +3469,8 @@ it stays true is for something to re-read the repo.
 ### 11.9 The width list, closed (#1372, decided 2026-08-26)
 
 **1080 joins `kPageSweepWidths`; nothing is cut.** Nine widths, so a page is 234 cells
-and the fifteen swept pages are 3,510. The ticket existed because the list had been
+and the fifteen pages swept when this landed were 3,510 (sixteen and 3,744 the next day,
+when `pnp_setup` joined — §11.8). The ticket existed because the list had been
 assembled three times by three tickets (#1349 chose it, #1302 supplied the pinch, #1370
 corrected what "golden CI's coordinates" meant) and nobody had ever asked it the two
 questions a coverage list has to answer: **is anything missing, and is anything not
@@ -3645,10 +3678,12 @@ spread either arm has ever shown here, and it points the same way.
 
     a page suite's projected serial time  ≤  the gate's clock with no page cells
 
-Today: **98.4s ≤ 149.8s**, so one file. The 98.4s is not this paragraph's arithmetic —
+Today: **106.4s ≤ 149.8s**, so one file — 98.4s until `pnp_setup` became the sixteenth
+swept page (§11.8). The figure is not this paragraph's arithmetic —
 `page_sweep_suites_test.dart` computes it from the roster every run and prints it when
-it fails, which is why the ceiling is a test and not a note. (It reads 10% above the
-89.66s the file really takes, because it weighs every page at its own measured
+it fails, which is why the ceiling is a test and not a note. (It reads ~30% above the 82s
+the sixteen-page file measured, and read 10% above the 89.66s #1371 measured at fifteen,
+because it weighs every page at its own measured
 `ms_per_cell` and those were measured one page at a time; a conservative model is the
 right direction for a ceiling.)
 
@@ -3659,7 +3694,7 @@ second removed from it is a second off the gate — and the +26% CPU becomes a p
 worth paying rather than a pure loss.
 
 **The crossover is about 23 pages** — `(149,790ms − 2 guards × 3,570ms) ÷ 234 cells ÷
-26.2ms` — or eight more than today. Two cruder estimates taken while the arms were
+26.2ms` — or seven more than today. Two cruder estimates taken while the arms were
 running said 19 and 25; they used the page work's own clock and the roster's raw
 median rather than the ceiling, and are superseded by the line above. Nobody needs to
 re-derive any of them: the oracle recomputes it and names the number of suites to
@@ -3722,7 +3757,7 @@ now so the split needs no new assertion on the day it happens.
 Sharding would have cost the property that the swept inventory is one file a reviewer
 reads top to bottom. Keeping one file keeps that — and measuring the alternative turned
 up something better worth knowing: **that property was never machine-checked.** Delete
-one of the fifteen `runOverflowSweep` calls today and
+one of the sixteen `runOverflowSweep` calls today and
 
 - `page_surface_family_test.dart` stays green (`kPageSurfaceCases` is intact),
 - `page_roster_test.dart` stays green (its `swept` rows still match that same list),
@@ -3753,10 +3788,10 @@ cannot stop a page from escaping this afternoon.
 
 #### What did not move
 
-`kPageSweepWidths` (nine, §11.9), `kPageSurfaceCases` (fifteen), the 3,510 `page`
-baseline rows, `--tags overflow`'s 429 tests, every fixture, and the wave ladder.
-`tool/overflow_baseline.sh`'s `suite_for page` still names the one file, and
-`check page` still diffs 3,510 rows against 3,510 rows. The four shards were built,
+`kPageSweepWidths` (nine, §11.9), `kPageSurfaceCases` (fifteen at the time, sixteen since
+§11.8), the 3,510 `page` baseline rows, `--tags overflow`'s 429 tests, every fixture, and
+the wave ladder. `tool/overflow_baseline.sh`'s `suite_for page` still names the one file,
+and `check page` still diffed 3,510 rows against 3,510 rows. The four shards were built,
 measured, green, and deleted; what survives of that design is what a future split will
 want anyway — cost-balanced bins, guards travelling with their pages, and the two
 constants that encode both.

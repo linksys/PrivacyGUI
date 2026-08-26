@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/collector.dart';
 import '../../../layout_gate/families/page_surface_family.dart';
-import '../../../layout_gate/incident.dart';
 import '../../../mocks/provider_overrides/mock_pnp.dart';
 import '../../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
@@ -33,14 +31,22 @@ import '../../../util/app_test_fonts.dart';
 /// The fix is in the widget: the controllers are created with the field, and
 /// `_initControllers` assigns `.text`.
 ///
-/// ## The second finding, and why it is pinned here
+/// ## The second finding, and where it went
 ///
-/// Sweeping this page also found a layout overflow that is **not ours to fix**:
-/// `AppStepper`'s bar variant divides `constraints.maxWidth` among its bars while
-/// each bar carries a permanent 4px of horizontal focus-ring offset, so it
-/// overflows by `stepCount × 4` at every width in every locale. The last test in
-/// this file pins that arithmetic, because it is the thing standing between this
-/// page and the gate — see its own doc comment.
+/// Sweeping this page also found a layout overflow that was **not ours to fix**:
+/// `AppStepper`'s bar variant divided `constraints.maxWidth` among its bars while
+/// each bar carried a permanent 4px of horizontal focus-ring offset, so it
+/// overflowed by `stepCount × 4` at every width in every locale — 208 of 208 cells
+/// at +12.0px. A tripwire test lived at the bottom of this file pinning that
+/// arithmetic, because it was the thing standing between this page and the gate.
+///
+/// It was filed as `linksys/privacyGUI-UI-kit#70`, fixed there by `936c1da6` and
+/// released as v2.40.2; the tripwire went red with an empty incident list on the
+/// bump, which is the signal it was written to give, and was deleted in the same
+/// commit that declared `kPnpSetupPageCase`. So the width-and-locale coverage of
+/// this page is the layout gate's now
+/// (`test/page/_shared/page_surface_overflow_test.dart`, 234 cells), and what is
+/// left here is the lifecycle.
 void main() {
   setUpAll(() async {
     // Real fonts, because the last test measures an overflow in pixels and Ahem
@@ -95,13 +101,17 @@ void main() {
   /// mid-test disposal lets the assertion name the phase that caused it.
   ///
   /// Wrapped in [runWithOverflowCollection] so a `RenderFlex` overflow lands in
-  /// `sink` instead of in `takeException()`. Without it the `WizardConfiguring`
-  /// cases below would report `AppStepper`'s overflow (see the last test) as
-  /// though the page had failed to tear down — a layout defect masquerading as a
-  /// lifecycle one. Genuine errors are still forwarded, which is what keeps the
-  /// `LateInitializationError` these tests exist for visible. `cell: null`
-  /// (the default) keeps these pumps out of the coverage dataset: they are not
-  /// sweep coordinates.
+  /// `sink` instead of in `takeException()`. It was load-bearing while
+  /// `AppStepper` was over by `stepCount × 4`: without it the `WizardConfiguring`
+  /// cases below reported that overflow as though the page had failed to tear
+  /// down — a layout defect masquerading as a lifecycle one. v2.40.2 fixed the
+  /// stepper, and the wrap stays because the separation of concerns is the point
+  /// rather than the one bug: an overflow on this page is now the layout gate's
+  /// verdict to give (234 cells, every width and locale), and these four tests
+  /// have nothing to say about it. Genuine errors are still forwarded, which is
+  /// what keeps the `LateInitializationError` these tests exist for visible.
+  /// `cell: null` (the default) keeps these pumps out of the coverage dataset:
+  /// they are not sweep coordinates.
   Future<Object?> exceptionOnDispose(
     WidgetTester tester,
     PnpPhase phase,
@@ -173,75 +183,4 @@ void main() {
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
   });
 
-  /// A **tripwire on someone else's bug**, and the reason this page is not in
-  /// `kPageSurfaceCases` yet (#1378).
-  ///
-  /// `AppStepper._buildBarStepper` (ui_kit v2.40.1,
-  /// `lib/src/molecules/stepper/app_stepper.dart:232`) sizes its bars by dividing
-  /// the width it was given:
-  ///
-  /// ```dart
-  /// final barWidth = (totalWidth - totalGaps) / stepCount;
-  /// ```
-  ///
-  /// but each bar is wrapped in `AppInteractionSensor` → `AppFocusIndicator`,
-  /// which pads `EdgeInsets.all(focusStyle.ringOffset)` **unconditionally** —
-  /// `needsOffset` is `!useGlow && ringOffset > 0`, with no reference to whether
-  /// anything is focused (`app_focus_indicator.dart:148`). `ringOffset` defaults
-  /// to `2.0` and this app never overrides `focusStyle`, so every bar is 4px wider
-  /// than the arithmetic above allows and the `Row` overflows by
-  /// `stepCount × 4` — at every width, in every locale, in production as much as
-  /// in this test.
-  ///
-  /// Three things follow, and this test exists to keep all three honest:
-  ///
-  /// 1. It cannot be fixed here. `AppStepper` is the only ui_kit component this
-  ///    app renders (one call site, `pnp_setup_view.dart:257`) and ui_kit is a
-  ///    tag-pinned git dependency, so the fix is a PR there plus a bump here.
-  /// 2. It cannot be fixed in the fixture either. The one wizard shape that lays
-  ///    out clean is a single-step one — `_buildStepperForm` renders no
-  ///    `AppStepper` at all when `totalSteps == 1` — i.e. the fixture that hides
-  ///    the widget under test. #1378 forbids exactly that move.
-  /// 3. So `pnp_setup` stays `queued` in `test/fixtures/page_roster.tsv` while the
-  ///    other eight instant_setup pages are declared. Queued **with a figure**, and
-  ///    the roster's `# blocked` header block says why: #1378 did sweep this page's
-  ///    208 cells through `pnpWizardConfiguringState` and all 208 failed at
-  ///    +12.0px — a 3-step wizard — so it is sweep debt, not fixture debt.
-  ///
-  /// **When ui_kit is fixed this test goes red.** That is the intended signal: at
-  /// that point declare a `kPnpSetupPageCase` in
-  /// `test/layout_gate/families/page_surface_cases.dart` over
-  /// `pnpOverrides(pnpWizardConfiguringState)` — requiring `AppStepper` and
-  /// forbidding `AppLoader` — flip the roster row to `swept`, and then delete this
-  /// test, in that order.
-  testWidgets('ui_kit AppStepper still overflows by stepCount x 4 — so this '
-      'page cannot be declared in the layout gate yet', (tester) async {
-    final incidents = <OverflowIncident>[];
-    await runWithOverflowCollection((sink) async {
-      enlargeSurface(tester);
-      await tester.pumpWidget(host(
-        WizardConfiguring(wifiConfig: pnpUnifiedWifiConfig),
-      ));
-      await settle(tester);
-      incidents.addAll(sink);
-    });
-
-    final steps = tester.widget<AppStepper>(find.byType(AppStepper)).steps.length;
-    expect(steps, 2, reason: 'main + guest, from pnpUnifiedWifiConfig');
-    expect(
-      incidents.map((i) => i.pixels),
-      [steps * 4.0],
-      reason: 'the bar stepper overflow is stepCount x 2 x ringOffset(2.0). If '
-          'this list is now empty, ui_kit fixed it: delete this test and declare '
-          'kPnpSetupPageCase. If the number moved, re-derive it before trusting '
-          'either side — the roster row and #1369\'s cost projection both quote '
-          'it.',
-    );
-    expect(
-      incidents.single.file,
-      contains('app_stepper.dart'),
-      reason: 'an overflow of the same size from one of our own Rows would be '
-          'ours to fix, and must not pass as this known one',
-    );
-  });
 }

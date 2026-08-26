@@ -1,5 +1,5 @@
 /// The pages the gate sweeps: the #1349 pilot's two, #1377's wave 1 five, and
-/// #1378's wave 2 eight.
+/// #1378's wave 2 nine.
 ///
 /// ## The rule that constrained the choice
 ///
@@ -75,6 +75,7 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart'
 import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
@@ -92,6 +93,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppIpv4TextField,
         AppLoader,
         AppPasswordInput,
+        AppStepper,
         AppTextField,
         AppTopology;
 
@@ -322,7 +324,7 @@ final kPortForwardingPageCase = PageSurfaceCase(
 );
 
 // ===========================================================================
-// Wave 2 (#1378) — the instant_setup flow, eight of its nine reachable pages
+// Wave 2 (#1378) — the instant_setup flow, all nine of its reachable pages
 // ===========================================================================
 //
 // A different kind of wave. Wave 1's five pages were *destinations*: each fetches,
@@ -343,12 +345,16 @@ final kPortForwardingPageCase = PageSurfaceCase(
 // more pages need a phase pinned than #1370 predicted, and the per-page fixture
 // cost is lower than it assumed.
 //
-// **Eight, not nine.** `pnp_setup` is measurable and still cannot be declared: the
-// wizard renders ui_kit's `AppStepper`, whose bar variant overflows by
-// `stepCount × 4` at every width in every locale, and the fix is in ui_kit rather
-// than here. The finding is pinned as a tripwire test in
-// `test/page/instant_setup/views/pnp_setup_view_test.dart` — read that test's doc
-// comment for the arithmetic and for what to do when it goes red. `pnp_complete`
+// **Nine, after a day at eight.** `pnp_setup` shipped `queued` because the wizard
+// renders ui_kit's `AppStepper`, whose bar variant overflowed by `stepCount × 4` at
+// every width in every locale — 208 of 208 cells at +12.0px — and the fix was in
+// ui_kit rather than here. It was filed as `linksys/privacyGUI-UI-kit#70`, fixed
+// there by `936c1da6` (the bar row is divided with `Expanded` instead of a measured
+// width), released as **v2.40.2**, and the tripwire that pinned the arithmetic in
+// `test/page/instant_setup/views/pnp_setup_view_test.dart` went red on the bump with
+// an **empty** incident list — the signal it was written to give. So the last case
+// below is the ninth, and the order it appears in is the order it was onboarded
+// rather than the order the flow runs (see [kPageSurfaceCases]). `pnp_complete`
 // stays excluded as unreachable, unchanged from #1370.
 
 /// `page.pnp_entry` — the flow's front door, pinned at its one loader-free phase.
@@ -499,8 +505,40 @@ final kPnpWaitingModemPageCase = PageSurfaceCase(
   forbids: const [AppLoader, CircularCountdownWidget],
 );
 
+/// `page.pnp_setup` — the wizard, at step 0 of its three-step split-mode form.
+///
+/// Wave 2's ninth, declared a day after the other eight and for a reason worth
+/// keeping: it was never fixture debt. `pnpWizardConfiguringState` got this view
+/// past its loader from the first attempt, and #1378 swept all 208 cells through it
+/// — all 208 red at +12.0px, on a defect in ui_kit's `AppStepper` rather than in
+/// anything this repo can edit (`linksys/privacyGUI-UI-kit#70`, fixed by `936c1da6`
+/// in v2.40.2). §8's graduation rule is what kept the page out in the meantime: a
+/// whole page of debt cannot enter the gate, and the one fixture that laid out clean
+/// was a single-step wizard, i.e. one rendering no `AppStepper` at all.
+///
+/// [AppStepper] is therefore the premise that matters most here, and it is doing two
+/// jobs. It pins that the wizard has **more than one step** — `_buildStepperForm`
+/// renders no stepper when `totalSteps == 1` — which is the fixture workaround this
+/// page was explicitly forbidden from taking, and it puts the regression test for
+/// #70 in the gate: 234 cells of the widget that was over by `stepCount × 4` at
+/// every one of them.
+///
+/// The two field types are the other half, and they pin the *step*. Only step 0 is
+/// measured (`_currentStep` is widget state, and advancing it needs a tap per cell —
+/// the same second axis `kWifiSettingsPageCase` declines), and step 0 is the only
+/// one that renders a form: [AppTextField] and [AppPasswordInput] per band, three
+/// bands deep because `pnpSplitWifiConfig` is split-mode. A premise naming only
+/// `AppStepper` would hold against a wizard whose step content had gone missing.
+final kPnpSetupPageCase = PageSurfaceCase(
+  id: 'pnp_setup',
+  view: () => const PnpSetupView(),
+  overrides: () => pnpOverrides(pnpWizardConfiguringState),
+  requires: const [AppStepper, AppTextField, AppPasswordInput],
+  forbids: const [AppLoader],
+);
+
 /// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five,
-/// then wave 2's eight.
+/// then wave 2's nine.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
@@ -527,4 +565,11 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kPnpUnplugModemPageCase,
   kPnpModemLightsOffPageCase,
   kPnpWaitingModemPageCase,
+  // The ninth, appended rather than slotted into the flow above: in flow order it
+  // belongs between `pnp_entry` and `pnp_no_internet`, but it was onboarded a day
+  // later — after ui_kit v2.40.2 fixed `AppStepper` — and this list's order is the
+  // onboarding order the oracle pins. Moving it to its flow position would make the
+  // list read as though wave 2 had declared nine pages in one go, which is the one
+  // thing the record of this page should not say.
+  kPnpSetupPageCase,
 ];

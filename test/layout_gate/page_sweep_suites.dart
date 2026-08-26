@@ -21,9 +21,10 @@
 /// **2. Hold #1371's split rule so the next wave applies it instead of guessing.**
 /// The ticket asked where the page cells should run, and the honest answer came out
 /// of a three-arm A/B rather than out of the intuition the question was built on
-/// (§11.10). One suite runs its own tests in sequence, so fifteen pages in one file
-/// *is* a 90s serial block — but a serial block only costs wall clock once it
-/// exceeds everything it runs beside, and under `--tags layout-gate` that floor is
+/// (§11.10). One suite runs its own tests in sequence, so the pages in one file
+/// *are* a serial block — 89.66s measured at fifteen of them, ~98s at today's
+/// sixteen — but a serial block only costs wall clock once it exceeds everything it
+/// runs beside, and under `--tags layout-gate` that floor is
 /// **149.8s** — compiling the whole test tree, because `@Tags` is read by loading a
 /// suite, and then running the other 1,500 tests the tag selects. 90s fits
 /// inside 150s, so splitting the file into four shards was measured at **+14.7s on
@@ -33,7 +34,7 @@
 ///
 /// So the rule is a *ceiling on the critical path*, not a shard count:
 /// **no page suite may be projected heavier than [kGateFloorWithoutPagesMs].**
-/// At fifteen pages the one suite models to 98.4s against a 149.8s floor, so one
+/// At sixteen pages the one suite models to 106.4s against a 149.8s floor, so one
 /// suite is right. The crossover lands near **23 pages**, and
 /// `page_sweep_suites_test.dart` is what says so on the day a wave reaches it —
 /// with the roster's own figures, not with this paragraph's arithmetic.
@@ -92,7 +93,8 @@ const String kPageSurfaceCasesPath =
 ///
 /// **One, and one until the ceiling below is reached.** #1371 measured the
 /// alternative rather than assuming it: four cost-balanced shards cost +14.7s on
-/// `--tags layout-gate` and +61s on `./run_tests.sh` at today's fifteen pages,
+/// `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen pages of the
+/// day it was measured,
 /// because the page sweep's 90s of serial pumping already fits inside the 149.8s
 /// the rest of that selection takes. Raising this number is only correct once
 /// [kGateFloorWithoutPagesMs] is the binding constraint — see §11.10, and expect

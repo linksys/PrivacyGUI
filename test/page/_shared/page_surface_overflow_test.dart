@@ -19,14 +19,14 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1 and #1378's
 /// wave 2.
 ///
-/// Fifteen whole pages × 9 screen widths × 26 locales, declared through the shared
+/// Sixteen whole pages × 9 screen widths × 26 locales, declared through the shared
 /// runner. Everything about *which* cells exist and *how* one is hosted lives in
-/// `test/layout_gate/families/page_surface_family.dart`; which fifteen pages, and
-/// why those fifteen, lives in `page_surface_cases.dart`. This file is the
-/// declaration, the fifteen pins, and the two readability guards that sit beside the
+/// `test/layout_gate/families/page_surface_family.dart`; which sixteen pages, and
+/// why those sixteen, lives in `page_surface_cases.dart`. This file is the
+/// declaration, the sixteen pins, and the two readability guards that sit beside the
 /// two fixes this family has prompted so far.
 ///
-/// The epic (#1369) takes the remaining 30 in waves; `test/fixtures/page_roster.tsv`
+/// The epic (#1369) takes the remaining 29 in waves; `test/fixtures/page_roster.tsv`
 /// is the register of which page is where, and is the file to read before assuming
 /// a page absent from this list is a page with nothing wrong with it.
 ///
@@ -42,7 +42,7 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// adding 1080 — golden CI's third coordinate, and the only width in the list that
 /// renders a content box wider than 977px. Fifteen literals moved in one edit,
 /// which is the shape the ticket wanted: a coverage change nobody can make while
-/// looking away.
+/// looking away. `pnp_setup` brought the sixteenth later the same day.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -131,10 +131,10 @@ void main() {
     expectedCellCount: 234,
   );
 
-  // Wave 2 (#1378): the instant_setup flow, in flow order. Eight of its nine
-  // reachable pages — `pnp_setup` is measurable and blocked on a ui_kit defect
-  // (`test/page/instant_setup/views/pnp_setup_view_test.dart` pins it), and
-  // `pnp_complete_view` is unreachable. The register is the roster.
+  // Wave 2 (#1378): the instant_setup flow, in flow order — eight here and the
+  // ninth (`pnp_setup`) at the end of the file, where its own comment says why it
+  // is out of order. `pnp_complete_view` is the tenth view and stays excluded as
+  // unreachable. The register is the roster.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpEntryPageCase),
     expectedCellCount: 234,
@@ -172,6 +172,18 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpWaitingModemPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Wave 2's ninth, and the only page in this file that arrived after its wave. It
+  // was `queued` for a day on `linksys/privacyGUI-UI-kit#70` — `AppStepper`'s bar
+  // variant was over by `stepCount × 4` at every width in every locale, so all 208
+  // of its cells failed — and v2.40.2 fixed it. The tripwire that pinned the
+  // arithmetic (`test/page/instant_setup/views/pnp_setup_view_test.dart`) went red
+  // with an empty incident list on the bump and was deleted, which is the order §8's
+  // graduation rule asks for: fix to zero, then declare, then capture.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpSetupPageCase),
     expectedCellCount: 234,
   );
 

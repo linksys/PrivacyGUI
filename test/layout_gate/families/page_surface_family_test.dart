@@ -44,8 +44,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when fifteen pages fit. It is *also*
-/// green when fifteen pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when sixteen pages fit. It is *also*
+/// green when sixteen pages never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -64,9 +64,9 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  group('the gate sweeps fifteen pages, and which fifteen is a decision', () {
+  group('the gate sweeps sixteen pages, and which sixteen is a decision', () {
     test(
-        'kPageSurfaceCases holds the pilot two, wave 1\'s five and wave 2\'s eight',
+        'kPageSurfaceCases holds the pilot two, wave 1\'s five and wave 2\'s nine',
         () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
@@ -86,6 +86,7 @@ void main() {
           'pnp_unplug_modem',
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
+          'pnp_setup',
         ],
         // Updated by #1377 and #1378, and the wording is the point of the test.
         // This pin is the epic's per-wave checkpoint: it goes red on every wave
@@ -109,24 +110,29 @@ void main() {
         // added here. No page in this list arrives carrying debt, and
         // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
         //
-        // **Wave 2's eight (#1378)**: the instant_setup flow, which is a different
+        // **Wave 2's nine (#1378)**: the instant_setup flow, which is a different
         // kind of wave — nine views over one `pnpProvider`, where a fixture is a
         // *phase* rather than a payload. Six of the nine need one pinned, three need
         // nothing, and all six are served by one override builder over three
         // composed states. That corrects #1370's "2 of 9" in both directions: more
         // pages need a phase than it predicted, at a lower fixture cost.
         //
-        // Eight, not nine: `pnp_setup` renders ui_kit's `AppStepper`, whose bar
-        // variant overflows by `stepCount × 4` at every width in every locale
-        // (`AppFocusIndicator` pads each bar unconditionally while
-        // `_buildBarStepper` divides the raw width). The fix is in ui_kit, not
-        // here, and the finding is pinned as a tripwire in
-        // `test/page/instant_setup/views/pnp_setup_view_test.dart`. The one fixture
-        // that would render this page clean is a single-step wizard — i.e. one with
-        // no `AppStepper` in it — which is the fixture workaround #1378 forbids.
-        // `pnp_complete_view` stays excluded as unreachable.
+        // `pnp_setup` is last rather than in flow position because it was onboarded
+        // a day after the other eight, and this list's order is the onboarding
+        // order. It shipped `queued` on a defect in ui_kit's `AppStepper`, whose bar
+        // variant overflowed by `stepCount × 4` at every width in every locale
+        // (`AppFocusIndicator` padded each bar unconditionally while
+        // `_buildBarStepper` divided the raw width) — 208 of 208 cells at +12.0px.
+        // §8's graduation rule is what kept it out, and the one fixture that would
+        // have rendered it clean was a single-step wizard, i.e. one with no
+        // `AppStepper` in it — the workaround #1378 forbade. It was filed as
+        // `linksys/privacyGUI-UI-kit#70`, fixed there by `936c1da6` and released as
+        // v2.40.2; the tripwire in
+        // `test/page/instant_setup/views/pnp_setup_view_test.dart` went red with an
+        // empty incident list on the bump and was deleted. `pnp_complete_view` is
+        // the flow's tenth view and stays excluded as unreachable.
         //
-        // The 30 that remain are in `test/fixtures/page_roster.tsv`, not here.
+        // The 29 that remain are in `test/fixtures/page_roster.tsv`, not here.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -292,12 +298,13 @@ void main() {
       );
     });
 
-    // Wave 2's eight (#1378). Grouped rather than one pin per page, because what
-    // is worth pinning about this wave is not eight separate widget lists — the
+    // Wave 2's nine (#1378). Grouped rather than one pin per page, because what
+    // is worth pinning about this wave is not nine separate widget lists — the
     // generic half already holds those non-empty — it is the two things a
     // state-machine flow gets wrong that a data-fed page cannot: a `forbids` that
     // names only `AppLoader` while the page's real waiting state is something
-    // else, and a phase pinned on a page that never reads one.
+    // else, and a phase pinned on a page that never reads one. `pnp_setup` gets a
+    // pin of its own below, for a third reason neither of those covers.
 
     test('the three ISP-form pages forbid the overlay, not just the loader', () {
       // None of these three renders an `AppLoader` while saving. `PnpIspSettingsView`
@@ -357,16 +364,18 @@ void main() {
       );
     });
 
-    test('five of wave 2\'s eight pin a phase and three deliberately do not',
-        () {
+    test('six of wave 2\'s nine pin a phase and three deliberately do not', () {
       // The fixture story as a value. #1370 predicted 2 of the 9 instant_setup
-      // pages would need a fixture; reading the views gives **6** — the five here
-      // plus `pnp_setup`, which is queued on a ui_kit defect — all six served by
-      // one override builder over three composed states. The three with an empty
+      // pages would need a fixture; reading the views gives **6**, all six served
+      // by one override builder over three composed states. The three with an empty
       // list are empty because the view reads no provider on the path swept, not
       // because nobody wrote one, and that distinction is only checkable while it
       // is written down: an empty `overrides` that *should* have pinned a phase is
       // how a page silently renders a different screen than the one it names.
+      //
+      // `pnp_setup` is the sixth, and it is the one page here whose fixture was
+      // never in question: it got past its loader on the first attempt and spent a
+      // day `queued` on a ui_kit defect instead (see its own pin below).
       final pinned = <String>[];
       final unpinned = <String>[];
       for (final page in <PageSurfaceCase>[
@@ -378,6 +387,7 @@ void main() {
         kPnpUnplugModemPageCase,
         kPnpModemLightsOffPageCase,
         kPnpWaitingModemPageCase,
+        kPnpSetupPageCase,
       ]) {
         (page.overrides().isEmpty ? unpinned : pinned).add(page.id);
       }
@@ -391,7 +401,25 @@ void main() {
             'then renders is whatever `PnpState.initial()` selects: '
             '`AdminCheckingInternet`, which is a spinner on most of this flow.',
       );
-      expect(pinned, hasLength(5));
+      expect(pinned, hasLength(6));
+    });
+
+    test('page.pnp_setup requires the widget that was blocking it', () {
+      expect(
+        kPnpSetupPageCase.requires,
+        containsAll(<Type>[AppStepper, AppTextField, AppPasswordInput]),
+        reason: 'AppStepper is doing two jobs here that no other premise in this '
+            'file does. It pins that the wizard has more than one step — '
+            '`_buildStepperForm` renders no stepper at all when `totalSteps == 1`, '
+            'which is the single-step fixture #1378 forbade as a way to make this '
+            'page lay out clean — and it keeps the regression test for '
+            'linksys/privacyGUI-UI-kit#70 in the gate, since that defect was in '
+            'the stepper and nowhere else. The two field types pin the *step*: only '
+            'step 0 is measured (advancing `_currentStep` needs a tap per cell), '
+            'and step 0 is the only one with a form on it, three bands deep because '
+            'the fixture is split-mode. Dropping them would leave this premise '
+            'holding against a wizard whose step content had gone missing.',
+      );
     });
   });
 

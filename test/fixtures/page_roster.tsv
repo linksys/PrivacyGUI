@@ -16,8 +16,8 @@
 # basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
 # basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
 # basis-note Cross-checked on the five pages it re-measured; four agreed with #1370 within 6%.
-# basis-note So the 14 queued figures still carry #1370's wall-clock-minus-control reading and
-# basis-note the 15 swept ones carry the durations; the agreement above is why one column holds both.
+# basis-note So the 13 queued figures still carry #1370's wall-clock-minus-control reading and
+# basis-note the 16 swept ones carry the durations; the agreement above is why one column holds both.
 # basis-note #1378 kept that basis and added a rule: three runs, median committed. Four passes over
 # basis-note pnp_entry read 21.2, 18.5, 11.6 and 10.9 ms/cell, because the first coordinate test of a
 # basis-note run absorbs the font load and the first pump, and that fixed cost is most of a cheap
@@ -27,24 +27,26 @@
 # basis-note (36.5 -> 59.6) is a fixture difference — this wave's state expands the DNS rows, so five
 # basis-note IPv4 fields render where #1370's default state rendered three. So read any figure under
 # basis-note ~20ms/cell as +/-40%, and re-measure before planning against one.
-# blocked pnp_setup_view is queued WITH a figure and is not fixture debt: pnpWizardConfiguringState in
-# blocked test/mocks/test_data/scenes/pnp_scene_data.dart gets it past its loader and #1378 measured all
-# blocked 208 cells through it (the 208 a page was before #1372; 234 now). What blocks it is ui_kit
-# blocked v2.40.1's AppStepper bar variant, which
-# blocked overflows by stepCount x 4 at every width in every locale — app_stepper.dart:239 divides
-# blocked constraints.maxWidth while AppFocusIndicator pads each bar by ringOffset=2.0 unconditionally.
-# blocked 208 of 208 cells failed at +12.0px on this page's 3-step wizard — the defect is width- and
-# blocked locale-independent, so the ninth width adds 26 more of the same — and declaring it would put a
-# blocked whole page of debt into the gate, which section 8's graduation rule forbids. The fix is a
-# blocked ui_kit PR plus a bump here; the tripwire that goes red when it lands is
-# blocked test/page/instant_setup/views/pnp_setup_view_test.dart.
+# unblocked pnp_setup_view was the one row this register has carried as measured-but-queued, and it is
+# unblocked kept here because the distinction is the useful part: it was never fixture debt.
+# unblocked pnpWizardConfiguringState in test/mocks/test_data/scenes/pnp_scene_data.dart got it past its
+# unblocked loader on the first attempt and #1378 measured all 208 cells through it — 208 of 208 red at
+# unblocked +12.0px on this page's 3-step wizard, on ui_kit v2.40.1's AppStepper bar variant, which
+# unblocked divided constraints.maxWidth while AppFocusIndicator padded each bar by ringOffset=2.0
+# unblocked unconditionally. Section 8's graduation rule is what kept it out: a whole page of debt does
+# unblocked not enter the gate, and the only fixture that laid out clean was a 1-step wizard, i.e. one
+# unblocked rendering no AppStepper. Filed as linksys/privacyGUI-UI-kit#70, fixed there by 936c1da6 and
+# unblocked released as v2.40.2 on 2026-08-26; the tripwire in
+# unblocked test/page/instant_setup/views/pnp_setup_view_test.dart went red with an empty incident list
+# unblocked on the bump, which is the signal it was written to give, and was then deleted. Swept the
+# unblocked same day, so this row's disposition is the shorter half of its story.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
-# swept 15
-# queued 28
+# swept 16
+# queued 27
 # measured 29
 # needs_fixture 14
 # excluded 2
@@ -69,7 +71,7 @@ lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
 lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	swept	12.9
 lib/page/instant_setup/views/pnp_no_internet_view.dart	swept	14.7
 lib/page/instant_setup/views/pnp_pppoe_view.dart	swept	20.8
-lib/page/instant_setup/views/pnp_setup_view.dart	queued	34.3
+lib/page/instant_setup/views/pnp_setup_view.dart	swept	34.3
 lib/page/instant_setup/views/pnp_static_ip_view.dart	swept	59.6
 lib/page/instant_setup/views/pnp_unplug_modem_view.dart	swept	13.5
 lib/page/instant_setup/views/pnp_waiting_modem_view.dart	swept	11.7

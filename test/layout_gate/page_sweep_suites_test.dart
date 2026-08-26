@@ -24,8 +24,8 @@ import 'page_sweep_suites.dart';
 ///
 /// #1371 asked where the page cells should run and measured the answer instead of
 /// assuming it: the page sweep **stays one file**, because four cost-balanced shards
-/// cost +14.7s on `--tags layout-gate` and +61s on `./run_tests.sh` at today's
-/// fifteen pages (§11.10). So this oracle is not the bookkeeping a split needed — it
+/// cost +14.7s on `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen
+/// pages of the day it was measured — sixteen now (§11.10). So this oracle is not the bookkeeping a split needed — it
 /// is the hole that was already open with one file, and would have stayed open if
 /// the split had shipped:
 ///
@@ -37,7 +37,7 @@ import 'page_sweep_suites.dart';
 /// - `page.tsv` would notice, as 234 rows reading `no longer measured`, and nothing
 ///   in the PR gate runs that diff.
 ///
-/// Delete one of the fifteen calls today and every record above still calls the page
+/// Delete one of the sixteen calls today and every record above still calls the page
 /// covered. That is what assertion 2 is for.
 ///
 /// ## The five assertions
@@ -508,8 +508,8 @@ void main() {
       );
       expect(weight, greaterThan(kGateFloorWithoutPagesMs));
 
-      // ...and today's fifteen, at the same median, are comfortably under it.
-      final today = suiteOf(cases: List.generate(15, (i) => 'kPage${i}Case'));
+      // ...and today's sixteen, at the same median, are comfortably under it.
+      final today = suiteOf(cases: List.generate(16, (i) => 'kPage${i}Case'));
       expect(
         pageSweepSuiteWeightMs(
           today,
