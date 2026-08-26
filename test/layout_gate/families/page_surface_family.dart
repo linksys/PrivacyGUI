@@ -42,18 +42,19 @@
 ///   | **601**| 32     | **537** | 31px *narrower* than 600px                  |
 ///   | 905    | 32     | 841     | last width of the tablet margin             |
 ///   | 906    | 24     | 858     | wider content again                         |
-///   | 1240   | 24     | 1216    | widest content the app ever grants           |
-///   | **1241**| 200   | **841** | 375px narrower than 1240px — the #1302 pinch |
+///   | **1080**| 24    | **1032**| golden CI's third coordinate — and the widest content this list renders |
+///   | 1240   | 24     | 1192    | widest content below the pinch              |
+///   | **1241**| 200   | **841** | 351px narrower than 1240px — the #1302 pinch |
 ///   | 1280   | 200    | 880     | golden CI's desktop coordinate              |
 ///   | **1441**| 256   | **929** | 111px narrower than 1440px                  |
 ///   | **1681**| 352   | **977** | 191px narrower than 1680px                  |
 ///
 /// [kPageSweepWidths] is that table's four step-ups (601, 1241, 1441, 1681), its
-/// floor (320), the last width before the 906px step *down* (905), and the two
-/// **committed** golden coordinates (480, 1280) — a literal list, because there is
-/// nothing to derive it from and a derived "worst case" would be wrong four times
-/// over. #1302 measured the 1241px pinch as the worst *desktop* case for the
-/// device-detail page (`fr` +30px, against +20px at 1280px), which is the same
+/// floor (320), the last width before the 906px step *down* (905), and the three
+/// **committed** golden coordinates (480, 1080, 1280) — a literal list, because
+/// there is nothing to derive it from and a derived "worst case" would be wrong
+/// four times over. #1302 measured the 1241px pinch as the worst *desktop* case for
+/// the device-detail page (`fr` +30px, against +20px at 1280px), which is the same
 /// arithmetic reaching a different page.
 ///
 /// **"Golden CI's two coordinates" was wrong and is corrected here (#1370).** Two
@@ -62,9 +63,37 @@
 /// `golden_runner.dart:43` synthesises a device from
 /// `--dart-define=screens=<width>`: §1.3 records it sweeping four (`phone320`,
 /// `phone480`, `desktop1241`, `desktop1280`) and §5's note records `screen1080`
-/// arriving on 2026-08-24. All four of the first set are in this list; **1080 is
-/// not**, and that is the one real gap in §8's `file:line` comparability — #1372's
-/// input, not a defect here.
+/// arriving on 2026-08-24. **#1372 closed the list on 2026-08-26 by adding 1080**,
+/// so all five are now here.
+///
+/// ## Why 1080 is in the list, and it is not because of #1368's 53 flags
+///
+/// The obvious argument was the weak one. #1368 records golden CI flagging 53
+/// screens at `screen1080` the day the width was added there, so "1080 finds
+/// things" reads as settled — but the two sites in this repo's own committed
+/// capture of such a run (`test/fixtures/golden_overflow_warnings.json`, 16 records
+/// at `screens=1080`) are `firmware_update_card.dart:77`, a **loading** skeleton
+/// reached through `usp_admin_view.dart`, and `usp_sliver_dashboard_view.dart:414`,
+/// the delete target that exists only in **edit mode**. Neither appears in any of
+/// the five committed baselines, at any width. What those two want is page and
+/// state coverage, which is #1369's and #1380's job; adding a width does not reach
+/// them.
+///
+/// The real argument is the table above. Before 1080 joined, the widest content box
+/// this list ever rendered was 1681's **977px** — and the app grants up to 1192px
+/// below the pinch and 1856px at 2560px, where the margin stops growing. Every
+/// width here had been chosen for a *narrow*-side reason (the floor, the step-ups)
+/// or for the golden join, so a defect that needs a **wide** box to appear — a
+/// fixed-count grid gaining a column, a legend that grows with its chart — was
+/// outside the sweep by construction. 1080 grants 1032px, wider than all eight, and
+/// it is a coordinate golden CI already runs, so it closes §8's last comparability
+/// gap in the same cell.
+///
+/// The band is narrowed, not closed: 1032px is still short of 1192px and far short
+/// of 1856px, and `page_surface_family_test.dart` pins both numbers so the residual
+/// gap stays a stated one. Measured 2026-08-26 before it landed: the fifteen swept
+/// pages × 1080/1240/1920/2560 × 26 locales is **1,560 cells at zero**, so 1080
+/// enters on the coverage argument alone and no find is claimed for it.
 ///
 /// Locale is a first-class axis for the same reason it is everywhere else in this
 /// family: #1302's row was clean in `en` at every width it broke in `fr`.
@@ -84,20 +113,22 @@ import '../sweep.dart';
 
 /// Screen widths swept per locale — see the library header's table.
 ///
-/// Eight, not twelve: four are margin step-ups (the widths the content box narrows
+/// Nine, not twelve: four are margin step-ups (the widths the content box narrows
 /// at), one is the product floor, one is the last width before the 906px step
-/// *down*, and two are the repo's **committed** golden coordinates, which are what
-/// make the `file:line` join of §8 comparable. A ninth width would cost 26 cells
-/// per page and answer a question one of these already answers.
+/// *down*, and three are widths golden CI runs, which are what make the `file:line`
+/// join of §8 comparable. A tenth width would cost 26 cells per page and answer a
+/// question one of these already answers.
 ///
-/// The header explains why "golden CI's two coordinates" was the wrong phrase for
-/// the last pair: two is `GoldenDevice.defaults`, and golden CI synthesises further
-/// widths — of which 1080 is the one this list does not hold.
+/// **#1372 closed this list on 2026-08-26**: 1080 in, nothing cut. Its two decisions
+/// are argued in the header — 1080 for the wide-side band and *not* for #1368's
+/// flags, and 905/1441/1681 kept despite zero finds across 43 pages, because two of
+/// them are step-ups and the zero rests on the 27 pages a fixture could render.
 const kPageSweepWidths = <double>[
   320, // product floor; content 288 — narrowest the app ever lays out. Also golden CI's phone320
   480, // committed golden coordinate (GoldenDevice.phone480)
   601, // margin 16 → 32: content 537, narrower than 600px's 568
   905, // last width of the 32px margin; content 841
+  1080, // golden CI coordinate since 614aad41; content 1032 — the widest box this list renders (#1372)
   1241, // margin 24 → 200: content 841, the #1302 desktop pinch. Also golden CI's desktop1241
   1280, // committed golden coordinate (GoldenDevice.desktop1280)
   1441, // margin 200 → 256: content 929

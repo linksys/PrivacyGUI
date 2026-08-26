@@ -195,8 +195,10 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 ///
 /// Neither [UspDeviceFilterPanel] (desktop) nor `UspDeviceFilterChipBar` (mobile)
 /// can be a premise here, and the reason generalises to every responsive page in
-/// this family: a `requires` entry has to hold at **all eight** widths, and those
-/// two are on opposite sides of the `AppResponsiveLayout` breakpoint.
+/// this family: a `requires` entry has to hold at **every** width in
+/// `kPageSweepWidths` — nine since #1372 — and those two are on opposite sides of
+/// the `AppResponsiveLayout` breakpoint. #1377 measured the panel at four of the
+/// eight widths that existed then, which is four short of a premise either way.
 final kDeviceListPageCase = PageSurfaceCase(
   id: 'device_list',
   view: () => const UspDeviceListView(),
@@ -270,7 +272,7 @@ final kTopologyPageCase = PageSurfaceCase(
 /// backhaul throughput row is `if (uplinkRate != null || downlinkRate != null)`
 /// (`usp_node_detail_view.dart:400`) — *not* `phyRate`, which is what an earlier
 /// draft of this case assumed. No existing `UspNodeDetailState` carries either
-/// rate, so no [DetailSpeedCard] renders on this page in any of the 208 cells, and
+/// rate, so no [DetailSpeedCard] renders on this page in any of the 234 cells, and
 /// #1377 may not write a fixture that would (its own out-of-scope list). So the
 /// row stays unmeasured here and is a later wave's fixture scope. The premise
 /// caught the assumption at all 26 locales of the first width, which is the
@@ -415,7 +417,7 @@ final kPnpNoInternetPageCase = PageSurfaceCase(
 /// anything is. `_prefillFromCurrentSettings` runs in `initState` and reads **only**
 /// `NoInternet.currentWanSettings`; without it every field renders empty, and
 /// `vlanEnabled` is what flips `_showVlan` and adds the VLAN label and field at
-/// all. An unpinned fixture would sweep 208 cells of a shorter form than any real
+/// all. An unpinned fixture would sweep 234 cells of a shorter form than any real
 /// user sees — the same under-measurement `kDhcpPageCase` warns about with its
 /// empty-list state.
 ///
@@ -488,7 +490,7 @@ final kPnpModemLightsOffPageCase = PageSurfaceCase(
 /// this page is pinned even though its instruction stage is also what an unpinned
 /// fixture happens to render: [AppLoader] rules out the checking stage and
 /// [CircularCountdownWidget] the countdown, which together are the only two ways
-/// this case could be measuring 208 cells of something that cannot overflow.
+/// this case could be measuring 234 cells of something that cannot overflow.
 final kPnpWaitingModemPageCase = PageSurfaceCase(
   id: 'pnp_waiting_modem',
   view: () => const PnpWaitingModemView(),

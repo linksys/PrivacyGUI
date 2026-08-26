@@ -19,7 +19,7 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1 and #1378's
 /// wave 2.
 ///
-/// Fifteen whole pages × 8 screen widths × 26 locales, declared through the shared
+/// Fifteen whole pages × 9 screen widths × 26 locales, declared through the shared
 /// runner. Everything about *which* cells exist and *how* one is hosted lives in
 /// `test/layout_gate/families/page_surface_family.dart`; which fifteen pages, and
 /// why those fifteen, lives in `page_surface_cases.dart`. This file is the
@@ -32,11 +32,17 @@ import '../../util/dashboard/text_readability_probe.dart';
 ///
 /// ## Why the pins are literals
 ///
-/// `8 × 26 = 208` is the enumeration restating itself. The literal is what stands
-/// between "the pilot deliberately swept 8 widths" and "someone dropped four
+/// `9 × 26 = 234` is the enumeration restating itself. The literal is what stands
+/// between "the pilot deliberately swept 9 widths" and "someone dropped four
 /// widths and the suite stayed green in half the time" — the same argument
 /// `sweep.dart`'s header makes for every other pin in this family, and the reason
 /// `expectedCellCount` is required rather than defaulted.
+///
+/// It was `8 × 26 = 208` until 2026-08-26, when #1372 closed the width list by
+/// adding 1080 — golden CI's third coordinate, and the only width in the list that
+/// renders a content box wider than 977px. Fifteen literals moved in one edit,
+/// which is the shape the ticket wanted: a coverage change nobody can make while
+/// looking away.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -77,7 +83,7 @@ void main() {
     }
   });
 
-  // 8 widths × 26 locales. Every page sweeps the same axis, so every pin is the
+  // 9 widths × 26 locales. Every page sweeps the same axis, so every pin is the
   // same number — which is a fact about the axis, not a copy: a page that ever
   // needs its own width list changes only its own pin.
   //
@@ -89,12 +95,12 @@ void main() {
   // diff that names it.
   runOverflowSweep(
     family: PageSurfaceFamily(kDhcpPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kWifiSettingsPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   // Wave 1 (#1377): five pages whose fixture was already written. See
@@ -102,27 +108,27 @@ void main() {
   // for what is still queued.
   runOverflowSweep(
     family: PageSurfaceFamily(kDeviceListPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kDeviceDetailPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kTopologyPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kNodeDetailPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPortForwardingPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   // Wave 2 (#1378): the instant_setup flow, in flow order. Eight of its nine
@@ -131,42 +137,42 @@ void main() {
   // `pnp_complete_view` is unreachable. The register is the roster.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpEntryPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpNoInternetPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpIspSettingsPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpPppoePageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpStaticIpPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpUnplugModemPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpModemLightsOffPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpWaitingModemPageCase),
-    expectedCellCount: 208,
+    expectedCellCount: 234,
   );
 
   // The readability assertion rule 4 of the skill requires beside an overflow

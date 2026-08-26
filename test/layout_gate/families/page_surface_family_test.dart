@@ -158,7 +158,7 @@ void main() {
           reason: 'a page opens with `if (isLoading) return AppLoader()`, or — '
               'worse for this gate — with a `SizedBox.shrink()` or a not-found '
               'column. Every one of those fits at any width in any locale, so an '
-              'empty `requires` does not turn the sweep red; it turns 208 cells '
+              'empty `requires` does not turn the sweep red; it turns 234 cells '
               'green over nothing.',
         );
       });
@@ -273,7 +273,7 @@ void main() {
             '`uplinkRate != null || downlinkRate != null` '
             '(`usp_node_detail_view.dart:400`), and no existing '
             '`UspNodeDetailState` carries either rate, so no speed card renders '
-            'on this page in any of the 208 cells. Requiring it fails all 26 '
+            'on this page in any of the 234 cells. Requiring it fails all 26 '
             'locales of the first width, which is how #1377 found the assumption. '
             'Adding it back needs a fixture with rates first — that is a later '
             'wave\'s scope, and this pin is where the gap is recorded.',
@@ -514,18 +514,59 @@ void main() {
       // shares", which conflated two different sets: `GoldenDevice.defaults` is
       // two (`phone480`, `desktop1280`, `golden_test_config.dart:33`), but golden
       // CI synthesises a device per `--dart-define=screens=<width>`
-      // (`golden_runner.dart:43`) and §1.3 records it sweeping four. All four are
-      // asserted here.
+      // (`golden_runner.dart:43`) and §1.3 records it sweeping four.
       //
-      // `screen1080` arrived on 2026-08-24 (§5's note) and is **not** in the list;
-      // it is the one real gap in §8's comparability and it is #1372's input, so it
-      // is named here rather than asserted — a test cannot pin a width the sweep
-      // does not visit without going red on a known, ticketed gap.
+      // **Five since #1372 (2026-08-26).** `screen1080` arrived in golden CI on
+      // 2026-08-24 (§5's note) and used to be named here as a ticketed gap rather
+      // than asserted, because a test cannot pin a width the sweep does not visit.
+      // The sweep visits it now, so it is asserted like the rest.
       expect(
         kPageSweepWidths,
-        containsAll(<double>[320, 480, 1241, 1280]),
+        containsAll(<double>[320, 480, 1080, 1241, 1280]),
         reason: 'dropping any of these leaves "the gate found what golden CI '
             'missed" unfalsifiable at that width',
+      );
+    });
+
+    test('the widest content box the list renders, and the band left over', () {
+      // 1080's own pin, and the only one it has. It is not a step-up, so the two
+      // tests above cannot hold it: `no step-up is missing` walks the widths where
+      // the content box *narrows*, and 1080 is in the middle of a band where it
+      // widens. Golden CI's `containsAll` does hold it today, but that couples a
+      // coverage decision to another repo's screen set — if golden CI ever drops
+      // 1080, the reason it is here would vanish with it.
+      //
+      // The reason it is here is stated as arithmetic instead: before #1372 the
+      // widest content box any swept width granted was 1681's 977px, while the app
+      // grants 1192px at 1240px and 1856px at 2560px. Every other width in the list
+      // was chosen for a *narrow*-side reason, so a defect needing a wide box was
+      // outside the sweep by construction.
+      final widestSwept =
+          kPageSweepWidths.map(_contentWidth).reduce((a, b) => a > b ? a : b);
+      expect(
+        widestSwept,
+        1032.0,
+        reason: 'This is 1080\'s content box, and it is the widest the sweep '
+            'renders. If it fell back to 977 someone removed 1080 and reopened '
+            'the wide-side band #1372 narrowed; if it rose, a wider width was '
+            'added and the header table and the cell-count pins both need it.',
+      );
+
+      // The residual band, pinned so it stays a stated gap rather than a forgotten
+      // one. #1372 narrowed it from 977→1856 to 1032→1856; it did not close it, and
+      // no page has ever been swept at a content box above 1032px.
+      expect(
+        _contentWidth(1240),
+        1192.0,
+        reason: 'the widest content box below the 1241px pinch, and 160px wider '
+            'than anything the sweep renders',
+      );
+      expect(
+        _contentWidth(2560),
+        1856.0,
+        reason: 'ui_kit stops growing the margin at 1681px, so above it the '
+            'content box grows without bound — the far end of the band the '
+            'sweep still does not reach',
       );
     });
 
@@ -542,20 +583,25 @@ void main() {
 
   group('each page pins its own cell count', () {
     // The pins live in the suite, as `runOverflowSweep` requires. What is checkable
-    // here is the arithmetic behind them: the suite says 208 once per page, and 208 is
-    // 8 widths × 26 locales — so a locale added to the app fails the suite's pins
+    // here is the arithmetic behind them: the suite says 234 once per page, and 234 is
+    // 9 widths × 26 locales — so a locale added to the app fails the suite's pins
     // and this test says why.
-    test('208 is 8 widths x 26 locales, for every page in the list', () {
+    //
+    // 208 until #1372 added 1080 on 2026-08-26. Fifteen literals moved with it, and
+    // so did every row of the committed `page` baseline (3,120 → 3,510) — which is
+    // the cost the ticket weighed and the reason it had to be decided before the
+    // remaining waves capture anything.
+    test('234 is 9 widths x 26 locales, for every page in the list', () {
       expect(
         kPageSweepWidths.length * AppLocalizations.supportedLocales.length,
-        208,
+        234,
         reason: 'every pin in page_surface_overflow_test.dart is this product '
             'spelled as a literal. If the app ships another locale, every '
             'pins move together — and that is a coverage change worth an '
             'explicit edit, which is why the pin is a literal in the first place.',
       );
       for (final page in kPageSurfaceCases) {
-        expect(PageSurfaceFamily(page).enumerateCells(), hasLength(208));
+        expect(PageSurfaceFamily(page).enumerateCells(), hasLength(234));
       }
     });
 

@@ -5,9 +5,13 @@
 #
 # rule a file named *_view.dart directly inside a views/ directory, at any depth under lib/page/
 # dispositions swept | queued | excluded:<reason>
-# ms_per_cell measured milliseconds per cell of this page's 8 widths x 26 locales; `-` means NOT MEASURED
+# ms_per_cell measured milliseconds per cell of this page's 9 widths x 26 locales; `-` means NOT MEASURED
 # fixture_debt a `-` on a queued row is #1370's finding that no fixture gets that view past its loader yet
-# basis section 11.2's: an isolated --plain-name run, its 8 coordinate tests only, over 208 cells
+# basis section 11.2's: an isolated --plain-name run, its coordinate tests only, over one page's cells
+# basis-note Every figure below was taken while a page was 8 widths x 26 locales = 208 cells. #1372 made
+# basis-note it 9 x 26 = 234 on 2026-08-26 and did NOT re-measure this column: a per-cell rate is the
+# basis-note quantity that survives a width being added, and the widest cells are the cheapest to lay
+# basis-note out. Re-measure before planning a wave against a total rather than a rate.
 # basis-note #1377 took the same quantity from --reporter json's per-test durations instead of
 # basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
 # basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
@@ -25,10 +29,12 @@
 # basis-note ~20ms/cell as +/-40%, and re-measure before planning against one.
 # blocked pnp_setup_view is queued WITH a figure and is not fixture debt: pnpWizardConfiguringState in
 # blocked test/mocks/test_data/scenes/pnp_scene_data.dart gets it past its loader and #1378 measured all
-# blocked 208 cells through it. What blocks it is ui_kit v2.40.1's AppStepper bar variant, which
+# blocked 208 cells through it (the 208 a page was before #1372; 234 now). What blocks it is ui_kit
+# blocked v2.40.1's AppStepper bar variant, which
 # blocked overflows by stepCount x 4 at every width in every locale — app_stepper.dart:239 divides
 # blocked constraints.maxWidth while AppFocusIndicator pads each bar by ringOffset=2.0 unconditionally.
-# blocked 208 of 208 cells fail at +12.0px on this page's 3-step wizard, so declaring it would put a
+# blocked 208 of 208 cells failed at +12.0px on this page's 3-step wizard — the defect is width- and
+# blocked locale-independent, so the ninth width adds 26 more of the same — and declaring it would put a
 # blocked whole page of debt into the gate, which section 8's graduation rule forbids. The fix is a
 # blocked ui_kit PR plus a bump here; the tripwire that goes red when it lands is
 # blocked test/page/instant_setup/views/pnp_setup_view_test.dart.

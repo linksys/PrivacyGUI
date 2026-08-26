@@ -558,7 +558,8 @@ void main() {
       //
       // So the five #1377 added and the eight #1378 added are here for a different
       // reason than "the inventory said they were clean". Each is a
-      // `PageSurfaceCase` with a premise, each is pinned at 208 cells in the suite,
+      // `PageSurfaceCase` with a premise, each is pinned at 234 cells in the suite
+      // (208 until #1372 widened every page by one width),
       // and each is in the committed `page` coverage baseline — and the one of
       // wave 1's five that was *not* at zero was fixed in the widget before it
       // arrived. The set below is the join assertion 3 checks both directions of, so

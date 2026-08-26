@@ -33,19 +33,21 @@ tags:
   # `test/layout_gate/families/page_surface_family_test.dart` since #1349).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 327 test files to skip 322 of them. Re-measured 2026-08-26 for #1378, the
-  # same 414 tests take 3m10s under the tag and 1m17s when the five files are
-  # named (shell clock; `flutter test`'s own is 2m52s and 1m10s). Name the file for
+  # all 327 test files to skip 322 of them. Re-measured 2026-08-26 for #1372, the
+  # same 429 tests take 2m39s under the tag and 1m24s when the five files are
+  # named (shell clock; `flutter test`'s own is 2m21s and 1m17s). Name the file for
   # a tight loop; use the tag when a sixth sweep must not be missed — the fifth
   # arrived on the day this comment last said "fifth", which is the argument.
   #
-  # 414, not the 342 after #1377, the 296 before it, the 590 after #1343 nor the
-  # 2,412 before that: every sweep loops its locales inside one test per
-  # coordinate, so 6,736 cells are declared by 414 tests (card 102, popup 80,
-  # chrome 57, forced-form 38, page 137 — 135 of them cells, the other two
+  # 429, not the 414 before #1372, the 342 after #1377, the 296 before it, the 590
+  # after #1343 nor the 2,412 before that: every sweep loops its locales inside one
+  # test per coordinate, so 7,126 cells are declared by 429 tests (card 102, popup
+  # 80, chrome 57, forced-form 38, page 152 — 150 of them cells, the other two
   # readability guards that pump 52 trees each and name none). Cells are what the
   # gate measures; the test count is how they are named. Waves 1 and 2 of #1369
-  # moved both numbers: thirteen more pages at 208 cells and 9 tests each.
+  # moved both numbers: thirteen more pages at 208 cells and 9 tests each. #1372
+  # then moved them on the other axis — one more screen width, so every page is
+  # 234 cells and 10 tests, +390 cells and +15 tests over the same fifteen pages.
   #
   # +4 tests and +29 cells at the merge, and no sweep was edited for either:
   # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal

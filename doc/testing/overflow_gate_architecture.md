@@ -31,9 +31,22 @@ so the gate holds **fifteen** pages and 3,120 page cells, and the committed data
 teardown from every phase but `WizardConfiguring` **in production** (fixed in the widget,
 with an untagged regression test so `run_tests.sh` cannot skip it), while the ninth page is
 blocked by **ui_kit v2.40.1's `AppStepper`**, whose bar variant overflows by `stepCount × 4`
-at every width in every locale — 208 of 208 cells at +12.0px. That one is a PR against
-`ui_kit_library` plus a bump here, so §8's graduation rule keeps the page out and a tripwire
-test holds the arithmetic until it lands. `known_overflows.json` is still empty.
+at every width in every locale — 208 of the 208 cells that existed then, at +12.0px. That
+one is a PR against `ui_kit_library` plus a bump here, so §8's graduation rule keeps the
+page out and a tripwire test holds the arithmetic until it lands. `known_overflows.json` is
+still empty.
+
+**#1372 then closed the width list** (2026-08-26, §11.9): **1080 joins `kPageSweepWidths`
+and nothing is cut**, so a page is 9 × 26 = **234** cells and the fifteen swept pages are
+**3,510**. The decision does not rest on #1368's 53 `screen1080` flags — the two sites in
+this repo's own committed capture of such a run are a *loading* skeleton and an *edit-mode*
+drop target, neither of which any of the five baselines has ever rendered at any width. It
+rests on the geometry: before 1080, the widest content box the sweep ever laid a page out
+in was 1681's **977px**, while the app grants 1192px below the pinch and 1856px at 2560px,
+so every width in the list had been chosen for a narrow-side reason and a defect needing a
+wide box was outside the sweep by construction. All 390 new cells are `clean`, and the
+1,560-cell probe behind the decision (15 pages × 1080/1240/1920/2560 × 26 locales) found
+nothing either — 1080 enters on coverage, with no find claimed for it.
 
 **Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · **R4 → gone; it left this epic on 2026-08-22 (§9.4)** — #1346 is a standalone golden-facing ticket, and #1339 (retire the golden framework's own parser) stays as a gate-side finishing ticket whose verification is offline rather than CI-bound (§3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349** · plus **#1361**, the fixture-decoupling ticket §9.4 opened. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
@@ -116,7 +129,7 @@ runner a `zh-TW` would silently match no entry and read as "not deferred". Now
 `localeTag()` in `test/layout_gate/locale_tag.dart`, imported by all four — and by
 `sweep.dart`, which reaches it rather than `Locale.toLanguageTag()` for exactly
 this reason. `sweep_test.dart` pins the `zh_TW` spelling so that "simplifying" it
-back is a red test rather than a silent re-key of 6,736 rows.
+back is a red test rather than a silent re-key of 7,126 rows.
 
 ```
   dashboard_card_overflow_test.dart      page_chrome_overflow_test.dart      golden_runner.dart
@@ -211,16 +224,16 @@ parenthesised ones read `pre-#1378` and then `pre-#1377` behind that.
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **38** (37 pre-merge, 80 pre-#1344) | 78 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **137** (65 pre-#1378, 19 pre-#1377) | 3,120 + 104 guard pumps | 1m12s (**1m18s** wall), median of three | **23.1ms** (27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **414** (342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 6,736 rows † | 1m10s (**1m17s** wall) | — |
-| The same five via `--tags overflow` | **414** | 6,736 rows † | 2m52s (**3m10s** wall) | — |
-| Whole `layout-gate` family (47 files) | **1,636** (1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 6,900 | 2m13s / **2m21s** wall (2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,630** (5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m02s / **3m08s** wall (3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
+| **Page sweep (one file, new at #1349)** | **152** (137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 3,510 + 104 guard pumps | 1m27s, median of {1m18s, 1m27s, 2m03s} — the spread is wider than #1372's whole delta, so read the per-cell figure and not the difference | **24.8ms** (23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| The five overflow sweeps (5 files, named) | **429** (414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 7,126 rows † | 1m17s (**1m24s** wall) | — |
+| The same five via `--tags overflow` | **429** | 7,126 rows † | 2m21s (**2m39s** wall) | — |
+| Whole `layout-gate` family (47 files) | **1,652** (1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 7,300 | 2m44s / **2m53s** wall (2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,646** (5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m13s / **3m20s** wall (3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
-baselines hold 1,943 + 347 + 78 + 1,248 + 3,120 = 6,736 rows, of which the *sweeps* pump
-6,716 and **20 are hand-written guards that pump a real card and record their coordinate
+baselines hold 1,943 + 347 + 78 + 1,248 + 3,510 = 7,126 rows, of which the *sweeps* pump
+7,106 and **20 are hand-written guards that pump a real card and record their coordinate
 anyway** — `card.tab_registry` (6), `card.single_view` (12), `card.profile_data` (1) and
 `popup.exempt` (1). Each is in the dataset for the same stated reason, and it is the
 reason this column is rows: they are what decides how much the sweeps cover (which tabs
@@ -231,7 +244,7 @@ sweep adds no guard *of this kind* — its premise is a *value* on the case, pin
 oracle outside the `overflow` tag (§11.4), which is the #1364/#1366 shape rather than
 this footnote's. Its hand-written tests — one at #1349, a second at #1377 — are
 **readability** guards (§7), and they deliberately name no cell: they never install the
-collector, so the `page` baseline is exactly 15 × 208 and the 20 above stays 20.
+collector, so the `page` baseline is exactly 15 × 234 and the 20 above stays 20.
 
 **Only the gate row moved for the baseline reporter** (`overflow_baseline.sh render`,
 [overflow_baselines.md](overflow_baselines.md) §1): +22 tests in
@@ -642,7 +655,7 @@ roughly 135 ticketed coordinates:
   past its loader (see §11.6).
 
   Read that as evidence and not as proof. Golden CI's coordinates are four devices
-  at golden heights; the page sweep is 8 widths at 1600px. The two are different
+  at golden heights; the page sweep is 9 widths at 1600px. The two are different
   geometries, and §1.3's whole point is that they cannot be joined — so "clean
   here" says the debt does not reproduce on *these* coordinates.
 - **120 further coordinates** in admin, all at `firmware_update_card.dart:77`
@@ -1179,6 +1192,14 @@ from the ticket:
    at `test/fixtures/golden_overflow_warnings.json` with its provenance. It must
    never be regenerated: it is the *old* parser's output, and regenerating it with
    the new one would compare the new parser against itself.
+
+   **That fixture has since acquired a second reader, and it is not a parser test.**
+   #1372 (§11.9) needed to know what golden CI's `screen1080` actually finds *in this
+   repo*, and these 16 records are the only committed answer: two sites, both outside
+   every gate baseline. Read the caveat with them — the capture is `screens=1080`
+   **alone**, so it cannot say whether those two sites also break at 320 or 480. The
+   "all 53 flags were at `screen1080`" claim is #1368's, from a multi-width CI run,
+   and it is cross-repo and uncommitted here.
 2. **The corpus cannot exercise the difference the ticket is about.** All 16
    messages name exactly one side, so first-side → worst-side cannot arise in any
    of them. That is the finding, not a gap — it says the swap is invisible on real
@@ -2328,8 +2349,8 @@ Recorded so they can be reversed cheaply now rather than discovered later.
 | **A group's name comes from the cell's axes, not from parsing the coordinate label** (`overflowSweepNames`) — a label is prose and an axis value may contain spaces | §3.3 | inline it back, and re-accept that a spaced value splits a group name |
 | **A family with no axes still declares**, under a `(no axes)` group, rather than throwing while naming groups — the count test is what reports the problem, and a throw at load stops that report from running | §3.3 | one ternary |
 | **One family class parameterised by a `PageSurfaceCase`, where chrome has one class per widget** — the exception to the row above, and it does not weaken it: two pages share a host and an axis, and what differs (route, fixture, premise) are *values*. Each instance still carries its own `name` and its own pinned count, which is what that row protects | §11.1 | split into one class per page, and the two `enumerateCells` bodies become copies of each other |
-| **`kPageSweepWidths` is a literal list** — ui_kit's four margin step-ups, the 320px product floor, the last width before the 906px step down, and the repo's two **committed** golden coordinates (`GoldenDevice.defaults`; "golden CI's two coordinates" was the wrong phrase and #1370 corrects it in §11.6 — golden CI synthesises more, and 1080 is the one this list lacks). Content width is *not* monotone in screen width for a page, so there is no "narrowest realization" to derive it from; the list is pinned against `AppLayoutConfig.margin` by `page_surface_family_test.dart` instead | §11.1 | re-derive the list; every width added is 26 cells per page |
-| **The page family's premise is `requires`/`forbids` on the case, not an assertion in `onCellSettled`'s body** — both pilot pages fall back to a loader, and a loader cannot overflow, so an emptied premise is 208 green cells over a spinner | §11.1 | the two lists move into the hook and become deletable in silence again |
+| **`kPageSweepWidths` is a literal list** — ui_kit's four margin step-ups, the 320px product floor, the last width before the 906px step down, and three golden CI coordinates (480 and 1280 are `GoldenDevice.defaults`; 1080 is synthesised from `--dart-define=screens`, and #1370 corrected "golden CI's two coordinates" in §11.6 before #1372 closed the list in §11.9). Content width is *not* monotone in screen width for a page, so there is no "narrowest realization" to derive it from; the list is pinned against `AppLayoutConfig.margin` by `page_surface_family_test.dart` instead | §11.1, §11.9 | re-derive the list; every width added is 26 cells per page, and every width removed is a content box nothing renders |
+| **The page family's premise is `requires`/`forbids` on the case, not an assertion in `onCellSettled`'s body** — both pilot pages fall back to a loader, and a loader cannot overflow, so an emptied premise is 234 green cells over a spinner | §11.1 | the two lists move into the hook and become deletable in silence again |
 | **Pages graduate one at a time, not as a class** — 7.8s each, 5m37s for all 43 remaining (#1370's counts; filed as 5m29s for 42) | §11.3 | none; it is a budget, to be re-read each time a page is added |
 | **`pageSurfaceHost` is the one whole-page host, and `probeViewOverflow` delegates to it** rather than keeping the copy it had — the duplication its own header warned about had become real | §11.4 | re-inline the tree into `detail_view_probe.dart` and re-accept two copies |
 
@@ -2373,12 +2394,19 @@ for the chrome sweep's reason (a nav bar appearing at 601px) but for a sharper o
 `AppLayoutConfig.margin(width)` steps **up** at four breakpoints, so the content box
 a page is granted gets **narrower as the screen gets wider** — 601px grants 537px of
 content where 600px granted 568px, and 1241px grants 841px where 1240px granted
-1,216px. There is no single worst width to derive, so `kPageSweepWidths` is a literal
-list of all four step-ups plus the 320px product floor and golden CI's 480/1280 join
-coordinates: **8 widths × 26 locales = 208 cells per page**, pinned as a literal in
-the suite and pinned *against ui_kit* by `page_surface_family_test.dart`, which walks
-321–2560px and fails if any width where the content box narrows is missing from the
-list.
+1,192px. There is no single worst width to derive, so `kPageSweepWidths` is a literal
+list of all four step-ups plus the 320px product floor and golden CI's join
+coordinates: **8 widths × 26 locales = 208 cells per page** as the pilot shipped it,
+pinned as a literal in the suite and pinned *against ui_kit* by
+`page_surface_family_test.dart`, which walks 321–2560px and fails if any width where
+the content box narrows is missing from the list.
+
+**Nine widths and 234 cells since #1372** (2026-08-26), which added 1080 and cut
+nothing. The step-up half of the list is unchanged — 1080 is not a step-up — so
+what §11.9 argues is the other half: every width the pilot chose was chosen for a
+*narrow*-side reason, which left the widest content box the sweep ever rendered at
+977px while the app grants up to 1,192px. Read §11.9 before re-deriving this list;
+the two arguments it rejects are the two that look obvious.
 
 Two shape decisions, both recorded in §10.1: one family class parameterised by a
 `PageSurfaceCase` rather than one class per page (two pages share a host and an axis;
@@ -2387,7 +2415,7 @@ route, fixture and premise are values), and the premise carried as
 body. The second is #1364/#1366 applied before the fact rather than after: both pilot
 pages open with `if (isLoading) return AppLoader()`, and a loader is a centred box
 that cannot overflow at any width in any locale — so a drifted fixture does not turn
-this sweep red, it turns 208 cells **green over a spinner**. That failure mode is
+this sweep red, it turns all 234 of a page's cells **green over a spinner**. That failure mode is
 what `page_surface_family_test.dart` measures directly: it pumps a loader-only cell,
 asserts the overflow verdict is clean, and asserts the cell fails anyway.
 
@@ -3121,7 +3149,9 @@ its own premise), and the gap is now recorded twice: in the case's doc, and as a
 pin in the oracle (`isNot(contains(DetailSpeedCard))`) so a later wave that writes the
 fixture has to delete a test that names the scope. `device_list` got the second negative
 pin, for the responsive trap §11.6 closes with: `UspDeviceFilterPanel` cannot be a premise
-because it holds at four of the eight widths.
+because it holds at four of the eight widths that existed then — four of nine since
+#1372, which does not change the argument: a `requires` entry has to hold at *every*
+swept width, and adding a wide one cannot rescue an entry that fails at 320px.
 
 #### Counts, and a correction to §11.6's per-file row
 
@@ -3161,10 +3191,12 @@ aggregate.**
 
 The nine reachable `instant_setup` pages, and the first wave that does not land what it
 was filed for: **eight are declared, the ninth is measured and left `queued`**. The gate
-now sweeps **fifteen** pages, `page` holds **3,120** cells, and the committed dataset is
-**6,736** rows. The filed figure was 9 × 208 = 1,872 cells and a 3,328-row dataset; the
-delivered one is 1,664 and 3,120, and the missing page is the subject of the second
-finding below.
+now sweeps **fifteen** pages, `page` held **3,120** cells the day this wave landed, and
+the committed dataset was **6,736** rows. The filed figure was 9 × 208 = 1,872 cells and
+a 3,328-row dataset; the delivered one is 1,664 and 3,120, and the missing page is the
+subject of the second finding below. (§11.9 widened every page by one width later the
+same day, so the same fifteen pages are **3,510** cells and the dataset **7,126** rows
+today; every count in this section is the 208-cell page it was measured on.)
 
 | Page | Arrived at | Phase pinned | Work |
 |---|---|---|---|
@@ -3349,9 +3381,9 @@ it stays true is for something to re-read the repo.
 
 #### What this wave deliberately leaves unmeasured
 
-- **`pnp_setup`'s 208 cells**, until ui_kit's `AppStepper` is fixed. The fixture exists,
-  the tripwire is written, and the roster carries the figure — so the work left is a
-  dependency bump, not an investigation.
+- **`pnp_setup`'s 208 cells** (234 since §11.9), until ui_kit's `AppStepper` is fixed. The
+  fixture exists, the tripwire is written, and the roster carries the figure — so the work
+  left is a dependency bump, not an investigation.
 - **The other phases of the pages that pin one.** Each declared case pins exactly one
   phase; the PnP flow's other branches are a second axis, the same decision
   `port_forwarding` took on tabs (§11.7).
@@ -3359,3 +3391,144 @@ it stays true is for something to re-read the repo.
   reading.
 - **30 page views**, in waves #1379 / #1380. The roster reads 15 swept, 28 queued,
   2 excluded.
+
+---
+
+### 11.9 The width list, closed (#1372, decided 2026-08-26)
+
+**1080 joins `kPageSweepWidths`; nothing is cut.** Nine widths, so a page is 234 cells
+and the fifteen swept pages are 3,510. The ticket existed because the list had been
+assembled three times by three tickets (#1349 chose it, #1302 supplied the pinch, #1370
+corrected what "golden CI's coordinates" meant) and nobody had ever asked it the two
+questions a coverage list has to answer: **is anything missing, and is anything not
+paying for itself.**
+
+#### The argument that was rejected, and it is the obvious one
+
+#1368 records golden CI flagging **53 screens at `screen1080`** the day that width was
+added there, so "1080 finds things" reads as settled and "add it" reads as a formality.
+It is not the reason 1080 is in the list, and the reason it is not is in this repo:
+`test/fixtures/golden_overflow_warnings.json` is a **committed** capture of exactly such
+a run (`--dart-define=screens=1080`, four locales, 2026-08-25, frozen by §3.5), and its
+16 records land on precisely two sites —
+
+| Site | Records | Worst | What it is |
+|---|--:|--:|---|
+| `firmware_update_card.dart:77` | 12 | +72px (`pl`) | the **loading** skeleton — `AppLoader` + `AppGap.md()` + one label in a `Row`, reached through `usp_admin_view.dart` |
+| `usp_sliver_dashboard_view.dart:414` | 4 | +70px | the delete drop target that exists only in **edit mode** |
+
+Neither appears in any of the five committed baselines, at any width, and neither *can*:
+one is a state no fixture in this repo puts a page into, the other is a mode no sweep
+enters. **What those two want is page and state coverage — #1369's job and #1380's — and
+adding a width does not reach them.** Filing 1080 against #1368's 53 would have recorded
+a false expectation: the next reader would go looking for the finds the new width bought
+and conclude the gate was broken when it found none.
+
+Read the caveat with the table, too: that capture is `screens=1080` **alone**, so it
+cannot say whether those two sites also break at 320 or 480. The "all 53 were at
+`screen1080`" shape of the claim is #1368's, from a multi-width CI run, and it is
+cross-repo and uncommitted here.
+
+#### The argument that carries it: the wide side was blind by construction
+
+§11.1's table, extended. Every width the list held had been chosen for a **narrow**-side
+reason — the 320px product floor, the four margin step-ups where the content box gets
+*narrower as the screen gets wider*, the last width before the 906px step down — or for
+the golden join. So:
+
+| | content box |
+|---|--:|
+| widest box the eight-width list ever rendered (1681) | **977px** |
+| widest box **1080** renders | **1032px** |
+| widest box the app grants below the pinch (1240) | **1192px** |
+| widest box the app grants at all (2560; ui_kit stops growing the margin at 1681) | **1856px** |
+
+A defect that needs a **wide** box to appear — a fixed-count grid gaining a column, a
+legend that grows with its chart, a `Row` of fixed-width children that only stops
+wrapping when there is room for all of them — was outside this sweep **by construction**,
+at every width, in every locale. 1080 is the cheapest close available: it is wider than
+all eight, and it is a coordinate golden CI already runs, so it also closes §8's last
+`file:line` comparability gap in the same 26 cells per page.
+
+**The band is narrowed, not closed**, and that is stated rather than implied:
+`page_surface_family_test.dart`'s new oracle pins 1032, 1192 and 1856 together, so the
+residual gap is a number in a test rather than a thing nobody wrote down. It fails if
+someone removes 1080 (the widest swept box falls back to 977) *and* if ui_kit changes
+the margin table under either of the other two.
+
+#### What was measured before deciding, and what it found: nothing
+
+The wide side was swept before it was argued for. A scratch probe (deleted; `ui`-tagged,
+`cell: null`, so no baseline row could be emitted) ran the **fifteen declared pages ×
+1080 / 1240 / 1920 / 2560 × 26 locales = 1,560 cells** and found **zero** overflows.
+
+That result is reported as-is, and it is why the section above argues coverage rather
+than yield: **no find is claimed for 1080.** The probe carried a **positive control** —
+`dhcp` pumped at 200px, below the 320px product floor — which returned 9 incidents, so
+the host, the settle and the collector were proved to work before any "clean" verdict
+from it was trusted. A print-only probe whose failure mode is silence needs one.
+
+#### The cut side, which is the half the ticket expected to act on
+
+Five widths have never produced a find: 905, 1241, 1280, 1441, 1681. Across #1370's
+45-page inventory every overflow the page family has ever seen was at **320** (7 pages),
+**480** (1) and **601** (2). The ticket's implied action was to cut the dead ones.
+
+Nothing is cut, and the reason is what the widths are *for*:
+
+- **1241, 1441, 1681 are margin step-ups.** They are not samples of a smooth axis; they
+  are the three widths where the content box discontinuously narrows. The oracle test
+  `'no step-up is missing from the list'` walks 321–2560px and would fail on their
+  removal — correctly, because the list's stated construction is "every step-up", and a
+  step-up with no find is a step-up that has not been broken *yet*.
+- **1280 is a committed golden coordinate** (`GoldenDevice.desktop1280`), which is what
+  makes §8's cross-pipeline join possible at all.
+- **905 is the last width of the 32px margin**, the width the 906px step *down* is
+  measured against.
+- And the zero itself is weaker than it looks: #1370 swept 43 pages, but only **27** had
+  a fixture that reached a loaded page. The other 16 rendered `AppLoader`, and a spinner
+  is clean at every width — so "these five found nothing" rests on a smaller denominator
+  than the headline count suggests.
+
+1080 is the one width in the list that is **not** a step-up and **not** a floor, which is
+why it needed its own structural pin: the step-up oracle cannot hold it, and without the
+widest-box test above, a later cleanup that read the list as "step-ups plus golden
+coordinates" would drop it as redundant with 1280.
+
+#### Counts, and what moved
+
+| | before | after |
+|---|--:|--:|
+| widths | 8 | **9** |
+| cells per page | 208 | **234** |
+| `page` baseline rows | 3,120 | **3,510** |
+| committed dataset | 6,736 | **7,126** |
+| `layout-gate` | 1,636 | **1,652** (+16) |
+| `./run_tests.sh` | 5,630 | **5,646** (+16) |
+
+The +16 is 15 (one coordinate group per swept page in
+`page_surface_overflow_test.dart`) + 1 (the new oracle). Both rows move by the same
+amount, which is the expected shape — nothing new is untagged.
+
+`capture page` was re-run and the diff read row by row before it was accepted:
+**390 rows added, 0 removed, 0 changed, every one of them `screen_px=1080`, every one
+`clean`.** A purely additive diff is what "a width was added and nothing else moved"
+looks like in the dataset; a single `no longer measured` row would have meant a coordinate
+was traded rather than gained. The other four baselines are byte-identical.
+
+Cost: the page file's median wall clock moves inside its own noise band — 1m27s, median
+of {1m18s, 1m27s, 2m03s}, against #1378's 1m12s over 3,120 cells. **The spread between
+those three readings is wider than this ticket's whole delta**, so the honest statement
+is 24.8ms per cell and "not measurably slower", not a +12% regression. §1.2's rows are
+re-measured accordingly.
+
+#### One AC that could not be met, and it was unmeetable when filed
+
+The ticket asked to land **before #1378 captured its baseline**, so that wave 2's 3,120
+rows would never exist at 208 cells. #1378 landed earlier the same day; by the time this
+ticket was picked up, that ordering was already gone. The remedy is the one this ticket
+performs anyway — a re-capture — so the cost of the missed ordering is one extra
+`capture page`, and it is recorded here rather than silently satisfied. The ticket's own
+figures had expired the same way (seven pinned literals and 1,456 rows when filed;
+fifteen and 3,120 when implemented) — a ticket's counts are a measurement with a date on
+it, which is why every number above carries one.
