@@ -169,8 +169,23 @@ class _UspIpv6SectionState extends ConsumerState<UspIpv6Section> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
-          SizedBox(width: 160, child: AppText.labelLarge(label)),
-          const Spacer(),
+          // `Expanded`, not a fixed 160px box plus a `Spacer`. Two columns of a
+          // 601px page give this row ~253px, and 160px + the switch + the section
+          // card's insets was 5.5px past that in all 26 locales (#1380) — the
+          // desktop layout's narrowest column is narrower than the whole content
+          // box of a 320px phone, so this row was the only one on the page with a
+          // hard floor under it. The switch does not move: the `Spacer` existed only
+          // to push it to the far edge, which the `Expanded` does as well.
+          //
+          // What it costs, measured rather than assumed: the share is 142.5px where
+          // the box was 160px, and across all three labels × 26 locales exactly one
+          // string is in between — `sv`'s "6rd Tunnel (6rd-tunnel)" at 159.8px, which
+          // now takes two lines. The other 77 are 58.6px or less. A clean two-line
+          // wrap in one locale for a row that was clipped in all 26 is the trade, and
+          // no smaller gap buys it back (`sm` would reclaim 4px of the 17px). Both
+          // directions guarded in test/page/_shared/page_surface_overflow_test.dart.
+          Expanded(child: AppText.labelLarge(label)),
+          AppGap.md(),
           AppSwitch(value: value, onChanged: onChanged),
         ],
       ),

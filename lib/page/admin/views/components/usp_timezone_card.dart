@@ -69,9 +69,20 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.titleMedium(loc(context).timezone),
+                // Expanded, not `spaceBetween` with an intrinsic title: the
+                // trailing group is a status capsule plus a 40px icon button and
+                // it is inflexible, so a `Row` handed it unbounded width and gave
+                // the title whatever was left — over by up to 19px in `pl` at
+                // 320px (#1380). Expanding the title right-aligns the group for
+                // free and turns the overflow into a wrap, guarded for readability
+                // in test/page/_shared/page_surface_overflow_test.dart.
+                //
+                // This is half of that fix. The other half is `usp_admin_view`
+                // keeping one column through the tablet band: 15 more locales were
+                // over here at 601px, and no amount of flex fits a heading into the
+                // 75px two columns of a 601px screen left it.
+                Expanded(child: AppText.titleMedium(loc(context).timezone)),
                 Row(
                   children: [
                     AppBadge(

@@ -399,7 +399,20 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AppText.bodyMedium(loc(context).viewDhcpReservations),
+                  // `Expanded`, because a `spaceBetween` row with two inflexible
+                  // children hands the label whatever the chevron leaves and then
+                  // lets it overflow rather than wrap — `ru`'s
+                  // "Посмотреть резервирования DHCP" was 12.0px past the right edge
+                  // of a 320px phone (#1380). The chevron is 20px, so unlike the
+                  // `addDevice` button in `instant_privacy_view.dart:172` there is
+                  // nothing to reflow below: the label keeps the whole row and takes
+                  // a second line in the locales that need one. Guarded in
+                  // test/page/_shared/page_surface_overflow_test.dart.
+                  Expanded(
+                    child:
+                        AppText.bodyMedium(loc(context).viewDhcpReservations),
+                  ),
+                  AppGap.md(),
                   AppIcon.font(Icons.chevron_right, size: 20),
                 ],
               ),

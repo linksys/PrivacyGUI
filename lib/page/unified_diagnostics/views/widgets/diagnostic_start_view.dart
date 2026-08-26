@@ -113,6 +113,24 @@ class _PrimaryAction extends StatelessWidget {
 
   const _PrimaryAction({required this.onTap});
 
+  /// Card-content width below which the action button moves under the text.
+  ///
+  /// The row is icon (40px), text, and a button whose width is a localized label
+  /// plus padding. The text is `Expanded`, so it yields all of its width before the
+  /// row overflows — and then the two fixed children still do not fit: at 320px the
+  /// card grants ~256px and `fr` needed 74px more (#1380, 9 of 234 cells).
+  ///
+  /// Constraining the button instead of moving it is the wrong trade here. Its label
+  /// is already `Flexible` with `TextOverflow.ellipsis` inside ui_kit, so a
+  /// `Flexible` on the outside buys a green sweep and an ellipsized call to action —
+  /// "Commencer maintenant" as "Comm…" — which is a defect the sweep cannot see.
+  ///
+  /// 360 rather than the 600px mobile breakpoint so that only the widths that
+  /// actually overflow reflow: the card grants ~256px at a 320px screen and ~416px
+  /// at 480px, and 480px was clean in all 26 locales. The gate pins both halves of
+  /// that claim — see `test/page/_shared/page_surface_overflow_test.dart`.
+  static const _reflowBelow = 360.0;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -122,26 +140,47 @@ class _PrimaryAction extends StatelessWidget {
       child: AppCard(
         isSelected: true,
         onTap: onTap,
-        child: Row(
-          children: [
-            Icon(Icons.rocket_launch, size: 40, color: colorScheme.primary),
-            AppGap.xl(),
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final icon =
+                Icon(Icons.rocket_launch, size: 40, color: colorScheme.primary);
+            final text = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.titleLarge(loc(context).runFullDiagnostic),
+                AppGap.xs(),
+                AppText.bodySmall(
+                  loc(context).runFullDiagnosticDesc,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            );
+            final button =
+                AppButton(label: loc(context).startNow, onTap: onTap);
+
+            if (constraints.maxWidth < _reflowBelow) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.titleLarge(loc(context).runFullDiagnostic),
-                  AppGap.xs(),
-                  AppText.bodySmall(
-                    loc(context).runFullDiagnosticDesc,
-                    color: colorScheme.onSurfaceVariant,
+                  Row(
+                    children: [icon, AppGap.xl(), Expanded(child: text)],
                   ),
+                  AppGap.lg(),
+                  SizedBox(width: double.infinity, child: button),
                 ],
-              ),
-            ),
-            AppGap.lg(),
-            AppButton(label: loc(context).startNow, onTap: onTap),
-          ],
+              );
+            }
+
+            return Row(
+              children: [
+                icon,
+                AppGap.xl(),
+                Expanded(child: text),
+                AppGap.lg(),
+                button,
+              ],
+            );
+          },
         ),
       ),
     );
