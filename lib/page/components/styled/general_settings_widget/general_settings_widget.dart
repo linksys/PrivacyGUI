@@ -188,13 +188,13 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                         AppTextButton(
                           loc(context).ok,
                           color: Theme.of(context).colorScheme.error,
-                          onTap: () {
+                          onTap: () async {
                             logger.i('[Auth]: The user manually end session');
                             context.pop();
-                            ref
+                            await ref
                                 .read(remoteClientProvider.notifier)
                                 .endRemoteAssistance();
-                            ref.read(authProvider.notifier).logout();
+                            await ref.read(authProvider.notifier).logout();
                           },
                         ),
                       ],

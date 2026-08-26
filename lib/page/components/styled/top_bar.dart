@@ -237,10 +237,14 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           actions: [
             AppTextButton(
               loc(context).ok,
-              onTap: () {
+              onTap: () async {
                 context.pop();
-                ref.read(remoteClientProvider.notifier).endRemoteAssistance();
-                ref.read(authProvider.notifier).logout();
+                // Tear the session down before logging out, so logout is the
+                // last thing that touches the stored credentials.
+                await ref
+                    .read(remoteClientProvider.notifier)
+                    .endRemoteAssistance();
+                await ref.read(authProvider.notifier).logout();
               },
             )
           ],

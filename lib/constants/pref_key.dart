@@ -35,3 +35,6 @@ const pLocalPassword = 'LocalPassword';
 const pBiometrics = 'Biometrics';
 const pLinksysToken = 'LinksysToken';
 const pLinksysTokenTs = 'LinksysTokenTs';
+// Serial number the linksys token was issued for. A token is only valid for
+// that device, so it must never be reused across devices.
+const pLinksysTokenSn = 'LinksysTokenSn';

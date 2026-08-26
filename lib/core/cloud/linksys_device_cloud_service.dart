@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/cloud/device_token_store.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/guardians_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
@@ -134,39 +134,18 @@ class DeviceCloudService {
     required String macAddress,
     required String deviceUUID,
   }) async {
-    String linksysToken = await _loadToken() ??
-        await _fetchToken(
-          serialNumber: serialNumber,
-          deviceUUID: deviceUUID,
-          macAddress: macAddress,
-        ).then((value) async {
-          const storage = FlutterSecureStorage();
-          await storage.write(key: pLinksysToken, value: value);
-          await storage.write(
-              key: pLinksysTokenTs,
-              value: '${DateTime.now().millisecondsSinceEpoch}');
-          return value;
-        });
-
-    return linksysToken;
-  }
-
-  Future<bool> _isLinksysTokenExpired() async {
-    const storage = FlutterSecureStorage();
-    final tokenTs =
-        int.tryParse(await storage.read(key: pLinksysTokenTs) ?? '');
-    if (tokenTs == null) {
-      return true;
+    const tokenStore = DeviceTokenStore();
+    final cachedToken = await tokenStore.read(serialNumber);
+    if (cachedToken != null) {
+      return cachedToken;
     }
-    const tokenExpiration = 60 * 60 * 24 * 1000;
-    return DateTime.now().millisecondsSinceEpoch - tokenTs > tokenExpiration;
-  }
-
-  Future<String?> _loadToken() async {
-    final isExpired = await _isLinksysTokenExpired();
-    const storage = FlutterSecureStorage();
-
-    return isExpired ? null : await storage.read(key: pLinksysToken);
+    final linksysToken = await _fetchToken(
+      serialNumber: serialNumber,
+      deviceUUID: deviceUUID,
+      macAddress: macAddress,
+    );
+    await tokenStore.save(linksysToken, serialNumber);
+    return linksysToken;
   }
 
   Future<String> _fetchToken({
