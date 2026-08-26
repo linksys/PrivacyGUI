@@ -71,6 +71,39 @@ one exemption from the loader rule — declared as the pinned set
 indistinguishable from the silent narrowing #1364/#1366 found three times.
 `known_overflows.json` is still empty.
 
+**#1380 then ran the fourth wave and closed the axis** (2026-08-27, §11.12): the
+remaining **twenty-one** pages, so the gate holds **43** pages and **10,062** page cells,
+the committed dataset is **13,678** rows, and with the two unreachable exclusions that is
+**45 of 45 page views under `lib/page/` accounted for**. This wave is where the epic's
+ordering shows up in its numbers. Waves 1–3 were *chosen* — the fixture already existed,
+or a flow, or the entry surfaces — and needed **one** widget fix between the twenty pages
+they added; wave 4 is the **remainder**, and needed **fourteen** — fourteen reported
+coordinates, sixteen edits, 13 files, eleven of its twenty-one pages. So the per-page fix
+rate of a wave is an artefact of when it ran,
+and the last wave pays what the earlier ones deferred. Six kinds of defect came out of it
+and **only two are locale defects**: at least seven of the fourteen break in `en`,
+including the epic's largest single find (`usp_test_console_view.dart:1147`, 52 cells,
++109px, a hard-coded English dropdown), and two are the undeclared `AppResponsiveLayout` tablet arm
+giving a 601px screen **narrower** columns than a 320px phone — the class §11.9's 1080
+width was added for, found at the other end of the list. The 13 rows carrying a
+fixture-less figure confirmed #1379's rule: **not one came in above its queued figure**,
+and the mechanism is that an error path is work (`usp_menu_view` −42.6%) while a fixture is
+content (`pnp_static_ip` +63%, the one exception and the rule's boundary). All four
+inherited exclusion candidates **stay in**, each with a written verdict in
+`page_roster.tsv`; `usp_sliver_dashboard_view`'s 315.4ms/cell was a cross-basis artefact
+and reads **58.6**, so nothing had to absorb 66s of pump CPU. §11.12 carries the final
+43-page distribution and supersedes every projection in §11.2, §11.3 and §11.6.
+**#1371's deferred split decision was also taken, and the answer is four suites**: the
+page sweep measures **558s against a 145.2s floor**, ×4.01 on `--tags layout-gate`, so the
+file that hid *inside* the gate at fifteen pages now **is** the gate — 95% of its wall
+clock, on 1.07 of ten cores. `kPageSweepSuiteCount` stays **1** and moving the calls is a
+successor ticket; §11.12 carries the five-arm A/B and the three reasons. The same
+measurement retired the epic's cost model as an *estimate*: a projection summed from
+per-page figures is a **floor** — 336.1s modelled against 558s measured — because a page
+in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
+#1380 measured and did not explain. `known_overflows.json` is **still** empty — four waves
+and a pilot in, across 10,062 cells, it has never held an entry.
+
 **Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · **R4 → gone; it left this epic on 2026-08-22 (§9.4)** — #1346 is a standalone golden-facing ticket, and #1339 (retire the golden framework's own parser) stays as a gate-side finishing ticket whose verification is offline rather than CI-bound (§3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349** · plus **#1361**, the fixture-decoupling ticket §9.4 opened. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
 **Two steps this document did not have (added 2026-08-21).** R1–R3 as written verify that each port matches its own baseline, which is necessary and not sufficient: a refactor that makes 3,800 cells run faster and quieter while measuring less satisfies all of it. So **R5 (#1348)** re-runs the card suite's existing mutation table against the ported code and adds one *executed* mutation per framework invariant — the precedent being that table's own row 1, where a real defect was killed by 26 of 26 `network_health` tab-0 cases while the main width sweep, the largest thing in the file, saw nothing (§9.3, which also records which of that table's counts no longer reconcile). And the **pilot (#1349)** is now ticketed inside the epic rather than deferred past it, gated on R5, with §10 Q5 as its deliverable.
@@ -268,22 +301,46 @@ columns for a contention check instead (392.96s gate against 400.18s suite here,
 the containment the wall clock no longer shows), and read §11.10's ceiling for the reason
 this matters rather than being a curiosity.
 
+**#1380 re-measured every row and the table's shape changed, not just its numbers**
+(§11.12). Twenty-one more pages doubles the page sweep's cells and multiplies its clock by
+**4.9** — 1m53s to 9m13s — and it takes the two totals with it: the gate goes 3m45s →
+9m34s and `./run_tests.sh` 3m27s → 9m40s. Three readings are worth taking off this table
+rather than out of §11.12:
+
+- **Run by itself, the page sweep is 95% of the whole PR gate's wall clock** (558.25s of
+  586.15s, shell) and the gate's long pole outright. The two totals are within 6s of each
+  other and of the page file itself, because everything else in either selection finishes
+  while the page file is still running: with the page suite moved aside the same two arms
+  read **2m17s** (1,573 tests) and **3m09s** (5,566 tests).
+- **The per-cell column stopped agreeing with the roster, and that is the finding.** This
+  column is always the whole file's clock ÷ its cells, so it is an *in-situ* figure. At 22
+  pages it read 21.9ms against a 22.4ms roster median — near-identical, which is why the
+  epic's additive cost model looked sound. At 43 pages it reads **55.0ms** against a
+  **21.5ms** median: the model is a floor, not an estimate (§11.12).
+- **The inversion above is gone, because the long pole is now in both selections.** Wave
+  3's oddity was the gate's wall clock exceeding the suite that contains it; at 43 pages
+  the containment reads the right way round again (9m34s inside 9m40s) for the same reason
+  it broke — one serial block dominating both. So the retired heuristic is not restored;
+  it is simply not being contradicted this wave. Keep using the CPU columns: 553.68s gate
+  against 580.48s suite.
+
 | Suite | `flutter test` tests | Pumped cells | Wall clock | Per cell |
 |---|---|---|---|---|
 | Card sweep (one file) | **102** (99 pre-merge, 1,921 pre-#1343) | 1,924 | 17s (**21s** wall) | **8.8ms** |
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **38** (37 pre-merge, 80 pre-#1344) | 78 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **222** (162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 5,148 + 104 guard pumps | 1m53s (**1m58s** wall), against readings of {1m18s, 1m27s, 2m03s} at fifteen pages — the spread is wider than a whole page's delta, so read the per-cell figure and not the difference | **21.9ms** (21.9ms pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **499** (439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 8,764 rows † | 2m11s (**2m17s** wall) | — |
-| The same five via `--tags overflow` | **499** | 8,764 rows † | 3m14s (**3m32s** wall) | — |
-| Whole `layout-gate` family (48 files) | **1,764** (1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 8,934 | 3m45s / **3m54s** wall (3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,757** (5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m27s / **3m32s** wall (3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
+| **Page sweep (one file, new at #1349)** | **448** (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 10,062 + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| The five overflow sweeps (5 files, named) | **725** (499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 13,678 rows † | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
+| The same five via `--tags overflow` | **725** | 13,678 rows † | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
+| Whole `layout-gate` family (48 files) | **2,041** (1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,848 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **6,034** (5,757 pre-#1380; 5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | **9m40s / 9m46s** wall (3m27s / 3m32s pre-#1380, 3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
-baselines hold 1,943 + 347 + 78 + 1,248 + 5,148 = 8,764 rows, of which the *sweeps* pump
-8,744 and **20 are hand-written guards that pump a real card and record their coordinate
+baselines hold 1,943 + 347 + 78 + 1,248 + 10,062 = **13,678** rows (8,764 pre-#1380), of
+which the *sweeps* pump 13,658 and **20 are hand-written guards that pump a real card and
+record their coordinate
 anyway** — `card.tab_registry` (6), `card.single_view` (12), `card.profile_data` (1) and
 `popup.exempt` (1). Each is in the dataset for the same stated reason, and it is the
 reason this column is rows: they are what decides how much the sweeps cover (which tabs
@@ -2522,6 +2579,20 @@ measured exceed 38ms** and the worst is 315.4ms, 8× the top of the band. What t
 bounds is how much the *instrument* moves between sessions on a fixed page; what it does
 not bound is the next page.
 
+> **SUPERSEDED, and the whole section with it — read §11.12 for the final numbers.**
+> Every figure above is a two-page reading, and #1380 finished measuring the population it
+> was a sample of: **43 pages, median 21.5ms, mean 27.6ms, min 11.0, max 104.7**. Three
+> specific things here are now known to be wrong rather than merely provisional. The
+> **33–38ms band contains 3 of the 43 pages** — it is not a range pages fall in, it is
+> where these two happened to sit, and it sits above the third quartile (33.4). The **inversion**
+> below (dhcp dearer than wifi_settings) survives as a fact about two pages but not as
+> evidence about a class: at 43 points cost tracks laid-out widget count loosely and
+> nothing else at all. And 315.4ms, quoted just above as the worst page in the app, was a
+> cross-basis artefact — the same page reads **58.6ms** on this basis. The section is kept
+> because the *method* is what later waves inherited (isolate with `--plain-name`,
+> subtract a pump-free control, take a median of three) and because the record of what a
+> two-page sample could and could not support is the reusable part.
+
 The guard itself costs **3.57s for 52 pumps — 68.7ms each**, twice a swept cell, and the
 reason is which coordinates it pumps: 320px and 601px are the two narrowest content boxes
 the page sweep visits, where dhcp's two tables wrap into the most lines. It is the
@@ -2636,6 +2707,21 @@ of how that CPU lands, and this pilot's own 416 cells calibrate both ends:
   also has to decay upward as pump time approaches the rest of the run's — 8,944 cells
   cannot stay free when they exceed the whole current gate — which is exactly why the
   decision below is taken against the CPU column.
+
+> **SUPERSEDED — the projections in this section are done, and §11.12 has the measured
+> answer.** Every row above that is not marked measured is `37.7ms × cells`, and the
+> epic's completed sweep says what that constant was worth. The 43-page row projected
+> **5m37s over 8,944 cells**; the real 43 pages are **10,062 cells** (§11.9 widened them)
+> and cost **278.0s** — so the projection read **17.5% high while counting 12.5% fewer
+> cells**, which puts the per-cell constant **37% above** the measured mean of 27.6ms and
+> **75% above** the median page. It erred in the safe direction, and it erred for a
+> reason worth carrying forward: a mean taken over two pages, one of which was an outlier
+> in the sample, cannot describe a right-skewed population. What *did* survive is the
+> shape of the argument rather than its arithmetic — the CPU column was the right column
+> to decide against, the ratio really was a property of the selection, and §11.10 and
+> §11.12 both reach their conclusions the same way. The decision below also survived
+> being taken on wrong numbers, which is the more interesting outcome: see §11.12's
+> closing note on why.
 
 **So: the two pilot pages graduate into the PR gate, and pages do not graduate as a
 class.** That decision does not depend on which bound is right, which is why it is
@@ -3049,6 +3135,22 @@ fall inside the 33–38ms band; 17 are below 33 and 8 above 38. Min 7.6, **media
 27.4**, mean 37.9, max 315.4. The mean agrees with 37.7 and describes nothing:
 `sliver_dashboard` alone is 66s of the measured 3m23s, a third of it in one page.
 
+> **SUPERSEDED by §11.12's 43-page distribution, and this one's own basis is why.** The
+> 28 figures above are one-shot wall-clock readings; the roster's committed column is
+> three-run medians with a pump-free control subtracted, and the two do not mix. #1380
+> re-measured the seven rows that had reached the roster still carrying figures from this
+> run and **five of the seven moved by more than the ±7% floor, every one of them
+> downward** (support −63.2%, `firmware_update` −58.2%, `router_assistant` −32.3%,
+> `advanced_settings` −19.5%, `unified_diagnostics` −14.6%; `test_console` +1.5% and
+> `remote_assistance` +0.8% agreed). Support took **no widget fix at all**, which is what
+> isolates the cause as the basis rather than the fixes, and the two that agreed are one
+> cheap page and one expensive one, so it is not simply the sub-20ms band. The headline
+> casualty is the sentence above: `sliver_dashboard`'s **315.4 reads 58.6**, so it is the
+> 4th most expensive page and 4.9% of the sweep rather than a third of it in one page.
+> Nothing had to absorb 66s of pump CPU and #1371 did not need re-opening. **Read this
+> section for the inventory — which pages exist, which need a fixture, what is excluded —
+> and §11.12 for what any of them costs.**
+
 #### Reconciling against the four waves
 
 Total unchanged at 43; two pages become exclusions and one moves wave.
@@ -3059,6 +3161,17 @@ Total unchanged at 43; two pages become exclusions and one moves wave.
 | #1378 `instant_setup` | 10 | **9** | 7 | 0 | 2 | 16 of 45 |
 | #1379 entry surfaces | 6 | 6 | 5 | 0 | 1 | 22 of 45 |
 | #1380 the rest | 21 | 21 | 3 | 5 | 13 | **43 of 45** + 2 excluded |
+| #1380 **as it landed** | 21 | 21 | **10** | **11** | **18** | **43 of 45** + 2 excluded |
+
+**The last two rows are the same wave, before and after, and the three columns that
+moved are the ones a planner would have used.** #1370 could reach 8 of the 21 pages
+without a fixture and read 3 clean against 5 overflowing there; run with fixtures, 11 of
+the 21 overflowed and 10 were clean. Fixture debt went the same way, 13 → 18, for the
+reason `page_roster_test.dart` records: the column counted pages nothing could measure,
+and four pages with an unusable builder plus one unpinned cost artefact are not in that
+set. So an inventory taken without fixtures **under-reads defects and under-reads the
+work**, in the same direction and by a similar factor, and it under-reads them because
+the same missing fixture causes both. §11.12 is the measured wave.
 
 Three moves, each with its reason:
 
@@ -3736,6 +3849,14 @@ model is the right direction for a ceiling. **The headroom is now 15.0s — abou
 pages** — so wave 4 is where the projection crosses, and by then the crossing is a print
 rather than a red.)
 
+> **Superseded 2026-08-27 (#1380). The parenthesis above is the part that did not
+> survive.** At 43 pages the model reads 336.1s and the file measures 558.25s — the
+> "conservative … right direction for a ceiling" claim reverses, by 66%, and the three
+> readings it was based on (+14%, +30%, +10%) were the whole margin it ever had. The
+> inequality and the *rule* stand and are what §11.12 decides the split on; what a
+> projection is worth does not. §11.12, "A page's cost is not additive", has the
+> per-page measurement and the nine pages that carry the reversal.
+
 The ceiling is the right criterion because it is the point where the trade changes
 sign. Below it, splitting spends CPU and buys nothing, since the serial block is
 hidden inside the rest of the run. Above it, the suite *is* the long pole and every
@@ -3757,7 +3878,27 @@ never this arithmetic: it is check 5's print, which weighs each page at its own 
 Today that reads **134.8s against the 149.79s floor, 15.0s of headroom** — one wave of
 pages, not four abstract ones.
 
+> **Amended 2026-08-27 (#1380).** Wave 4 added 21 pages, the median fell again (22.4 →
+> **21.5**, the roster's `usp_apps_view`), and the *modelled* crossover moved out once
+> more, to **30 pages** — which the file had already passed. The measured crossover was
+> behind it: the 43-page file measures 558.25s against a re-measured 145.20s floor, so
+> the trade changed sign somewhere in the low twenties and the model did not see it. The
+> ladder 23 → 27 → 30 is the model chasing a median while the real cost ran ahead; read
+> it as a demonstration that the crossover cannot be estimated from per-page figures, not
+> as three successive corrections of one number. §11.12 takes the decision on the
+> measurement instead.
+
 #### At 43 pages, which is where #1369 ends
+
+> **Superseded 2026-08-27 (#1380): 43 pages is no longer a projection.** Everything in
+> this subsection was written at 22 pages, about a future. That future is the current
+> state of the tree, so read the subsection as the forecast it was and §11.12 for what
+> arrived. Three of its numbers were wrong in ways worth naming: **321.3s** became a
+> 336.1s model and a **558.25s** measurement; **"at least three suites"** became four;
+> and **13 unmeasured rows** became zero — the medians those rows were weighed at were
+> upper bounds, and one of them (`usp_sliver_dashboard_view`, the paragraph below) was
+> over by 5.4×. What survives is the criterion: the ceiling is the point where the trade
+> changes sign, and the split is decided against the floor.
 
 The roster projects the full end state at **321.3s** — 43 in-scope rows, **30** of them
 measured, the other **13** weighed at the measured **22.4ms/cell** median. That is
@@ -3794,6 +3935,19 @@ have to be a cheaper fixture, not a smaller bin — `page_sweep_suites_test.dart
 a solo page above the mean from the balance check for exactly this reason, and
 deliberately does **not** exempt it from the projection it reports.
 
+> **Corrected 2026-08-27 (#1380). The expensive page was not expensive, and the
+> reassuring answer was reassuring about the wrong page.** `usp_sliver_dashboard_view`
+> had no fixture when #1370 timed it, so its **315.4ms** was the cost of failing 234
+> cells through an `AsyncError`, not of rendering the dashboard. With a fixture it
+> measures **58.6ms** — 5.4× cheaper, 13.7s rather than 73.8s, and no longer a third of
+> anything. The heaviest single page in the finished roster is `usp_local_network_view`
+> at **104.7ms** = 24.5s modelled, which is 29% of a quarter-suite and still fits; in
+> situ it runs at **417.7ms/cell** = 97.7s, which is 70% of a quarter-suite and only just
+> fits (§11.12's ratio table). So the paragraph's
+> conclusion holds — every page fits in a bin — and its arithmetic does not, and the
+> reason it does not is the one #1380 was told to check first: **a queued figure is an
+> upper bound, not a prediction.**
+
 #### The ceiling is reported, not enforced (amended 2026-08-26)
 
 The ceiling shipped as an assertion: `page_sweep_suites_test.dart` failed once a
@@ -3828,6 +3982,34 @@ implies. The split decision is taken **once, at the end of #1380**, when all 45 
 carry a measured figure and the three arms can be re-run against the real thing instead
 of against a median.
 
+> **Amended 2026-08-27 (#1380): the decision was taken, the reporting stayed.** All 45
+> rows carry a figure, the arms were re-run at 43 pages, and the answer is **four
+> suites** (§11.12). The print now reads
+>
+>     [page sweep] page_surface_overflow_test.dart: 43 pages project to 336.1s of serial
+>     pumping against a 149.8s floor — over by 186.3s, which is at least 3 suites of
+>     similar weight. A projection is a floor on the cost, not an estimate: it sums
+>     measured per-page figures, and #1380 measured this file at 558s where the sum reads
+>     336.1s. Reported only; #1380 decided four suites (§11.12).
+>
+> **"At least 3" and "decided four" are not in conflict**, and the sentence between them
+> is why: 3 is `ceil(336.1 / 149.79)` over the *model*, and four is what the measured
+> 558.25s divides into. The print keeps computing the model's floor because that is the
+> only figure a test can derive from the committed roster; the decision is recorded in
+> prose because it rests on a measurement no test can take.
+>
+> Two of the three bullets above have to be re-read in light of that. The first still
+> holds and is now unarguable — the crossing is history, not a forecast, so a red would
+> report a fact this page states. The second **reversed**: splitting is no longer a net
+> loss, it is worth ~400s of gate wall clock for the same ~+120s of CPU on cores that
+> are idle. The third holds, and was checked rather than assumed: the floor was
+> re-measured at **145.20s** with 73 more tests in it, 3% *below* #1371's figure, so it
+> did not rise and the constant was left alone. What keeps the ceiling reported rather
+> than enforced is now a fourth reason, and a stronger one: the red would be **correct**,
+> and no PR author can act on it, because the remedy is a four-file refactor with its
+> own A/B — so an assertion would block whoever happens to touch the roster next until
+> that ticket lands.
+
 **What stays enforced is membership.** A page that silently loses its
 `runOverflowSweep` call is a coverage loss no other PR-gate test can see (the three
 records above all stay green, and `page.tsv` would show it but nothing in the gate runs
@@ -3841,6 +4023,15 @@ only the wall-clock projection was downgraded.
 A suite's weight is the sum of its pages' **measured** `ms_per_cell` from
 `test/fixtures/page_roster.tsv`, × 234 cells, + 3.57s per readability guard it holds
 (§11.2's measurement: 52 pumps, 68.7ms each). Two properties make that honest:
+
+> **Amended 2026-08-27 (#1380): the guard term is now 4.465s.** Wave 4 added eleven
+> guard groups, so the term stopped being a rounding error and got re-derived from the
+> whole set rather than from #1349's one group: **13 groups, 18 tests, 845 pumps** across
+> the sweep file, 58.0s in the same json run, ÷ 13 = 4,465ms per group. It is charged per
+> *group* because a group is what a suite holds — `kReadabilityGuardPages` maps a page to
+> its guards, and a guard cannot be moved to another shard without its page. The old
+> figure was 25% low, and at four suites that difference is which shard 58.0s lands in
+> rather than a decimal on a printed total.
 
 - **No page is ever weighed by a guess.** `page_roster.dart` rejects a `swept` row with
   no figure, so a page is measured before it can be declared, and it carries its own
@@ -3857,10 +4048,25 @@ A suite's weight is the sum of its pages' **measured** `ms_per_cell` from
   it does that by moving the date the ceiling is crossed, not by silently making a
   suite heavier than it reads.
 
+> **Closed 2026-08-27 (#1380): there is no `-` row left.** All 43 swept pages carry a
+> measured figure and the two excluded ones carry a reason, so the second property above
+> is now history rather than a rule in force — it will apply again only if a page is
+> declared before it is measured, which `page_roster.dart` still refuses. The direction
+> held for all 13: not one came in *above* its queued figure. The extreme was
+> `usp_sliver_dashboard_view`, 315.4 → 58.6.
+
 The ±25% balance tolerance is a decision rather than a measurement: loose enough that
 §11.6's ±40% per-page noise cannot trip it alone, tight enough that no suite can grow
 into the long pole while the others idle. It is vacuous at one suite, and it is written
 now so the split needs no new assertion on the day it happens.
+
+> **Amended 2026-08-27 (#1380): it is still vacuous, and it is now also unusable as
+> written.** The four suites §11.12 decided on cannot be balanced on this rule, because
+> the rule balances on the roster column and that column is not a share of the file's
+> wall clock (§11.12's ratio table: 0.45× to 4.47× per page). The tolerance and the
+> exemption stay in the oracle — they are correct machinery over the wrong input — and
+> the successor that moves the calls has to compute the bins from in-situ per-test
+> durations. That is one of the three reasons #1380 declined to perform the split itself.
 
 #### The property that was given up, and it is not the one the split would have cost
 
@@ -3916,8 +4122,9 @@ not, the case count and the register's own literals did — §11.11.)
 
 The pages a user meets **before there is a session** — the landing page, the three
 local-login pages, the menu the dashboard hands off to, and the first-login firmware
-screen. The gate sweeps **twenty-two** pages, `page` holds **5,148** cells and the
-committed dataset is **8,764** rows.
+screen. On the day it landed the gate swept **twenty-two** pages, `page` held **5,148**
+cells and the committed dataset was **8,764** rows. (#1380 closed the axis a day later:
+43, 10,062 and 13,678 — §11.12.)
 
 **The wave's main finding is that the prediction it was filed on was wrong.** #1379's own
 body said to expect overflow finds here, on the reasonable grounds that login pages are
@@ -4072,3 +4279,456 @@ a clock instead of in a print.
 - **21 page views**, all of them #1380's. The roster reads 22 swept, 21 queued, 2 excluded,
   and 13 of the 21 still have no fixture — which is exactly the set this wave's drift
   finding says to read as an *upper* bound.
+
+### 11.12 Wave 4: the last twenty-one pages, and the epic's final distribution (#1380, landed 2026-08-27)
+
+Everything left. The gate sweeps **43** pages, `page` holds **10,062** cells and the
+committed dataset is **13,678** rows. With the two exclusions that is **45 of 45 page
+views under `lib/page/` accounted for**, which is what #1369 was opened to reach.
+
+**This wave has a different shape from the three before it, and the difference is the
+finding.** Waves 1–3 were *chosen*: the pilot took a cost bracket, wave 1 took the pages
+whose fixture already existed, wave 2 took a flow, wave 3 took the entry surfaces. Wave 4
+is a **remainder**, and a remainder is where a wave stops being able to pick the clean
+ones. The three chosen waves needed **one** widget fix between the twenty pages they
+added. This one needed **fourteen**, on eleven of its twenty-one pages. Those are not
+different populations of page; they are different populations of *choice* — so the
+generalisation to carry forward is that **an epic's per-page fix rate is an artefact of
+its ordering, and the last wave pays what the earlier ones deferred.** §8's graduation
+rule was paid fourteen times over rather than repealed once, and
+`known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`: four waves and a
+pilot in, across 10,062 cells, the file has never held an entry.
+
+**Fourteen is a count of *coordinates*, and it is the count worth quoting.** A coordinate
+is a `file:line` the collector reported — the same key `known_overflows.json` would have
+taken had any of these been allowlisted — and the line numbers below are therefore the
+**pre-fix** ones, as everywhere else in this document. Fixing those fourteen took **sixteen
+edits in 13 files** (+565/−222): two coordinates needed two edits each, because
+`usp_timezone_card.dart:71` and `firmware_update_card.dart:77` each had a sibling in the
+same row that had to give up width before flex could do anything. Both counts are exact;
+they answer different questions, and neither is "how many pages" (eleven).
+
+| Page | ms/cell | Arrived at | Fixture | Coordinates fixed |
+|---|--:|---|---|---|
+| `advanced_settings` | 13.6 | 4 of 234, +43px `fr_CA`, and at **601px** | — (watches nothing) | `usp_advanced_settings_view.dart:110` |
+| `remote_assistance` | 13.4 | zero | `gateSessionPendingInfo` | — |
+| `support` | 15.1 | zero | `deviceCredentialsOverrides` | — |
+| `unified_diagnostics` | 15.2 | 9 of 234, `fr` short by 74px | — | `diagnostic_start_view.dart:125` |
+| `firmware_update` | 19.4 | 50 of 234, worst +357px `ru`, +160px `en` | `firmwareUpdateOverrides` | `firmware_update_view.dart:546` |
+| `router_assistant` | 21.6 | 7 of 234, worst +89px `tr` | `routerAssistantOverrides` | `router_assistant_view.dart:409` |
+| `test_console` | 54.2 | 52 of 234, +109px in **every** locale | — | `usp_test_console_view.dart:1147` |
+| `sliver_dashboard` | 58.6 | zero | `dashboardPageOverrides` | — |
+| `usp_dashboard` | 63.5 | zero | reuses `sliver_dashboard`'s | — |
+| `admin` | 22.2 | 30 of 234 + 234 of 234 | `adminPageOverrides` | `usp_timezone_card.dart:71` (two edits), `firmware_update_card.dart:77` (two edits) |
+| `apps` | 21.5 | 16 at 320px, 234, 11 at 601px | `appsOverrides` | `usp_apps_view.dart:90`, `:155`, `:159` |
+| `dmz` | 32.3 | zero | `dmzOverrides` | — |
+| `firewall` | 18.5 | zero | `firewallOverrides` | — |
+| `instant_privacy` | 19.3 | +110px at 320px in 14 of 26 locales | `instantPrivacyOverrides` | `instant_privacy_view.dart:172` |
+| `instant_safety` | 14.5 | zero | `instantSafetyOverrides` | — |
+| `internet_settings` | 36.1 | 5.5px in all 26, at 601px alone | `internetSettingsOverrides` | `usp_ipv6_section.dart:170` |
+| `ipv6_port_service` | 19.6 | zero | `ipv6PortServiceOverrides` | — |
+| `local_network` | **104.7** | +12.0px `ru` at 320px | `localNetworkOverrides` | `usp_local_network_view.dart:399` |
+| `static_routing` | 17.8 | zero | `staticRoutingOverrides` | — |
+| `statistics` | 45.3 | zero | `gateStatisticsOverrides` (authored) | — |
+| `system_log` | 16.2 | +20.0px to +85.0px, all 26 locales, **both** cards | `gateSystemLogState` (authored) | `usp_system_log_view.dart:100` |
+
+`admin`'s two coordinates are worth reading twice: neither is in `lib/page/admin/views/`
+alone. One is a component (`usp_timezone_card`) and one is a card owned by another feature
+(`firmware_update_card`), so a per-directory reading of this table would attribute two of
+the wave's finds to the wrong pages. What the sweep tests is a **page**, and a page is
+whatever it composes.
+
+#### The fixture bill, and why #1370's count of it was low by five
+
+**Eighteen of the twenty-one pages needed a fixture; #1370's `needs_fixture` column said
+thirteen.** The three that need none are `advanced_settings`, `unified_diagnostics` and
+`test_console`, which render under `commonOverrides()` alone. The eighteen were served by
+**sixteen files**, because two files each serve two pages:
+
+- **Nine override builders moved verbatim** out of `test/golden_test/golden_framework/mocks/`
+  under #1361's import ban, with their fixtures moved to `test/mocks/test_data/scenes/` and
+  the golden suite repointed by a two-line import change. Eight are 1:1 — same two
+  declarations in, same two out. `admin` is the exception and grew from 2 declarations to
+  6, because the gate pins four providers the golden suite left live.
+- **Ten fixture files moved**, one more than the builders: `statistics`'s fixtures came out
+  of `test/golden_test/` while its builder already lived in `test/mocks/`.
+- **Six authored from nothing** — `apps`, `system_log`, `router_assistant`,
+  `remote_assistance`+`support` (one file, two pages), `sliver_dashboard`+`usp_dashboard`
+  (one file, two pages), and `firmware_update`.
+- **One superset wrapper authored beside a builder that already worked**:
+  `gateStatisticsOverrides()`. The golden fixtures exist, but **split across three tab
+  states**, and the gate pumps tab 0 and cannot tap — so a fourth composed state had to
+  populate every provider at once. Expect this one again: a golden suite's fixtures are
+  arranged per interaction, and a sweep has no interactions.
+
+**The gap between 13 and 18 is a finding, not an error in either number.** #1370's column
+counted the pages it *could not measure*, which is not the same set as the pages that owe a
+fixture, and the five it missed are five pages whose fixture-less render was good enough to
+time:
+
+- `firmware_update` — a builder existed, in `test/golden_test/`, which #1361 forbids the
+  gate from importing. A builder in a banned location is fixture debt even though `grep`
+  finds it. This one is also the wave's only fixture that was **not** moved: the golden
+  mock overrides nine methods and takes three required parameters, so it was left where it
+  is and a leaner gate-side builder written beside it. That leaves `firmwareUpdateOverrides`
+  and two `Fixed…Notifier` classes defined twice in the tree, which #1361 still owes; the
+  signatures differ enough that importing the wrong one fails to compile rather than
+  rendering the wrong page.
+- `support`, `router_assistant`, `remote_assistance` — no builder anywhere. Reachable at a
+  page level, so `#1370` timed them; nothing pinned their state, so the cell would have
+  been whatever the service returned.
+- `sliver_dashboard` — the 315.4ms/cell artefact. A page that is expensive *because* it is
+  unpinned reads as measured and is not.
+
+The generalisation for the next family: **a page is fixture debt unless a builder that the
+sweep is allowed to import gets it past its loader.** Location and reachability are both
+part of that, and a cost figure is evidence of neither.
+
+#### Six kinds of defect, and only two of them are locale defects
+
+The fourteen coordinates are worth reading as a taxonomy, because the epic's stated premise
+was that a page-level sweep finds *locale* overflows and the finding is that it mostly does
+not. Counted by **edit** rather than by coordinate, so the six classes sum to sixteen:
+
+1. **The responsive band nobody declared** (2 edits) — `usp_apps_view.dart:159` and
+   `usp_timezone_card.dart:71` at 601px. `AppResponsiveLayout`
+   defaults its tablet arm to `desktop`, so a 601px screen took a multi-column layout
+   whose columns are **narrower than the single column a 320px phone gives the same
+   card** (253px vs 288px on `admin`; 152px vs 240px on `apps`). Both pages' worst
+   coordinate was 601px, not their floor, and no amount of flex inside the card can fix a
+   box narrower than the phone's. This is the class §11.9's 1080 width was added for,
+   found at the other end of the list.
+2. **The row of inflexible children under `spaceBetween`** (6 edits) — `usp_apps_view:90`,
+   `instant_privacy_view:172`, `usp_system_log_view:100`,
+   `usp_advanced_settings_view:110`, `usp_timezone_card:71` at 320px, and
+   `usp_local_network_view:399`.
+   Six instances of one
+   idiom — the wave's largest class, and the reason the fix is nearly always the same two
+   words. `system_log` shows what it costs at its worst: all 26
+   locales on both cards, +20.0px to +85.0px. A `Spacer` takes free space when there is
+   some and contributes nothing when there is not. The class splits on what the row can do
+   about it: four of the six could drop the trailing child below the label, and two —
+   `local_network` and `advanced_settings`, whose trailing child is a 20px chevron — have
+   nothing worth reflowing, so the label takes the whole row and wraps.
+3. **No narrow layout at all** (3 edits) — `usp_test_console_view:1147`,
+   `firmware_update_view:546`,
+   `diagnostic_start_view:125`. Two `Expanded(flex: 1)` panes either side of a divider
+   give a 320px screen 159px each; the fix is a threshold, not a flex.
+4. **A hard-coded box that was never its content's size** (2 edits) — `usp_apps_view:155` (a
+   `mainAxisExtent` of 112 against 118px of content, 6px short in every locale on every
+   card) and `usp_ipv6_section:170` (a `SizedBox(width: 160)` label against a 253px row,
+   5.5px short in every locale at 601px alone). Locale-independent by construction.
+5. **A title that cannot be a title at 320px** (1 edit) — `router_assistant_view:409`. `tr`'s
+   `titleLarge` asks 345px inside a Material `AppBar`'s `width - 32`, so it needs a 420px
+   screen and no font size puts it on one line at 320px while leaving it a title.
+6. **A skeleton nothing pumps deliberately** (2 edits) — `firmware_update_card:77`, plus
+   hiding the `Update` button beside it while the fetch is in flight, which is what leaves
+   the caption room to wrap into. An
+   `AsyncNotifier`'s `build` is a `Future` even when the fixture already holds the value,
+   so **every cell renders one loading frame before its data frame** and the collector is
+   installed for both. The state is real in the app — a router that answers slowly holds
+   it for seconds — and nothing else in the gate reaches it. Found by luck, and worth
+   knowing about as a capability: the page sweep measures a page's skeleton for free.
+
+Only 2 and 5 are locale defects. **At least seven of the fourteen coordinates break in
+`en`** — five of them in *every* locale (`usp_apps_view:155`, `firmware_update_view:546`,
+`usp_ipv6_section:170`, `usp_system_log_view:100`, `usp_test_console_view:1147`), plus
+`firmware_update_card:77` in all 234 cells, plus `usp_timezone_card:71` at 601px, where
+`en`'s one-word `Timezone` heading was granted 75.4px for a 77.5px word. Four provably do
+*not* break in `en` — §11.6's find table lists their locales — and three
+(`usp_apps_view:90` at 16 of 26, `:159` at `el` and 10 others, `instant_privacy_view:172`
+at 14 of 26) recorded a breadth without naming whether `en` was in it, so "at least" is the
+honest quantifier rather than a hedge.
+
+**That is the reversal worth carrying forward.** §11.6 measured five of these same pages
+without fixtures and wrote "`test_console` is the only site that breaks in `en` — every
+other one is invisible without the locale axis". Run with fixtures, half of the finds are
+visible in `en`, because a fixture is what puts real strings and real trailing controls
+into the row: an empty state has nothing to compete for the width. So a fixture-less sweep
+does not merely under-count defects (§11.6's 3-clean-of-8 against 10-of-21) — it
+**systematically over-attributes them to the locale axis**, which is the one axis the epic
+was built to defend. `test_console` is the clearest single case: it breaks in `en` by
+exactly as much as in every other locale, because the five `Notification Type` items are
+hard-coded English and `DropdownButtonFormField` sizes itself to the widest of them. That
+is the epic's largest single find — 52 cells, +109px — and it is a defect every engineer and
+every QA build hits at 320px in English.
+
+#### The final distribution across all 43 swept pages
+
+This replaces §11.2's 33–38ms band, §11.3's `37.7ms × cells` projections and §11.6's
+28-page distribution. It is the last measurement the epic produces, and it is on one
+basis throughout: `--plain-name`, `--reporter json` per-test durations summed and divided
+by cells, **three runs, median committed**, per `page_roster.tsv`'s `# basis-note`.
+
+| | §11.2 (n=2) | §11.6 (n=28) | **§11.12 (n=43)** |
+|---|--:|--:|--:|
+| Min | 29.2 | 7.6 | **11.0** (`home`) |
+| Q1 | — | — | **15.1** |
+| **Median** | 37.7 (mean of 2) | 27.4 | **21.5** (`usp_apps_view`) |
+| Q3 | — | — | **33.4** |
+| Mean | 37.7 | 37.9 | **27.6** |
+| Max | 44.8 | 315.4 | **104.7** (`local_network`) |
+| Total pump time | 15.7s / 416 cells | 3m23s / 5,200 | **278.0s / 10,062** |
+
+**It is right-skewed, and that is the shape every projection in this document got wrong.**
+The mean sits 28% above the median; **28 of 43 pages are below the mean** and 20 are below
+20ms/cell; the five most expensive pages (104.7, 63.5, 59.6, 58.6, 54.2) are **28.7% of the
+total cost on 11.6% of the pages**. A median-based projection therefore under-reads and a
+mean-based one over-reads, and both were tried in this document: #1379 projected 43 pages
+at **321.3s** from a 22.4 median and the answer is 278.0s (**13.5% high** — the median it
+used carried thirteen unmeasured rows weighed at it); §11.3 projected **5m37s over 8,944
+cells** at a 37.7ms mean, and the real 43 pages cost 278.0s over **10,062** cells, which is
+**17.5% low on time while counting 12.5% more cells**.
+
+**Cost does not track anything cheap to know in advance.** §11.2's inversion (the page
+picked as cheap being 1.5× the page picked as expensive) generalises: at 43 points the only
+predictor that holds at all is laid-out widget count, and §11.6 measured *that* varying 12×
+per widget. `local_network` at 104.7 is a form page; `home` at 11.0 is a page with a
+picture on it; `usp_dashboard` at 63.5 is forty lines of frame around `sliver_dashboard`'s
+58.6, which is the one pair in the family where the arithmetic is legible. **Measure the
+page.**
+
+#### A page's cost is not additive, and it is not additive in both directions
+
+The distribution above is a sum of **per-page** measurements, each taken with that page's
+tests running alone. §11.10's weighting rule adds them up and compares the total to the
+floor, and that comparison has been the epic's cost model since #1371. **At 43 pages it
+under-reads by 66%.**
+
+| Pages in the file | model (`Σ ms/cell × cells` + guards) | the file measured | model ÷ measured |
+|--:|--:|--:|--:|
+| 15 (#1371) | 98.6s | **89.66s** | 1.10 |
+| 16 (§11.8) | 106.4s | **82s** | 1.30 |
+| 22 (§11.11) | 134.8s | **118s** | 1.14 |
+| **43 (#1380)** | **336.1s** | **558.25s** (three runs: 533.93 / 558.25 / 615.16) | **0.60** |
+
+The first three rows are the reason §11.10 called the projection "conservative … the right
+direction for a ceiling": measured one page at a time and summed, the figures read *high*.
+The fourth row is that claim failing, and failing by three times the margin it ever had in
+hand. Nothing in the arithmetic changed — 278.0s of cell time plus 58.0s of guards is the
+same rule over the same roster — so the gap is in what the rule does not model.
+
+**Where the 222s goes, measured rather than reasoned.** A fourth run of the file with
+`--reporter json` (533.93s wall, so the cheap end of the three) attributes it:
+
+| | measured in the assembled file | the model's term for it |
+|---|--:|--:|
+| the 43 pages' 430 coordinate and cell-count tests | **450.6s** | 278.0s |
+| the 18 readability tests in 13 groups | **75.2s** | 58.0s |
+| the suite's own `loading …` test | 4.3s | — |
+| `setUpAll` + `tearDownAll` | 0.13s | — |
+| **sum of per-test durations** | **530.2s** | — |
+| the run's clock | **531.2s** | 336.1s |
+
+**Only 1.0s of 531.2 is outside a test.** That kills the first explanation anyone reaches
+for — that the roster's basis (per-test durations from the JSON reporter, summed) misses
+harness time between tests. There is no harness time between tests worth naming. The cost
+is inside the test bodies, and the same tests are simply dearer here than they were alone.
+
+**But not uniformly, and not in one direction.** Per page, in-situ ms/cell against the
+committed isolated figure:
+
+| | pages | ratio |
+|---|--:|--:|
+| **cheaper in company** | **30 of 43** | 0.45 – 0.98, median **0.70** |
+| dearer, mildly | 4 | 1.12 – 1.38 |
+| **dearer, severely** | **9** | 1.80 – **4.47** |
+
+The median page costs **70%** of its isolated figure in the assembled file — an isolated run
+amortises font loading, l10n and first-frame JIT over ten tests instead of 448, so most
+pages *look* worse alone. The whole 1.62× on the page term is carried by nine pages:
+`firmware_update` **4.47** (19.4 → 86.7 in-situ ms/cell), `local_network` **3.99**
+(104.7 → 417.7), `test_console` **3.25**, `sliver_dashboard` **3.04**, `dmz` **2.69**,
+`login_local` **2.60**, `usp_dashboard` **2.45**, `pnp_static_ip` **2.18**,
+`local_reset_router_password` **1.80**.
+
+**And it is not position in the run.** Pearson correlation between a page's position and
+its ratio is **0.29** — the mean ratio is 0.91 over the first half and 1.48 over the second,
+which is the whole of what a "later tests are slower" story would predict, and the nine
+severe pages are spread from position 12 to position 40. Nor does the isolated figure
+predict it: the two worst offenders sit at opposite ends of that column (19.4 and 104.7).
+**Why those nine and not the other 34 is unexplained, and #1380 does not explain it.** What
+it does is name it, measure it, and stop treating the sum as a prediction.
+
+**Three consequences.**
+
+1. A page's `ms_per_cell` is a reproducible measurement on a stated basis and **not** a
+   share of any file's wall clock. It is right for the job it has — a wave can take it
+   before the page is onboarded, and it is the same number twice — and wrong for the job it
+   was being given.
+2. Every projection this document has published is a **floor**, including the ones it called
+   conservative. §11.3's 5m37s, #1379's 321.3s and this wave's 336.1s are all less than the
+   file costs.
+3. A cost-balanced split cannot be computed from the roster column. Bins balanced on
+   isolated figures put `firmware_update` in a bin at 19.4 and get 86.7 — so the shard
+   arithmetic in the next section is deliberately done on **wall clock and the floor**, and
+   the successor ticket owes an in-situ re-measurement before it chooses which page goes
+   where.
+
+#### The split decision #1371 deferred: **four suites**
+
+#1371 measured splitting as a net loss and #1380 was named as the ticket that would decide
+it "once, at the end, with all 45 pages measured and the three arms re-run against the real
+thing instead of against a median". All 45 are accounted for, 43 are swept, and the arms
+were re-run on 2026-08-27 — an idle 10-core box, warm caches, one commit, the shell's
+`/usr/bin/time -p real` for every figure (`flutter test`'s own clock reads 5–8s lower and
+is quoted where it matters):
+
+| Measured | page suite held aside | **one file, 43 pages** | ×|
+|---|--:|--:|--:|
+| the page work by itself | — | 448 tests, **558.25s** — median of 533.93 / 558.25 / 615.16 | — |
+| …its user CPU / sys | — | 320.51s / 277.24s | — |
+| `--tags layout-gate` | 1,573 in **145.20s** | 2,041 in **583.00s** | **×4.01** |
+| …its user CPU / sys | 213.73s / 53.78s | 553.68s / 323.01s | ×2.59 |
+| `./run_tests.sh` | 5,566 in **194.95s** | 6,034 in **586.15s** | **×3.01** |
+| …its user CPU / sys | 228.91s / 59.67s | 580.48s / 343.30s | ×2.54 |
+
+**Read the two gate rows first: this one file, run by itself, is 95% of the whole PR
+gate's wall clock** — 558.25 of 586.15 — and taking it out leaves 194.95s, so it adds
+391.2s to a 195s baseline. And 583.00 is only 24.8s more than the file's own 558.25 — so the other 1,573 tests, the whole
+test tree's compile included, now run *inside* the page sweep. §11.10's model has arrived
+exactly as written and inverted: at fifteen pages the page suite hid inside the floor, and
+at 43 the floor hides inside the page suite.
+
+**What splitting costs is CPU, and the CPU is idle.** The suite alone draws
+(320.51 + 277.24) / 558.25 = **1.07 cores of ten**. The gate with it in place draws 1.50 —
+*lower* than the 1.84 the same gate draws without it, because a long serial tail is a
+period with nothing to run beside it. So eight and a half cores watch one chain for nine
+and a half minutes. #1371 measured four shards at **+118.9s user / +53.6s sys** (87.69 →
+206.59, 17.15 → 70.71), and that cost is **per shard** — a fresh isolate, a JIT warm-up and
+`loadAppFonts()` again — not per page, so it is the same ~+120s at 43 pages, where it buys
+back ~400s of wall clock instead of losing 14.7s. **The same measurement, taken twice at
+different sizes, reverses.** That is why #1371 rolled the split back and why #1380 takes it.
+
+**Four, and not five.** The floor is what a shard may hide inside, so the arithmetic is
+wall clock over the floor and nothing finer: 558.25 / 145.20 = **3.84**. Four shards put
+~140s of the measured work in each, at the floor, and the gate goes back to being
+floor-bound near 150–200s. A fifth would divide work that has stopped costing wall clock
+and pay another isolate for the privilege. The section above is why this is not computed
+from the model instead: the model reads 336.1s, which would say three, and it is the number
+that just failed.
+
+**Balance is achievable and is no longer computable in advance.** Two halves to that.
+§11.10's "one page cannot be split, and it is the expensive one" was about
+`usp_sliver_dashboard_view` at #1370's 315.4ms/cell — 73.8s, a third of the projection, and
+the reason that section could not promise balance at 43 pages. #1380 re-measured it at
+**58.6**, and the heaviest page in the final roster is `usp_local_network_view` at 104.7:
+**24.5s** modelled, 4.4% of the file. No single page is anywhere near a quarter of the work,
+so four bins exist. But that page measures **97.7s in situ**, so which bins they are cannot
+be read off the roster — the successor ticket has to balance on figures taken inside a real
+shard. `kPageSweepBalanceTolerance` (±25%) and `kReadabilityGuardPages` (each guard's 4.5s
+travels with its page) are the two mechanisms that already exist for it; what they need is
+an input the roster cannot give them.
+
+**What #1380 does not do is perform the split**, and the reason is not scope-hoarding. It
+is a structural change to where every page cell runs; it owes its own measured four-arm A/B
+at 43 pages, because the only sharded measurement in this document is at fifteen; and it
+moves the suite count, the carrier count and the test counts in four documents that this
+wave has just finished correcting. `kPageSweepSuiteCount` therefore still reads **1** —
+that constant describes the tree, not the plan, and editing it before the calls move turns
+assertion 1 red and moves no cell. The header of `page_sweep_suites.dart` carries the
+decision, the arms and the shard count for whoever picks it up.
+
+**The ceiling stays reported, not enforced**, and for a new reason. #1371's three arguments
+were that the end state was already readable, that a red would contradict its own evidence,
+and that the floor loosens with age. The first two are now spent — the end state was
+readable and *wrong by 66%*, and the evidence has changed sign — and the third did not
+happen: re-measured at 1,573 tests the floor reads **145.20s**, 4.6s *below* #1371's
+149.79s, so it has not risen while the suite grew and the constant keeps the older,
+conservative figure rather than being rebased onto a 3% noise band. What replaces them is
+simpler: the red would now be correct, and there is still nothing the author of an
+unrelated PR could do about it, because the remedy is one restructuring ticket and not a
+change to the page they touched.
+
+**One thing the arms measured by accident, and it is worth keeping.** Holding the page
+suite aside removes **468** tests from `--tags layout-gate` — its own 448, plus the 20 in
+`page_sweep_suites_test.dart`, whose `setUpAll` throws when nothing under `test/page`
+sweeps a page — and produces exactly **one** red, which is that register's. Every other
+record stays green: `kPageSurfaceCases` still lists 43 pages, the roster still calls them
+`swept`, `page.tsv` still holds their 10,062 rows and nothing in the gate diffs it. That is
+§11.10's membership claim demonstrated end to end rather than argued, and it is the reason
+this register was kept when the split it was written for was not.
+
+#### A queued figure is an upper bound — confirmed, and the mechanism named
+
+#1380 was opened partly to test the rule #1379 proposed: a figure measured on a page whose
+fixture does not exist is not a prediction of its swept figure, and where it differs it
+reads **high**. Thirteen rows carried one. **Not one came in above its queued figure.**
+
+Two mechanisms, both seen, neither of them noise:
+
+- **An error path is work.** `usp_menu_view` read 40.1 queued and 23.0 swept (−42.6%),
+  because #1370 measured it with no overrides, where `lanDataProvider` and
+  `uspInstantPrivacyProvider` both land in `AsyncError` — and a throw, a stack capture and
+  a log line are charged to all 234 cells. **A fixture-less page is not a cheaper page; it
+  is a page doing different and often more work.**
+- **A fixture is content.** The one exception to the direction is `pnp_static_ip`, +63%
+  (36.5 → 59.6), because wave 2's state expands the DNS rows and five IPv4 fields render
+  where #1370's default state rendered three. That is the rule's boundary: an upper bound
+  on the *same* content, and a fixture that adds content is not the same content.
+
+And a third source of drift that is neither: **basis**. Seven rows reached the roster in
+this wave's first slice still carrying #1370's one-shot wall-clock figures, and re-reading
+them on the committed basis moved five by more than #1377's ±7% floor, **every one of them
+downward** (`support` −63.2%, `firmware_update` −58.2%, `router_assistant` −32.3%,
+`advanced_settings` −19.5%, `unified_diagnostics` −14.6%), while two agreed (`test_console`
++1.5%, `remote_assistance` +0.8%). `support` took **no widget fix at all**, which is what
+isolates the cause as the basis rather than the fixes; and the two that agreed are one
+cheap page and one expensive one, so it is not simply the sub-20ms band. The operational
+rule, already in the roster's `# basis-note`: **re-measure before planning against a
+figure, and never compare two figures taken on different bases.**
+
+#### The four exclusion candidates: all four stay in
+
+#1369 inherited four pages argued for exclusion on three different grounds, and #1380's AC
+required a written verdict on each. All four are swept. The full arguments are in
+`page_roster.tsv`'s `# verdict` block; the shape of the answer is that **unreachability is
+the only reason this epic accepts for an exclusion, and none of the four is unreachable**:
+
+- **`usp_sliver_dashboard_view`** — non-routed but constructed at
+  `usp_dashboard_view.dart:64`; routed and reachable are different questions. Its *cost*
+  objection is also gone: 315.4 was cross-basis, and 58.6 makes it 4.9% of the sweep.
+- **`usp_dashboard_view`** — the open question was whether a page probe measures anything
+  the chrome and card sweeps do not, and #1380's AC required the answer **on coordinates**.
+  It does. **Coverage**: `kPageSweepWidths ∩ kChromeSweepWidths` is 5 widths, so 1080,
+  1241, 1441 and 1681 — four of this page's nine, including #1302's 1241px desktop pinch —
+  are visited by no chrome cell in any locale. **Tree**: at the five shared widths the
+  chrome sweep pumps `ChromeTopBarFamily` / `ChromeHeaderFamily`, the bar and header
+  alone, so a shared width is not a shared measurement; `page_chrome_family.dart:289`
+  quotes this very page to explain why the header is a *sibling* of the content, which is
+  an argument that the content is not in its tree. **Axis**: the card sweep's axis is card
+  width at a computed grid realization, not screen width, so its cells are not coordinates
+  in this space at all. What the sweep *found* is nothing — the page is at zero across 234
+  cells — so this verdict rests on coverage of coordinates, which is the honest way to
+  state it.
+- **`usp_test_console_view`** — `route_usp_dashboard.dart:201` registers it under
+  `if (kDebugMode || GlobalConfig.feature.enableTestConsole)`, so it is absent from a
+  default release build and present in **every debug build**, which is how it is reached in
+  practice. The AC asked what an exclusion would have cost: the epic's largest find, for
+  **4.6% of the sweep's runtime**.
+- **`router_assistant_view`** — the AC's question was conditional on the page being
+  feature-gated off in shipping configurations, and `route_usp_dashboard.dart:225`
+  registers it **unconditionally**. The premise is false, so the `test_console` reasoning
+  never has to be reached.
+
+#### What this wave deliberately leaves unmeasured
+
+- **`statistics` is four sections of nine, on tab 0 of three.** The narrowest coverage
+  claim in the family, and it is measured rather than estimated: `kPageSweepHeight` is
+  1600px, the tab's sliver builds `Traffic Monitor`, `Traffic Comparison`, `Traffic
+  Distribution` and `Traffic Trends` and stops, and the count is 4 at all nine widths and
+  in `en`/`ru`/`zh` alike because the sliver's extent decides it and not the text. The
+  other five sections never build. Raising `kPageSweepHeight` would measure more and would
+  multiply **every** page in the family by the same factor; that trade belongs to whoever
+  wants the coverage, and #1380 declined to take it silently. `stats_traffic_monitor_legend_test.dart`,
+  `stats_wifi_channels_section_test.dart` and `test/util/statistics/stats_section_probe.dart`
+  are what cover the rest, and `kStatisticsPageCase` says so.
+- **One state per page, on all twenty-one.** Same decision `port_forwarding` took on tabs
+  (§11.7), the PnP flow took on phases (§11.8) and wave 3 took on branches (§11.11) — and
+  now the whole roster carries it. **This is the epic's real remaining coverage gap**, and
+  it is a second axis rather than more of this one: 43 pages × 234 cells says nothing about
+  `firewall`'s disabled state, `dmz`'s second source type, `local_network`'s DHCP-off
+  branch, or `system_log`'s empty list. It is not #1369's, and nothing in this document
+  prices it.
+- **Dialogs, bottom sheets and ui_kit-internal overflow**, all three out of scope by
+  #1380's AC and all three still unmeasured by anything.

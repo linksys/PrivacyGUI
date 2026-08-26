@@ -155,6 +155,7 @@ class PageSurfaceCase {
     required this.overrides,
     required this.requires,
     required this.forbids,
+    this.needsMaterialAncestor = false,
   });
 
   /// The sweep name's suffix — `page.dhcp` — and therefore part of every cell id.
@@ -168,8 +169,45 @@ class PageSurfaceCase {
   /// two places is a name that can disagree with the committed baseline.
   String get sweepName => 'page.$id';
 
-  /// The real view, built fresh per cell.
+  /// The real view, built fresh per cell — **the page's own class, unwrapped**.
+  ///
+  /// Unwrapped is a contract, not a style note. `page_roster_test.dart`'s third
+  /// assertion joins a swept case to its roster row through
+  /// `page.view().runtimeType`, so a closure that returns `Scaffold(body: TheView())`
+  /// resolves to `Scaffold` — a type no file under `lib/page/**/views/` declares — and
+  /// the ⟺ between the 45 discovered pages and the swept cases breaks in both
+  /// directions at once: the case looks like a page nothing declares, and its page
+  /// looks like a file no case sweeps. Both dashboard cases were written that way and
+  /// both failures were exactly that (#1380). A page that needs scaffolding says so
+  /// with [needsMaterialAncestor] instead, which the host applies and the oracle
+  /// looks through.
   final Widget Function() view;
+
+  /// Whether the host must supply a [Material] ancestor for this page.
+  ///
+  /// Almost no page needs it: every other case returns its own `UiKitPageView` or
+  /// `StyledAppPageView`, so [pageSurfaceHost]'s `LinksysRoute` is all the
+  /// scaffolding they take. The two dashboard pages have none of their own — in the
+  /// app their `Material` comes from `UspDashboardShell`, the `ShellRoute` above them
+  /// — and pumped bare every `AppCard`'s `InkWell` throws `No Material widget found`,
+  /// 17 exceptions per cell and not one of them an overflow.
+  ///
+  /// A **flag** rather than a wrapper inside [view] for two reasons. The join above
+  /// is the first. The second is #1364's finding one layer down: scaffolding held in
+  /// a closure body is invisible, so nobody can tell whether a page is pumped under
+  /// chrome the other 42 are measured without. As a field it is pinned per case by
+  /// `page_surface_family_test.dart`, so growing this from two to three pages is an
+  /// edit someone has to defend. What it may **not** become is the real shell — see
+  /// [kSliverDashboardPageCase] for why no page here is pumped under one.
+  final bool needsMaterialAncestor;
+
+  /// [view] as the family actually pumps it.
+  ///
+  /// The one place the [needsMaterialAncestor] wrapper is applied, so the wrapper
+  /// cannot differ between the two dashboard cases, and `view()` stays the bare page
+  /// for anything that asks what class this case sweeps.
+  Widget hostedView() =>
+      needsMaterialAncestor ? Scaffold(body: view()) : view();
 
   /// The page's data providers. Rebuilt per cell rather than shared, because a
   /// `ProviderScope` may not be handed a list whose length changes between pumps
@@ -259,7 +297,7 @@ class PageSurfaceFamily extends OverflowSurfaceFamily {
             locale: locale,
             surfaceSize: Size(width, kPageSweepHeight),
             build: () => pageSurfaceHost(
-              view: page.view(),
+              view: page.hostedView(),
               locale: locale,
               overrides: page.overrides(),
             ),

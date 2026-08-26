@@ -2,8 +2,8 @@ import 'package:privacy_gui/page/internet_settings/views/usp_internet_settings_v
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
-import '../../../golden_framework/mocks/mock_internet_settings.dart';
-import '../fixtures/internet_settings_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_internet_settings.dart';
+import '../../../../mocks/test_data/scenes/internet_settings_scene_data.dart';
 
 void main() {
   runViewGoldenTests(

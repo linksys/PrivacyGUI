@@ -23,9 +23,12 @@ import 'page_sweep_suites.dart';
 /// ## What this closes, and why it is not a consolation prize
 ///
 /// #1371 asked where the page cells should run and measured the answer instead of
-/// assuming it: the page sweep **stays one file**, because four cost-balanced shards
+/// assuming it: the page sweep **stayed one file**, because four cost-balanced shards
 /// cost +14.7s on `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen
-/// pages of the day it was measured — twenty-two now (§11.10). So this oracle is not the bookkeeping a split needed — it
+/// pages of the day it was measured (§11.10). At the 43 of #1380 the same measurement
+/// reverses — one file is 558s against a 145.2s floor, ×4.01 on the gate — so the
+/// split is **decided, and its ticket is the successor that moves the calls**
+/// (§11.12). Either way this oracle is not the bookkeeping a split needed — it
 /// is the hole that was already open with one file, and would have stayed open if
 /// the split had shipped:
 ///
@@ -37,8 +40,11 @@ import 'page_sweep_suites.dart';
 /// - `page.tsv` would notice, as 234 rows reading `no longer measured`, and nothing
 ///   in the PR gate runs that diff.
 ///
-/// Delete one of the twenty-two calls today and every record above still calls the
-/// page covered. That is what assertion 2 is for.
+/// Delete one of the 43 calls today and every record above still calls the
+/// page covered. That is what assertion 2 is for — and #1380's A/B measured it from
+/// the other side: holding the whole suite aside takes **468** tests out of
+/// `--tags layout-gate` (its 448, plus these 20, which cannot load without it) and
+/// produces exactly one red, this file's `setUpAll`.
 ///
 /// ## The five checks — four assertions and one report
 ///
@@ -56,11 +62,12 @@ import 'page_sweep_suites.dart';
 ///    lighter than that is hidden inside it and costs only CPU, and a heavier one is
 ///    the run's long pole where every second is a second on the gate. This shipped as
 ///    an assertion and **Austin downgraded it to a print the same day** (§11.10's
-///    amendment): the 43-page end state is already known to be 2.14× the floor, so a
-///    red at wave 4 would block a PR to report something already written down, and it
-///    would demand the split that #1371 measured as a net loss at today's size. The
-///    number is in front of whoever takes the decision — which happens once, at the
-///    end of #1380 — rather than taking it for them.
+///    amendment), so that the decision would be taken once, with all 45 pages
+///    measured. **#1380 took it: four suites** (§11.12, and
+///    `page_sweep_suites.dart`'s header carries the five-arm A/B). The print stays a
+///    print, for a reason that has changed rather than lapsed — the red would now be
+///    *correct*, and there would still be nothing the author of an unrelated PR could
+///    do about it, because the fix is one restructuring ticket.
 ///
 /// ## Red before green, permanently
 ///
@@ -214,7 +221,7 @@ void main() {
         reason: 'these guard groups are not in kReadabilityGuardPages: '
             '${faults.unregistered.join(', ')}. Register each with the page it '
             'pumps — a guard whose page is unknown cannot be kept beside that '
-            'page across a split, and its 3.6s is charged to whichever suite '
+            'page across a split, and its 4.5s is charged to whichever suite '
             'happens to hold it.',
       );
     });
@@ -284,9 +291,14 @@ void main() {
         final weight = weights[suite.label]!;
         // The one exemption, and it is a floor rather than a loophole: 234 cells of
         // one page are one `runOverflowSweep` call, so a page heavier than the mean
-        // cannot be split and gets a suite to itself. `usp_sliver_dashboard_view` at
-        // 315.4ms/cell — 1m14s alone — is the page this exists for, and the reason
-        // §11.10 cannot promise balance at 43 pages.
+        // cannot be split and gets a suite to itself. It was written for
+        // `usp_sliver_dashboard_view` at #1370's 315.4ms/cell — 1m14s alone — and
+        // #1380 re-measured that page at **58.6**, so the heaviest page in the roster
+        // is now `usp_local_network_view` at 104.7ms/cell, **24.5s**. That is 29% of a
+        // quarter-suite rather than most of one, so §11.10's "cannot promise balance
+        // at 43 pages" no longer holds and the four shards #1380 decided on are
+        // balanceable. The exemption stays: it costs nothing at one suite, and the
+        // next family's heaviest page is not this one.
         if (suite.caseIdentifiers.length == 1 && weight > mean) continue;
         expect(
           (weight / mean - 1).abs(),
@@ -304,22 +316,25 @@ void main() {
 
   group('check 5: the ceiling is reported, not enforced', () {
     // Austin's call, 2026-08-26, and it reversed what #1371 shipped: this used to
-    // fail the build once a suite outgrew the floor. Three reasons, and none of them
-    // is that the number is wrong. (1) The end state is already known — the next
-    // test projects 43 pages at 2.14x the floor (2.27x at #1371) — so an
-    // assertion that fires at wave 4 is an alarm clock set for a time we can
-    // already read, not a warning.
-    // (2) #1371 measured splitting as a bad trade at today's size (+14.7s gate,
-    // +60.8s suite, x2.36 CPU), so a red that says "split now" would be advice
-    // against its own evidence. (3) The floor is a laptop measurement whose divisor
-    // is the rest of the test tree, so it *rises* as the suite grows — it gets
-    // looser with age, which is the wrong direction for a gate.
+    // fail the build once a suite outgrew the floor. Three reasons were given, and
+    // #1380's measurement retired two of them and confirmed the third.
+    // (1) "The end state is already known" — it was, and the next test still projects
+    // it, but the projection under-read: 43 pages model to 336.1s and the file
+    // measures 558s.
+    // (2) "#1371 measured splitting as a bad trade" (+14.7s gate, +60.8s suite,
+    // x2.36 CPU) — at fifteen pages. At 43 the same trade is ~-400s of wall clock for
+    // the same ~+120s of CPU, on eight idle cores, so **#1380 decided to split, into
+    // four** (page_sweep_suites.dart's header has the five arms).
+    // (3) The floor is a laptop measurement whose divisor is the rest of the test
+    // tree, so it should *rise* as the suite grows — looser with age, the wrong
+    // direction for a gate. Re-measured at 1,573 tests it read 145.2s, 4.6s *below*
+    // #1371's, so it has not risen yet; the concern is sound and has not bitten.
     //
-    // So the projection is printed on every run and the split decision is made once,
-    // at the end of #1380, with all 45 pages measured. What stays enforced is
-    // assertions 1-4 — a page silently losing its `runOverflowSweep` call is a
-    // coverage loss no other test in the PR gate can see, which is a different class
-    // of fact from a suite being slow.
+    // The print stays a print anyway, and the reason is now a different one: the red
+    // would be correct, and the fix is a restructuring ticket that no PR author can
+    // perform on the way past. What stays enforced is assertions 1-4 — a page silently
+    // losing its `runOverflowSweep` call is a coverage loss no other test in the PR
+    // gate can see, which is a different class of fact from a suite being slow.
     test(
         'reports each suite\'s projected weight against the '
         '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor', () {
@@ -343,18 +358,21 @@ void main() {
             '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(1)}s floor — '
             '${headroom >= 0 ? '${(headroom / 1000).toStringAsFixed(1)}s of '
                 'headroom' : 'over by ${(-headroom / 1000).toStringAsFixed(1)}s, '
-                'which would be about $needed suites of similar weight'}. '
-            'Reported only; #1380 decides.');
+                'which is at least $needed suites of similar weight'}. '
+            'A projection is a floor on the cost, not an estimate: it sums measured '
+            'per-page figures, and #1380 measured this file at 558s where the sum '
+            'reads 336.1s. Reported only; #1380 decided four suites (§11.12).');
       }
     });
 
-    test('the 43-page end state still needs more than one suite', () {
+    test('the 43-page end state needs more than one suite', () {
       // This one stays an assertion, because it cannot fire as a nuisance: it goes
       // red only if the pages turn out *cheap* enough that the whole split question
       // is moot — which is news worth a red, and a paragraph to delete rather than a
-      // number to edit. It is also what carries the end-state figure the deferred
-      // decision will be made on, so the projection is recorded on every run whether
-      // or not anyone is looking for it.
+      // number to edit. It carried the end-state figure the deferred decision was
+      // taken on, and #1380 took it: 43 pages, every row measured, and the answer is
+      // four suites. It stays because the *next* family will ask the same question of
+      // its own roster.
       final inScope = roster.rows
           .where((r) => r.disposition != PageRosterDisposition.excluded)
           .toList();
@@ -368,7 +386,8 @@ void main() {
 
       // A `-` row is weighed at the median of the measured rows for the projection
       // only — never for a suite's own weight, which is always its own pages' own
-      // measurements. See page_sweep_suites.dart's header.
+      // measurements. Dead since #1380, when the last `-` row gained a figure, and
+      // kept for the next family. See page_sweep_suites.dart's header.
       final projectedMs =
           inScope.fold<double>(0, (sum, r) => sum + (r.msPerCell ?? median)) *
               cellsPerPage;
@@ -378,14 +397,17 @@ void main() {
         greaterThan(kGateFloorWithoutPagesMs),
         reason: 'at ${inScope.length} pages the sweep projects to '
             '${(projectedMs / 1000).toStringAsFixed(0)}s against a '
-            '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor — '
-            'that is why §11.10 keeps a split *question* open rather than '
-            'declaring one file permanent, even though the ceiling above no '
-            'longer fails the build. ${measured.length} of ${inScope.length} rows are '
-            'measured; the rest are projected at the ${median}ms/cell median, and '
-            'the heaviest measured page alone is '
-            '${(measured.last * cellsPerPage / 1000).toStringAsFixed(0)}s and '
-            'indivisible.',
+            '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(0)}s floor — which '
+            'is what says the split question is live, and it is a '
+            'floor rather than an estimate: the file itself measured 558s the day '
+            'this landed, 1.65x the model, because a page in company costs 0.45x to '
+            '4.47x what it costs alone (§11.12). #1380 decided four suites on that '
+            'measurement, not on this sum. ${measured.length} of ${inScope.length} rows are '
+            'measured — all of them, since #1380 — and '
+            'the heaviest single page is '
+            '${(measured.last * cellsPerPage / 1000).toStringAsFixed(1)}s and '
+            'indivisible, which is 4% of the suite where #1370 read it as most of '
+            'a shard.',
       );
     });
   });
@@ -526,46 +548,49 @@ void main() {
       );
     });
 
-    test('the crossover is where §11.10 says it is', () {
-      // 29 pages at the measured 22.4ms/cell median: 152.0s against a 149.8s floor.
-      // The arithmetic §11.10 calls "about 27 pages" — that figure carries the two
-      // readability guards' 7.1s and this drive does not, which is the whole gap
-      // between 27 and 29. Driven rather than asserted in prose. This outlived the
-      // assertion it used to drive: the ceiling is reported now, but the report is
-      // only worth reading if the arithmetic under it is pinned, and this is the only
-      // place the over-the-floor branch runs at all.
+    test('the modelled crossover is 30 pages, and the model is a floor', () {
+      // 30 pages at the final 21.5ms/cell median: 150.9s against a 149.8s floor, and
+      // 29 are under it at 145.9s. Both margins are ~1-4s, so this drive flips on any
+      // edit to the median — which is the intended behaviour, because a median that
+      // moved is a crossover that moved. Driven rather than asserted in prose. It
+      // outlived the assertion it used to drive: the ceiling is reported now, but the
+      // report is only worth reading if the arithmetic under it is pinned, and this is
+      // the only place the over-the-floor branch runs at all.
       //
-      // The median is 22.4 and not #1371's 26.2 because wave 3 added six cheap entry
-      // surfaces to 24 heavier pages, which moved the crossover *out* rather than in
-      // (§11.11). 22.4 is the mean of the two middle rows of an even 30 — 21.8 and
-      // 23.0 — and taking the upper one instead reads 23.0, which is a page's own
-      // figure and looks equally plausible. #1371's 26.2 was an exact middle element
-      // on an odd 29, so nothing in the number's shape says which convention it used.
-      // A median is a moving quantity either way, so this test pins the arithmetic
-      // and check 5's print carries the number anyone should act on.
+      // The median is 21.5 — an exact middle element of an odd 43, not a mean of two
+      // middles as wave 3's even 30 forced (22.4, and 23.0 if you took the upper).
+      // #1371 read 26.2 at 29 pages, wave 3 read 22.4 at 30, and #1380 reads 21.5 at
+      // 43: every wave has pushed the *modelled* crossover further out, because every
+      // wave added pages cheaper than the running median.
+      //
+      // **And every one of those readings under-states the cost, increasingly.** The
+      // model sums per-page figures measured one page at a time, and until #1380 it
+      // over-read by a small margin in the safe direction: at 15 pages it modelled
+      // 98.6s against a measured 89.66s, 10% high. At 43 it models 336.1s against a
+      // measured 558s — 40% low. The sign flipped. What #1380's per-test json shows is
+      // that this is not a uniform per-cell surcharge: 30 of the 43 pages are *cheaper*
+      // in company than alone (median ratio 0.70) and nine are 1.8x to 4.5x dearer,
+      // with no correlation to position in the run (Pearson 0.29) and no explanation
+      // (§11.12). So the real crossover is earlier than 30, this drive cannot say
+      // where, and #1380's decision was taken against a measured file rather than
+      // against this arithmetic.
       final heavy = suiteOf(
-          cases: List.generate(29, (i) => 'kPage${i}Case'), guards: const []);
+          cases: List.generate(30, (i) => 'kPage${i}Case'), guards: const []);
       final weight = pageSweepSuiteWeightMs(
         heavy,
         msPerCellByIdentifier: {
-          for (final identifier in heavy.caseIdentifiers) identifier: 22.4
+          for (final identifier in heavy.caseIdentifiers) identifier: 21.5
         },
         cellsPerPage: 234,
       );
       expect(weight, greaterThan(kGateFloorWithoutPagesMs));
 
-      // ...and today's twenty-two, at the same median, are still under it — 115.3s
-      // against 149.8s. The real figure is heavier than the median projection here
-      // (check 5 prints 134.8s, 15.0s of headroom) because the pages actually swept
-      // are dearer than the roster's median, which now includes 13 unmeasured rows
-      // weighed at it. Wave 3 moved this literal from 16; wave 4 is where the ceiling
-      // is crossed either way.
-      final today = suiteOf(cases: List.generate(22, (i) => 'kPage${i}Case'));
+      final under = suiteOf(cases: List.generate(29, (i) => 'kPage${i}Case'));
       expect(
         pageSweepSuiteWeightMs(
-          today,
+          under,
           msPerCellByIdentifier: {
-            for (final identifier in today.caseIdentifiers) identifier: 22.4
+            for (final identifier in under.caseIdentifiers) identifier: 21.5
           },
           cellsPerPage: 234,
         ),

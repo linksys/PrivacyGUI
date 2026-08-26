@@ -22,8 +22,8 @@
 /// The ticket asked where the page cells should run, and the honest answer came out
 /// of a three-arm A/B rather than out of the intuition the question was built on
 /// (§11.10). One suite runs its own tests in sequence, so the pages in one file
-/// *are* a serial block — 89.66s measured at fifteen of them, ~98s at today's
-/// sixteen — but a serial block only costs wall clock once it exceeds everything it
+/// *are* a serial block — 89.66s measured at fifteen of them — but a serial block
+/// only costs wall clock once it exceeds everything it
 /// runs beside, and under `--tags layout-gate` that floor is
 /// **149.8s** — compiling the whole test tree, because `@Tags` is read by loading a
 /// suite, and then running the other 1,500 tests the tag selects. 90s fits
@@ -34,23 +34,69 @@
 ///
 /// So the model is a *ceiling on the critical path*, not a shard count: a page suite
 /// projected heavier than [kGateFloorWithoutPagesMs] has become the run's long pole.
-/// At sixteen pages the one suite models to 106.4s against a 149.8s floor, so one
-/// suite is right. The crossover lands near **23 pages**, and
-/// `page_sweep_suites_test.dart` computes it from the roster's own figures rather
-/// than from this paragraph's arithmetic.
+/// At fifteen pages the one suite modelled to 90s against a 149.8s floor, so one
+/// suite was right. `page_sweep_suites_test.dart` computes the crossover from the
+/// roster's own figures rather than from this paragraph's arithmetic.
 ///
-/// **The ceiling is reported, not enforced — Austin's call, 2026-08-26**, reversing
-/// what #1371 shipped. The oracle prints each suite's projection and its headroom on
-/// every run and fails on neither, and the split decision is taken **once, at the end
-/// of #1380**, with all 45 pages measured. Three reasons: the 43-page end state is
-/// already known (2.14× the floor, 2.27× when #1371 wrote this), so a red at wave 4
-/// would be an alarm set for a
-/// time already readable; splitting was *measured* as a bad trade at today's size, so
-/// a red advising a split would contradict its own evidence; and the floor is a
-/// laptop figure whose divisor is the rest of the test tree, so it rises as the suite
-/// grows — a bound that loosens with age. What stays enforced is membership: a page
+/// ## The decision #1371 deferred, taken: **four suites**
+///
+/// **#1371 deferred the shard count to the end of #1380** — reported, not enforced —
+/// so that it would be taken with all 45 pages measured instead of extrapolated from
+/// fifteen. All 45 are now accounted for and 43 are swept, and the answer measured
+/// 2026-08-27 on an idle 10-core box is that the page sweep **has to be split, into
+/// four**:
+///
+/// | Arm | tests | wall | user | sys |
+/// |---|---|---|---|---|
+/// | this suite alone, warm | 448 | **558.2s** | 320.5s | 277.2s |
+/// | `--tags layout-gate`, suite present | 2,041 | **583.0s** | 553.7s | 323.0s |
+/// | `--tags layout-gate`, suite held aside | 1,573 | **145.2s** | 213.7s | 53.8s |
+/// | `./run_tests.sh`, suite held aside | 5,566 | **195.0s** | 228.9s | 59.7s |
+/// | `./run_tests.sh`, suite present | 6,034 | **586.2s** | 580.5s | 343.3s |
+///
+/// Read the middle two rows first: **run by itself this one file is 95% of the whole
+/// PR gate's wall clock** — 558s of 586s, and taking it out leaves 195s, so it adds
+/// 391s to a 195s baseline. The gate went 145.2s → 583.0s by adding it — ×4.01 — and
+/// 583.0 is 25s more than the file's own serial chain, which is the long-pole model arriving
+/// exactly as §11.10 wrote it, only inverted. At fifteen pages the page sweep hid
+/// inside the floor. At 43 the floor hides inside the page sweep, and everything
+/// else in the gate is now free.
+///
+/// **What splitting costs is CPU, and the CPU is sitting idle.** The suite alone
+/// draws (320.5 + 277.2) / 558.2 = **1.07 cores of ten**; the whole gate with it draws
+/// 1.50. So 8.5 cores watch one serial chain for nine minutes. #1371 measured four
+/// shards at +119s of user CPU (88 → 207) and that cost is *per shard*, not per page
+/// — it is fonts, JIT and isolate startup — so it is the same ~+120s at 43 pages,
+/// where it buys back ~400s of wall clock instead of losing 14.7s. **The same
+/// measurement, taken twice, reverses.** That is why #1371 rolled the split back and
+/// why #1380 takes it.
+///
+/// **Four, and not five**, because the floor is what a shard may hide inside:
+/// 558.2 / 145.2 = 3.84, so four shards put ~140s in each, just under the floor, and
+/// the gate goes back to being floor-bound near 150–190s. A fifth shard would divide
+/// work that no longer costs wall clock and pay another isolate for it.
+///
+/// **The four-shard arm is #1371's, restored, not a new design** — §11.10 records
+/// what it looked like and `kPageSweepBalanceTolerance` and
+/// [kReadabilityGuardPages] are the two things it needs that already exist. It is a
+/// successor ticket rather than part of #1380: it is a structural change to where
+/// every page cell runs, it owes its own measured A/B at 43 pages, and it moves the
+/// suite and carrier counts in four documents. [kPageSweepSuiteCount] stays 1 until
+/// it lands, because that constant describes the tree and not the plan.
+///
+/// **What the ceiling stays is reported, not enforced**, unchanged from #1371's
+/// amendment: the oracle prints each suite's projection and its headroom on every run
+/// and fails on neither. The reason has changed, though. It was "the end state is
+/// already readable, so a red would be an alarm clock set for a time we can read";
+/// it is now "the red would be correct and there is nothing a PR author could do
+/// about it" — the fix is one restructuring ticket, not something to be demanded of
+/// whoever next touches a page. What stays enforced is membership: a page
 /// that silently loses its `runOverflowSweep` call is a coverage loss nothing else in
 /// the PR gate can see, which is a different class of fact from a suite being slow.
+/// The A/B above measured that too, by accident and usefully — holding this suite
+/// aside removed **468** tests from the gate, the 448 above plus the 20 in
+/// `page_sweep_suites_test.dart`, whose `setUpAll` throws when no file under
+/// `test/page` sweeps a page. One red, and it is this register's.
 ///
 /// ## How a suite is found
 ///
@@ -76,10 +122,12 @@
 ///
 /// What a queued `-` row gaining a figure moves is therefore *when the ceiling is
 /// reached* — never a page's own contribution, which was always its own
-/// measurement. 14 rows still carry `-`; §11.10 weighs them at the measured median
-/// (26.2ms) when it projects the 43-page end state, and labels it as a projection.
-/// What the oracle prints uses no median at all: it adds up what is measured and
-/// compares that to the floor, so the reported headroom cannot be moved by a guess.
+/// measurement. **Since #1380 no row carries `-` at all**: 43 of the 45 are swept and
+/// measured and the other two are excluded, so the median-substitution branch in
+/// `page_sweep_suites_test.dart`'s end-state projection is now dead code kept for the
+/// next family. Every figure the oracle prints is a measurement, and it was already
+/// only ever adding up what was measured — the median never entered a suite's own
+/// weight, only the projection.
 library;
 
 import 'dart:io';
@@ -104,16 +152,18 @@ const String kPageSurfaceCasesPath =
 /// should be an edit that says so rather than a number the tree can change by
 /// accident.
 ///
-/// **One, and one until #1380 decides otherwise.** #1371 measured the alternative
+/// **One, and the next edit to this line is four.** #1371 measured the alternative
 /// rather than assuming it: four cost-balanced shards cost +14.7s on
 /// `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen pages of the
 /// day it was measured,
 /// because the page sweep's 90s of serial pumping already fits inside the 149.8s
 /// the rest of that selection takes. Raising this number is only correct once
-/// [kGateFloorWithoutPagesMs] is the binding constraint — see §11.10. The oracle
-/// prints the projection and the headroom on every run so the number is in front of
-/// whoever takes that decision, but it will not fail the build to force it: the call
-/// is taken once, at the end of #1380, with all 45 pages measured.
+/// [kGateFloorWithoutPagesMs] is the binding constraint — and **since #1380 it is**:
+/// 43 pages measure 558s against a 145.2s floor, so the header's decision is taken
+/// and the count is four. It still reads 1 here because this constant describes the
+/// tree, and the tree has one file until the restructuring ticket moves the
+/// `runOverflowSweep` calls. Editing it before then turns assertion 1 red and moves
+/// no cell.
 const int kPageSweepSuiteCount = 1;
 
 /// The wall clock `--tags layout-gate` spends with no page cells in it, in
@@ -136,17 +186,49 @@ const int kPageSweepSuiteCount = 1;
 /// the number is a property of the whole test tree and the other 1,500 tests, both
 /// of which grow. A floor that rose without being re-measured would hide a page
 /// suite that had genuinely become the long pole.
+///
+/// **Re-measured 2026-08-27 for #1380 and kept unchanged**: the same arm is now
+/// 1,573 tests in **145.20s** — 4.6s *lower* at 73 more tests, which is inside the
+/// ±14s session noise §1.2 measures and is the opposite of the direction the
+/// paragraph above worries about. So the floor did not rise while the suite grew,
+/// and the constant stays at #1371's figure rather than being edited to the newer
+/// reading: it is the more conservative of the two, every projection published in
+/// this epic is stated against it, and re-baselining a ceiling to a 3% noise band
+/// would make two tickets' numbers incomparable for nothing.
 const double kGateFloorWithoutPagesMs = 149790;
 
-/// What one readability guard adds to its suite, in milliseconds.
+/// What one readability guard group adds to its suite, in milliseconds.
 ///
-/// §11.2's measurement of the pilot's guard: 52 pumps in 3.57s, 68.7ms each —
-/// twice a swept cell, because it pumps only 320px and 601px, the two narrowest
-/// content boxes this family visits. Applied to both guards, which assumes wave
-/// 1's costs the same as the pilot's; the guards are 7% of the suite's weight, well
-/// inside the headroom the ceiling leaves, and they are counted at all because a
-/// suite's weight should be what it really runs rather than only its cells.
-const double kReadabilityGuardWeightMs = 3570;
+/// **Re-derived for #1380's thirteen groups.** The unit underneath it is unchanged:
+/// §11.2's measurement of the pilot's guard, 52 pumps in 3.57s, **68.7ms a pump** —
+/// twice a swept cell, because a guard pumps only the narrowest content boxes this
+/// family visits. What changed is the multiplier. [pageSweepSuiteWeightMs] bills this
+/// once per guard *group*, and a group is no longer one test: the thirteen groups hold
+/// **eighteen tests and 845 pumps**, and 845 / 13 = 65 pumps a group, so 65 × 68.7 =
+/// 4,465. The pump counts are each `widths × locales`, readable in the guard's own
+/// loops: 52 for `dhcp`, `port_forwarding`, `advanced_settings`, `internet_settings`
+/// and `local_network`; 34 for `unified_diagnostics`, `firmware_update`,
+/// `router_assistant` and `test_console`, which read all 26 locales at 320px and one
+/// locale at each of the other eight widths; 78 for `instant_privacy` and
+/// `system_log`; 133 across `admin`'s three tests and 160 across `apps`' four.
+///
+/// So this is a **mean, not a bound**, and it is exact at the only granularity the
+/// file uses it: 13 × 4,465 = 58.0s, which is what 845 pumps cost. Per group it is
+/// wrong in both directions — `apps` runs 2.5× it, the four 34-pump guards about half
+/// — and that starts to matter only when a split puts guards in different suites,
+/// which is what [kReadabilityGuardPages] exists to make survivable.
+///
+/// This doc used to promise the other fix: "if a future wave puts three guards in one
+/// group, correct this rather than widening the note." Wave 4 put three in `admin` and
+/// four in `apps`, and the promised correction — a per-group pump count in this
+/// register — was **reconsidered and not taken.** A pump count is a hand-copied
+/// integer with no verifier, and this wave's own finding is that an unverified column
+/// drifts: §11.12 records #1370's `needs_fixture` reading 13 where the truth was 18.
+/// A mean re-derived from arithmetic anyone can redo from the guards' loops keeps the
+/// suite total exact and adds nothing new to drift. The previous value, 3,570, was
+/// this same unit at one pump count per group; re-derive it again when the guard set
+/// changes shape rather than trusting it.
+const double kReadabilityGuardWeightMs = 4465;
 
 /// Which page each readability guard pumps, keyed by the guard's `group` title.
 ///
@@ -158,10 +240,48 @@ const double kReadabilityGuardWeightMs = 3570;
 /// This is also the map that makes a future split safe. Rule 4 pairs a guard with
 /// the *site* an overflow fix changed, so when the sweep is finally split the guard
 /// has to travel with its page — otherwise it measures a page that is no longer
-/// beside it, and its 3.6s is charged to the wrong suite.
+/// beside it, and its 4.5s is charged to the wrong suite. That stops being
+/// hypothetical at the four suites #1380 decided on: thirteen groups over four shards
+/// is 58.0s that has to land in the shard holding each guard's page.
+/// Wave 4 fixed fourteen coordinates on eleven pages and so declares **eleven
+/// groups holding sixteen tests** — thirteen groups and eighteen tests below, with the
+/// pilot's and wave 1's. The count of groups follows the count of *pages*, not of
+/// coordinates, and that is not a naming
+/// choice: this map holds one page per title, and a group is billed once by
+/// [pageSweepSuiteWeightMs] — so sixteen tests under one wave-level title would be
+/// unregisterable *and* would bill eleven fixtures as one, while one group per
+/// coordinate would bill `admin`'s fixture twice and `apps`' three times.
 const Map<String, String> kReadabilityGuardPages = {
   'readability at the site the pilot fixed': 'kDhcpPageCase',
   'readability at the site wave 1 fixed': 'kPortForwardingPageCase',
+  'readability at the site wave 4 fixed in advanced_settings':
+      'kAdvancedSettingsPageCase',
+  'readability at the site wave 4 fixed in unified_diagnostics':
+      'kUnifiedDiagnosticsPageCase',
+  'readability at the site wave 4 fixed in firmware_update':
+      'kFirmwareUpdatePageCase',
+  'readability at the site wave 4 fixed in router_assistant':
+      'kRouterAssistantPageCase',
+  'readability at the site wave 4 fixed in test_console':
+      'kTestConsolePageCase',
+  // Two guards, one page: `admin` is where the wave's sixth and seventh fixes both
+  // landed, and they are in one group because the register keys on the group name
+  // rather than on the test. Splitting them into two groups would say the page had
+  // two independent reasons to be guarded, when it has one page and two sites.
+  'readability at the site wave 4 fixed in admin': 'kAdminPageCase',
+  // Four guards, one page, and the plural in the group name is deliberate: `apps`
+  // took three `lib/` fixes — a tablet band, a mobile card extent and a heading row
+  // — plus the column-count shape guard that keeps the first of them honest. Same
+  // reason as `admin` for keeping them in one group: the register bills one fixture
+  // per group title, so four groups would bill this page four times.
+  'readability at the sites wave 4 fixed in apps': 'kAppsPageCase',
+  'readability at the site wave 4 fixed in instant_privacy':
+      'kInstantPrivacyPageCase',
+  'readability at the site wave 4 fixed in internet_settings':
+      'kInternetSettingsPageCase',
+  'readability at the site wave 4 fixed in local_network':
+      'kLocalNetworkPageCase',
+  'readability at the site wave 4 fixed in system_log': 'kSystemLogPageCase',
 };
 
 /// How far suites may sit from each other's weight once there is more than one.

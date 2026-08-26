@@ -1,3 +1,15 @@
+/// Composed scenes for `usp_statistics_view` — the golden suite's two states, its two
+/// tab interactions, and the gate's one.
+///
+/// Moved here from
+/// `test/golden_test/page/statistics/fixtures/statistics_test_data.dart` by #1380
+/// (wave 4), for the reason `dmz_scene_data.dart` records: the layout gate may not
+/// import from `test/golden_test/` (#1361), and one fixture read by both suites beats
+/// two that can disagree. The mock that consumes these had already moved — see
+/// `test/mocks/provider_overrides/mock_statistics.dart`, which three non-golden suites
+/// were already importing before this wave.
+library;
+
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -155,3 +167,13 @@ const testWifiData = WifiData(
     ),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// The gate scene
+// ---------------------------------------------------------------------------
+//
+// There is no `gateStatisticsState` here, because this page's scene is not one state
+// but seven providers: `gateStatisticsOverrides()` in
+// `test/mocks/provider_overrides/mock_statistics.dart` composes it from the finals
+// above, and its doc says why the gate wants every one of them populated where the
+// golden suite splits them across three states.

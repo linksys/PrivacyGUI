@@ -13,6 +13,8 @@ import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart'
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
+import '../test_data/scenes/statistics_scene_data.dart';
+
 class FixedTrafficAnalysisNotifier extends UspTrafficAnalysisNotifier {
   final TrafficAnalysisState _fixedState;
 
@@ -130,3 +132,29 @@ List<Override> statisticsOverrides({
       devicesDataProvider
           .overrideWith(() => FixedDevicesDataNotifierForStats()),
     ];
+
+/// [statisticsOverrides] with every provider populated — the layout gate's scene.
+///
+/// A separate entry point rather than defaults on [statisticsOverrides], because that
+/// function's `const`-empty defaults are what its three section-level callers want:
+/// they pump one section and pass only the provider it reads.
+///
+/// The gate wants the opposite, and this is the one scene in the family that is a
+/// *superset* of what any single golden state passes. The golden suite splits its
+/// fixtures across three states because it photographs three tabs; the gate pumps tab
+/// 0 only (see `kStatisticsPageCase` for why) and cannot tap, so the cheapest way to
+/// guarantee no section renders an empty placeholder for want of a fixture is to hand
+/// every provider its data regardless of which tab reads it.
+///
+/// `firewallData` is left at its `FirewallData.empty()` default because that is the
+/// only [FirewallData] either suite has ever had — `StatsFirewallRulesSection` is
+/// eighth of the nine sections on tab 0 and below the fold at every swept width, so an
+/// empty one changes nothing this scene measures.
+List<Override> gateStatisticsOverrides() => statisticsOverrides(
+      trafficState: testTrafficState,
+      deviceAnalyticsState: testDeviceAnalyticsState,
+      systemMonitorState: testSystemMonitorState,
+      systemInfoData: testSystemInfoData,
+      wifiData: testWifiData,
+      portForwardingData: testPortForwardingData,
+    );

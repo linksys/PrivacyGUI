@@ -4,8 +4,8 @@ import 'package:ui_kit_library/ui_kit.dart' show AppButton;
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
-import '../../../golden_framework/mocks/mock_instant_privacy.dart';
-import '../fixtures/instant_privacy_test_data.dart';
+import '../../../../mocks/provider_overrides/mock_instant_privacy.dart';
+import '../../../../mocks/test_data/scenes/instant_privacy_scene_data.dart';
 
 void main() {
   runViewGoldenTests(

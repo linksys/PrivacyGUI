@@ -1,6 +1,6 @@
 # Overflow Gate — How To Use It
 
-**Last Updated: 2026-08-26** · counts measured that day, all green
+**Last Updated: 2026-08-27** · counts measured that day, all green
 
 **This is the operator's guide.** If you are changing UI and want to know whether
 it overflows before you open a PR, everything you need is here. The other three
@@ -21,7 +21,7 @@ are for people maintaining the gate itself:
 fvm flutter test --tags overflow
 ```
 
-That runs every overflow sweep in the repo: **8,764 coordinates**, each one a
+That runs every overflow sweep in the repo: **13,678 coordinates**, each one a
 screen × width × tab × locale combination, pumped as its own widget tree and
 asked one question — did a `RenderFlex` overflow?
 
@@ -34,24 +34,36 @@ and the gate is tagged `layout-gate`, so it already runs on every PR.
 
 | Command | Tests | Test clock / wall | When |
 |---|---|---|---|
-| naming the five sweep files (below) | 499 | 2m11s / 2m17s | inner loop while fixing |
-| `fvm flutter test --tags overflow` | 499 | 3m14s / 3m32s | before committing |
-| `fvm flutter test --tags layout-gate` | 1,764 | 3m45s / 3m54s | the whole PR-blocking gate |
-| `./run_tests.sh` | 5,757 | 3m27s / 3m32s | what CI runs |
+| naming the five sweep files (below) | 725 | 8m17s / 8m22s | inner loop while fixing |
+| `fvm flutter test --tags overflow` | 725 | 9m23s / 9m40s | before committing |
+| `fvm flutter test --tags layout-gate` | 2,041 | 9m34s / 9m43s | the whole PR-blocking gate |
+| `./run_tests.sh` | 6,034 | 9m40s / 9m46s | what CI runs |
 
-(Measured 2026-08-26, after #1379 took the page sweep from sixteen pages to twenty-two,
-#1378 from seven to sixteen, and #1372 every page from 8 widths to 9. The five sweep files
-were 342 tests and 49s before wave 2 — the six wave-3 pages alone are +60 tests and +1,404
-cells — and the page sweep now *is* this inner loop: that one file alone measures 1m53s,
-so the other four overlap with it rather than adding to it. Its
-readings have ranged 1m18s to 2m03s at a fixed page count, so treat any figure here as
-±40% and re-measure before planning against it. Note the top two rows: the same 499 tests take
-3m14s under the tag and 2m11s named, because `@Tags` is read by *loading* a suite, so the
-tag compiles every test file in the repo to skip all but five. Identical selection either
-way. And note the bottom two: **the gate now reads slower than the suite that contains
-it** — that is not contention, it is the page file being the long pole while the tag leaves
-the other workers idle; the untagged run fills them. Compare user CPU, not wall clock, if
-you need to tell a busy box from a slow one.)
+**Read this table before you plan your afternoon: the gate takes about ten minutes now,
+not three.** (Measured 2026-08-27, after #1380 took the page sweep from twenty-two pages to
+all **forty-three** — every one of these four rows roughly tripled, and none of the other
+four sweeps changed at all.)
+
+Four readings that matter more than the numbers:
+
+- **The page sweep *is* the gate.** That one file alone measures **9m13s / 9m18s** — 95% of
+  `./run_tests.sh`'s whole wall clock. Move it aside and the same two arms read 2m17s and
+  3m09s. So the other four sweeps and the other 5,586 tests are effectively free: they
+  finish while the page file is still going.
+- **The top two rows are the same 725 tests**, 77s apart, because `@Tags` is read by
+  *loading* a suite — the tag compiles every test file in the repo to then skip all but
+  five. Identical selection either way. Name the files for the inner loop.
+- **Fixing one page? Do not run any of these four.** Run the one file, or better, one page
+  in it (§3's `--plain-name`). A page is ~1/43rd of that 9m13s.
+- **The containment reads the right way round again** (9m34s inside 9m40s). At wave 3 the
+  gate read *slower* than the suite containing it, which was the page file being the long
+  pole while the tag left the other workers idle. It is still the long pole — it is now
+  simply the long pole in both selections. Compare user CPU, not wall clock, if you need to
+  tell a busy box from a slow one: 553.68s gate against 580.48s suite.
+
+Three consecutive runs of the page file read 8m54s / 9m18s / 10m15s — **±7%** around the
+median, tighter than the ±40% the earlier smaller readings drifted by, but still wider than
+a whole page's contribution. Re-measure before planning against any figure here.
 
 The first two select **exactly the same tests**. `@Tags` is only readable by
 loading a suite, so the tag compiles every test file in the repo to then skip all
@@ -68,8 +80,11 @@ fvm flutter test \
 ```
 
 **One thing this selector cannot tell you: whether every page is still swept.**
-All twenty-two pages are in one file and every page is in the PR gate (#1371 measured
-the alternative and kept it that way — §11.10 of the architecture doc). But the
+All forty-three pages are in one file and every page is in the PR gate. (#1371 measured
+the alternative at fifteen pages and kept one file; at 43 the measurement reversed, so
+**#1380 decided to split it into four** and left the move to a successor ticket — §11.12
+of the architecture doc. Until that lands, "one file" is still what you are running, and
+nothing below changes when it does: the same pages, the same cells, the same tags.) But the
 test that checks a declared page has not lost its `runOverflowSweep` call —
 [page_sweep_suites_test.dart](../../test/layout_gate/page_sweep_suites_test.dart) —
 carries `layout-gate` and **not** `overflow`, because it pumps no cells. So delete
@@ -170,7 +185,7 @@ The names in this subsystem mislead in a specific way, so:
 | **family** | The declaration of one sweep: which coordinates exist, and how one coordinate becomes a widget. Five sweeps, nine families. |
 | **cell** | One coordinate. A `clean` cell is a recorded row, **not** an absence. |
 | **ratchet** / **allowlist** | [known_overflows.json](../../test/fixtures/known_overflows.json). A tolerance list that *weakens* the verdict. **Currently empty**, so nothing is exempt. See §6. |
-| **baseline** (`.tsv`) | A coverage register — a record of *which* 8,764 coordinates were measured. It judges nothing. See §5. |
+| **baseline** (`.tsv`) | A coverage register — a record of *which* 13,678 coordinates were measured. It judges nothing. See §5. |
 | `sweep_test.dart`, `ratchet_test.dart` | **Not sweeps.** Unit tests of the framework itself. You never run them deliberately. |
 
 The two easiest mistakes: thinking `sweep` is an auxiliary check on top of the
@@ -227,17 +242,20 @@ Coverage today, per sweep:
 | `card` | 1,943 | every dashboard card × narrowest grid width per span × tab × 26 locales |
 | `chrome` | 1,248 | top bar and dashboard header at screen width × locale × action mode |
 | `popup` | 347 | the same cards pinned into the popup form |
-| `page` | 5,148 | twenty-two whole pages, 9 widths × 26 locales each — the #1349 pilot's `dhcp` and `wifi_settings`, #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), and #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`) |
+| `page` | 10,062 | **forty-three whole pages** — every page view under `lib/page/` except the two excluded as unreachable — at 9 widths × 26 locales each. The #1349 pilot (`dhcp`, `wifi_settings`), #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`), and #1380's wave 4, the remaining twenty-one (`admin`, `advanced_settings`, `apps`, `dmz`, `firewall`, `firmware_update`, `instant_privacy`, `instant_safety`, `internet_settings`, `ipv6_port_service`, `local_network`, `remote_assistance`, `router_assistant`, `sliver_dashboard`, `usp_dashboard`, `static_routing`, `statistics`, `support`, `system_log`, `test_console`, `unified_diagnostics`). `test/fixtures/page_roster.tsv` is the register that says so |
 | `forced_form` | 78 | the boxes a user's forced-size pick produces, which no drag could |
-| | **8,764** | |
+| | **13,678** | |
 
 `page` is the row that moves, on both of its axes. The epic (#1369) takes the
 remaining 21 page views in waves, at **234** cells each — and #1372 moved the width
 axis itself on 2026-08-26, adding 1080 so a page is 9 widths rather than 8 (every
 page's pin went 208 → 234 and the register gained 390 rows, all of them clean).
 `test/fixtures/page_roster.tsv` is the register of which page is swept and which is
-queued, and is the file to read before assuming a page absent from the list above is
-a page with nothing wrong with it.
+not. Since #1380 closed the last wave there is no `queued` row left in it: 43 swept
+plus 2 excluded is all 45 page views under `lib/page/`, and the two exclusions
+(`pnp_complete_view`, `speed_test_view`) each carry the reason in the row. So a page
+missing from the list above is now either one of those two or not a page view at all —
+and the register is still the file to read before assuming so.
 
 ---
 
@@ -257,12 +275,16 @@ You do not have to remember any of this. The gate tells you.
 
 ### Adding a sweep
 
-Only when the overflow is on a surface nothing currently renders. Not covered
-today: **23 of the 45 page views** (21 queued and 2 excluded) — named one per line in
-[`test/fixtures/page_roster.tsv`](../../test/fixtures/page_roster.tsv) since #1382,
-so "~40" is no longer an estimate — plus dialogs and bottom sheets. You write a
-*family* — which coordinates exist, and how one becomes a widget — and declare it
-once:
+Only when the overflow is on a surface nothing currently renders. **Page views are
+done**: 43 of 45 are swept and the other 2 are unreachable, per
+[`test/fixtures/page_roster.tsv`](../../test/fixtures/page_roster.tsv) (#1382's
+register, closed out by #1380). What is still uncovered is a different shape of thing:
+**dialogs and bottom sheets**, which no family renders at all; **ui_kit-internal
+overflow**, which is upstream in `linksys/privacyGUI-UI-kit`; and **second states of
+pages already swept** — the sweep pumps one state per page, so `firewall` disabled,
+`dmz`'s other source type or `system_log`'s empty list are not measured by adding a
+page but by adding a case. You write a *family* — which coordinates exist, and how one
+becomes a widget — and declare it once:
 
 ```dart
 runOverflowSweep(family: MyDialogFamily(), expectedCellCount: 208);
@@ -273,10 +295,11 @@ dataset row and the cell-count pin all come with it. #1349 added two pages this
 way and changed nothing in the engine — a page is a `PageSurfaceCase` data entry,
 not a class.
 
-**Onboarding a page also moves its roster row** from `queued` to `swept`, with the
-ms/cell the run measured. You will not forget: the roster oracle asserts `swept` and
-`kPageSurfaceCases` agree in both directions, so a page added to the sweep without
-its row goes red naming the path. See the architecture doc §11.5.
+**Onboarding a page also moves its roster row** to `swept`, with the ms/cell the run
+measured. You will not forget: the roster oracle asserts `swept` and `kPageSurfaceCases`
+agree in both directions, so a page added to the sweep without its row goes red naming
+the path — and since #1380 the same oracle is what catches a *new* page view added to
+`lib/page/` with no row at all. See the architecture doc §11.5.
 
 ### Updating the register
 
@@ -366,7 +389,7 @@ Both are why `shoot` exists. When a cell's verdict matters, look at the picture.
 
 ```bash
 # ── run ─────────────────────────────────────────────────────────────────────
-fvm flutter test --tags overflow          # the five sweeps, 8,764 cells
+fvm flutter test --tags overflow          # the five sweeps, 13,678 cells
 fvm flutter test --tags layout-gate       # the whole PR-blocking gate
 ./run_tests.sh                            # what CI runs (includes the above)
 

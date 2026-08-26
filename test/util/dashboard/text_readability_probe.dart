@@ -1,3 +1,5 @@
+import 'dart:ui' show BoxHeightStyle;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -38,11 +40,22 @@ extension TextReadabilityProbe on WidgetTester {
   /// which is sometimes the intended trade — from "wrapped mid-word", because
   /// both leave the widget's `data` intact and both fit inside the box the gate
   /// measures.
+  ///
+  /// `BoxHeightStyle.max` is load-bearing, not a default worth changing.
+  /// `tight` — which this counted with until #1380 — fits each box "per run", and
+  /// a run ends wherever font fallback changes the metrics. Vietnamese "Ứng dụng"
+  /// is two runs of different heights on one line, so under `tight` its two box
+  /// tops differ and one line counts as two: the same false verdict for every
+  /// string whose diacritics leave the primary font. `max` gives every box on a
+  /// line the line's own height, so the distinct-tops count *is* the line count.
+  /// No caller's number went up when this changed — a wrap that was real reports
+  /// the same count either way.
   int textLineCount(Finder finder) {
     final paragraph = paragraphOf(finder);
     final plain = paragraph.text.toPlainText();
     final boxes = paragraph.getBoxesForSelection(
       TextSelection(baseOffset: 0, extentOffset: plain.length),
+      boxHeightStyle: BoxHeightStyle.max,
     );
     expect(boxes, isNotEmpty, reason: '"$plain" painted no glyphs at all');
     return boxes.map((b) => b.top.round()).toSet().length;
@@ -89,6 +102,29 @@ extension TextReadabilityProbe on WidgetTester {
   bool hasSplitToken(Finder finder) =>
       widestTokenWidth(finder) > paragraphOf(finder).size.width;
 }
+
+/// The locale tags whose script writes no spaces between words, so
+/// [TextReadabilityProbe.hasSplitToken] carries no information about them.
+///
+/// The criterion is "did a break fall inside a token", and a token is a
+/// whitespace-delimited run — the only definition available to a test, since Flutter
+/// exposes no line-break iterator. In Thai, Japanese and Chinese a whole sentence is
+/// therefore *one* token, and any sentence long enough to wrap trips the check by
+/// construction. The break itself is not damage in those scripts: breaking between
+/// characters is how they wrap, which is the opposite of the `Ενεργοποιήθ` / `ηκε`
+/// case the criterion was written for.
+///
+/// So this is an exclusion from one assertion, not from a locale's coverage. Every
+/// other measurement still applies to these four — overflow, [isTextClipped] and the
+/// line ceiling are all script-independent, and the ceiling is what catches a
+/// space-less sentence shredded into eight lines.
+///
+/// Why it appears only now: until #1380 every guarded string was a title or a chip
+/// label, short enough to fit one line in every locale, so no caller had a wrapping
+/// space-less string to judge. `firmware_update`'s "your firmware is up to date" is
+/// the family's first full sentence. Do not widen this set to make a failure go away
+/// — `ko` writes spaces, and `ar` and `he` wrap at spaces like Latin does.
+const kLocalesWithoutWordSpaces = <String>{'th', 'ja', 'zh', 'zh_TW'};
 
 /// The supported [Locale] for a `language` or `language_COUNTRY` [tag].
 ///

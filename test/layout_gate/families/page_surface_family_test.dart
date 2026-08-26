@@ -16,8 +16,12 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_det
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
+import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../mocks/test_data/scenes/login_scene_data.dart';
@@ -47,8 +51,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when twenty-two pages fit. It is *also*
-/// green when twenty-two pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when forty-three pages fit. It is *also*
+/// green when forty-three pages never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -67,11 +71,12 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  group('the gate sweeps twenty-two pages, and which twenty-two is a decision',
+  group(
+      'the gate sweeps forty-three pages, and which forty-three is a decision',
       () {
     test(
-        'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine '
-        'and wave 3\'s six', () {
+        'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
+        'wave 3\'s six and wave 4\'s twenty-one', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -97,9 +102,30 @@ void main() {
           'local_reset_router_password',
           'menu',
           'auto_parent_first_login',
+          'advanced_settings',
+          'remote_assistance',
+          'support',
+          'unified_diagnostics',
+          'firmware_update',
+          'router_assistant',
+          'test_console',
+          'sliver_dashboard',
+          'usp_dashboard',
+          'admin',
+          'apps',
+          'dmz',
+          'firewall',
+          'instant_privacy',
+          'instant_safety',
+          'internet_settings',
+          'ipv6_port_service',
+          'local_network',
+          'static_routing',
+          'statistics',
+          'system_log',
         ],
-        // Updated by #1377, #1378 and #1379, and the wording is the point of the
-        // test.
+        // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
+        // the test.
         // This pin is the epic's per-wave checkpoint: it goes red on every wave
         // *by design*, so that the wave has to say here which pages it added and
         // on what grounds. Trimming the list to whatever `kPageSurfaceCases`
@@ -160,7 +186,46 @@ void main() {
         // page — declared, not excluded, with its exemption pinned in
         // `kPagesWhoseLoaderIsContent` below.
         //
-        // The 23 that remain are in `test/fixtures/page_roster.tsv`, not here.
+        // **Wave 4's twenty-one (#1380)**: everything left, which is what makes this
+        // the wave with a different shape from the three before it — the earlier waves
+        // were *chosen* (a bracket, then the free ones, then a flow, then the entry
+        // surfaces) and this one is a remainder. Two slices: the seven whose
+        // `List<Override>` builder already reached the view, and the fourteen the
+        // roster had marked as owing one.
+        //
+        // The fixture bill came in above both slices' arithmetic: **18 of the 21
+        // needed a fixture**, served by 16 files, two of which serve two pages each.
+        // Only three pages need none at all (`advanced_settings`,
+        // `unified_diagnostics`, `test_console`). Nine builders moved verbatim out of
+        // `test/golden_test/` under #1361's rule (eight of them 1:1; `admin` moved and
+        // then grew from 2 declarations to 6), ten fixture files moved, six were
+        // authored from nothing, and one superset wrapper was authored beside a
+        // builder that already worked — `statistics`, whose golden fixtures exist but
+        // split across three tab states the gate cannot tap between. So the split is
+        // roughly half relocation, half authoring. Architecture doc §11.12 and
+        // `page_roster_test.dart` carry why the roster's column read 13.
+        //
+        // What it cost in `lib/` is the number that separates this wave from the three
+        // before it: waves 1-3 needed **one** widget fix between the twenty pages they
+        // added, and wave 4 needed **fourteen** — fourteen reported coordinates, fixed by
+        // sixteen edits in 13 files, because two of the coordinates had a sibling in the
+        // same row that had to give up width before flex could do anything. Those are not
+        // different populations of
+        // page; they are different populations of *choice*, and a remainder is where a
+        // wave stops being able to pick the clean ones. §8's graduation rule is paid
+        // fourteen times over here rather than repealed once, and
+        // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
+        //
+        // The four pages this wave inherited as exclusion candidates
+        // (`sliver_dashboard`, `usp_dashboard`, `test_console`, `router_assistant`) are
+        // all four in this list. `test/fixtures/page_roster.tsv`'s `# verdict` block is
+        // where each one is argued; the short version is that unreachability is the
+        // only reason this epic accepts for an exclusion and none of the four is
+        // unreachable.
+        //
+        // Nothing remains. The 2 that are not here are excluded as unreachable, with
+        // their reasons in `test/fixtures/page_roster.tsv` — so this list and that file
+        // now account for all 45, which is the whole of what #1369 was opened to do.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -259,6 +324,49 @@ void main() {
         reason: 'an exempt id that names no case is an exemption nothing is '
             'checking, and it would keep passing after the page left the gate',
       );
+    });
+
+    test('exactly two pages are pumped under a Material the host supplies', () {
+      // The other membership pin of this family, and the same shape of claim: every
+      // page here is measured with the scaffolding the app gives it and no more, so
+      // "which pages get an extra ancestor" is a list someone has to defend rather
+      // than a closure body nobody reads (#1364's finding, applied to the host).
+      // Both entries are the dashboard pair, whose `Material` comes from
+      // `UspDashboardShell` in the app; a third entry means either a page grew a
+      // real dependency on chrome the other 41 are measured without, or a fixture
+      // was hard to write and a `Scaffold` made the exceptions go away.
+      expect(
+        kPageSurfaceCases
+            .where((c) => c.needsMaterialAncestor)
+            .map((c) => c.id)
+            .toSet(),
+        const {'sliver_dashboard', 'usp_dashboard'},
+        reason:
+            'a page that needs a Material ancestor is a page with no chrome '
+            'of its own. Adding one needs the argument in '
+            'kSliverDashboardPageCase made again — including why a bare '
+            '`Scaffold` and not the real shell.',
+      );
+    });
+
+    test('every case pumps the page class its `view` names', () {
+      // The cheap half of `page_roster_test.dart`'s third assertion, kept here
+      // because this is the file that pins the family's shape and because the
+      // roster's version reads 45 files to say it. `view()` must be the page, so a
+      // wrapper belongs in `hostedView()`: both dashboard cases were written as
+      // `Scaffold(body: TheView())` and the roster join then resolved them to
+      // `Scaffold`, which no file under lib/page/**/views/ declares — the case
+      // looked like a page nothing declares and its page looked like a file no case
+      // sweeps, in the same run (#1380).
+      for (final page in kPageSurfaceCases) {
+        expect(
+          page.view().runtimeType,
+          isNot(Scaffold),
+          reason: 'page.${page.id} returns a wrapper rather than its own view. '
+              'Set needsMaterialAncestor: true instead — the host applies it and '
+              'the roster oracle can still see which page this case sweeps.',
+        );
+      }
     });
 
     // The specific half: the lists themselves, by name. This is the assertion that
@@ -619,6 +727,194 @@ void main() {
             '`checkAndAutoInstallFirmware()` returns false, which makes the view '
             'call `goNamed(RouteNamed.dashboardHome)` — a route this family\'s '
             'single-route host does not have.',
+      );
+    });
+
+    // ---------------------------------------------------------------------------
+    // Wave 4 (#1380). Twenty-one pages arrived and seven are pinned by name here,
+    // on the same standard the three waves above used: a premise gets its own test
+    // when it makes a claim the generic loop cannot state — an absence, a set, or a
+    // relationship between two cases. The other fourteen say only "these widgets are
+    // the loaded page", which the `requires is not empty` loop already covers, and
+    // writing them out would grow this file by fourteen tests that cannot fail
+    // independently of it.
+    // ---------------------------------------------------------------------------
+
+    test('the seven pages that need no fixture at all are named, both ways',
+        () {
+      // Written for wave 4 but pinned over the whole family, because the interesting
+      // fact turned out not to be wave-shaped: seven of the forty-three cases sweep
+      // 234 cells on `overrides: () => const []`, and they are the family's cheapest
+      // rows in every sense — no scene to write, none to keep in step with `lib`.
+      //
+      // Four are pre-session or in-flow screens whose content is static prose and
+      // buttons (`pnp_isp_settings`'s form starts empty, `pnp_unplug_modem` and
+      // `pnp_modem_lights_off` are instruction screens, `home` is the landing page).
+      // Three arrived with wave 4: `advanced_settings` and `unified_diagnostics` are
+      // link/entry surfaces, and `test_console` is a developer form whose fields start
+      // empty.
+      //
+      // Both directions, because each catches a different mistake. Membership catches
+      // a page recorded as fixture-free that has since grown a scene — harmless, but
+      // it makes this record wrong. The equality catches the one that is not harmless:
+      // a page whose scene was *deleted* joins this set silently, and a page sweeping
+      // 234 cells on no overrides looks exactly like a page sweeping 234 cells on the
+      // right ones. `requires` is what would actually fail then; this is what says
+      // which page to look at.
+      const fixtureFree = {
+        'pnp_isp_settings',
+        'pnp_unplug_modem',
+        'pnp_modem_lights_off',
+        'home',
+        'advanced_settings',
+        'unified_diagnostics',
+        'test_console',
+      };
+      for (final id in fixtureFree) {
+        final page = kPageSurfaceCases.firstWhere((c) => c.id == id);
+        expect(page.overrides(), isEmpty,
+            reason:
+                'page.$id is recorded as needing no fixture. If it has grown '
+                'one, take it out of this set — the set is the record of what '
+                'the epic\'s waves actually cost in fixtures.');
+      }
+      expect(
+        kPageSurfaceCases.where((c) => c.overrides().isEmpty).map((c) => c.id),
+        unorderedEquals(fixtureFree),
+        reason:
+            'a page sweeping 234 cells on no overrides at all is either one '
+            'of these seven or a scene that has gone missing, and the second '
+            'looks exactly like green.',
+      );
+    });
+
+    test('page.internet_settings pins five sections and no top bar', () {
+      // The wave's one premise built out of an absence. Its `UiKitPageView` declares
+      // no `topbar`, so requiring `UspTopBar` here would fail all 234 cells — and the
+      // case doc records that being a child route of `advanced_settings` is not the
+      // reason, since `local_network` is a sibling child route and does declare one.
+      expect(
+        kInternetSettingsPageCase.requires,
+        isNot(contains(UspTopBar)),
+        reason: 'this page has no top bar to require. If one has been added to '
+            'the view, add it here too — but check the view first, because the '
+            'other direction of this test is what makes the five sections load '
+            'bearing.',
+      );
+      expect(
+        kInternetSettingsPageCase.requires,
+        hasLength(5),
+        reason: 'with no bar in the premise the five sections are the whole of '
+            'it, and this page is the wave\'s longest form. Dropping one leaves '
+            'four sections vouching for a page that renders five.',
+      );
+    });
+
+    test('the two dashboard pages pin the containment they are in', () {
+      // `usp_dashboard` is roughly forty lines of frame around `sliver_dashboard`, and
+      // the two cases are the only pair in the family where one page's tree is inside
+      // the other's. That makes the pair worth pinning in both directions: they share
+      // the content premise, and the outer page is the only one of the two that can
+      // vouch for the frame.
+      expect(
+        kSliverDashboardPageCase.requires,
+        contains(SliverDashboard),
+        reason:
+            'the inner page is the grid. Without this its premise would hold '
+            'against a header bar over an empty viewport.',
+      );
+      expect(
+        kUspDashboardPageCase.requires,
+        contains(SliverDashboard),
+        reason: 'the outer page renders the inner one, so it must require the '
+            'grid too — otherwise its 234 cells could be measuring a frame '
+            'around nothing, which is the exact failure the two-case split was '
+            'meant to make visible.',
+      );
+      expect(
+        kUspDashboardPageCase.requires,
+        contains(UspTopBar),
+        reason: 'and the bar is what the outer page adds. It is mounted by the '
+            'view itself at usp_dashboard_view.dart:43 rather than passed as '
+            '`UiKitPageView.topbar`, so it is the one premise here that would '
+            'survive the inner page being swapped in.',
+      );
+      expect(
+        kSliverDashboardPageCase.requires,
+        isNot(contains(UspTopBar)),
+        reason: 'the inner page has no bar. Requiring one would make the two '
+            'cases indistinguishable, and the reason there are two is that the '
+            'frame is worth measuring separately.',
+      );
+    });
+
+    test('page.test_console requires the widget at the epic\'s largest find',
+        () {
+      // 52 cells over at usp_test_console_view.dart:1147, worst +109px, and the only
+      // page of the 45 that broke in `en` rather than needing a long locale. The
+      // autocomplete field is what sits at that site, so it is the premise that makes
+      // the fix's 234 green cells mean the fix rather than a console that stopped
+      // rendering its form.
+      expect(
+        kTestConsolePageCase.requires,
+        contains(Tr181AutocompleteField),
+        reason: 'this page was one of the four exclusion candidates and it was '
+            'kept because of what it found. A premise that no longer reaches '
+            'the field would retire that find without retiring the row.',
+      );
+    });
+
+    test('page.local_network requires what its 104.7ms per cell bought', () {
+      // The most expensive page in the roster by 65% over the second, so it is the one
+      // page where "is this cost buying coverage" is a real question. The premise is
+      // the answer: five widget types, three of them form fields, which is what makes
+      // the page expensive in the first place.
+      expect(
+        kLocalNetworkPageCase.requires,
+        containsAll(<Type>[AppIpv4TextField, AppTextFormField, AppSwitch]),
+        reason:
+            'a cheaper premise here would be the worst trade in the family: '
+            'the same 234 cells at the same price, vouching for less.',
+      );
+    });
+
+    test('page.statistics requires a section card, not just its tab bar', () {
+      // The page whose case doc carries the wave's narrowest coverage claim: tab 0 of
+      // 3, and four of tab 0's nine sections, because `kPageSweepHeight` decides how
+      // far the sliver builds. A tab bar over an empty viewport is exactly what a
+      // fixture-less scene produces here, and it fits at every width.
+      expect(
+        kStatisticsPageCase.requires,
+        contains(StatsSectionCard),
+        reason: 'every section on this page is wrapped in one, so the card is '
+            'the difference between "the sliver laid out content" and "the tab '
+            'bar rendered". Since the case already covers only four of nine '
+            'sections, losing the premise would leave it covering none.',
+      );
+    });
+
+    test(
+        'page.system_log requires the card its third content state has none of',
+        () {
+      // Wave 4's other narrow premise, and the family's only case whose page has a
+      // *third* content state: an empty log list renders a centred icon over one line
+      // of prose and no card at all — a tree with no `Row` in it, which cannot
+      // overflow at any width in any locale.
+      expect(
+        kSystemLogPageCase.requires,
+        contains(AppCard),
+        reason:
+            'the empty-list state fits everywhere, so a fixture that drifted '
+            'to it would turn all 234 cells green over a page with nothing in '
+            'it. The card is what makes those cells mean the two log rows.',
+      );
+      expect(
+        kSystemLogPageCase.requires,
+        contains(AppButton),
+        reason:
+            'and the export button is the right-hand end of the one row this '
+            'page can overflow — the row #1380 fixed. Requiring the card alone '
+            'would vouch for a card whose tight row had gone.',
       );
     });
   });

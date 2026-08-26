@@ -8,47 +8,112 @@
 # ms_per_cell measured milliseconds per cell of this page's 9 widths x 26 locales; `-` means NOT MEASURED
 # fixture_debt a `-` on a queued row is #1370's finding that no fixture gets that view past its loader yet
 # basis section 11.2's: an isolated --plain-name run, its coordinate tests only, over one page's cells
-# basis-note Every figure below was taken while a page was 8 widths x 26 locales = 208 cells. #1372 made
-# basis-note it 9 x 26 = 234 on 2026-08-26 and did NOT re-measure this column: a per-cell rate is the
-# basis-note quantity that survives a width being added, and the widest cells are the cheapest to lay
-# basis-note out. Re-measure before planning a wave against a total rather than a rate.
-# basis-note #1377 took the same quantity from --reporter json's per-test durations instead of
-# basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
-# basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
-# basis-note Cross-checked on the five pages it re-measured; four agreed with #1370 within 6%.
-# basis-note So the 8 queued figures still carry #1370's wall-clock-minus-control reading and
-# basis-note the 22 swept ones carry the durations; the agreement above is why one column holds both.
-# basis-note #1378 kept that basis and added a rule: three runs, median committed. Four passes over
-# basis-note pnp_entry read 21.2, 18.5, 11.6 and 10.9 ms/cell, because the first coordinate test of a
-# basis-note run absorbs the font load and the first pump, and that fixed cost is most of a cheap
-# basis-note page's total. Only 1 of its 7 comparable pages landed inside #1377's +/-7% floor
-# basis-note (pnp_modem_lights_off, -2.3%); the rest moved -70% to +63%. Two causes, not one: below
-# basis-note ~20ms/cell the two bases disagree by more than they agree, and pnp_static_ip's +63%
-# basis-note (36.5 -> 59.6) is a fixture difference — this wave's state expands the DNS rows, so five
-# basis-note IPv4 fields render where #1370's default state rendered three. So read any figure under
-# basis-note ~20ms/cell as +/-40%, and re-measure before planning against one.
-# basis-note #1379 kept the same basis and rule (three runs, median) and re-measured its five
-# basis-note comparable pages. 2 of 5 inside #1377's +/-7% floor: local_reset_router_password +0.8%
-# basis-note (26.2 -> 26.4) and login_local -6.4% (23.3 -> 21.8). The other three all moved DOWN —
-# basis-note home -20.3% (13.8 -> 11.0), local_router_recovery -11.6% (21.6 -> 19.1) and
-# basis-note usp_menu_view -42.6% (40.1 -> 23.0). Two of those are inside the +/-40% band the note
-# basis-note above warns about for sub-20ms figures; the menu's is not, and it is a harness finding
-# basis-note rather than noise. Same class of cause as pnp_static_ip's +63%, in the opposite
-# basis-note direction: #1370 measured this page with no overrides, where lanDataProvider and
-# basis-note uspInstantPrivacyProvider both reach a USP service and land in AsyncError, and an error
-# basis-note path costs a throw, a stack capture and a log line per cell. Wave 3's fixture returns
-# basis-note both values, so 234 cells stopped paying for two failures each. The rule that falls out:
-# basis-note a queued figure taken WITHOUT a fixture is not a prediction of the swept figure, and
-# basis-note where it differs it reads high — so #1380 should treat the queued column as an upper
-# basis-note bound for every row whose fixture does not exist yet.
+# basis-note Figures were taken while a page was 8 widths x 26 locales = 208 cells until #1372 made
+# basis-note it 9 x 26 = 234 on 2026-08-26. That change did NOT invalidate the column: a per-cell rate
+# basis-note is the quantity that survives a width being added, and the widest cells are the cheapest
+# basis-note to lay out. Every figure here is now on the same reading: --plain-name, --reporter json
+# basis-note per-test durations summed and divided by cells, three runs, median committed. #1377
+# basis-note established the durations basis over wall-clock-minus-control (a ~6s startup with ~1s of
+# basis-note variance has a wider error band than the drift being measured); #1378 added the
+# basis-note three-runs-median rule after four passes over pnp_entry read 21.2, 18.5, 11.6 and 10.9.
+# basis-note WHAT #1380 RE-MEASURED, and what it did not. All 21 of this wave's pages were measured
+# basis-note here, three runs each. Seven of them entered the roster in this wave's first slice still
+# basis-note carrying #1370's one-shot wall-clock figures, and re-reading them on this basis moved
+# basis-note five by far more than #1377's +/-7% floor: support -63.2% (41.0 -> 15.1),
+# basis-note firmware_update -58.2% (46.4 -> 19.4), ai_assistant/router_assistant -32.3% (31.9 -> 21.6),
+# basis-note advanced_settings -19.5% (16.9 -> 13.6), unified_diagnostics -14.6% (17.8 -> 15.2). Two
+# basis-note agreed: test_console +1.5% (53.4 -> 54.2) and remote_assistance +0.8% (13.3 -> 13.4).
+# basis-note Every drift is DOWNWARD except those two, and support's -63% took no lib fix at all, so
+# basis-note this is the basis and not the fixes. Note also that the two that agreed are one cheap
+# basis-note page and one expensive one, so the disagreement is not simply the sub-20ms band the
+# basis-note note below warns about. The 22 pages from the pilot and waves 1-3 were NOT re-measured
+# basis-note by #1380: their figures are already three-run medians on this basis, taken 2026-08-25/26,
+# basis-note and re-running 22 pages to re-confirm a two-day-old reading buys less than it costs. So
+# basis-note the distribution below mixes measurement DATES, not bases.
+# basis-note Read any figure under ~20ms/cell as +/-40% and re-measure before planning against one:
+# basis-note only 1 of #1378's 7 comparable pages landed inside the +/-7% floor and the rest moved
+# basis-note -70% to +63%. Two causes seen so far, neither of them noise: a fixture difference
+# basis-note (pnp_static_ip +63%, 36.5 -> 59.6, because this wave's state expands the DNS rows, so
+# basis-note five IPv4 fields render where #1370's default state rendered three) and an error path
+# basis-note (usp_menu_view -42.6%, 40.1 -> 23.0, because #1370 measured it with no overrides, where
+# basis-note lanDataProvider and uspInstantPrivacyProvider both land in AsyncError and a throw, a
+# basis-note stack capture and a log line are charged to all 234 cells). The rule that falls out, and
+# basis-note the one #1380 was opened on: a queued figure taken WITHOUT a fixture is not a prediction
+# basis-note of the swept figure, and where it differs it reads HIGH. It is an upper bound. Confirmed
+# basis-note by this wave on the 13 rows that had one - not one came in above its queued figure.
 # basis-note auto_parent_first_login_view's 19.9 is a FIRST measurement, not a drift: it was #1370's
 # basis-note one unmeasurable row (its `-` meant no fixture got the view past its opening state).
-# median Everything §11.10 projects "at the median" is the median of this column's non-`-` rows.
-# median It is 22.4 today: 30 rows is even, so it is the mean of the 15th and 16th (21.8 and 23.0).
-# median #1379 first published 23.0 by taking the upper middle instead, and it read as plausible
-# median because 23.0 is also usp_menu_view's own new figure. #1371's 26.2 was an exact middle
-# median element on an odd 29, so no published figure's shape tells you which convention made it.
-# median Take it with statistics.median, and re-derive every figure downstream of it in one pass.
+# basis-note WHAT A FIGURE IN THIS COLUMN IS NOT: it is not the page's share of the sweep file's wall
+# basis-note clock. Every figure here is measured with that page's suite run alone. #1380 also ran the
+# basis-note whole 43-page file under --reporter json and divided each page's group by 234, and the
+# basis-note two columns disagree per page in BOTH directions: 30 of 43 pages are CHEAPER in company
+# basis-note (ratios 0.45-0.98, median 0.70), 4 are mildly dearer (1.12-1.38), and 9 are severely
+# basis-note dearer - firmware_update 4.47 (19.4 -> 86.7), local_network 3.99 (104.7 -> 417.7),
+# basis-note test_console 3.25, sliver_dashboard 3.04, dmz 2.69, login_local 2.60, usp_dashboard 2.45,
+# basis-note pnp_static_ip 2.18, local_reset_router_password 1.80. It is not position in the run
+# basis-note (Pearson 0.29; the offenders sit at positions 12-40) and it is not harness overhead
+# basis-note (only 1.0s of the run's 531.2s is outside a test body). Why those nine and not the other
+# basis-note 34 is unexplained, and #1380 did not explain it. Two consequences for anyone reading this
+# basis-note column: (1) it is a reproducible per-page MEASUREMENT and stays the basis for comparing
+# basis-note pages to each other; (2) any sum of it is a FLOOR on the file's cost, never an estimate -
+# basis-note the sum below reads 278.0s where the file measures 553s. Do not balance shards on it.
+# distribution FINAL, all 43 swept pages, 2026-08-27 (#1380). n=43, so the median is an element and
+# distribution not a mean of two: 21.5 (usp_apps_view). min 11.0 (home), max 104.7 (local_network),
+# distribution mean 27.6, sum 1188.2 ms/cell => 43 x 234 = 10,062 cells = 278.0s of pump time.
+# distribution Right-skewed, which is the shape that matters for #1371 and #1380 both: mean > median
+# distribution by 28%, and the five most expensive pages (104.7, 63.5, 59.6, 58.6, 54.2) are 28.7% of
+# distribution the total while being 11.6% of the pages. 28 of 43 pages are under the mean, 20 of 43
+# distribution are under 20ms/cell, and only 8 are over 40. Quartiles 15.1 / 21.5 / 33.4.
+# distribution This replaces every projection published before it. #1379 projected 43 pages at 321.3s
+# distribution from a 22.4 median; summed from real figures it is 278.0s, so that projection over-read
+# distribution by 13.5% - in the same direction and for the same reason as the queued column above.
+# distribution But 278.0s is a floor and not the file's cost. Same-run json, same 43 pages: the 430
+# distribution page tests sum to 450.6s, 1.62x this figure, and the whole file measures 553s (median of
+# distribution 533.93 / 558.25 / 615.16) once its 18 readability tests (75.2s) and its `loading` test
+# distribution are in. See the basis-note above for the per-page in-situ ratios, and read 278.0s as
+# distribution "the pump time these pages own", not as "what the sweep costs the gate".
+# distribution Take it with statistics.median over this file's non-`-` rows; re-derive anything
+# distribution downstream of it in one pass rather than editing the number in place.
+# verdict The four exclusion candidates #1380 inherited. ALL FOUR STAY IN. An exclusion is a row with
+# verdict a reason, and unreachability is the only reason this epic accepts; none of the four is
+# verdict unreachable. Written out because three of them were argued on something else.
+# verdict 1. usp_sliver_dashboard_view - #1370's verdict stands: non-routed but constructed at
+# verdict usp_dashboard_view.dart:64, and routed vs reachable are different questions. Its cost
+# verdict objection is now gone too: #1370 read 315.4ms/cell and called it the epic's most expensive
+# verdict page by 6x; three runs on this basis read 58.6, so it is the 4th most expensive and 4.9%
+# verdict of the sweep. Nothing had to absorb 66s of pump CPU, and no #1371 re-open was needed.
+# verdict 2. usp_dashboard_view - the open question was whether a page-level probe measures anything
+# verdict the chrome and card sweeps do not. Answered on coordinates, as the AC required, not by
+# verdict assertion. (a) COVERAGE: kPageSweepWidths is {320,480,601,905,1080,1241,1280,1441,1681} and
+# verdict kChromeSweepWidths is {320,375,480,600,601,640,700,768,800,905,1024,1280}; the intersection
+# verdict is 5 widths, so 1080, 1241, 1441 and 1681 - four of this page's nine, including the #1302
+# verdict desktop pinch at 1241 - are visited by no chrome cell in any locale. (b) TREE: at the five
+# verdict shared widths the chrome sweep pumps ChromeTopBarFamily / ChromeHeaderFamily, i.e. the bar
+# verdict and the header alone. Neither contains the grid or a single card, so a shared width is not
+# verdict a shared measurement. Its one citation of this file, page_chrome_family.dart:289, quotes
+# verdict usp_dashboard_view.dart:36 to explain why the header is a sibling of the content - which is
+# verdict an argument that the content is NOT in its tree. (c) AXIS: the card sweep's axis is card
+# verdict width at a computed grid realization, not screen width, so its cells are not coordinates in
+# verdict this space at all; it never renders a page. What the sweep found is nothing: this page is at
+# verdict zero across 234 cells today, so the verdict rests on coverage of coordinates and not on a
+# verdict find. It costs 63.5ms/cell, the 2nd most expensive page in the roster.
+# verdict 3. usp_test_console_view - a developer surface, and the AC asked what an exclusion costs.
+# verdict Reachability first, because it decides the question: route_usp_dashboard.dart:201 registers
+# verdict it under `if (kDebugMode || GlobalConfig.feature.enableTestConsole)`, and enableTestConsole
+# verdict defaults to false (build_config.dart:54, --dart-define=test_console). So it is absent from a
+# verdict default release build but present in EVERY debug build and in any build made with that
+# verdict define, which is how it is reached in practice. "Not reachable" is therefore false as
+# verdict stated, and it stays. What excluding it would have cost, stated as the AC asked: the single
+# verdict largest find in the epic - 52 cells over at usp_test_console_view.dart:1147, worst +109px,
+# verdict and the ONLY page of all 45 that breaks in `en` rather than needing a long locale. That is a
+# verdict defect every engineer and every QA build hits at 320px in English. Which way it cuts: the
+# verdict page is 54.2ms/cell, 4.6% of the sweep, so the trade on offer was the epic's biggest find
+# verdict for 4.6% of its runtime. Kept and fixed to zero.
+# verdict 4. router_assistant_view - the AC's question was conditional on it being feature-gated off
+# verdict in shipping configurations, and it is not: route_usp_dashboard.dart:225 registers it
+# verdict unconditionally, with no kDebugMode and no flag. It ships, so the test_console reasoning
+# verdict does not even need to be reached. Its 7 cells at :409 +89px were user-visible defects.
+# verdict Kept and fixed to zero.
 # unblocked pnp_setup_view was the one row this register has carried as measured-but-queued, and it is
 # unblocked kept here because the distinction is the useful part: it was never fixture debt.
 # unblocked pnpWizardConfiguringState in test/mocks/test_data/scenes/pnp_scene_data.dart got it past its
@@ -67,26 +132,26 @@
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
-# swept 22
-# queued 21
-# measured 30
-# needs_fixture 13
+# swept 43
+# queued 0
+# measured 43
+# needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
-lib/page/admin/views/usp_admin_view.dart	queued	-
-lib/page/advanced_settings/views/usp_advanced_settings_view.dart	queued	16.9
-lib/page/ai_assistant/views/router_assistant_view.dart	queued	31.9
-lib/page/apps/views/usp_apps_view.dart	queued	-
-lib/page/dashboard/views/usp_dashboard_view.dart	queued	-
-lib/page/dashboard/views/usp_sliver_dashboard_view.dart	queued	315.4
+lib/page/admin/views/usp_admin_view.dart	swept	22.2
+lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
+lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
+lib/page/apps/views/usp_apps_view.dart	swept	21.5
+lib/page/dashboard/views/usp_dashboard_view.dart	swept	63.5
+lib/page/dashboard/views/usp_sliver_dashboard_view.dart	swept	58.6
 lib/page/devices/views/usp_device_detail_view.dart	swept	33.4
 lib/page/devices/views/usp_device_list_view.dart	swept	44.0
 lib/page/dhcp/views/usp_dhcp_detail_view.dart	swept	44.8
-lib/page/dmz/views/usp_dmz_view.dart	queued	-
-lib/page/firewall/views/usp_firewall_view.dart	queued	-
-lib/page/firmware_update/views/firmware_update_view.dart	queued	46.4
-lib/page/instant_privacy/views/instant_privacy_view.dart	queued	-
-lib/page/instant_safety/views/instant_safety_view.dart	queued	-
+lib/page/dmz/views/usp_dmz_view.dart	swept	32.3
+lib/page/firewall/views/usp_firewall_view.dart	swept	18.5
+lib/page/firmware_update/views/firmware_update_view.dart	swept	19.4
+lib/page/instant_privacy/views/instant_privacy_view.dart	swept	19.3
+lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
 lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
 lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
@@ -97,24 +162,24 @@ lib/page/instant_setup/views/pnp_setup_view.dart	swept	34.3
 lib/page/instant_setup/views/pnp_static_ip_view.dart	swept	59.6
 lib/page/instant_setup/views/pnp_unplug_modem_view.dart	swept	13.5
 lib/page/instant_setup/views/pnp_waiting_modem_view.dart	swept	11.7
-lib/page/internet_settings/views/usp_internet_settings_view.dart	queued	-
-lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	queued	-
+lib/page/internet_settings/views/usp_internet_settings_view.dart	swept	36.1
+lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	swept	19.6
 lib/page/landing/views/home_view.dart	swept	11.0
-lib/page/local_network/views/usp_local_network_view.dart	queued	-
+lib/page/local_network/views/usp_local_network_view.dart	swept	104.7
 lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	swept	19.9
 lib/page/login/views/local_reset_router_password_view.dart	swept	26.4
 lib/page/login/views/local_router_recovery_view.dart	swept	19.1
 lib/page/login/views/login_local_view.dart	swept	21.8
 lib/page/menu/views/usp_menu_view.dart	swept	23.0
 lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	swept	21.6
-lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	queued	13.3
-lib/page/static_routing/views/usp_static_routing_view.dart	queued	-
-lib/page/statistics/views/usp_statistics_view.dart	queued	-
-lib/page/support/views/usp_support_view.dart	queued	41.0
-lib/page/system_log/views/usp_system_log_view.dart	queued	-
-lib/page/test_console/views/usp_test_console_view.dart	queued	53.4
+lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	swept	13.4
+lib/page/static_routing/views/usp_static_routing_view.dart	swept	17.8
+lib/page/statistics/views/usp_statistics_view.dart	swept	45.3
+lib/page/support/views/usp_support_view.dart	swept	15.1
+lib/page/system_log/views/usp_system_log_view.dart	swept	16.2
+lib/page/test_console/views/usp_test_console_view.dart	swept	54.2
 lib/page/topology/views/usp_node_detail_view.dart	swept	31.6
 lib/page/topology/views/usp_topology_view.dart	swept	28.0
 lib/page/unified_diagnostics/views/speed_test_view.dart	excluded:not reachable; its only route is commented out at lib/route/route_usp_dashboard.dart:223 (#1370)	-
-lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	queued	17.8
+lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	swept	15.2
 lib/page/wifi_settings/views/usp_wifi_settings_view.dart	swept	29.2
