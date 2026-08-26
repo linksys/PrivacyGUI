@@ -33,19 +33,19 @@ tags:
   # `test/layout_gate/families/page_surface_family_test.dart` since #1349).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 325 test files to skip 320 of them. Re-measured 2026-08-24 for #1349, the
-  # same 296 tests take 2m03s under the tag and 32.1s when the five files are
-  # named (shell clock; `flutter test`'s own is 1m48s and 25s). Name the file for
+  # all 327 test files to skip 322 of them. Re-measured 2026-08-26 for #1378, the
+  # same 414 tests take 3m10s under the tag and 1m17s when the five files are
+  # named (shell clock; `flutter test`'s own is 2m52s and 1m10s). Name the file for
   # a tight loop; use the tag when a sixth sweep must not be missed — the fifth
   # arrived on the day this comment last said "fifth", which is the argument.
   #
-  # 342, not the 296 before #1377, the 590 after #1343 nor the 2,412 before it:
-  # every sweep loops its locales inside one test per coordinate, so 5,072 cells
-  # are declared by 342 tests (card 102, popup 80, chrome 57, forced-form 38,
-  # page 65 — 63 of them cells, the other two readability guards that pump 52
-  # trees each and name none). Cells are what the gate measures; the test count is
-  # how they are named. Wave 1 of #1369 moved both numbers: five pages at 208
-  # cells and 9 tests each.
+  # 414, not the 342 after #1377, the 296 before it, the 590 after #1343 nor the
+  # 2,412 before that: every sweep loops its locales inside one test per
+  # coordinate, so 6,736 cells are declared by 414 tests (card 102, popup 80,
+  # chrome 57, forced-form 38, page 137 — 135 of them cells, the other two
+  # readability guards that pump 52 trees each and name none). Cells are what the
+  # gate measures; the test count is how they are named. Waves 1 and 2 of #1369
+  # moved both numbers: thirteen more pages at 208 cells and 9 tests each.
   #
   # +4 tests and +29 cells at the merge, and no sweep was edited for either:
   # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal
