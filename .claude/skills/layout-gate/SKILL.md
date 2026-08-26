@@ -1,6 +1,6 @@
 ---
 name: layout-gate
-description: Operate and maintain the `layout-gate`-tagged PR gate — 47 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 7,126 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
+description: Operate and maintain the `layout-gate`-tagged PR gate — 48 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 7,126 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
 # Layout Gate — Operate & Maintain
@@ -37,14 +37,18 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **47 suites carry `layout-gate` today** (counted 2026-08-26), and most
+a re-export of it since #1340. **48 suites carry `layout-gate` today** (counted 2026-08-26), and most
 of them are not overflow sweeps at all — they are density, readability, form and
-gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
+gesture, layout-block, probe self-test, ratchet-oracle, render-parity, and the two
+registers that measure no cell at all (the #1382 page roster and the #1371
+page-sweep register). `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Five of the 47 additionally carry `overflow`**, the pre-commit selector.
-`flutter test --tags overflow` runs these and nothing else:
+**Five of the 48 additionally carry `overflow`**, the pre-commit selector.
+`flutter test --tags overflow` runs these and nothing else — five files, five
+sweeps, because **#1371 kept every page cell in one file** (architecture doc
+§11.10; the four-shard arm was built, measured and rolled back):
 
 | Sweep | What it pumps |
 |---|---|
@@ -55,7 +59,7 @@ gate.
 | `test/page/_shared/page_surface_overflow_test.dart` | fifteen **whole pages** — `dhcp` and `wifi_settings` (#1349's pilot), `device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding` (#1377's wave 1), and the eight reachable `instant_setup` pages `pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem` (#1378's wave 2) — at **9** screen widths × 26 locales each, **3,510** cells (8 widths and 3,120 until #1372 added 1080; architecture doc §11.9 for why that width and why nothing was cut). Fifteen by decision, not as a class: a page cell costs 24.8ms against a card's 8.8ms, so pages enter in waves and one at a time inside a wave (architecture doc §11, §11.7). `test/fixtures/page_roster.tsv` is the register of the other 30 |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles every test file in the repo (327 at #1378) to skip all but five:
+compiles every test file in the repo (328 at #1371) to skip all but five:
 measured 2026-08-26,
 those same **429** tests take **2m21s under the tag and 1m17s when the five files are
 named** (`flutter test`'s own clock; the shell sees 2m39s and 1m24s, the difference
@@ -73,15 +77,26 @@ verdict depends on", which would slide the tag back over the whole family. So
 the probe self-tests
 ([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
 [overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
-and the four framework oracles
+and the six framework oracles
 ([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341;
 [sweep_test.dart](../../../test/layout_gate/sweep_test.dart), #1342;
 [families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart), #1343;
-[families/page_surface_family_test.dart](../../../test/layout_gate/families/page_surface_family_test.dart), #1349)
+[families/page_surface_family_test.dart](../../../test/layout_gate/families/page_surface_family_test.dart), #1349;
+[page_roster_test.dart](../../../test/layout_gate/page_roster_test.dart), #1382;
+[page_sweep_suites_test.dart](../../../test/layout_gate/page_sweep_suites_test.dart), #1371)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
 what naming the five sweep files measures (**429** both ways, confirmed
 2026-08-26), so nothing has quietly joined the pre-commit selector.
+
+**What that costs, said once:** the two registers are the guards against a page
+that stops being swept, and they are outside the pre-commit selector. So deleting
+a `runOverflowSweep(family: PageSurfaceFamily(...))` call makes
+`--tags overflow` **greener** — fewer cells, still zero overflows — and only
+`--tags overflow` is what a pre-commit hook runs. The red arrives on the PR gate,
+from `page_sweep_suites_test.dart`. Do not "fix" that by tagging the registers
+`overflow`: they pump no cell, and the tag means "pumps cells and asserts zero
+overflow" (architecture doc §11.10).
 
 Two members are worth naming:
 
@@ -628,16 +643,38 @@ constraints come with it, both from the architecture doc §11/§8:
 
 - **A page cell costs 37.7ms**, ~4× a card cell, so pages do **not** join as a
   class. (Re-measured in a second session it reads 33.2ms; the doc plans against the
-  top of the 33–38ms band, so every projection there is an upper bound.) The budget
+  top of the 33–38ms band, so every projection there is an upper bound. #1382's
+  roster now measures it **per page** instead of as one band: the 29 measured rows
+  spread **7.6–315.4 ms/cell**, median **26.2**, so "a page cell" is a fiction and
+  the roster's `ms_per_cell` column is what a projection must weight by.) The budget
   is a **rate — 7.8s of pump CPU per page** — to be re-read at
   each graduation, not a headroom total: the 42 remaining page-view files (35 of
   them routed) are 5m29s of pump CPU, more than the whole gate's current wall
   clock, and land somewhere between 1.6× and 2.8× on it depending on how much
   else `flutter test` has to overlap with. By the criterion "the page sweep costs
   more than every other sweep combined", the edge is **four** pages, not eight.
+  **#1371 replaced that criterion with a measured one** (§11.10): the page file may
+  cost up to the clock the gate has *without* any page cells — 98.4s against 149.8s
+  at fifteen pages — because below that ceiling `flutter test` overlaps it with the
+  other suites and the whole PR gate does not move (196.82s with the page work,
+  196.89s without). Splitting the file *before* the ceiling costs, it does not save:
+  four shards read +14.7s on the tag and +60.8s on the suite, at ×2.36 user CPU.
+  The crossover is **≈23 pages**; at the roster's 43 the projection is 339.8s and
+  needs at least three suites.
 - **A page earns a probe only once it is already at zero** — fix it, then pin it.
   A new sweep must not arrive with an allowlist entry, which is what would turn the
   ratchet back into a to-do list.
+- **Declaring the case is half the job; the sweep call is the other half** (#1371).
+  A `PageSurfaceCase` in
+  [families/page_surface_cases.dart](../../../test/layout_gate/families/page_surface_cases.dart)
+  with no matching `runOverflowSweep(family: PageSurfaceFamily(kYourPageCase), …)`
+  measures nothing and fails nowhere — every sweep is still green, the cell count
+  simply never grew.
+  [page_sweep_suites_test.dart](../../../test/layout_gate/page_sweep_suites_test.dart)
+  is what makes that red: it reads the case file and every `test/page/**` suite off
+  disk and asserts the two sets match, so an unswept page, a page swept twice, and a
+  sweep of a page nobody declared are each a named failure. Run it, not just the
+  sweep, after onboarding.
 
 ### The seven rules
 

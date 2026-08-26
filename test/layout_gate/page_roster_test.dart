@@ -16,11 +16,13 @@ import 'page_roster.dart';
 /// asserts zero overflow", and this file pumps nothing at all — it is one
 /// directory walk and one file parse.
 ///
-/// **That is also why #1371 must not be able to move it.** Whatever that ticket
-/// decides about where the page family's cells run, it does not apply here: an
-/// oracle that runs on a schedule cannot stop a page added this afternoon from
-/// escaping this afternoon. The tag stays `layout-gate` and the file stays inside
-/// `./run_tests.sh`, which excludes `golden||loc||ui` and therefore includes this.
+/// **That is also why #1371 could not move it.** That ticket kept the page
+/// family's cells in one file (architecture doc §11.10), but the reasoning never
+/// depended on the outcome: an oracle that runs on a schedule cannot stop a page
+/// added this afternoon from escaping this afternoon. The tag stays `layout-gate`
+/// and the file stays inside `./run_tests.sh`, which excludes `golden||loc||ui`
+/// and therefore includes this — and the same holds for #1371's own register,
+/// `page_sweep_suites_test.dart`, which guards the other half of the same risk.
 ///
 /// ## The three assertions, and what each one alone would let through
 ///

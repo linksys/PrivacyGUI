@@ -510,7 +510,8 @@ bool isPageViewPath(String path) {
 /// Every page view under the rule, in path order.
 ///
 /// One directory walk, no pumping — which is why this oracle's cost does not
-/// depend on whatever #1371 decides about where the page cells run.
+/// depend on where the page cells run. #1371 kept them in one file; this walk
+/// would read the same, and cost the same, had it split them.
 List<String> discoverPageViews({String root = kPageViewRoot}) {
   final dir = Directory(root);
   if (!dir.existsSync()) {

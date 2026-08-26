@@ -64,6 +64,15 @@ fvm flutter test \
   test/page/_shared/page_surface_overflow_test.dart
 ```
 
+**One thing this selector cannot tell you: whether every page is still swept.**
+All fifteen pages are in one file and every page is in the PR gate (#1371 measured
+the alternative and kept it that way — §11.10 of the architecture doc). But the
+test that checks a declared page has not lost its `runOverflowSweep` call —
+[page_sweep_suites_test.dart](../../test/layout_gate/page_sweep_suites_test.dart) —
+carries `layout-gate` and **not** `overflow`, because it pumps no cells. So delete
+a sweep call and `--tags overflow` goes *greener*, not redder; `./run_tests.sh` and
+the PR gate are what turn red.
+
 ---
 
 ## 2. It went red. Now what?

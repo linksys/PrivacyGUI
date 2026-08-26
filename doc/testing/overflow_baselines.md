@@ -295,6 +295,20 @@ key that humans also grep (#1356):
 `# commit` and the other `#` lines are **excluded from the diff**, so re-capturing
 at a new commit does not by itself register as a change.
 
+**`# suite` can name more than one file, and this dataset cannot tell you which
+file pumped a row.** The field is derived from the run's own `suite` events rather
+than from the registry, so a sweep split across files would grow the header and
+change nothing else. That is the right split of duties: **a row is keyed by cell id,
+and a cell id names the page, never the suite that pumped it.** #1371 measured
+splitting the page sweep and decided against it (§11.10) — but the property matters
+either way, because it is what makes the dataset a record of *coverage* rather than
+of file layout. It is also why the thing that has to notice a page dropping out of
+the sweep entirely is a test in the PR gate
+([page_sweep_suites_test.dart](../../test/layout_gate/page_sweep_suites_test.dart))
+and not this diff, which nothing in the gate runs — here, a page that stopped being
+swept reads as 234 rows saying `no longer measured`, and only if somebody runs
+`check`.
+
 **`-dirty` in `# commit` means what it says.** The suffix is appended when any of
 `lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
 last one because most of the widgets these rows measure are not in this repo:

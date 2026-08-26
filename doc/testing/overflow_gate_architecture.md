@@ -218,6 +218,15 @@ for #1378's wave 2 (§11.8), five and then eight more pages in the page sweep, s
 row and the four totals below it moved both times. The figures below are wave 2's; the
 parenthesised ones read `pre-#1378` and then `pre-#1377` behind that.
 
+**The last two rows were re-measured once more the same day for #1371** (§11.10), which
+adds 20 tests and no cell: the page-sweep register. Its cost is inside the session noise
+and reads *negative* on the wall clock in both selections — the gate's own CPU went
+354.70s against the 356.78s/362.81s the same selection took at 1,652 tests — so the two
+clocks below are current figures, not a +20 delta. **The first attempt at this pair was
+thrown away rather than published**: a FortiClient scan took 66% of a core mid-run and
+the gate came out at 242.01s, *slower than the whole PR gate that contains it* (226.56s),
+which is impossible on a quiet box and is the cheapest contention check this table has.
+
 | Suite | `flutter test` tests | Pumped cells | Wall clock | Per cell |
 |---|---|---|---|---|
 | Card sweep (one file) | **102** (99 pre-merge, 1,921 pre-#1343) | 1,924 | 17s (**21s** wall) | **8.8ms** |
@@ -227,8 +236,8 @@ parenthesised ones read `pre-#1378` and then `pre-#1377` behind that.
 | **Page sweep (one file, new at #1349)** | **152** (137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 3,510 + 104 guard pumps | 1m27s, median of {1m18s, 1m27s, 2m03s} — the spread is wider than #1372's whole delta, so read the per-cell figure and not the difference | **24.8ms** (23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
 | The five overflow sweeps (5 files, named) | **429** (414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 7,126 rows † | 1m17s (**1m24s** wall) | — |
 | The same five via `--tags overflow` | **429** | 7,126 rows † | 2m21s (**2m39s** wall) | — |
-| Whole `layout-gate` family (47 files) | **1,652** (1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 7,300 | 2m44s / **2m53s** wall (2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **5,646** (5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m13s / **3m20s** wall (3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
+| Whole `layout-gate` family (48 files) | **1,672** (1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 7,300 | 2m49s / **2m57s** wall (2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,666** (5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | 3m02s / **3m08s** wall (3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
@@ -725,7 +734,7 @@ the whole R2 sequence moved, and it moved for a reason the re-export cannot serv
 
 ```
    SUITES ─ stay next to the code under test
-   test/page/dashboard/cards/          test/page/shell/              test/page/<future>/
+   test/page/dashboard/cards/          test/page/shell/              test/page/_shared/
    dashboard_card_overflow_test        page_chrome_overflow_test     page_surface_overflow_test
           │ runOverflowSweep(                  │                              │
           │   CardWidthFamily(gate))           │                              │
@@ -778,7 +787,7 @@ graph TD
   subgraph S[Suites — next to the code under test]
     S1[dashboard_card_overflow_test]
     S2[page_chrome_overflow_test]
-    S3[page_surface_overflow_test<br/>future]
+    S3[page_surface_overflow_test]
   end
   subgraph F[Families — the 3 essential differences]
     F1["CardWidthFamily · CardNormalBandFamily · CardProfileFamily<br/>axes: card × span × tab (+ profile)<br/>monotone ✓<br/>host: buildDashboardCardApp<br/>share one CardSweepGate"]
@@ -1304,14 +1313,14 @@ so none of this was a migration.
 
 ## 4. Tags
 
-`layout-gate` is carried by **46 test files** (a 47th mention, at
-`test/golden_test/flutter_test_config.dart:9`, is a comment) — 38 until #1341
-added `test/layout_gate/ratchet_test.dart`, which carries `layout-gate` **only**:
-it pumps no cell, so the `overflow` pre-commit selector has nothing to gain from
-it. Only **9** of the 46 have "overflow" in the filename, and only **5** carry the
-`overflow` tag; the rest are density, readability, form and gesture, layout blocks,
-probe self-tests, the ratchet oracle and render-parity gates. Renaming the tag to
-`overflow` would therefore mislabel **37** files.
+`layout-gate` is carried by **48 test files** (measured 2026-08-26; more files
+*mention* the tag, in comments like `test/golden_test/flutter_test_config.dart:9`)
+— 38 until #1341 added `test/layout_gate/ratchet_test.dart`, which carries
+`layout-gate` **only**: it pumps no cell, so the `overflow` pre-commit selector has
+nothing to gain from it. **9** of the 48 have "overflow" in the filename and only
+**5** carry the `overflow` tag; the rest are density, readability, form and gesture,
+layout blocks, probe self-tests, the ratchet oracle and render-parity gates.
+Renaming the tag to `overflow` would therefore mislabel **43** files.
 
 The `dev-2.7.0` merge is what took 39 to 44, and it widened the gap the paragraph
 above is about: two of the five new carriers *are* named `*_overflow_test.dart`
@@ -1319,8 +1328,22 @@ above is about: two of the five new carriers *are* named `*_overflow_test.dart`
 `usp_device_detail_speed_card_overflow_test.dart`) and neither carries the
 `overflow` tag, because neither is one of the sweeps the pre-commit selector
 names. So "overflow in the filename" and "in the `overflow` tag" have drifted
-further apart, in both directions — 9 files named for it, 5 tagged with it, and no
-file in either set implied by the other.
+further apart — 9 files named for it, 5 tagged with it, and the inclusion runs one
+way only: every tagged file is also named for it, and four of the nine named ones
+are not tagged (`overflow_probe_test.dart`, `overflow_baseline_test.dart`,
+`usp_node_detail_backhaul_overflow_test.dart`,
+`usp_device_detail_speed_card_overflow_test.dart` — self-tests of the mechanism,
+and per-widget regressions that are not sweeps). Reading the tag off the filename
+gets four files wrong in the direction that matters, since each would be added to a
+pre-commit selector it does not belong in.
+
+**#1371 moved neither set.** It considered splitting the page sweep into four
+cost-balanced shards — which *would* have moved it out of the named set while
+leaving it in the tagged one, since a shard is named for its shard letter and not
+for what all four do — and the measurement said not to (§11.10). What it added is a
+48th carrier of the third kind: `test/layout_gate/page_sweep_suites_test.dart`,
+named for neither and tagged with neither, which is the shape every oracle in this
+gate has.
 
 **#1349 added one of each kind, which is the cleanest illustration of the split
 this section has.** Its sweep, `test/page/_shared/page_surface_overflow_test.dart`,
@@ -1328,7 +1351,11 @@ is named for overflow and tagged with it; its oracle,
 `test/layout_gate/families/page_surface_family_test.dart`, is neither named for it nor
 tagged with it and is nonetheless what makes the sweep's 416 cells mean anything
 (§11.4). Both are `layout-gate`, so both block the PR — which is the property that
-matters, and the reason the two tags are not a hierarchy.
+matters, and the reason the two tags are not a hierarchy. #1371's
+`page_sweep_suites_test.dart` lands on the same side of that line for the same
+reason — it reads the page tree as text and pumps nothing — and it is the file that
+makes the *pairing* mean something: without it the sweep can drop a page while the
+oracle's exact-list pin stays green.
 
 `dart_test.yaml` documents the tag's real meaning — since #1336 landed, in the
 name as well as the comment:
@@ -1347,14 +1374,15 @@ name as well as the comment:
 
 (Abridged — the file also records *when* each count moved, so that a file arriving
 with the wrong tag is noticed rather than merged in silence. It read 39 when this
-section was written, 44 at the merge, 46 since #1349 and 47 since #1382.)
+section was written, 44 at the merge, 46 since #1349, 47 since #1382 and 48 since
+#1371's page-sweep register.)
 
 Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 47 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
-| `overflow` | the sweep files only, as `@Tags(['layout-gate', 'overflow'])` | the fast pre-commit selector |
+| `layout-gate` | all 48 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5; 47 until #1371's `page_sweep_suites_test.dart`, the second such carrier) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `overflow` | the five sweep files only, as `@Tags(['layout-gate', 'overflow'])`. Not `page_sweep_suites_test.dart`, which pumps no cell and therefore stays out of the pre-commit selector — which is why a deleted `runOverflowSweep` call is caught by `./run_tests.sh` and the PR gate and *not* by `--tags overflow` (§11.10) | the fast pre-commit selector |
 
 **The split is checked by arithmetic, not by inspection** (#1342): `--tags overflow`
 measures **296** (277 before #1349, 590 after #1343, 2,412 before it), which is exactly
@@ -2536,22 +2564,31 @@ today", not as forecasts that got more solid.
 **Read the two right-hand columns as bounds and an interpolation, not as a forecast,
 because the measurements bracket a factor of eight.** The CPU column is what a machine has
 to spend, but 37.7ms per cell is a **mean of two pages and not a ceiling**: #1370 measured
-26 more and 8 of the 28 exceed the top of §11.2's 33–38ms band (§11.6). Both wall columns are added to the gate's measured
-2m43s. They are models of how that CPU lands, and this pilot's own 416 cells calibrate
-both ends:
+26 more and 8 of the 28 exceed the top of §11.2's 33–38ms band (§11.6). Both wall
+columns are added to **`./run_tests.sh`'s 2m43s as measured on 2026-08-19 at 5,362
+tests** — a base clock that has since moved to **3m17s at 5,646 tests** (measured
+2026-08-26, §11.10), so every multiple in the two right-hand columns is stated
+against the older and smaller base and reads high against today's. They are models
+of how that CPU lands, and this pilot's own 416 cells calibrate both ends:
 
 - **Serial bound** — the added CPU appended whole. That is what a single-core CI box
   pays, and it is also what *this* file will pay internally, since one suite runs its own
   tests in sequence: at 43 pages the page file alone is 5m37s of pumps and becomes the
   run's long pole no matter how many cores exist.
-- **Free, at today's size.** The sharpest measurement available is a same-session A/B on
-  the whole gate: with the page suite in place, **5,362 tests in 2m43s**; with the file
-  moved aside, **5,343 in 2m44s**. The suite adds **+36s of user CPU** (238.3s → 274.3s)
-  and **−1s of wall** (2m44s → 2m43s clock), i.e. its wall cost is
-  under the ~10% session noise §1.2 measures.
+- **Free on the whole PR gate — measured at two pages, and it held at fifteen.** The
+  sharpest measurement available then was a same-session A/B on `./run_tests.sh`: with
+  the page suite in place, **5,362 tests in 2m43s**; with the file moved aside,
+  **5,343 in 2m44s**. The suite added **+36s of user CPU** (238.3s → 274.3s) and
+  **−1s of wall**, i.e. its wall cost was under the ~10% session noise §1.2 measures.
   `flutter test` had 320-odd other suites to fill the cores with and this one filled an
   idle core. Under `--tags layout-gate`, where there is much less to overlap with, the
-  same work costs **+14s** — a ratio near 0.8, close to serial.
+  same work cost **+14s** — a ratio near 0.8, close to serial. **Both figures are
+  2026-08-19 at two pages**; #1371 re-ran the same A/B at fifteen on 2026-08-26 and
+  the shape survived seven times the page work: `./run_tests.sh` is 196.89s without
+  the page cells and 196.82s with, still free, while `--tags layout-gate` went from
+  149.79s to 195.41/197.69s — **+46.8s, +31%**. So the second ratio has risen toward
+  serial as predicted and the first has not moved at all. §11.10 is the full table,
+  and it is where the consequence for the file layout is decided.
 - So the ratio is a property of the *selection*, and the interpolation column's 0.32 is a
   middle value between a measured ~0 and a measured ~0.8, not itself a measurement. It
   also has to decay upward as pump time approaches the rest of the run's — 8,944 cells
@@ -2764,7 +2801,7 @@ Two structural notes came out of watching it, both worth keeping:
   header that disagrees with the rows. Each is a way the record could claim something
   untrue while parsing cleanly, which is the only failure mode a coverage record has.
 
-#### Cost, and why #1371 must not move it
+#### Cost, and why #1371 could not move it
 
 **+33 tests, and no measurable wall time**: one directory walk, 45 small reads and
 one parse, at 00:00 on `flutter test`'s own clock. Measured on both rows of §1.2's
@@ -2772,9 +2809,11 @@ table — the gate 1,443 → **1,476** and the PR gate 5,430 → **5,463**, the 
 each because a `layout-gate` carrier is not excluded from `./run_tests.sh` — while the
 wall clock moved *down* (2m20s → 2m07s), which is machine load, not a speedup, and is
 the paragraph in §1.2 that says not to read this row's clock. So none of #1371's reasoning about
-where 8,944 page cells run applies here, and the file must stay tagged `layout-gate`
+where the page cells run applied here — it kept them in one file (§11.10), and a
+split would have left this row untouched — and the file must stay tagged `layout-gate`
 and inside `./run_tests.sh` — **an oracle that runs on a schedule cannot stop a page
-added this afternoon from escaping this afternoon.**
+added this afternoon from escaping this afternoon.** The same is true of #1371's own
+register, which is why §11.10 puts it in the same place under the same rule.
 
 Nothing in `test/fixtures/overflow_baselines/` moved; all five are byte-identical.
 This ticket adds a record, not a measurement.
@@ -3532,3 +3571,191 @@ performs anyway — a re-capture — so the cost of the missed ordering is one e
 figures had expired the same way (seven pinned literals and 1,456 rows when filed;
 fifteen and 3,120 when implemented) — a ticket's counts are a measurement with a date on
 it, which is why every number above carries one.
+
+---
+
+### 11.10 Where the page cells run (#1371, measured 2026-08-26)
+
+**Decision: every page stays in the PR gate, the page sweep stays one file, and the
+split has a measured trigger instead of a plan.** No page is moved to a nightly lane,
+no selection is narrowed, and nothing about wave 3 or wave 4 changes. What is new is a
+ceiling — a page suite may not be projected heavier than the gate takes *without* any
+page cells in it — and a test that checks it, so the file splits on the day the
+measurement says to and not on the day someone's intuition says to.
+
+#### The premise the ticket was filed on, and it did not survive contact
+
+The ticket's reasoning was sound and is worth stating because it is the reasoning
+anyone would use: **a suite runs its own tests in sequence** (§3.4's Invariant 1 is
+about fresh trees, not about parallelism, and `flutter test` parallelises across
+*suites* only). Fifteen pages in one file is therefore a serial 90s block in the middle
+of a run with cores to spare, and splitting it four ways should convert that into ~23s
+of wall clock on four cores.
+
+It does the opposite, and the reason is the part the premise leaves out: **a serial
+block only costs wall clock once it is longer than everything it runs beside.** Under
+`--tags layout-gate` there are 1,500 other tests and the whole test tree to compile
+first — 149.79s of work that the page suite's 90s runs *inside*, not after. Splitting
+does not remove 90s from the critical path because the 90s was never on it. What it
+does add is four copies of a per-suite fixed cost: a new isolate, a fresh JIT warm-up,
+and `loadAppFonts()` again.
+
+#### The three arms
+
+One session, one idle box, warm caches, every arm reconstructed from the same commit.
+The `no page cells` arm holds the page suite and its oracle aside — it is not a
+historical figure, it was measured for this ticket, because §11.3's "free at today's
+size" bullet was two pages old and correcting it needs a same-session baseline.
+
+| Measured | no page cells | **one file (today)** | four cost-balanced shards |
+|---|--:|--:|--:|
+| the page work by itself | — | 152 tests, **89.66s** | 152 tests, **94.48s** |
+| …its user CPU / sys | — | 87.69s / 17.15s | **206.59s / 70.71s** |
+| `--tags layout-gate` | 1,500 in **149.79s** | 1,652 in **195.41s**, then 197.69s | 1,661 in **216.74s**, then 205.73s |
+| …its user CPU | 213.47s | 356.78s / 362.81s | 463.18s / 444.26s |
+| `./run_tests.sh` | 5,494 in **196.89s** | 5,646 in **196.82s** | 5,655 in **257.61s** |
+| …its user CPU | 238.16s | 371.87s | 472.34s |
+
+The gate was run **twice per arm** because §11.6's cost figures drift ±40% and one run
+each could not carry this conclusion. Every multiple below names the clock it is against.
+
+**What the page work costs.** Against the **149.79s no-page gate**, the fifteen pages
+are **+46.8s / +31%** (mean of 195.41 and 197.69). Against the **196.89s no-page
+`./run_tests.sh`**, they are **−0.07s** — free to within the noise, at seven times the
+page count that produced §11.3's "−1s of wall". So the two ratios that section
+predicted have both held: near-zero where there are 320-odd other suites to hide
+inside, near-serial where there are not.
+
+**What sharding costs.** Against the **196.55s one-file gate** (mean of the same two
+runs), four shards are **+14.7s / +7.5%** (mean 211.24s). Against the **196.82s
+one-file `./run_tests.sh`**, they are **+60.8s / +31%**. Against the page file's own
+**89.66s**, the four shards are **+4.8s** of wall — and **×2.36 the user CPU**
+(87.69s → 206.59s) and **×4.12 the system time** (17.15s → 70.71s). That last pair is
+the whole finding in two numbers: the work did not get faster, four copies of the
+fixed cost got added, and on a box whose cores are already committed the CPU has to
+come out of somewhere.
+
+**Read the sign, not the size, on the gate.** The two one-file runs differ by 2.3s and
+the two sharded runs by 11.0s, so a +14.7s delta is comfortably signed and softly
+sized. The `./run_tests.sh` delta is one run each — but +60.8s is far outside any
+spread either arm has ever shown here, and it points the same way.
+
+#### The rule: a ceiling on the critical path, not a shard count
+
+    a page suite's projected serial time  ≤  the gate's clock with no page cells
+
+Today: **98.4s ≤ 149.8s**, so one file. The 98.4s is not this paragraph's arithmetic —
+`page_sweep_suites_test.dart` computes it from the roster every run and prints it when
+it fails, which is why the ceiling is a test and not a note. (It reads 10% above the
+89.66s the file really takes, because it weighs every page at its own measured
+`ms_per_cell` and those were measured one page at a time; a conservative model is the
+right direction for a ceiling.)
+
+The ceiling is the right criterion because it is the point where the trade changes
+sign. Below it, splitting spends CPU and buys nothing, since the serial block is
+hidden inside the rest of the run. Above it, the suite *is* the long pole and every
+second removed from it is a second off the gate — and the +26% CPU becomes a price
+worth paying rather than a pure loss.
+
+**The crossover is about 23 pages** — `(149,790ms − 2 guards × 3,570ms) ÷ 234 cells ÷
+26.2ms` — or eight more than today. Two cruder estimates taken while the arms were
+running said 19 and 25; they used the page work's own clock and the roster's raw
+median rather than the ceiling, and are superseded by the line above. Nobody needs to
+re-derive any of them: the oracle recomputes it and names the number of suites to
+split into.
+
+#### At 43 pages, which is where #1369 ends
+
+The roster projects the full end state at **339.8s** — 43 in-scope rows, 29 of them
+measured, the other 14 weighed at the measured **26.2ms/cell** median. That is
+**2.27× the 149.79s floor**, so the sweep will need **at least three suites**, and this
+is stated now so wave 3 and wave 4 can each check one number instead of reopening the
+question.
+
+**The ticket's own headline number expired while it waited.** #1371 is titled "where
+8,944 cells run" — 43 pages × the 208 cells a page had when it was filed. #1372's ninth
+width (§11.9) makes the end state **43 × 234 = 10,062**, and every figure above is
+against 234. The projection is what the oracle computes from the roster, so it moves
+with the width list and the measured column and never needs this paragraph re-derived;
+the 8,944 in §11.3's table keeps its number because it is a dated measurement, not a
+current claim.
+
+**One page cannot be split, and it is the expensive one.** `usp_sliver_dashboard_view`
+measures **315.4ms/cell** — 234 cells is **73.8s alone**, a third of the whole
+projection (§11.6). 234 cells of one page are a single `runOverflowSweep` call, so the
+smallest possible suite containing it is 73.8s. That fits under the 149.8s ceiling with
+room to spare, which is the reassuring answer: at 43 pages three suites of ~113s each
+are achievable *and* the heavy page fits in one of them. If a future measurement ever
+pushed a single page past the ceiling, the ceiling would be unsatisfiable and the
+answer would have to be a cheaper fixture, not a smaller bin —
+`page_sweep_suites_test.dart` exempts a solo page above the mean from the balance
+check for exactly this reason, and deliberately does **not** exempt it from the
+ceiling.
+
+#### The weighting rule, and what a `-` row does when it gains a figure
+
+A suite's weight is the sum of its pages' **measured** `ms_per_cell` from
+`test/fixtures/page_roster.tsv`, × 234 cells, + 3.57s per readability guard it holds
+(§11.2's measurement: 52 pumps, 68.7ms each). Two properties make that honest:
+
+- **No page is ever weighed by a guess.** `page_roster.dart` rejects a `swept` row with
+  no figure, so a page is measured before it can be declared, and it carries its own
+  measurement from its first green run. `pageSweepSuiteWeightMs` throws rather than
+  counting a missing figure as zero — the one direction the ceiling cannot catch is a
+  suite reading lighter than it is.
+- **A `-` row gaining a figure moves the projection, never a suite's weight.** The 14
+  unmeasured rows are queued, not swept; they contribute to the 339.8s end-state
+  estimate at the median and to nothing else. When #1379 measures one and onboards it,
+  the page arrives with its own number and the *projection's* guess for it disappears.
+  So a queued page that turns out to be expensive can bring the crossover closer — and
+  it does that by moving the date the ceiling is crossed, not by silently making a
+  suite heavier than it reads.
+
+The ±25% balance tolerance is a decision rather than a measurement: loose enough that
+§11.6's ±40% per-page noise cannot trip it alone, tight enough that no suite can grow
+into the long pole while the others idle. It is vacuous at one suite, and it is written
+now so the split needs no new assertion on the day it happens.
+
+#### The property that was given up, and it is not the one the split would have cost
+
+Sharding would have cost the property that the swept inventory is one file a reviewer
+reads top to bottom. Keeping one file keeps that — and measuring the alternative turned
+up something better worth knowing: **that property was never machine-checked.** Delete
+one of the fifteen `runOverflowSweep` calls today and
+
+- `page_surface_family_test.dart` stays green (`kPageSurfaceCases` is intact),
+- `page_roster_test.dart` stays green (its `swept` rows still match that same list),
+- `page.tsv` would show it, as 234 rows reading `no longer measured`, and **nothing in
+  the PR gate runs that diff**.
+
+So the register was kept when the shards were not:
+[test/layout_gate/page_sweep_suites.dart](../../test/layout_gate/page_sweep_suites.dart)
+and its oracle, **+20 tests and no measurable time** — the pair took the gate to
+**1,672 tests in 2m49s at 354.70s of user CPU**, against 1,652 in 195.41s/197.69s at
+356.78s/362.81s for the same selection an hour earlier, so the register is cheaper than
+the session noise on the wall clock and flat on CPU (§1.2) — discovering page sweep suites by
+*content* (any `*_test.dart` under `test/page` calling `PageSurfaceFamily`) so a second
+suite cannot arrive unregistered. Each of its five assertions was watched red against
+the real tree before it was green — dropped tag, count pinned wrong, a page swept
+twice, a page swept by nothing, a guard's group title reworded, and the ceiling
+crossed — and the `each assertion can fail` group keeps driving the same checks over
+synthetic registers, because a hand check that happened this afternoon is not a guard.
+
+**What was given up is one thing, and it is stated in the usage doc too**
+([overflow_gate_usage.md](overflow_gate_usage.md) §1): that oracle carries
+`layout-gate` and **not** `overflow`, because it pumps no cell. So `--tags overflow`,
+the pre-commit selector, does not check membership — delete a sweep call and the
+pre-commit run goes *greener*. `./run_tests.sh` and the PR gate are what turn red.
+This is the same line #1382's roster oracle sits on, and both stay inside
+`./run_tests.sh` for the reason recorded there: an oracle that runs on a schedule
+cannot stop a page from escaping this afternoon.
+
+#### What did not move
+
+`kPageSweepWidths` (nine, §11.9), `kPageSurfaceCases` (fifteen), the 3,510 `page`
+baseline rows, `--tags overflow`'s 429 tests, every fixture, and the wave ladder.
+`tool/overflow_baseline.sh`'s `suite_for page` still names the one file, and
+`check page` still diffs 3,510 rows against 3,510 rows. The four shards were built,
+measured, green, and deleted; what survives of that design is what a future split will
+want anyway — cost-balanced bins, guards travelling with their pages, and the two
+constants that encode both.
