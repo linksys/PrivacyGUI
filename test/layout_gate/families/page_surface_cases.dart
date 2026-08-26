@@ -1,4 +1,5 @@
-/// The pages the gate sweeps: the #1349 pilot's two, plus #1377's wave 1 five.
+/// The pages the gate sweeps: the #1349 pilot's two, #1377's wave 1 five, and
+/// #1378's wave 2 eight.
 ///
 /// ## The rule that constrained the choice
 ///
@@ -57,6 +58,7 @@
 /// from being quietly emptied.
 library;
 
+import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
@@ -67,6 +69,15 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_ca
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
@@ -74,10 +85,19 @@ import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
-import 'package:ui_kit_library/ui_kit.dart' show AppLoader, AppTopology;
+import 'package:ui_kit_library/ui_kit.dart'
+    show
+        AppButton,
+        AppCard,
+        AppIpv4TextField,
+        AppLoader,
+        AppPasswordInput,
+        AppTextField,
+        AppTopology;
 
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_pnp.dart';
 import '../../mocks/provider_overrides/mock_port_forwarding.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
@@ -87,6 +107,7 @@ import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // fixture twice, and picking the wrong one is exactly the confusion the
 // `_scene_data` naming convention exists to prevent (CLAUDE.md, testing structure).
 import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
+import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
@@ -298,7 +319,186 @@ final kPortForwardingPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
-/// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five.
+// ===========================================================================
+// Wave 2 (#1378) — the instant_setup flow, eight of its nine reachable pages
+// ===========================================================================
+//
+// A different kind of wave. Wave 1's five pages were *destinations*: each fetches,
+// and its provider's state is "loading" then "loaded". These are the screens of a
+// **state machine** — nine views over one `pnpProvider`, where the phase decides
+// not merely whether a page has data but which page-sized tree it renders. So a
+// fixture here is a phase, and `test/mocks/test_data/scenes/pnp_scene_data.dart`
+// holds three composed `PnpState`s that all eight cases below draw from, through
+// the single `pnpOverrides()` builder.
+//
+// **The fixture count, restated as a number (#1378 AC 3).** #1370's inventory said
+// 2 of 9 would need a fixture. Reading the nine views says **6 of 9 need a pinned
+// phase** and 3 need nothing — but all six are served by *one* override builder
+// and three shared states, so the cost is one fixture file, not six. The six are
+// the ones that read `pnpProvider` on their build path; the three that need
+// nothing are `pnp_isp_settings` (reads it only while `_dhcpSaving`) and the two
+// pure `StatelessWidget`s. #1369's projection should be corrected in that shape:
+// more pages need a phase pinned than #1370 predicted, and the per-page fixture
+// cost is lower than it assumed.
+//
+// **Eight, not nine.** `pnp_setup` is measurable and still cannot be declared: the
+// wizard renders ui_kit's `AppStepper`, whose bar variant overflows by
+// `stepCount × 4` at every width in every locale, and the fix is in ui_kit rather
+// than here. The finding is pinned as a tripwire test in
+// `test/page/instant_setup/views/pnp_setup_view_test.dart` — read that test's doc
+// comment for the arithmetic and for what to do when it goes red. `pnp_complete`
+// stays excluded as unreachable, unchanged from #1370.
+
+/// `page.pnp_entry` — the flow's front door, pinned at its one loader-free phase.
+///
+/// Three of this view's four branches are a loader: `_buildLoading` is a bare
+/// [AppLoader] and `_buildCheckingInternet` is an [AppCard] *containing* one, so
+/// the blanket `forbids: [AppLoader]` rule leaves exactly `AdminReadFailure` — the
+/// error card, and also the widest of the four (an icon, a wrapped message, a text
+/// button).
+///
+/// The override is doing more here than picking a branch. `initState` fires
+/// `startPostLoginFlow()` in a microtask, which on a real notifier reaches
+/// `ref.read(uspClientProvider)!` and lands the flow in `AdminReadFailure` **via
+/// its own null-check failure** — a page that looks measured while it is really
+/// measuring a crash. `FixedPnpNotifier` no-ops that transition, so the phase
+/// under measurement is the phase this case named.
+final kPnpEntryPageCase = PageSurfaceCase(
+  id: 'pnp_entry',
+  view: () => const PnpEntryView(),
+  overrides: () => pnpOverrides(pnpAdminReadFailureState),
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_isp_settings` — the ISP-type hub: three tappable option cards.
+///
+/// One of the three pages in this wave that needs **no** fixture, and the case
+/// says so with an empty override list rather than pinning a phase it does not
+/// read. `build` watches `pnpProvider` only inside `_dhcpSaving ? … : null`, so at
+/// rest this page is provider-independent — the real `PnpNotifier.build()` returns
+/// `PnpState.initial()` and touches no service.
+///
+/// [PnpIspSavingProgress] is forbidden for that reason: it is the one tree that
+/// replaces the whole page, and its absence is what makes "at rest" a checked
+/// claim instead of an assumption about a `bool` field's initial value.
+final kPnpIspSettingsPageCase = PageSurfaceCase(
+  id: 'pnp_isp_settings',
+  view: () => const PnpIspSettingsView(),
+  overrides: () => const [],
+  requires: const [AppCard],
+  forbids: const [AppLoader, PnpIspSavingProgress],
+);
+
+/// `page.pnp_no_internet` — the troubleshooter hub.
+///
+/// The tree does not depend on the phase, so pinning `NoInternet` is not what gets
+/// the page to render — it is what makes the branch a *decision*. Unpinned, this
+/// page renders the same thing because `AdminCheckingInternet` happens to fail the
+/// two `is` checks in `ref.listen`, and a fixture that is right by coincidence is
+/// one nobody notices going wrong.
+///
+/// Both required widgets are here because they are on opposite sides of the page:
+/// [AppCard] is the two option cards and [AppButton] is the two text buttons
+/// beneath them, so a `Column` that lost its tail would still satisfy the first.
+final kPnpNoInternetPageCase = PageSurfaceCase(
+  id: 'pnp_no_internet',
+  view: () => const PnpNoInternetView(),
+  overrides: () => pnpOverrides(pnpNoInternetState),
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_pppoe` — the PPPoE form, prefilled and with its VLAN row open.
+///
+/// This is the page where the fixture changes what is measured rather than whether
+/// anything is. `_prefillFromCurrentSettings` runs in `initState` and reads **only**
+/// `NoInternet.currentWanSettings`; without it every field renders empty, and
+/// `vlanEnabled` is what flips `_showVlan` and adds the VLAN label and field at
+/// all. An unpinned fixture would sweep 208 cells of a shorter form than any real
+/// user sees — the same under-measurement `kDhcpPageCase` warns about with its
+/// empty-list state.
+///
+/// The premise names both field types because they are different widgets with
+/// different intrinsic widths ([AppPasswordInput] carries a trailing reveal
+/// button), plus the save button that closes the form.
+final kPnpPppoePageCase = PageSurfaceCase(
+  id: 'pnp_pppoe',
+  view: () => const PnpPppoeView(),
+  overrides: () => pnpOverrides(pnpNoInternetState),
+  requires: const [AppTextField, AppPasswordInput, AppButton],
+  forbids: const [AppLoader, PnpIspSavingProgress],
+);
+
+/// `page.pnp_static_ip` — the static-IP form, prefilled and with DNS expanded.
+///
+/// Same fixture and the same argument as [kPnpPppoePageCase], one field type
+/// further: a non-empty `dnsServer1`/`dnsServer2` flips `_showDns`, which adds two
+/// more [AppIpv4TextField]s to the three the form always has. Five labelled IPv4
+/// fields in 26 locales is the widest this page gets.
+final kPnpStaticIpPageCase = PageSurfaceCase(
+  id: 'pnp_static_ip',
+  view: () => const PnpStaticIpView(),
+  overrides: () => pnpOverrides(pnpNoInternetState),
+  requires: const [AppIpv4TextField, AppButton],
+  forbids: const [AppLoader, PnpIspSavingProgress],
+);
+
+/// `page.pnp_unplug_modem` — step 1 of the modem-restart flow.
+///
+/// A pure [StatelessWidget] with no provider at all, so the empty override list is
+/// the whole fixture. Its tip card's `Row` is the width-sensitive part: an icon, an
+/// `Expanded` body and a chevron, with a tip string that triples in length in some
+/// locales.
+///
+/// The tip **dialog** is not measured. It is behind a tap, and a dialog is a
+/// surface of its own rather than a wider version of this page — the gate's own
+/// §8 argument for why a new surface earns a new probe rather than a wider sweep.
+final kPnpUnplugModemPageCase = PageSurfaceCase(
+  id: 'pnp_unplug_modem',
+  view: () => const PnpUnplugModemView(),
+  overrides: () => const [],
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_modem_lights_off` — step 2 of the modem-restart flow.
+///
+/// Structurally [kPnpUnplugModemPageCase]'s twin — same shell, same tip card, a
+/// different illustration and different strings. Both are declared rather than one
+/// standing in for the other, because "different strings" is the entire axis this
+/// family sweeps: they are the same layout only until a locale makes one of the two
+/// tip strings wrap and the other not.
+final kPnpModemLightsOffPageCase = PageSurfaceCase(
+  id: 'pnp_modem_lights_off',
+  view: () => const PnpModemLightsOffView(),
+  overrides: () => const [],
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_waiting_modem` — step 3, at its instruction stage.
+///
+/// Three stages share this view and the phase picks between them: `NoInternet`
+/// renders the plug-back-in instruction, `ModemRestartCountdown` a
+/// [CircularCountdownWidget] and `ModemRestartCheckingInternet` a spinner. Only the
+/// first is a page-shaped tree; the other two are centred fixed-size boxes.
+///
+/// So both forbids are load-bearing rather than ceremonial, and they are the reason
+/// this page is pinned even though its instruction stage is also what an unpinned
+/// fixture happens to render: [AppLoader] rules out the checking stage and
+/// [CircularCountdownWidget] the countdown, which together are the only two ways
+/// this case could be measuring 208 cells of something that cannot overflow.
+final kPnpWaitingModemPageCase = PageSurfaceCase(
+  id: 'pnp_waiting_modem',
+  view: () => const PnpWaitingModemView(),
+  overrides: () => pnpOverrides(pnpNoInternetState),
+  requires: const [AppButton],
+  forbids: const [AppLoader, CircularCountdownWidget],
+);
+
+/// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five,
+/// then wave 2's eight.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
@@ -315,4 +515,14 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kTopologyPageCase,
   kNodeDetailPageCase,
   kPortForwardingPageCase,
+  // Wave 2 (#1378), in flow order rather than cost order — the flow is what makes
+  // the set legible, and every page in it costs about the same anyway.
+  kPnpEntryPageCase,
+  kPnpNoInternetPageCase,
+  kPnpIspSettingsPageCase,
+  kPnpPppoePageCase,
+  kPnpStaticIpPageCase,
+  kPnpUnplugModemPageCase,
+  kPnpModemLightsOffPageCase,
+  kPnpWaitingModemPageCase,
 ];

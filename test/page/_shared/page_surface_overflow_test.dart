@@ -16,16 +16,17 @@ import '../../layout_gate/sweep.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
-/// The overflow gate's page sweep — the #1349 pilot, plus #1377's wave 1.
+/// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1 and #1378's
+/// wave 2.
 ///
-/// Seven whole pages × 8 screen widths × 26 locales, declared through the shared
+/// Fifteen whole pages × 8 screen widths × 26 locales, declared through the shared
 /// runner. Everything about *which* cells exist and *how* one is hosted lives in
-/// `test/layout_gate/families/page_surface_family.dart`; which seven pages, and why
-/// those seven, lives in `page_surface_cases.dart`. This file is the declaration,
-/// the seven pins, and the two readability guards that sit beside the two fixes
-/// this family has prompted so far.
+/// `test/layout_gate/families/page_surface_family.dart`; which fifteen pages, and
+/// why those fifteen, lives in `page_surface_cases.dart`. This file is the
+/// declaration, the fifteen pins, and the two readability guards that sit beside the
+/// two fixes this family has prompted so far.
 ///
-/// The epic (#1369) takes the remaining 38 in waves; `test/fixtures/page_roster.tsv`
+/// The epic (#1369) takes the remaining 30 in waves; `test/fixtures/page_roster.tsv`
 /// is the register of which page is where, and is the file to read before assuming
 /// a page absent from this list is a page with nothing wrong with it.
 ///
@@ -80,11 +81,12 @@ void main() {
   // same number — which is a fact about the axis, not a copy: a page that ever
   // needs its own width list changes only its own pin.
   //
-  // Seven `runOverflowSweep` calls and not a loop over `kPageSurfaceCases`, which
-  // is the same argument the literal pin rests on one level down. A loop would make
-  // the *inventory* of swept pages derived too, so deleting a case would delete its
-  // sweep and this file would stay green in less time. Written out, a page leaving
-  // the gate is a deletion someone has to perform here, in a diff that names it.
+  // One `runOverflowSweep` call per page and not a loop over `kPageSurfaceCases`,
+  // which is the same argument the literal pin rests on one level down. A loop
+  // would make the *inventory* of swept pages derived too, so deleting a case
+  // would delete its sweep and this file would stay green in less time. Written
+  // out, a page leaving the gate is a deletion someone has to perform here, in a
+  // diff that names it.
   runOverflowSweep(
     family: PageSurfaceFamily(kDhcpPageCase),
     expectedCellCount: 208,
@@ -123,9 +125,53 @@ void main() {
     expectedCellCount: 208,
   );
 
+  // Wave 2 (#1378): the instant_setup flow, in flow order. Eight of its nine
+  // reachable pages — `pnp_setup` is measurable and blocked on a ui_kit defect
+  // (`test/page/instant_setup/views/pnp_setup_view_test.dart` pins it), and
+  // `pnp_complete_view` is unreachable. The register is the roster.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpEntryPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpNoInternetPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpIspSettingsPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpPppoePageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpStaticIpPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpUnplugModemPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpModemLightsOffPageCase),
+    expectedCellCount: 208,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpWaitingModemPageCase),
+    expectedCellCount: 208,
+  );
+
   // The readability assertion rule 4 of the skill requires beside an overflow
   // assertion, aimed at the one site this pilot changed. Neither this group nor
-  // wave 1's below names a cell, so the committed `page` baseline counts the seven
+  // wave 1's below names a cell, so the committed `page` baseline counts the page
   // sweeps and nothing else, and `overflow_baselines.md` §5's "every collector call
   // names a cell" stays true: these two tests do not install the collector at all,
   // because their oracle is not "did a RenderFlex overflow".

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_in
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
@@ -42,8 +44,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when seven pages fit. It is *also*
-/// green when seven pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when fifteen pages fit. It is *also*
+/// green when fifteen pages never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -62,8 +64,10 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  group('the gate sweeps seven pages, and which seven is a decision', () {
-    test('kPageSurfaceCases holds the pilot two plus the five of wave 1', () {
+  group('the gate sweeps fifteen pages, and which fifteen is a decision', () {
+    test(
+        'kPageSurfaceCases holds the pilot two, wave 1\'s five and wave 2\'s eight',
+        () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -74,12 +78,20 @@ void main() {
           'topology',
           'node_detail',
           'port_forwarding',
+          'pnp_entry',
+          'pnp_no_internet',
+          'pnp_isp_settings',
+          'pnp_pppoe',
+          'pnp_static_ip',
+          'pnp_unplug_modem',
+          'pnp_modem_lights_off',
+          'pnp_waiting_modem',
         ],
-        // Updated by #1377, and the wording is the point of the test. This pin is
-        // the epic's per-wave checkpoint: it goes red on every wave *by design*, so
-        // that the wave has to say here which pages it added and on what grounds.
-        // Trimming the list to whatever `kPageSurfaceCases` happens to hold is how
-        // the checkpoint stops existing.
+        // Updated by #1377 and #1378, and the wording is the point of the test.
+        // This pin is the epic's per-wave checkpoint: it goes red on every wave
+        // *by design*, so that the wave has to say here which pages it added and
+        // on what grounds. Trimming the list to whatever `kPageSurfaceCases`
+        // happens to hold is how the checkpoint stops existing.
         //
         // **The pilot's two (#1349)**: a plain form page and a provider-heavy one,
         // bracketing the cost range §1.2 records.
@@ -97,7 +109,24 @@ void main() {
         // added here. No page in this list arrives carrying debt, and
         // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
         //
-        // The 38 that remain are in `test/fixtures/page_roster.tsv`, not here.
+        // **Wave 2's eight (#1378)**: the instant_setup flow, which is a different
+        // kind of wave — nine views over one `pnpProvider`, where a fixture is a
+        // *phase* rather than a payload. Six of the nine need one pinned, three need
+        // nothing, and all six are served by one override builder over three
+        // composed states. That corrects #1370's "2 of 9" in both directions: more
+        // pages need a phase than it predicted, at a lower fixture cost.
+        //
+        // Eight, not nine: `pnp_setup` renders ui_kit's `AppStepper`, whose bar
+        // variant overflows by `stepCount × 4` at every width in every locale
+        // (`AppFocusIndicator` pads each bar unconditionally while
+        // `_buildBarStepper` divides the raw width). The fix is in ui_kit, not
+        // here, and the finding is pinned as a tripwire in
+        // `test/page/instant_setup/views/pnp_setup_view_test.dart`. The one fixture
+        // that would render this page clean is a single-step wizard — i.e. one with
+        // no `AppStepper` in it — which is the fixture workaround #1378 forbids.
+        // `pnp_complete_view` stays excluded as unreachable.
+        //
+        // The 30 that remain are in `test/fixtures/page_roster.tsv`, not here.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -262,6 +291,108 @@ void main() {
             'while loading and a `ServiceErrorView` on error.',
       );
     });
+
+    // Wave 2's eight (#1378). Grouped rather than one pin per page, because what
+    // is worth pinning about this wave is not eight separate widget lists — the
+    // generic half already holds those non-empty — it is the two things a
+    // state-machine flow gets wrong that a data-fed page cannot: a `forbids` that
+    // names only `AppLoader` while the page's real waiting state is something
+    // else, and a phase pinned on a page that never reads one.
+
+    test('the three ISP-form pages forbid the overlay, not just the loader', () {
+      // None of these three renders an `AppLoader` while saving. `PnpIspSettingsView`
+      // and both forms hand the whole surface to `PnpIspSavingProgress` — a
+      // full-page progress screen that lays out clean at every width, so a cell
+      // showing it is green and measures nothing about the form underneath. Naming
+      // only `AppLoader` in `forbids` would leave exactly that hole, and it is a
+      // hole the fixture can fall into by accident: `_dhcpSaving`, `_pppoeSaving`
+      // and `_staticSaving` are plain widget state, so any override that let a save
+      // start would swap the surface out mid-sweep.
+      for (final page in <PageSurfaceCase>[
+        kPnpIspSettingsPageCase,
+        kPnpPppoePageCase,
+        kPnpStaticIpPageCase,
+      ]) {
+        expect(
+          page.forbids,
+          contains(PnpIspSavingProgress),
+          reason: 'page.${page.id} would measure a progress screen as a clean '
+              'page. `AppLoader` alone is not this flow\'s waiting state.',
+        );
+      }
+    });
+
+    test('page.pnp_waiting_modem forbids the stage it is not measuring', () {
+      expect(
+        kPnpWaitingModemPageCase.forbids,
+        contains(CircularCountdownWidget),
+        reason: 'three stages share this one view and the phase picks between '
+            'them: `NoInternet` renders the plug-back-in instruction this case '
+            'measures, `ModemRestartCountdown` renders a countdown ring and '
+            '`ModemRestartCheckingInternet` a spinner. The other two are a ring '
+            'and a spinner in a `Center` — clean at every width — so without this '
+            'a phase drift would move the page to a different screen and report '
+            '208 green cells for the one it was declared to cover.',
+      );
+    });
+
+    test('the two ISP forms require the fields their fixture unlocks', () {
+      expect(
+        kPnpPppoePageCase.requires,
+        containsAll(<Type>[AppTextField, AppPasswordInput]),
+        reason: 'the username and password fields are the width-sensitive '
+            'content, and the password one is the reason the pair is named '
+            'rather than just `AppTextField`: `AppPasswordInput` carries a '
+            'trailing reveal button inside the same row as the label, which is '
+            'the narrower box of the two.',
+      );
+      expect(
+        kPnpStaticIpPageCase.requires,
+        contains(AppIpv4TextField),
+        reason: 'five labelled IPv4 fields is this page at its widest, and the '
+            'last two exist only because the fixture\'s `dnsServer1`/'
+            '`dnsServer2` flip `_showDns`. A premise naming a plain '
+            '`AppTextField` would hold against a form with the DNS rows '
+            'collapsed, which is three fields and a narrower page.',
+      );
+    });
+
+    test('five of wave 2\'s eight pin a phase and three deliberately do not',
+        () {
+      // The fixture story as a value. #1370 predicted 2 of the 9 instant_setup
+      // pages would need a fixture; reading the views gives **6** — the five here
+      // plus `pnp_setup`, which is queued on a ui_kit defect — all six served by
+      // one override builder over three composed states. The three with an empty
+      // list are empty because the view reads no provider on the path swept, not
+      // because nobody wrote one, and that distinction is only checkable while it
+      // is written down: an empty `overrides` that *should* have pinned a phase is
+      // how a page silently renders a different screen than the one it names.
+      final pinned = <String>[];
+      final unpinned = <String>[];
+      for (final page in <PageSurfaceCase>[
+        kPnpEntryPageCase,
+        kPnpNoInternetPageCase,
+        kPnpIspSettingsPageCase,
+        kPnpPppoePageCase,
+        kPnpStaticIpPageCase,
+        kPnpUnplugModemPageCase,
+        kPnpModemLightsOffPageCase,
+        kPnpWaitingModemPageCase,
+      ]) {
+        (page.overrides().isEmpty ? unpinned : pinned).add(page.id);
+      }
+      expect(
+        unpinned,
+        const ['pnp_isp_settings', 'pnp_unplug_modem', 'pnp_modem_lights_off'],
+        reason: 'these three read no `pnpProvider` state on the path this sweep '
+            'measures — the ISP hub watches it only while `_dhcpSaving`, and the '
+            'two modem-restart steps are plain StatelessWidgets. Any *other* page '
+            'appearing here is a phase that stopped being pinned, and the page it '
+            'then renders is whatever `PnpState.initial()` selects: '
+            '`AdminCheckingInternet`, which is a spinner on most of this flow.',
+      );
+      expect(pinned, hasLength(5));
+    });
   });
 
   group('the premise is an assertion, not coverage', () {
@@ -272,7 +403,7 @@ void main() {
     // animates forever and that is the point of it.
     testWidgets('a page that never left its loader is measured, and fails',
         (tester) async {
-      // Deliberately not one of the seven real cases: this is the tree a drifted
+      // Deliberately not one of the real cases: this is the tree a drifted
       // fixture produces, and it has to be constructible without a drifted
       // fixture. `requires` is dhcp's, so the failure names a real card.
       final stuckOnLoader = PageSurfaceCase(
@@ -306,7 +437,7 @@ void main() {
         reason:
             'the premise is what turns a clean-but-meaningless cell red. If '
             'this passes with a null error, `onCellSettled` has stopped '
-            'asserting and all seven real sweeps are green over whatever renders.',
+            'asserting and every real sweep is green over whatever renders.',
       );
       expect(
         verdict.error.toString(),
@@ -411,7 +542,7 @@ void main() {
 
   group('each page pins its own cell count', () {
     // The pins live in the suite, as `runOverflowSweep` requires. What is checkable
-    // here is the arithmetic behind them: the suite says 208 seven times, and 208 is
+    // here is the arithmetic behind them: the suite says 208 once per page, and 208 is
     // 8 widths × 26 locales — so a locale added to the app fails the suite's pins
     // and this test says why.
     test('208 is 8 widths x 26 locales, for every page in the list', () {
@@ -419,7 +550,7 @@ void main() {
         kPageSweepWidths.length * AppLocalizations.supportedLocales.length,
         208,
         reason: 'every pin in page_surface_overflow_test.dart is this product '
-            'spelled as a literal. If the app ships another locale, all seven '
+            'spelled as a literal. If the app ships another locale, every '
             'pins move together — and that is a coverage change worth an '
             'explicit edit, which is why the pin is a literal in the first place.',
       );

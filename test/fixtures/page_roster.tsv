@@ -12,17 +12,35 @@
 # basis-note wall-clock-minus-control: the control is a ~6s startup with ~1s of variance, and
 # basis-note subtracting it from a ~9s total has a wider error band than the drift being measured.
 # basis-note Cross-checked on the five pages it re-measured; four agreed with #1370 within 6%.
-# basis-note So the 20 queued figures still carry #1370's wall-clock-minus-control reading and
-# basis-note the 7 swept ones carry the durations; the agreement above is why one column holds both.
+# basis-note So the 14 queued figures still carry #1370's wall-clock-minus-control reading and
+# basis-note the 15 swept ones carry the durations; the agreement above is why one column holds both.
+# basis-note #1378 kept that basis and added a rule: three runs, median committed. Four passes over
+# basis-note pnp_entry read 21.2, 18.5, 11.6 and 10.9 ms/cell, because the first coordinate test of a
+# basis-note run absorbs the font load and the first pump, and that fixed cost is most of a cheap
+# basis-note page's total. Only 1 of its 7 comparable pages landed inside #1377's +/-7% floor
+# basis-note (pnp_modem_lights_off, -2.3%); the rest moved -70% to +63%. Two causes, not one: below
+# basis-note ~20ms/cell the two bases disagree by more than they agree, and pnp_static_ip's +63%
+# basis-note (36.5 -> 59.6) is a fixture difference — this wave's state expands the DNS rows, so five
+# basis-note IPv4 fields render where #1370's default state rendered three. So read any figure under
+# basis-note ~20ms/cell as +/-40%, and re-measure before planning against one.
+# blocked pnp_setup_view is queued WITH a figure and is not fixture debt: pnpWizardConfiguringState in
+# blocked test/mocks/test_data/scenes/pnp_scene_data.dart gets it past its loader and #1378 measured all
+# blocked 208 cells through it. What blocks it is ui_kit v2.40.1's AppStepper bar variant, which
+# blocked overflows by stepCount x 4 at every width in every locale — app_stepper.dart:239 divides
+# blocked constraints.maxWidth while AppFocusIndicator pads each bar by ringOffset=2.0 unconditionally.
+# blocked 208 of 208 cells fail at +12.0px on this page's 3-step wizard, so declaring it would put a
+# blocked whole page of debt into the gate, which section 8's graduation rule forbids. The fix is a
+# blocked ui_kit PR plus a bump here; the tripwire that goes red when it lands is
+# blocked test/page/instant_setup/views/pnp_setup_view_test.dart.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 45
-# swept 7
-# queued 36
-# measured 27
-# needs_fixture 16
+# swept 15
+# queued 28
+# measured 29
+# needs_fixture 14
 # excluded 2
 # columns path	disposition	ms_per_cell
 lib/page/admin/views/usp_admin_view.dart	queued	-
@@ -40,15 +58,15 @@ lib/page/firmware_update/views/firmware_update_view.dart	queued	46.4
 lib/page/instant_privacy/views/instant_privacy_view.dart	queued	-
 lib/page/instant_safety/views/instant_safety_view.dart	queued	-
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
-lib/page/instant_setup/views/pnp_entry_view.dart	queued	38.6
-lib/page/instant_setup/views/pnp_isp_settings_view.dart	queued	13.7
-lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	queued	13.2
-lib/page/instant_setup/views/pnp_no_internet_view.dart	queued	12.5
-lib/page/instant_setup/views/pnp_pppoe_view.dart	queued	16.3
-lib/page/instant_setup/views/pnp_setup_view.dart	queued	-
-lib/page/instant_setup/views/pnp_static_ip_view.dart	queued	36.5
-lib/page/instant_setup/views/pnp_unplug_modem_view.dart	queued	18.1
-lib/page/instant_setup/views/pnp_waiting_modem_view.dart	queued	-
+lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
+lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
+lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	swept	12.9
+lib/page/instant_setup/views/pnp_no_internet_view.dart	swept	14.7
+lib/page/instant_setup/views/pnp_pppoe_view.dart	swept	20.8
+lib/page/instant_setup/views/pnp_setup_view.dart	queued	34.3
+lib/page/instant_setup/views/pnp_static_ip_view.dart	swept	59.6
+lib/page/instant_setup/views/pnp_unplug_modem_view.dart	swept	13.5
+lib/page/instant_setup/views/pnp_waiting_modem_view.dart	swept	11.7
 lib/page/internet_settings/views/usp_internet_settings_view.dart	queued	-
 lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	queued	-
 lib/page/landing/views/home_view.dart	queued	13.8
