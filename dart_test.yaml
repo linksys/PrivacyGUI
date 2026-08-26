@@ -39,25 +39,27 @@ tags:
   # gate redder).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 328 test files to skip 323 of them. Re-measured 2026-08-26 for #1378's
-  # ninth page, the same 439 tests take 2m46s under the tag and 1m30s when the
-  # five files are named (shell clock; `flutter test`'s own is 2m28s and 1m24s).
-  # Name the file for a tight loop; use the tag when a sixth sweep must not be
-  # missed — the fifth arrived on the day this comment last said "fifth", which is
-  # the argument.
+  # all 328 test files to skip 323 of them. Re-measured 2026-08-26 for #1379's
+  # wave 3, the same 499 tests take 3m09s under the tag and 2m03s when the five
+  # files are named (`flutter test`'s own clock both times; the shell adds package
+  # resolution and build on top of each). Name the file for a tight loop; use the
+  # tag when a sixth sweep must not be missed — the fifth arrived on the day this
+  # comment last said "fifth", which is the argument.
   #
-  # 439, not the 429 before `pnp_setup`, the 414 before #1372, the 342 after
-  # #1377, the 296 before it, the 590 after #1343 nor the 2,412 before that: every
-  # sweep loops its locales inside one test per coordinate, so 7,360 cells are
-  # declared by 439 tests (card 102, popup 80, chrome 57, forced-form 38, page
-  # 162 — 160 of them cells, the other two readability guards that pump 52 trees
-  # each and name none). Cells are what the gate measures; the test count is how
-  # they are named. Waves 1 and 2 of #1369 moved both numbers: thirteen more pages
-  # at 208 cells and 9 tests each. #1372 then moved them on the other axis — one
-  # more screen width, so every page is 234 cells and 10 tests, +390 cells and +15
-  # tests over the fifteen pages swept at the time. `pnp_setup` is wave 2's ninth
-  # and joined at the post-#1372 rate (+234 cells, +10 tests) once
-  # ui_kit v2.40.2 fixed the `AppStepper` overflow that had held it out (#70).
+  # 499, not the 439 before #1379, the 429 before `pnp_setup`, the 414 before
+  # #1372, the 342 after #1377, the 296 before it, the 590 after #1343 nor the
+  # 2,412 before that: every sweep loops its locales inside one test per
+  # coordinate, so 8,764 cells are declared by 499 tests (card 102, popup 80,
+  # chrome 57, forced-form 38, page 222 — 220 of them cells, the other two
+  # readability guards that pump 52 trees each and name none). Cells are what the
+  # gate measures; the test count is how they are named. Waves 1 and 2 of #1369
+  # moved both numbers: thirteen more pages at 208 cells and 9 tests each. #1372
+  # then moved them on the other axis — one more screen width, so every page is
+  # 234 cells and 10 tests, +390 cells and +15 tests over the fifteen pages swept
+  # at the time. `pnp_setup` is wave 2's ninth and joined at the post-#1372 rate
+  # (+234 cells, +10 tests) once ui_kit v2.40.2 fixed the `AppStepper` overflow
+  # that had held it out (#70). #1379's wave 3 added six entry surfaces at that
+  # same rate: +1,404 cells, +60 tests.
   #
   # +4 tests and +29 cells at the merge, and no sweep was edited for either:
   # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal
