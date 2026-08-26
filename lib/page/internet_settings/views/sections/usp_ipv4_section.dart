@@ -131,7 +131,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           if (isEditing)
             AppDropdown<UspWanConnectionType>(
               identifier: 'internet-connection-type',
-              itemIdentifier: (type) => 'connection-type-${type.name}',
+              itemIdentifier: _connectionTypeSlug,
               label: loc(context).connectionType,
               items: UspWanConnectionType.values,
               value: form.connectionType,
@@ -435,3 +435,18 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     ref.read(uspInternetSettingsProvider.notifier).updateField(updater);
   }
 }
+
+/// Builds the E2E test-hook identifier for each connection-type option.
+///
+/// The enum member name is used verbatim by Dart, so `staticIp` would emit a
+/// mixed-case slug. The E2E identifier generator only accepts all-lowercase
+/// kebab hooks (`PrivacyGUI-USP-E2E/scripts/gen-identifiers.mts` STATIC_RE:
+/// `/^[a-z0-9]+(?:-[a-z0-9]+)+$/`) and silently drops anything else, so a
+/// non-normalised `staticIp` hook would never reach `identifiers.generated.ts`.
+/// This normalises camelCase to kebab and prefixes the page/control anchor
+/// (`internet-connection-type-`) per `constitution.md:1529`
+/// (`{page}-{control}[-{instance-key}]`). Do NOT "simplify" this back to
+/// `type.name` — it will break the Static IP hook.
+String _connectionTypeSlug(UspWanConnectionType type) =>
+    'internet-connection-type-'
+    '${type.name.replaceAllMapped(RegExp(r'(?<=[a-z0-9])([A-Z])'), (m) => '-${m[1]!.toLowerCase()}').toLowerCase()}';
