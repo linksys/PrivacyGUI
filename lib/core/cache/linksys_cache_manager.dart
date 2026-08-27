@@ -30,15 +30,19 @@ class LinksysCacheManager {
   factory LinksysCacheManager.forTesting(CacheManager cacheManager) =>
       LinksysCacheManager._withBackend(cacheManager);
 
-  LinksysCacheManager._withBackend(this.cacheManager) {
-    defaultCacheExpiration = (BuildConfig.refreshTimeInterval * 1000) - 10000;
-  }
+  LinksysCacheManager._withBackend(this.cacheManager);
+
+  static int get _defaultCacheExpiration =>
+      (BuildConfig.refreshTimeInterval * 1000) - 10000;
 
   /// cache system can cache multiple devices via serial number.
   /// data variable is specific device cache map data.
   /// cache is plain text for data that used for saving in file.
-  String lastSerialNumber = "";
-  late int defaultCacheExpiration;
+  ///
+  /// [loadedSerialNumber] is the device the in-memory data belongs to: it is
+  /// claimed by [loadCache] and is what [saveCache] persists against.
+  String loadedSerialNumber = "";
+  int defaultCacheExpiration = _defaultCacheExpiration;
   Map<String, dynamic> _data = {};
   Map<String, dynamic> get data => _data;
   String _cache = "";
@@ -46,7 +50,7 @@ class LinksysCacheManager {
 
   void init() async {
     logger.d('Starting to init linksys cache manager');
-    defaultCacheExpiration = (BuildConfig.refreshTimeInterval * 1000) - 10000;
+    defaultCacheExpiration = _defaultCacheExpiration;
     cacheManager = FlutterCacheManager();
     _cache = await cacheManager.get() ?? "";
     logger.d('[CacheManager] init cache data: ${_cache.isNotEmpty}');
@@ -63,8 +67,8 @@ class LinksysCacheManager {
       _data = {};
     }
 
-    if (lastSerialNumber.isNotEmpty) {
-      saveCache(lastSerialNumber);
+    if (loadedSerialNumber.isNotEmpty) {
+      saveCache(loadedSerialNumber);
     }
   }
 
@@ -74,10 +78,10 @@ class LinksysCacheManager {
       // No device selected, so no cache belongs in memory either.
       logger.d("[CacheManager] No SN given. Drop the in-memory cache data");
       _data = {};
-      lastSerialNumber = "";
+      loadedSerialNumber = "";
       return false;
     }
-    if (serialNumber != lastSerialNumber) {
+    if (serialNumber != loadedSerialNumber) {
       logger.d("[CacheManager] SN changed. Starting to load cache");
       final value = await cacheManager.get();
       _cache = value ?? "";
@@ -86,7 +90,7 @@ class LinksysCacheManager {
       // right device. Claiming it any earlier would make a save that lands
       // while the read above is in flight write this device's entry with the
       // previous device's data.
-      lastSerialNumber = serialNumber;
+      loadedSerialNumber = serialNumber;
       if (_cache.isEmpty) {
         _data = {};
         return false;
@@ -110,13 +114,13 @@ class LinksysCacheManager {
     if (serialNumber.isEmpty) {
       return;
     }
-    if (lastSerialNumber.isNotEmpty && serialNumber != lastSerialNumber) {
-      // The in-memory data belongs to lastSerialNumber, so writing it as
+    if (loadedSerialNumber.isNotEmpty && serialNumber != loadedSerialNumber) {
+      // The in-memory data belongs to loadedSerialNumber, so writing it as
       // another device's entry would replace that device's cache with this
       // one's. Callers that take the serial number from the preferences can ask
       // for a device whose cache is not loaded yet, so drop the write instead.
       logger.d(
-          "[CacheManager] Skip saving $serialNumber, cache belongs to $lastSerialNumber");
+          "[CacheManager] Skip saving $serialNumber, cache belongs to $loadedSerialNumber");
       return;
     }
     // From here on the serial number is either the loaded device or no device
@@ -132,7 +136,7 @@ class LinksysCacheManager {
       return;
     }
     Map<String, dynamic> cacheModel = jsonDecode(_cache);
-    if (serialNumber == lastSerialNumber) {
+    if (serialNumber == loadedSerialNumber) {
       // The in-memory data is the whole cache of this device, so replace its
       // entry instead of merging - a merge can never persist a removal made by
       // clearCache. Other devices keep their own entries.
@@ -150,7 +154,7 @@ class LinksysCacheManager {
   }
 
   Future<Map<String, dynamic>?> getCache(String? serialNumber) async {
-    String sn = serialNumber ?? lastSerialNumber;
+    String sn = serialNumber ?? loadedSerialNumber;
     final tempCache = await cacheManager.get();
     if (tempCache == null || tempCache.isEmpty) {
       logger.d('[CacheManager] no cache from $serialNumber');

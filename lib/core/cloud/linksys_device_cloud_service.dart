@@ -123,7 +123,12 @@ class DeviceCloudService {
     final linksysToken = await fetchDeviceToken(
         serialNumber: targetSerialNumber,
         macAddress: master.getMacAddress(),
-        deviceUUID: master.deviceID);
+        deviceUUID: master.deviceID,
+        // Ending a session runs while the user is on the way out, and logging
+        // out clears the stored token right after. Storing a token here would
+        // either land after that clear or file a token minted for the master
+        // under another device's serial number.
+        persistToken: false);
     // Awaited so the caller can tell whether the session was actually closed:
     // logging out right after a fire-and-forget request can tear the client down
     // before it leaves.
@@ -133,11 +138,16 @@ class DeviceCloudService {
         serialNumber: targetSerialNumber);
   }
 
-  // Fetch device token from cloud via UUID
+  /// Fetch device token from cloud via UUID.
+  ///
+  /// Pass [persistToken] as false to keep a freshly fetched token out of the
+  /// store. Reading is unaffected, so a token already stored for
+  /// [serialNumber] is still reused.
   Future<String> fetchDeviceToken({
     required String serialNumber,
     required String macAddress,
     required String deviceUUID,
+    bool persistToken = true,
   }) async {
     const tokenStore = DeviceTokenStore();
     final cachedToken = await tokenStore.read(serialNumber);
@@ -149,7 +159,9 @@ class DeviceCloudService {
       deviceUUID: deviceUUID,
       macAddress: macAddress,
     );
-    await tokenStore.save(linksysToken, serialNumber);
+    if (persistToken) {
+      await tokenStore.save(linksysToken, serialNumber);
+    }
     return linksysToken;
   }
 

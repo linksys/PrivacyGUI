@@ -33,7 +33,7 @@ void main() {
   late DeviceCloudService service;
   late Map<String, String> storage;
 
-  const freshTs = 1;
+  const freshAgeMs = 1;
   const kDay = 60 * 60 * 24 * 1000;
 
   const master = LinksysDevice(
@@ -75,7 +75,7 @@ void main() {
   group('fetchDeviceToken', () {
     test('fetches a new token when the cached one belongs to another device',
         () async {
-      seedToken(token: 'token-A', serialNumber: 'SN-A', ageMs: freshTs);
+      seedToken(token: 'token-A', serialNumber: 'SN-A', ageMs: freshAgeMs);
 
       final token = await service.fetchDeviceToken(
         serialNumber: 'SN-B',
@@ -90,7 +90,7 @@ void main() {
     });
 
     test('reuses the cached token of the same device', () async {
-      seedToken(token: 'token-A', serialNumber: 'SN-A', ageMs: freshTs);
+      seedToken(token: 'token-A', serialNumber: 'SN-A', ageMs: freshAgeMs);
 
       final token = await service.fetchDeviceToken(
         serialNumber: 'SN-A',
@@ -134,7 +134,7 @@ void main() {
         () async {
       // A session that was created for another device than the current master.
       seedToken(
-          token: 'token-master', serialNumber: 'SN-MASTER', ageMs: freshTs);
+          token: 'token-master', serialNumber: 'SN-MASTER', ageMs: freshAgeMs);
 
       await service.deleteSession(
         master: master,
@@ -147,6 +147,23 @@ void main() {
       final deleteRequest = httpClient.requests.last;
       expect(deleteRequest.headers[kHeaderSerialNumber], 'SN-SESSION');
       expect(deleteRequest.headers[kHeaderLinksysToken], 'token-B');
+    });
+
+    test('does not store the token it fetched', () async {
+      // Logging out clears the store right after, and the token was minted
+      // against the master's mac address and uuid, so it must not be filed
+      // under the serial number the session belongs to either.
+      seedToken(
+          token: 'token-master', serialNumber: 'SN-MASTER', ageMs: freshAgeMs);
+
+      await service.deleteSession(
+        master: master,
+        sessionId: 'session-1',
+        serialNumber: 'SN-SESSION',
+      );
+
+      expect(storage[pLinksysToken], 'token-master');
+      expect(storage[pLinksysTokenSN], 'SN-MASTER');
     });
   });
 }
