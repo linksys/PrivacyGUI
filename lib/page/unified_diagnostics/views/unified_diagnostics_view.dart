@@ -51,6 +51,7 @@ class _UnifiedDiagnosticsViewState
     final state = ref.watch(unifiedDiagnosticsProvider);
 
     return UiKitPageView(
+      identifier: 'unified-diagnostics',
       appBarStyle: UiKitAppBarStyle.back,
       title: loc(context).networkDiagnostics,
       scrollable: true,
