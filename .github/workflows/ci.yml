@@ -224,6 +224,14 @@ jobs:
   # branch is cut from a branch that has the gate, so it inherits both this file
   # and the suites — add it to that include list when it is cut.
   #
+  # And not before that ruleset's branches actually carry THIS file. A
+  # `pull_request` run reads its workflow from the merge ref, so a PR into a base
+  # still on the old single-job version reports `🛡️ Quality & Logic (PR)` and none
+  # of the four names, whatever the head carries. Set the checks up only once the
+  # base has the four jobs — otherwise the PRs whose head branched off the split
+  # go green and everyone else's sit at "Expected", which reads as "flaky" rather
+  # than "misconfigured" and is the more expensive way to find out.
+  #
   # Two things not to require, and one that is not protected at all:
   #
   #  * `dart-wasm-boundary` (usp-boundary.yml) triggers on `usp` and `dev-*` but
