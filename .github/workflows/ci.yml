@@ -13,8 +13,20 @@ on:
   # every hypothesis that sounded more likely (quota, draft PR, disabled
   # workflow) was wrong. `gh pr view <n> --json mergeable` is the first thing to
   # check when the checks tab is empty.
+  #
+  # `usp` is in this list because it is the 2.x release target — dev-2.x merges
+  # into it by PR (#1147, #995) — and it was missing until 2026-08-27, so the
+  # release PR was the one PR in the repo that ran no CI at all. A PR that reports
+  # nothing is worse than one that reports the wrong thing, which is the same
+  # defect this whole four-job file was written to fix.
+  #
+  # Keep this list a superset of whatever the `version branch` ruleset requires
+  # checks on. A required check that no trigger produces sits at "Expected"
+  # forever and the PR can never merge — so adding a branch to that ruleset means
+  # adding it here first. `v*.*.*` is deliberately absent: 15 such branches exist
+  # but they are 1.x-era leftovers that take tags, not PRs.
   pull_request:
-    branches: [ "main", "dev-*" ]
+    branches: [ "main", "usp", "dev-*" ]
 
 # Cancel previous runs if a new commit is pushed to the same branch. The group is
 # workflow-level, so this cancels all four jobs below together.
@@ -175,17 +187,33 @@ jobs:
   # ========================================================================
   # Required status checks are a repository setting, and there are none today
   # ------------------------------------------------------------------------
-  # Checked 2026-08-27: the `feature branch` and `version branch` rulesets carry
-  # `non_fast_forward`, `deletion` and `pull_request`, and no
-  # `required_status_checks` rule at all. Nothing pins a check by name, which is
-  # why this split could rename `🛡️ Quality & Logic (PR)` out of existence
-  # without breaking a merge — and also why a red pipeline does not actually stop
-  # one.
+  # Checked 2026-08-27: `version branch` (4093935) carries `deletion`,
+  # `non_fast_forward` and `pull_request` (1 approval) over `~DEFAULT_BRANCH`,
+  # `refs/heads/dev-*` and `refs/heads/v*.*.*`, and no `required_status_checks`
+  # rule at all. Nothing pins a check by name, which is why this split could
+  # rename `🛡️ Quality & Logic (PR)` out of existence without breaking a merge —
+  # and also why a red pipeline does not actually stop one.
   #
-  # If that is ever fixed, the four names to require are the `name:` values
-  # above: `🎨 Lint & Analyze`, `🧪 Unit Tests`, `🛡️ Layout Gate`,
-  # `🏗️ Smoke Build (Web)`. Adding a fifth job without adding it to that list
+  # The four names to require are the `name:` values above: `🎨 Lint & Analyze`,
+  # `🧪 Unit Tests`, `🛡️ Layout Gate`, `🏗️ Smoke Build (Web)`. Add them from the
+  # UI's picker rather than by typing: `🛡️` and `🏗️` carry a U+FE0F variation
+  # selector that `🎨` and `🧪` do not, and a name that differs by an invisible
+  # codepoint is a check that never reports, which looks exactly like success
+  # until the PR cannot merge. Adding a fifth job without adding it to that list
   # makes the new job advisory, silently.
+  #
+  # Two things not to require, and one that is not protected at all:
+  #
+  #  * `dart-wasm-boundary` (usp-boundary.yml) triggers on `usp` and `dev-*` but
+  #    NOT `main`, so requiring it would deadlock every PR into main.
+  #  * `v*.*.*` is in the ruleset but not in this file's triggers. Latent only —
+  #    no PR in the last 300 targeted one.
+  #  * `usp` is in NEITHER branch ruleset. `version branch` does not include it,
+  #    and `feature branch` (4094648) has an EMPTY include list, so it matches no
+  #    branch and enforces nothing anywhere. The 2.x release target therefore has
+  #    no PR requirement and no force-push protection. Fixing that means adding
+  #    `usp` to 4093935 — and this file's trigger list already covers it, which
+  #    is the ordering that avoids the deadlock above.
   # ========================================================================
 
   # ========================================================================
