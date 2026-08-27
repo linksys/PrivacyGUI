@@ -21,6 +21,13 @@ fi
 # PR-blocking is its *absence* from this list, which is the same thing
 # dart_test.yaml says from the other side — so moving `layout-gate` into
 # BASE_EXCLUDE_TAGS is how the whole gate leaves the PR command in silence.
+#
+# EDIT THIS AND YOU MUST EDIT `.github/workflows/ci.yml` TOO. The CI gate job does
+# not go through this script — it spells the same string out itself — so changing
+# only this line leaves a tag excluded here, still excluded there, and running in
+# neither job with both green. The comment above that job explains what holds the
+# partition together; this is the other end of the same warning, because whoever
+# breaks it will be reading this line and not that one.
 BASE_EXCLUDE_TAGS="golden||loc||ui"
 
 # Opt-in narrowing, for CI only. `.github/workflows/ci.yml` runs the layout gate

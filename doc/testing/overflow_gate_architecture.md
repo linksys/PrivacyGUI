@@ -2508,7 +2508,10 @@ surface blocks, because otherwise that step has no verification signal of its ow
    answer is therefore split, and the split is the affordability answer rather than a
    hedge: **the two pilot pages graduate into the PR gate; pages do not graduate as a
    class.** One page is 7.8s and all 43 remaining are 5m37s, which is twice the whole
-   2m43s gate's clock. The pilot also found a real overflow at 320px and 601px that
+   2m43s gate's clock — and "the gate" there is `./run_tests.sh` as measured on
+   2026-08-19 at 5,362 tests (§11.3's figure, same number, disambiguated at :2736
+   and :2748), not `--tags layout-gate`, which is a different and much smaller
+   clock. The pilot also found a real overflow at 320px and 601px that
    golden CI structurally cannot see, which is what makes graduating worth 7.8s a
    page. *Blocks nothing; §11.3 carries the budget to re-read when a third page is
    proposed.*
