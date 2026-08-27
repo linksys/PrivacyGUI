@@ -11,6 +11,8 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
+    show ruleIdentifierKey;
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -31,6 +33,7 @@ class UspNodeDetailView extends ConsumerWidget {
     final detail = ref.watch(uspNodeDetailProvider(deviceId));
 
     return UiKitPageView.withSliver(
+      identifier: 'node-detail',
       scrollable: true,
       title: loc(context).nodeDetail,
       topbar: const PreferredSize(
@@ -49,6 +52,7 @@ class UspNodeDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 AppButton.text(
                   label: loc(context).backToTopology,
+                  identifier: 'node-detail-back',
                   onTap: () =>
                       context.navigateBack(fallback: RouteNamed.uspTopology),
                 ),
@@ -296,6 +300,7 @@ class UspNodeDetailView extends ConsumerWidget {
           // Connected To Block
           if (parentNode != null) ...[
             LayoutBlock(
+              identifier: 'node-detail-parent',
               onTap: () => context.pushNamed(
                 RouteNamed.uspNodeDetail,
                 queryParameters: {'deviceId': parentNode.deviceId},
@@ -532,6 +537,8 @@ class UspNodeDetailView extends ConsumerWidget {
               children: [
                 for (var i = 0; i < devices.length; i++) ...[
                   LayoutBlock(
+                    identifier:
+                        'node-device-open-${ruleIdentifierKey(devices[i].mac, null)}',
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.sm,

@@ -149,6 +149,21 @@ class UiKitPageView extends ConsumerStatefulWidget {
   /// Whether the tab bar surface shows borders.
   final bool showTabBorder;
 
+  /// Optional stable, screen-reader-silent test hook
+  /// (→ `flt-semantics-identifier`) for the page container itself.
+  ///
+  /// The sibling of [UiKitBottomBarConfig.positiveIdentifier] /
+  /// [UiKitBottomBarConfig.negativeIdentifier], one level up: those hook the
+  /// page's Save / Cancel buttons, this one hooks the page surface so E2E can
+  /// assert "which page am I on" without depending on a rendered title string.
+  /// See PrivacyGUI#1391.
+  ///
+  /// Left null by default and **deliberately un-adopted by any call site in this
+  /// change**, so that "no identifier ⇒ byte-identical widget tree" is a
+  /// property the shared component can be verified on in isolation before the
+  /// pages start opting in one by one.
+  final String? identifier;
+
   const UiKitPageView({
     super.key,
     this.title,
@@ -187,6 +202,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.isTabScrollable = true,
     this.showAppBarBorder = false,
     this.showTabBorder = true,
+    this.identifier,
   });
 
   /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
@@ -270,6 +286,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     bool isTabScrollable = true,
     bool showAppBarBorder = false,
     bool showTabBorder = true,
+    String? identifier,
   }) {
     return UiKitPageView(
       key: key,
@@ -308,6 +325,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       isTabScrollable: isTabScrollable,
       showAppBarBorder: showAppBarBorder,
       showTabBorder: showTabBorder,
+      identifier: identifier,
     );
   }
 
@@ -468,17 +486,37 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       childBuilder: widget.child,
     );
 
+    // Page-level test hook (PrivacyGUI#1391).
+    //
+    // CONDITIONAL, not unconditional: with no identifier the tree must be
+    // exactly what it was before this parameter existed — no extra `Semantics`
+    // node, no extra `SemanticsNode` in the merged tree, nothing for the layout
+    // gate or the goldens to notice. `Semantics(identifier: null)` would be a
+    // near-no-op but still a real element in the tree; skipping the wrap
+    // entirely is the stronger guarantee, and it matches the precedent already
+    // set in this repo at
+    // `lib/components/styled/menus/widgets/app_menu_card.dart:91`.
+    //
+    // Assembled ONCE here, before the two return paths below diverge, so the
+    // with-topbar and without-topbar pages can never drift into hooking the page
+    // differently (or one of them silently losing the hook).
+    // `withIdentifier` (exported by ui_kit.dart) owns the null-OR-empty half of
+    // the §11.1 identifier contract: a plain `!= null` check would let an empty
+    // string through and emit a stray identified node. Using it here closes that
+    // hole while staying behaviour-identical for the null case.
+    final content = withIdentifier(widget.identifier, appPageView);
+
     // In non-sliver mode, render TopBar outside AppPageView to prevent layout issues
     if (topBarWidget != null && !widget.enableSliverAppBar) {
       return Column(
         children: [
           topBarWidget,
-          Expanded(child: appPageView),
+          Expanded(child: content),
         ],
       );
     }
 
-    return appPageView;
+    return content;
   }
 
   /// T074: Native TopBar support directly in UiKitPageView (no wrappers)

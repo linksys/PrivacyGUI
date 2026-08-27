@@ -16,6 +16,7 @@ class DiagnosticStartView extends ConsumerWidget {
     final chooseIssue = _SecondaryAction(
       icon: Icons.search,
       iconTint: _SecondaryTint.secondary,
+      identifier: 'diagnostic-choose-issue',
       title: loc(context).chooseSpecificIssue,
       description: loc(context).chooseSpecificIssueDesc,
       onTap: notifier.startWithPreQualifier,
@@ -23,6 +24,7 @@ class DiagnosticStartView extends ConsumerWidget {
     final manualTools = _SecondaryAction(
       icon: Icons.terminal,
       iconTint: _SecondaryTint.tertiary,
+      identifier: 'diagnostic-manual-tools',
       title: loc(context).manualTools,
       description: loc(context).manualToolsDesc,
       onTap: notifier.openManualTools,
@@ -155,8 +157,11 @@ class _PrimaryAction extends StatelessWidget {
                 ),
               ],
             );
-            final button =
-                AppButton(label: loc(context).startNow, onTap: onTap);
+            final button = AppButton(
+              label: loc(context).startNow,
+              identifier: 'diagnostic-run-full',
+              onTap: onTap,
+            );
 
             if (constraints.maxWidth < _reflowBelow) {
               return Column(
@@ -194,6 +199,7 @@ class _SecondaryAction extends StatelessWidget {
   final _SecondaryTint iconTint;
   final String title;
   final String description;
+  final String identifier;
   final VoidCallback onTap;
 
   const _SecondaryAction({
@@ -201,6 +207,7 @@ class _SecondaryAction extends StatelessWidget {
     required this.iconTint,
     required this.title,
     required this.description,
+    required this.identifier,
     required this.onTap,
   });
 
@@ -216,6 +223,7 @@ class _SecondaryAction extends StatelessWidget {
       label: title,
       child: AppCard(
         onTap: onTap,
+        identifier: identifier,
         child: Row(
           children: [
             Container(

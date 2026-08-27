@@ -59,6 +59,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final state = ref.watch(firmwareUpdateNotifierProvider);
 
     return UiKitPageView.withSliver(
+      identifier: 'firmware-update',
       scrollable: true,
       title: loc(context).firmwareUpdate,
       topbar: const PreferredSize(
@@ -167,11 +168,13 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
                 label: hasPickedFile
                     ? loc(context).chooseAnotherFile
                     : loc(context).chooseFirmwareFile,
+                identifier: 'firmware-pick-file',
                 onTap: () => _onPickFile(context),
               ),
               if (hasPickedFile)
                 AppButton(
                   label: loc(context).updateFirmware,
+                  identifier: 'firmware-install-confirm',
                   onTap: () => _onConfirmInstall(context, state),
                 ),
             ],
@@ -341,6 +344,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           AppGap.xl(),
           AppButton(
             label: loc(context).tryAgain,
+            identifier: 'firmware-retry',
             onTap: () =>
                 ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
           ),
@@ -585,6 +589,7 @@ class _OtaCheckCard extends StatelessWidget {
                     )
                   : AppButton.primaryOutline(
                       label: loc(context).checkForUpdates,
+                      identifier: 'firmware-check',
                       onTap: onCheck,
                       size: size,
                     );

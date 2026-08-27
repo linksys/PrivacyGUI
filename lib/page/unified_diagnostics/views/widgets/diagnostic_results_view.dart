@@ -211,16 +211,22 @@ class _ActionBar extends StatelessWidget {
       children: [
         Expanded(
           child: AppButton.secondary(
-              label: loc(context).runAgain, onTap: onRestart),
+              label: loc(context).runAgain,
+              identifier: 'diagnostic-run-again',
+              onTap: onRestart),
         ),
         AppGap.lg(),
         Expanded(
-          child: AppButton(label: loc(context).done, onTap: onDone),
+          child: AppButton(
+              label: loc(context).done,
+              identifier: 'diagnostic-done',
+              onTap: onDone),
         ),
       ],
     );
     final exportLink = AppButton.text(
       label: loc(context).exportDiagnosticsReport,
+      identifier: 'diagnostic-export',
       onTap: () => const DiagnosticReportService().share(state),
     );
     final stack = Column(
@@ -276,6 +282,7 @@ class _SummaryCard extends StatelessWidget {
               );
 
     return AppCard(
+      identifier: 'diagnostic-results',
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(
