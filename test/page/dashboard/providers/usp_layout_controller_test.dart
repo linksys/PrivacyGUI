@@ -8,6 +8,13 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+// The drag entry points are not on the exported interface: `DashboardOverlay`
+// and the item widget reach them through this extension, and #1393 is about what
+// happens when they are called. Driving them directly is what lets the grab /
+// move / drop sequence be tested without pumping the whole dashboard — the
+// widget layer's own bindings are covered by the package.
+// ignore: implementation_imports
+import 'package:sliver_dashboard/src/controller/utility.dart';
 
 /// Wait for async initialization chains (SharedPreferences) to settle.
 Future<void> pumpAsync() async {
@@ -51,6 +58,21 @@ List<dynamic> _savedDesktopLayout(String raw) {
   final layouts = (jsonDecode(raw) as Map)['layouts'] as Map;
   return layouts['${UspLayoutEnvelope.desktopSlotCount}'] as List;
 }
+
+/// One card out of [layout].
+Map<String, dynamic> _card(List<dynamic> layout, String id) =>
+    (layout.firstWhere((i) => (i as Map)['id'] == id) as Map)
+        .cast<String, dynamic>();
+
+/// The coordinates in [layout], one `id: x,y,w,h` line per card, id-ordered.
+///
+/// Compared instead of the raw maps where a layout goes through the pref and back:
+/// a JSON round-trip is free to hand back `8.0` where the live layout held `8` for
+/// a bound, and the coordinates are what a reorder or a compaction changes.
+List<String> _geometry(List<dynamic> layout) => layout
+    .map((i) => '${(i as Map)['id']}: ${i['x']},${i['y']},${i['w']},${i['h']}')
+    .toList()
+  ..sort();
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1020,6 +1042,182 @@ void main() {
           decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
       expect(item['h'], 5);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1393 — the grid stores the edits it makes to itself
+  // ---------------------------------------------------------------------------
+  //
+  // Reordering was the one edit that never passed through a method here: the
+  // pointer overlay and the a11y keyboard flow both move cards by talking to the
+  // controller, and only the toolbar's own actions wrote anything out. A dragged
+  // card was back where it started on the next reload. The fix is the controller's
+  // `onLayoutChanged` hook, which the package calls once a mutation has settled.
+  //
+  // What is asserted is the pref rather than the render. The render already moved
+  // before this ticket — that is precisely why the bug was invisible to whoever
+  // was looking at the grid when they dragged the card.
+  group('auto-persist (#1393)', () {
+    /// The card the reorder tests move. First in the default layout's 6-column
+    /// pairs, so it starts at the left edge with room to step right.
+    const card = 'device_info';
+
+    test('every controller this provider publishes reports its edits',
+        () async {
+      // Five construction sites, and one left unwired is one session's worth of
+      // drags going nowhere: the constructor's, the one the stored layout is
+      // imported into, a preset, a membership change, and a reset.
+      final fresh = await createInitializedContainer();
+      addTearDown(fresh.dispose);
+      expect(
+        fresh.read(uspSliverDashboardControllerProvider).onLayoutChanged,
+        isNotNull,
+        reason: 'a first run has no stored layout, so nothing replaces the '
+            'controller the constructor built',
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(pUspSliverDashboardLayout)!;
+
+      final reloaded = await createInitializedContainer(
+        initialValues: {pUspSliverDashboardLayout: stored},
+      );
+      addTearDown(reloaded.dispose);
+      final notifier =
+          reloaded.read(uspSliverDashboardControllerProvider.notifier);
+      expect(
+        reloaded.read(uspSliverDashboardControllerProvider).onLayoutChanged,
+        isNotNull,
+        reason: 'the instance the stored layout was imported into',
+      );
+
+      await notifier.applyPreset(UspDashboardPreset.essential);
+      expect(
+        reloaded.read(uspSliverDashboardControllerProvider).onLayoutChanged,
+        isNotNull,
+        reason: 'after a preset',
+      );
+
+      await notifier.removeWidget('stats_panel');
+      expect(
+        reloaded.read(uspSliverDashboardControllerProvider).onLayoutChanged,
+        isNotNull,
+        reason: 'after a membership change replaces the instance',
+      );
+
+      await notifier.resetLayout();
+      expect(
+        reloaded.read(uspSliverDashboardControllerProvider).onLayoutChanged,
+        isNotNull,
+        reason: 'after a reset',
+      );
+    });
+
+    test('a pointer drag is stored when it is dropped', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final prefs = await SharedPreferences.getInstance();
+      final baseline = prefs.getString(pUspSliverDashboardLayout);
+      expect(baseline, isNotNull, reason: 'the first init seeds a baseline');
+
+      final before = _card(controller.exportLayout(), card);
+      final targetX = (before['x'] as int) + 1;
+
+      // The three calls DashboardOverlay makes for a pointer drag: grab, follow
+      // the pointer, drop. One cell is 100px with no spacing here, so a content
+      // position of (targetX * 100, y * 100) puts the pivot in column targetX.
+      controller.internal.onDragStart(card);
+      controller.internal.onDragUpdate(
+        card,
+        Offset(targetX * 100.0, (before['y'] as int) * 100.0),
+        slotWidth: 100,
+        slotHeight: 100,
+        mainAxisSpacing: 0,
+        crossAxisSpacing: 0,
+      );
+      controller.internal.onDragEnd(card);
+      await pumpAsync();
+
+      expect(_card(controller.exportLayout(), card)['x'], targetX,
+          reason: 'the drag moved the card one column right');
+
+      final saved = prefs.getString(pUspSliverDashboardLayout);
+      expect(saved, isNot(baseline),
+          reason: 'a dropped drag reaches SharedPreferences on its own — no '
+              '"Done" and no explicit save (#1393)');
+      expect(_card(_savedDesktopLayout(saved!), card)['x'], targetX);
+    });
+
+    test('a keyboard grab is stored when it is dropped, and reloads unchanged',
+        () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final prefs = await SharedPreferences.getInstance();
+      final baseline = prefs.getString(pUspSliverDashboardLayout);
+      final originalX = _card(controller.exportLayout(), card)['x'] as int;
+
+      // The a11y sequence: Space grabs, an arrow key moves, Space drops.
+      controller.clearSelection();
+      controller.toggleSelection(card);
+      controller.internal.onDragStart(card);
+      controller.moveActiveItemBy(1, 0);
+      controller.internal.onDragEnd(card);
+      await pumpAsync();
+
+      final dropped = controller.exportLayout();
+      expect(_card(dropped, card)['x'], originalX + 1,
+          reason: 'the arrow key moved the card one column right');
+
+      final saved = prefs.getString(pUspSliverDashboardLayout);
+      expect(saved, isNot(baseline),
+          reason: 'the keyboard path ends in the same drop as the pointer one, '
+              'so it stores the move the same way (#1393)');
+
+      // And the stored layout has to be a fixed point of the load path: the
+      // import compacts what it reads, so a layout that shifts on the way back in
+      // would leave the cards somewhere other than where the user dropped them.
+      final afterReload = await createInitializedContainer(
+        initialValues: {pUspSliverDashboardLayout: saved!},
+      );
+      addTearDown(afterReload.dispose);
+
+      expect(
+        _geometry(afterReload
+            .read(uspSliverDashboardControllerProvider)
+            .exportLayout()),
+        _geometry(dropped),
+        reason: 'the reloaded grid is the one that was dropped, card for card',
+      );
+    });
+
+    test('a grab that is still held is not stored', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final prefs = await SharedPreferences.getInstance();
+      final baseline = prefs.getString(pUspSliverDashboardLayout);
+      final before = _geometry(controller.exportLayout());
+
+      controller.clearSelection();
+      controller.toggleSelection(card);
+      controller.internal.onDragStart(card);
+      controller.moveActiveItemBy(1, 0);
+      await pumpAsync();
+
+      expect(_geometry(controller.exportLayout()), isNot(before),
+          reason: 'the grab is genuinely in flight and has moved the card');
+      expect(prefs.getString(pUspSliverDashboardLayout), baseline,
+          reason: 'the package reports a change when the interaction settles, '
+              'not while it is in progress — a layout mid-grab is uncompacted, '
+              'so storing it would hand the load path a layout it disagrees '
+              'with. What happens to an unfinished grab is decided by the exit '
+              'path in dashboard_edit_mode_provider.dart.');
     });
   });
 }

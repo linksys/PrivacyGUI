@@ -59,12 +59,41 @@ final uspSliverDashboardControllerProvider = StateNotifierProvider<
 /// order of the two *not* load-bearing — swapping them produces the same layout,
 /// which is deliberate rather than lucky, and is why neither has to know it runs
 /// second.
+///
+/// ## An edit is stored by the grid that made it, not by the button that ends it
+///
+/// Reordering is the one edit that never passes through a method here: the
+/// pointer overlay and the a11y keyboard flow both move cards by talking to the
+/// controller, so for two tickets' worth of dashboards a dragged card came back
+/// on reload (#1393). Every controller this provider publishes is therefore built
+/// with [_handleLayoutChanged], which the package calls once a mutation has
+/// settled — after the drop, not during the drag.
+///
+/// That makes the controller the authority on what is stored, and the two
+/// consequences are worth stating. Committing edit mode writes nothing, because
+/// there is nothing left to write. And an interaction that never ended has
+/// nothing to store: the layout the arrows produced is uncompacted, so storing it
+/// would mean handing the load path a layout it does not agree with, and the
+/// cards would settle somewhere else on the next reload.
 class UspSliverDashboardControllerNotifier
     extends StateNotifier<DashboardController> {
+  /// The controller handed to [super] is a bootstrap that is immediately thrown
+  /// away, because the one the app gets has to carry [_handleLayoutChanged] and
+  /// an initializer list cannot reach `this`. Swapping rather than wiring it
+  /// later is what makes "every controller this provider publishes reports its
+  /// edits" true without exception — two branches of [_initializeLayout] keep the
+  /// controller they were given, so a hook armed only on the replacements would
+  /// miss the sessions that start without a stored layout (#1393).
+  ///
+  /// [_swapController] arms the width lock and the selection mirror, which is
+  /// what this constructor used to do by hand. The bootstrap is dropped without
+  /// disposing, like every other controller this class replaces.
   UspSliverDashboardControllerNotifier(this._ref)
-      : super(_createDefaultController()) {
-    _armWidthLock();
-    _armSelectionMirror();
+      : super(DashboardController(
+          initialSlotCount: _desktopSlots,
+          initialLayout: UspWidgetSpecs.createDefaultLayout(),
+        )) {
+    _swapController(_createDefaultController());
     _initializeLayout();
   }
 
@@ -90,12 +119,27 @@ class UspSliverDashboardControllerNotifier
   /// callback and the seeding walk among them.
   CardForms _forms = CardForms.empty;
 
-  static DashboardController _createDefaultController() {
+  /// True while this notifier is putting a layout *into* the controller, as
+  /// opposed to the grid reporting one the user made — see [_importQuietly].
+  bool _suppressAutoPersist = false;
+
+  /// Orders the writes [_enqueue] hands out, oldest first.
+  Future<void> _writeQueue = Future.value();
+
+  /// A controller carrying [layout] that reports its own edits back here.
+  ///
+  /// Every construction goes through this, so there is one place where the
+  /// auto-persist hook can be forgotten rather than three.
+  DashboardController _createController(List<LayoutItem> layout) {
     return DashboardController(
       initialSlotCount: _desktopSlots,
-      initialLayout: UspWidgetSpecs.createDefaultLayout(),
+      initialLayout: layout,
+      onLayoutChanged: _handleLayoutChanged,
     );
   }
+
+  DashboardController _createDefaultController() =>
+      _createController(UspWidgetSpecs.createDefaultLayout());
 
   /// Load saved layout from SharedPreferences, or keep the constructor default.
   ///
@@ -111,10 +155,7 @@ class UspSliverDashboardControllerNotifier
     // Remote mode: use fixed remote preset layout, skip persistence
     final forcedPreset = GlobalConfig.remote.forcedPreset;
     if (forcedPreset != null) {
-      _swapController(DashboardController(
-        initialSlotCount: _desktopSlots,
-        initialLayout: forcedPreset.createLayout(),
-      ));
+      _swapController(_createController(forcedPreset.createLayout()));
       _seedBreakpoints();
       return;
     }
@@ -156,7 +197,7 @@ class UspSliverDashboardControllerNotifier
     final desktop = envelope[_desktopSlots];
     final newController = _createDefaultController();
     if (desktop != null) {
-      newController.importLayout(desktop);
+      _importQuietly(newController, desktop);
     }
     _swapController(newController);
     _seedBreakpoints(stored: envelope);
@@ -193,7 +234,7 @@ class UspSliverDashboardControllerNotifier
     var desktopLayout = controller.exportLayout();
     final normalizedDesktop = _normalize(desktopLayout, _desktopSlots);
     if (!identical(normalizedDesktop, desktopLayout)) {
-      controller.importLayout(normalizedDesktop);
+      _importQuietly(controller, normalizedDesktop);
       desktopLayout = controller.exportLayout();
     }
 
@@ -202,20 +243,23 @@ class UspSliverDashboardControllerNotifier
 
       controller.setSlotCount(slots);
       final storedLayout = stored?[slots];
-      controller.importLayout(_normalize(
-        storedLayout == null
-            ? UspWidgetSpecs.scaleLayout(desktopLayout, _desktopSlots, slots)
-            // A stored entry can predate a card the desktop grid has; align it
-            // before importing, or `setSlotCount` reads the gap as a deletion
-            // and reconciles the card out of every other breakpoint too.
-            : UspWidgetSpecs.alignMembership(
-                storedLayout,
-                desktopLayout,
-                fromCols: _desktopSlots,
-                toCols: slots,
-              ),
-        slots,
-      ));
+      _importQuietly(
+        controller,
+        _normalize(
+          storedLayout == null
+              ? UspWidgetSpecs.scaleLayout(desktopLayout, _desktopSlots, slots)
+              // A stored entry can predate a card the desktop grid has; align it
+              // before importing, or `setSlotCount` reads the gap as a deletion
+              // and reconciles the card out of every other breakpoint too.
+              : UspWidgetSpecs.alignMembership(
+                  storedLayout,
+                  desktopLayout,
+                  fromCols: _desktopSlots,
+                  toCols: slots,
+                ),
+          slots,
+        ),
+      );
     }
 
     // Returns to the layout cached during the first setSlotCount above.
@@ -353,8 +397,75 @@ class UspSliverDashboardControllerNotifier
     super.dispose();
   }
 
+  /// Stores an edit the grid made to itself (#1393).
+  ///
+  /// `sliver_dashboard` calls this after every mutation that leaves the layout
+  /// settled — a drag or a keyboard grab that was dropped, a resize, a delete, an
+  /// optimise — and never mid-gesture, which is the line persistence has to be
+  /// drawn on: by the time it arrives the layout has been compacted, so what is
+  /// stored is a layout the load path reproduces rather than one it would shuffle.
+  ///
+  /// Before this hook, only edits that went through a method on this notifier were
+  /// written out, and reordering is not one of them: both the pointer overlay and
+  /// the a11y keyboard flow move cards by talking to the controller directly. A
+  /// card dragged to a new position was back where it started on the next reload.
+  ///
+  /// Fire-and-forget, because the caller is a synchronous gesture handler that
+  /// cannot wait for a pref write and must not fail with it. The arguments are the
+  /// layout as it stands, which is what [saveLayout] reads for itself — across
+  /// every breakpoint, not just the one that changed.
+  void _handleLayoutChanged(List<LayoutItem> items, int slotCount) {
+    if (_suppressAutoPersist) return;
+
+    saveLayout().onError((error, stackTrace) => logger.e(
+          '[USP][Layout]: could not store a layout change',
+          error: error,
+          stackTrace: stackTrace,
+        ));
+  }
+
+  /// Imports [layout] into [controller] without arming [_handleLayoutChanged].
+  ///
+  /// Every import in this class is this notifier putting back a layout it already
+  /// knows about — the stored one on load, a derived one per breakpoint, a
+  /// snapshot on cancel, a normalisation after a resize — and the ones that belong
+  /// in the pref call [saveLayout] themselves. Letting them trigger the hook would
+  /// have the load path write back what it just read, one breakpoint at a time,
+  /// before the user has touched anything.
+  ///
+  /// Restores the previous value rather than clearing the flag, so a caller that
+  /// mutes a wider region cannot be un-muted by an import inside it.
+  void _importQuietly(DashboardController controller, List<dynamic> layout) {
+    final wasSuppressed = _suppressAutoPersist;
+    _suppressAutoPersist = true;
+    try {
+      controller.importLayout(layout);
+    } finally {
+      _suppressAutoPersist = wasSuppressed;
+    }
+  }
+
   /// Persist the layout of every breakpoint to SharedPreferences.
-  Future<void> saveLayout() async {
+  Future<void> saveLayout() => _enqueue(_writeLayout);
+
+  /// Runs [write] after the writes already queued, and returns its result.
+  ///
+  /// Persistence is serialised because two writes can now be in flight at once: a
+  /// resize fires [_handleLayoutChanged] with the geometry the gesture produced,
+  /// and then [updateItemSize] saves again with the geometry the constraints
+  /// allow. Ordering them means the last one to land is the newest state rather
+  /// than whichever export happened to be captured first — and each reads the
+  /// layout as it stands when its turn comes, so a write that waited is not a
+  /// write that went stale.
+  Future<void> _enqueue(Future<void> Function() write) {
+    final queued = _writeQueue.then((_) => write());
+    // A failed write must not stall the ones behind it. The caller still sees the
+    // error; the queue only needs to know the slot is free again.
+    _writeQueue = queued.then((_) {}, onError: (_, __) {});
+    return queued;
+  }
+
+  Future<void> _writeLayout() async {
     final envelope = UspLayoutEnvelope(
       _exportAllBreakpoints(),
       forms: _forms,
@@ -368,8 +479,22 @@ class UspSliverDashboardControllerNotifier
   /// The controller holds a cached layout per slot count and reconciles
   /// membership as it moves between them, so the walk is doing two jobs: it is
   /// how the geometries we are not currently rendering are read, and it is how a
-  /// card added or deleted on this grid reaches the others. It ends where it
-  /// started, so the grid the user is looking at does not move.
+  /// card *deleted* on this grid reaches the others. It ends where it started, so
+  /// the grid the user is looking at does not move.
+  ///
+  /// Deleted, not added: the reconciliation is only safe in that direction, and
+  /// the asymmetry constrains every caller. A card the live layout has and the
+  /// target grid's cache does not is placed by the package at the width it has
+  /// here, and `placeNewItems` wraps to the next row forever when that width does
+  /// not fit — the wrap branch skips its own safety counter
+  /// (`sliver_dashboard` 0.9.0, `layout_engine.dart:1058`). `stats_panel` is
+  /// `w: 12`, so one full-width card coming back on the desktop grid used to hang
+  /// the isolate here rather than throw (#1393).
+  ///
+  /// So an addition has to be aligned into every breakpoint before it reaches the
+  /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
+  /// for, and why [restoreSnapshot] goes through them rather than importing into
+  /// the controller it is handed.
   Map<int, List<dynamic>> _exportAllBreakpoints() {
     final controller = state;
     final origin = controller.slotCount.value;
@@ -396,7 +521,7 @@ class UspSliverDashboardControllerNotifier
     final wasEditing = previous.isEditing.value;
 
     final controller = _createDefaultController();
-    controller.importLayout(layouts[_desktopSlots] ?? const []);
+    _importQuietly(controller, layouts[_desktopSlots] ?? const []);
     _swapController(controller);
     _seedBreakpoints(stored: UspLayoutEnvelope(layouts));
 
@@ -422,8 +547,12 @@ class UspSliverDashboardControllerNotifier
     // correctBounds at tablet width, which collapses the two-column grid.
     _seedBreakpoints();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(pUspSliverDashboardLayout);
+    // Through the queue, so a save started by the drag before the reset cannot
+    // land after the removal and leave the pref holding a layout again.
+    await _enqueue(() async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(pUspSliverDashboardLayout);
+    });
   }
 
   /// Force update an item's size (used after resize constraint enforcement).
@@ -452,7 +581,8 @@ class UspSliverDashboardControllerNotifier
       // In place, so the caches for the other breakpoints survive. The grid
       // rebuilds off the controller's own layout beacon — the same path every
       // drag and resize already uses — so no Riverpod notification is needed.
-      controller.importLayout(
+      _importQuietly(
+        controller,
         _normalize(newLayout, controller.slotCount.value),
       );
       await saveLayout();
@@ -522,7 +652,7 @@ class UspSliverDashboardControllerNotifier
     // In place, and on this grid only: the caches for the other breakpoints are
     // what keeps their picks and geometry theirs. The grid rebuilds off the
     // controller's own layout beacon, the path every drag already uses.
-    controller.importLayout(_normalize(next, slots));
+    _importQuietly(controller, _normalize(next, slots));
     await saveLayout();
   }
 
@@ -538,10 +668,40 @@ class UspSliverDashboardControllerNotifier
   /// [layout] is re-normalised rather than trusted, so a snapshot taken before
   /// this ticket existed — or one carried across a reload — still lands as a
   /// layout the current rules agree with.
+  ///
+  /// A revert can bring back a card the session deleted, which makes it a
+  /// membership change, and those go in the way [addWidget] and [removeWidget]
+  /// put theirs in: aligned across every breakpoint first, then swapped in as a
+  /// fresh instance. Importing the snapshot into the live controller instead left
+  /// the other grids without the card and let the package place it there itself,
+  /// which for a full-width card does not terminate — see
+  /// [_exportAllBreakpoints]. Dragging a full-width card to the trash and
+  /// pressing "Cancel" froze the tab (#1393).
+  ///
+  /// The other grids keep the geometry they have. Only their membership follows
+  /// the snapshot, because that is the only part of them edit mode could have
+  /// changed from here.
   Future<void> restoreSnapshot(List<dynamic> layout, CardForms forms) async {
     _setForms(forms);
-    final controller = state;
-    controller.importLayout(_normalize(layout, controller.slotCount.value));
+    final slots = state.slotCount.value;
+    final restored = _normalize(layout, slots);
+
+    final layouts = _exportAllBreakpoints();
+    for (final grid in layouts.keys.toList()) {
+      layouts[grid] = grid == slots
+          ? restored
+          : _normalize(
+              UspWidgetSpecs.alignMembership(
+                layouts[grid]!,
+                restored,
+                fromCols: slots,
+                toCols: grid,
+              ),
+              grid,
+            );
+    }
+
+    _replaceController(layouts);
     await saveLayout();
   }
 
@@ -635,10 +795,7 @@ class UspSliverDashboardControllerNotifier
   /// rather than generic 2-column packing.
   Future<void> applyPreset(UspDashboardPreset preset) async {
     final layout = preset.createLayout();
-    _swapController(DashboardController(
-      initialSlotCount: _desktopSlots,
-      initialLayout: layout,
-    ));
+    _swapController(_createController(layout));
     _seedBreakpoints();
     await saveLayout();
   }

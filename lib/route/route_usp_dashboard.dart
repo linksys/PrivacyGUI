@@ -24,11 +24,11 @@ final uspDashboardRoute = ShellRoute(
         // switch), reverting to the pre-edit snapshot.
         //
         // Intentional silent-discard policy: unlike the enableDirtyCheck routes
-        // below, the dashboard does NOT prompt with showUnsavedAlert. Layout
-        // edits are persisted on every drag/resize, so "cancel" means restoring
-        // the snapshot captured on edit-mode entry — there is no unsaved buffer
-        // to warn about, and a confirmation dialog on every tab switch would be
-        // noise. See #1037.
+        // below, the dashboard does NOT prompt with showUnsavedAlert. Every
+        // layout edit is stored as it is made — the grid reports its own drops
+        // and resizes (#1393) — so "cancel" means restoring the snapshot captured
+        // on edit-mode entry rather than dropping a buffer of pending work, and a
+        // confirmation dialog on every tab switch would be noise. See #1037.
         final container = ProviderScope.containerOf(context);
         final editState = container.read(dashboardEditModeProvider);
         if (editState.isEditing) {

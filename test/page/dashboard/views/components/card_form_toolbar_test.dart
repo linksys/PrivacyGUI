@@ -632,8 +632,17 @@ void main() {
       // toolbar watches through Riverpod fires, and the layout beacon it
       // subscribes to is the only way it can hear about the move. A drag, a
       // resize or a preset swap reach it the same way.
+      //
+      // `w: 4`, so the card fits the narrowest grid as it stands. Adding straight
+      // to the controller skips the alignment
+      // `UspSliverDashboardControllerNotifier` does for every breakpoint, and
+      // since #1393 that reaches the walk which stores the result: the package
+      // places a card the other grids have not seen at the width it has here, and
+      // does not terminate when it does not fit. No production path adds this way
+      // — the settings panel goes through `addWidget` — but a wider card here
+      // would hang the run rather than fail it.
       controllerOf(container)
-          .addItem(const LayoutItem(id: 'stats_panel', x: 0, y: 0, w: 6, h: 2));
+          .addItem(const LayoutItem(id: 'stats_panel', x: 0, y: 0, w: 4, h: 2));
       await tester.pumpAndSettle();
 
       final cell = cellRect(tester, 'lan_info');

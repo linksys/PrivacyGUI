@@ -144,14 +144,12 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
   /// Exit edit mode, keeping the current layout.
   ///
-  /// Most edits persist themselves as they happen — every drag, resize, delete,
-  /// preset-apply and form pick ends in [saveLayout]. The one that does not is
-  /// the keyboard (a11y) reorder: `sliver_dashboard`'s `moveActiveItemBy`
-  /// mutates the layout beacon but never fires the `onLayoutChanged` callback
-  /// the other mutators do, so a card moved with the keyboard is only ever a
-  /// transient in-memory change and reverts on reload (#1393). Committing
-  /// therefore writes the layout out explicitly, so whatever is on the grid at
-  /// "Done" survives a reload regardless of how it got there.
+  /// Writes nothing, and that is the point: every edit is stored by whoever made
+  /// it — the grid reports drags, drops, resizes and deletes through the
+  /// controller's `onLayoutChanged` hook (#1393), and the toolbar's own actions
+  /// store their result themselves. Saving again here would only re-write what is
+  /// already in the pref, and on the one path where the two disagree — a keyboard
+  /// grab still held — the in-memory layout is the one that should lose.
   Future<void> commitEditMode() => _exitEditMode(revert: false);
 
   /// Exit edit mode and revert the layout/prefs to the pre-edit snapshots
@@ -160,12 +158,31 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
   /// Shared exit path for [commitEditMode] / [cancelEditMode].
   ///
+  /// Both paths end an interaction that is still in flight before anything else.
+  /// The keyboard (a11y) reorder is a mode rather than a gesture — Space grabs a
+  /// card, the arrows move it, Space drops it — so unlike a pointer drag it can
+  /// still be open when "Done" or "Cancel" is clicked with the mouse. Left open it
+  /// would strand `isDragging` on a controller that is no longer in edit mode, and
+  /// leave the grid holding the uncompacted layout the arrows produced.
+  /// [DashboardController.cancelInteraction] puts the card back where the grab
+  /// started, which is the same thing Escape does mid-grab.
+  ///
+  /// It has to run before the revert below rather than alongside the cleanup in
+  /// the `finally`: the layout it restores is the one from the moment of the grab,
+  /// so afterwards it would overwrite the snapshot that was just imported.
+  ///
   /// The edit flag and snapshots are always cleared in the `finally` block so
-  /// that a failure in [DashboardController.saveLayout] /
+  /// that a failure in [UspSliverDashboardControllerNotifier.restoreSnapshot] /
   /// [UspLayoutPreferencesNotifier.restoreSnapshot] can never leave the
   /// dashboard stuck in edit mode with stale state.
+  ///
+  /// That block re-reads the controller rather than reusing the one the
+  /// interaction was cancelled on: a revert that restores a deleted card swaps the
+  /// instance, and clearing edit mode on the instance we started with would take
+  /// the handles off a controller nobody is rendering while the live one kept
+  /// them.
   Future<void> _exitEditMode({required bool revert}) async {
-    final controller = ref.read(uspSliverDashboardControllerProvider);
+    ref.read(uspSliverDashboardControllerProvider).cancelInteraction();
 
     try {
       if (revert) {
@@ -183,18 +200,9 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
               .read(uspLayoutPreferencesProvider.notifier)
               .restoreSnapshot(state.prefsSnapshot!);
         }
-      } else {
-        // Commit: persist the layout as it stands. Drag/resize/delete/preset/form
-        // paths have already saved themselves, but the keyboard reorder path has
-        // not (#1393 — the package's `moveActiveItemBy` skips `onLayoutChanged`),
-        // so its move only lives in memory until this write. `saveLayout` reads
-        // the controller's current layout across every breakpoint, so committing
-        // any in-memory change — however it was made — reaches SharedPreferences.
-        await ref
-            .read(uspSliverDashboardControllerProvider.notifier)
-            .saveLayout();
       }
     } finally {
+      final controller = ref.read(uspSliverDashboardControllerProvider);
       controller.setEditMode(false);
       // A selection is edit-mode state too (#1299). The package keeps it across
       // `setEditMode(false)`, and both things that read it are edit-mode only:
