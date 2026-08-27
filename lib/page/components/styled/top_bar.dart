@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/remote_assistance/end_remote_assistance_and_logout.dart';
 import 'package:privacy_gui/page/components/styled/remote_assistance/remote_assistance_dialog.dart';
 import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/brand_asset_provider.dart';
@@ -239,12 +240,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
               loc(context).ok,
               onTap: () async {
                 context.pop();
-                // Tear the session down before logging out, so logout is the
-                // last thing that touches the stored credentials.
-                await ref
-                    .read(remoteClientProvider.notifier)
-                    .endRemoteAssistance();
-                await ref.read(authProvider.notifier).logout();
+                await endRemoteAssistanceAndLogout(ref);
               },
             )
           ],

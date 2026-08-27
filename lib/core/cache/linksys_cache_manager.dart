@@ -23,14 +23,12 @@ class LinksysCacheManager {
     return _instance!;
   }
 
-  /// Replaces the singleton with an instance backed by [cacheManager] so tests
-  /// can drive the cache without touching the platform file system.
+  /// An instance backed by [cacheManager] so tests can drive the cache without
+  /// touching the platform file system. It is deliberately not installed as the
+  /// singleton: each test gets its own instance and no state leaks between them.
   @visibleForTesting
-  factory LinksysCacheManager.forTesting(CacheManager cacheManager) {
-    final instance = LinksysCacheManager._withBackend(cacheManager);
-    _instance = instance;
-    return instance;
-  }
+  factory LinksysCacheManager.forTesting(CacheManager cacheManager) =>
+      LinksysCacheManager._withBackend(cacheManager);
 
   LinksysCacheManager._withBackend(this.cacheManager) {
     defaultCacheExpiration = (BuildConfig.refreshTimeInterval * 1000) - 10000;
@@ -81,12 +79,14 @@ class LinksysCacheManager {
     }
     if (serialNumber != lastSerialNumber) {
       logger.d("[CacheManager] SN changed. Starting to load cache");
-      // Claim the device up front: the in-memory data belongs to this serial
-      // number from here on, whether or not the device has an entry yet.
-      // saveCache/clearCache rely on it to persist against the right device.
-      lastSerialNumber = serialNumber;
       final value = await cacheManager.get();
       _cache = value ?? "";
+      // Claim the device as soon as its cache is in hand, whether or not it has
+      // an entry yet - saveCache/clearCache rely on it to persist against the
+      // right device. Claiming it any earlier would make a save that lands
+      // while the read above is in flight write this device's entry with the
+      // previous device's data.
+      lastSerialNumber = serialNumber;
       if (_cache.isEmpty) {
         _data = {};
         return false;
@@ -108,6 +108,15 @@ class LinksysCacheManager {
   void saveCache(String serialNumber) {
     logger.d("[CacheManager] Save cache for $serialNumber");
     if (serialNumber.isEmpty) {
+      return;
+    }
+    if (lastSerialNumber.isNotEmpty && serialNumber != lastSerialNumber) {
+      // The in-memory data belongs to lastSerialNumber, so writing it as
+      // another device's entry would replace that device's cache with this
+      // one's. Callers that take the serial number from the preferences can ask
+      // for a device whose cache is not loaded yet, so drop the write instead.
+      logger.d(
+          "[CacheManager] Skip saving $serialNumber, cache belongs to $lastSerialNumber");
       return;
     }
     if (_cache.isEmpty) {

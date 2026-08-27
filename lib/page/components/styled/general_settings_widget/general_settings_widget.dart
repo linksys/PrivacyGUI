@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
-import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
+import 'package:privacy_gui/page/components/styled/remote_assistance/end_remote_assistance_and_logout.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
@@ -191,10 +191,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                           onTap: () async {
                             logger.i('[Auth]: The user manually end session');
                             context.pop();
-                            await ref
-                                .read(remoteClientProvider.notifier)
-                                .endRemoteAssistance();
-                            await ref.read(authProvider.notifier).logout();
+                            await endRemoteAssistanceAndLogout(ref);
                           },
                         ),
                       ],

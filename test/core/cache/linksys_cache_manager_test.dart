@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,8 +13,15 @@ class FakeCacheManager implements CacheManager {
   int getCount = 0;
   int setCount = 0;
 
+  /// When set, [get] does not complete until the gate does, so a test can run
+  /// code while a read is in flight.
+  Completer<void>? gate;
+
   @override
   Future<String?> get() async {
+    if (gate != null) {
+      await gate!.future;
+    }
     getCount++;
     return content;
   }
@@ -108,6 +116,51 @@ void main() {
 
       expect(backend.decoded['SN-A'], contains('getFoo'));
       expect(backend.decoded['SN-B'], isNot(contains('getBar')));
+    });
+  });
+
+  group('saveCache', () {
+    test('skips a device whose cache is not the one held in memory', () async {
+      backend.content = jsonEncode({
+        'SN-A': {
+          'getFoo': {'target': 'getFoo', 'cachedAt': 1, 'data': {}}
+        },
+        'SN-B': {
+          'getBar': {'target': 'getBar', 'cachedAt': 2, 'data': {}}
+        },
+      });
+      await manager.loadCache(serialNumber: 'SN-A');
+
+      // Callers that take the serial number from the preferences can ask for a
+      // device that has not been loaded yet.
+      manager.saveCache('SN-B');
+
+      expect(backend.decoded['SN-B'], contains('getBar'));
+      expect(backend.decoded['SN-B'], isNot(contains('getFoo')));
+    });
+
+    test('a save made while a load is in flight belongs to the loaded device',
+        () async {
+      backend.content = jsonEncode({
+        'SN-A': {
+          'getFoo': {'target': 'getFoo', 'cachedAt': 1, 'data': {}}
+        },
+        'SN-B': {
+          'getBar': {'target': 'getBar', 'cachedAt': 2, 'data': {}}
+        },
+      });
+      await manager.loadCache(serialNumber: 'SN-A');
+
+      final gate = Completer<void>();
+      backend.gate = gate;
+      final loading = manager.loadCache(serialNumber: 'SN-B');
+      // The other device is not loaded yet, so this still belongs to SN-A.
+      manager.clearCache('getFoo');
+      gate.complete();
+      await loading;
+
+      expect(backend.decoded['SN-A'], isNot(contains('getFoo')));
+      expect(backend.decoded['SN-B'], contains('getBar'));
     });
   });
 }
