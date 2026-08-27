@@ -8,8 +8,13 @@ import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_v
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import '../../golden_test/golden_framework/mocks/mock_ipv6_port_service.dart';
-import '../../golden_test/page/ipv6_port_service/fixtures/ipv6_port_service_test_data.dart';
+// Relocated by #1380 (`a4caf569`) when ipv6_port_service entered the page sweep:
+// the mock moved to test/mocks/provider_overrides/ and the fixture became a
+// composed scene under test/mocks/test_data/scenes/. `ipv6PortServiceOverrides`
+// and `dataState` kept their names and signatures, so this is an import change
+// and nothing more. See CLAUDE.md on why `_scene_data` is not `_test_data`.
+import '../../mocks/provider_overrides/mock_ipv6_port_service.dart';
+import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
 
 /// Verifies the E2E identifier hooks added to uspIpv6PortService for
