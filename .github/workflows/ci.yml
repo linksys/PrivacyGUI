@@ -4,74 +4,184 @@ on:
   # Only `pull_request`, and see the note at the bottom of this file for why: the
   # golden jobs that `push`, `workflow_dispatch` and `schedule` existed for are
   # not in this repo.
+  #
+  # One consequence is worth knowing before you debug a silent pipeline: a
+  # `pull_request` run is built against `refs/pull/N/merge`, and GitHub cannot
+  # build that ref for a PR it reports as `CONFLICTING`. It does not fail the
+  # run — it creates no run at all. Twelve commits landed on
+  # `feat/1382-roster-oracle` with no CI whatsoever for exactly that reason, and
+  # every hypothesis that sounded more likely (quota, draft PR, disabled
+  # workflow) was wrong. `gh pr view <n> --json mergeable` is the first thing to
+  # check when the checks tab is empty.
   pull_request:
     branches: [ "main", "dev-*" ]
 
-# Cancel previous runs if a new commit is pushed to the same branch
+# Cancel previous runs if a new commit is pushed to the same branch. The group is
+# workflow-level, so this cancels all four jobs below together.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ==========================================================================
+# Four jobs, one purpose: a PR should say WHICH check failed.
+# --------------------------------------------------------------------------
+# This was one job with sequential steps until 2026-08-27. Steps inside a job
+# fail fast, so a 4-second `dart format` failure meant the 12-minute test step
+# never ran and the PR reported one problem per push. That is not hypothetical —
+# it is how this split got filed: #1380's branch failed on a single trailing
+# blank line, learned nothing else that round, and had to push again.
+#
+# Splitting is NOT for speed, and the numbers should stop anyone from claiming
+# otherwise. Measured on the last single-job green run (2026-08-27, run
+# 33031520852): setup 33s, analyze 34s, format 4s, `run_tests.sh` 12m30s, web
+# build 89s, whole job 15m11s against the 30-minute cap. Split, the wall clock is
+# whatever the layout-gate job takes — projected ~13 min — because that job is
+# dominated by ONE serially-executed file (`page_surface_overflow_test.dart`, 43
+# pages × 234 cells). Four jobs cost three extra copies of a 33s setup and save
+# about two minutes. The wins are diagnosis, independent timeout budgets, and
+# having somewhere for the four-shard split of the page sweep to land as a
+# matrix — not throughput.
+#
+# The split does not create work either: locally the two test arms are 195s and
+# 541s against 750s undivided, so 736s of the same tests plus scheduling. Jobs 2
+# and 3 are a partition, not a duplication — the proof is in job 2's comment.
+#
+# A note on the CI/local ratio, because it was predicted wrong here once. The
+# pipeline used to run 2.32× slower than a developer machine (413s against 178s),
+# and projecting the post-#1380 suite with that factor gave 22.7 min of tests
+# against a real 12m30s. The factor is a property of the workload's PARALLELISM,
+# not of the two boxes: once one serial file dominates, the runner's 4 vCPU stop
+# mattering against a 10-core laptop and the ratio collapses to ~1.28×. Re-derive
+# it before planning against it.
+# ==========================================================================
+
 jobs:
-  # ========================================================================
-  # Pull Request Checks (Fast Fail)
   # ------------------------------------------------------------------------
-  # Focus: Logic, Syntax, Compilation
-  # Trigger: Pull Request
-  #
-  # The only job in this repo. It was "STAGE A" of three until #1346 deleted the
-  # commented-out remains of the other two — see the note at the bottom.
-  # ========================================================================
-  pr_quality_check:
-    name: 🛡️ Quality & Logic (PR)
-    if: github.event_name == 'pull_request'
+  # 1. Static analysis and formatting. ~1.5 min, so it is the first thing a PR
+  #    author sees go red.
+  # ------------------------------------------------------------------------
+  lint:
+    name: 🎨 Lint & Analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      # Setup SSH for private dependencies (Deploy Key approach)
-      - name: 🔑 Setup SSH for Private Deps
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: ./.github/actions/setup
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
-      # Force git to use SSH instead of HTTPS
-      - name: 🔄 Configure Git to use SSH
-        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-      - name: 📋 Setup Environment File
-        run: cp assets/agents/env.template assets/agents/.env
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      # Generate l10n files (ignored by .gitignore, must be generated before analyze)
-      - name: 🌐 Generate L10n
-        run: flutter gen-l10n
-
-      # 1. Static Analysis (Linter)
       - name: 🔍 Flutter Analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
-      # 2. Formatting Check
+      # `!cancelled()` rather than the default, so that analyze failing does not
+      # hide a format failure. These two are 34s and 4s: there is no reason to
+      # learn about them one push at a time, which is the whole complaint that
+      # produced this file's shape. The job still fails if either does.
       - name: 🎨 Dart Format Check
+        if: ${{ !cancelled() }}
         run: dart format --output=none --set-exit-if-changed .
 
-      # 3. Unit Tests (Pure Logic)
-      - name: 🧪 Unit Tests
+  # ------------------------------------------------------------------------
+  # 2. The functional suite MINUS the layout gate, which job 3 owns.
+  #
+  #    The partition is measured, not asserted: 2026-08-27 on this tree, the two
+  #    selectors ran 4,002 and 2,061 tests, and `./run_tests.sh` undivided runs
+  #    6,063. Nothing is in both jobs and nothing fell out between them. Re-run
+  #    both arms and re-add if you change either selector — the failure mode of
+  #    getting this wrong is two green jobs that skipped a suite.
+  # ------------------------------------------------------------------------
+  test_unit:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
+      # `golden||loc||ui` selection in one variable so these two jobs cannot
+      # drift apart. It exists so the local `./run_tests.sh` can stay complete:
+      # a developer's pre-push command must still run the gate.
+      - name: 🧪 Unit Tests (gate excluded)
+        env:
+          EXTRA_EXCLUDE_TAGS: layout-gate
         run: sh run_tests.sh
 
-      # 4. Smoke Build (Web)
+  # ------------------------------------------------------------------------
+  # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall
+  #    clock and because "the gate is red" and "a unit test is red" are
+  #    different conversations.
+  # ------------------------------------------------------------------------
+  test_layout_gate:
+    name: 🛡️ Layout Gate
+    runs-on: ubuntu-latest
+    # The longest budget here, and deliberately more headroom than the others.
+    # ~13 min projected, but the same suite drifted to 2× on a developer machine
+    # under memory pressure the day this job was written (18m01s at 672s user CPU
+    # and 552s *system*), and a hosted runner has no more immunity to that than a
+    # laptop. A shared 30-minute cap is what made the old single job's headroom
+    # everyone's problem; this number is only this job's.
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # `--tags layout-gate`, NOT `--tags overflow`. The gate is 49 suites; only
+      # five of them are overflow sweeps. Selecting `overflow` here would leave
+      # 44 suites — the density and readability suites, six framework oracles and
+      # the two page registers — running in neither job, with both jobs green.
+      #
+      # The base exclusion is repeated so this job and job 2 are an exact
+      # partition of what `./run_tests.sh` runs; see the comment in that script.
+      #
+      # A misspelled tag is safe, and it is worth knowing why rather than
+      # trusting it: `flutter test --tags <no-such-tag>` prints "No tests ran."
+      # and exits **79**, so a typo here is a red job and not a green one that
+      # measured nothing. Verified against this SDK, not assumed.
+      - name: 🛡️ Layout Gate (PR-blocking widget gates)
+        run: flutter test --tags layout-gate --exclude-tags="golden||loc||ui"
+
+  # ------------------------------------------------------------------------
+  # 4. Web smoke build. Independent of every test above, and it used to wait
+  #    behind all of them for no reason.
+  # ------------------------------------------------------------------------
+  build_web:
+    name: 🏗️ Smoke Build (Web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # `--no-pub` is safe: the setup action has already run `flutter pub get`.
       - name: 🏗️ Smoke Build (Web)
         run: flutter build web --release --no-pub
+
+  # ========================================================================
+  # Required status checks are a repository setting, and there are none today
+  # ------------------------------------------------------------------------
+  # Checked 2026-08-27: the `feature branch` and `version branch` rulesets carry
+  # `non_fast_forward`, `deletion` and `pull_request`, and no
+  # `required_status_checks` rule at all. Nothing pins a check by name, which is
+  # why this split could rename `🛡️ Quality & Logic (PR)` out of existence
+  # without breaking a merge — and also why a red pipeline does not actually stop
+  # one.
+  #
+  # If that is ever fixed, the four names to require are the `name:` values
+  # above: `🎨 Lint & Analyze`, `🧪 Unit Tests`, `🛡️ Layout Gate`,
+  # `🏗️ Smoke Build (Web)`. Adding a fifth job without adding it to that list
+  # makes the new job advisory, silently.
+  # ========================================================================
 
   # ========================================================================
   # Golden / snapshot jobs are deliberately not in this repo

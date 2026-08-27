@@ -17,6 +17,35 @@ else
   echo "Using system flutter"
 fi
 
+# The PR-blocking selection, in exactly one place. What makes `layout-gate`
+# PR-blocking is its *absence* from this list, which is the same thing
+# dart_test.yaml says from the other side — so moving `layout-gate` into
+# BASE_EXCLUDE_TAGS is how the whole gate leaves the PR command in silence.
+BASE_EXCLUDE_TAGS="golden||loc||ui"
+
+# Opt-in narrowing, for CI only. `.github/workflows/ci.yml` runs the layout gate
+# as its own job — so a PR says which gate failed instead of failing at the first
+# step and never reaching the rest — and sets EXTRA_EXCLUDE_TAGS=layout-gate on
+# the *unit* job so the two jobs do not both pay for the page sweep. The two
+# selectors partition this script's set exactly:
+#
+#   unit job:  --exclude-tags="golden||loc||ui||layout-gate"
+#   gate job:  --tags layout-gate --exclude-tags="golden||loc||ui"
+#
+# Union is what `./run_tests.sh` runs, intersection is empty, both by
+# construction. The gate job carries the base exclusion too, and not for
+# symmetry: without it a suite tagged both `layout-gate` and `golden` would run
+# there while this script skips it, and the two jobs would stop being a partition
+# of anything.
+#
+# Do not set this locally. The default has to stay complete, because the local
+# command is the only one a developer runs before pushing — and it is already
+# missing `dart format`, which is what let a format failure reach CI unseen.
+EXCLUDE_TAGS="${BASE_EXCLUDE_TAGS}${EXTRA_EXCLUDE_TAGS:+||${EXTRA_EXCLUDE_TAGS}}"
+if [ -n "$EXTRA_EXCLUDE_TAGS" ]; then
+  echo "Narrowed run: excluding $EXCLUDE_TAGS (EXTRA_EXCLUDE_TAGS=$EXTRA_EXCLUDE_TAGS)"
+fi
+
 # Run the PR-blocking suite and leave one JSON reporter event per line in $1.
 # Returns the test command's own exit code.
 #
@@ -28,7 +57,7 @@ fi
 run_tests_to_json() {
   local dest="$1"
   local raw="${dest}.raw"
-  $FLUTTER test --reporter json --exclude-tags="golden||loc||ui" > "$raw"
+  $FLUTTER test --reporter json --exclude-tags="$EXCLUDE_TAGS" > "$raw"
   local exit_code=$?
   # The flutter tool's own notices ("The following plugins do not support…") share
   # stdout with the events, and one of them in front of `jq -s` — or of the legacy
@@ -144,7 +173,7 @@ if [ "$reportPath" == "--report" ]; then
   exit $TEST_EXIT
 elif [ -z "$reportPath" ]; then
   # When no report path is given, just run the tests and exit with the status of the test command.
-  $FLUTTER test --exclude-tags="golden||loc||ui"
+  $FLUTTER test --exclude-tags="$EXCLUDE_TAGS"
 else
   # When a report path is given, run tests and generate a report (legacy HTML mode).
   echo "*********************Running Tests********************"

@@ -1,0 +1,62 @@
+name: Setup Flutter workspace
+description: >
+  Everything the four PR jobs need before they can run anything: the Flutter
+  SDK, an SSH agent for the private ui_kit dependency, the env template, pub
+  packages and the generated l10n. Measured at 33-49s, and it is paid once per
+  job.
+
+# This exists because the PR pipeline is four jobs, not one (see ci.yml). Four
+# copies of these six steps is four things that can drift apart, and the one that
+# drifts is the one nobody notices: a job that skips `gen-l10n` fails with
+# hundreds of missing-getter errors that look nothing like "a step is missing".
+# GitHub Actions has no YAML anchors, so a composite action is the only way to
+# say it once.
+#
+# `actions/checkout` is deliberately NOT in here. A composite action's steps run
+# from the repository's checkout, so this file cannot exist to be read until
+# checkout has already happened — every caller starts with it.
+#
+# The SSH key arrives as an input rather than being read from `secrets` here,
+# because a composite action cannot see `secrets` at all — every caller must
+# pass it. That is why the input is marked required: a job that forgets it fails
+# at `flutter pub get` on a private git dependency, not here.
+
+inputs:
+  ssh-private-key:
+    description: Deploy key with read access to linksys/privacyGUI-UI-kit
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+
+    # Deploy Key approach for the private ui_kit dependency.
+    - name: 🔑 Setup SSH for Private Deps
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
+
+    # pubspec.yaml names the dependency over HTTPS; the agent above only speaks
+    # SSH, so git has to be told to rewrite the one into the other.
+    - name: 🔄 Configure Git to use SSH
+      shell: bash
+      run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+    - name: 📋 Setup Environment File
+      shell: bash
+      run: cp assets/agents/env.template assets/agents/.env
+
+    - name: Install Dependencies
+      shell: bash
+      run: flutter pub get
+
+    # Generated l10n is gitignored, so it must exist before analyze, before any
+    # test compiles, and before the web build.
+    - name: 🌐 Generate L10n
+      shell: bash
+      run: flutter gen-l10n
