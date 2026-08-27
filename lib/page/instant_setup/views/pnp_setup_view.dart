@@ -28,11 +28,19 @@ class PnpSetupView extends ConsumerStatefulWidget {
 }
 
 class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
-  // Unified mode controllers
-  late final TextEditingController _ssidController;
-  late final TextEditingController _wifiPasswordController;
-  late final TextEditingController _guestSsidController;
-  late final TextEditingController _guestPasswordController;
+  // Unified mode controllers.
+  //
+  // Created with the field, not in _initControllers: that runs only on the
+  // WizardConfiguring branch, while dispose() below disposes all four
+  // unconditionally. Every other phase renders the loader and never calls it, so
+  // `late final` fields meant leaving the wizard early — back button, a
+  // WizardError, a save that navigated away — threw LateInitializationError
+  // during teardown. _initControllers assigns .text instead.
+  final TextEditingController _ssidController = TextEditingController();
+  final TextEditingController _wifiPasswordController = TextEditingController();
+  final TextEditingController _guestSsidController = TextEditingController();
+  final TextEditingController _guestPasswordController =
+      TextEditingController();
 
   // Split mode controllers: keyed by ssidInstancePath
   final Map<String, TextEditingController> _bandSsidControllers = {};
@@ -133,12 +141,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
     final config = phase.wifiConfig;
 
-    // Unified mode controllers
-    _ssidController = TextEditingController(text: config.ssid);
-    _wifiPasswordController = TextEditingController(text: config.password);
-    _guestSsidController = TextEditingController(text: config.guestSsid);
-    _guestPasswordController =
-        TextEditingController(text: config.guestPassword);
+    // Unified mode controllers — the objects already exist (see the fields), so
+    // this seeds their text rather than replacing them.
+    _ssidController.text = config.ssid;
+    _wifiPasswordController.text = config.password;
+    _guestSsidController.text = config.guestSsid;
+    _guestPasswordController.text = config.guestPassword;
 
     // Split mode controllers for main WiFi
     for (final band in config.mainBands) {

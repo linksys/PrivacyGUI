@@ -536,6 +536,23 @@ class _OtaCheckCard extends StatelessWidget {
   final FirmwareUpdateState state;
   final VoidCallback onCheck;
 
+  /// Card-content width below which the button and the status line stack.
+  ///
+  /// The row held two children that could neither shrink nor wrap: a button whose
+  /// width is a localized label plus padding, and an up-to-date line whose
+  /// `MainAxisSize.min` made it as wide as its own localized sentence. It overflowed
+  /// in **all 26 locales** at 320px, 19 at 480px and 5 at 601px — worst `ru` at
+  /// +357px, and +160px in `en` (#1380, 50 of 234 cells). The sibling card twenty
+  /// lines up lays its two buttons out in a `Wrap` for the same reason; a `Wrap`
+  /// cannot carry this pair because neither of *these* children fits a 256px line on
+  /// its own, and a `RenderWrap` reports no overflow when one doesn't — it just paints
+  /// past the card, which is worse than the bug it replaced.
+  ///
+  /// 600 is picked against measurement, not against the mobile breakpoint it
+  /// coincides with: the widest locale needs ~580px for the pair, and the card grants
+  /// ~473px at a 601px screen (which overflowed) and ~809px at 905px (which did not).
+  static const _stackBelow = 600.0;
+
   @override
   Widget build(BuildContext context) {
     final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
@@ -547,43 +564,85 @@ class _OtaCheckCard extends StatelessWidget {
         children: [
           AppText.titleMedium(loc(context).otaUpdate),
           AppGap.md(),
-          Row(
-            children: [
-              if (isChecking)
-                AppButton.primaryOutline(
-                  label: loc(context).checking,
-                  onTap: null,
-                  icon: const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              else
-                AppButton.primaryOutline(
-                  label: loc(context).checkForUpdates,
-                  identifier: 'firmware-check',
-                  onTap: onCheck,
-                ),
-              if (state.otaUpToDate && !isChecking) ...[
-                AppGap.md(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < _stackBelow;
+              // `small` when stacked, and this is a readability fix rather than a
+              // taste one. A medium button spends `buttonHeight * 0.5` — 24px — of
+              // padding on each side, so a full-width button on a 230px card line
+              // grants its label 182px; `fr`'s "Rechercher des mises à jour" needs
+              // 194.5px and ui_kit ellipsizes the remainder silently. `small` spends
+              // 16px a side and draws `labelMedium`, which fits. Same component, its
+              // own compact size, no new API — five other call sites in `lib/` already
+              // pass this.
+              final size = stacked ? AppButtonSize.small : AppButtonSize.medium;
+              final button = isChecking
+                  ? AppButton.primaryOutline(
+                      label: loc(context).checking,
+                      onTap: null,
+                      size: size,
+                      icon: const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : AppButton.primaryOutline(
+                      label: loc(context).checkForUpdates,
+                      identifier: 'firmware-check',
+                      onTap: onCheck,
+                      size: size,
+                    );
+              // `Expanded` on the label rather than `MainAxisSize.min` on the row:
+              // the sentence is what made this line unshrinkable, and letting it wrap
+              // is the only way the line fits 256px in any locale. Alignment moves to
+              // `start` because it now has more than one line to align to.
+              final upToDate = state.otaUpToDate && !isChecking
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 18,
+                          color: scheme.primary,
+                        ),
+                        AppGap.sm(),
+                        Expanded(
+                          child: AppText.bodyMedium(
+                            loc(context).firmwareUpToDate,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ],
+                    )
+                  : null;
+
+              if (stacked) {
+                // `stretch` gives the button the whole line, so its label has the
+                // card's full width to render in instead of ellipsizing inside
+                // ui_kit's `Flexible`. The gate pins that it does not ellipsize.
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 18,
-                      color: scheme.primary,
-                    ),
-                    AppGap.sm(),
-                    AppText.bodyMedium(
-                      loc(context).firmwareUpToDate,
-                      color: scheme.primary,
-                    ),
+                    button,
+                    if (upToDate != null) ...[
+                      AppGap.md(),
+                      upToDate,
+                    ],
                   ],
-                ),
-              ],
-            ],
+                );
+              }
+
+              return Row(
+                children: [
+                  button,
+                  if (upToDate != null) ...[
+                    AppGap.md(),
+                    Expanded(child: upToDate),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),

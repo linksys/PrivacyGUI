@@ -62,6 +62,15 @@ class UspAdminView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UspAdminState state) {
     return AppResponsiveLayout(
       mobile: (ctx) => _buildMobileLayout(ctx, ref, state),
+      // The tablet band — `AppLayoutConfig`'s `600 < w <= 905` — keeps one column.
+      // Left to its default it falls back to `desktop`, and two `colWidth(6)`
+      // columns of a 601px screen are ~253px each: *narrower* than the 288px a
+      // 320px phone gives the same card, which is why #1380's sweep found this
+      // page's worst coordinates at 601px rather than at its floor. At 601px `en`'s
+      // one-word `Timezone` heading was granted 75.4px for a 77.5px word, and a box
+      // that cannot hold one word of a heading is the container being wrong, not
+      // the header. Two columns start above 905px, where each is ~490px and up.
+      tablet: (ctx) => _buildMobileLayout(ctx, ref, state),
       desktop: (ctx) => _buildDesktopLayout(ctx, ref, state),
     );
   }

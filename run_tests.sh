@@ -17,6 +17,42 @@ else
   echo "Using system flutter"
 fi
 
+# The PR-blocking selection, in exactly one place. What makes `layout-gate`
+# PR-blocking is its *absence* from this list, which is the same thing
+# dart_test.yaml says from the other side — so moving `layout-gate` into
+# BASE_EXCLUDE_TAGS is how the whole gate leaves the PR command in silence.
+#
+# EDIT THIS AND YOU MUST EDIT `.github/workflows/ci.yml` TOO. The CI gate job does
+# not go through this script — it spells the same string out itself — so changing
+# only this line leaves a tag excluded here, still excluded there, and running in
+# neither job with both green. The comment above that job explains what holds the
+# partition together; this is the other end of the same warning, because whoever
+# breaks it will be reading this line and not that one.
+BASE_EXCLUDE_TAGS="golden||loc||ui"
+
+# Opt-in narrowing, for CI only. `.github/workflows/ci.yml` runs the layout gate
+# as its own job — so a PR says which gate failed instead of failing at the first
+# step and never reaching the rest — and sets EXTRA_EXCLUDE_TAGS=layout-gate on
+# the *unit* job so the two jobs do not both pay for the page sweep. The two
+# selectors partition this script's set exactly:
+#
+#   unit job:  --exclude-tags="golden||loc||ui||layout-gate"
+#   gate job:  --tags layout-gate --exclude-tags="golden||loc||ui"
+#
+# Union is what `./run_tests.sh` runs, intersection is empty, both by
+# construction. The gate job carries the base exclusion too, and not for
+# symmetry: without it a suite tagged both `layout-gate` and `golden` would run
+# there while this script skips it, and the two jobs would stop being a partition
+# of anything.
+#
+# Do not set this locally. The default has to stay complete, because the local
+# command is the only one a developer runs before pushing — and it is already
+# missing `dart format`, which is what let a format failure reach CI unseen.
+EXCLUDE_TAGS="${BASE_EXCLUDE_TAGS}${EXTRA_EXCLUDE_TAGS:+||${EXTRA_EXCLUDE_TAGS}}"
+if [ -n "$EXTRA_EXCLUDE_TAGS" ]; then
+  echo "Narrowed run: excluding $EXCLUDE_TAGS (EXTRA_EXCLUDE_TAGS=$EXTRA_EXCLUDE_TAGS)"
+fi
+
 # Run the PR-blocking suite and leave one JSON reporter event per line in $1.
 # Returns the test command's own exit code.
 #
@@ -28,7 +64,7 @@ fi
 run_tests_to_json() {
   local dest="$1"
   local raw="${dest}.raw"
-  $FLUTTER test --reporter json --exclude-tags="golden||loc||ui" > "$raw"
+  $FLUTTER test --reporter json --exclude-tags="$EXCLUDE_TAGS" > "$raw"
   local exit_code=$?
   # The flutter tool's own notices ("The following plugins do not support…") share
   # stdout with the events, and one of them in front of `jq -s` — or of the legacy
@@ -122,7 +158,14 @@ generate_report() {
 
 reportPath=$1
 
-if [ "$reportPath" == "--report" ]; then
+# `=` and not `==`: this script declares `#!/bin/bash`, but it was invoked as
+# `sh run_tests.sh` from CI until 2026-08-27, and Ubuntu's `sh` is dash, whose `[`
+# has no `==`. That printed `[: unexpected operator` into every unit-test job log,
+# and — worse — sent `--report` down the *else* branch, because a failed `[` is just
+# a false `if`. The caller was fixed to `bash run_tests.sh`; this is belt as well as
+# braces, and since `==` was the only bash-only construct in the file (`local` is
+# fine in dash) the script now behaves identically under either shell.
+if [ "$reportPath" = "--report" ]; then
   # Generate markdown report
   echo "*********************Running Tests********************"
   JSON_FILE="/tmp/test_results_$$.json"
@@ -144,7 +187,7 @@ if [ "$reportPath" == "--report" ]; then
   exit $TEST_EXIT
 elif [ -z "$reportPath" ]; then
   # When no report path is given, just run the tests and exit with the status of the test command.
-  $FLUTTER test --exclude-tags="golden||loc||ui"
+  $FLUTTER test --exclude-tags="$EXCLUDE_TAGS"
 else
   # When a report path is given, run tests and generate a report (legacy HTML mode).
   echo "*********************Running Tests********************"

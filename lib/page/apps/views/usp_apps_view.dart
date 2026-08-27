@@ -80,29 +80,79 @@ class UspAppsView extends ConsumerWidget {
       );
     }
 
-    final isDesktop = !context.isMobileLayout;
-    final crossAxisCount = isDesktop ? 3 : 1;
-    final mainAxisExtent = isDesktop ? 152.0 : 112.0;
+    // Three bands, not two. The tablet band — `AppLayoutConfig`'s
+    // `600 < w <= 905` — used to take the desktop arm's three columns, and three
+    // columns of a 601px screen are 152.3px each: *narrower* than the 240px one
+    // column of a 320px phone gives the same card. That is where #1380's sweep
+    // found this page's worst card overflow (`el` and 10 others, up to +29px in
+    // the header row below), and no card can be made to fit a box that is
+    // narrower than the phone's. Two columns at 601px is ~236px, and the header
+    // row is clean there.
+    final isMobile = context.isMobileLayout;
+    final crossAxisCount = isMobile
+        ? 1
+        : context.isTabletLayout
+            ? 2
+            : 3;
+    // The extent is the card's content height, and 120 is that sum plus 2px
+    // rather than a round number: AppCard's own padding (`AppSpacing.lg ×
+    // spacingFactor`, 19px top and bottom) + the 36px icon tile + two
+    // `AppSpacing.xs` gaps + one 20px `titleSmall` line + one 16px `bodySmall`
+    // line = 118. It was 112, which is 6px short of its own content in all 26
+    // locales — the shortfall is locale-independent because both text rows are
+    // capped at one line here. The 2px is the same shaping margin the non-mobile
+    // arm has always carried: it keeps 152 over a sum of 150, its description
+    // being allowed three lines (48px) rather than one.
+    // `page_surface_overflow_test.dart` guards both sums against a theme whose
+    // `spacingFactor` moves the 19px.
+    final mainAxisExtent = isMobile ? 120.0 : 152.0;
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.headlineSmall(loc(context).apps),
-              AppButton(
-                label: loc(context).store,
-                identifier: 'apps-store',
-                icon: AppIcon.font(Icons.storefront),
-                onTap: () {
-                  final token = ref.read(uspClientProvider)?.sessionToken ?? '';
-                  openUrl('${Uri.base.origin}/app-store/?token=$token');
-                },
-              ),
-            ],
+          // A `Wrap`, not a `Row` — and not a `Row` with an `Expanded` heading
+          // either. It was `spaceBetween` with two inflexible children, so the
+          // icon-bearing `Store` button took the width it asked for and left the
+          // heading the remainder: over by up to +49px at 320px in 16 locales
+          // (#1380). Expanding the heading moves the overflow rather than
+          // removing it, because the heading is a *single word* in every locale
+          // ("Applications", "Εφαρμογές", "Приложения"), so 7 locales then broke
+          // mid-word inside an 85–113px box asking for 124–150px. A box that
+          // cannot hold one word of a heading is the row being wrong for the
+          // screen, so the button drops below the heading when the two do not
+          // fit and nothing shrinks. `WrapAlignment.spaceBetween` keeps the wide
+          // widths pixel-identical to what the `Row` gave them; both directions
+          // are guarded in test/page/_shared/page_surface_overflow_test.dart.
+          //
+          // The `SizedBox` is what makes that "pixel-identical" true. A `Wrap`
+          // sizes itself to its widest *run*, not to its constraint, so on a
+          // 1441px page an unconstrained one would be ~300px wide and
+          // `spaceBetween` would have no free space left to distribute — the
+          // button would sit beside the heading instead of at the far edge. A
+          // tight width restores the `Row`'s geometry.
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.md,
+              children: [
+                AppText.headlineSmall(loc(context).apps),
+                AppButton(
+                  label: loc(context).store,
+                  identifier: 'apps-store',
+                  icon: AppIcon.font(Icons.storefront),
+                  onTap: () {
+                    final token =
+                        ref.read(uspClientProvider)?.sessionToken ?? '';
+                    openUrl('${Uri.base.origin}/app-store/?token=$token');
+                  },
+                ),
+              ],
+            ),
           ),
           AppGap.xl(),
           SizedBox(
@@ -111,7 +161,7 @@ class UspAppsView extends ConsumerWidget {
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                mainAxisSpacing: isDesktop ? AppSpacing.md : AppSpacing.sm,
+                mainAxisSpacing: isMobile ? AppSpacing.sm : AppSpacing.md,
                 crossAxisSpacing: AppSpacing.lg,
                 childAspectRatio: (205 / 152),
                 mainAxisExtent: mainAxisExtent,

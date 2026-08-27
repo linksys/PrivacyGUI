@@ -4,74 +4,291 @@ on:
   # Only `pull_request`, and see the note at the bottom of this file for why: the
   # golden jobs that `push`, `workflow_dispatch` and `schedule` existed for are
   # not in this repo.
+  #
+  # One consequence is worth knowing before you debug a silent pipeline: a
+  # `pull_request` run is built against `refs/pull/N/merge`, and GitHub cannot
+  # build that ref for a PR it reports as `CONFLICTING`. It does not fail the
+  # run — it creates no run at all. Twelve commits landed on
+  # `feat/1382-roster-oracle` with no CI whatsoever for exactly that reason, and
+  # every hypothesis that sounded more likely (quota, draft PR, disabled
+  # workflow) was wrong. `gh pr view <n> --json mergeable` is the first thing to
+  # check when the checks tab is empty.
+  #
+  # `usp` is in this list because it is the 2.x release target — dev-2.x merges
+  # into it by PR (#1147, #995) — and it was missing until 2026-08-27, so the
+  # release PR was the one PR in the repo that ran no CI at all. A PR that reports
+  # nothing is worse than one that reports the wrong thing, which is the same
+  # defect this whole four-job file was written to fix.
+  #
+  # Keep this list a superset of whatever any ruleset requires checks on. A
+  # required check that no trigger produces sits at "Expected" forever and the PR
+  # can never merge — so adding a branch to such a ruleset means adding it here
+  # first. `v*.*.*` is deliberately absent: 15 such branches exist but they are
+  # 1.x-era leftovers that take tags, not PRs.
+  #
+  # This file is NOT portable to the 1.x or pre-2.7 lines, and the reason is job 3.
+  # Counted 2026-08-27, `layout-gate`-tagged test files: dev-2.7.0 has 56, and
+  # main, dev-1.3.0 and dev-2.6.1 have zero. `flutter test --tags layout-gate`
+  # against a line with no gate exits 79, so cherry-picking these CI commits onto
+  # main would produce a job that cannot go green. The workflow and the gate suites
+  # have to travel together — which is the same exit 79 that makes a typo'd tag
+  # safe, doing the second useful thing it does.
   pull_request:
-    branches: [ "main", "dev-*" ]
+    branches: [ "main", "usp", "dev-*" ]
 
-# Cancel previous runs if a new commit is pushed to the same branch
+# All four jobs read: checkout, pub get, test, build. None writes a comment, a
+# label, a check or a commit, so none needs a token that can. This matches
+# usp-boundary.yml, which has had the same block since it was written; ci.yml was
+# the odd one out and inherited whatever the repository default happens to be —
+# "read and write" in most organisations. Add the narrowest scope a new job needs
+# TO THAT JOB rather than widening this: a `permissions:` at job level overrides
+# this one, so a future job that must post a comment does not hand write access to
+# the other three.
+permissions:
+  contents: read
+
+# Cancel previous runs if a new commit is pushed to the same branch. The group is
+# workflow-level, so this cancels all four jobs below together.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ==========================================================================
+# Four jobs, one purpose: a PR should say WHICH check failed.
+# --------------------------------------------------------------------------
+# This was one job with sequential steps until 2026-08-27. Steps inside a job
+# fail fast, so a 4-second `dart format` failure meant the 12-minute test step
+# never ran and the PR reported one problem per push. That is not hypothetical —
+# it is how this split got filed: #1380's branch failed on a single trailing
+# blank line, learned nothing else that round, and had to push again.
+#
+# The wall clock, single job (run 33031520852) against four (run 33034114305),
+# both on this branch a quarter-hour apart:
+#
+#   before  15m11s   setup 33s · analyze 34s · format 4s · run_tests.sh 12m30s
+#                    · web build 89s — all in series
+#   after    9m29s   🛡️ 9m29s · 🧪 5m21s · 🏗️ 2m08s · 🎨 1m34s — all at once
+#
+# So it is 37% faster, and this comment used to say "NOT for speed … saves about
+# two minutes" on the strength of a ~13 min projection for the gate job. The real
+# gate job is 9m29s, and the reason the projection missed is worth more than the
+# number: its test step took 508s where the same arm takes 541s on a developer
+# laptop — 0.94×, the runner is FASTER. That arm is one serially-executed file
+# (`page_surface_overflow_test.dart`, 43 pages × 234 cells), so 4 vCPU against 10
+# cores buys the laptop nothing and only single-core speed is left. Any projection
+# here needs to know whether the arm it is projecting parallelises: the pipeline's
+# CI/local ratio has now measured 2.32× (many small files, 413s vs 178s), 1.28×
+# (mixed) and 0.94× (one serial file) on the same pair of machines.
+#
+# One number explains all three ratios, and it is worth knowing before anyone tries
+# to speed this up: `flutter test` takes its suite concurrency from
+# `max(1, numberOfProcessors ~/ 2)`, so a 4-vCPU runner gets TWO test lanes where a
+# 10-core laptop gets five. Job 3's 508s was read per-test out of the run log (the
+# `github` reporter stamps one line per test, so all 2,061 can be placed on a clock):
+# the page sweep spans 411s of it, every other suite has finished by 455s, and those
+# last 53s are the only idleness in the whole step. Two lanes at ~90% — so the gate is
+# work-bound here, and sharding the page sweep INSIDE this job would buy ~50s of wall
+# clock for ~+87s of per-shard isolate/JIT/font cost. Do not do it. The measurement
+# and the reversal it caused are in doc/testing/overflow_gate_architecture.md §11.12,
+# "The lane count, not the page count".
+#
+# Speed is still not the argument, because 37% of a green run is worth much less
+# than a red run that names itself. The durable wins are diagnosis, independent
+# timeout budgets, and — if the gate ever does outgrow its budget — a place for
+# #1371's four shards to land as a MATRIX, one runner per shard with its own two
+# lanes, which is the only form of that split the numbers above support.
+#
+# The split does not duplicate work either: jobs 2 and 3 are an exact partition,
+# proof in job 2's comment. Its cost is three extra setups — 32-52s each, and
+# concurrent, so it costs machine time and not wall clock.
+# ==========================================================================
+
 jobs:
-  # ========================================================================
-  # Pull Request Checks (Fast Fail)
   # ------------------------------------------------------------------------
-  # Focus: Logic, Syntax, Compilation
-  # Trigger: Pull Request
-  #
-  # The only job in this repo. It was "STAGE A" of three until #1346 deleted the
-  # commented-out remains of the other two — see the note at the bottom.
-  # ========================================================================
-  pr_quality_check:
-    name: 🛡️ Quality & Logic (PR)
-    if: github.event_name == 'pull_request'
+  # 1. Static analysis and formatting. ~1.5 min, so it is the first thing a PR
+  #    author sees go red.
+  # ------------------------------------------------------------------------
+  lint:
+    name: 🎨 Lint & Analyze
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      # Setup SSH for private dependencies (Deploy Key approach)
-      - name: 🔑 Setup SSH for Private Deps
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: ./.github/actions/setup
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
-      # Force git to use SSH instead of HTTPS
-      - name: 🔄 Configure Git to use SSH
-        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-      - name: 📋 Setup Environment File
-        run: cp assets/agents/env.template assets/agents/.env
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      # Generate l10n files (ignored by .gitignore, must be generated before analyze)
-      - name: 🌐 Generate L10n
-        run: flutter gen-l10n
-
-      # 1. Static Analysis (Linter)
       - name: 🔍 Flutter Analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
-      # 2. Formatting Check
+      # `!cancelled()` rather than the default, so that analyze failing does not
+      # hide a format failure. These two are 34s and 4s: there is no reason to
+      # learn about them one push at a time, which is the whole complaint that
+      # produced this file's shape. The job still fails if either does.
       - name: 🎨 Dart Format Check
+        if: ${{ !cancelled() }}
         run: dart format --output=none --set-exit-if-changed .
 
-      # 3. Unit Tests (Pure Logic)
-      - name: 🧪 Unit Tests
-        run: sh run_tests.sh
+  # ------------------------------------------------------------------------
+  # 2. The functional suite MINUS the layout gate, which job 3 owns.
+  #
+  #    The partition is measured, not asserted: 2026-08-27 on this tree, the two
+  #    selectors ran 4,002 and 2,061 tests, and `./run_tests.sh` undivided runs
+  #    6,063. Nothing is in both jobs and nothing fell out between them. Re-run
+  #    both arms and re-add if you change either selector — the failure mode of
+  #    getting this wrong is two green jobs that skipped a suite.
+  # ------------------------------------------------------------------------
+  test_unit:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
 
-      # 4. Smoke Build (Web)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
+      # `golden||loc||ui` selection in one variable. It exists so the local
+      # `./run_tests.sh` can stay complete: a developer's pre-push command must
+      # still run the gate.
+      #
+      # That variable is one place for THIS job only — job 3 repeats the literal,
+      # because it does not go through this script. So the partition is held by the
+      # measured count in the comment above and not by a shared constant: edit
+      # BASE_EXCLUDE_TAGS in run_tests.sh and job 3 keeps the old exclusion, which
+      # is two green jobs with a tag running in neither. Change both, or neither.
+      #
+      # Whether the variable was actually read is visible, not assumed: the script
+      # prints `Narrowed run: excluding golden||loc||ui||layout-gate
+      # (EXTRA_EXCLUDE_TAGS=layout-gate)` as the job's first line. If that line says
+      # only `golden||loc||ui`, this env: block stopped connecting and the gate is
+      # running twice.
+      #
+      # `bash`, not `sh`. This was `sh run_tests.sh` until 2026-08-27, and Ubuntu's
+      # `sh` is dash: the script's `#!/bin/bash` was ignored and its `[ "$x" ==` at
+      # line 154 printed `[: unexpected operator` into every run of this job (see
+      # run 33034114305). Harmless here only because this job passes no argument.
+      - name: 🧪 Unit Tests (gate excluded)
+        env:
+          EXTRA_EXCLUDE_TAGS: layout-gate
+        run: bash run_tests.sh
+
+  # ------------------------------------------------------------------------
+  # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall
+  #    clock and because "the gate is red" and "a unit test is red" are
+  #    different conversations.
+  # ------------------------------------------------------------------------
+  test_layout_gate:
+    name: 🛡️ Layout Gate
+    runs-on: ubuntu-latest
+    # The longest budget here, and deliberately more headroom than the others.
+    # Measured at 9m29s, and the 4.3× headroom is not padding: this same suite
+    # drifted to 2× on a developer machine under memory pressure the day this job
+    # was written (18m01s at 672s user CPU and 552s *system*), and a hosted runner
+    # has no more immunity to that than a laptop. A shared 30-minute cap is what
+    # made the old single job's headroom everyone's problem; this number is only
+    # this job's, which is most of why the split is worth its three extra setups.
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # `--tags layout-gate`, NOT `--tags overflow`. The gate is 49 suites; only
+      # five of them are overflow sweeps. Selecting `overflow` here would leave
+      # 44 suites — the density and readability suites, six framework oracles and
+      # the two page registers — running in neither job, with both jobs green.
+      #
+      # The base exclusion is repeated so this job and job 2 are an exact
+      # partition of what `./run_tests.sh` runs; see the comment in that script.
+      #
+      # A misspelled tag is safe, and it is worth knowing why rather than
+      # trusting it: `flutter test --tags <no-such-tag>` prints "No tests ran."
+      # and exits **79**, so a typo here is a red job and not a green one that
+      # measured nothing. Verified against this SDK, not assumed.
+      - name: 🛡️ Layout Gate (PR-blocking widget gates)
+        run: flutter test --tags layout-gate --exclude-tags="golden||loc||ui"
+
+  # ------------------------------------------------------------------------
+  # 4. Web smoke build. Independent of every test above, and it used to wait
+  #    behind all of them for no reason.
+  # ------------------------------------------------------------------------
+  build_web:
+    name: 🏗️ Smoke Build (Web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      # `--no-pub` is safe: the setup action has already run `flutter pub get`.
       - name: 🏗️ Smoke Build (Web)
         run: flutter build web --release --no-pub
+
+  # ========================================================================
+  # Required status checks are a repository setting, and there are none today
+  # ------------------------------------------------------------------------
+  # Checked 2026-08-27: `version branch` (4093935) carries `deletion`,
+  # `non_fast_forward` and `pull_request` (1 approval) over `~DEFAULT_BRANCH`,
+  # `refs/heads/dev-*` and `refs/heads/v*.*.*`, and no `required_status_checks`
+  # rule at all. Nothing pins a check by name, which is why this split could
+  # rename `🛡️ Quality & Logic (PR)` out of existence without breaking a merge —
+  # and also why a red pipeline does not actually stop one.
+  #
+  # The four names to require are the `name:` values above: `🎨 Lint & Analyze`,
+  # `🧪 Unit Tests`, `🛡️ Layout Gate`, `🏗️ Smoke Build (Web)`. Add them from the
+  # UI's picker rather than by typing: `🛡️` and `🏗️` carry a U+FE0F variation
+  # selector that `🎨` and `🧪` do not, and a name that differs by an invisible
+  # codepoint is a check that never reports, which looks exactly like success
+  # until the PR cannot merge. Adding a fifth job without adding it to that list
+  # makes the new job advisory, silently.
+  #
+  # But NOT on 4093935, and this is the part that is easy to get wrong. Its include
+  # list is `~DEFAULT_BRANCH` + `refs/heads/dev-*` + `refs/heads/v*.*.*`, and
+  # `dev-*` swallows `dev-1.3.0` and `dev-2.6.1` — lines with zero `layout-gate`
+  # tests, where job 3 cannot pass by construction. Requiring these four names
+  # there turns every PR into the 1.x and pre-2.7 lines red on a job that has no
+  # gate to run.
+  #
+  # So the four checks belong on a SECOND, narrower ruleset whose include list is
+  # exactly the branches carrying the gate. Today that is `refs/heads/dev-2.7.0`,
+  # plus `refs/heads/usp` once 2.7.0 has merged into it. `refs/heads/dev-2.*` is
+  # NOT a safe shorthand while dev-2.6.1 is still taking PRs. Every new 2.x dev
+  # branch is cut from a branch that has the gate, so it inherits both this file
+  # and the suites — add it to that include list when it is cut.
+  #
+  # And not before that ruleset's branches actually carry THIS file. A
+  # `pull_request` run reads its workflow from the merge ref, so a PR into a base
+  # still on the old single-job version reports `🛡️ Quality & Logic (PR)` and none
+  # of the four names, whatever the head carries. Set the checks up only once the
+  # base has the four jobs — otherwise the PRs whose head branched off the split
+  # go green and everyone else's sit at "Expected", which reads as "flaky" rather
+  # than "misconfigured" and is the more expensive way to find out.
+  #
+  # Two things not to require, and one that is not protected at all:
+  #
+  #  * `dart-wasm-boundary` (usp-boundary.yml) triggers on `usp` and `dev-*` but
+  #    NOT `main`, so requiring it would deadlock every PR into main.
+  #  * `v*.*.*` is in 4093935 but not in this file's triggers. Latent only — no PR
+  #    in the last 300 targeted one, and those branches take tags, which a separate
+  #    tag-target ruleset (4093447, `~ALL`) already governs.
+  #  * `usp` is in NEITHER branch ruleset. 4093935 does not include it, and
+  #    `feature branch` (4094648) has an EMPTY include list, so it matches no branch
+  #    and enforces nothing anywhere. The 2.x release target therefore has no PR
+  #    requirement and no force-push protection. Note before "fixing" 4094648 by
+  #    setting its include to `~ALL`: its rules are `non_fast_forward` and
+  #    `deletion` with only `RepositoryRole:4` bypassing, so switching it on would
+  #    block rebase-and-force-push and post-merge branch deletion on every feature
+  #    branch. Inert is its harmless state.
+  # ========================================================================
 
   # ========================================================================
   # Golden / snapshot jobs are deliberately not in this repo

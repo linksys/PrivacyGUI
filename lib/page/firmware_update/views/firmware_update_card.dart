@@ -54,11 +54,17 @@ class FirmwareUpdateCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  AppButton.text(
-                    label: loc(context).update,
-                    onTap: () =>
-                        context.pushNamed(RouteNamed.uspFirmwareUpdate),
-                  ),
+                  // Hidden while the version is unknown, which is both what the
+                  // button means — there is nothing to compare against yet — and
+                  // what makes the skeleton readable: the button costs this row
+                  // 60–110px depending on locale, and at 320px that is most of what
+                  // the caption beside the spinner has to live in (#1380).
+                  if (!isLoading)
+                    AppButton.text(
+                      label: loc(context).update,
+                      onTap: () =>
+                          context.pushNamed(RouteNamed.uspFirmwareUpdate),
+                    ),
                 ],
               ),
             ),
@@ -78,7 +84,13 @@ class _CardSkeleton extends StatelessWidget {
       children: [
         const SizedBox(width: 16, height: 16, child: AppLoader()),
         AppGap.md(),
-        AppText.bodyMedium(loc(context).loadingFirmwareInfo),
+        // Expanded for the reason `usp_timezone_card`'s header gives, with one
+        // difference worth naming: this row is only on screen while the fetch is
+        // in flight, so its overflow — up to +234px at 320px in `de` (#1380) — is
+        // one the gate caught in the first frame of a cell rather than at settle.
+        // A spinner's caption is still a caption, and it wraps. It needs the
+        // `Update` button out of the row to have room to; see there.
+        Expanded(child: AppText.bodyMedium(loc(context).loadingFirmwareInfo)),
       ],
     );
   }

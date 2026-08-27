@@ -401,19 +401,76 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   // Configuration Screen
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /// Screen width below which the app-bar title needs a second line.
+  ///
+  /// Measured, not chosen: at 320px the title `Row` overflowed in seven locales
+  /// (#1370's site, `tr` worst at +89px), because a Material `AppBar` grants its
+  /// title `width - 32` and the icon and its gap spend another 32 of that. `tr`
+  /// ("Yapay Zeka Yönlendirici Asistanı") asks 345px for its text at
+  /// `titleLarge`, so it needs a **409px screen** to sit on one line; every other
+  /// locale needs less. 420 is that number with a shaping margin — deliberately
+  /// not the 600px mobile breakpoint, which would leave a 460px screen with a
+  /// two-line-tall bar holding a one-line title.
+  ///
+  /// Two lines rather than an ellipsis because this title is the screen's name.
+  /// Fitting it on one line at 320px would take a ~16px font — `titleMedium`, so
+  /// no longer a title — and truncating "Yapay Zeka Yönlendirici…" spends the
+  /// noun. The same reasoning as `firmware_update_view`'s stack: reflow, don't
+  /// shorten. What guards it is
+  /// `page_surface_overflow_test.dart`'s title test, which asserts the string is
+  /// whole in all 26 locales rather than merely unreported.
+  static const _twoLineTitleBelow = 420.0;
+
+  /// The toolbar height that fits the second line: one more `titleLarge` line
+  /// (22px at M3's 1.27 height) on top of the default.
+  static const _twoLineToolbarHeight = kToolbarHeight + 28.0;
+
+  /// The app bar both screens wear.
+  ///
+  /// Shared so the title has one implementation and one threshold. The chat
+  /// screen's copy of this `Row` carries a status badge and two actions, so it has
+  /// strictly less room than the config screen's — but only the config screen is
+  /// reachable in a widget test (see `mock_router_assistant.dart`), so the gate
+  /// measures this code once and the chat screen rides on it.
+  ///
+  /// [Flexible] rather than [Expanded] on purpose: loose fit lets the text take
+  /// only the width it needs, which is what keeps [trailing] beside the title
+  /// instead of pushed to the far edge of the toolbar.
+  PreferredSizeWidget _buildAssistantAppBar({
+    Widget? trailing,
+    List<Widget>? actions,
+  }) {
+    final theme = Theme.of(context);
+    final twoLine = MediaQuery.sizeOf(context).width < _twoLineTitleBelow;
+
+    return AppBar(
+      toolbarHeight: twoLine ? _twoLineToolbarHeight : null,
+      title: Row(
+        children: [
+          Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              loc(context).aiRouterAssistant,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing,
+          ],
+        ],
+      ),
+      actions: actions,
+    );
+  }
+
   Widget _buildConfigScreen() {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(loc(context).aiRouterAssistant),
-          ],
-        ),
-      ),
+      appBar: _buildAssistantAppBar(),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -554,19 +611,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   Widget _buildChatScreen() {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(loc(context).aiRouterAssistant),
-            const SizedBox(width: 8),
-            _buildStatusBadge(),
-          ],
-        ),
+      appBar: _buildAssistantAppBar(
+        trailing: _buildStatusBadge(),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),

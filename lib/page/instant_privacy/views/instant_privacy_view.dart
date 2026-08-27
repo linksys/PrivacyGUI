@@ -169,18 +169,35 @@ class InstantPrivacyView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            AppText.labelLarge(
-                loc(context).allowedDevicesCount(state.allowedDevices.length)),
-            AppButton.text(
-              label: loc(context).addDevice,
-              onTap: state.isToggleLocked
-                  ? null
-                  : () => _showAddMacDialog(context, ref, state),
-            ),
-          ],
+        // A `Wrap`, not a `Row`, and for the reason `usp_apps_view.dart:90`
+        // records at the same shape: `spaceBetween` with two inflexible children
+        // let the `addDevice` button take the width it asked for and left the
+        // count label the remainder — over by up to +110px at 320px in 14 of the
+        // 26 locales (#1380). Expanding the label only moves the damage: the
+        // button is ~194px of a 288px content row, so `fr` then took 4 lines in
+        // 76.7px and `ru` broke a 95.8px word inside 94.1px. The button drops
+        // below the count when the two do not fit and nothing shrinks.
+        // `WrapAlignment.spaceBetween` plus the tight `SizedBox` keep the wide
+        // widths pixel-identical to what the `Row` gave them — a `Wrap` sizes to
+        // its widest run, not to its constraint. Both directions are guarded in
+        // test/page/_shared/page_surface_overflow_test.dart.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.md,
+            children: [
+              AppText.labelLarge(loc(context)
+                  .allowedDevicesCount(state.allowedDevices.length)),
+              AppButton.text(
+                label: loc(context).addDevice,
+                onTap: state.isToggleLocked
+                    ? null
+                    : () => _showAddMacDialog(context, ref, state),
+              ),
+            ],
+          ),
         ),
         AppGap.sm(),
         if (state.allowedDevices.isEmpty)

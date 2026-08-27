@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-24** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`. A third subcommand, **`render`**, was added the same day so the committed rows can be read as a report without running anything (§1), and a fourth, **`shoot`**, photographs cells — either the ones a cell-id pattern names, which is the first thing in the whole family that can show what a *passing* cell renders as (#1240 AC1, #1349's wrap), or, as `shoot <sweep> failed`, exactly the cells that run judged as failures. It reports on its own run, so the rows and the images are always one tree (§1).
+**Last Updated: 2026-08-27** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes; all four re-captured at `25d1b8ed-dirty` for the `dev-2.7.0` merge — see §5). **All four ports were signed off against it**: #1342 (`check chrome`, 1,248 cells identical), #1343 (`check card`, 1,917 identical), #1345 (`check popup`, 347 byte-identical) and #1344 (`check forced_form`, 75 cells with six renamed ids). **A fifth baseline arrived at `69079cb0-dirty`** — `page`, 416 cells from #1349's two-page pilot — which is the first one captured *after* the framework existed rather than to protect a port through it, and registering it took two lines of `tool/overflow_baseline.sh`. A third subcommand, **`render`**, was added the same day so the committed rows can be read as a report without running anything (§1), and a fourth, **`shoot`**, photographs cells — either the ones a cell-id pattern names, which is the first thing in the whole family that can show what a *passing* cell renders as (#1240 AC1, #1349's wrap), or, as `shoot <sweep> failed`, exactly the cells that run judged as failures. It reports on its own run, so the rows and the images are always one tree (§1). **All five were re-captured at `08b15539-dirty` for #1377's wave 1**: `page` 416 → **1,456** as five page groups arrive (+1,040 rows, none removed, none changed), the other four moving only their `# commit` stamp — 5,072 rows in total (§5). **#1378's wave 2 re-captured `page` alone at `aedf6b4f-dirty`**: 1,456 → **3,120** as eight `instant_setup` groups arrive (+1,664 rows, every one `clean`, none removed and none changed), and this time the other four datasets were left *byte*-identical rather than re-stamped — a wave that only appends `kPageSurfaceCases` entries has no business touching them, so not re-capturing them is the stronger claim. **#1372 then re-captured `page` alone again at `c4418629-dirty`** — the first re-capture driven by the sweep's *axis* rather than its case list: `kPageSweepWidths` gained 1080, so 3,120 → **3,510** as all fifteen groups swept at the time widen by one width (+390 rows, every one `screen_px=1080`, every one `clean`, none removed and none changed). **Wave 2's ninth page then arrived a day late at `81e57210-dirty`**: `pnp_setup` had failed 208 of 208 cells on an `AppStepper` defect belonging to `ui_kit_library` (`linksys/privacyGUI-UI-kit#70`), and the bump to v2.40.2 released it into the sweep — 3,510 → **3,744** (+234 rows, all `page.pnp_setup`, every one `clean`, none removed and none changed). **And #1379's wave 3 re-captured `page` a fifth time at `18e3c7d5-dirty`**: 3,744 → **5,148** as the six entry surfaces arrive (+1,404 rows, every one `clean`, none removed and none changed), with no widget touched on the way in and the other four left byte-identical for the fourth time. **#1380's wave 4 then re-captured `page` a sixth and last time at `b44b73c8-dirty`**: 5,148 → **10,062** as the epic's remaining twenty-one pages arrive (+4,914 rows across 21 groups, every one `clean`, none removed and none changed) — the largest single append this dataset has taken, and the one that makes it *complete* for page views, since 43 swept plus 2 unreachable is all 45 under `lib/page/`. The other four were left byte-identical for the fifth time. **And then the 2026-08-27 `dev-2.7.0` merge subtracted a row, which nothing in this file had done before**: #1367 gave the KPI stats panel a per-card resolution, the `forced_form.skeleton|variant=stats` coordinate stopped existing, and `forced_form` went 78 → **77**. It is taken at #1367's own `2ddacb86-dirty` rather than re-stamped at the merge, because the merge produced a byte-identical file — the branch that removed the coordinate is the branch that should own the stamp — and a `check forced_form` on the merged tree confirms all 77 rows. The other four are byte-identical for the sixth time. **13,677 rows in total** (§5).
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -57,7 +57,7 @@ permanent.
 
 ### Reading one without running it — `render`
 
-A baseline is 4,031 sorted rows across five files. `check` answers "did it move";
+A baseline is 13,677 sorted rows across five files. `check` answers "did it move";
 it does not answer "what does this sweep cover", which is the question anyone
 inheriting the gate asks first. `render` turns a committed `.tsv` into a report:
 
@@ -295,6 +295,20 @@ key that humans also grep (#1356):
 `# commit` and the other `#` lines are **excluded from the diff**, so re-capturing
 at a new commit does not by itself register as a change.
 
+**`# suite` can name more than one file, and this dataset cannot tell you which
+file pumped a row.** The field is derived from the run's own `suite` events rather
+than from the registry, so a sweep split across files would grow the header and
+change nothing else. That is the right split of duties: **a row is keyed by cell id,
+and a cell id names the page, never the suite that pumped it.** #1371 measured
+splitting the page sweep and decided against it (§11.10) — but the property matters
+either way, because it is what makes the dataset a record of *coverage* rather than
+of file layout. It is also why the thing that has to notice a page dropping out of
+the sweep entirely is a test in the PR gate
+([page_sweep_suites_test.dart](../../test/layout_gate/page_sweep_suites_test.dart))
+and not this diff, which nothing in the gate runs — here, a page that stopped being
+swept reads as 234 rows saying `no longer measured`, and only if somebody runs
+`check`.
+
 **`-dirty` in `# commit` means what it says.** The suffix is appended when any of
 `lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
 last one because most of the widgets these rows measure are not in this repo:
@@ -457,13 +471,87 @@ was **captured at `69079cb0-dirty`** for #1349's pilot — a new sweep rather th
 re-capture, so it has nothing to diff against yet and its 416 rows are the claim
 future ports check.
 
+**All five were re-captured at `08b15539-dirty`** for #1377's wave 1, and it is the
+cleanest additive diff in this file's history: `page` goes 416 → **1,456** as five page
+groups arrive, **+1,040 rows with none removed and none changed** — the pilot's 416 rows
+are byte-identical, so the five new sweeps did not disturb the two that existed. The other
+four datasets changed **only their `# commit` stamp**, which is the check worth stating:
+a wave that adds cases to `kPageSurfaceCases` must not move a card, a popup or a chrome
+cell, and the diff is how that is known rather than assumed.
+
+**`page` alone was re-captured at `aedf6b4f-dirty`** for #1378's wave 2, and the diff is
+the same shape one wave on: 1,456 → **3,120** as eight `instant_setup` groups arrive,
+**+1,664 rows, all `clean`, none removed and none changed**. The header moved three lines
+— `# groups`, `# commit`, `# cells` — and nothing else. The other four were not re-captured
+at all this time: #1377 re-stamped them to prove the wave had not disturbed them, but a
+`check` that passes byte-identically proves the same thing without writing to the files,
+so wave 2 ran `check` on all four and committed none of them.
+
+**`page` alone was re-captured again at `c4418629-dirty`**, hours later, for #1372's
+width decision — and this one is a change to the *axis* rather than to the case list,
+which is the first time that has happened. `kPageSweepWidths` gained 1080, so all
+fifteen groups swept at the time widen together: 3,120 → **3,510**, **+390 rows, every one of
+them `screen_px=1080`, every one `clean`, none removed and none changed**. The
+purely-additive shape is the whole verification: a width that was *traded* rather than
+gained would show up here as 390 additions beside 390 `no longer measured` rows, and a
+width that perturbed the existing cells would show up as changes. Neither appeared. The
+other four were left byte-identical again, for wave 2's reason.
+
+**And `page` once more at `81e57210-dirty`**, the same day, for wave 2's ninth page:
+3,510 → **3,744**, **+234 rows, all of them `page.pnp_setup`, every one `clean`, none
+removed and none changed**. This one is a case-list change like wave 2 itself, but its
+history is why it arrived a day late — `pnp_setup` failed 208 of 208 cells on an
+`AppStepper` defect that was `ui_kit_library`'s, not ours (`linksys/privacyGUI-UI-kit#70`,
+fixed by `936c1da6`). The gate held the page out until the bump to v2.40.2, and the
+additive-only diff is what says the fix was upstream: a page onboarded by loosening its
+own premise instead would show the same 234 additions, which is precisely why
+`page_surface_family_test.dart` pins `requires` as a value. The other four were left
+byte-identical for the third time.
+
+**And `page` a fifth time, at `18e3c7d5-dirty`**, for #1379's wave 3: 3,744 → **5,148**,
+**+1,404 rows across six new groups, every one `clean`, none removed and none changed**.
+The six are the entry surfaces — `home`, `login_local`, `local_router_recovery`,
+`local_reset_router_password`, `menu` and `auto_parent_first_login` — and the diff is the
+plainest kind this file records, because **no widget was touched on the way in**: all six
+were already at zero at all 234 coordinates, so there is no fix to attribute and nothing
+in the additions to read as a premise loosened to fit. The header moved three lines again
+and the other four were left byte-identical for the fourth time. One thing in the diff is
+worth naming: `page.auto_parent_first_login`'s 234 rows are the first in this dataset
+belonging to a page whose `AppLoader` **is** its content, which is a state every other
+group's `forbids` exists to keep out — see architecture doc §11.11 for why that is a
+pinned set (`kPagesWhoseLoaderIsContent`) rather than one case quietly omitting the rule.
+
+**And `page` a sixth and final time, at `b44b73c8-dirty`**, for #1380's wave 4: 5,148 →
+**10,062**, **+4,914 rows across twenty-one new groups, every one `clean`, none removed
+and none changed**. It is the largest append this dataset has taken — 4,917 lines added
+and 3 removed, the three being `# groups`, `# commit` and `# cells`, so **not one data
+row changed** — and it is the one that finishes the axis: 43 swept plus 2 unreachable is
+all 45 page views under `lib/page/`, and no seventh `page` capture can be a wave.
+
+Two things make this diff read differently from wave 3's, and both are worth knowing
+before trusting the next one:
+
+- **Fourteen widgets under `lib/` were touched on the way in**, on eleven of the
+  twenty-one pages, where wave 3 touched none. So "every added row is `clean`" is here a
+  statement about the *end* of the work rather than the start, and the additive-only
+  shape is what says the fixes did not disturb the 5,148 rows already committed — a
+  responsive-band fix on `admin` or `apps` is exactly the kind of change that could have
+  moved another page's cells, and it did not. Read this diff together with the `lib/`
+  diff, not instead of it.
+- **A clean row is not a covered page.** `page.statistics`'s 234 rows are the family's
+  narrowest coverage claim — 1600px of viewport reaches four of that page's nine sections
+  on tab 0 of three — and the dataset cannot say so, because a cell is a coordinate and
+  not a promise about what rendered inside it. `kStatisticsPageCase` and architecture doc
+  §11.12 are where that is written down. The same caveat applies in kind to every page in
+  the sweep: one state each.
+
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|
 | `card` | `dashboard_card_overflow_test.dart` | 1,943 | 0 | `width` 1638 · `normal_band` 234 · `profile` 52 · `single_view` 12 · `tab_registry` 6 · `profile_data` 1 |
 | `chrome` | `page_chrome_overflow_test.dart` | 1,248 | 0 | `header` 936 · `top_bar` 312 |
 | `popup` | `dashboard_card_popup_overflow_test.dart` | 347 | 0 | `form` 234 · `picked_dialog` 51 · `dialog` 27 · `picked_value` 17 · `picked_height` 17 · `exempt` 1 |
-| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 78 | 0 | `popup_tile` 51 · `compact_floor` 21 · `skeleton` 6 |
-| `page` | `page_surface_overflow_test.dart` | 416 | 0 | `dhcp` 208 · `wifi_settings` 208 |
+| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 77 | 0 | `popup_tile` 51 · `compact_floor` 21 · `skeleton` 5 (6 until #1367) |
+| `page` | `page_surface_overflow_test.dart` | 10,062 | 0 | **43 groups × 234** (× 208 until #1372) — `dhcp` · `wifi_settings` (#1349) · `device_list` · `device_detail` · `topology` · `node_detail` · `port_forwarding` (#1377) · `pnp_entry` · `pnp_no_internet` · `pnp_isp_settings` · `pnp_pppoe` · `pnp_static_ip` · `pnp_unplug_modem` · `pnp_modem_lights_off` · `pnp_waiting_modem` · `pnp_setup` (#1378) · `home` · `login_local` · `local_router_recovery` · `local_reset_router_password` · `menu` · `auto_parent_first_login` (#1379) · `admin` · `advanced_settings` · `apps` · `dmz` · `firewall` · `firmware_update` · `instant_privacy` · `instant_safety` · `internet_settings` · `ipv6_port_service` · `local_network` · `remote_assistance` · `router_assistant` · `sliver_dashboard` · `static_routing` · `statistics` · `support` · `system_log` · `test_console` · `unified_diagnostics` · `usp_dashboard` (#1380) |
 
 **`card`'s density cells come to 1,638 + 208 + 52 = 1,898**, the figure
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §1.2 measured
@@ -482,9 +570,11 @@ exemption now carries a `maxOverflowPx` ceiling beside its locale list, and the
 two sections must name the same sites — see
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §3), but an empty
 map is an empty map under either shape, and all five baselines still `check`
-identical. What is being frozen is the *coverage*: **4,031**
+identical. What is being frozen is the *coverage*: **13,677**
 coordinates that are measured and clean today (3,587 at capture, 3,616 after the
-merge, plus #1349's 416). Against an all-clean baseline the
+merge, plus #1349's 416, #1377's 1,040, #1378's 1,664, #1372's 390, #1378's
+late 234 for `pnp_setup`, #1379's 1,404 and #1380's 4,914, **less the one** the
+2026-08-27 `dev-2.7.0` merge retired — the only subtraction in that list). Against an all-clean baseline the
 only difference a port can produce is a lost cell, a new overflow, or a cell that
 stopped finishing — which is exactly what R3 and R5 need to detect, and what a
 pass/fail run cannot distinguish from success.
