@@ -119,6 +119,8 @@ class LinksysCacheManager {
           "[CacheManager] Skip saving $serialNumber, cache belongs to $lastSerialNumber");
       return;
     }
+    // From here on the serial number is either the loaded device or no device
+    // has been loaded at all - see the two branches further down.
     if (_cache.isEmpty) {
       cacheManager.get().then((value) {
         _cache = value ?? "";
@@ -130,10 +132,19 @@ class LinksysCacheManager {
       return;
     }
     Map<String, dynamic> cacheModel = jsonDecode(_cache);
-    // The in-memory data is the whole cache of this device, so replace its
-    // entry instead of merging - a merge can never persist a removal made by
-    // clearCache. Other devices keep their own entries.
-    cacheModel[serialNumber] = data;
+    if (serialNumber == lastSerialNumber) {
+      // The in-memory data is the whole cache of this device, so replace its
+      // entry instead of merging - a merge can never persist a removal made by
+      // clearCache. Other devices keep their own entries.
+      cacheModel[serialNumber] = data;
+    } else {
+      // No cache has been loaded, so the in-memory data is only part of this
+      // device's cache: add to the stored entry instead of dropping whatever is
+      // not in memory.
+      final stored = Map<String, dynamic>.from(cacheModel[serialNumber] ?? {});
+      stored.addAll(data);
+      cacheModel[serialNumber] = stored;
+    }
     _cache = jsonEncode(cacheModel);
     cacheManager.set(_cache);
   }

@@ -118,14 +118,17 @@ class DeviceCloudService {
     required String sessionId,
     String? serialNumber,
   }) async {
+    // The token has to be the one issued for the device this request is sent
+    // for, otherwise the cloud is handed a token that belongs to another device.
+    final targetSerialNumber = serialNumber ?? master.unit.serialNumber ?? '';
     final linksysToken = await fetchDeviceToken(
-        serialNumber: master.unit.serialNumber ?? '',
+        serialNumber: targetSerialNumber,
         macAddress: master.getMacAddress(),
         deviceUUID: master.deviceID);
     _httpClient.deleteSession(
         token: linksysToken,
         sessionId: sessionId,
-        serialNumber: serialNumber ?? master.unit.serialNumber ?? '');
+        serialNumber: targetSerialNumber);
   }
 
   // Fetch device token from cloud via UUID

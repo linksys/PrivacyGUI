@@ -139,6 +139,24 @@ void main() {
       expect(backend.decoded['SN-B'], isNot(contains('getFoo')));
     });
 
+    test('adds to the stored entry when no cache has been loaded', () async {
+      backend.content = jsonEncode({
+        'SN-A': {
+          'getFoo': {'target': 'getFoo', 'cachedAt': 1, 'data': {}},
+          'getBaz': {'target': 'getBaz', 'cachedAt': 2, 'data': {}},
+        },
+      });
+      // Logging out drops the in-memory data but keeps the file, and logging
+      // back in caches JNAP responses before the device is loaded again.
+      await manager.loadCache(serialNumber: 'SN-A');
+      await manager.loadCache(serialNumber: '');
+
+      manager.handleJNAPCached({'result': 'OK'}, 'getBar', 'SN-A');
+
+      expect(backend.decoded['SN-A'].keys,
+          containsAll(['getFoo', 'getBaz', 'getBar']));
+    });
+
     test('a save made while a load is in flight belongs to the loaded device',
         () async {
       backend.content = jsonEncode({
