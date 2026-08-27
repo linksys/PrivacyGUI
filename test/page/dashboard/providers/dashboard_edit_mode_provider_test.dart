@@ -9,7 +9,9 @@ import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 Future<void> pumpAsync() async {
   await Future.delayed(const Duration(milliseconds: 100));
@@ -399,8 +401,128 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // #1294 — logging out must leave edit mode
+  // #1393 — a keyboard (a11y) reorder must survive a reload
   // ---------------------------------------------------------------------------
+  //
+  // Drag / resize / delete / preset-apply / form-pick all end in `saveLayout`,
+  // so they persist as they happen. The keyboard reorder does not: the package's
+  // `moveActiveItemBy` mutates the layout beacon but never fires the
+  // `onLayoutChanged` callback the other mutators do, and our controller wires no
+  // such callback anyway — so a card moved with the keyboard was only ever a
+  // transient in-memory change and reverted on reload. The fix persists on
+  // commit, so whatever is on the grid at "Done" reaches SharedPreferences
+  // regardless of how it got there.
+  //
+  // The bug was invisible to drag users, so the acceptance criterion is the
+  // persisted value, not the on-screen one: the render already changed before
+  // this ticket. Both halves are asserted in one test — that the move is NOT
+  // self-persisting mid-edit (the reproduction) and that it IS persisted after
+  // commit (the fix) — because a test that only checked the commit half would
+  // pass just as well if every mutator had always persisted, proving nothing
+  // about the keyboard path specifically.
+  group('keyboard reorder persistence (#1393)', () {
+    /// Grabs [cardId] and nudges it one step with the keyboard, returning the
+    /// layout after the move. Fails loudly if the move was a no-op, so the
+    /// persistence assertions can never be vacuous.
+    ///
+    /// A single horizontal step keeps the test independent of the seeded
+    /// layout's exact geometry while still being a real `moveActiveItemBy` call
+    /// — the keyboard (a11y) reorder path, the one mutator that does not persist
+    /// itself.
+    List<Map<String, dynamic>> keyboardMove(
+      DashboardController controller,
+      String cardId,
+    ) {
+      final before = controller.exportLayout();
+      controller.clearSelection();
+      controller.toggleSelection(cardId);
+
+      // Step in whichever horizontal direction the grid allows: a card at x=0
+      // can only go right, one at the right edge only left.
+      controller.moveActiveItemBy(1, 0);
+      var after = controller.exportLayout();
+      if (after.toString() == before.toString()) {
+        controller.moveActiveItemBy(-1, 0);
+        after = controller.exportLayout();
+      }
+      if (after.toString() == before.toString()) {
+        controller.moveActiveItemBy(0, 1);
+        after = controller.exportLayout();
+      }
+      if (after.toString() == before.toString()) {
+        fail('moveActiveItemBy did not change the layout — cannot test '
+            'persistence of a move that never happened');
+      }
+      return after;
+    }
+
+    test('a keyboard move is not self-persisting, but commit persists it',
+        () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final baseline = prefs.getString(pUspSliverDashboardLayout);
+      expect(baseline, isNotNull,
+          reason: 'the seed writes a baseline layout on first init');
+
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final original =
+          controller.exportLayout().firstWhere((e) => e['id'] == 'device_info');
+      final originalX = original['x'] as int;
+      final originalY = original['y'] as int;
+
+      final moved = keyboardMove(controller, 'device_info');
+      final movedItem = moved.firstWhere((e) => e['id'] == 'device_info');
+      // Guard: the in-memory keyboard move genuinely relocated the card.
+      expect(
+        movedItem['x'] != originalX || movedItem['y'] != originalY,
+        isTrue,
+        reason: 'the keyboard move must have changed the card position',
+      );
+
+      // Reproduction: the keyboard path does not persist itself. The move is on
+      // the grid, but SharedPreferences still holds the pre-move baseline.
+      expect(prefs.getString(pUspSliverDashboardLayout), baseline,
+          reason: 'moveActiveItemBy must not have reached SharedPreferences on '
+              'its own — that is exactly the #1393 bug');
+
+      await notifier.commitEditMode();
+
+      // Fix: commit writes the layout out, so the move now survives a reload.
+      final persisted = prefs.getString(pUspSliverDashboardLayout);
+      expect(persisted, isNot(baseline),
+          reason:
+              'committing a keyboard move must change the persisted layout');
+
+      // Reload from prefs and confirm the card did NOT snap back to its
+      // original position. Rebuild the mock store from exactly what was
+      // persisted (a plain new container would reset the store and reseed the
+      // default), then bring up a fresh controller that reads it — the reload.
+      SharedPreferences.setMockInitialValues(
+          {pUspSliverDashboardLayout: persisted!});
+      final reloaded = ProviderContainer();
+      addTearDown(reloaded.dispose);
+      reloaded.read(uspSliverDashboardControllerProvider);
+      await reloaded.read(uspLayoutPreferencesProvider.notifier).initialized;
+      await pumpAsync();
+      final reloadedItem = reloaded
+          .read(uspSliverDashboardControllerProvider)
+          .exportLayout()
+          .firstWhere((e) => e['id'] == 'device_info');
+
+      expect(
+        reloadedItem['x'] != originalX || reloadedItem['y'] != originalY,
+        isTrue,
+        reason: 'after reload the card stays where the keyboard move left it, '
+            'not back at its original ($originalX,$originalY) position',
+      );
+    });
+  });
+
   group('logout leaves edit mode', () {
     /// A logged-in [AuthNotifier] whose logout can be driven without the USP /
     /// SSE / credential-store machinery the real one needs.

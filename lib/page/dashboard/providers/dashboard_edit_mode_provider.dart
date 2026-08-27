@@ -142,8 +142,16 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     controller.setEditMode(true);
   }
 
-  /// Exit edit mode, keeping the current layout (changes are already persisted
-  /// on each drag/resize, so committing is just clearing the edit flag).
+  /// Exit edit mode, keeping the current layout.
+  ///
+  /// Most edits persist themselves as they happen — every drag, resize, delete,
+  /// preset-apply and form pick ends in [saveLayout]. The one that does not is
+  /// the keyboard (a11y) reorder: `sliver_dashboard`'s `moveActiveItemBy`
+  /// mutates the layout beacon but never fires the `onLayoutChanged` callback
+  /// the other mutators do, so a card moved with the keyboard is only ever a
+  /// transient in-memory change and reverts on reload (#1393). Committing
+  /// therefore writes the layout out explicitly, so whatever is on the grid at
+  /// "Done" survives a reload regardless of how it got there.
   Future<void> commitEditMode() => _exitEditMode(revert: false);
 
   /// Exit edit mode and revert the layout/prefs to the pre-edit snapshots
@@ -175,6 +183,16 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
               .read(uspLayoutPreferencesProvider.notifier)
               .restoreSnapshot(state.prefsSnapshot!);
         }
+      } else {
+        // Commit: persist the layout as it stands. Drag/resize/delete/preset/form
+        // paths have already saved themselves, but the keyboard reorder path has
+        // not (#1393 — the package's `moveActiveItemBy` skips `onLayoutChanged`),
+        // so its move only lives in memory until this write. `saveLayout` reads
+        // the controller's current layout across every breakpoint, so committing
+        // any in-memory change — however it was made — reaches SharedPreferences.
+        await ref
+            .read(uspSliverDashboardControllerProvider.notifier)
+            .saveLayout();
       }
     } finally {
       controller.setEditMode(false);
