@@ -20,11 +20,19 @@ on:
   # nothing is worse than one that reports the wrong thing, which is the same
   # defect this whole four-job file was written to fix.
   #
-  # Keep this list a superset of whatever the `version branch` ruleset requires
-  # checks on. A required check that no trigger produces sits at "Expected"
-  # forever and the PR can never merge — so adding a branch to that ruleset means
-  # adding it here first. `v*.*.*` is deliberately absent: 15 such branches exist
-  # but they are 1.x-era leftovers that take tags, not PRs.
+  # Keep this list a superset of whatever any ruleset requires checks on. A
+  # required check that no trigger produces sits at "Expected" forever and the PR
+  # can never merge — so adding a branch to such a ruleset means adding it here
+  # first. `v*.*.*` is deliberately absent: 15 such branches exist but they are
+  # 1.x-era leftovers that take tags, not PRs.
+  #
+  # This file is NOT portable to the 1.x or pre-2.7 lines, and the reason is job 3.
+  # Counted 2026-08-27, `layout-gate`-tagged test files: dev-2.7.0 has 56, and
+  # main, dev-1.3.0 and dev-2.6.1 have zero. `flutter test --tags layout-gate`
+  # against a line with no gate exits 79, so cherry-picking these CI commits onto
+  # main would produce a job that cannot go green. The workflow and the gate suites
+  # have to travel together — which is the same exit 79 that makes a typo'd tag
+  # safe, doing the second useful thing it does.
   pull_request:
     branches: [ "main", "usp", "dev-*" ]
 
@@ -202,18 +210,35 @@ jobs:
   # until the PR cannot merge. Adding a fifth job without adding it to that list
   # makes the new job advisory, silently.
   #
+  # But NOT on 4093935, and this is the part that is easy to get wrong. Its include
+  # list is `~DEFAULT_BRANCH` + `refs/heads/dev-*` + `refs/heads/v*.*.*`, and
+  # `dev-*` swallows `dev-1.3.0` and `dev-2.6.1` — lines with zero `layout-gate`
+  # tests, where job 3 cannot pass by construction. Requiring these four names
+  # there turns every PR into the 1.x and pre-2.7 lines red on a job that has no
+  # gate to run.
+  #
+  # So the four checks belong on a SECOND, narrower ruleset whose include list is
+  # exactly the branches carrying the gate. Today that is `refs/heads/dev-2.7.0`,
+  # plus `refs/heads/usp` once 2.7.0 has merged into it. `refs/heads/dev-2.*` is
+  # NOT a safe shorthand while dev-2.6.1 is still taking PRs. Every new 2.x dev
+  # branch is cut from a branch that has the gate, so it inherits both this file
+  # and the suites — add it to that include list when it is cut.
+  #
   # Two things not to require, and one that is not protected at all:
   #
   #  * `dart-wasm-boundary` (usp-boundary.yml) triggers on `usp` and `dev-*` but
   #    NOT `main`, so requiring it would deadlock every PR into main.
-  #  * `v*.*.*` is in the ruleset but not in this file's triggers. Latent only —
-  #    no PR in the last 300 targeted one.
-  #  * `usp` is in NEITHER branch ruleset. `version branch` does not include it,
-  #    and `feature branch` (4094648) has an EMPTY include list, so it matches no
-  #    branch and enforces nothing anywhere. The 2.x release target therefore has
-  #    no PR requirement and no force-push protection. Fixing that means adding
-  #    `usp` to 4093935 — and this file's trigger list already covers it, which
-  #    is the ordering that avoids the deadlock above.
+  #  * `v*.*.*` is in 4093935 but not in this file's triggers. Latent only — no PR
+  #    in the last 300 targeted one, and those branches take tags, which a separate
+  #    tag-target ruleset (4093447, `~ALL`) already governs.
+  #  * `usp` is in NEITHER branch ruleset. 4093935 does not include it, and
+  #    `feature branch` (4094648) has an EMPTY include list, so it matches no branch
+  #    and enforces nothing anywhere. The 2.x release target therefore has no PR
+  #    requirement and no force-push protection. Note before "fixing" 4094648 by
+  #    setting its include to `~ALL`: its rules are `non_fast_forward` and
+  #    `deletion` with only `RepositoryRole:4` bypassing, so switching it on would
+  #    block rebase-and-force-push and post-merge branch deletion on every feature
+  #    branch. Inert is its harmless state.
   # ========================================================================
 
   # ========================================================================
