@@ -18,7 +18,7 @@ class UspAppsView extends ConsumerWidget {
     final asyncState = ref.watch(uspAppsProvider);
 
     return UiKitPageView.withSliver(
-      identifier: 'apps',
+      identifier: 'apps-page',
       scrollable: true,
       title: loc(context).apps,
       topbar: const PreferredSize(

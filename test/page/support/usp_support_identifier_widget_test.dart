@@ -18,7 +18,7 @@ import '../../mocks/provider_overrides/mock_common.dart';
 ///
 /// Not tagged `ui`: gated in `run_tests.sh` (the repo's only CI test job).
 void main() {
-  const anchor = 'support';
+  const anchor = 'support-page';
 
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

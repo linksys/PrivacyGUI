@@ -45,7 +45,7 @@ class _UspStatisticsViewState extends ConsumerState<UspStatisticsView>
     // and SliverAppBar scrolls away with the content.
     return LayoutBuilder(builder: (context, constraints) {
       return UiKitPageView.withSliver(
-        identifier: 'statistics',
+        identifier: 'statistics-page',
         title: loc(context).statistics,
         topbar: const PreferredSize(
           preferredSize: Size.fromHeight(64),

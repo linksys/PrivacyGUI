@@ -109,7 +109,7 @@ void main() {
       ]));
       await tester.pumpAndSettle();
 
-      expect(find.bySemanticsIdentifier('apps'), findsOneWidget,
+      expect(find.bySemanticsIdentifier('apps-page'), findsOneWidget,
           reason: 'the arrival anchor must be locatable');
       expect(find.bySemanticsIdentifier('apps-store'), findsOneWidget);
 

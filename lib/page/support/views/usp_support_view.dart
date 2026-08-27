@@ -29,7 +29,7 @@ class UspSupportView extends ConsumerWidget {
     final isDesktop = !context.isMobileLayout;
 
     return UiKitPageView.withSliver(
-      identifier: 'support',
+      identifier: 'support-page',
       scrollable: true,
       appBarStyle: UiKitAppBarStyle.none,
       topbar: const PreferredSize(

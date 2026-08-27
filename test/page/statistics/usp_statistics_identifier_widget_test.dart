@@ -22,7 +22,7 @@ import '../../mocks/provider_overrides/mock_statistics.dart';
 /// repo — with the same lightweight shell the golden framework uses. Assertion
 /// shape mirrors `test/components/ui_kit_page_view_test.dart`.
 void main() {
-  const anchor = 'statistics';
+  const anchor = 'statistics-page';
   const tabHooks = <String>[
     'statistics-tab-network',
     'statistics-tab-devices',
