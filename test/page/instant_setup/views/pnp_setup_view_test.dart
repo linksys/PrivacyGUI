@@ -182,5 +182,4 @@ void main() {
     expect(find.text(pnpUnifiedWifiConfig.ssid), findsOneWidget);
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
   });
-
 }
