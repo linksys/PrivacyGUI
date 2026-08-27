@@ -150,6 +150,7 @@ class _FirmwareRecoveryDialogState
       actions: [
         AppButton.text(
           label: loc(context).returnToLoginPage,
+          identifier: 'firmware-recovery-return-login',
           onTap: () {
             notifier.exitToLogout();
           },
@@ -157,6 +158,7 @@ class _FirmwareRecoveryDialogState
         AppButton.primary(
           label:
               _retrying ? loc(context).checkingEllipsis : loc(context).retryNow,
+          identifier: 'firmware-recovery-retry',
           onTap: _retrying
               ? null
               : () async {

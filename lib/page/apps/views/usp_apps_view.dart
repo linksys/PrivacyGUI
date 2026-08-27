@@ -18,6 +18,7 @@ class UspAppsView extends ConsumerWidget {
     final asyncState = ref.watch(uspAppsProvider);
 
     return UiKitPageView.withSliver(
+      identifier: 'apps-page',
       scrollable: true,
       title: loc(context).apps,
       topbar: const PreferredSize(
@@ -53,6 +54,7 @@ class UspAppsView extends ConsumerWidget {
           AppGap.xxl(),
           AppButton(
             label: loc(context).retry,
+            identifier: 'apps-retry',
             onTap: () => ref.invalidate(uspAppsProvider),
           ),
         ],
@@ -93,6 +95,7 @@ class UspAppsView extends ConsumerWidget {
               AppText.headlineSmall(loc(context).apps),
               AppButton(
                 label: loc(context).store,
+                identifier: 'apps-store',
                 icon: AppIcon.font(Icons.storefront),
                 onTap: () {
                   final token = ref.read(uspClientProvider)?.sessionToken ?? '';
@@ -145,6 +148,7 @@ class _AppGridCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
+      identifier: 'apps-open-${app.identifierKey}',
       onTap: app.link.isNotEmpty
           ? () {
               final token = ref.read(uspClientProvider)?.sessionToken ?? '';

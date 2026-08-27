@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
+import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Visual variant for [UspDeviceListTile].
@@ -45,6 +46,19 @@ class UspDeviceListTile extends StatelessWidget {
     this.onTap,
     this.variant = DeviceListTileVariant.card,
   });
+
+  /// Stable, data-derived E2E `identifier` key for this row's arrival anchor
+  /// (`device-row-<key>`), consumed by the E2E suite via `byIdentifier()`
+  /// against the CanvasKit Semantics tree.
+  ///
+  /// Derived from the device's MAC via [normalizeMac] (`aa:bb:cc:…` →
+  /// `AABBCC…`), so it is stable across list reordering and independent of the
+  /// human-visible hostname. The FULL normalized MAC is used (not a
+  /// shortest-unique suffix) because this tile is a standalone per-device
+  /// widget with no knowledge of its sibling rows: the full MAC is globally
+  /// unique on its own and needs no cross-row context. Mirrors the per-instance
+  /// getter precedent in `DhcpReservationUIModel.identifierKey`.
+  String get identifierKey => normalizeMac(device.mac);
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +163,19 @@ class UspDeviceListTile extends StatelessWidget {
             );
     }
 
-    return Opacity(opacity: device.displayOpacity, child: tile);
+    // Per-row E2E arrival anchor (`device-row-<normalized-mac>`). Outermost so
+    // the identifier node wraps the whole row (incl. its tap sensor), giving the
+    // E2E suite a stable, MAC-derived handle to open each device's detail page.
+    // The `${...}` braces are REQUIRED by the E2E generator's DYNAMIC_RE
+    // (`prefix-${expr}$`): a bare `$identifierKey` at an inline `identifier:`
+    // site is not matched and the hook is silently dropped, so the analyzer's
+    // unnecessary-brace lint is suppressed here rather than removing the braces.
+    return Semantics(
+      // ignore: unnecessary_brace_in_string_interps
+      identifier: 'device-row-${identifierKey}',
+      container: true,
+      child: Opacity(opacity: device.displayOpacity, child: tile),
+    );
   }
 
   String _buildSubtitle(BuildContext context) {
