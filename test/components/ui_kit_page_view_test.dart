@@ -122,6 +122,29 @@ void main() {
         handle.dispose();
       });
 
+      testWidgets('emits no Semantics node when the identifier is empty',
+          (tester) async {
+        // The withIdentifier fix (PrivacyGUI#1391): an empty string must behave
+        // exactly like null — no wrapper node — so `byIdentifier('')` can never
+        // match. A plain `!= null` check would fail this.
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(buildHost(
+          identifier: '',
+          withTopbar: path.withTopbar,
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.bySemanticsIdentifier(RegExp('.+')), findsNothing);
+        expect(
+          parentWidgetOf(tester, find.byType(AppPageView)),
+          isNot(isA<Semantics>()),
+          reason: 'an empty identifier must mean no wrapper element at all',
+        );
+
+        handle.dispose();
+      });
+
       testWidgets('wraps the page content in Semantics when given',
           (tester) async {
         final handle = tester.ensureSemantics();

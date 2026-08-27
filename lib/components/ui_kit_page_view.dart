@@ -500,9 +500,11 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     // Assembled ONCE here, before the two return paths below diverge, so the
     // with-topbar and without-topbar pages can never drift into hooking the page
     // differently (or one of them silently losing the hook).
-    final content = widget.identifier != null
-        ? Semantics(identifier: widget.identifier, child: appPageView)
-        : appPageView;
+    // `withIdentifier` (exported by ui_kit.dart) owns the null-OR-empty half of
+    // the §11.1 identifier contract: a plain `!= null` check would let an empty
+    // string through and emit a stray identified node. Using it here closes that
+    // hole while staying behaviour-identical for the null case.
+    final content = withIdentifier(widget.identifier, appPageView);
 
     // In non-sliver mode, render TopBar outside AppPageView to prevent layout issues
     if (topBarWidget != null && !widget.enableSliverAppBar) {
