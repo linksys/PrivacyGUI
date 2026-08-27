@@ -4376,7 +4376,8 @@ pilot in, across 10,062 cells, the file has never held an entry.
 is a `file:line` the collector reported — the same key `known_overflows.json` would have
 taken had any of these been allowlisted — and the line numbers below are therefore the
 **pre-fix** ones, as everywhere else in this document. Fixing those fourteen took **sixteen
-edits in 13 files** (+565/−222): two coordinates needed two edits each, because
+edits in 13 files** (+566/−222, `git show --numstat f5d35f00`): two coordinates needed two
+edits each, because
 `usp_timezone_card.dart:71` and `firmware_update_card.dart:77` each had a sibling in the
 same row that had to give up width before flex could do anything. Both counts are exact;
 they answer different questions, and neither is "how many pages" (eleven).
