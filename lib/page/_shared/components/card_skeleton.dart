@@ -10,25 +10,17 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// to real content when the domain data provider finishes loading.
 ///
 /// Variants:
-/// - [CardSkeleton.stats] — 4 stat tiles in a row (Stats Panel)
 /// - [CardSkeleton.info] — hero block + metric tiles + grid (Device Info, Network Status)
 /// - [CardSkeleton.list] — title + badge + N list item rows (Devices, DHCP, etc.)
 /// - [CardSkeleton.chart] — title + tab bar placeholder + chart area
 /// - [CardSkeleton.topology] — title + large visualization placeholder
 /// - [CardSkeleton.status] — single-row connection indicator
 
-enum _SkeletonVariant { stats, info, list, chart, topology, status }
+enum _SkeletonVariant { info, list, chart, topology, status }
 
 class CardSkeleton extends StatelessWidget {
   final _SkeletonVariant _variant;
   final int _rows;
-
-  const CardSkeleton._({required _SkeletonVariant variant, int rows = 3})
-      : _variant = variant,
-        _rows = rows;
-
-  /// 4 stat tiles in a row — matches [UspStatsPanel].
-  const factory CardSkeleton.stats() = _CardSkeletonStats;
 
   /// Hero block + metric tiles + grid — matches new info cards (Device Info, Network Status).
   const CardSkeleton.info({required int rows})
@@ -75,7 +67,6 @@ class CardSkeleton extends StatelessWidget {
     }
 
     return switch (_variant) {
-      _SkeletonVariant.stats => _buildStats(),
       _SkeletonVariant.info => _buildInfo(),
       _SkeletonVariant.list => _buildList(),
       _SkeletonVariant.chart => _buildChart(),
@@ -332,51 +323,6 @@ class CardSkeleton extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Stats — delegated to subclass for const
-  // ---------------------------------------------------------------------------
-
-  Widget _buildStats() {
-    // Should not be called — stats variant uses _CardSkeletonStats
-    return const SizedBox.shrink();
-  }
-}
-
-/// Stats panel skeleton — 4 stat tiles in a row.
-///
-/// Separate class because the stats panel has a unique multi-card layout
-/// that cannot be expressed as a single AppCard with parameterized rows.
-class _CardSkeletonStats extends CardSkeleton {
-  const _CardSkeletonStats() : super._(variant: _SkeletonVariant.stats);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(4, (i) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(left: i == 0 ? 0 : AppSpacing.sm),
-            child: AppCard(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppSkeleton(
-                      width: 24,
-                      height: 24,
-                      borderRadius: BorderRadius.circular(4)),
-                  AppGap.sm(),
-                  AppSkeleton.text(width: 40, height: 18),
-                  AppGap.xs(),
-                  AppSkeleton.text(width: 48),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

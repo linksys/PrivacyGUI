@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
+    show ruleIdentifierKey;
 
 /// Presentation Layer Model for a DHCP reservation.
 ///
@@ -37,6 +39,16 @@ class DhcpReservationUIModel extends Equatable with DiagnosticLoggable {
 
   @override
   String get diagnosticName => 'DhcpReservationUIModel';
+
+  /// Stable, kebab-case key for E2E `identifier` hooks
+  /// (e.g. `dhcp-reservation-edit-<key>`). Reuses the single repo-wide
+  /// derivation contract [ruleIdentifierKey]: the uppercase MAC is slugified
+  /// (`AA:BB:CC:DD:EE:FF` → `aa-bb-cc-dd-ee-ff`); an empty MAC falls back to the
+  /// saved instance number parsed from [instancePath], then a shared `'unnamed'`
+  /// sentinel — so the result is always non-empty and kebab-case. Distinct
+  /// across rows only when a discriminating tier (slug or instance number)
+  /// fires; empty-MAC rows with no parseable instance number share `'unnamed'`.
+  String get identifierKey => ruleIdentifierKey(mac, instancePath);
 
   @override
   Map<String, Object?> get namedProps => {

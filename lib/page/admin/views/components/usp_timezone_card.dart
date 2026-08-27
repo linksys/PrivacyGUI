@@ -101,6 +101,7 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                     AppIconButton(
                       icon: AppIcon.font(Icons.edit, size: 18),
                       semanticLabel: loc(context).editTimezoneSettings,
+                      identifier: 'admin-timezone-edit',
                       onTap: widget.onEdit,
                     ),
                   ],

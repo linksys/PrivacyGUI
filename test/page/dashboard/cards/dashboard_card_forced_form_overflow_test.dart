@@ -107,9 +107,15 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// | 3 | `_buildPopup` drops the `Flexible` around the value line | **survived** — equivalent today |
 ///
 /// Row 1 is the measurement behind the fix: 94.0px over on `connected_devices`,
-/// 6.0px on `wifi_performance`, and 4 of the 6 variants over on their own. Row 2 is
+/// 6.0px on `wifi_performance`, and 4 of the 5 variants over on their own. Row 2 is
 /// there because row 1 alone would also pass with the branch applied to a single
 /// variant — the popup form is card-independent, and so is its placeholder.
+///
+/// The kill counts are unchanged by #1367 deleting the `stats` variant, and the
+/// reason is worth recording: that variant was a subclass overriding `build`
+/// outright, so it never reached the popup branch these rows mutate and was killed
+/// by neither. The denominator above was 6 and is now 5; the numerator never
+/// included it.
 ///
 /// Row 3 survives because the popup skeleton's content is 48px inside an 86px box,
 /// so nothing is ever asked to shrink. The `Flexible` is kept anyway: it mirrors
@@ -126,7 +132,7 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// ## What this file is, since #1344
 ///
 /// Three [runOverflowSweep] declarations and the five hand-written tests that keep
-/// them honest. The 78 cells the three sweeps measure are enumerated by
+/// them honest. The 77 cells the three sweeps measure are enumerated by
 /// `test/layout_gate/families/forced_form_card_family.dart`; the tolerance filter,
 /// the fresh-subtree key, the surface reset and the failure prose are the shared
 /// runner's, which is what #1344 is for.
@@ -147,7 +153,12 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 /// `dhcp_reservations` became pickable-compact, so the compact sweep's coordinates go
 /// 6 → 7 and its cells 18 → 21. 5 + 17 + 6 + 7 + 3 = 38.
 ///
-/// One cell **id** changes with the port — the six skeleton cells gain
+/// **37 since #1367**, and this one *is* a decision: the `stats` skeleton variant is
+/// deleted, so the skeleton sweep's coordinates go 6 → 5 and its cells with them.
+/// 5 + 17 + 5 + 7 + 3 = 37. It is the same count #1344 landed at by coincidence, and
+/// the three cell-count pins are what tell the two apart.
+///
+/// One cell **id** changes with the port — the skeleton cells gain
 /// `|locale=en`, which they were always measured in — and `forced_form.tsv` is
 /// re-captured for it. The family header has the before/after and the argument;
 /// the other 69 rows are byte-identical.
@@ -322,14 +333,20 @@ void main() {
   // only renders its skeleton in the frames before its data arrives, and the
   // shared fixture resolves most cards' data immediately, so 13 of the 15 cards
   // that return a skeleton were covered by fixture timing rather than by a test.
-  // The six variants are therefore pumped directly, in `en` alone — the input is a
+  // The variants are therefore pumped directly, in `en` alone — the input is a
   // widget under a popup scope, which has nothing to do with locale or card data.
   //
-  // These six cells are the ones whose ids change at #1344, gaining the `|locale=en`
+  // These cells are the ones whose ids change at #1344, gaining the `|locale=en`
   // the runner appends to every cell by construction. See the family header.
+  //
+  // 6 until #1367 deleted the `stats` variant. It was the one cell here measuring a
+  // box production never produced — `stats_panel` is the single card with no popup
+  // path at all, which is why the inventory test above excludes it — and #1367 left
+  // `CardSkeleton.stats()` with no production caller. The family header has the
+  // argument; this pin is what makes the removal a number rather than prose.
   runOverflowSweep(
     family: const ForcedFormSkeletonFamily(),
-    expectedCellCount: 6,
+    expectedCellCount: 5,
   );
 
   // ─── A forced compact card at its floor ───────────────────────────────────

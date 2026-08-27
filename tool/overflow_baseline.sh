@@ -17,17 +17,28 @@
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
 #   All five sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 8,764 coordinates that are measured and clean — card 1,943,
-#   popup 347, forced_form 78, chrome 1,248, re-checked at the `dev-2.7.0` merge on
+#   freeze is coverage: 13,677 coordinates that are measured and clean — card 1,943,
+#   popup 347, forced_form 77, chrome 1,248, re-checked at the `dev-2.7.0` merge on
 #   2026-08-24, where +29 cells arrived from a production spec change (#1325's
-#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 5,148 —
-#   twenty-two whole pages at 9 widths x 26 locales. That last figure has moved five
-#   times and only `page` ever moves: 416 at #1349's pilot (the fifth sweep, and the
+#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 10,062 —
+#   forty-three whole pages at 9 widths x 26 locales. That last figure has moved six
+#   times: 416 at #1349's pilot (the fifth sweep, and the
 #   first one registered here after the framework existed: two lines, see
 #   `suite_for`), 1,456 at #1377's wave 1, 3,120 at #1378's wave 2, 3,510 when #1372
 #   added the 1080 width to all fifteen groups then swept, 3,744 when wave 2's ninth
-#   page landed a day late, and 5,148 at #1379's wave 3 — every one of those a purely
-#   additive diff with no row removed and none changed. The test run
+#   page landed a day late, 5,148 at #1379's wave 3 and 10,062 at #1380's wave 4 —
+#   every one of those a purely
+#   additive diff with no row removed and none changed.
+#
+#   "and only `page` ever moves" stood here until the 2026-08-27 `dev-2.7.0` merge,
+#   and #1367 falsified it: a per-card resolution for the KPI stats panel removed the
+#   `skeleton|variant=stats` coordinate, so `forced_form` went 78 to 77 and is the
+#   first non-`page` figure to move — **downward**, and the first row this directory
+#   has ever lost. A production change can retire a coordinate as easily as it can
+#   add one (#1325 added 29 the same way), so read a shrinking baseline as a diff to
+#   be *read*, exactly like a growing one, and never as a sweep that stopped
+#   measuring: `page.tsv`'s `no longer measured` verdict is what tells those two
+#   apart. The test run
 #   is nonetheless allowed to exit non-zero — a sweep can go red at any time, and
 #   its records are still the right input for a diff. What must never be tolerated
 #   is a *truncated* run, which the extractor rejects on its own.

@@ -3,7 +3,7 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 48 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 49 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
   # page-family oracle, page-roster oracle, page-sweep register, render-parity
@@ -25,7 +25,17 @@ tags:
   # decision at 43 pages and it reversed: the page file is 558s against a 145.2s
   # floor, so the sweep will be split into four (section 11.12). Every page still
   # stays in this gate — a split moves cells between carriers, not out of the
-  # tag — and the carrier count above moves to 51 on the day it lands.
+  # tag — and the carrier count above moves to 52 on the day it lands.
+  #
+  # 48 until the `dev-2.7.0` merge on 2026-08-27 brought #1367's
+  # `usp_stats_panel_test.dart`, whose branch predates #1336 and which therefore
+  # arrived carrying `dashboard-card` for the **fourth** time — this note working
+  # as intended: renaming its tag is what enrolled it, making it **49**. It pumps
+  # `probeCardOverflow` directly rather than through `runOverflowSweep`, so it owns
+  # no baseline and deliberately does not carry `overflow` — the same choice, for
+  # the same reason, as the two detail-view files from #1302. Five of the 49 carry
+  # `overflow`, and that is still the whole pre-commit selector.
+
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
@@ -43,8 +53,8 @@ tags:
   # gate redder).
   #
   # Complete, not quick — and since #1380 that means ten minutes, not three:
-  # `@Tags` is read by loading a suite, so the tag compiles all 328 test files to
-  # skip 323 of them. Re-measured 2026-08-27 for #1380's wave 4, the same 725
+  # `@Tags` is read by loading a suite, so the tag compiles all 330 test files to
+  # skip 325 of them. Re-measured 2026-08-27 for #1380's wave 4, the same 724
   # tests take 9m23s under the tag and 8m17s when the five
   # files are named (`flutter test`'s own clock both times; the shell adds package
   # resolution and build on top of each — 9m40s and 8m22s). Name the file for a
@@ -54,12 +64,12 @@ tags:
   # name one page: the page sweep alone is 9m13s of the 9m23s above, so it is the
   # whole inner loop and the other four sweeps overlap inside it.
   #
-  # 725, not the 499 before #1380, the 439 before #1379, the 429 before
+  # 724, not the 499 before #1380, the 439 before #1379, the 429 before
   # `pnp_setup`, the 414 before
   # #1372, the 342 after #1377, the 296 before it, the 590 after #1343 nor the
   # 2,412 before that: every sweep loops its locales inside one test per
-  # coordinate, so 13,678 cells are declared by 725 tests (card 102, popup 80,
-  # chrome 57, forced-form 38, page 448 — 430 of them cells, the other 18
+  # coordinate, so 13,677 cells are declared by 724 tests (card 102, popup 80,
+  # chrome 57, forced-form 37, page 448 — 430 of them cells, the other 18
   # readability guards in 13 groups, pumping 845 trees between them and naming
   # none). Cells are what the
   # gate measures; the test count is how they are named. Waves 1 and 2 of #1369
@@ -71,6 +81,12 @@ tags:
   # that had held it out (#70). #1379's wave 3 added six entry surfaces at that
   # same rate: +1,404 cells, +60 tests. #1380's wave 4 closed the axis with the
   # remaining twenty-one: +4,914 cells, +210 cell tests and +16 readability tests.
+  # Then the 2026-08-27 `dev-2.7.0` merge took **one** back: #1367 gave the KPI
+  # stats panel a per-card resolution, which removed the `skeleton|variant=stats`
+  # forced-form coordinate — 78 cells to 77, 38 tests to 37, and it is the only
+  # entry in this ladder that ever subtracted. The 9m23s and 8m17s clocks above
+  # were measured at 725 and are kept: one cell of 13,677 is three orders of
+  # magnitude below the run-to-run noise.
   #
   # +4 tests and +29 cells at the merge, and no sweep was edited for either:
   # #1325 gave `dhcp_reservations` a `normalAbove`, which put it in the normal
@@ -94,6 +110,14 @@ tags:
   # (6,034). One file is now 95% of the whole PR gate's wall clock, on 1.07 of ten
   # cores — which is why the split is decided (section 11.12) even though the cells
   # stay where they are until its ticket lands.
+  # Those four figures are one experiment and are kept as measured; the same day's
+  # `dev-2.7.0` merge then moved both "with" counts to **2,061** and **6,063** (the
+  # forced-form cell #1367 retired, less; #1367's stats-panel suite and #1376's two
+  # identifier changes, more), both confirmed green on the merged tree. The clocks
+  # from that confirmation run are not comparable to the pair above and are not
+  # substituted for it: 1081s and 962s wall on 672s and 702s user CPU, with ~520s of
+  # *system* time each — a box under memory pressure, not a slower gate. When these
+  # numbers disagree, the user-CPU figure is the one about the gate.
   # Pages are in the gate by decision and one wave at a time, not as a class, and
   # they are all in one file for a measured reason: see
   # overflow_gate_architecture.md sections 11, 11.10 and 11.12.

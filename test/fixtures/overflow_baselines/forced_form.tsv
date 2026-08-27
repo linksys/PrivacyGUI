@@ -2,8 +2,8 @@
 # sweep forced_form
 # groups forced_form.compact_floor forced_form.popup_tile forced_form.skeleton
 # suite test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart
-# commit 08b15539-dirty
-# cells 78
+# commit 2ddacb86-dirty
+# cells 77
 # incidents 0
 # overflows 0
 # unmeasured 0
@@ -83,6 +83,5 @@ forced_form.popup_tile|card=wifi_status|px=122|rows=1|locale=zh_TW	clean	-	-	-	-
 forced_form.skeleton|variant=chart|px=122|rows=1|locale=en	clean	-	-	-	-
 forced_form.skeleton|variant=info|px=122|rows=1|locale=en	clean	-	-	-	-
 forced_form.skeleton|variant=list|px=122|rows=1|locale=en	clean	-	-	-	-
-forced_form.skeleton|variant=stats|px=122|rows=1|locale=en	clean	-	-	-	-
 forced_form.skeleton|variant=status|px=122|rows=1|locale=en	clean	-	-	-	-
 forced_form.skeleton|variant=topology|px=122|rows=1|locale=en	clean	-	-	-	-

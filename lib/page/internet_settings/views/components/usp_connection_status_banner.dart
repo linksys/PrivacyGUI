@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
@@ -55,6 +56,8 @@ class UspConnectionStatusBanner extends StatelessWidget {
             // Edit / Close toggle
             AppIconButton(
               icon: Icon(isEditing ? AppFontIcons.close : AppFontIcons.edit),
+              semanticLabel: isEditing ? loc(context).close : loc(context).edit,
+              identifier: 'internet-settings-edit-toggle',
               onTap: onEditToggle,
             ),
           ],

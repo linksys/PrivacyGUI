@@ -1,6 +1,6 @@
 ---
 name: layout-gate
-description: Operate and maintain the `layout-gate`-tagged PR gate — 48 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 13,678 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
+description: Operate and maintain the `layout-gate`-tagged PR gate — 49 suites, five of which are overflow sweeps (dashboard cards, popup form, forced form, page chrome, whole pages) declaring 13,677 cells. Run a sweep, read its failure, photograph the broken cell with `shoot`, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new probe for a surface no suite renders yet. Use when a layout-gate test fails, when adding/removing a card, a page or a locale, when reading/generating an overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, page surface overflow, known_overflows, allowlist, whitelist, overflow report, overflow baseline, shoot, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 頁面溢出, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 看圖, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
 # Layout Gate — Operate & Maintain
@@ -37,7 +37,7 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **48 suites carry `layout-gate` today** (counted 2026-08-27 — #1380 added twenty-one pages and no suite, because a page is a data entry), and most
+a re-export of it since #1340. **49 suites carry `layout-gate` today** (counted 2026-08-27 — #1380 added twenty-one pages and no suite, because a page is a data entry; the forty-ninth arrived the same day with the `dev-2.7.0` merge, #1367's `usp_stats_panel_test.dart`, written against the retired `dashboard-card` tag and enrolled by renaming it — the fourth file to arrive that way), and most
 of them are not overflow sweeps at all — they are density, readability, form and
 gesture, layout-block, probe self-test, ratchet-oracle, render-parity, and the two
 registers that measure no cell at all (the #1382 page roster and the #1371
@@ -45,7 +45,7 @@ page-sweep register). `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Five of the 48 additionally carry `overflow`**, the pre-commit selector.
+**Five of the 49 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else — five files, five
 sweeps, because **#1371 kept every page cell in one file** (architecture doc
 §11.10; the four-shard arm was built, measured and rolled back). **At 43 pages
@@ -64,26 +64,38 @@ move is a successor ticket, so it is still five files today and
 
 It is complete, not quick — and since #1380 "not quick" means **ten minutes, not three**.
 `@Tags` is read by loading a suite, so the tag compiles every test file in the repo
-(328 at #1371) to skip all but five: measured 2026-08-27,
-those same **725** tests take **9m23s under the tag and 8m17s when the five files are
+(330 today; 328 at #1371) to skip all but five: measured 2026-08-27,
+those same **724** tests take **9m23s under the tag and 8m17s when the five files are
 named** (`flutter test`'s own clock; the shell sees 9m40s and 8m22s, the difference
 being package resolution and build). Identical selection either way, so name the files for a tight inner loop
 and use the tag when a sixth sweep must not be silently missed — the fifth arrived on
-the day this line last said "fifth". **725 — 499 before #1380, 439 before #1379, 429 before `pnp_setup`, 414 before #1372, 342 after #1377, 296 before it, 277 before
+the day this line last said "fifth". **724 — 725 before the same day's `dev-2.7.0` merge, 499 before #1380, 439 before #1379, 429 before `pnp_setup`, 414 before #1372, 342 after #1377, 296 before it, 277 before
 #1349, 590 after #1343, 2,412 before that**: all five sweeps aggregate their locales inside one
-test per coordinate, so 707 of those tests declare 13,678 cells (card 102, popup 80,
-chrome 57, forced-form 38, page 430) and the other **18** are readability guards — #1349's
+test per coordinate, so 706 of those tests declare 13,677 cells (card 102, popup 80,
+chrome 57, forced-form 37, page 430) and the other **18** are readability guards — #1349's
 one group, #1377's one, and wave 4's eleven — which pump **845** trees between them and
 name no cell. The cells are what the gate
-measures; the test count is only how they are named.
+measures; the test count is only how they are named. That merge is the only step in the
+ladder above that **subtracted**: #1367 gave the KPI stats panel a per-card resolution and
+the `skeleton|variant=stats` forced-form coordinate stopped existing, so 78 cells became 77
+and 38 tests became 37. The clocks are the pre-merge ones and are kept — one cell of 13,677
+is three orders of magnitude below the ±7% these runs drift by.
 
 **Where the ten minutes goes, because it changes what you should run.** The page sweep
 alone is **9m13s / 9m18s** of it; hold that one file aside and `--tags layout-gate` drops
 to **2m17s** and `./run_tests.sh` to **3m09s**. So the four card/chrome sweeps and the
-other 5,586 tests in the PR gate are effectively free — they finish while the page file is
+other 5,615 tests in the PR gate are effectively free — they finish while the page file is
 still running. Never run any of these four arms to check one page: run the one file, or
 one page inside it with `--plain-name` (§3 of the usage doc). A page is ~1/43rd of that
 9m13s, and the file's own three consecutive readings were 8m54s / 9m18s / 10m15s, ±7%.
+
+**±7% is the drift on one box in one state, and the merge-day run is the counter-example.**
+Confirming the post-merge counts (`--tags layout-gate` **2,061** green, `./run_tests.sh`
+**6,063** green) took 18m01s and 16m02s — about double every figure in this section, on
+672s and 702s of user CPU against 553s and 580s, with ~520s of *system* time in each. Half a
+run inside the kernel is a box under memory and IO pressure, not a slower gate, and it flips
+the wall-clock ordering so the gate reads longer than the suite containing it. If a reading
+here disagrees with yours by 2×, check user CPU before you look for a regression.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
 verdict depends on", which would slide the tag back over the whole family. So
@@ -99,7 +111,7 @@ and the six framework oracles
 [page_sweep_suites_test.dart](../../../test/layout_gate/page_sweep_suites_test.dart), #1371)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
-what naming the five sweep files measures (**725** both ways, confirmed
+what naming the five sweep files measures (**724** both ways, confirmed
 2026-08-27), so nothing has quietly joined the pre-commit selector.
 
 **What that costs, said once:** the two registers are the guards against a page
@@ -314,7 +326,7 @@ Raw `flutter test` knobs (the script wraps these as `--dart-define`):
 ### Before and after a refactor — `tool/overflow_baseline.sh`
 
 `run_overflow_test.sh` answers "is the gate green". It cannot answer "does the
-gate still measure the same 13,678 coordinates", and a refactor that stops
+gate still measure the same 13,677 coordinates", and a refactor that stops
 enumerating a coordinate is green for exactly that reason. So when you are about
 to restructure a sweep rather than fix a card:
 

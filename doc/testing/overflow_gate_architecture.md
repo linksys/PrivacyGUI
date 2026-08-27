@@ -73,7 +73,7 @@ indistinguishable from the silent narrowing #1364/#1366 found three times.
 
 **#1380 then ran the fourth wave and closed the axis** (2026-08-27, §11.12): the
 remaining **twenty-one** pages, so the gate holds **43** pages and **10,062** page cells,
-the committed dataset is **13,678** rows, and with the two unreachable exclusions that is
+the committed dataset is **13,677** rows, and with the two unreachable exclusions that is
 **45 of 45 page views under `lib/page/` accounted for**. This wave is where the epic's
 ordering shows up in its numbers. Waves 1–3 were *chosen* — the fixture already existed,
 or a flow, or the entry surfaces — and needed **one** widget fix between the twenty pages
@@ -103,6 +103,32 @@ per-page figures is a **floor** — 336.1s modelled against 558s measured — be
 in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
 #1380 measured and did not explain. `known_overflows.json` is **still** empty — four waves
 and a pilot in, across 10,062 cells, it has never held an entry.
+
+**The first cell this gate has ever lost, and it is a correction** (#1367, 2026-08-25).
+`forced_form.skeleton|variant=stats` measured a box production never produced:
+`stats_panel` is the one card with no popup path at all (its `minColumns: 6` floors it at
+288px, above `kPopupBelow`), so no width the grid chose put that skeleton under a popup
+scope. #1367 then replaced the panel's row-wide skeleton with a per-tile one and left
+`CardSkeleton.stats()` with no production caller, so the variant and its cell are gone:
+**forced_form 78 → 77**, the dataset **4,032 → 4,031**, and the sweep's
+`expectedCellCount` pin is what required this paragraph rather than allowing the row to
+vanish. The panel's own loading and error branches are swept at the 288px box the grid
+really gives it, in `usp_stats_panel_test.dart` — which is a `layout-gate` carrier (**46 →
+47**) and deliberately not an `overflow` one, per §5's rule that the tag means a
+registered sweep with a frozen baseline.
+
+The three figures in that paragraph are `dev-2.7.0`'s own, and they are kept as #1367 wrote
+them because that is the branch the change belongs to. On **this** branch, where #1380 had
+already landed when the merge arrived on 2026-08-27, the same edit reads **forced_form 78 →
+77**, the dataset **13,678 → 13,677** and the carrier count **48 → 49** — the arithmetic is
+identical, the bases are not. Two things are worth taking from the pair. First, the cell
+loss is the *smaller* consequence: 78 → 77 is a coordinate retired, but 48 → 49 is a new
+carrier that arrived tagged `dashboard-card`, a name retired at #1336, and was enrolled only
+because someone renamed it by hand — the fourth file to arrive that way, and the reason
+`dart_test.yaml` keeps a carrier count at all. Second, this is the first time the committed
+dataset has gone **down**, so §5's rule needs saying explicitly: a shrinking baseline is a
+diff to be read exactly like a growing one, and `page.tsv`'s `no longer measured` verdict is
+what distinguishes it from a sweep that stopped measuring.
 
 **Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form) ✅, #1345 (popup) ✅ · **R4 → gone; it left this epic on 2026-08-22 (§9.4)** — #1346 is a standalone golden-facing ticket, and #1339 (retire the golden framework's own parser) stays as a gate-side finishing ticket whose verification is offline rather than CI-bound (§3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349** · plus **#1361**, the fixture-decoupling ticket §9.4 opened. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
@@ -329,17 +355,40 @@ rather than out of §11.12:
 | Card sweep (one file) | **102** (99 pre-merge, 1,921 pre-#1343) | 1,924 | 17s (**21s** wall) | **8.8ms** |
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
-| Forced-form sweep (one file) | **38** (37 pre-merge, 80 pre-#1344) | 78 | 1s (**6s** wall) | — |
+| Forced-form sweep (one file) | **37** (38 pre-#1367, 37 pre-merge, 80 pre-#1344) | 77 | 1s (**6s** wall) | — |
 | **Page sweep (one file, new at #1349)** | **448** (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 10,062 + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **725** (499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 13,678 rows † | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
-| The same five via `--tags overflow` | **725** | 13,678 rows † | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
-| Whole `layout-gate` family (48 files) | **2,041** (1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,848 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
-| Whole PR gate (`./run_tests.sh`) | **6,034** (5,757 pre-#1380; 5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | **9m40s / 9m46s** wall (3m27s / 3m32s pre-#1380, 3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
+| The five overflow sweeps (5 files, named) | **724** (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 13,677 rows † | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
+| The same five via `--tags overflow` | **724** | 13,677 rows † | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
+| Whole `layout-gate` family (49 files) | **2,061** (2,041 pre-#1367; 1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,847 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| Whole PR gate (`./run_tests.sh`) | **6,063** (6,034 pre-#1367; 5,757 pre-#1380; 5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | **9m40s / 9m46s** wall (3m27s / 3m32s pre-#1380, 3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
+The last two rows moved at the 2026-08-27 `dev-2.7.0` merge without a sweep being
+touched, and the arithmetic is worth keeping because it is the first time this table
+subtracted: #1367 removed one forced-form coordinate (−1) and brought
+`usp_stats_panel_test.dart` (+21, a new `layout-gate` carrier), and #1376 brought
+`dhcp_reservation_identifier_test.dart` (+8, not tagged) **and one more test inside
+`port_forwarding_rule_identifier_test.dart`** (10 → 11, also untagged). So
+2,041 − 1 + 21 = **2,061** and 6,034 − 1 + 21 + 8 + 1 = **6,063** — and the reason both were
+measured rather than left as the arithmetic is that the first draft of this paragraph stopped
+at the two *new* files and predicted 6,062. A merge edits test files as well as adding them,
+and `git status`'s `A` lines are the only ones easy to count.
+
+**Both clocks in those two rows are pre-merge and are kept, and the run that confirmed the
+counts is why.** Measured back to back on the merged tree: the gate 2,061 green in **1081s**
+wall / 672s user / **552s sys**, the suite 6,063 green in **962s** wall / 702s user / 506s
+sys. The counts are exact; the clocks are nearly double the 9m34s / 9m40s above at
+comparable user CPU, which is a box under memory and IO pressure rather than a gate that got
+slower — half a run's wall clock spent in the kernel says so. It also **inverts the
+containment** §1.2 and the usage guide both read as reassuring: the gate measured *longer*
+than the suite that contains it, on 30s less user CPU. So the rule the usage guide already
+states is the one that survives contact — compare user CPU, not wall clock — and a wall
+clock in this table is only comparable to another taken on the same box in the same state.
+
 † **Dataset rows, not sweep cells**, and the two differ by design. The five committed
-baselines hold 1,943 + 347 + 78 + 1,248 + 10,062 = **13,678** rows (8,764 pre-#1380), of
-which the *sweeps* pump 13,658 and **20 are hand-written guards that pump a real card and
+baselines hold 1,943 + 347 + 77 + 1,248 + 10,062 = **13,677** rows (13,678 pre-#1367,
+8,764 pre-#1380), of
+which the *sweeps* pump 13,657 and **20 are hand-written guards that pump a real card and
 record their coordinate
 anyway** — `card.tab_registry` (6), `card.single_view` (12), `card.profile_data` (1) and
 `popup.exempt` (1). Each is in the dataset for the same stated reason, and it is the
@@ -1460,7 +1509,7 @@ name as well as the comment:
 
 ```yaml
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 48 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 49 carriers
   # are one — density, readability, form and gesture, layout-block, probe
   # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
   # page-family oracle, page-roster oracle, page-sweep register, render-parity
@@ -1480,7 +1529,7 @@ Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 48 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5; 47 until #1371's `page_sweep_suites_test.dart`, the second such carrier) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `layout-gate` | all 49 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5; 47 until #1371's `page_sweep_suites_test.dart`, the second such carrier; 48 until the *second* `dev-2.7.0` merge, on 2026-08-27, brought #1367's `usp_stats_panel_test.dart` — the **fourth** file to arrive under the retired name and the fourth to be enrolled by a hand rename, which is the carrier count doing the only job it has) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
 | `overflow` | the five sweep files only, as `@Tags(['layout-gate', 'overflow'])`. Not `page_sweep_suites_test.dart`, which pumps no cell and therefore stays out of the pre-commit selector — which is why a deleted `runOverflowSweep` call is caught by `./run_tests.sh` and the PR gate and *not* by `--tags overflow` (§11.10) | the fast pre-commit selector |
 
 **The split is checked by arithmetic, not by inspection** (#1342): `--tags overflow`
@@ -4124,7 +4173,7 @@ The pages a user meets **before there is a session** — the landing page, the t
 local-login pages, the menu the dashboard hands off to, and the first-login firmware
 screen. On the day it landed the gate swept **twenty-two** pages, `page` held **5,148**
 cells and the committed dataset was **8,764** rows. (#1380 closed the axis a day later:
-43, 10,062 and 13,678 — §11.12.)
+43, 10,062 and 13,677 — §11.12.)
 
 **The wave's main finding is that the prediction it was filed on was wrong.** #1379's own
 body said to expect overflow finds here, on the reasonable grounds that login pages are
@@ -4283,8 +4332,12 @@ a clock instead of in a print.
 ### 11.12 Wave 4: the last twenty-one pages, and the epic's final distribution (#1380, landed 2026-08-27)
 
 Everything left. The gate sweeps **43** pages, `page` holds **10,062** cells and the
-committed dataset is **13,678** rows. With the two exclusions that is **45 of 45 page
+committed dataset is **13,677** rows. With the two exclusions that is **45 of 45 page
 views under `lib/page/` accounted for**, which is what #1369 was opened to reach.
+(13,677 and not 13,678 because the `dev-2.7.0` merge landed on this branch the same day
+and #1367 retired one forced-form coordinate on the way in — §1.1's note on the first cell
+this gate ever lost. Nothing in this section's page arithmetic moves: the subtraction is
+entirely on the `forced_form` side.)
 
 **This wave has a different shape from the three before it, and the difference is the
 finding.** Waves 1–3 were *chosen*: the pilot took a cost bracket, wave 1 took the pages

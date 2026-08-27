@@ -1,22 +1,31 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
-/// Builds a stable, kebab-case key for E2E `identifier` hooks on port-forwarding
-/// / port-triggering rule rows. Prefers the (localizable-free) [description]
-/// slug — "Web Server" → "web-server" — so tests can target a specific rule by
-/// name instead of by row index. Falls back to the saved instance number parsed
-/// from [instancePath] (e.g. `Device.NAT.PortMapping.2` → "2"), then "unnamed",
-/// guaranteeing the result is always non-empty.
-String ruleIdentifierKey(String description, String? instancePath) {
-  final slug = description
+/// Builds a stable, kebab-case key for E2E `identifier` hooks on rule rows
+/// across features — port-forwarding, port-triggering, static-routing, and DHCP
+/// reservations all derive their row key here. Prefers the [nameField] slug
+/// (a localizable-free discriminator: a description, a route name, or a MAC —
+/// "Web Server" → "web-server", "AA:BB:CC:DD:EE:FF" → "aa-bb-cc-dd-ee-ff"), so
+/// tests can target a specific row by name instead of by index. When that slug
+/// is empty it falls back to the saved instance number parsed from
+/// [instancePath] — tolerating the trailing `.` every generated layer emits
+/// (e.g. `Device.NAT.PortMapping.2.` → "2") — then to a shared `'unnamed'`
+/// sentinel. The tier order is slug → instance number → `'unnamed'`; the result
+/// is always non-empty, but two rows only get distinct keys when a
+/// discriminating tier (slug or instance number) fires — a run of empty-name
+/// rows with no parseable instance number all share the `'unnamed'` sentinel.
+String ruleIdentifierKey(String nameField, String? instancePath) {
+  final slug = nameField
       .trim()
       .toLowerCase()
       .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
       .replaceAll(RegExp(r'^-+|-+$'), '');
   if (slug.isNotEmpty) return slug;
+  // Instance paths are dot-terminated in every generated layer
+  // (`final p = '$basePath$id.'`), so tolerate an optional trailing `.`.
   final instance = instancePath == null
       ? null
-      : RegExp(r'(\d+)$').firstMatch(instancePath)?.group(1);
+      : RegExp(r'(\d+)\.?$').firstMatch(instancePath)?.group(1);
   return instance ?? 'unnamed';
 }
 
@@ -85,8 +94,9 @@ class PortForwardingRuleUIModel extends Equatable with DiagnosticLoggable {
 
   /// Stable, kebab-case key for E2E `identifier` hooks (e.g. `pf-edit-<key>`).
   /// Derived from the description ("Web Server" → "web-server"); falls back to
-  /// the saved instance number, then "unnamed", so it is always non-empty and
-  /// never collides across rows.
+  /// the saved instance number, then a shared "unnamed" sentinel, so it is
+  /// always non-empty. Distinct across rows only when a discriminating tier
+  /// (description slug or instance number) fires.
   String get identifierKey => ruleIdentifierKey(description, instancePath);
 
   /// External port display: "8080" or "3074-3080".

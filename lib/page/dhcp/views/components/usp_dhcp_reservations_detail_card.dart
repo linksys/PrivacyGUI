@@ -49,6 +49,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
+                    semanticLabel: loc(context).addDhcpReservation,
+                    identifier: 'dhcp-reservation-add',
                     onTap: isSaving ? null : () => _showAddDialog(context, ref),
                   ),
                 ],
@@ -83,6 +85,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppSwitch(
               value: reservation.enable,
               scale: 0.8,
+              identifier:
+                  'dhcp-reservation-enable-${reservation.identifierKey}',
               onChanged: isSaving
                   ? null
                   : (value) => ref
@@ -118,6 +122,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit_outlined, size: 18),
+              semanticLabel: loc(context).editDhcpReservation,
+              identifier: 'dhcp-reservation-edit-${reservation.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, reservation),
@@ -125,6 +131,9 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              semanticLabel: loc(context).delete,
+              identifier:
+                  'dhcp-reservation-delete-${reservation.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => _confirmDelete(context, ref, reservation),
@@ -221,10 +230,12 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       actions: [
         AppButton.text(
           label: loc(context).cancel,
+          identifier: 'dhcp-reservation-delete-cancel',
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
           label: loc(context).delete,
+          identifier: 'dhcp-reservation-delete-confirm',
           onTap: () => context.pop(true),
         ),
       ],
