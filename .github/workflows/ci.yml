@@ -36,6 +36,17 @@ on:
   pull_request:
     branches: [ "main", "usp", "dev-*" ]
 
+# All four jobs read: checkout, pub get, test, build. None writes a comment, a
+# label, a check or a commit, so none needs a token that can. This matches
+# usp-boundary.yml, which has had the same block since it was written; ci.yml was
+# the odd one out and inherited whatever the repository default happens to be —
+# "read and write" in most organisations. Add the narrowest scope a new job needs
+# TO THAT JOB rather than widening this: a `permissions:` at job level overrides
+# this one, so a future job that must post a comment does not hand write access to
+# the other three.
+permissions:
+  contents: read
+
 # Cancel previous runs if a new commit is pushed to the same branch. The group is
 # workflow-level, so this cancels all four jobs below together.
 concurrency:
@@ -140,13 +151,30 @@ jobs:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
       # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
-      # `golden||loc||ui` selection in one variable so these two jobs cannot
-      # drift apart. It exists so the local `./run_tests.sh` can stay complete:
-      # a developer's pre-push command must still run the gate.
+      # `golden||loc||ui` selection in one variable. It exists so the local
+      # `./run_tests.sh` can stay complete: a developer's pre-push command must
+      # still run the gate.
+      #
+      # That variable is one place for THIS job only — job 3 repeats the literal,
+      # because it does not go through this script. So the partition is held by the
+      # measured count in the comment above and not by a shared constant: edit
+      # BASE_EXCLUDE_TAGS in run_tests.sh and job 3 keeps the old exclusion, which
+      # is two green jobs with a tag running in neither. Change both, or neither.
+      #
+      # Whether the variable was actually read is visible, not assumed: the script
+      # prints `Narrowed run: excluding golden||loc||ui||layout-gate
+      # (EXTRA_EXCLUDE_TAGS=layout-gate)` as the job's first line. If that line says
+      # only `golden||loc||ui`, this env: block stopped connecting and the gate is
+      # running twice.
+      #
+      # `bash`, not `sh`. This was `sh run_tests.sh` until 2026-08-27, and Ubuntu's
+      # `sh` is dash: the script's `#!/bin/bash` was ignored and its `[ "$x" ==` at
+      # line 154 printed `[: unexpected operator` into every run of this job (see
+      # run 33034114305). Harmless here only because this job passes no argument.
       - name: 🧪 Unit Tests (gate excluded)
         env:
           EXTRA_EXCLUDE_TAGS: layout-gate
-        run: sh run_tests.sh
+        run: bash run_tests.sh
 
   # ------------------------------------------------------------------------
   # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall

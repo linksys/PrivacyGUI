@@ -52,8 +52,11 @@ sweeps, because **#1371 kept every page cell in one file** (architecture doc
 measurement reversed on the laptop and #1380 briefly decided four — then measured the
 gate on the 4-vCPU PR runner, where it reverses back** (§11.12): two test lanes there
 instead of five, both ~90% busy, so a split buys ~50s and costs ~87s. The page file is
-95% of the gate's wall clock on ten cores and 10% of its idle time on the runner, and
-the runner is the machine that pays. So it is five files, and `kPageSweepSuiteCount`
+95% of the gate's wall clock on ten cores; on the runner it spans 411s of a 508s step
+and is the *only* suite still running for just the last 53s, which is the whole of the
+idleness a split could reclaim — and the runner is the machine that pays. (455s and
+53s are read off a step where both lanes were busy, so the 53s is a ceiling on the
+gain, not a prediction.) So it is five files, and `kPageSweepSuiteCount`
 reads 1 because 1 is the answer:
 
 | Sweep | What it pumps |

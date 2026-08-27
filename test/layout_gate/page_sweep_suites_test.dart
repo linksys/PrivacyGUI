@@ -26,9 +26,12 @@ import 'page_sweep_suites.dart';
 /// assuming it: the page sweep **stayed one file**, because four cost-balanced shards
 /// cost +14.7s on `--tags layout-gate` and +61s on `./run_tests.sh` at the fifteen
 /// pages of the day it was measured (§11.10). At the 43 of #1380 the same measurement
-/// reverses — one file is 558s against a 145.2s floor, ×4.01 on the gate — so the
-/// split is **decided, and its ticket is the successor that moves the calls**
-/// (§11.12). Either way this oracle is not the bookkeeping a split needed — it
+/// reverses on the laptop — one file is 558s against a 145.2s floor, ×4.01 on the
+/// gate — and then **reverses back on the runner that blocks the PR**, which has two
+/// test lanes to the laptop's five: 508s total, the page sweep alone for only its
+/// last 53s, so a split buys ~50s and costs ~87s. **One file stays** (§11.12), and
+/// `kPageSweepSuiteCount` reads 1 for the second time. Either way this oracle is not
+/// the bookkeeping a split needed — it
 /// is the hole that was already open with one file, and would have stayed open if
 /// the split had shipped:
 ///

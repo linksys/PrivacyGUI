@@ -4635,7 +4635,7 @@ it does is name it, measure it, and stop treating the sum as a prediction.
    the successor ticket owes an in-situ re-measurement before it chooses which page goes
    where.
 
-#### The split decision #1371 deferred: **four suites**
+#### The split decision #1371 deferred: **four suites on the laptop — reversed to one, read the note**
 
 > **AMENDED the same day, and the decision is reversed: one suite stays.** Every arm
 > below was run on the 10-core laptop, where `flutter test` gets five test lanes. The

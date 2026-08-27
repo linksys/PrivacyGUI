@@ -151,7 +151,14 @@ generate_report() {
 
 reportPath=$1
 
-if [ "$reportPath" == "--report" ]; then
+# `=` and not `==`: this script declares `#!/bin/bash`, but it was invoked as
+# `sh run_tests.sh` from CI until 2026-08-27, and Ubuntu's `sh` is dash, whose `[`
+# has no `==`. That printed `[: unexpected operator` into every unit-test job log,
+# and — worse — sent `--report` down the *else* branch, because a failed `[` is just
+# a false `if`. The caller was fixed to `bash run_tests.sh`; this is belt as well as
+# braces, and since `==` was the only bash-only construct in the file (`local` is
+# fine in dash) the script now behaves identically under either shell.
+if [ "$reportPath" = "--report" ]; then
   # Generate markdown report
   echo "*********************Running Tests********************"
   JSON_FILE="/tmp/test_results_$$.json"
