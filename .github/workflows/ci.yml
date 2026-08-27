@@ -69,10 +69,23 @@ concurrency:
 # CI/local ratio has now measured 2.32× (many small files, 413s vs 178s), 1.28×
 # (mixed) and 0.94× (one serial file) on the same pair of machines.
 #
+# One number explains all three ratios, and it is worth knowing before anyone tries
+# to speed this up: `flutter test` takes its suite concurrency from
+# `max(1, numberOfProcessors ~/ 2)`, so a 4-vCPU runner gets TWO test lanes where a
+# 10-core laptop gets five. Job 3's 508s was read per-test out of the run log (the
+# `github` reporter stamps one line per test, so all 2,061 can be placed on a clock):
+# the page sweep spans 411s of it, every other suite has finished by 455s, and those
+# last 53s are the only idleness in the whole step. Two lanes at ~90% — so the gate is
+# work-bound here, and sharding the page sweep INSIDE this job would buy ~50s of wall
+# clock for ~+87s of per-shard isolate/JIT/font cost. Do not do it. The measurement
+# and the reversal it caused are in doc/testing/overflow_gate_architecture.md §11.12,
+# "The lane count, not the page count".
+#
 # Speed is still not the argument, because 37% of a green run is worth much less
 # than a red run that names itself. The durable wins are diagnosis, independent
-# timeout budgets, and somewhere for #1371's four-shard page sweep to land as a
-# matrix.
+# timeout budgets, and — if the gate ever does outgrow its budget — a place for
+# #1371's four shards to land as a MATRIX, one runner per shard with its own two
+# lanes, which is the only form of that split the numbers above support.
 #
 # The split does not duplicate work either: jobs 2 and 3 are an exact partition,
 # proof in job 2's comment. Its cost is three extra setups — 32-52s each, and

@@ -38,7 +38,15 @@
 /// suite was right. `page_sweep_suites_test.dart` computes the crossover from the
 /// roster's own figures rather than from this paragraph's arithmetic.
 ///
-/// ## The decision #1371 deferred, taken: **four suites**
+/// ## The decision #1371 deferred, taken twice: **one suite stays**
+///
+/// **The short version, because the long one reverses halfway through.** The arms below
+/// were run on an idle 10-core box and say *split into four*. The same gate measured
+/// hours later on the 4-vCPU runner that actually blocks the PR says *do not split*, and
+/// the runner is the machine that pays. "The lane count, not the page count" has that
+/// measurement; read the arms first anyway, because they are how the wrong answer was
+/// reached honestly. [kPageSweepSuiteCount] stays 1, and now because 1 is right rather
+/// than because moving the calls belonged to a later ticket.
 ///
 /// **#1371 deferred the shard count to the end of #1380** — reported, not enforced —
 /// so that it would be taken with all 45 pages measured instead of extrapolated from
@@ -76,13 +84,44 @@
 /// the gate goes back to being floor-bound near 150–190s. A fifth shard would divide
 /// work that no longer costs wall clock and pay another isolate for it.
 ///
-/// **The four-shard arm is #1371's, restored, not a new design** — §11.10 records
-/// what it looked like and `kPageSweepBalanceTolerance` and
-/// [kReadabilityGuardPages] are the two things it needs that already exist. It is a
-/// successor ticket rather than part of #1380: it is a structural change to where
-/// every page cell runs, it owes its own measured A/B at 43 pages, and it moves the
-/// suite and carrier counts in four documents. [kPageSweepSuiteCount] stays 1 until
-/// it lands, because that constant describes the tree and not the plan.
+/// ## The lane count, not the page count — and it reverses everything above
+///
+/// Every figure to this point is a laptop figure, and 3.84 is a ratio whose divisor is
+/// the rest of the test tree *divided by however many lanes the machine gives it*.
+/// `flutter test` takes that from `max(1, numberOfProcessors ~/ 2)`
+/// (`test_core/lib/src/runner/configuration/values.dart`) — five lanes on the 10-core
+/// box, **two** on a 4-vCPU hosted runner. So the gate was measured there too, in run
+/// 33034114305, where `flutter test` switches to the `github` reporter and stamps one
+/// line per test, so all 2,061 of them can be placed on a clock:
+///
+/// | On the runner | |
+/// |---|---|
+/// | the whole `🛡️ Layout Gate` test step | **508s** |
+/// | this suite, first to last of its 448 tests | **411s** |
+/// | last test of any *other* suite | 455s in |
+/// | this suite alone, after every other suite is done | **53s** |
+/// | most suites ever observed running at once | **2** |
+///
+/// Those 53s are the only idleness anywhere in the log — two lanes at ~90%, 916 of 1,016
+/// lane-seconds spent — so **the gate is work-bound there, not tail-bound, and a perfect
+/// rebalance of every test in it could recover about 50s of 508.** Four shards cost
+/// #1371's +119s user / +54s sys, per shard and not per page, which is ~+87s once it is
+/// spread over two lanes. 87 > 50, and that is the decision.
+///
+/// It is §11.10's inequality with the divisor put back: on two lanes the other 48 suites
+/// take 455s, longer than this suite's 411s. At fifteen pages the sweep hid inside the
+/// floor; at 43 pages on five lanes the floor hid inside the sweep; at 43 pages on two
+/// lanes it hides inside the floor again. Nothing about the pages changed in between.
+///
+/// So the condition is **is there an idle lane for a shard to run in**, which no number of
+/// pages creates — a longer chain in the lane that chain already owns is still one chain.
+/// What creates one is a **matrix job**: one runner per shard, each with its own two
+/// lanes, priced in checkouts and setups rather than isolates.
+///
+/// **The four-shard arm stays #1371's, and stays ready** — §11.10 records what it looked
+/// like, `kPageSweepBalanceTolerance` and [kReadabilityGuardPages] are the two things it
+/// needs that already exist, and its bins have to be computed from in-situ durations
+/// rather than from the roster column. What it waits for is a lane, not a page count.
 ///
 /// **What the ceiling stays is reported, not enforced**, unchanged from #1371's
 /// amendment: the oracle prints each suite's projection and its headroom on every run
@@ -241,8 +280,9 @@ const double kReadabilityGuardWeightMs = 4465;
 /// the *site* an overflow fix changed, so when the sweep is finally split the guard
 /// has to travel with its page — otherwise it measures a page that is no longer
 /// beside it, and its 4.5s is charged to the wrong suite. That stops being
-/// hypothetical at the four suites #1380 decided on: thirteen groups over four shards
-/// is 58.0s that has to land in the shard holding each guard's page.
+/// hypothetical the day a split happens — whenever a lane appears for it: thirteen
+/// groups over four shards is 58.0s that has to land in the shard holding each guard's
+/// page.
 /// Wave 4 fixed fourteen coordinates on eleven pages and so declares **eleven
 /// groups holding sixteen tests** — thirteen groups and eighteen tests below, with the
 /// pilot's and wave 1's. The count of groups follows the count of *pages*, not of

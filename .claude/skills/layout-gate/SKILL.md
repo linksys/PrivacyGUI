@@ -48,11 +48,13 @@ gate.
 **Five of the 49 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else — five files, five
 sweeps, because **#1371 kept every page cell in one file** (architecture doc
-§11.10; the four-shard arm was built, measured and rolled back). **At 43 pages
-that measurement reversed and #1380 decided to split the page sweep into four**
-(§11.12) — the page file is now 95% of the whole PR gate's wall clock — but the
-move is a successor ticket, so it is still five files today and
-`kPageSweepSuiteCount` still reads 1:
+§11.10; the four-shard arm was built, measured and rolled back). **At 43 pages that
+measurement reversed on the laptop and #1380 briefly decided four — then measured the
+gate on the 4-vCPU PR runner, where it reverses back** (§11.12): two test lanes there
+instead of five, both ~90% busy, so a split buys ~50s and costs ~87s. The page file is
+95% of the gate's wall clock on ten cores and 10% of its idle time on the runner, and
+the runner is the machine that pays. So it is five files, and `kPageSweepSuiteCount`
+reads 1 because 1 is the answer:
 
 | Sweep | What it pumps |
 |---|---|
@@ -690,14 +692,22 @@ constraints come with it, both from the architecture doc §11/§8:
   other suites and the whole PR gate does not move (196.82s with the page work,
   196.89s without). Splitting the file *before* the ceiling costs, it does not save:
   four shards read +14.7s on the tag and +60.8s on the suite, at ×2.36 user CPU.
-  **#1380 crossed the ceiling and took the decision: four suites** (§11.12). At 43
+  **#1380 crossed the ceiling, took the decision, and then unwound it** (§11.12). At 43
   pages the file measures **558s against a re-measured 145.2s floor** — ×4.01 on
   `--tags layout-gate`, and 95% of the whole PR gate's wall clock — so the trade that
-  cost 14.7s at fifteen pages now buys back ~400s of wall clock for the same ~+120s of
-  CPU, on 8.5 idle cores of ten. `558.2 / 145.2 = 3.84`, hence four and not five.
-  **The split itself is a successor ticket**, so `kPageSweepSuiteCount` still reads 1
-  and every page cell is still in one file; do not edit that constant ahead of the move
-  — it would turn assertion 1 red and relocate no cell.
+  cost 14.7s at fifteen pages looked like ~400s of wall clock back for the same ~+120s
+  of CPU on 8.5 idle cores of ten, and `558.2 / 145.2 = 3.84` said four. **Then the same
+  gate was measured on the machine that blocks the PR**, and every one of those figures
+  turns out to be about a 10-core laptop. `flutter test` takes its lane count from
+  `max(1, numberOfProcessors ~/ 2)`: five there, **two** on a 4-vCPU hosted runner. On
+  the runner the gate is **508s**, the page suite spans 411s of it, and the last test of
+  every *other* suite lands at 455s — so this file is alone on the box for **53s**, which
+  is the only idleness in the log. Two lanes at ~90%, ~50s recoverable by any rebalance,
+  and four shards cost ~+87s of the same fixed cost (+119s user / +54s sys, per shard).
+  **The condition for splitting is a lane count, not a page count**, and adding pages
+  does not create a lane — a matrix job with one runner per shard does.
+  `kPageSweepSuiteCount` reads 1 and stays 1; do not edit it — it would turn assertion 1
+  red and relocate no cell.
   The *modelled* crossover read ≈27 pages at #1379 and reads **30** now, and both are
   wrong in the same direction: **a projection summed from this column is a floor, not
   an estimate.** It modelled 336.1s where the file measures 558s, because a page in

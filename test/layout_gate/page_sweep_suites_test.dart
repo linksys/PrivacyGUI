@@ -63,11 +63,13 @@ import 'page_sweep_suites.dart';
 ///    the run's long pole where every second is a second on the gate. This shipped as
 ///    an assertion and **Austin downgraded it to a print the same day** (§11.10's
 ///    amendment), so that the decision would be taken once, with all 45 pages
-///    measured. **#1380 took it: four suites** (§11.12, and
-///    `page_sweep_suites.dart`'s header carries the five-arm A/B). The print stays a
-///    print, for a reason that has changed rather than lapsed — the red would now be
-///    *correct*, and there would still be nothing the author of an unrelated PR could
-///    do about it, because the fix is one restructuring ticket.
+///    measured. **#1380 took it twice: four suites on the 10-core box, then one suite
+///    once the same gate was measured on the 4-vCPU runner that blocks the PR** — two
+///    test lanes there instead of five, both ~90% busy, so the 3.84 that chose four reads
+///    1.12 (§11.12, and `page_sweep_suites.dart`'s header carries both). The print stays
+///    a print either way, for a reason that has changed rather than lapsed — the red
+///    would now be *correct*, and there would still be nothing the author of an unrelated
+///    PR could do about it, because the fix is one restructuring ticket.
 ///
 /// ## Red before green, permanently
 ///
@@ -296,9 +298,10 @@ void main() {
         // #1380 re-measured that page at **58.6**, so the heaviest page in the roster
         // is now `usp_local_network_view` at 104.7ms/cell, **24.5s**. That is 29% of a
         // quarter-suite rather than most of one, so §11.10's "cannot promise balance
-        // at 43 pages" no longer holds and the four shards #1380 decided on are
-        // balanceable. The exemption stays: it costs nothing at one suite, and the
-        // next family's heaviest page is not this one.
+        // at 43 pages" no longer holds and a four-way split would be balanceable — on a
+        // machine with a spare lane to run it in, which the PR runner is not (§11.12).
+        // The exemption stays: it costs nothing at one suite, and the next family's
+        // heaviest page is not this one.
         if (suite.caseIdentifiers.length == 1 && weight > mean) continue;
         expect(
           (weight / mean - 1).abs(),
@@ -323,12 +326,18 @@ void main() {
     // measures 558s.
     // (2) "#1371 measured splitting as a bad trade" (+14.7s gate, +60.8s suite,
     // x2.36 CPU) — at fifteen pages. At 43 the same trade is ~-400s of wall clock for
-    // the same ~+120s of CPU, on eight idle cores, so **#1380 decided to split, into
-    // four** (page_sweep_suites.dart's header has the five arms).
+    // the same ~+120s of CPU, on eight idle cores, so #1380 decided to split into four —
+    // and then unwound that hours later, because eight idle cores is a laptop fact. The
+    // 4-vCPU runner gives `flutter test` two lanes, both ~90% busy, so the wall clock a
+    // split could buy back there is ~50s against ~+87s of fixed cost: **one suite**
+    // (page_sweep_suites.dart's header has the five arms and the runner's numbers).
     // (3) The floor is a laptop measurement whose divisor is the rest of the test
     // tree, so it should *rise* as the suite grows — looser with age, the wrong
     // direction for a gate. Re-measured at 1,573 tests it read 145.2s, 4.6s *below*
-    // #1371's, so it has not risen yet; the concern is sound and has not bitten.
+    // #1371's, so it has not risen yet. It bit on the other axis instead: the divisor
+    // also scales with the machine's lane count, and 145.2s is a five-lane figure that
+    // reads ~455s on two. The concern was right about the number being fragile and wrong
+    // about which way it would move.
     //
     // The print stays a print anyway, and the reason is now a different one: the red
     // would be correct, and the fix is a restructuring ticket that no PR author can
@@ -361,18 +370,23 @@ void main() {
                 'which is at least $needed suites of similar weight'}. '
             'A projection is a floor on the cost, not an estimate: it sums measured '
             'per-page figures, and #1380 measured this file at 558s where the sum '
-            'reads 336.1s. Reported only; #1380 decided four suites (§11.12).');
+            'reads 336.1s. Reported only, and no split follows from it: this floor is a '
+            'five-lane laptop figure, and on the 4-vCPU PR runner the whole gate is 508s '
+            'with this suite alone for just its last 53s, so sharding buys ~50s and '
+            'costs ~87s (§11.12).');
       }
     });
 
-    test('the 43-page end state needs more than one suite', () {
+    test('the 43-page end state outgrows the modelled floor', () {
       // This one stays an assertion, because it cannot fire as a nuisance: it goes
       // red only if the pages turn out *cheap* enough that the whole split question
       // is moot — which is news worth a red, and a paragraph to delete rather than a
       // number to edit. It carried the end-state figure the deferred decision was
-      // taken on, and #1380 took it: 43 pages, every row measured, and the answer is
-      // four suites. It stays because the *next* family will ask the same question of
-      // its own roster.
+      // taken on. Renamed from "needs more than one suite" once #1380 measured the gate
+      // on the PR runner: outgrowing the modelled floor is what this arithmetic shows,
+      // and whether that means more than one suite depends on a lane count the roster
+      // cannot see (§11.12). It stays because the *next* family will ask the same
+      // question of its own roster.
       final inScope = roster.rows
           .where((r) => r.disposition != PageRosterDisposition.excluded)
           .toList();
@@ -401,8 +415,9 @@ void main() {
             'is what says the split question is live, and it is a '
             'floor rather than an estimate: the file itself measured 558s the day '
             'this landed, 1.65x the model, because a page in company costs 0.45x to '
-            '4.47x what it costs alone (§11.12). #1380 decided four suites on that '
-            'measurement, not on this sum. ${measured.length} of ${inScope.length} rows are '
+            '4.47x what it costs alone (§11.12). Live is not the same as answered: this '
+            'floor is a five-lane laptop figure, and on the 4-vCPU PR runner the ratio '
+            'is 1.12, so #1380 left the sweep in one suite. ${measured.length} of ${inScope.length} rows are '
             'measured — all of them, since #1380 — and '
             'the heaviest single page is '
             '${(measured.last * cellsPerPage / 1000).toStringAsFixed(1)}s and '

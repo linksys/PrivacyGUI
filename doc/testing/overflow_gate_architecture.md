@@ -93,11 +93,17 @@ inherited exclusion candidates **stay in**, each with a written verdict in
 `page_roster.tsv`; `usp_sliver_dashboard_view`'s 315.4ms/cell was a cross-basis artefact
 and reads **58.6**, so nothing had to absorb 66s of pump CPU. §11.12 carries the final
 43-page distribution and supersedes every projection in §11.2, §11.3 and §11.6.
-**#1371's deferred split decision was also taken, and the answer is four suites**: the
-page sweep measures **558s against a 145.2s floor**, ×4.01 on `--tags layout-gate`, so the
-file that hid *inside* the gate at fifteen pages now **is** the gate — 95% of its wall
-clock, on 1.07 of ten cores. `kPageSweepSuiteCount` stays **1** and moving the calls is a
-successor ticket; §11.12 carries the five-arm A/B and the three reasons. The same
+**#1371's deferred split decision was also taken — twice, and the second answer is one
+suite.** On the 10-core laptop the page sweep measures **558s against a 145.2s floor**,
+×4.01 on `--tags layout-gate`, so the file that hid *inside* the gate at fifteen pages now
+**is** the gate there — 95% of its wall clock, on 1.07 of ten cores — and that reads as
+four shards. Measured the same day on the **4-vCPU runner that actually blocks the PR**,
+the same gate is **508s** with the page sweep alone for only its **last 53s**: two test
+lanes instead of five (`numberOfProcessors ~/ 2`), both ~90% busy, so the ratio is **1.12**
+and a perfect rebalance could recover ~50s against four shards' ~+87s. **The condition for
+splitting is a lane count, not a page count**, so `kPageSweepSuiteCount` stays **1** and
+the four shards wait for a matrix job that gives each one its own runner. §11.12 carries
+the five-arm A/B, the runner's numbers and the three reasons. The same
 measurement retired the epic's cost model as an *estimate*: a projection summed from
 per-page figures is a **floor** — 336.1s modelled against 558s measured — because a page
 in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
@@ -4033,27 +4039,36 @@ of against a median.
 
 > **Amended 2026-08-27 (#1380): the decision was taken, the reporting stayed.** All 45
 > rows carry a figure, the arms were re-run at 43 pages, and the answer is **four
-> suites** (§11.12). The print now reads
+> suites** (§11.12) — *reversed to one suite later the same day once the gate was measured
+> on the 4-vCPU runner instead of the 10-core laptop; §11.12, "The lane count, not the page
+> count".* The print now reads
 >
 >     [page sweep] page_surface_overflow_test.dart: 43 pages project to 336.1s of serial
 >     pumping against a 149.8s floor — over by 186.3s, which is at least 3 suites of
 >     similar weight. A projection is a floor on the cost, not an estimate: it sums
 >     measured per-page figures, and #1380 measured this file at 558s where the sum reads
->     336.1s. Reported only; #1380 decided four suites (§11.12).
+>     336.1s. Reported only, and no split follows from it: this floor is a five-lane laptop
+>     figure, and on the 4-vCPU PR runner the whole gate is 508s with this suite alone for
+>     just its last 53s, so sharding buys ~50s and costs ~87s (§11.12).
 >
-> **"At least 3" and "decided four" are not in conflict**, and the sentence between them
-> is why: 3 is `ceil(336.1 / 149.79)` over the *model*, and four is what the measured
-> 558.25s divides into. The print keeps computing the model's floor because that is the
-> only figure a test can derive from the committed roster; the decision is recorded in
-> prose because it rests on a measurement no test can take.
+> **"At least 3" and "no split follows" are not in conflict**, and the sentence between
+> them is why: 3 is `ceil(336.1 / 149.79)` over the *model*, on a floor measured with five
+> test lanes. The print keeps computing the model's floor because that is the only figure a
+> test can derive from the committed roster; what the roster cannot hold is the machine the
+> gate runs on, so the decision is recorded in prose because it rests on a measurement no
+> test can take. Its first form was "four suites", from the same laptop the floor came
+> from; the runner reversed it hours later.
 >
 > Two of the three bullets above have to be re-read in light of that. The first still
 > holds and is now unarguable — the crossing is history, not a forecast, so a red would
-> report a fact this page states. The second **reversed**: splitting is no longer a net
-> loss, it is worth ~400s of gate wall clock for the same ~+120s of CPU on cores that
-> are idle. The third holds, and was checked rather than assumed: the floor was
-> re-measured at **145.20s** with 73 more tests in it, 3% *below* #1371's figure, so it
-> did not rise and the constant was left alone. What keeps the ceiling reported rather
+> report a fact this page states. The second **reversed, and then reversed back**:
+> splitting looked worth ~400s of gate wall clock for ~+120s of CPU on cores that are
+> idle, which is true of a 10-core laptop and false of the runner, where the cores are not
+> idle and the recoverable wall clock is ~50s. The third holds, and was checked rather than
+> assumed: the floor was re-measured at **145.20s** with 73 more tests in it, 3% *below*
+> #1371's figure, so it did not rise — but the same measurement on two lanes rather than
+> five reads ~455s, so the concern was right that the constant is fragile and wrong about
+> which way it moves. What keeps the ceiling reported rather
 > than enforced is now a fourth reason, and a stronger one: the red would be **correct**,
 > and no PR author can act on it, because the remedy is a four-file refactor with its
 > own A/B — so an assertion would block whoever happens to touch the roster next until
@@ -4110,7 +4125,9 @@ into the long pole while the others idle. It is vacuous at one suite, and it is 
 now so the split needs no new assertion on the day it happens.
 
 > **Amended 2026-08-27 (#1380): it is still vacuous, and it is now also unusable as
-> written.** The four suites §11.12 decided on cannot be balanced on this rule, because
+> written.** The four suites §11.12 first decided on — since reversed to one on the
+> runner's numbers, but the objection outlives the count and applies to any split — cannot
+> be balanced on this rule, because
 > the rule balances on the roster column and that column is not a share of the file's
 > wall clock (§11.12's ratio table: 0.45× to 4.47× per page). The tolerance and the
 > exemption stay in the oracle — they are correct machinery over the wrong input — and
@@ -4620,6 +4637,13 @@ it does is name it, measure it, and stop treating the sum as a prediction.
 
 #### The split decision #1371 deferred: **four suites**
 
+> **AMENDED the same day, and the decision is reversed: one suite stays.** Every arm
+> below was run on the 10-core laptop, where `flutter test` gets five test lanes. The
+> runner that actually blocks the PR gets **two**, and on two lanes the ratio that chose
+> four reads **1.12** instead of 3.84. "The lane count, not the page count" at the end of
+> this subsection has the runner's numbers. The arms are left exactly as measured — they
+> are not wrong, they are answers about a machine nobody merges on.
+
 #1371 measured splitting as a net loss and #1380 was named as the ticket that would decide
 it "once, at the end, with all 45 pages measured and the three arms re-run against the real
 thing instead of against a median". All 45 are accounted for, 43 are swept, and the arms
@@ -4701,6 +4725,64 @@ record stays green: `kPageSurfaceCases` still lists 43 pages, the roster still c
 `swept`, `page.tsv` still holds their 10,062 rows and nothing in the gate diffs it. That is
 §11.10's membership claim demonstrated end to end rather than argued, and it is the reason
 this register was kept when the split it was written for was not.
+
+##### The lane count, not the page count (measured on the runner, same day)
+
+The four-suite arithmetic above divides one number by another: 558.25s of serial page
+pumping over a 145.20s floor, 3.84, so four shards of ~140s each. Both are laptop
+numbers, and the divisor is the one that moves. `flutter test` takes its concurrency from
+`defaultConcurrency = math.max(1, Platform.numberOfProcessors ~/ 2)`
+(`test_core-0.6.18/lib/src/runner/configuration/values.dart:14`) — **five lanes on the
+10-core box, two on a 4-vCPU hosted runner.**
+
+`🛡️ Layout Gate` in run 33034114305 is the first measurement of this gate on the machine
+that blocks the PR. Its test step ran **508s** (02:43:34 → 02:52:02). `flutter test`
+switches to the `github` reporter there, which stamps one line per test, so all **2,061**
+tests and all **49** suites can be placed on a clock:
+
+| On the runner | |
+|---|--:|
+| the whole step | **508s** |
+| `page_surface_overflow_test.dart`, first to last of its 448 tests | **411s** |
+| last test of any *other* suite | **02:51:09** — 455s in |
+| the page suite alone, after every other suite is done | **53s** |
+| most suites ever observed running at once | **2** |
+
+**The gate is work-bound on the runner, not tail-bound, and that is the finding.** Of the
+1,016 lane-seconds the step has to spend (2 × 508), the only idleness anywhere in the log
+is those last **53s**, when one lane has finished and the page suite has not. Both lanes
+therefore run at ~90%, so **a perfect rebalance of every test in the gate could recover
+about 50s of 508**. Four shards cost #1371's measured **+119s user / +54s sys** — per
+shard, not per page — which is ~**+87s** once it is spread over two lanes. It cannot pay
+for itself out of 50s.
+
+Which is §11.10's inequality with the divisor put back. A serial block costs wall clock
+only once it exceeds what runs beside it, and on two lanes the other 48 suites take 455s —
+longer than the page suite's 411s. At fifteen pages the sweep hid inside the floor; at 43
+pages on five lanes the floor hid inside the sweep; **at 43 pages on two lanes it hides
+inside the floor again.** Nothing about the pages changed in between.
+
+So the condition for splitting is not a page count and never was:
+
+    is there an idle lane for a shard to run in?
+
+On the runner there is not, and adding pages does not create one — it lengthens the chain
+in the lane that chain already owns. What creates one is a **matrix job**: one runner per
+shard, each with its own two lanes. That is the form in which #1371's four shards become
+worth building, and it is priced differently — five checkouts, five setups and five
+compiles of the whole test tree, roughly 20 minutes of machine time to save roughly three
+of wall clock (an estimate, not an arm) — so it waits until the gate is long enough to be
+worth five required-check names instead of one.
+
+**What was not measured, and why it does not move the answer.** The 455s is when the
+non-page suites *finished*, not what they would cost with both lanes to themselves; some
+of it is queueing behind a suite that owns one lane for the whole run. A held-aside arm on
+the runner would separate the two. It was not run because the 53s of idleness is measured
+directly and is what bounds the gain either way — the floor only affects how tidily the
+ratio can be written, and 1.12 is already the wrong side of 1.
+
+`kPageSweepSuiteCount` therefore stays **1**, and now for a measured reason rather than a
+sequencing one.
 
 #### A queued figure is an upper bound — confirmed, and the mechanism named
 
