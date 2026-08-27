@@ -31,28 +31,32 @@ concurrency:
 # it is how this split got filed: #1380's branch failed on a single trailing
 # blank line, learned nothing else that round, and had to push again.
 #
-# Splitting is NOT for speed, and the numbers should stop anyone from claiming
-# otherwise. Measured on the last single-job green run (2026-08-27, run
-# 33031520852): setup 33s, analyze 34s, format 4s, `run_tests.sh` 12m30s, web
-# build 89s, whole job 15m11s against the 30-minute cap. Split, the wall clock is
-# whatever the layout-gate job takes — projected ~13 min — because that job is
-# dominated by ONE serially-executed file (`page_surface_overflow_test.dart`, 43
-# pages × 234 cells). Four jobs cost three extra copies of a 33s setup and save
-# about two minutes. The wins are diagnosis, independent timeout budgets, and
-# having somewhere for the four-shard split of the page sweep to land as a
-# matrix — not throughput.
+# The wall clock, single job (run 33031520852) against four (run 33034114305),
+# both on this branch a quarter-hour apart:
 #
-# The split does not create work either: locally the two test arms are 195s and
-# 541s against 750s undivided, so 736s of the same tests plus scheduling. Jobs 2
-# and 3 are a partition, not a duplication — the proof is in job 2's comment.
+#   before  15m11s   setup 33s · analyze 34s · format 4s · run_tests.sh 12m30s
+#                    · web build 89s — all in series
+#   after    9m29s   🛡️ 9m29s · 🧪 5m21s · 🏗️ 2m08s · 🎨 1m34s — all at once
 #
-# A note on the CI/local ratio, because it was predicted wrong here once. The
-# pipeline used to run 2.32× slower than a developer machine (413s against 178s),
-# and projecting the post-#1380 suite with that factor gave 22.7 min of tests
-# against a real 12m30s. The factor is a property of the workload's PARALLELISM,
-# not of the two boxes: once one serial file dominates, the runner's 4 vCPU stop
-# mattering against a 10-core laptop and the ratio collapses to ~1.28×. Re-derive
-# it before planning against it.
+# So it is 37% faster, and this comment used to say "NOT for speed … saves about
+# two minutes" on the strength of a ~13 min projection for the gate job. The real
+# gate job is 9m29s, and the reason the projection missed is worth more than the
+# number: its test step took 508s where the same arm takes 541s on a developer
+# laptop — 0.94×, the runner is FASTER. That arm is one serially-executed file
+# (`page_surface_overflow_test.dart`, 43 pages × 234 cells), so 4 vCPU against 10
+# cores buys the laptop nothing and only single-core speed is left. Any projection
+# here needs to know whether the arm it is projecting parallelises: the pipeline's
+# CI/local ratio has now measured 2.32× (many small files, 413s vs 178s), 1.28×
+# (mixed) and 0.94× (one serial file) on the same pair of machines.
+#
+# Speed is still not the argument, because 37% of a green run is worth much less
+# than a red run that names itself. The durable wins are diagnosis, independent
+# timeout budgets, and somewhere for #1371's four-shard page sweep to land as a
+# matrix.
+#
+# The split does not duplicate work either: jobs 2 and 3 are an exact partition,
+# proof in job 2's comment. Its cost is three extra setups — 32-52s each, and
+# concurrent, so it costs machine time and not wall clock.
 # ==========================================================================
 
 jobs:
@@ -120,11 +124,12 @@ jobs:
     name: 🛡️ Layout Gate
     runs-on: ubuntu-latest
     # The longest budget here, and deliberately more headroom than the others.
-    # ~13 min projected, but the same suite drifted to 2× on a developer machine
-    # under memory pressure the day this job was written (18m01s at 672s user CPU
-    # and 552s *system*), and a hosted runner has no more immunity to that than a
-    # laptop. A shared 30-minute cap is what made the old single job's headroom
-    # everyone's problem; this number is only this job's.
+    # Measured at 9m29s, and the 4.3× headroom is not padding: this same suite
+    # drifted to 2× on a developer machine under memory pressure the day this job
+    # was written (18m01s at 672s user CPU and 552s *system*), and a hosted runner
+    # has no more immunity to that than a laptop. A shared 30-minute cap is what
+    # made the old single job's headroom everyone's problem; this number is only
+    # this job's, which is most of why the split is worth its three extra setups.
     timeout-minutes: 40
 
     steps:
