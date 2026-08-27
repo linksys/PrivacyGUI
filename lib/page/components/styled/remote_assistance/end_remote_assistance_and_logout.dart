@@ -3,6 +3,11 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+/// How long logging out is willing to wait for the teardown. Ending the session
+/// can hit the cloud, and that request retries with a backoff - the user is
+/// looking at a screen with no spinner on it, so the wait has to be bounded.
+const _kTeardownTimeout = Duration(seconds: 5);
+
 /// Ends the remote assistance session and then logs out.
 ///
 /// The order matters: ending the session fetches (and stores) the device token,
@@ -10,11 +15,6 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 /// Logout also has to happen even when the teardown fails - otherwise a failed
 /// teardown would leave the user signed in with the device token of the device
 /// they were assisting.
-/// How long logging out is willing to wait for the teardown. Ending the session
-/// can hit the cloud, and that request retries with a backoff - the user is
-/// looking at a screen with no spinner on it, so the wait has to be bounded.
-const _kTeardownTimeout = Duration(seconds: 5);
-
 Future<void> endRemoteAssistanceAndLogout(WidgetRef ref) async {
   // Resolve both notifiers before the first await: the widget that owns [ref]
   // may be disposed while the teardown is in flight.

@@ -61,7 +61,7 @@ void main() {
   }) {
     storage
       ..[pLinksysToken] = token
-      ..[pLinksysTokenSn] = serialNumber
+      ..[pLinksysTokenSN] = serialNumber
       ..[pLinksysTokenTs] = '${DateTime.now().millisecondsSinceEpoch - ageMs}';
   }
 
@@ -86,7 +86,7 @@ void main() {
       expect(token, 'token-B');
       expect(httpClient.requests, hasLength(1));
       expect(storage[pLinksysToken], 'token-B');
-      expect(storage[pLinksysTokenSn], 'SN-B');
+      expect(storage[pLinksysTokenSN], 'SN-B');
     });
 
     test('reuses the cached token of the same device', () async {
@@ -125,7 +125,7 @@ void main() {
 
       expect(token, 'token-B');
       expect(httpClient.requests, hasLength(1));
-      expect(storage[pLinksysTokenSn], 'SN-B');
+      expect(storage[pLinksysTokenSN], 'SN-B');
     });
   });
 

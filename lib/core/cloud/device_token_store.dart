@@ -20,7 +20,7 @@ class DeviceTokenStore {
       // Without a device there is nothing a stored token could belong to.
       return null;
     }
-    final storedSerialNumber = await _storage.read(key: pLinksysTokenSn);
+    final storedSerialNumber = await _storage.read(key: pLinksysTokenSN);
     if (storedSerialNumber != serialNumber) {
       return null;
     }
@@ -47,19 +47,19 @@ class DeviceTokenStore {
     // as the commit marker: it is removed before the token changes and written
     // back last. A save that is interrupted half way therefore reads back as a
     // miss instead of handing the new token out for the previous device.
-    await _storage.delete(key: pLinksysTokenSn);
+    await _storage.delete(key: pLinksysTokenSN);
     await _storage.write(key: pLinksysToken, value: token);
     await _storage.write(
       key: pLinksysTokenTs,
       value: '${DateTime.now().millisecondsSinceEpoch}',
     );
-    await _storage.write(key: pLinksysTokenSn, value: serialNumber);
+    await _storage.write(key: pLinksysTokenSN, value: serialNumber);
   }
 
   Future<void> clear() async {
     // Same reason as in [save]: drop the commit marker first, so an interrupted
     // clear cannot leave a readable token behind.
-    await _storage.delete(key: pLinksysTokenSn);
+    await _storage.delete(key: pLinksysTokenSN);
     await _storage.delete(key: pLinksysToken);
     await _storage.delete(key: pLinksysTokenTs);
   }

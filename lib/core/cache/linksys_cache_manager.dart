@@ -120,7 +120,7 @@ class LinksysCacheManager {
       return;
     }
     // From here on the serial number is either the loaded device or no device
-    // has been loaded at all - see the two branches further down.
+    // has been loaded at all, which is what the write paths below tell apart.
     if (_cache.isEmpty) {
       cacheManager.get().then((value) {
         _cache = value ?? "";

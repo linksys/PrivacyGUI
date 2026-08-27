@@ -14,7 +14,7 @@ void main() {
   void seed({required String serialNumber, int ageMs = 0}) {
     storage
       ..[pLinksysToken] = 'token-A'
-      ..[pLinksysTokenSn] = serialNumber
+      ..[pLinksysTokenSN] = serialNumber
       ..[pLinksysTokenTs] = '${DateTime.now().millisecondsSinceEpoch - ageMs}';
   }
 
@@ -49,7 +49,7 @@ void main() {
     test('returns null when the timestamp is missing', () async {
       storage
         ..[pLinksysToken] = 'token-A'
-        ..[pLinksysTokenSn] = 'SN-A';
+        ..[pLinksysTokenSN] = 'SN-A';
 
       expect(await store.read('SN-A'), isNull);
     });
@@ -74,7 +74,7 @@ void main() {
       await store.save('token-B', 'SN-B');
 
       expect(storage[pLinksysToken], 'token-B');
-      expect(storage[pLinksysTokenSn], 'SN-B');
+      expect(storage[pLinksysTokenSN], 'SN-B');
       expect(int.tryParse(storage[pLinksysTokenTs] ?? ''), isNotNull);
       expect(await store.read('SN-B'), 'token-B');
     });
@@ -98,7 +98,7 @@ void main() {
           _InterruptedStorage(data, allowedMutations: 1));
       data
         ..[pLinksysToken] = 'token-A'
-        ..[pLinksysTokenSn] = 'SN-A'
+        ..[pLinksysTokenSN] = 'SN-A'
         ..[pLinksysTokenTs] = '${DateTime.now().millisecondsSinceEpoch}';
 
       await expectLater(store.save('token-B', 'SN-B'), throwsStateError);
@@ -114,7 +114,7 @@ void main() {
     await store.clear();
 
     expect(storage[pLinksysToken], isNull);
-    expect(storage[pLinksysTokenSn], isNull);
+    expect(storage[pLinksysTokenSN], isNull);
     expect(storage[pLinksysTokenTs], isNull);
   });
 }

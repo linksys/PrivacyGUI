@@ -83,7 +83,6 @@ class DeviceCloudService {
   Future<GRASessionInfo> getSessionInfo({
     required LinksysDevice master,
     required String sessionId,
-    String? serialNumber,
   }) async {
     final linksysToken = await fetchDeviceToken(
         serialNumber: master.unit.serialNumber ?? '',
@@ -125,7 +124,10 @@ class DeviceCloudService {
         serialNumber: targetSerialNumber,
         macAddress: master.getMacAddress(),
         deviceUUID: master.deviceID);
-    _httpClient.deleteSession(
+    // Awaited so the caller can tell whether the session was actually closed:
+    // logging out right after a fire-and-forget request can tear the client down
+    // before it leaves.
+    await _httpClient.deleteSession(
         token: linksysToken,
         sessionId: sessionId,
         serialNumber: targetSerialNumber);
