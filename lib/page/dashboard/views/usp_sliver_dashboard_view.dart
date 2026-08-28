@@ -57,6 +57,38 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// slides in once the drag is already under way.
   static const Duration trashHoverDelay = Duration(milliseconds: 600);
 
+  /// How long a card displaced by a drag or a resize takes to slide to the slot
+  /// it was pushed into (#1397).
+  ///
+  /// Named for the same reason as [trashHoverDelay]: a test that reads a card's
+  /// painted offset mid-slide has to pump inside this window and then past it,
+  /// and a copy of the number in the test would keep passing if this one were
+  /// lowered.
+  ///
+  /// ## Why 150ms, which is also the package default
+  ///
+  /// Written out rather than inherited, because the number is a decision about
+  /// *this* grid: a row here is [kDashboardSlotHeight] plus `AppSpacing.lg`, so
+  /// the smallest displacement a card can suffer is 136px. Over 150ms of
+  /// `easeOutCubic` that covers three quarters of the distance in the first
+  /// 60ms, which reads as "the card moved aside" rather than "the card is
+  /// sliding" — the point of the flag is that the user does not lose track of
+  /// where a card went, not that the motion is admired.
+  ///
+  /// Longer is worse rather than merely slower, and for a reason particular to a
+  /// continuous drag: each cell crossing retargets a transition that is still in
+  /// flight (`_seedTransition` mutates in place), so a duration above the time
+  /// between two crossings means the displaced cards never arrive while the
+  /// pointer keeps moving — the grid follows the drag at a visible remove. 150ms
+  /// is under one crossing at any speed a pointer sustains here.
+  ///
+  /// The cost side agrees. The interpolation is a paint-phase translate of an
+  /// already-cached layer, but it does pump `markNeedsPaint` every frame it is
+  /// alive, and we ship web only (`build_web.sh`) — where the package's own doc
+  /// names that pump as the reason the flag is off by default. A shorter window
+  /// is a smaller pump.
+  static const Duration reflowDuration = Duration(milliseconds: 150);
+
   const UspSliverDashboardView({super.key});
 
   @override
@@ -416,6 +448,17 @@ class _UspSliverDashboardViewState
                       crossAxisSpacing: AppSpacing.lg,
                       breakpoints: {0: uiKitColumns},
                       gridStyle: isEditMode ? editModeGridStyle : null,
+                      // Cards pushed aside by a drag or a resize slide to their
+                      // new slot instead of jumping (#1397). Here and not on
+                      // [DashboardOverlay]: the overlay is the gesture layer and
+                      // has no such flag — the tiles it displaces are painted by
+                      // this sliver, so this is the only call that can animate
+                      // them. Unconditional rather than `isEditMode`, because
+                      // the only mutations that displace a card are edit-mode
+                      // gestures anyway, and a flag that flips with the mode
+                      // would clear in-flight transitions on the way out.
+                      animateReflow: true,
+                      reflowDuration: UspSliverDashboardView.reflowDuration,
                     ),
             ),
             const SliverToBoxAdapter(

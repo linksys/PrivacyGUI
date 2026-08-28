@@ -58,6 +58,13 @@
 /// | 4 | usp_widget_specs | `device_info`'s `maxH` 6 → 3, so the card is already at its full height | all seven resize tests |
 /// | 5 | this file | make [onHost] ignore its `platform` argument and report android, i.e. the harness bug the docstring above describes | the seven tests that arm a pointer gesture with a mouse — three resize cases, the control, the desktop trash case and both throttle tests. The keyboard pair survives, which is the row's other half: those two are regime-independent, and a reader should not expect a platform mistake to show up there |
 /// | 6 | this file | `web: false` on the two throttle tests | both of them: with no gate in the path no move is ever coalesced, so there is nothing pending for the flush to land and nothing held back at the release. Both had to be given an explicit premise assertion to earn this row — before that, "the commit equals the last frame" was trivially true off web |
+/// | 7 | usp_sliver_dashboard_view | `animateReflow: false` — the state of the world before #1397, since the flag is off by default | all four reflow tests. Two of them die on their premise rather than their claim ("there is a slide in flight to be dropped"), which is what those premises are for: with no transition to observe, "the slide is dropped" would pass on a grid that never animated |
+///
+/// Not covered by a row: dropping the `reflowDuration:` argument is invisible
+/// while our number and the package default are the same 150ms. The assertion
+/// pairs the render object with [UspSliverDashboardView.reflowDuration], so it
+/// catches the two drifting apart — from either side — but it cannot see an
+/// argument removed today.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -66,9 +73,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
@@ -97,6 +106,19 @@ const _surfaces = <int, Size>{
 /// the package does not export it. Only ever used to pump *past* it or to stay
 /// inside it, so the copy drifting makes a test fail rather than lie.
 const _kThrottleWindow = Duration(milliseconds: 16);
+
+/// Long enough to cover the jiggle's random start delay.
+///
+/// Every edit-mode tile staggers its shake behind
+/// `Future.delayed(Duration(milliseconds: _random.nextInt(50)))`
+/// (`jiggle_shake.dart:88`), and a tile that mounts late — because a viewport
+/// change brought a card into the sliver's cache extent — schedules that timer
+/// with nothing after it to pump. The binding fails a test that unmounts with a
+/// timer pending, so a test whose last act mounts a tile has to drain this
+/// window or it fails on the roughly one run in five where the random draw lands
+/// past the frames it pumps. Read as "the tile has finished arriving", not as a
+/// wait for the shake itself, which never ends.
+const _kJiggleStagger = Duration(milliseconds: 50);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -500,6 +522,241 @@ void main() {
                 'and the committed height likewise. Our persist hook writes '
                 'this straight to the pref (#1393), so a commit that differed '
                 'from the last frame would be saved as well as shown.');
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Reflow animation (#1397)
+  //
+  // `animateReflow` interpolates the *painted* offset of a tile the engine moved,
+  // and nothing else: layout, hit-testing and semantics all use the final slot
+  // immediately. So there is no rect to read and no `pumpAndSettle` that can see
+  // it — `tester.getRect` returns where the card will be, which is exactly the
+  // property that makes the feature free. What the assertions below read instead
+  // are the render object's two `@visibleForTesting` hooks, which is the only
+  // surface the interpolation has.
+  // ---------------------------------------------------------------------------
+  group('cards displaced by a gesture slide to their new slot (#1397)', () {
+    /// The distance between the top of one grid row and the top of the next, in
+    /// the sliver's content coordinates.
+    ///
+    /// The reflow hooks report offsets in that space, and it is the space the
+    /// grid computes from `slotAspectRatio` — which the page derives from
+    /// [kDashboardSlotHeight], so the row pitch is that height plus the spacing
+    /// and is the same at every breakpoint. Only ever used to check where a slide
+    /// *starts*, so getting it wrong fails the premise rather than the claim.
+    const rowPitch = kDashboardSlotHeight + AppSpacing.lg;
+
+    RenderSliverDashboard gridRender(WidgetTester tester) =>
+        tester.renderObject<RenderSliverDashboard>(
+          find.byType(SliverDashboardLayout),
+        );
+
+    /// The ids [after] moved to a lower row than [before] had them on.
+    Set<String> pushedDown(
+      List<dynamic> before,
+      List<dynamic> after,
+    ) {
+      final was = {
+        for (final item in before) (item as Map)['id'] as String: item['y'] as int,
+      };
+      return {
+        for (final item in after)
+          if ((item as Map)['y'] as int > (was[item['id']] ?? -1))
+            item['id'] as String,
+      };
+    }
+
+    /// Presses [_id]'s bottom-right corner and drags down one screenful, leaving
+    /// the pointer down. Returns the layout before the gesture.
+    ///
+    /// Down only: a corner drag would change the card's width as well, and width
+    /// pushes cards sideways, which is a second displacement to reason about for
+    /// no extra coverage.
+    Future<List<dynamic>> growDown(
+      WidgetTester tester,
+      DashboardController controller,
+    ) async {
+      final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+      final before = controller.exportLayout();
+      final gesture =
+          await tester.startGesture(rect.bottomRight - const Offset(8, 8));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(controller.activeItemId.value, _id, reason: 'the premise');
+
+      await gesture.moveBy(const Offset(0, rowPitch * 2));
+      // Past the web move gate, so the move lands on this frame rather than on
+      // the trailing flush — the reflow clock starts when the layout changes, and
+      // a test that measured from the wrong frame would read progress 0 twice.
+      await tester.pump(_kThrottleWindow * 2);
+      return before;
+    }
+
+    testWidgets('the flag and the duration reach the grid', (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        await pumpDashboardPage(tester, size: _surfaces[12]!, editing: true);
+
+        final render = gridRender(tester);
+        expect(render.animateReflow, isTrue,
+            reason: 'the whole ticket is this flag; every assertion below is '
+                'silently vacuous without it, because a grid that does not '
+                'animate never seeds a transition to inspect');
+        expect(render.reflowDuration, UspSliverDashboardView.reflowDuration,
+            reason: 'and the duration is ours rather than the package default '
+                'it happens to equal — see the constant for why 150ms. A '
+                'future upstream change to the default must not silently '
+                'change our timing.');
+      });
+    });
+
+    testWidgets('a resize interpolates the card it pushed, over the duration',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final render = gridRender(tester);
+
+        final before = await growDown(tester, controller);
+        final pushed = pushedDown(before, controller.exportLayout());
+        expect(pushed, isNotEmpty,
+            reason: 'the premise: growing the card downwards displaced at '
+                'least one card below it. Without this the resize would be a '
+                'gesture with nothing to animate and the counts below would '
+                'all be zero for the wrong reason.');
+        expect(pushed, isNot(contains(_id)),
+            reason: 'and the resized card is not one of them — a bottom-edge '
+                'resize keeps its own origin');
+
+        // A subset of `pushed`, and deliberately not compared for equality with
+        // it. A transition is seeded from the child's *previous* paint offset
+        // (`_applyChildGeometry`, guarded by `pd.hasPaintOffset`), so only the
+        // children this pass laid out can have one — and the sliver is lazy, so
+        // that is the viewport plus its cache extent. The eight cards the resize
+        // pushed down include several below the fold; those snap, and nobody is
+        // looking at them. Asserting `pushed.length` here instead would be
+        // asserting that the grid is eager.
+        final sliding = <String>{
+          for (final item in controller.exportLayout())
+            if (render.debugReflowPaintOffsetFor(item['id'] as String) != null)
+              item['id'] as String,
+        };
+        expect(sliding, isNotEmpty,
+            reason: 'at least one of the displaced cards was on screen and is '
+                'mid-slide. This is the claim of the ticket; everything below '
+                'measures the slide it found.');
+        expect(sliding, everyElement(isIn(pushed)),
+            reason: 'and only displaced cards slide — a card the resize left '
+                'alone must be painted where it has always been, or the flag '
+                'would be animating the whole grid on every mutation');
+        expect(render.debugActiveReflowTransitionCount, sliding.length,
+            reason: 'the transition map holds exactly those and nothing else: a '
+                'count above what is painted is a leaked entry keeping the '
+                'ticker alive');
+        expect(sliding, isNot(contains(_id)),
+            reason: 'the card under the pointer is painted where it is, not '
+                'interpolated: it is the thing the user is holding, so a lag '
+                'here would be the gesture itself feeling loose. AC: the '
+                'dragged card is unaffected.');
+
+        final id = sliding.first;
+        final startedAt = render.debugReflowPaintOffsetFor(id)!;
+        final wasOnRow = (before.firstWhere(
+          (item) => (item as Map)['id'] == id,
+        ) as Map)['y'] as int;
+        expect(startedAt.dy, closeTo(wasOnRow * rowPitch, 0.5),
+            reason: 'and it starts from the row it was on before the resize, '
+                'not from an arbitrary offset');
+
+        // Two samples inside the window rather than one: a single reading above
+        // the start would also be produced by a two-state jump, which is the
+        // behaviour this replaces.
+        await tester.pump(UspSliverDashboardView.reflowDuration ~/ 3);
+        final third = render.debugReflowPaintOffsetFor(id)!;
+        await tester.pump(UspSliverDashboardView.reflowDuration ~/ 3);
+        final twoThirds = render.debugReflowPaintOffsetFor(id)!;
+        expect(third.dy, greaterThan(startedAt.dy));
+        expect(twoThirds.dy, greaterThan(third.dy),
+            reason: 'the offset closes on the target across frames instead of '
+                'switching between two values');
+
+        await tester.pump(UspSliverDashboardView.reflowDuration);
+        expect(render.debugActiveReflowTransitionCount, 0,
+            reason: 'and the slide ends. A transition that outlived its '
+                'duration would keep the ticker — and `markNeedsPaint` — alive '
+                'for the rest of the session.');
+        expect(render.debugReflowPaintOffsetFor(id), isNull,
+            reason: 'so the card is painted in the slot it was laid out in, '
+                'which is why goldens are unaffected: they capture this state');
+      });
+    });
+
+    testWidgets('a slot-metric change snaps rather than interpolating',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final render = gridRender(tester);
+
+        await growDown(tester, controller);
+        expect(render.debugActiveReflowTransitionCount, greaterThan(0),
+            reason: 'the premise: there is a slide in flight to be dropped');
+
+        // Narrower, but still 12 columns: the slot *width* changes while the
+        // grid does not, so the same render object sees the metric change. That
+        // is the package rule being tested — a transition's endpoints were
+        // computed in the old metric space, so carrying it across would slide a
+        // card to a place it never was.
+        final narrower = _surfaces[12]!;
+        tester.view.physicalSize =
+            Size(narrower.width - 160, narrower.height);
+        await tester.pump();
+
+        expect(identical(gridRender(tester), render), isTrue,
+            reason: 'still the same grid: the assertion below is about the '
+                'package dropping the transition, not about our own '
+                'breakpoint catch-up unmounting the sliver');
+        expect(controller.slotCount.value, 12,
+            reason: 'and still the same column count');
+        expect(render.debugActiveReflowTransitionCount, 0,
+            reason: 'the slide is dropped, so the resize settles instantly at '
+                'the new metrics');
+
+        // The narrower viewport brought a card into the cache extent, and that
+        // tile is still holding its jiggle stagger — see [_kJiggleStagger].
+        // Nothing above depends on this pump; it is here so the teardown in
+        // [onHost] finds no pending timer.
+        await tester.pump(_kJiggleStagger);
+      });
+    });
+
+    testWidgets('crossing a breakpoint carries no interpolation with it',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+
+        await growDown(tester, controller);
+        expect(gridRender(tester).debugActiveReflowTransitionCount,
+            greaterThan(0),
+            reason: 'the premise');
+
+        tester.view.physicalSize = _surfaces[8]!;
+        await settleIgnoringAnimations(tester);
+
+        expect(controller.slotCount.value, 8,
+            reason: 'the grid really did change: the whole layout is re-derived '
+                'at the new column count, so every card moves at once');
+        expect(gridRender(tester).debugActiveReflowTransitionCount, 0,
+            reason: 'and none of that motion is animated. Two mechanisms agree '
+                'here — the package drops transitions on a metric change, and '
+                'our own catch-up withholds the sliver for the frame the '
+                'controller is a breakpoint behind (#1395) — which is why this '
+                'is asserted as an observable rather than attributed to one of '
+                'them.');
       });
     });
   });
