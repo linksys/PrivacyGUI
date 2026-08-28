@@ -12,7 +12,13 @@ import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sliver_dashboard/sliver_dashboard.dart';
+// 2.x's barrel opens with `export 'package:state_beacon/state_beacon.dart'`,
+// which brings `lite_ref` and `state_beacon_core` with it — so five Riverpod
+// names arrive from a package three hops away. `Ref` and `AsyncValue` are the two
+// that collided on the bump; the other three are hidden because they only collide
+// at the point of *use*, and the compiler names the file rather than the cause.
+import 'package:sliver_dashboard/sliver_dashboard.dart'
+    hide Ref, AsyncValue, AsyncData, AsyncError, AsyncLoading;
 
 import '../models/usp_dashboard_preset.dart';
 import '../models/usp_widget_specs.dart';
@@ -88,11 +94,17 @@ class UspSliverDashboardControllerNotifier
   /// [_swapController] arms the width lock and the selection mirror, which is
   /// what this constructor used to do by hand. The bootstrap is dropped without
   /// disposing, like every other controller this class replaces.
+  ///
+  /// It still carries the input policy, through [_applyInputPolicy] and the one
+  /// history argument, even though it is replaced on the next line. This is the
+  /// one controller no test can reach — anything that reads the provider reads the
+  /// replacement — so it is the one that has to be right by construction (#1395).
   UspSliverDashboardControllerNotifier(this._ref)
-      : super(DashboardController(
+      : super(_applyInputPolicy(DashboardController(
           initialSlotCount: _desktopSlots,
           initialLayout: UspWidgetSpecs.createDefaultLayout(),
-        )) {
+          maxHistoryLength: 0,
+        ))) {
     _swapController(_createDefaultController());
     _initializeLayout();
   }
@@ -136,16 +148,102 @@ class UspSliverDashboardControllerNotifier
   /// reconciles deletions safely, which is the asymmetry the walk documents.
   Set<String> _seededIds = const {};
 
+  /// The keyboard and modifier set the grid is given, narrower than the
+  /// package's default.
+  ///
+  /// Held as one shared instance rather than built per controller: every card
+  /// caches the intent maps it derives from this and rebuilds them whenever the
+  /// config is not `identical` to the cached one
+  /// (`dashboard_item_widget.dart:449`), so a fresh config per controller would
+  /// re-key all 18 caches on every preset and every membership change.
+  ///
+  /// What is dropped, and why (#1395). None of these existed at 0.9.1, so each
+  /// entry keeps today's behaviour rather than taking one away:
+  ///
+  /// - `delete` (Delete / Backspace) removes the focused card, or the whole
+  ///   selection when the focused card is in it, with no confirmation. Removal is
+  ///   the one edit here that loses information, the history is off (see
+  ///   [_createController]), and Cancel does not fully restore a deletion
+  ///   (#1396) — so a stray Backspace, which is a browser Back reflex, costs the
+  ///   user their arrangement. Deleting from the keyboard is worth having; it
+  ///   wants `DashboardOverlay.onWillDelete` in front of it, which is its own
+  ///   decision because the trash zone has no confirmation either.
+  /// - `selectAll` (Ctrl / Cmd + A) selects every card at once. Nothing here
+  ///   consumes a multi-selection: [selectedCardIdProvider] reads two or more as
+  ///   none, so the form toolbar drops back to its prompt with nothing to say
+  ///   why. Shift- and Ctrl-click reach the same dead end and are deliberately
+  ///   left alone — they predate the bump (0.9.1 `dashboard_overlay.dart:665`),
+  ///   and one card at a time is a gesture a user can see the result of.
+  /// - `undo` / `redo` (Ctrl / Cmd + Z, Ctrl + Y, Cmd + Shift + Z) are bound by
+  ///   the package whether or not there is a history to travel. Left bound they
+  ///   would be swallowed by the grid's `Actions` and do nothing at all; empty,
+  ///   the chords fall through to whatever encloses the dashboard. The history
+  ///   itself is switched off in [_createController], and this is the same
+  ///   decision written where the keys are.
+  /// - `swapModeModifier` (Shift, held during a drag) inverts `dragMode`, so a
+  ///   Shift-drag exchanges two cards outright instead of pushing neighbours
+  ///   aside (`getEffectiveDragMode`). Our geometry rules are written against
+  ///   push-neighbours, and Shift is a key the user is already holding to
+  ///   multi-select, so the same drag would land differently depending on a key
+  ///   that means something else. An empty list removes the toggle and leaves
+  ///   `dragMode` in sole control, which is the field's own documented opt-out.
+  ///
+  /// Everything else is left at the package default. Grab / arrows / drop /
+  /// Escape is the only way to reorder a card without a pointer and is kept for
+  /// that reason; `duplicate` is inert while no `onCloneRequested` is registered.
+  static const _shortcuts = DashboardShortcuts(
+    delete: {},
+    selectAll: {},
+    undo: {},
+    redo: {},
+    swapModeModifier: [],
+  );
+
+  /// Applies the input policy [_shortcuts] belongs to.
+  ///
+  /// Static because the bootstrap controller in the constructor's initializer
+  /// list cannot reach `this` and is therefore the one instance no test can
+  /// observe — see the class doc. Configuring it here rather than in
+  /// [_createController] is what makes the policy hold by construction instead of
+  /// by an assertion nothing can make.
+  static DashboardController _applyInputPolicy(
+          DashboardController controller) =>
+      controller
+        ..lassoStyle = LassoStyle.off
+        ..shortcuts = _shortcuts;
+
   /// A controller carrying [layout] that reports its own edits back here.
   ///
   /// Every construction goes through this, so there is one place where the
   /// auto-persist hook can be forgotten rather than three.
+  ///
+  /// It is also where the interaction surfaces `sliver_dashboard` 2.x switches on
+  /// by default are switched back off (#1395) — a bump is not the place to start
+  /// shipping gestures. Two live here and two more in [_shortcuts]:
+  ///
+  /// - `maxHistoryLength: 0` disables undo/redo, and this one is a defect rather
+  ///   than a preference. [_importQuietly] suppresses this notifier's persist
+  ///   hook, not the package's bookkeeping: `importLayout` records a history entry
+  ///   (`dashboard_controller_impl.dart:1030`), so [_seedBreakpoints]' walk pushes
+  ///   the 8- and 4-column layouts onto the stack before the user has touched
+  ///   anything. A Ctrl+Z then re-projects one of those onto the grid the user is
+  ///   looking at — measured on 2.6.0: `canUndo` was already true on a first run
+  ///   and the first undo narrowed `stats_panel` from 12 slots to 8 on the desktop
+  ///   grid — and [_handleLayoutChanged] persists it. Turning the history on means
+  ///   first calling `clearHistory()` at the end of every internal import, so the
+  ///   stack holds the user's operations and only those.
+  /// - `LassoStyle.off` keeps an empty-space drag doing what it did before: the
+  ///   grid shares its scroll view with other slivers, and a rubberband only
+  ///   makes a multi-selection easier to reach, which nothing here consumes but
+  ///   the trash drag. `LassoSelectionMode.modifierRequired` is the upgrade path
+  ///   upstream recommends for a grid like this one.
   DashboardController _createController(List<LayoutItem> layout) {
-    return DashboardController(
+    return _applyInputPolicy(DashboardController(
       initialSlotCount: _desktopSlots,
       initialLayout: layout,
       onLayoutChanged: _handleLayoutChanged,
-    );
+      maxHistoryLength: 0,
+    ));
   }
 
   DashboardController _createDefaultController() =>
@@ -486,6 +584,14 @@ class UspSliverDashboardControllerNotifier
 
   /// Whether [_exportAllBreakpoints] can safely walk [controller]'s layout.
   ///
+  /// A card only the live grid's cache holds is placed into the narrower grids at
+  /// the width it has here, and the placement does not clamp it, so the walk
+  /// stores a card wider than the grid it sits in. Nothing throws: that breakpoint
+  /// simply renders over-wide until a reload pulls it back in, which is a defect
+  /// with no stack trace attached. Only the addition direction is checked — a
+  /// delete reconciles safely, which is the asymmetry [_exportAllBreakpoints]
+  /// documents.
+  ///
   /// Checked here, on the caller's stack, rather than inside the walk: the walk
   /// runs behind the write queue, where an assertion failure is caught by
   /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
@@ -532,11 +638,10 @@ class UspSliverDashboardControllerNotifier
   /// Deleted, not added: the reconciliation is only safe in that direction, and
   /// the asymmetry constrains every caller. A card the live layout has and the
   /// target grid's cache does not is placed by the package at the width it has
-  /// here, and `placeNewItems` wraps to the next row forever when that width does
-  /// not fit — the wrap branch skips its own safety counter
-  /// (`sliver_dashboard` 0.9.1, `layout_engine.dart:1058`). `stats_panel` is
-  /// `w: 12`, so one full-width card coming back on the desktop grid used to hang
-  /// the isolate here rather than throw (#1393).
+  /// here, and the placement never narrows it: `placeNewItems(cols: 8)` given a
+  /// `w: 12` item appends it below the others, still 12 wide. `stats_panel` is
+  /// `w: 12`, so one full-width card coming back on the desktop grid is stored
+  /// over-wide on the two narrower ones (#1393).
   ///
   /// So an addition has to be aligned into every breakpoint before it reaches the
   /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
@@ -545,12 +650,10 @@ class UspSliverDashboardControllerNotifier
   ///
   /// [_membershipIsAligned] is what a comment cannot do. Now that the hook runs
   /// this walk after *every* controller mutation, a future caller reaching for
-  /// `controller.addItem` instead of [addWidget] gets a frozen tab with no stack
-  /// trace — nothing in `lib/` does today, and the fixture in
-  /// `card_form_toolbar_test.dart` had to be narrowed to a width that fits every
-  /// grid because of it. Failing loudly in debug is the whole defence: the
-  /// non-termination is upstream (fixed in 2.3.0, #1395) and there is no release
-  /// path into it.
+  /// `controller.addItem` instead of [addWidget] persists that over-wide geometry
+  /// silently — nothing in `lib/` does today, and the fixture in
+  /// `card_form_toolbar_test.dart` adds at a width every grid can hold because of
+  /// it. Failing loudly in debug is the whole defence.
   Map<int, List<dynamic>> _exportAllBreakpoints(
       DashboardController controller) {
     final origin = controller.slotCount.value;

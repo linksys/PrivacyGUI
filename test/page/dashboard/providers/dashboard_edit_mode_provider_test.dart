@@ -14,7 +14,11 @@ import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_prov
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sliver_dashboard/sliver_dashboard.dart';
+// sliver_dashboard 2.x re-exports `state_beacon`, whose `AsyncValue` collides
+// with Riverpod's — along with its three subclasses, which collide only where
+// they are used. See the same list on `usp_layout_controller.dart`'s import.
+import 'package:sliver_dashboard/sliver_dashboard.dart'
+    hide AsyncValue, AsyncData, AsyncError, AsyncLoading;
 // The grab that Space starts is not on the exported interface — the item widget
 // reaches it through this extension, and an exit while one is open is what the
 // #1393 group below is about.
@@ -535,12 +539,17 @@ void main() {
   // by the walk that visits every breakpoint — and a cancel then has to put the
   // card back on all of them at a width each one can hold.
   //
-  // Left to the package that walk hangs rather than fails: `placeNewItems` wraps
-  // to the next row forever when an item is wider than the grid it is being
-  // reconciled into, because the wrap branch skips its own safety counter
-  // (`sliver_dashboard` 0.9.0). `stats_panel` is `w: 12`, so this test does not
-  // fail without the fix in `restoreSnapshot` — it spins, and takes the rest of
-  // the file's run with it.
+  // Left to the package, that walk puts the card back at the width it has on the
+  // grid the cancel restored: `placeNewItems` places an item the target grid's
+  // cache does not hold without ever narrowing it, so `stats_panel`'s `w: 12`
+  // lands in the 8- and 4-column grids as-is. The width assertion at the end of
+  // the test is what catches that.
+  //
+  // Under `sliver_dashboard` 0.9.1 the same walk *hung* instead — the wrap branch
+  // skipped its own safety counter — so without the fix in `restoreSnapshot` this
+  // test used to spin and take the rest of the file's run with it. 2.3.0 fixed
+  // the termination and #1395 brought that fix in; the walk is still only safe in
+  // the delete direction.
   group('cancel after a delete (#1393)', () {
     bool holds(List<dynamic> layout, String id) =>
         layout.any((item) => (item as Map)['id'] == id);
