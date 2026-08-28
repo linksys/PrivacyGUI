@@ -13,9 +13,10 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 /// Why the inversion does not contradict §2.1's "not a user preference": the
 /// framework still guarantees the layout, it just guarantees it by constraining
 /// the geometry rather than by degrading the content. On a phone the user has no
-/// influence over width at all — the 4-column grid pins `x: 0, w: cols` and the
-/// #1293 left-edge lock forbids horizontal resize outright — so a pick is the
-/// only mechanism that puts a phone user in control of density.
+/// influence over width at all — the 4-column grid pins `x`, `w` and both width
+/// caps, which since `sliver_dashboard` 2.6.0 is the whole of the #1293 lock
+/// (#1399) — so a pick is the only mechanism that puts a phone user in control of
+/// density.
 class CardFormChoice extends Equatable {
   const CardFormChoice({
     required this.density,

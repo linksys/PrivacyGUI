@@ -57,7 +57,8 @@ final uspSliverDashboardControllerProvider = StateNotifierProvider<
 ///
 /// 1. the form each card was picked into (#1299) — pinning a popup tile, raising
 ///    a compact card's floor, restoring the spec bounds for normal;
-/// 2. the mobile full-width lock (#1293) — pinning `x`/`w` on the 4-column grid.
+/// 2. the mobile full-width lock (#1293) — pinning `x`/`w` and the width caps on
+///    the 4-column grid.
 ///
 /// Each rule owns one axis on a phone: the forms rule abstains from `x`/`w` at 4
 /// columns and the lock only ever touches those, so a popup card there is a short
@@ -65,6 +66,13 @@ final uspSliverDashboardControllerProvider = StateNotifierProvider<
 /// order of the two *not* load-bearing — swapping them produces the same layout,
 /// which is deliberate rather than lucky, and is why neither has to know it runs
 /// second.
+///
+/// Rule 2 used to need a third mechanism behind it: a subscription on the
+/// controller's layout beacon that rewrote whatever a left-hand resize handle had
+/// got past the caps, because 0.9.1 clamped the new width but let `x` move. 2.6.0
+/// clamps `x` against the same caps, so the subscription was deleted and the pin
+/// is now the whole of the rule (#1399) — an illegal width is never produced
+/// rather than corrected a frame later.
 ///
 /// ## An edit is stored by the grid that made it, not by the button that ends it
 ///
@@ -91,9 +99,9 @@ class UspSliverDashboardControllerNotifier
   /// controller they were given, so a hook armed only on the replacements would
   /// miss the sessions that start without a stored layout (#1393).
   ///
-  /// [_swapController] arms the width lock and the selection mirror, which is
-  /// what this constructor used to do by hand. The bootstrap is dropped without
-  /// disposing, like every other controller this class replaces.
+  /// [_swapController] arms the selection mirror, which is what this constructor
+  /// used to do by hand. The bootstrap is dropped without disposing, like every
+  /// other controller this class replaces.
   ///
   /// It still carries the input policy, through [_applyInputPolicy] and the one
   /// history argument, even though it is replaced on the next line. This is the
@@ -117,9 +125,6 @@ class UspSliverDashboardControllerNotifier
   /// Publishes the picked forms to [cardFormsProvider] for the render side.
   final Ref _ref;
 
-  /// Cancels the current controller's width-lock subscription.
-  VoidCallback? _widthLockGuard;
-
   /// Cancels the current controller's selection subscription.
   VoidCallback? _selectionGuard;
 
@@ -130,8 +135,8 @@ class UspSliverDashboardControllerNotifier
   /// but that provider is this notifier's *published mirror*: a test or a scope
   /// that overrode it would then be silently changing which geometry [_normalize]
   /// derives, rather than only what the cards render. Reading the pref instead is
-  /// not open either — [_normalize] runs on paths that cannot await, the width-lock
-  /// callback and the seeding walk among them.
+  /// not open either — [_normalize] runs on paths that cannot await, the seeding
+  /// walk and [_exportAllBreakpoints] among them.
   CardForms _forms = CardForms.empty;
 
   /// True while this notifier is putting a layout *into* the controller, as
@@ -209,6 +214,29 @@ class UspSliverDashboardControllerNotifier
   /// observe — see the class doc. Configuring it here rather than in
   /// [_createController] is what makes the policy hold by construction instead of
   /// by an assertion nothing can make.
+  ///
+  /// ## Why there is no `..policy` here (#1399)
+  ///
+  /// 2.2.0 added `DashboardPolicy`, and this is the line it would go on. Both
+  /// geometry rules this page has were considered for it and neither fits, so the
+  /// field is deliberately left unset:
+  ///
+  /// - **The phone width lock.** The hooks are four booleans and none of them
+  ///   takes a width. `canResize(item)` is asked once at `onResizeStart` with no
+  ///   handle, so it can only refuse *every* resize — which would take the height
+  ///   with it, and the height is the one dimension a phone user still chooses.
+  ///   `canMoveTo` is handed the *raw* rounded pointer target before any clamping,
+  ///   so a rule shaped like "x is not yours" refuses the whole event including
+  ///   its vertical component: a diagonal drag would freeze instead of sliding up
+  ///   and down. The caps on the items express it exactly, and 2.6.0's resolver
+  ///   clamps `x` against them — see [UspWidgetSpecs.lockToFullWidth].
+  /// - **Per-card min/max from `WidgetSpec`.** Already per item, which is where
+  ///   the resolver reads them. A boolean veto could only re-derive the arithmetic
+  ///   and then refuse, which stops a card dead at its cap instead of letting it
+  ///   come to rest on it.
+  ///
+  /// A policy that repeated either rule would be a second copy of an invariant
+  /// that already holds — the shape of thing #1399 removed, not added.
   static DashboardController _applyInputPolicy(
           DashboardController controller) =>
       controller
@@ -435,8 +463,12 @@ class UspSliverDashboardControllerNotifier
   ///    each card was picked into on this grid (#1299). Derived rather than
   ///    stored, so the pick is the only thing persisted and the sizes it justifies
   ///    cannot drift away from it.
-  /// 2. [UspWidgetSpecs.lockToFullWidth] pins `x`/`w` on the 4-column grid, so a
-  ///    phone is height-and-order only (#1293). Wider grids skip it.
+  /// 2. [UspWidgetSpecs.lockToFullWidth] pins `x`, `w` and both width caps on the
+  ///    4-column grid, so a phone is height-and-order only (#1293). Wider grids
+  ///    skip it. The caps are named here because since `sliver_dashboard` 2.6.0
+  ///    they are the entire enforcement: this call is the last thing that touches
+  ///    the width before the layout is imported, and nothing watches it afterwards
+  ///    (#1399).
   ///
   /// The order is not load-bearing — the forms rule abstains from `x`/`w` on the
   /// phone grid precisely so the two cannot contradict each other — but it is
@@ -466,13 +498,14 @@ class UspSliverDashboardControllerNotifier
     _ref.read(cardFormsProvider.notifier).state = forms;
   }
 
-  /// Swaps in [controller] and re-arms the width lock on it.
+  /// Swaps in [controller] and re-arms the subscriptions that belong to it.
   ///
-  /// The lock belongs to the instance it watches, so a swap that forgets to
-  /// re-arm leaves the phone grid horizontally editable again.
+  /// One of them left with #1399 — the width lock used to be re-armed here too,
+  /// and forgetting it left the phone grid horizontally editable again. The rule
+  /// it enforced is now carried by the items themselves (see [_normalize]), so a
+  /// swap cannot mislay it.
   void _swapController(DashboardController controller) {
     state = controller;
-    _armWidthLock();
     _armSelectionMirror();
   }
 
@@ -483,8 +516,8 @@ class UspSliverDashboardControllerNotifier
   /// beacon on the controller rather than Riverpod state — see
   /// [selectedCardIdProvider] for why it is bridged instead of watched directly.
   ///
-  /// Re-armed on every swap, like the width lock: the subscription belongs to the
-  /// instance it watches, and the new instance starts with nothing selected. The
+  /// Re-armed on every swap — the subscription belongs to the instance it
+  /// watches, and the new instance starts with nothing selected. The
   /// default `startNow: true` is what pushes that fresh state through, so a swap
   /// cannot leave the toolbar naming a card the grid no longer highlights.
   ///
@@ -505,55 +538,8 @@ class UspSliverDashboardControllerNotifier
         ids.length == 1 ? ids.first : null;
   }
 
-  /// Watches the current controller's layout so a horizontal change made on the
-  /// phone grid is undone before it is drawn.
-  ///
-  /// [_normalize] is applied when a layout is imported and when it is stored,
-  /// which covers everything except the case in between: a gesture writes
-  /// straight to the controller's layout beacon, and on mobile the left-hand
-  /// resize handles get past the width caps by moving `x` — see
-  /// [UspWidgetSpecs.lockItemsToFullWidth]. Nothing else re-reads the live
-  /// layout after a resize, so without this the card stays where the drag left
-  /// it until the next import.
-  ///
-  /// Subscribing is what makes the drag look inert rather than rubber-banding:
-  /// the correction is queued alongside the rebuild the same write triggers, and
-  /// runs first because this subscription is registered before any widget starts
-  /// watching. `startNow: false` because the layout as it stands has already
-  /// been normalised by whoever imported it.
-  void _armWidthLock() {
-    _widthLockGuard?.call();
-    final controller = state;
-    _widthLockGuard = controller.layout.subscribe(
-      (items) => _enforceWidthLock(controller, items),
-      startNow: false,
-    );
-  }
-
-  /// Restores the full-width geometry of [items] if a gesture broke it.
-  ///
-  /// Takes the controller it was armed on rather than reading [state]: a swap
-  /// can land between the write and this callback, and the layout being
-  /// corrected belongs to the old instance.
-  void _enforceWidthLock(
-    DashboardController controller,
-    List<LayoutItem> items,
-  ) {
-    final slotCount = controller.slotCount.value;
-    if (slotCount > UspLayoutEnvelope.mobileSlotCount) return;
-
-    final locked = UspWidgetSpecs.lockItemsToFullWidth(items, slotCount);
-    if (locked == null) return;
-
-    // Straight to the beacon rather than through importLayout: that would
-    // compact the whole grid mid-gesture, closing gaps the user is in the
-    // middle of making.
-    controller.layout.value = locked;
-  }
-
   @override
   void dispose() {
-    _widthLockGuard?.call();
     _selectionGuard?.call();
     super.dispose();
   }
@@ -807,10 +793,10 @@ class UspSliverDashboardControllerNotifier
   ///
   /// A pick is per grid, like the geometry it constrains. That is the point of it
   /// on a phone: there the user has no influence over width at all (the 4-column
-  /// grid pins `x: 0, w: cols`, and #1293's left-edge lock forbids horizontal
-  /// resize outright), so picking the form is the only control they have — and
-  /// wanting a card reduced in that one column says nothing about wanting it
-  /// reduced on a laptop.
+  /// grid pins `x`, `w`, `minW` and `maxW` alike, which is now the whole of the
+  /// lock — see [UspWidgetSpecs.lockToFullWidth]), so picking the form is the only
+  /// control they have — and wanting a card reduced in that one column says
+  /// nothing about wanting it reduced on a laptop.
   ///
   /// ## `normal` is not a pin
   ///

@@ -503,120 +503,128 @@ void main() {
   // ---------------------------------------------------------------------------
   // Mobile width lock
   //
-  // The phone grid is height-and-order only, and the width caps cannot enforce
-  // that on their own: the left-hand resize handles move `x`, and the package
-  // then trims `w` to whatever is left of the row (#1293).
+  // The phone grid is height-and-order only (#1293). It used to be enforced
+  // twice: `lockToFullWidth` pinning `x`/`w`/`minW`/`maxW` on every import, plus
+  // a subscription on the layout beacon that rewrote whatever a left-hand resize
+  // handle had got past the pin — because 0.9.1 clamped the new *width* to the
+  // caps but let `x` move freely, and then trimmed `w` to what was left of the
+  // row.
   //
-  // These tests stand in for that gesture by writing the geometry it produces
-  // straight to the layout beacon — which is the last thing
-  // `DashboardController.onResizeUpdate` does — because the call that reaches it
-  // sits behind the package's internal-only extension.
+  // `sliver_dashboard` 2.6.0 clamps `x` against the same caps
+  // (`dashboard_controller_impl.dart:1828-1842`), so the subscription became
+  // unreachable and was deleted (#1399). These tests therefore changed shape:
+  // they used to simulate the gesture by writing its result to the layout beacon
+  // and assert it was undone, which is no longer a thing that happens to any
+  // layout, by design. What is asserted here now is that every path into the
+  // phone grid hands it a pinned layout; the gesture half — that no drag and no
+  // arrow key can produce an unpinned one in the first place — is
+  // `test/page/dashboard/views/edit_mode_interactions_test.dart`, which needs a
+  // real page and a real pointer.
   // ---------------------------------------------------------------------------
   group('mobile width lock', () {
-    /// What one column of drag on [id]'s left edge leaves behind on a 4-column
-    /// grid. Either way the card ends up a column narrower; dragging inwards
-    /// moves it as well, dragging outwards runs into the row's own edge and the
-    /// package trims the width there instead.
-    void dragLeftEdge(
-      DashboardController controller,
-      String id, {
-      bool inwards = true,
-    }) {
-      controller.layout.value = [
-        for (final item in controller.layout.value)
-          if (item.id == id) item.copyWith(x: inwards ? 1 : 0, w: 3) else item,
-      ];
-    }
+    const mobile = UspLayoutEnvelope.mobileSlotCount;
 
     LayoutItem itemById(DashboardController controller, String id) =>
         controller.layout.value.firstWhere((item) => item.id == id);
 
-    test('a left-edge resize on the phone grid is undone', () async {
+    /// The four fields the 2.6.0 resize resolver reads, for every card.
+    List<List<num>> widthFields(DashboardController controller) => [
+          for (final item in controller.layout.value)
+            [item.x, item.w, item.minW, item.maxW],
+        ];
+
+    test('the phone grid hands over every card already pinned', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
-      expect(itemById(controller, 'device_info').x, 0,
-          reason: 'the phone grid starts out locked');
+      controller.setSlotCount(mobile);
 
-      dragLeftEdge(controller, 'device_info');
-      await pumpAsync();
+      // Every card, not a sample: the pin is what makes the resolver refuse a
+      // width change, so one card that arrived without it is one card the user
+      // can still narrow. There is no second mechanism left to catch it.
+      //
+      // `everyElement` is vacuously true on an empty list, so the count comes
+      // first — a controller that handed over nothing at all would otherwise
+      // read as fully pinned.
+      expect(widthFields(controller), isNotEmpty, reason: 'the premise');
+      expect(
+        widthFields(controller),
+        everyElement([0, mobile, mobile, mobile.toDouble()]),
+      );
+    });
 
+    test('and the desktop grid does not', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // The control. Width is the user's to choose everywhere above mobile, so
+      // a pin applied at every breakpoint would pass the test above while
+      // taking the feature away.
+      final controller = container.read(uspSliverDashboardControllerProvider);
       final item = itemById(controller, 'device_info');
-      expect(item.x, 0);
-      expect(item.w, UspLayoutEnvelope.mobileSlotCount);
+      expect(item.maxW, greaterThan(item.minW.toDouble()));
     });
 
-    test('a left-edge resize that only narrows is undone as well', () async {
+    test('a preset applied on the phone grid arrives pinned', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
+      // This replaces 'a preset re-arms the lock on the controller it swaps in'.
+      // The lock used to be a subscription, so a swap that forgot to re-arm it
+      // left the phone grid editable; now it travels with the items, and what
+      // has to hold instead is that the cards a preset *introduces* go through
+      // [_normalize] on the way in.
       final controller = container.read(uspSliverDashboardControllerProvider);
-      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
-
-      dragLeftEdge(controller, 'device_info', inwards: false);
-      await pumpAsync();
-
-      expect(itemById(controller, 'device_info').w,
-          UspLayoutEnvelope.mobileSlotCount);
-    });
-
-    test('the same resize stands on the desktop grid', () async {
-      final container = await createInitializedContainer();
-      addTearDown(container.dispose);
-
-      // Width is the user's to choose everywhere above mobile, so the guard has
-      // to keep its hands off this one.
-      final controller = container.read(uspSliverDashboardControllerProvider);
-      dragLeftEdge(controller, 'device_info');
-      await pumpAsync();
-
-      final item = itemById(controller, 'device_info');
-      expect(item.x, 1);
-      expect(item.w, 3);
-    });
-
-    test('a height resize on the phone grid is left alone', () async {
-      final container = await createInitializedContainer();
-      addTearDown(container.dispose);
-
-      final controller = container.read(uspSliverDashboardControllerProvider);
-      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
-      final originalH = itemById(controller, 'device_info').h;
-
-      controller.layout.value = [
-        for (final item in controller.layout.value)
-          if (item.id == 'device_info')
-            item.copyWith(h: originalH + 2)
-          else
-            item,
-      ];
-      await pumpAsync();
-
-      // The one dimension a phone still lets the user choose.
-      final item = itemById(controller, 'device_info');
-      expect(item.h, originalH + 2);
-      expect(item.x, 0);
-      expect(item.w, UspLayoutEnvelope.mobileSlotCount);
-    });
-
-    test('a preset re-arms the lock on the controller it swaps in', () async {
-      final container = await createInitializedContainer();
-      addTearDown(container.dispose);
-
-      // The lock is a subscription on one controller's layout, so every swap has
-      // to re-arm it or the phone grid quietly becomes editable again.
+      controller.setSlotCount(mobile);
       await container
           .read(uspSliverDashboardControllerProvider.notifier)
           .applyPreset(UspDashboardPreset.essential);
 
+      // The preset's own card count, for the same reason as above and one more:
+      // it is also the evidence that `applyPreset` landed at all. Without it a
+      // preset that silently no-opped would leave the seeded layout in place and
+      // the assertion below would still pass.
+      final fields =
+          widthFields(container.read(uspSliverDashboardControllerProvider));
+      expect(fields, hasLength(UspDashboardPreset.essential.cardIds.length),
+          reason: 'the premise');
+      expect(fields, everyElement([0, mobile, mobile, mobile.toDouble()]));
+    });
+
+    test('the height is left unpinned on the phone grid', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
       final controller = container.read(uspSliverDashboardControllerProvider);
-      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
-      dragLeftEdge(controller, 'device_info');
+      controller.setSlotCount(mobile);
+
+      // The one dimension a phone still lets the user choose — and the reason
+      // the pin is four named fields rather than "collapse every bound".
+      final item = itemById(controller, 'device_info');
+      expect(item.maxH, greaterThan(item.minH.toDouble()));
+    });
+
+    test('nothing watches the layout to correct it after the fact', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // The deletion itself, asserted from the outside. Writing the beacon is
+      // how the old tests stood in for a left-edge drag; the write is kept here
+      // with the expectation inverted, because a *reverted* value would mean the
+      // subscription is back — and with it the frame where the user saw a
+      // narrowed card, which is what #1399 set out to remove. The guarantee that
+      // no gesture can reach this state lives in the view test named above.
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(mobile);
+      controller.layout.value = [
+        for (final item in controller.layout.value)
+          if (item.id == 'device_info') item.copyWith(x: 1, w: 3) else item,
+      ];
       await pumpAsync();
 
-      expect(itemById(controller, 'device_info').x, 0);
+      final item = itemById(controller, 'device_info');
+      expect([item.x, item.w], [1, 3]);
     });
   });
 

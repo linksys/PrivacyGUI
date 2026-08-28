@@ -738,16 +738,38 @@ abstract class UspWidgetSpecs {
   ///
   /// Below five columns there is no width worth choosing — every card is either
   /// full-width or unreadably narrow — so on mobile the width stops being
-  /// editable instead of being merely defaulted. `minW == maxW == cols` is half
-  /// of what enforces that: `DashboardController` clamps every resize delta to
-  /// `[minW, maxW]`, which is enough to make the right-hand handles inert. The
-  /// left-hand ones need [lockItemsToFullWidth] on top — see there for why the
-  /// caps alone cannot hold them.
+  /// editable instead of being merely defaulted. `minW == maxW == cols` is the
+  /// whole of what enforces that, as of `sliver_dashboard` 2.6.0 (#1399): the
+  /// resolver clamps the new width to `[minW, maxW]` *and then* clamps `x` into
+  /// `[originalRight - maxW, originalRight - minW]`
+  /// (`dashboard_controller_impl.dart:1828-1842`), which for a card pinned at
+  /// both caps is the single value it already has. The left-hand handles are held
+  /// by the second clamp and the right-hand ones by the first.
   ///
-  /// It also repairs what the old mobile seed produced. Scaling `minW`/`maxW`
+  /// 0.9.1 had only the first, so the left-hand handles moved `x` and the package
+  /// trimmed the width to what was left of the row — `x: 1, w: 3` dragged inwards
+  /// and `x: 0, w: 3` dragged outwards, on a grid where neither width was
+  /// authorised. That is why this used to be backed by a watcher writing the live
+  /// layout back; the watcher is gone, and `edit_mode_interactions_test.dart`
+  /// samples every frame of a left-edge drag, its bottom-left diagonal and an
+  /// arrow-key move to show the geometry is now never produced rather than
+  /// corrected afterwards.
+  ///
+  /// Only the inward end of that second clamp is ours, which is worth knowing
+  /// before reading those tests: its lower bound is
+  /// `max(limitX, originalRight - maxW)`, and `limitX` is already 0 for a card at
+  /// the left edge, so a card cannot be dragged out of the row whatever the caps
+  /// say. `minW` is what stops it being dragged *in*.
+  ///
+  /// Rewriting both caps rather than only lowering `maxW` also repairs what a
+  /// projection from a wider grid produces, in both directions. Scaling
   /// proportionally gave a card with `maxW: 8` at 12 columns a `maxW` of 3 at 4
-  /// columns while its width was set to 4 — a width outside its own cap, which
-  /// the first resize would have snapped down to 3 of 4 columns.
+  /// columns while its width was set to 4 — a width outside its own cap, which the
+  /// first resize would have snapped down to 3 of 4 columns. And a spec that
+  /// declares `minW: 6` for the desktop grid arrives with a floor wider than the
+  /// whole phone grid, which is not a mis-size but a crash: the engine asserts
+  /// `currentL.minW <= cols` (`layout_engine.dart:963`) while the page is
+  /// building.
   static List<dynamic> lockToFullWidth(List<dynamic> layout, int cols) {
     return layout.map((item) {
       return {
@@ -1024,45 +1046,6 @@ abstract class UspWidgetSpecs {
     if (h is int && h < minH) map['h'] = minH;
     final maxH = (map['maxH'] as num?)?.toDouble() ?? minH.toDouble();
     if (maxH < minH) map['maxH'] = minH.toDouble();
-  }
-
-  /// The [lockToFullWidth] geometry applied to live items, or null when every
-  /// item already has it.
-  ///
-  /// Pinning `minW == maxW == cols` does not finish the job. A resize delta is
-  /// clamped to `[minW, maxW]`, so a right-hand handle cannot move a width that
-  /// is already both floor and ceiling — but the left-hand handles (left,
-  /// topLeft, bottomLeft) move `x` as well, and the package trims the width to
-  /// whatever is left of the row after the clamp:
-  ///
-  /// ```
-  /// newX = x + dW;  newW = (w - dW).clamp(minW, maxW)
-  /// if (newX < 0) { newW += newX; newX = 0; }
-  /// if (newX + newW > cols) newW = cols - newX
-  /// ```
-  ///
-  /// One column of drag on the left edge therefore narrows a card on a 4-column
-  /// grid to three whichever way it is dragged — to `x: 1, w: 3` inwards, and to
-  /// `x: 0, w: 3` outwards, where the row's own edge does the trimming. Neither
-  /// width was authorised, and no cap can express "x may not move", so this has
-  /// to be undone on the live layout by whoever is watching it.
-  ///
-  /// Only `x` and `w` are touched: the height is the one dimension a phone still
-  /// leaves to the user, and the caps are repaired on import by
-  /// [lockToFullWidth]. Returning null rather than an equal list is what keeps a
-  /// watcher from writing back into the layout it was just notified about.
-  static List<LayoutItem>? lockItemsToFullWidth(
-    List<LayoutItem> items,
-    int cols,
-  ) {
-    List<LayoutItem>? locked;
-    for (var i = 0; i < items.length; i++) {
-      final item = items[i];
-      if (item.x == 0 && item.w == cols) continue;
-      locked ??= List<LayoutItem>.of(items);
-      locked[i] = item.copyWith(x: 0, w: cols);
-    }
-    return locked;
   }
 
   /// Rewrites [layout] to hold exactly the cards in [reference], in that order,

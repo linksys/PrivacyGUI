@@ -56,9 +56,24 @@
 /// | 2 | usp_layout_controller (`_shortcuts`) | add `cancel: {}` — the plausible reading of "we only kept grab, arrows and drop" | 'Escape abandons the move' only, which is why the cancel key is asserted separately from the drop |
 /// | 3 | usp_sliver_dashboard_view | `trashBuilder: null` | both trash tests, at the premise: no pill to drag onto |
 /// | 4 | usp_widget_specs | `device_info`'s `maxH` 6 → 3, so the card is already at its full height | all seven resize tests |
-/// | 5 | this file | make [onHost] ignore its `platform` argument and report android, i.e. the harness bug the docstring above describes | the seven tests that arm a pointer gesture with a mouse — three resize cases, the control, the desktop trash case and both throttle tests. The keyboard pair survives, which is the row's other half: those two are regime-independent, and a reader should not expect a platform mistake to show up there |
+/// | 5 | this file | make [onHost] ignore its `platform` argument and report android, i.e. the harness bug the docstring above describes | the ten tests that arm a pointer gesture with a mouse — three resize cases, the control, the desktop trash case, both throttle tests and the three phone-handle drags of #1399. The three keyboard tests survive, which is the row's other half: they arm through a tap and a chord, so they are regime-independent, and a reader should not expect a platform mistake to show up there |
 /// | 6 | this file | `web: false` on the two throttle tests | both of them: with no gate in the path no move is ever coalesced, so there is nothing pending for the flush to land and nothing held back at the release. Both had to be given an explicit premise assertion to earn this row — before that, "the commit equals the last frame" was trivially true off web |
 /// | 7 | usp_sliver_dashboard_view | `animateReflow: false` — the state of the world before #1397, since the flag is off by default | all four reflow tests. Two of them die on their premise rather than their claim ("there is a slide in flight to be dropped"), which is what those premises are for: with no transition to observe, "the slide is dropped" would pass on a grid that never animated |
+/// | 8 | usp_widget_specs (`lockToFullWidth`) | `minW: 1` instead of `cols`, leaving `maxW` alone — the narrowest edit that unlocks a phone card | all four #1399 tests, at `phoneGrid`'s shared premise, which reads the caps directly |
+/// | 8b | as row 8, **and** `phoneGrid`'s premise relaxed to `[item.x, item.w]` | the two-step version, run to find out what the claims are worth once the tripwire is out of the way | the left-handle test, on its claim, with `{'x0 w4', 'x1 w3'}` — the inward leak 0.9.1 had, reproduced on 2.6.0 the moment the cap goes; and the bottom-left one, which drives the same inward direction through the corner case. The arrow-key and bottom-handle tests pass, correctly: the arrow clamp reads `w`, which nothing in that test narrows first, and the bottom handle is about the height |
+///
+/// Row 8b is why 8 is written as a premise kill rather than a claim kill. Reading
+/// the caps in the shared helper is deliberate — an unpinned card would make every
+/// assertion below pass for the wrong reason — but it does mean the single-step
+/// mutation never reaches a gesture, and a row claiming otherwise would be
+/// describing a run nobody had done.
+///
+/// Row 8 has a coarser sibling worth knowing about rather than listing: dropping
+/// *both* caps does not unlock anything, it trips the engine's own
+/// `currentL.minW <= cols` assertion while the page is building
+/// (`layout_engine.dart:963`), because the 12-column spec's `minW: 6` then
+/// survives the projection onto a 4-column grid. Pinning the caps is two jobs in
+/// one line, and only the mutation above isolates the one these tests are for.
 ///
 /// Not covered by a row: dropping the `reflowDuration:` argument is invisible
 /// while our number and the package default are the same 150ms. The assertion
@@ -559,7 +574,8 @@ void main() {
       List<dynamic> after,
     ) {
       final was = {
-        for (final item in before) (item as Map)['id'] as String: item['y'] as int,
+        for (final item in before)
+          (item as Map)['id'] as String: item['y'] as int,
       };
       return {
         for (final item in after)
@@ -651,7 +667,8 @@ void main() {
                 'alone must be painted where it has always been, or the flag '
                 'would be animating the whole grid on every mutation');
         expect(render.debugActiveReflowTransitionCount, sliding.length,
-            reason: 'the transition map holds exactly those and nothing else: a '
+            reason:
+                'the transition map holds exactly those and nothing else: a '
                 'count above what is painted is a leaked entry keeping the '
                 'ticker alive');
         expect(sliding, isNot(contains(_id)),
@@ -710,8 +727,7 @@ void main() {
         // computed in the old metric space, so carrying it across would slide a
         // card to a place it never was.
         final narrower = _surfaces[12]!;
-        tester.view.physicalSize =
-            Size(narrower.width - 160, narrower.height);
+        tester.view.physicalSize = Size(narrower.width - 160, narrower.height);
         await tester.pump();
 
         expect(identical(gridRender(tester), render), isTrue,
@@ -740,15 +756,16 @@ void main() {
         final controller = container.read(uspSliverDashboardControllerProvider);
 
         await growDown(tester, controller);
-        expect(gridRender(tester).debugActiveReflowTransitionCount,
-            greaterThan(0),
+        expect(
+            gridRender(tester).debugActiveReflowTransitionCount, greaterThan(0),
             reason: 'the premise');
 
         tester.view.physicalSize = _surfaces[8]!;
         await settleIgnoringAnimations(tester);
 
         expect(controller.slotCount.value, 8,
-            reason: 'the grid really did change: the whole layout is re-derived '
+            reason:
+                'the grid really did change: the whole layout is re-derived '
                 'at the new column count, so every card moves at once');
         expect(gridRender(tester).debugActiveReflowTransitionCount, 0,
             reason: 'and none of that motion is animated. Two mechanisms agree '
@@ -757,6 +774,224 @@ void main() {
                 'controller is a breakpoint behind (#1395) — which is why this '
                 'is asserted as an observable rather than attributed to one of '
                 'them.');
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The phone grid's width lock, at the gesture (#1399)
+  //
+  // The lock (#1293) used to be held in two places: `minW == maxW == cols` on
+  // every item, and a subscription on the layout beacon that rewrote `x`/`w`
+  // back after the fact — because 0.9.1's resize arithmetic let the left-hand
+  // handles move `x` past the caps and then trimmed `w` to whatever was left
+  // of the row. The correction was a write into `controller.layout.value`, and
+  // one frame of the illegal geometry was drawn before it landed.
+  //
+  // 2.x resolves an anchored resize against the caps instead
+  // (`dashboard_controller_impl.dart:1828-1842`): for a left-family handle it
+  // clamps `newX` into `[max(limitX, originalRight - maxW), originalRight -
+  // minW]`, which for `x == 0, w == minW == maxW == cols` is `[0, 0]`. So the
+  // caps now hold both handles, and the geometry is refused rather than
+  // undone. These tests are the evidence for that — they sample every frame of
+  // a real gesture, which is the only place the difference between "refused"
+  // and "reverted" is visible.
+  //
+  // Which end of that interval the caps actually supply is worth being exact
+  // about, because only one of the two directions is evidence. The lower bound
+  // is `max(limitX, originalRight - maxW)` and `limitX` is already 0 for a card
+  // at the left edge, so dragging *outwards* is held by the row whatever the
+  // caps say. The upper bound, `originalRight - minW`, is the caps' alone: drop
+  // `minW` and the card narrows inwards. So in the drag below the outward half
+  // is a control — it shows the gesture is live and travelling — and the inward
+  // half is the claim.
+  // -------------------------------------------------------------------------
+  group('the phone grid refuses a width change outright (#1399)', () {
+    /// [_id]'s live geometry, formatted so a set of samples reads as one line.
+    String widthOf(DashboardController controller) {
+      final item = controller.layout.value.firstWhere((item) => item.id == _id);
+      return 'x${item.x} w${item.w}';
+    }
+
+    /// Pumps a 4-column page in edit mode and returns its controller.
+    Future<DashboardController> phoneGrid(WidgetTester tester) async {
+      final container =
+          await pumpDashboardPage(tester, size: _surfaces[4]!, editing: true);
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      expect(controller.slotCount.value, 4,
+          reason: 'the premise: this width really is the phone grid');
+
+      final item = controller.layout.value.firstWhere((item) => item.id == _id);
+      expect([item.x, item.w, item.minW, item.maxW], [0, 4, 4, 4.0],
+          reason: 'and the card arrives pinned. The caps are the mechanism '
+              'under test — an item that reached the phone grid without them '
+              'would make everything below pass for the wrong reason, which '
+              'is exactly the failure the deleted beacon correction used to '
+              'hide.');
+      return controller;
+    }
+
+    testWidgets('a left-handle drag moves neither x nor w, on any frame',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        // Inside the 20px band on the left edge and clear of both corners,
+        // which is where `calculateResizeHandle` reads `ResizeHandle.left` —
+        // the handle family the caps alone could not hold at 0.9.1.
+        final gesture =
+            await tester.startGesture(rect.centerLeft + const Offset(8, 0));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id,
+            reason: 'the gesture landed on this card');
+        expect(controller.isDragging.value, isFalse,
+            reason: 'and armed a resize rather than a body drag — a press '
+                'that missed the band would move the card instead, and every '
+                'sample below would be about the wrong gesture');
+
+        final seen = <String>{widthOf(controller)};
+        // Outwards first, into the row's own left edge, then back inwards past
+        // where the card started. 0.9.1 leaked in both directions and leaked
+        // differently — `x: 0, w: 3` outwards, `x: 1, w: 3` inwards — but on
+        // 2.6.0 only the inward half is held by the caps (see the note above
+        // this group). Both are still driven, because a gesture that stopped
+        // travelling would sample one value too.
+        for (final step in [const Offset(-30, 0), const Offset(45, 0)]) {
+          for (var i = 0; i < 8; i++) {
+            await gesture.moveBy(step);
+            await tester.pump(_kThrottleWindow * 2);
+            seen.add(widthOf(controller));
+          }
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+        seen.add(widthOf(controller));
+
+        expect(seen, {'x0 w4'},
+            reason: 'one value across the whole gesture. A set rather than a '
+                'final reading is the whole point: the correction this '
+                'replaces produced the right answer at the end too, and was '
+                'still drawing a narrowed card for a frame each time.');
+      });
+    });
+
+    testWidgets('nor can an arrow key, which is the other way in',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+
+        // Grab exactly as the 12-column keyboard tests do: tap to focus, Space
+        // to grab. The arrows reach `moveActiveItemBy` from there
+        // (`dashboard_item_widget.dart:308-318`), and that is a second mutation
+        // path with its own arithmetic — `targetX.clamp(0, slotCount - bbox.w)`
+        // (`dashboard_controller_impl.dart:1930`) rather than the resize
+        // resolver's anchored clamp. The caps reach it one step removed: they
+        // keep `w == slotCount`, and that is what collapses the clamp to
+        // `[0, 0]`. Worth a test of its own because the deleted correction
+        // covered both paths at once, and because arrows are the one
+        // interaction our shortcut policy deliberately leaves bound.
+        await tester.tap(find.byKey(const ValueKey<String>(_id)),
+            warnIfMissed: false);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pump();
+        expect(controller.isDragging.value, isTrue,
+            reason: 'the premise: the card is grabbed, so the arrows below are '
+                'the move path and not a scroll');
+
+        final seen = <String>{widthOf(controller)};
+        for (var i = 0; i < 3; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          seen.add(widthOf(controller));
+        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        seen.add(widthOf(controller));
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await settleIgnoringAnimations(tester);
+        seen.add(widthOf(controller));
+
+        expect(seen, {'x0 w4'},
+            reason: 'the same single value. The control for this one is the '
+                '12-column test above, which sends the identical chord and '
+                'does move the card — so this is the caps refusing the move, '
+                'not a keyboard path that never arrived.');
+      });
+    });
+
+    testWidgets('the bottom handle still takes the height on a phone',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+        final before = itemOf(controller, _id);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        final gesture =
+            await tester.startGesture(rect.bottomCenter - const Offset(0, 8));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id, reason: 'the premise');
+
+        for (var i = 0; i < 4; i++) {
+          await gesture.moveBy(const Offset(0, 60));
+          await tester.pump(_kThrottleWindow * 2);
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+
+        final after = itemOf(controller, _id);
+        expect(after['h'], greaterThan(before['h'] as num),
+            reason: 'the one dimension the lock leaves alone. Without this '
+                'the group above would also pass on a phone grid that had '
+                'stopped accepting any resize at all.');
+        expect([after['x'], after['w']], [0, 4],
+            reason: 'and taking the height did not cost the width');
+      });
+    });
+
+    testWidgets('a bottom-left drag takes only the half it is allowed',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+        final before = itemOf(controller, _id);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        // Both bands at once: `calculateResizeHandle` returns `bottomLeft`
+        // before it considers the sides (`resize_handle.dart:227-236`), so a
+        // corner is not the two side handles run twice — it is a third case,
+        // and the only one where the two axes are resolved in the same frame.
+        // The vertical branch has the same anchored shape as the horizontal one
+        // (`:1801-1814`), which is why this is the case a rule expressed
+        // per-axis is most likely to get wrong.
+        final gesture =
+            await tester.startGesture(rect.bottomLeft + const Offset(8, -8));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id, reason: 'the premise');
+        expect(controller.isDragging.value, isFalse,
+            reason: 'and it is a resize, not a body drag');
+
+        final widths = <String>{widthOf(controller)};
+        // Rightwards, not leftwards: inwards is the direction the caps hold, so
+        // a diagonal that pushed out would be resolved by the row edge and this
+        // test would tell us nothing the pure bottom handle does not.
+        for (var i = 0; i < 6; i++) {
+          await gesture.moveBy(const Offset(25, 40));
+          await tester.pump(_kThrottleWindow * 2);
+          widths.add(widthOf(controller));
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+        widths.add(widthOf(controller));
+
+        final after = itemOf(controller, _id);
+        expect(widths, {'x0 w4'},
+            reason: 'the width half is refused on every frame, exactly as for '
+                'the pure left handle');
+        expect(after['h'], greaterThan(before['h'] as num),
+            reason: 'and the height half still lands — a corner that refused '
+                'both would pass the assertion above while being a worse bug '
+                'than the one it is guarding');
       });
     });
   });

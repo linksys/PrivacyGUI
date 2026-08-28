@@ -571,6 +571,22 @@ class _UspSliverDashboardViewState
   // Edit Mode — resize, settings, item builder
   // ---------------------------------------------------------------------------
 
+  /// Corrects a finished resize that its card's spec does not allow, and says so.
+  ///
+  /// Reachable only when an item's own `minW`/`maxW`/`minH`/`maxH` disagree with
+  /// the bounds its spec implies for the grid it is on — the gesture itself is
+  /// clamped to those caps by `DashboardController`, so a card whose caps describe
+  /// its spec lands *on* a bound and [UspWidgetSpecs.correctedSize] returns null
+  /// (which is what the resize cases in `edit_mode_interactions_test.dart`
+  /// measure). What is left for this to catch is the disagreement: a card added by
+  /// a package rather than a spec, a layout stored by an older build, or a
+  /// projection that scaled the caps differently from how [UspWidgetSpecs] scales
+  /// the spec.
+  ///
+  /// Kept for that reason rather than folded into a `DashboardPolicy` (#1399): a
+  /// policy hook is a boolean asked before the gesture, so it could only refuse
+  /// the resize outright, and the case this handles is one where the *correct*
+  /// bounds are known and the card should come to rest on them.
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
     final factory = ref.read(uspWidgetFactoryProvider);
     final spec = factory.getSpec(item.id) ??
