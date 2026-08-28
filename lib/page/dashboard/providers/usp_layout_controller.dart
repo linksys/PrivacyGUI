@@ -266,8 +266,13 @@ class UspSliverDashboardControllerNotifier
     // Remote mode: use fixed remote preset layout, skip persistence
     final forcedPreset = GlobalConfig.remote.forcedPreset;
     if (forcedPreset != null) {
+      // Read the live breakpoint at the swap, not before an await: the pref read
+      // below means this method can land several frames after the page was first
+      // laid out — on a phone, several frames after the view moved the outgoing
+      // controller off desktop.
+      final live = state.slotCount.value;
       _swapController(_createController(forcedPreset.createLayout()));
-      _seedBreakpoints();
+      _seedBreakpoints(live: live);
       return;
     }
 
@@ -310,8 +315,9 @@ class UspSliverDashboardControllerNotifier
     if (desktop != null) {
       _importQuietly(newController, desktop);
     }
+    final live = state.slotCount.value;
     _swapController(newController);
-    _seedBreakpoints(stored: envelope);
+    _seedBreakpoints(stored: envelope, live: live);
 
     // A legacy bare list, or an envelope written before we rendered a
     // breakpoint, has nothing stored for the grids we just derived. Write them
@@ -333,7 +339,13 @@ class UspSliverDashboardControllerNotifier
   /// two-column layout collapses.
   ///
   /// Must be called with the controller on the desktop grid (the widest one is
-  /// the source everything else is derived from); it leaves it there.
+  /// the source everything else is derived from). It ends the walk there too, and
+  /// then puts the controller back on the grid the page is rendering: [live], or
+  /// the one it found the controller on. A caller that has just swapped the
+  /// instance has to pass it, because a fresh controller starts on desktop
+  /// whatever width it is about to be shown at — and the view withholds the grid
+  /// for any frame the two disagree, so getting this wrong is a blank flash
+  /// rather than a wrong layout (#1395).
   ///
   /// ## And it cannot wait for the pref (#1395)
   ///
@@ -359,8 +371,9 @@ class UspSliverDashboardControllerNotifier
   ///
   /// The cost is one extra walk per session — three `setSlotCount` calls and two
   /// imports, in memory, persisting nothing.
-  void _seedBreakpoints({UspLayoutEnvelope? stored}) {
+  void _seedBreakpoints({UspLayoutEnvelope? stored, int? live}) {
     final controller = state;
+    final liveSlots = live ?? controller.slotCount.value;
 
     // Desktop is normalised here rather than by its caller because every path
     // into this method imports the desktop layout first and then relies on this
@@ -401,10 +414,17 @@ class UspSliverDashboardControllerNotifier
     // Returns to the layout cached during the first setSlotCount above.
     controller.setSlotCount(_desktopSlots);
 
-    // Every grid's cache now holds the same membership — see [_seededIds].
+    // Every grid's cache now holds the same membership — see [_seededIds]. Read
+    // on the desktop grid because that is the one this walk normalised first;
+    // after the seed every breakpoint agrees, so which one is read is arbitrary.
     _seededIds = {
       for (final item in controller.exportLayout()) item['id'] as String,
     };
+
+    // And back to the grid the page is actually rendering.
+    if (liveSlots != _desktopSlots) {
+      controller.setSlotCount(liveSlots);
+    }
   }
 
   /// The per-grid policy a layout must satisfy before it is imported or stored.
@@ -710,11 +730,10 @@ class UspSliverDashboardControllerNotifier
     final controller = _createDefaultController();
     _importQuietly(controller, layouts[_desktopSlots] ?? const []);
     _swapController(controller);
-    _seedBreakpoints(stored: UspLayoutEnvelope(layouts));
+    // `live: origin` is what keeps a delete made on a phone from handing the page
+    // a desktop grid — the seed leaves the controller where the outgoing one was.
+    _seedBreakpoints(stored: UspLayoutEnvelope(layouts), live: origin);
 
-    if (origin != _desktopSlots) {
-      controller.setSlotCount(origin);
-    }
     // Edit mode lives on the controller, so a fresh instance would drop the
     // handles and the trash zone mid-session while dashboardEditModeProvider
     // still believed we were editing.
@@ -729,10 +748,11 @@ class UspSliverDashboardControllerNotifier
     // reset that kept the picks would hand back a "default" layout with cards
     // still pinned and still missing their handles.
     _setForms(CardForms.empty);
+    final live = state.slotCount.value;
     _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
     // correctBounds at tablet width, which collapses the two-column grid.
-    _seedBreakpoints();
+    _seedBreakpoints(live: live);
 
     // Through the queue, so a save started by the drag before the reset cannot
     // land after the removal and leave the pref holding a layout again.
@@ -982,8 +1002,9 @@ class UspSliverDashboardControllerNotifier
   /// rather than generic 2-column packing.
   Future<void> applyPreset(UspDashboardPreset preset) async {
     final layout = preset.createLayout();
+    final live = state.slotCount.value;
     _swapController(_createController(layout));
-    _seedBreakpoints();
+    _seedBreakpoints(live: live);
     await saveLayout();
   }
 

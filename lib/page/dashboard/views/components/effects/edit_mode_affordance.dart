@@ -32,6 +32,22 @@ import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake
 /// behaviour rather than decoration: without it a tap reaches card content while
 /// the grid thinks it is being edited, which is how accidental deletions
 /// happened.
+///
+/// ## Shape, not properties — and when that has to change
+///
+/// [build] swaps the widget *shape* (a bare child, or a wrapped one) rather than
+/// mounting [JiggleShake] and [AbsorbPointer] permanently and driving their
+/// `active`/`absorbing` flags. Driving the flags would keep one element across
+/// the toggle; swapping shape remounts the card's subtree under it. Today that
+/// buys nothing, because the three chrome changes above already remount every
+/// tile on the same toggle — and view mode, which is nearly all of the time,
+/// pays for no ticker, no `AnimatedBuilder` and no identity transform per card.
+///
+/// If those chrome changes ever stop remounting the tiles — the opacity change
+/// this class exists to survive — this has to become
+/// `JiggleShake(active: isEditMode, child: AbsorbPointer(absorbing: isEditMode,
+/// …))` on the same day, or the toggle starts disposing every card's state and
+/// re-issuing whatever its providers were holding.
 class EditModeAffordance extends ConsumerWidget {
   const EditModeAffordance({super.key, required this.child});
 
@@ -39,7 +55,13 @@ class EditModeAffordance extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
+    // `select`, because this is the one field of the state the affordance reads
+    // and there is one of these per card: `enterEditMode` publishes twice — the
+    // flag, then the snapshots it took — and every unselected watcher would
+    // rebuild for both, each time running an `Equatable` comparison over the
+    // layout snapshot it does not look at.
+    final isEditMode =
+        ref.watch(dashboardEditModeProvider.select((s) => s.isEditing));
     if (!isEditMode) return child;
 
     // AbsorbPointer blocks content interactions while keeping the area hittable

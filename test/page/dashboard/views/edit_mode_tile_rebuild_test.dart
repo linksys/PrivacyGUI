@@ -36,7 +36,9 @@
 /// The page-level group asserts the user-visible behaviour on the real page, with
 /// the real controller, factory and edit-mode notifier — but it *cannot* fail for
 /// the right reason, because the incidental remounts above would carry a
-/// parent-passed flag too. The affordance group is the one that pins the mechanism:
+/// parent-passed flag too. It earned its keep on a different axis: row 6 of the
+/// table below is a crash on entering edit mode that only a real page could see.
+/// The affordance group is the one that pins the mechanism:
 /// it flips the provider under a tile whose element is never remounted, which is
 /// what the package's cache leaves us with.
 ///
@@ -49,6 +51,7 @@
 /// | 3 | edit_mode_affordance | wrap unconditionally, ignoring edit mode | 'a card outside edit mode is not wrapped' |
 /// | 4 | edit_mode_affordance | wrap on `isEditing == false` | 'leaving edit mode unwraps them again' |
 /// | 5 | usp_sliver_dashboard_view | stop wrapping cards in the affordance at all | every test in both groups |
+/// | 6 | usp_sliver_dashboard_view | hoist the grid's per-build `ScrollController` into the `State` — the obvious fix for what reads like a leak | both toggle tests, with `ScrollController attached to multiple scroll views`: `CardFormToolbarLayer` changes the tree shape above the `Scrollable`, so a shared instance has two positions attached during the frame the layer appears in. Found by running it. |
 library;
 
 import 'package:flutter/material.dart';
@@ -59,10 +62,12 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provide
 import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../layout_gate/collector.dart' show settleIgnoringAnimations;
 import '../../../mocks/provider_overrides/mock_dashboard_page.dart';
+import '../../../util/settle.dart';
 
 final _theme = AppTheme.create(
   brightness: Brightness.light,
@@ -146,6 +151,88 @@ void main() {
         of: find.byType(JiggleShake),
         matching: find.byType(AbsorbPointer),
       );
+
+  group('the premise: 2.6.0 really does cache tile content (#1395)', () {
+    /// The cache boundary both fixes are built on, asserted against the package
+    /// rather than quoted from its changelog.
+    ///
+    /// No mutation table: the code under test is `sliver_dashboard`'s, and
+    /// mutating a pub-cache package is not an edit anyone can commit — the same
+    /// reason `density_control_gesture_spike_test.dart` gives. The positive
+    /// control is what stands in for one: if this harness could not make the
+    /// package call `itemBuilder` again at all, the first test would pass for the
+    /// wrong reason.
+    Future<int Function()> pumpGrid(
+      WidgetTester tester, {
+      required ValueNotifier<double> ratio,
+    }) async {
+      var calls = 0;
+      final controller = DashboardController(
+        initialSlotCount: 12,
+        initialLayout: UspWidgetSpecs.createDefaultLayout(),
+        maxHistoryLength: 0,
+      );
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: _theme,
+        home: Scaffold(
+          body: ValueListenableBuilder<double>(
+            valueListenable: ratio,
+            builder: (context, value, _) => CustomScrollView(
+              slivers: [
+                SliverDashboard(
+                  controller: controller,
+                  itemBuilder: (context, item) {
+                    calls++;
+                    return const SizedBox.expand();
+                  },
+                  slotAspectRatio: value,
+                  breakpoints: {0: 12},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+      return () => calls;
+    }
+
+    testWidgets('a rebuild that changes nothing about an item does not rebuild '
+        'its content', (tester) async {
+      final ratio = ValueNotifier<double>(1.5);
+      addTearDown(ratio.dispose);
+      final calls = await pumpGrid(tester, ratio: ratio);
+
+      final built = calls();
+      expect(built, greaterThan(0), reason: 'the premise of the premise');
+
+      // Same items, same geometry, new parent build — which is all a page rebuild
+      // is when a provider it watches publishes.
+      ratio.notifyListeners();
+      await tester.pump();
+
+      expect(calls(), built,
+          reason: 'this is the boundary: anything a tile reads from the page '
+              'build is frozen at the first frame, which is why the edit-mode '
+              'flag and the package templates are read inside the tile');
+    });
+
+    testWidgets('a dimension change does', (tester) async {
+      final ratio = ValueNotifier<double>(1.5);
+      addTearDown(ratio.dispose);
+      final calls = await pumpGrid(tester, ratio: ratio);
+
+      final built = calls();
+      ratio.value = 2.5;
+      await tester.pump();
+
+      expect(calls(), greaterThan(built),
+          reason: 'the positive control: the harness can make the package '
+              'rebuild tile content, so the test above measures the cache and '
+              'not a harness that cannot trigger anything');
+    });
+  });
 
   group('edit-mode tile wrapping on the real page (#1395)', () {
     testWidgets('a card outside edit mode is not wrapped', (tester) async {
@@ -251,7 +338,17 @@ void main() {
         (tester) async {
       await pumpAffordance(tester);
 
-      expect(find.byType(SizedBox), findsWidgets);
+      // Scoped, and to the box this test pumped: `MaterialApp` and `Scaffold`
+      // bring `SizedBox`es of their own, so an unscoped `findsWidgets` would pass
+      // for an affordance that returned `SizedBox.shrink()` and dropped the card.
+      expect(
+          find.descendant(
+            of: find.byType(EditModeAffordance),
+            matching: find.byWidgetPredicate(
+                (w) => w is SizedBox && w.width == 40 && w.height == 40),
+          ),
+          findsOneWidget,
+          reason: 'view mode returns the child, not a wrapper around it');
       // Scoped to the affordance's own subtree: `MaterialApp` brings absorbers of
       // its own, and they are not what this is about.
       expect(
