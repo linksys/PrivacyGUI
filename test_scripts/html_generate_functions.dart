@@ -474,31 +474,43 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         banner.textContent =
           'Overflow detail unavailable: ' + DATA.overflowReportUnreadable;
       }
-      drawDonut(c.success, c.fail);
+      drawDonut(c.success, c.fail, incomplete);
     }
 
-    function drawDonut(pass, fail) {
+    function drawDonut(pass, fail, incomplete) {
       const canvas = document.getElementById('donutChart');
       const ctx = canvas.getContext('2d');
-      const total = pass + fail;
+      // The denominator is the Total tile's number rather than pass + fail, so a
+      // run that lost suites mid-way cannot still paint a full green ring while
+      // the tiles above say otherwise (#1404).
+      const total = pass + fail + incomplete;
       if (total === 0) return;
       const cx = 50, cy = 50, r = 40, inner = 25;
-      const passAngle = (pass / total) * Math.PI * 2;
       const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + Math.PI * 2;
+      // Amber is the Incomplete tile's colour. Empty buckets are dropped, so a
+      // healthy run still draws the same two arcs it always did.
+      const segments = [
+        [pass, '#22c55e'],
+        [fail, '#ef4444'],
+        [incomplete, '#f59e0b'],
+      ].filter(s => s[0] > 0);
 
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, startAngle, startAngle + passAngle);
-      ctx.arc(cx, cy, inner, startAngle + passAngle, startAngle, true);
-      ctx.closePath();
-      ctx.fillStyle = '#22c55e';
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, startAngle + passAngle, startAngle + Math.PI * 2);
-      ctx.arc(cx, cy, inner, startAngle + Math.PI * 2, startAngle + passAngle, true);
-      ctx.closePath();
-      ctx.fillStyle = '#ef4444';
-      ctx.fill();
+      let angle = startAngle;
+      segments.forEach(function(s, i) {
+        // The last segment closes on the exact start angle: summing sweeps
+        // instead would leave a hairline gap at twelve o'clock.
+        const to = i === segments.length - 1
+          ? endAngle
+          : angle + (s[0] / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, angle, to);
+        ctx.arc(cx, cy, inner, to, angle, true);
+        ctx.closePath();
+        ctx.fillStyle = s[1];
+        ctx.fill();
+        angle = to;
+      });
 
       ctx.fillStyle = getComputedStyle(document.body).color;
       ctx.font = 'bold 14px sans-serif';

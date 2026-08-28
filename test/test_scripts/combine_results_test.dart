@@ -53,8 +53,6 @@ void main() {
       ]);
 
       expect(counting, {'success': 1, 'fail': 1, 'incomplete': 2, 'total': 4});
-      expect(counting['total'],
-          counting['success']! + counting['fail']! + counting['incomplete']!);
     });
 
     test('is all zeroes for a run that produced no records', () {
