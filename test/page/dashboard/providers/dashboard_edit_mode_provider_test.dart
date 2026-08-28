@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
@@ -9,10 +12,24 @@ import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+// The grab that Space starts is not on the exported interface — the item widget
+// reaches it through this extension, and an exit while one is open is what the
+// #1393 group below is about.
+// ignore: implementation_imports
+import 'package:sliver_dashboard/src/controller/utility.dart';
 
 Future<void> pumpAsync() async {
   await Future.delayed(const Duration(milliseconds: 100));
+}
+
+/// The desktop grid out of a persisted layout envelope (#1293 keys it by slot
+/// count), so an assertion can name the grid the test acted on.
+List<dynamic> _savedDesktopLayout(String raw) {
+  final layouts = (jsonDecode(raw) as Map)['layouts'] as Map;
+  return layouts['${UspLayoutEnvelope.desktopSlotCount}'] as List;
 }
 
 void main() {
@@ -394,6 +411,180 @@ void main() {
             .read(dashboardEditModeProvider.notifier)
             .commitEditMode();
         expect(container.read(dashboardEditModeProvider).isEditing, isFalse);
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1393 — leaving edit mode with a keyboard grab still held
+  // ---------------------------------------------------------------------------
+  //
+  // Every edit is stored by whoever made it: since #1393 the grid reports its own
+  // drops through the controller's `onLayoutChanged` hook (covered in
+  // usp_layout_controller_test.dart), and the toolbar's actions store their result
+  // themselves. So exiting edit mode writes nothing — with one case left to
+  // decide, and it is the reason this group exists.
+  //
+  // The a11y reorder is a mode rather than a gesture: Space grabs a card, the
+  // arrows move it, Space drops it. Unlike a pointer drag it can therefore still
+  // be open when "Done" or "Cancel" is clicked with the mouse, and the layout it
+  // is holding is uncompacted — not a layout the load path would reproduce. The
+  // exit ends the interaction instead of storing it, which is what Escape does
+  // mid-grab.
+  group('exit with an interaction still in flight (#1393)', () {
+    /// The coordinates in [layout], one `id: x,y,w,h` line per card, id-ordered.
+    List<String> geometry(List<dynamic> layout) => layout
+        .map((i) =>
+            '${(i as Map)['id']}: ${i['x']},${i['y']},${i['w']},${i['h']}')
+        .toList()
+      ..sort();
+
+    /// Grabs [cardId] with the keyboard and steps it one column right, the way
+    /// Space-then-arrow does, and leaves the grab open.
+    void grabAndMove(DashboardController controller, String cardId) {
+      controller.clearSelection();
+      controller.toggleSelection(cardId);
+      controller.internal.onDragStart(cardId);
+      controller.moveActiveItemBy(1, 0);
+    }
+
+    test('commit abandons the held move and stores nothing', () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final beforeGrab = geometry(controller.exportLayout());
+      final baseline = prefs.getString(pUspSliverDashboardLayout);
+      expect(baseline, isNotNull,
+          reason: 'the seed writes a baseline layout on first init');
+
+      grabAndMove(controller, 'device_info');
+      expect(geometry(controller.exportLayout()), isNot(beforeGrab),
+          reason: 'the grab is in flight and has moved the card');
+
+      await notifier.commitEditMode();
+      await pumpAsync();
+
+      expect(controller.isDragging.value, isFalse,
+          reason: 'a grab must not outlive the edit session it was made in');
+      expect(geometry(controller.exportLayout()), beforeGrab,
+          reason: 'the card goes back where the grab started, as it would on '
+              'Escape — the move was never dropped');
+      expect(prefs.getString(pUspSliverDashboardLayout), baseline,
+          reason: 'nothing was dropped, so there is nothing to store. Writing '
+              'the held layout instead would store an uncompacted grid, and the '
+              'cards would settle somewhere else on the next reload.');
+    });
+
+    test('cancel reverts to the entry snapshot, not to the moment of the grab',
+        () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final onEntry = geometry(controller.exportLayout());
+
+      // A first reorder, dropped: stored as it happens (#1393).
+      grabAndMove(controller, 'device_info');
+      controller.internal.onDragEnd('device_info');
+      await pumpAsync();
+      final afterFirstMove = geometry(controller.exportLayout());
+      expect(afterFirstMove, isNot(onEntry),
+          reason: 'the dropped move changed the grid');
+
+      // A second reorder, still held when Cancel is clicked.
+      grabAndMove(controller, 'device_info');
+
+      await notifier.cancelEditMode();
+      await pumpAsync();
+
+      expect(controller.isDragging.value, isFalse,
+          reason: 'the grab is ended on the instance it was made on');
+
+      // Re-read: restoring a snapshot can restore a card the session deleted,
+      // which is a membership change, and those arrive as a new controller.
+      final live = container.read(uspSliverDashboardControllerProvider);
+      expect(geometry(live.exportLayout()), onEntry,
+          reason: 'cancel reverts the whole session. Ending the interaction '
+              'after the snapshot is imported rather than before it would put '
+              'the grid back to the first move instead.');
+      expect(
+        geometry(
+            _savedDesktopLayout(prefs.getString(pUspSliverDashboardLayout)!)),
+        onEntry,
+        reason: 'and the revert is stored, so the reload agrees with the grid',
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1393 — cancelling a delete has to put the card back on every grid
+  // ---------------------------------------------------------------------------
+  //
+  // The trash zone does not go through the notifier: the package's overlay calls
+  // `removeItems` on the controller itself and the view only persists the result.
+  // So a delete leaves the live layout without the card while the pref is written
+  // by the walk that visits every breakpoint — and a cancel then has to put the
+  // card back on all of them at a width each one can hold.
+  //
+  // Left to the package that walk hangs rather than fails: `placeNewItems` wraps
+  // to the next row forever when an item is wider than the grid it is being
+  // reconciled into, because the wrap branch skips its own safety counter
+  // (`sliver_dashboard` 0.9.0). `stats_panel` is `w: 12`, so this test does not
+  // fail without the fix in `restoreSnapshot` — it spins, and takes the rest of
+  // the file's run with it.
+  group('cancel after a delete (#1393)', () {
+    bool holds(List<dynamic> layout, String id) =>
+        layout.any((item) => (item as Map)['id'] == id);
+
+    test('the deleted card comes back on every breakpoint', () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+
+      // What the trash zone does: the overlay removes the item, the hook stores
+      // the result.
+      container
+          .read(uspSliverDashboardControllerProvider)
+          .removeItems(['stats_panel']);
+      await pumpAsync();
+      expect(
+        holds(_savedDesktopLayout(prefs.getString(pUspSliverDashboardLayout)!),
+            'stats_panel'),
+        isFalse,
+        reason: 'the delete reached the pref on its own (#1393)',
+      );
+
+      await notifier.cancelEditMode();
+      await pumpAsync();
+
+      final live = container.read(uspSliverDashboardControllerProvider);
+      expect(holds(live.exportLayout(), 'stats_panel'), isTrue,
+          reason: 'the card the session deleted is back on the grid');
+
+      final envelope = UspLayoutEnvelope.tryDecode(
+          prefs.getString(pUspSliverDashboardLayout)!)!;
+      for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
+        final layout = envelope[slots];
+        expect(layout, isNotNull, reason: 'every grid is still written out');
+        expect(holds(layout!, 'stats_panel'), isTrue,
+            reason: 'membership is global, so the revert restores the card on '
+                'the $slots-column grid too');
+        final card =
+            layout.firstWhere((i) => (i as Map)['id'] == 'stats_panel');
+        expect((card as Map)['w'] as int, lessThanOrEqualTo(slots),
+            reason: 'and it is stored at a width that grid can hold');
       }
     });
   });

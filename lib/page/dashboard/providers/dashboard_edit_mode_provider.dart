@@ -142,8 +142,14 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     controller.setEditMode(true);
   }
 
-  /// Exit edit mode, keeping the current layout (changes are already persisted
-  /// on each drag/resize, so committing is just clearing the edit flag).
+  /// Exit edit mode, keeping the current layout.
+  ///
+  /// Writes nothing, and that is the point: every edit is stored by whoever made
+  /// it — the grid reports drags, drops, resizes and deletes through the
+  /// controller's `onLayoutChanged` hook (#1393), and the toolbar's own actions
+  /// store their result themselves. Saving again here would only re-write what is
+  /// already in the pref, and on the one path where the two disagree — a keyboard
+  /// grab still held — the in-memory layout is the one that should lose.
   Future<void> commitEditMode() => _exitEditMode(revert: false);
 
   /// Exit edit mode and revert the layout/prefs to the pre-edit snapshots
@@ -152,14 +158,34 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
   /// Shared exit path for [commitEditMode] / [cancelEditMode].
   ///
+  /// Both paths end an interaction that is still in flight before anything else.
+  /// The keyboard (a11y) reorder is a mode rather than a gesture — Space grabs a
+  /// card, the arrows move it, Space drops it — so unlike a pointer drag it can
+  /// still be open when "Done" or "Cancel" is clicked with the mouse. Left open it
+  /// would strand `isDragging` on a controller that is no longer in edit mode, and
+  /// leave the grid holding the uncompacted layout the arrows produced.
+  /// [DashboardController.cancelInteraction] puts the card back where the grab
+  /// started, which is the same thing Escape does mid-grab.
+  ///
+  /// It has to run before the revert below rather than alongside the cleanup in
+  /// the `finally`: the layout it restores is the one from the moment of the grab,
+  /// so afterwards it would overwrite the snapshot that was just imported.
+  ///
   /// The edit flag and snapshots are always cleared in the `finally` block so
-  /// that a failure in [DashboardController.saveLayout] /
+  /// that a failure in [UspSliverDashboardControllerNotifier.restoreSnapshot] /
   /// [UspLayoutPreferencesNotifier.restoreSnapshot] can never leave the
-  /// dashboard stuck in edit mode with stale state.
+  /// dashboard stuck in edit mode with stale state. The cancellation is inside the
+  /// `try` for the same reason — first, but not ahead of the guarantee.
+  ///
+  /// That block re-reads the controller rather than reusing the one the
+  /// interaction was cancelled on: a revert that restores a deleted card swaps the
+  /// instance, and clearing edit mode on the instance we started with would take
+  /// the handles off a controller nobody is rendering while the live one kept
+  /// them.
   Future<void> _exitEditMode({required bool revert}) async {
-    final controller = ref.read(uspSliverDashboardControllerProvider);
-
     try {
+      ref.read(uspSliverDashboardControllerProvider).cancelInteraction();
+
       if (revert) {
         final layoutSnapshot = state.layoutSnapshot;
         final formsSnapshot = state.formsSnapshot;
@@ -177,6 +203,7 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
         }
       }
     } finally {
+      final controller = ref.read(uspSliverDashboardControllerProvider);
       controller.setEditMode(false);
       // A selection is edit-mode state too (#1299). The package keeps it across
       // `setEditMode(false)`, and both things that read it are edit-mode only:
