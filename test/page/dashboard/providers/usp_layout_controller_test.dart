@@ -7,6 +7,11 @@ import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// The counting store below wraps whatever `setMockInitialValues` installed.
+// ignore: depend_on_referenced_packages
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+// ignore: depend_on_referenced_packages
+import 'package:shared_preferences_platform_interface/types.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 // The drag entry points are not on the exported interface: `DashboardOverlay`
 // and the item widget reach them through this extension, and #1393 is about what
@@ -1219,5 +1224,183 @@ void main() {
               'with. What happens to an unfinished grab is decided by the exit '
               'path in dashboard_edit_mode_provider.dart.');
     });
+
+    // -------------------------------------------------------------------------
+    // Stored once
+    // -------------------------------------------------------------------------
+    // The hook made three explicit `saveLayout()` calls in
+    // usp_sliver_dashboard_view.dart redundant, and each one was a second walk of
+    // all three breakpoints — export, normalise, encode, write — for a pref that
+    // already held the answer. These are what licenses deleting them: not "the
+    // edit is stored" but "the edit is stored *once*, by the mutation itself".
+    group('stored once, by the mutation itself', () {
+      /// A container whose writes to the layout key are counted.
+      ///
+      /// The counter starts after initialization, which legitimately writes once
+      /// when there is no stored layout to load.
+      Future<(ProviderContainer, _LayoutWriteCounter)>
+          countedContainer() async {
+        SharedPreferences.setMockInitialValues(const {});
+        final counter =
+            _LayoutWriteCounter(SharedPreferencesStorePlatform.instance);
+        SharedPreferencesStorePlatform.instance = counter;
+        addTearDown(() => SharedPreferencesStorePlatform.instance =
+            counter.inner as SharedPreferencesStorePlatform);
+
+        final container = ProviderContainer();
+        container.read(uspSliverDashboardControllerProvider);
+        await pumpAsync();
+        counter.writes = 0;
+        return (container, counter);
+      }
+
+      test('an optimise, so the header bar does not save again', () async {
+        final (container, counter) = await countedContainer();
+        addTearDown(container.dispose);
+
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        // Make the layout worth optimising, so the mutation is real.
+        controller.internal.onDragStart(card);
+        controller.moveActiveItemBy(0, 3);
+        controller.internal.onDragEnd(card);
+        await pumpAsync();
+        counter.writes = 0;
+
+        controller.optimizeLayout();
+        await pumpAsync();
+
+        expect(counter.writes, 1);
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          _geometry(
+              _savedDesktopLayout(prefs.getString(pUspSliverDashboardLayout)!)),
+          _geometry(controller.exportLayout()),
+          reason: 'and the one write is the optimised grid',
+        );
+      });
+
+      test('a trash delete, so the overlay callback does not save again',
+          () async {
+        final (container, counter) = await countedContainer();
+        addTearDown(container.dispose);
+
+        // What DashboardOverlay does when a card is dropped on the trash: remove
+        // it, then notify. The notification used to save; the removal already
+        // has.
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        controller.removeItems([card]);
+        await pumpAsync();
+
+        expect(counter.writes, 1);
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          _savedDesktopLayout(prefs.getString(pUspSliverDashboardLayout)!)
+              .map((i) => (i as Map)['id']),
+          isNot(contains(card)),
+          reason: 'and the one write is the deletion',
+        );
+      });
+
+      test(
+          'a resize the spec allows, so the resize handler does not save again',
+          () async {
+        final (container, counter) = await countedContainer();
+        addTearDown(container.dispose);
+
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final before = _card(controller.exportLayout(), card);
+
+        // One row taller, which every card's spec allows — the branch of
+        // _handleResizeEnd that used to call saveLayout and now returns.
+        controller.internal.onResizeStart(card);
+        controller.internal.onResizeUpdate(
+          card,
+          ResizeHandle.bottomRight,
+          const Offset(0, 100),
+          slotWidth: 100,
+          slotHeight: 100,
+          crossAxisSpacing: 0,
+          mainAxisSpacing: 0,
+        );
+        controller.internal.onResizeEnd(card);
+        await pumpAsync();
+
+        expect(_card(controller.exportLayout(), card)['h'],
+            (before['h'] as int) + 1,
+            reason: 'the resize happened');
+        expect(counter.writes, 1);
+      });
+    });
+
+    test('a card added straight to the controller is caught, not hung',
+        () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // The walk can only reconcile *deletions* into the other breakpoints. A
+      // card the live layout gained on its own is placed there by the package at
+      // the width it has here, and `placeNewItems` never terminates when that
+      // width does not fit — a frozen tab with no stack trace. Now that the hook
+      // runs the walk after every controller mutation, the constraint has an
+      // assertion behind it instead of a comment (#1393).
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      expect(
+        () => controller.addItem(
+          const LayoutItem(id: 'zz_probe', x: 0, y: 0, w: 6, h: 2),
+        ),
+        throwsA(isA<AssertionError>().having(
+          (e) => e.message,
+          'message',
+          contains('addWidget'),
+        )),
+      );
+    });
   });
+}
+
+/// Counts writes to the layout key, so "stored once" can be asserted as once
+/// rather than as at-least-once.
+///
+/// Delegates everything else to the in-memory store `setMockInitialValues`
+/// installs — the point is the count, not a second implementation of prefs.
+class _LayoutWriteCounter extends SharedPreferencesStorePlatform {
+  _LayoutWriteCounter(this.inner);
+
+  final SharedPreferencesStorePlatform inner;
+  int writes = 0;
+
+  @override
+  bool get isMock => inner.isMock;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) {
+    // The legacy API namespaces keys with `flutter.`.
+    if (key.endsWith(pUspSliverDashboardLayout)) writes++;
+    return inner.setValue(valueType, key, value);
+  }
+
+  @override
+  Future<bool> remove(String key) => inner.remove(key);
+
+  @override
+  Future<bool> clear() => inner.clear();
+
+  @override
+  Future<Map<String, Object>> getAll() => inner.getAll();
+
+  @override
+  Future<bool> clearWithPrefix(String prefix) => inner.clearWithPrefix(prefix);
+
+  @override
+  Future<bool> clearWithParameters(ClearParameters parameters) =>
+      inner.clearWithParameters(parameters);
+
+  @override
+  Future<Map<String, Object>> getAllWithPrefix(String prefix) =>
+      inner.getAllWithPrefix(prefix);
+
+  @override
+  Future<Map<String, Object>> getAllWithParameters(
+          GetAllParameters parameters) =>
+      inner.getAllWithParameters(parameters);
 }

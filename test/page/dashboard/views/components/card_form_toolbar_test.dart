@@ -639,8 +639,9 @@ void main() {
       // since #1393 that reaches the walk which stores the result: the package
       // places a card the other grids have not seen at the width it has here, and
       // does not terminate when it does not fit. No production path adds this way
-      // — the settings panel goes through `addWidget` — but a wider card here
-      // would hang the run rather than fail it.
+      // — the settings panel goes through `addWidget`, which is what the notifier
+      // now asserts. A wider card here fails on that assertion; before it existed,
+      // it hung the run instead.
       controllerOf(container)
           .addItem(const LayoutItem(id: 'stats_panel', x: 0, y: 0, w: 4, h: 2));
       await tester.pumpAndSettle();

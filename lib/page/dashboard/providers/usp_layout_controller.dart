@@ -126,6 +126,16 @@ class UspSliverDashboardControllerNotifier
   /// Orders the writes [_enqueue] hands out, oldest first.
   Future<void> _writeQueue = Future.value();
 
+  /// The card ids the breakpoint caches were last seeded with.
+  ///
+  /// Only used by the assertion in [_exportAllBreakpoints], and only in the
+  /// addition direction: a card the live layout gained without going through
+  /// [_seedBreakpoints] is one the other grids' caches have never seen, which is
+  /// the single input that makes the walk hang. A card *removed* straight from the
+  /// controller leaves this set stale in the harmless direction — the walk
+  /// reconciles deletions safely, which is the asymmetry the walk documents.
+  Set<String> _seededIds = const {};
+
   /// A controller carrying [layout] that reports its own edits back here.
   ///
   /// Every construction goes through this, so there is one place where the
@@ -264,6 +274,11 @@ class UspSliverDashboardControllerNotifier
 
     // Returns to the layout cached during the first setSlotCount above.
     controller.setSlotCount(_desktopSlots);
+
+    // Every grid's cache now holds the same membership — see [_seededIds].
+    _seededIds = {
+      for (final item in controller.exportLayout()) item['id'] as String,
+    };
   }
 
   /// The per-grid policy a layout must satisfy before it is imported or stored.
@@ -411,10 +426,12 @@ class UspSliverDashboardControllerNotifier
   /// card dragged to a new position was back where it started on the next reload.
   ///
   /// Fire-and-forget, because the caller is a synchronous gesture handler that
-  /// cannot wait for a pref write and must not fail with it. The arguments are the
-  /// layout as it stands, which is what [saveLayout] reads for itself — across
-  /// every breakpoint, not just the one that changed.
-  void _handleLayoutChanged(List<LayoutItem> items, int slotCount) {
+  /// cannot wait for a pref write and must not fail with it.
+  ///
+  /// Both arguments are ignored, and unnamed so that nothing suggests otherwise:
+  /// the package hands over the one layout that changed, while what gets stored is
+  /// every breakpoint, which [saveLayout] reads for itself.
+  void _handleLayoutChanged(List<LayoutItem> _, int __) {
     if (_suppressAutoPersist) return;
 
     saveLayout().onError((error, stackTrace) => logger.e(
@@ -446,7 +463,37 @@ class UspSliverDashboardControllerNotifier
   }
 
   /// Persist the layout of every breakpoint to SharedPreferences.
-  Future<void> saveLayout() => _enqueue(_writeLayout);
+  ///
+  /// The controller is read here, synchronously, rather than when the queued write
+  /// gets its turn. A write that waits still has to read a live controller: this
+  /// notifier is not `autoDispose`, so the only thing that disposes it is the
+  /// container going away, and a queued write that reached for `state` after that
+  /// found a `StateNotifier` that throws on access — losing the drop that queued
+  /// it, and only in debug, where the assertion behind `state` is compiled in.
+  /// Capturing it keeps the write correct in both build modes. Ordering is
+  /// unaffected: every mutation enqueues after it has mutated, so the last write in
+  /// the queue is still the one holding the newest controller.
+  Future<void> saveLayout() {
+    final controller = state;
+    assert(
+      _membershipIsAligned(controller),
+      'A card wider than the narrowest grid reached the live layout without '
+      'being aligned into the others — add it through addWidget or applyPreset, '
+      'not straight to the controller. See _exportAllBreakpoints (#1393).',
+    );
+    return _enqueue(() => _writeLayout(controller));
+  }
+
+  /// Whether [_exportAllBreakpoints] can safely walk [controller]'s layout.
+  ///
+  /// Checked here, on the caller's stack, rather than inside the walk: the walk
+  /// runs behind the write queue, where an assertion failure is caught by
+  /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
+  /// mutation that caused it.
+  bool _membershipIsAligned(DashboardController controller) =>
+      !controller.exportLayout().any((item) =>
+          !_seededIds.contains(item['id'] as String) &&
+          (item['w'] as int) > UspLayoutEnvelope.mobileSlotCount);
 
   /// Runs [write] after the writes already queued, and returns its result.
   ///
@@ -465,9 +512,9 @@ class UspSliverDashboardControllerNotifier
     return queued;
   }
 
-  Future<void> _writeLayout() async {
+  Future<void> _writeLayout(DashboardController controller) async {
     final envelope = UspLayoutEnvelope(
-      _exportAllBreakpoints(),
+      _exportAllBreakpoints(controller),
       forms: _forms,
     );
     final prefs = await SharedPreferences.getInstance();
@@ -487,7 +534,7 @@ class UspSliverDashboardControllerNotifier
   /// target grid's cache does not is placed by the package at the width it has
   /// here, and `placeNewItems` wraps to the next row forever when that width does
   /// not fit — the wrap branch skips its own safety counter
-  /// (`sliver_dashboard` 0.9.0, `layout_engine.dart:1058`). `stats_panel` is
+  /// (`sliver_dashboard` 0.9.1, `layout_engine.dart:1058`). `stats_panel` is
   /// `w: 12`, so one full-width card coming back on the desktop grid used to hang
   /// the isolate here rather than throw (#1393).
   ///
@@ -495,8 +542,17 @@ class UspSliverDashboardControllerNotifier
   /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
   /// for, and why [restoreSnapshot] goes through them rather than importing into
   /// the controller it is handed.
-  Map<int, List<dynamic>> _exportAllBreakpoints() {
-    final controller = state;
+  ///
+  /// [_membershipIsAligned] is what a comment cannot do. Now that the hook runs
+  /// this walk after *every* controller mutation, a future caller reaching for
+  /// `controller.addItem` instead of [addWidget] gets a frozen tab with no stack
+  /// trace — nothing in `lib/` does today, and the fixture in
+  /// `card_form_toolbar_test.dart` had to be narrowed to a width that fits every
+  /// grid because of it. Failing loudly in debug is the whole defence: the
+  /// non-termination is upstream (fixed in 2.3.0, #1395) and there is no release
+  /// path into it.
+  Map<int, List<dynamic>> _exportAllBreakpoints(
+      DashboardController controller) {
     final origin = controller.slotCount.value;
     final layouts = <int, List<dynamic>>{};
 
@@ -686,7 +742,7 @@ class UspSliverDashboardControllerNotifier
     final slots = state.slotCount.value;
     final restored = _normalize(layout, slots);
 
-    final layouts = _exportAllBreakpoints();
+    final layouts = _exportAllBreakpoints(state);
     for (final grid in layouts.keys.toList()) {
       layouts[grid] = grid == slots
           ? restored
@@ -732,7 +788,7 @@ class UspSliverDashboardControllerNotifier
   ///
   /// [spec] can be provided for package widgets not in [UspWidgetSpecs].
   Future<void> addWidget(String id, {WidgetSpec? spec}) async {
-    final layouts = _exportAllBreakpoints();
+    final layouts = _exportAllBreakpoints(state);
     final desktopLayout = layouts[_desktopSlots] ?? const [];
     if (desktopLayout.any((item) => (item as Map)['id'] == id)) {
       return; // Already exists
@@ -805,7 +861,7 @@ class UspSliverDashboardControllerNotifier
   /// Removal is global: which cards the dashboard shows is not a per-breakpoint
   /// choice, so a card deleted on a phone is gone on a laptop too.
   Future<void> removeWidget(String id) async {
-    final layouts = _exportAllBreakpoints();
+    final layouts = _exportAllBreakpoints(state);
     final desktopLayout = layouts[_desktopSlots] ?? const [];
     if (!desktopLayout.any((item) => (item as Map)['id'] == id)) return;
 

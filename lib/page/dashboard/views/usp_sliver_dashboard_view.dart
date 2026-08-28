@@ -197,9 +197,10 @@ class _UspSliverDashboardViewState
       isEditMode: ref.watch(dashboardEditModeProvider).isEditing,
       isRemoteMode: GlobalConfig.remote.isActive,
       onOptimizeLayout: () {
-        final controller = ref.read(uspSliverDashboardControllerProvider);
-        controller.optimizeLayout();
-        ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+        // No save: `optimizeLayout` is a controller mutation, so the grid stores
+        // it through the auto-persist hook (#1393). Saving here too would walk
+        // every breakpoint a second time to write what is already in the pref.
+        ref.read(uspSliverDashboardControllerProvider).optimizeLayout();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -320,10 +321,9 @@ class _UspSliverDashboardViewState
                 return _buildTrashZone(context, isHovered, isActive);
               },
         trashHoverDelay: const Duration(milliseconds: 600),
-        onItemsDeleted: (items) {
-          // The overlay already called controller.removeItems — persist.
-          ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
-        },
+        // No onItemsDeleted: the overlay calls `controller.removeItems` before it
+        // notifies, so the deletion is already on its way to the pref through the
+        // auto-persist hook (#1393).
         child: CustomScrollView(
           controller: scrollController,
           slivers: [
@@ -459,10 +459,9 @@ class _UspSliverDashboardViewState
       slotCount: ref.read(uspSliverDashboardControllerProvider).slotCount.value,
     );
 
-    if (corrected == null) {
-      notifier.saveLayout();
-      return;
-    }
+    // A size the spec allows needs nothing done to it: the resize itself is what
+    // the hook stores (#1393).
+    if (corrected == null) return;
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

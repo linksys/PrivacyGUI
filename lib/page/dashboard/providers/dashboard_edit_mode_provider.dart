@@ -174,7 +174,8 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
   /// The edit flag and snapshots are always cleared in the `finally` block so
   /// that a failure in [UspSliverDashboardControllerNotifier.restoreSnapshot] /
   /// [UspLayoutPreferencesNotifier.restoreSnapshot] can never leave the
-  /// dashboard stuck in edit mode with stale state.
+  /// dashboard stuck in edit mode with stale state. The cancellation is inside the
+  /// `try` for the same reason — first, but not ahead of the guarantee.
   ///
   /// That block re-reads the controller rather than reusing the one the
   /// interaction was cancelled on: a revert that restores a deleted card swaps the
@@ -182,9 +183,9 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
   /// the handles off a controller nobody is rendering while the live one kept
   /// them.
   Future<void> _exitEditMode({required bool revert}) async {
-    ref.read(uspSliverDashboardControllerProvider).cancelInteraction();
-
     try {
+      ref.read(uspSliverDashboardControllerProvider).cancelInteraction();
+
       if (revert) {
         final layoutSnapshot = state.layoutSnapshot;
         final formsSnapshot = state.formsSnapshot;
