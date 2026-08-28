@@ -17,6 +17,49 @@ String _relativeToReport(String path, String folderStr) {
   return path;
 }
 
+/// Buckets [records] into the Test Summary panel's numbers.
+///
+/// `total` is the sum of the buckets rather than the record count, so the panel
+/// cannot again show a Total that its own Pass and Fail fail to account for
+/// (#1404).
+///
+/// `fail` counts `'error'` and nothing else, deliberately. A golden mismatch
+/// reports `result: "error"` — measured against 5016 real failures in the
+/// published 2026-08-22..24 dev reports, and mechanically because every golden
+/// case is a `testWidgets`, where flutter_test routes both a failed `expect` and
+/// a thrown exception through `FlutterErrorDetails` (only a plain `test()`
+/// yields `'failure'`). `PrivacyGUI-golden-ci` keys off that same string in
+/// `detect_golden_failures.sh` and cross-checks
+/// `report_counting.fail == errors_total` in the triage playbook, so widening
+/// `fail` here would manufacture anomalies there.
+///
+/// Anything else lands in `incomplete`: chiefly a record that started and never
+/// reported, which is what a suite killed mid-run leaves behind. Those must stay
+/// countable instead of being read as passes or quietly dropped — under the
+/// previous "drop every record without a result" filter, an OOM-killed suite
+/// made the report look better the more tests it lost.
+Map<String, int> computeCounting(List<Map<String, dynamic>> records) {
+  var success = 0;
+  var fail = 0;
+  var incomplete = 0;
+  for (final record in records) {
+    switch (record['result']) {
+      case 'success':
+        success++;
+      case 'error':
+        fail++;
+      default:
+        incomplete++;
+    }
+  }
+  return {
+    'success': success,
+    'fail': fail,
+    'incomplete': incomplete,
+    'total': success + fail + incomplete,
+  };
+}
+
 Map<String, dynamic> scanCoverage() {
   final viewDir = Directory('lib/page');
   final testDir = Directory('test/golden_test/page');
@@ -187,11 +230,7 @@ void main(List<String> args) {
   }
 
   final resultObj = <String, dynamic>{};
-  resultObj['counting'] = {
-    'success': jsonObjects.where((e) => e['result'] == 'success').length,
-    'fail': jsonObjects.where((e) => e['result'] == 'error').length,
-    'total': jsonObjects.length,
-  };
+  resultObj['counting'] = computeCounting(jsonObjects);
   resultObj['tests'] = jsonObjects;
   resultObj['locales'] = locales;
   resultObj['devices'] = devices;

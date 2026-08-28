@@ -350,6 +350,9 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         <div class="stat-item"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
         <div class="stat-item stat-pass"><div class="stat-value" id="passCount">0</div><div class="stat-label">Pass</div></div>
         <div class="stat-item stat-fail"><div class="stat-value" id="failCount">0</div><div class="stat-label">Fail</div></div>
+        <!-- Hidden while zero, which is every healthy run: a tile that reads 0
+             forever teaches a reader to stop looking at it. -->
+        <div class="stat-item" id="incompleteTile" style="display:none"><div class="stat-value" id="incompleteCount" style="color:#f59e0b">0</div><div class="stat-label">Incomplete</div></div>
         <div class="stat-item"><div class="stat-value" id="overflowCount" style="color:#f59e0b">0</div><div class="stat-label">Overflow</div></div>
         <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
       </div>
@@ -448,6 +451,14 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
+      // Tests that started and never reported a result — a suite killed mid-run.
+      // Surfaced because Total counts them, so without this tile the panel would
+      // show a Total that Pass and Fail cannot add up to and give no clue why
+      // (#1404). `|| 0` covers a report generated before the bucket existed.
+      const incomplete = c.incomplete || 0;
+      document.getElementById('incompleteTile').style.display =
+        incomplete > 0 ? '' : 'none';
+      document.getElementById('incompleteCount').textContent = incomplete;
       // A '?' rather than a 0 when the overflow report could not be read. Zero is
       // a measurement and this is the absence of one, and the two used to render
       // identically — a run full of overflows read as all-clean off this tile.
