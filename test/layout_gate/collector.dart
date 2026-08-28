@@ -129,4 +129,3 @@ Future<List<OverflowIncident>> collectOverflow(
     return sink;
   });
 }
-
