@@ -47,6 +47,16 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// reads.
   static const double slotHeight = kDashboardSlotHeight;
 
+  /// How long a card must hover the trash zone before the drop deletes it.
+  ///
+  /// Named for the same reason as [slotHeight]: a test that drives the deletion
+  /// has to wait this out, and a copy of the number in the test would keep
+  /// passing if this one were raised — it would simply stop reaching the
+  /// deletion, and a drag that deletes nothing is exactly what the test is there
+  /// to catch. Shorter than the package's 800ms default because the zone only
+  /// slides in once the drag is already under way.
+  static const Duration trashHoverDelay = Duration(milliseconds: 600);
+
   const UspSliverDashboardView({super.key});
 
   @override
@@ -379,7 +389,7 @@ class _UspSliverDashboardViewState
             : (context, isHovered, isActive, activeItemId) {
                 return _buildTrashZone(context, isHovered, isActive);
               },
-        trashHoverDelay: const Duration(milliseconds: 600),
+        trashHoverDelay: UspSliverDashboardView.trashHoverDelay,
         // No onItemsDeleted: the overlay calls `controller.removeItems` before it
         // notifies, so the deletion is already on its way to the pref through the
         // auto-persist hook (#1393).

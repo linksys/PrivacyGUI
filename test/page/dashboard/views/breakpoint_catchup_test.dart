@@ -29,20 +29,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
-import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../mocks/provider_overrides/mock_dashboard_page.dart';
-import '../../../util/settle.dart';
-
-final _theme = AppTheme.create(
-  brightness: Brightness.light,
-  seedColor: Colors.blue,
-  designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
-);
+import '../../../util/dashboard_page_harness.dart';
 
 /// Desktop and phone, either side of a `currentMaxColumns` boundary: 12 columns
 /// at 1280 and 4 at 480. The height is the page sweep's, so the same cards are
@@ -53,26 +43,8 @@ const _phone = Size(480, 1600);
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<ProviderContainer> pumpAt(WidgetTester tester, Size size) async {
-    tester.view.physicalSize = size;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    final container = ProviderContainer(overrides: dashboardPageOverrides());
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(
-        theme: _theme,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: UspSliverDashboardView()),
-      ),
-    ));
-    await settleIgnoringAnimations(tester);
-    return container;
-  }
+  Future<ProviderContainer> pumpAt(WidgetTester tester, Size size) =>
+      pumpDashboardPage(tester, size: size);
 
   testWidgets('the frame that observes a new breakpoint has no grid in it',
       (tester) async {
@@ -90,7 +62,8 @@ void main() {
     await tester.pump();
 
     expect(find.byType(SliverDashboard), findsNothing,
-        reason: 'the frame is withheld rather than laid out at the wrong width');
+        reason:
+            'the frame is withheld rather than laid out at the wrong width');
     // The catch-up is scheduled post-frame and `pump` retires post-frame
     // callbacks, so it has already run by the time this line reads it — what the
     // assertion above records is that it did not run *during* the build, which is
@@ -107,15 +80,16 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(container.read(uspSliverDashboardControllerProvider).slotCount.value,
-        4,
+    expect(
+        container.read(uspSliverDashboardControllerProvider).slotCount.value, 4,
         reason: 'the post-frame callback ran');
     expect(find.byType(SliverDashboard), findsOneWidget,
         reason: 'and the grid is back, on the grid it is being rendered at — a '
             'withhold that is not followed by a catch-up is a blank dashboard');
   });
 
-  testWidgets('a page opened on a phone renders the phone grid', (tester) async {
+  testWidgets('a page opened on a phone renders the phone grid',
+      (tester) async {
     // The boot case, which is what the gate's 320 and 480 cells measure: a fresh
     // controller starts on the desktop breakpoint whatever width the page is
     // about to be laid out at, so the first frame is withheld and the settled

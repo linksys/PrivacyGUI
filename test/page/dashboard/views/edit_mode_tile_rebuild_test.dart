@@ -57,23 +57,15 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
-import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../mocks/provider_overrides/mock_dashboard_page.dart';
+import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
-
-final _theme = AppTheme.create(
-  brightness: Brightness.light,
-  seedColor: Colors.blue,
-  designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
-);
 
 /// Desktop, so the grid is on its 12-column breakpoint — the one a fresh
 /// controller starts on, and the one where cards are wide enough that a lazy
@@ -102,31 +94,12 @@ void main() {
   ///
   /// A stand-in `itemBuilder` would measure nothing here: what is under test is
   /// whether the cards on the real page carry the affordance, so the builder has to
-  /// be the page's own. [dashboardPageOverrides] is the fixture the layout gate
-  /// already uses for this page for the same reason (`mock_dashboard_page.dart`).
-  Future<ProviderContainer> pumpDashboard(WidgetTester tester) async {
-    tester.view.physicalSize = _desktopSurface;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    final container = ProviderContainer(overrides: dashboardPageOverrides());
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(
-        theme: _theme,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: UspSliverDashboardView()),
-      ),
-    ));
-    // Not `pumpAndSettle`: the page carries looping animations (and edit mode adds
-    // one — `JiggleShake` never ends, which is the point of it). The gate's own
-    // settle is the one that tolerates them.
-    await settleIgnoringAnimations(tester);
-    return container;
-  }
+  /// be the page's own. [pumpDashboardPage] pumps it over the fixture the layout
+  /// gate already uses for this page for the same reason
+  /// (`mock_dashboard_page.dart`), and this group drives edit mode itself rather
+  /// than asking for it — the toggle is the subject.
+  Future<ProviderContainer> pumpDashboard(WidgetTester tester) =>
+      pumpDashboardPage(tester, size: _desktopSurface);
 
   /// Enters or leaves edit mode the way the header bar does, and lets the frame
   /// the toggle produces land.
@@ -175,7 +148,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(MaterialApp(
-        theme: _theme,
+        theme: dashboardTestTheme,
         home: Scaffold(
           body: ValueListenableBuilder<double>(
             valueListenable: ratio,
@@ -198,7 +171,8 @@ void main() {
       return () => calls;
     }
 
-    testWidgets('a rebuild that changes nothing about an item does not rebuild '
+    testWidgets(
+        'a rebuild that changes nothing about an item does not rebuild '
         'its content', (tester) async {
       final ratio = ValueNotifier<double>(1.5);
       addTearDown(ratio.dispose);
@@ -303,7 +277,8 @@ void main() {
       return container;
     }
 
-    testWidgets('the affordance follows the flag without being rebuilt from '
+    testWidgets(
+        'the affordance follows the flag without being rebuilt from '
         'above', (tester) async {
       final container = await pumpAffordance(tester);
       final element = tester.element(find.byType(EditModeAffordance));
@@ -357,7 +332,8 @@ void main() {
             matching: find.byType(AbsorbPointer),
           ),
           findsNothing,
-          reason: 'a view-mode card must stay interactive: its own gestures are '
+          reason:
+              'a view-mode card must stay interactive: its own gestures are '
               'the whole of the dashboard outside edit mode');
     });
   });
