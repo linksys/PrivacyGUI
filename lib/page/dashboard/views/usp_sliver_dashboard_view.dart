@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
-import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
+import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
@@ -335,7 +335,7 @@ class _UspSliverDashboardViewState
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
-          return _buildItemWidget(context, item, isEditMode, factory);
+          return _buildItemWidget(context, item, factory);
         },
         slotAspectRatio: ratio,
         mainAxisSpacing: AppSpacing.lg,
@@ -368,8 +368,7 @@ class _UspSliverDashboardViewState
                   ? const SliverToBoxAdapter(child: SizedBox.shrink())
                   : SliverDashboard(
                       itemBuilder: (context, item) {
-                        return _buildItemWidget(
-                            context, item, isEditMode, factory);
+                        return _buildItemWidget(context, item, factory);
                       },
                       slotAspectRatio: ratio,
                       mainAxisSpacing: AppSpacing.lg,
@@ -430,7 +429,14 @@ class _UspSliverDashboardViewState
       alignment: Alignment.bottomCenter,
       child: Container(
         height: 56,
-        width: 180,
+        // A minimum rather than a fixed width, plus padding: the label is
+        // localized, and 180px does not hold "Drag Here to Remove" at
+        // `bodyMedium` in English — let alone in a locale that needs more. The
+        // pill still reads as one shape at rest, and the drop target is
+        // whatever it grew to. Found by #1395's edit-mode test; the overflow
+        // gate cannot see this surface, because it never enters edit mode.
+        constraints: const BoxConstraints(minWidth: 180),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         margin: const EdgeInsets.only(bottom: AppSpacing.lg),
         decoration: BoxDecoration(
           color: isActive
@@ -451,6 +457,7 @@ class _UspSliverDashboardViewState
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isActive ? Icons.delete_forever : Icons.delete_outline,
@@ -460,10 +467,16 @@ class _UspSliverDashboardViewState
               size: isActive ? 28 : 24,
             ),
             AppGap.sm(),
-            AppText.bodyMedium(
-              isActive
-                  ? loc(context).releaseToRemove
-                  : loc(context).dragHereToRemove,
+            // Flexible, not bare: the pill grows to its label, but a viewport
+            // narrower than the label still has to clip rather than overflow.
+            Flexible(
+              child: AppText.bodyMedium(
+                isActive
+                    ? loc(context).releaseToRemove
+                    : loc(context).dragHereToRemove,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -539,10 +552,14 @@ class _UspSliverDashboardViewState
     }
   }
 
+  /// Builds one card's content.
+  ///
+  /// Takes no edit-mode flag: the affordance that depends on it reads it for
+  /// itself, one level down, because 2.3.1 caches what this returns and would
+  /// otherwise strand the wrapper — see [EditModeAffordance] (#1395).
   Widget _buildItemWidget(
     BuildContext context,
     LayoutItem item,
-    bool isEditMode,
     UspWidgetFactory factory,
   ) {
     Widget? resolvedWidget = factory.buildWidget(item.id);
@@ -567,20 +584,6 @@ class _UspSliverDashboardViewState
     // visual truncation. Cards handle their own overflow via internal clipping.
     final displayedWidget = SizedBox.expand(child: resolvedWidget);
 
-    if (isEditMode) {
-      // In edit mode: AbsorbPointer blocks content interactions while keeping
-      // the area hittable for DashboardOverlay's drag/resize detection.
-      // Widget removal is handled via drag-to-trash (trashBuilder on the
-      // overlay), NOT via in-cell tap — a GestureDetector here conflicts with
-      // the overlay's raw Listener and causes accidental deletions.
-      return JiggleShake(
-        active: true,
-        child: AbsorbPointer(
-          child: displayedWidget,
-        ),
-      );
-    }
-
-    return displayedWidget;
+    return EditModeAffordance(child: displayedWidget);
   }
 }
