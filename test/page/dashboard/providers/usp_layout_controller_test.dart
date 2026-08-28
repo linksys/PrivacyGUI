@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -1505,12 +1507,29 @@ void main() {
 
         // Off (#1395). Each of these is new in 2.x, so an empty set is today's
         // behaviour rather than one taken away.
-        expect(shortcuts!.delete, isEmpty, reason: 'delete key: $site');
-        expect(shortcuts.selectAll, isEmpty, reason: 'select all: $site');
+        expect(shortcuts!.selectAll, isEmpty, reason: 'select all: $site');
         expect(shortcuts.undo, isEmpty, reason: 'undo chord: $site');
         expect(shortcuts.redo, isEmpty, reason: 'redo chord: $site');
         expect(shortcuts.swapModeModifier, isEmpty,
             reason: 'swap-on-Shift: $site');
+
+        // Back on, and by both of its keys (#1398). #1395 cleared `delete`
+        // because the removal was unconfirmed and the history is off, so one
+        // reflex keypress cost a card permanently; what pays for the binding is
+        // `UspSliverDashboardView`'s `onWillDelete`, which the keyboard intent
+        // reads too. The keys are named rather than asserted `isNotEmpty` for the
+        // reason the whole helper exists: Backspace is in the package default and
+        // is the one a user reaches for by accident, so a minor that dropped it
+        // would quietly change which reflex is guarded.
+        expect(
+          shortcuts.delete
+              .expand((a) => a.triggers ?? const <LogicalKeyboardKey>[]),
+          unorderedEquals([
+            LogicalKeyboardKey.delete,
+            LogicalKeyboardKey.backspace,
+          ]),
+          reason: 'delete key: $site',
+        );
 
         // On, and asserted so that "narrow the set" cannot drift into "drop the
         // keyboard": grab / move / drop is the only way to reorder a card

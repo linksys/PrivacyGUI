@@ -168,14 +168,6 @@ class UspSliverDashboardControllerNotifier
   /// What is dropped, and why (#1395). None of these existed at 0.9.1, so each
   /// entry keeps today's behaviour rather than taking one away:
   ///
-  /// - `delete` (Delete / Backspace) removes the focused card, or the whole
-  ///   selection when the focused card is in it, with no confirmation. Removal is
-  ///   the one edit here that loses information, the history is off (see
-  ///   [_createController]), and Cancel does not fully restore a deletion
-  ///   (#1396) — so a stray Backspace, which is a browser Back reflex, costs the
-  ///   user their arrangement. Deleting from the keyboard is worth having; it
-  ///   wants `DashboardOverlay.onWillDelete` in front of it, which is its own
-  ///   decision because the trash zone has no confirmation either.
   /// - `selectAll` (Ctrl / Cmd + A) selects every card at once. Nothing here
   ///   consumes a multi-selection: [selectedCardIdProvider] reads two or more as
   ///   none, so the form toolbar drops back to its prompt with nothing to say
@@ -199,8 +191,32 @@ class UspSliverDashboardControllerNotifier
   /// Everything else is left at the package default. Grab / arrows / drop /
   /// Escape is the only way to reorder a card without a pointer and is kept for
   /// that reason; `duplicate` is inert while no `onCloneRequested` is registered.
+  ///
+  /// ## `delete` is the one that came back (#1398)
+  ///
+  /// It was cleared here at first, and for a reason that has since been dealt
+  /// with rather than reconsidered: Delete / Backspace removes the focused card —
+  /// or the whole selection, when the focused card is in it — and removal is the
+  /// one edit that loses information. The history is off (see [_createController])
+  /// and #1393's hook persists the deletion on the frame it happens, so a stray
+  /// Backspace, which is a browser Back reflex, cost the user their arrangement
+  /// with nothing to press to get it back.
+  ///
+  /// What restores the binding is `UspSliverDashboardView`'s `onWillDelete`, an
+  /// async veto the *keyboard* path reads too — `DashboardDeleteItemIntent` looks
+  /// it up on `DashboardOverlayProvider` and only calls its `executeDeletion`
+  /// when the answer is true (`dashboard_item_widget.dart:354-362`). So the
+  /// confirmation is not a second mechanism bolted onto the shortcut; it is the
+  /// same dialog the trash drop goes through, and there is no arrangement of this
+  /// page where one path is guarded and the other is not. That is also why the two
+  /// changes are ordered: un-clearing this without the dialog in place would be
+  /// shipping exactly the keypress #1395 cleared this binding to refuse.
+  ///
+  /// Both default activators are taken back, Backspace included. A confirmation
+  /// is what makes the reflex affordable — the mis-press now costs a dialog rather
+  /// than a card — and dropping one of the two would leave a shortcut whose
+  /// behaviour depends on which key the user reached for.
   static const _shortcuts = DashboardShortcuts(
-    delete: {},
     selectAll: {},
     undo: {},
     redo: {},
