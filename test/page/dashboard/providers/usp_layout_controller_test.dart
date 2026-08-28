@@ -248,6 +248,59 @@ void main() {
       expect(notifier, isA<UspSliverDashboardControllerNotifier>());
       expect(container.read(uspSliverDashboardControllerProvider), isNotNull);
     });
+
+    /// Deliberately not awaited, and that is the whole test (#1395).
+    ///
+    /// `_initializeLayout` is async — it awaits `SharedPreferences.getInstance()`
+    /// before it can seed anything — while the first frame is laid out
+    /// synchronously off the controller the constructor published. So there is a
+    /// window in which the grid asks the controller for a breakpoint it has no
+    /// cache for, and the package answers with `correctBounds`, which clamps `w`
+    /// to the column count but leaves `minW` where it was: the desktop layout's
+    /// half-width cards arrive in the phone grid declaring `minW: 6` of 4 columns.
+    ///
+    /// On 0.9.1 that frame was survivable — the tiles were laid out over-wide and
+    /// the seed replaced them a frame later. 2.x asserts the invariant instead
+    /// (`layout_engine.dart:963`, `'currentL.minW <= cols'`), so in debug the same
+    /// window is a thrown `FlutterError` on every narrow-window boot, and the
+    /// layout gate's four narrow cells for this page fail: 320 and 480 throw the
+    /// assertion, 601 and 905 report the over-wide frame's own overflow.
+    ///
+    /// Asserted at the seam rather than through the page, because the page can
+    /// only observe it as "the gate is red at four widths". `minW` is the value the
+    /// package asserts on; `w` is checked with it so a fix that clamped only the
+    /// bound the assertion names would not pass.
+    test('every breakpoint is seeded before the first frame is laid out',
+        () async {
+      SharedPreferences.setMockInitialValues(const {});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+
+      for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
+        controller.setSlotCount(slots);
+        final tooWide = controller
+            .exportLayout()
+            .where((item) =>
+                ((item as Map)['minW'] as int) > slots ||
+                (item['w'] as int) > slots)
+            .map((item) => '${(item as Map)['id']}'
+                ' (w: ${item['w']}, minW: ${item['minW']})')
+            .toList();
+        expect(
+          tooWide,
+          isEmpty,
+          reason: 'the $slots-column grid was asked for before the async seed '
+              'finished, and answered with cards wider than it has columns',
+        );
+      }
+
+      // Left where the grid expects to find it, so a later expectation in this
+      // file cannot inherit a phone-sized controller from here.
+      controller.setSlotCount(UspLayoutEnvelope.desktopSlotCount);
+      await pumpAsync();
+    });
   });
 
   // ---------------------------------------------------------------------------

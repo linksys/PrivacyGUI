@@ -106,6 +106,9 @@ class UspSliverDashboardControllerNotifier
           maxHistoryLength: 0,
         ))) {
     _swapController(_createDefaultController());
+    // Synchronously, before [_initializeLayout]'s first `await` — see the method's
+    // own doc for why the seed cannot wait for the pref (#1395).
+    _seedBreakpoints();
     _initializeLayout();
   }
 
@@ -331,6 +334,31 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Must be called with the controller on the desktop grid (the widest one is
   /// the source everything else is derived from); it leaves it there.
+  ///
+  /// ## And it cannot wait for the pref (#1395)
+  ///
+  /// The constructor seeds too, off the default layout, before
+  /// [_initializeLayout] has awaited anything. That looks redundant — every path
+  /// through [_initializeLayout] seeds again a moment later, and with better
+  /// input — but the moment is a frame, and the grid lays out in it.
+  ///
+  /// An unseeded breakpoint is not a missing layout, it is a wrong one: the
+  /// package answers `setSlotCount` from `correctBounds`, which clamps `w` to the
+  /// column count but leaves the item's own `minW` alone, so the desktop grid's
+  /// half-width cards arrive on the phone four columns wide while still declaring
+  /// `minW: 6`. 0.9.1 shipped that contradiction silently; 2.x asserts against it
+  /// (`layout_engine.dart:963`, `'currentL.minW <= cols'`), which turns it into a
+  /// thrown `FlutterError` on any debug boot into a window narrower than the
+  /// desktop breakpoint. Reproduced with no code of ours involved: a bare
+  /// `DashboardController(initialSlotCount: 12, initialLayout: <the default>)`
+  /// throws on `setSlotCount(4)`, naming `stats_panel`'s `minW: 6`.
+  ///
+  /// Seeding is the fix rather than a workaround because a seeded breakpoint gets
+  /// its layout from [_normalize], which scales the constraints along with the
+  /// geometry — which is also what the rest of this class already relies on.
+  ///
+  /// The cost is one extra walk per session — three `setSlotCount` calls and two
+  /// imports, in memory, persisting nothing.
   void _seedBreakpoints({UspLayoutEnvelope? stored}) {
     final controller = state;
 

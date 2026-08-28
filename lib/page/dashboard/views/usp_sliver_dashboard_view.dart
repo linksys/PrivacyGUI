@@ -284,6 +284,37 @@ class _UspSliverDashboardViewState
     final factory = ref.watch(uspWidgetFactoryProvider);
     final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
     final uiKitColumns = context.currentMaxColumns;
+    // Whether the controller has caught up with the breakpoint this frame is
+    // being built at (#1395).
+    //
+    // `breakpoints` does not take effect in the frame that observes the change:
+    // `SliverDashboard` compares the width it was given against
+    // `controller.slotCount` and, when they differ, schedules `setSlotCount` in a
+    // post-frame callback. Until 2.0.0 it also returned an empty sliver for that
+    // one frame — "skip frame optimization" — and 2.x dropped the early return
+    // while keeping the callback, so the outgoing grid's geometry is now laid out
+    // at the incoming grid's width instead of being withheld: at 320px every
+    // half-width desktop card is drawn 6 columns wide in a 4-column viewport, and
+    // the overflow gate reports the whole page overflowing at all four widths
+    // below desktop.
+    //
+    // So the skip is done here instead, which is also the only place that can do
+    // it for the *other* two triggers: this page swaps the controller instance on
+    // every membership change and every preset, and a fresh instance starts on the
+    // desktop grid whatever width it is about to be rendered at.
+    //
+    // Post-frame rather than during this build, because `setSlotCount` writes the
+    // controller's layout beacon and half the grid is watching it — which is also
+    // why the slot count is *watched* here and not read: the callback below changes
+    // it without changing the controller instance, so nothing Riverpod publishes
+    // would bring this build back to notice, and the empty sliver would be
+    // permanent.
+    final slotsAreCurrent = controller.slotCount.watch(context) == uiKitColumns;
+    if (!slotsAreCurrent) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) controller.setSlotCount(uiKitColumns);
+      });
+    }
     final scrollController = ScrollController();
 
     final editModeGridStyle = GridStyle(
@@ -329,16 +360,23 @@ class _UspSliverDashboardViewState
           slivers: [
             SliverPadding(
               padding: EdgeInsets.symmetric(horizontal: pageMargin),
-              sliver: SliverDashboard(
-                itemBuilder: (context, item) {
-                  return _buildItemWidget(context, item, isEditMode, factory);
-                },
-                slotAspectRatio: ratio,
-                mainAxisSpacing: AppSpacing.lg,
-                crossAxisSpacing: AppSpacing.lg,
-                breakpoints: {0: uiKitColumns},
-                gridStyle: isEditMode ? editModeGridStyle : null,
-              ),
+              // Empty for the one frame the controller is a breakpoint behind —
+              // see [slotsAreCurrent]. `breakpoints` stays: it is what schedules
+              // the catch-up when the width changes without this build seeing it,
+              // and both callbacks ask for the same slot count.
+              sliver: !slotsAreCurrent
+                  ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                  : SliverDashboard(
+                      itemBuilder: (context, item) {
+                        return _buildItemWidget(
+                            context, item, isEditMode, factory);
+                      },
+                      slotAspectRatio: ratio,
+                      mainAxisSpacing: AppSpacing.lg,
+                      crossAxisSpacing: AppSpacing.lg,
+                      breakpoints: {0: uiKitColumns},
+                      gridStyle: isEditMode ? editModeGridStyle : null,
+                    ),
             ),
             const SliverToBoxAdapter(
               child: SizedBox(height: AppSpacing.md),
