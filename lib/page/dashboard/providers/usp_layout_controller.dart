@@ -621,13 +621,25 @@ class UspSliverDashboardControllerNotifier
   /// the queue is still the one holding the newest controller.
   Future<void> saveLayout() {
     final controller = state;
+    _assertMembershipAligned(controller);
+    return _enqueue(() => _writeLayout(controller));
+  }
+
+  /// Fails in debug if [controller]'s layout is not safe for the walk to visit.
+  ///
+  /// Called from the two places a walk is *asked for* — [saveLayout] and
+  /// [exportAllBreakpoints] — rather than from inside [_exportAllBreakpoints]
+  /// itself, so that it fires on the caller's stack. [saveLayout]'s own walk runs
+  /// behind the write queue, where an assertion failure is caught by
+  /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
+  /// mutation that caused it.
+  void _assertMembershipAligned(DashboardController controller) {
     assert(
       _membershipIsAligned(controller),
       'A card wider than the narrowest grid reached the live layout without '
       'being aligned into the others — add it through addWidget or applyPreset, '
       'not straight to the controller. See _exportAllBreakpoints (#1393).',
     );
-    return _enqueue(() => _writeLayout(controller));
   }
 
   /// Whether [_exportAllBreakpoints] can safely walk [controller]'s layout.
@@ -639,11 +651,6 @@ class UspSliverDashboardControllerNotifier
   /// with no stack trace attached. Only the addition direction is checked — a
   /// delete reconciles safely, which is the asymmetry [_exportAllBreakpoints]
   /// documents.
-  ///
-  /// Checked here, on the caller's stack, rather than inside the walk: the walk
-  /// runs behind the write queue, where an assertion failure is caught by
-  /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
-  /// mutation that caused it.
   bool _membershipIsAligned(DashboardController controller) =>
       !controller.exportLayout().any((item) =>
           !_seededIds.contains(item['id'] as String) &&
@@ -675,6 +682,25 @@ class UspSliverDashboardControllerNotifier
     await prefs.setString(pUspSliverDashboardLayout, envelope.encode());
   }
 
+  /// One layout per breakpoint, for a caller that has to put all of them back
+  /// later.
+  ///
+  /// This is the entry snapshot of edit mode, and the reason [restoreSnapshot]
+  /// can be a plain restore instead of a scale (#1396). It is the same walk
+  /// [_writeLayout] runs after every mutation, so it costs a session nothing new,
+  /// and it ends on the breakpoint it started on — the page does not move under
+  /// the user when they press "Edit".
+  ///
+  /// Guarded like [saveLayout], and for the same reason: the walk this hands out
+  /// is the walk that writes, so an unaligned membership reaching it produces a
+  /// snapshot with an over-wide card in the narrow grids — which a cancel would
+  /// then restore *and* store.
+  Map<int, List<dynamic>> exportAllBreakpoints() {
+    final controller = state;
+    _assertMembershipAligned(controller);
+    return _exportAllBreakpoints(controller);
+  }
+
   /// Reads out one layout per breakpoint by visiting each in turn.
   ///
   /// The controller holds a cached layout per slot count and reconciles
@@ -691,10 +717,11 @@ class UspSliverDashboardControllerNotifier
   /// `w: 12`, so one full-width card coming back on the desktop grid is stored
   /// over-wide on the two narrower ones (#1393).
   ///
-  /// So an addition has to be aligned into every breakpoint before it reaches the
-  /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
-  /// for, and why [restoreSnapshot] goes through them rather than importing into
-  /// the controller it is handed.
+  /// So an addition has to be in every breakpoint at a width that grid can hold
+  /// before it reaches the live layout — which is what [_replaceController] is
+  /// for, and why [restoreSnapshot] goes through it rather than importing into the
+  /// controller it is handed. Where that width comes from is the caller's
+  /// business: [addWidget] derives it, [restoreSnapshot] has it on record.
   ///
   /// [_membershipIsAligned] is what a comment cannot do. Now that the hook runs
   /// this walk after *every* controller mutation, a future caller reaching for
@@ -872,42 +899,61 @@ class UspSliverDashboardControllerNotifier
   /// tile that is resizable again. Both are states no sequence of gestures could
   /// have produced.
   ///
-  /// [layout] is re-normalised rather than trusted, so a snapshot taken before
-  /// this ticket existed — or one carried across a reload — still lands as a
-  /// layout the current rules agree with.
+  /// [forms] is restored *before* the geometry, and the order is load-bearing:
+  /// every grid the swap below imports goes through [_normalize] on the way in,
+  /// and [_normalize] derives geometry *from* the picks. Restoring the picks
+  /// second would normalise the pre-session grids against the session's picks —
+  /// a card put back in its old box while still carrying the form the user chose
+  /// and then cancelled.
   ///
   /// A revert can bring back a card the session deleted, which makes it a
   /// membership change, and those go in the way [addWidget] and [removeWidget]
-  /// put theirs in: aligned across every breakpoint first, then swapped in as a
-  /// fresh instance. Importing the snapshot into the live controller instead left
-  /// the other grids without the card and let the package place it there itself,
-  /// which for a full-width card does not terminate — see
-  /// [_exportAllBreakpoints]. Dragging a full-width card to the trash and
-  /// pressing "Cancel" froze the tab (#1393).
+  /// put theirs in: swapped in as a fresh instance carrying every breakpoint at
+  /// once. Importing the snapshot into the live controller instead left the other
+  /// grids without the card and let the package place it there itself, which for
+  /// a full-width card does not terminate — see [_exportAllBreakpoints].
+  /// Dragging a full-width card to the trash and pressing "Cancel" froze the tab
+  /// (#1393).
   ///
-  /// The other grids keep the geometry they have. Only their membership follows
-  /// the snapshot, because that is the only part of them edit mode could have
-  /// changed from here.
-  Future<void> restoreSnapshot(List<dynamic> layout, CardForms forms) async {
+  /// ## Why every grid is a snapshot and none is derived (#1396)
+  ///
+  /// This used to take one grid — the one the user was looking at — and rebuild
+  /// the other two from it with `UspWidgetSpecs.alignMembership`, on the grounds
+  /// that membership was the only part of them edit mode could change. That is
+  /// true of *membership* and false of everything the scale touches on the way:
+  /// aligning a 4-column grid up to 12 multiplies the coordinates, so a phone
+  /// card pinned to `x: 0, w: 4` by `lockToFullWidth` came back full-width on the
+  /// desktop — and `minW: 4` came back as `minW: 12`, which is a constraint the
+  /// 8-column grid cannot hold at all (`layout_engine.dart`'s
+  /// `assert(currentL.minW <= cols)`). Cancelling a phone-side delete either
+  /// rewrote the desktop layout or crashed, depending on the card.
+  ///
+  /// A grid the user never opened has nothing to derive from. [enterEditMode]
+  /// captures all three, and putting all three back is both simpler and the only
+  /// answer that is right by construction. `alignMembership` stays where a
+  /// derivation is genuinely all there is: [_seedBreakpoints], for a breakpoint
+  /// that was never stored.
+  ///
+  /// A snapshot missing a grid is a caller bug, and the assert is the whole
+  /// defence — [exportAllBreakpoints] is the only way to make one, and it always
+  /// fills all three. What release does without it is worth knowing rather than
+  /// guarding: [_replaceController] falls back to `const []` for the desktop key
+  /// only, so a missing 8- or 4-column grid is *derived* from desktop by
+  /// [_seedBreakpoints] — exactly the behaviour this ticket replaced — while a
+  /// missing desktop grid wipes the dashboard. A fallback here could only make one
+  /// of those two cases better, and would be a branch no test can reach.
+  Future<void> restoreSnapshot(
+      Map<int, List<dynamic>> layouts, CardForms forms) async {
+    assert(
+      UspLayoutEnvelope.persistedSlotCounts
+          .every((slots) => layouts[slots] != null),
+      'restoreSnapshot needs one layout per persisted breakpoint. '
+      'Capture with exportAllBreakpoints().',
+    );
     _setForms(forms);
-    final slots = state.slotCount.value;
-    final restored = _normalize(layout, slots);
-
-    final layouts = _exportAllBreakpoints(state);
-    for (final grid in layouts.keys.toList()) {
-      layouts[grid] = grid == slots
-          ? restored
-          : _normalize(
-              UspWidgetSpecs.alignMembership(
-                layouts[grid]!,
-                restored,
-                fromCols: slots,
-                toCols: grid,
-              ),
-              grid,
-            );
-    }
-
+    // Not normalised here: every grid handed to [_replaceController] is imported
+    // through [_seedBreakpoints], which normalises each one against the picks
+    // restored above.
     _replaceController(layouts);
     await saveLayout();
   }

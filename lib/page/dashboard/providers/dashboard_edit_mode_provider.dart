@@ -23,12 +23,19 @@ final dashboardEditModeProvider =
 /// so a second exit — a route guard and a button press racing, or a logout
 /// arriving after a commit — republishes a state identical to the one already
 /// held; on identity that is a rebuild of every listener for no change. And
-/// [layoutSnapshot] is a `List<Map<String, dynamic>>` freshly built by
-/// `exportLayout()` on every capture, which no two calls could ever share an
-/// identity for. [Equatable] compares it deeply.
+/// [layoutSnapshot] is a map of lists freshly built on every capture, which no
+/// two calls could ever share an identity for. [Equatable] compares it deeply.
 class DashboardEditState extends Equatable {
   final bool isEditing;
-  final List<Map<String, dynamic>>? layoutSnapshot;
+
+  /// The geometry of every breakpoint when edit mode opened, keyed by slot count.
+  ///
+  /// All of them, not just the one on screen (#1396): a cancel has to put back
+  /// the grids the user never opened, and those cannot be re-derived from the one
+  /// they were looking at — scaling a phone grid up to 12 columns invents
+  /// coordinates that were never theirs. See
+  /// [UspSliverDashboardControllerNotifier.restoreSnapshot].
+  final Map<int, List<dynamic>>? layoutSnapshot;
   final UspLayoutPreferences? prefsSnapshot;
 
   /// The forms cards were picked into when edit mode opened (#1299).
@@ -49,7 +56,7 @@ class DashboardEditState extends Equatable {
 
   DashboardEditState copyWith({
     bool? isEditing,
-    List<Map<String, dynamic>>? layoutSnapshot,
+    Map<int, List<dynamic>>? layoutSnapshot,
     UspLayoutPreferences? prefsSnapshot,
     CardForms? formsSnapshot,
     bool clearSnapshots = false,
@@ -127,8 +134,11 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     // instead of resuming and stranding the controller in edit mode.
     if (!state.isEditing) return;
 
-    final controller = ref.read(uspSliverDashboardControllerProvider);
-    final layoutSnapshot = controller.exportLayout();
+    // Every breakpoint, not the live one (#1396). The walk visits each grid and
+    // returns to the one on screen, so the page does not move under the user.
+    final layoutSnapshot = ref
+        .read(uspSliverDashboardControllerProvider.notifier)
+        .exportAllBreakpoints();
     final prefsSnapshot = ref.read(uspLayoutPreferencesProvider);
     final formsSnapshot = ref.read(cardFormsProvider);
 
@@ -139,7 +149,12 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
       formsSnapshot: formsSnapshot,
     );
 
-    controller.setEditMode(true);
+    // Read here rather than held from before the walk above: edit mode is a flag
+    // on the instance, and the one rule this file has about instances is that a
+    // stale one puts the flag on a controller nobody renders — see the `finally`
+    // in [_exitEditMode]. Nothing swaps between these two lines today; not keeping
+    // a reference is what makes that a non-question rather than an invariant.
+    ref.read(uspSliverDashboardControllerProvider).setEditMode(true);
   }
 
   /// Exit edit mode, keeping the current layout.
