@@ -22,10 +22,22 @@
 //                                   instantiate_wasm.js reads them for
 //                                   Cross-Origin Storage).
 //   flutter_service_worker_version  a constant "3346174710" where the build puts
-//                                   a fresh random value per build, so the
-//                                   service worker never invalidated and
-//                                   returning clients could hold a stale bundle
-//                                   across releases.
+//                                   a fresh value per build. Currently INERT for
+//                                   this project, and worth knowing why rather
+//                                   than assuming a staleness bug was fixed here:
+//                                   the loader's only use of the value is
+//                                   `active.scriptURL.endsWith(version)` in
+//                                   _getNewServiceWorker, and the URL it tests is
+//                                   serviceWorkerUrl below — ours, with no `?v=`
+//                                   query. So that check fails for every value,
+//                                   frozen or fresh, and registration.update() is
+//                                   called unconditionally on every load either
+//                                   way. The value becomes load-bearing again the
+//                                   moment the serviceWorkerUrl override goes,
+//                                   because the tool's default URL is
+//                                   flutter_service_worker.js?v=<version>. It is
+//                                   restored because it is the tool's value to
+//                                   fill, not because it was breaking anything.
 //
 // Guarded by test/web/canvaskit_variant_test.dart, which asserts the placeholders
 // are here and that none of the values above is written by hand.
@@ -76,8 +88,17 @@ _flutter.loader.load({
     // Unquoted: the substitution supplies its own quotes (and a deprecation
     // notice comment). Wrapping this in quotes produces a syntax error.
     serviceWorkerVersion: {{flutter_service_worker_version}},
-    // Ours. We ship web/service_worker.js; the tool's default would be
-    // flutter_service_worker.js, which this project does not generate.
+    // Ours, and it does more than rename the file. web/service_worker.js
+    // importScripts the generated flutter_service_worker.js (the build DOES emit
+    // it — 784 bytes, and identical in 3.44 and 3.47) and adds skipWaiting +
+    // clients.claim on top, which is what the PWA install prompt needs.
+    //
+    // Setting this key at all also changes registration: the loader registers
+    // unconditionally when a custom URL is given, whereas the default path first
+    // checks getRegistration() and does nothing if there is none. It logs
+    // flutter/flutter#156910 ("loading the service worker using Flutter
+    // bootstrap is deprecated") for exactly that reason, so this line is a known
+    // future migration and not a settled decision.
     serviceWorkerUrl: "service_worker.js"
   }
 });

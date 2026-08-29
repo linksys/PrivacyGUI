@@ -309,10 +309,13 @@ void main() {
         code,
         isNot(matches(RegExp(r'serviceWorkerVersion:\s*"'))),
         reason:
-            'serviceWorkerVersion must stay a placeholder. The build puts a '
-            'fresh random value there per build; a quoted literal means the '
-            'service worker never invalidates and returning clients can hold a '
-            'stale bundle across releases.',
+            'serviceWorkerVersion must stay a placeholder — it is the build\'s '
+            'value to fill. Note the value is currently inert here: the loader '
+            'only uses it as active.scriptURL.endsWith(version), and our '
+            'serviceWorkerUrl carries no ?v= query, so update() is called '
+            'unconditionally whatever the value is. It becomes load-bearing the '
+            'moment that override goes, since the default URL is '
+            'flutter_service_worker.js?v=<version>.',
       );
     });
 
@@ -328,9 +331,13 @@ void main() {
       expect(
         bootstrap,
         contains('serviceWorkerUrl: "service_worker.js"'),
-        reason: 'We ship our own web/service_worker.js. Dropping this line '
-            'sends the loader to the tool default, flutter_service_worker.js, '
-            'which this project does not generate.',
+        reason:
+            'We ship our own web/service_worker.js, which importScripts the '
+            'generated flutter_service_worker.js and adds skipWaiting + '
+            'clients.claim on top. Dropping this line sends the loader straight '
+            'at the generated file, losing both — and also switches it from '
+            'registering unconditionally to registering only when a '
+            'registration already exists.',
       );
     });
   });
