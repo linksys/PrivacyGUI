@@ -19,7 +19,7 @@
 #   rather than rediscovering it. It gated `--web-renderer html` on the literal
 #   "3.27.1" — a flag `flutter build web` removed in 3.44 and which does NOT
 #   degrade gracefully: it exits with `Could not find an option named
-#   "--web-renderer"` (verified on 3.47.0). So any job still passing 3.27.1 was
+#   "--web-renderer"` (verified on the pinned 3.47.2). So any job still passing 3.27.1 was
 #   failing its build outright, and no supported SDK could make that branch
 #   correct. If a Jenkins job still sets FlutterVersion, it is now inert here.
 #

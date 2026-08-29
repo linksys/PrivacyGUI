@@ -37,11 +37,26 @@ runs:
     # could not agree by construction, which is how a 3.44.0 CanvasKit came to
     # be served under a 3.47.0 engine (see doc/web/vendored-canvaskit.md).
     #
+    # The PATCH digit is load-bearing, and finding out why is what set this
+    # number. `channel: stable` had already carried CI past 3.47.0 to 3.47.1 and
+    # then 3.47.2 — run 33239883637 on 2026-08-29 resolved
+    # `stable-3.47.2-x64` — so pinning the .0 would have DOWNGRADED CI by two
+    # hotfixes and thrown away the only green evidence we have. Worse, each
+    # hotfix carries its own engine (3.47.0 5f776256 / 3.47.1 5d531788 /
+    # 3.47.2 a804b261) and `canvaskit.wasm` genuinely differs between them
+    # (2898c079, 7284349 B -> fbed517a, 7284602 B), so a major-minor pin leaves
+    # the same CanvasKit-vs-engine mismatch this issue was filed about, one digit
+    # further down. Pin all three digits.
+    #
     # Two things this buys beyond hygiene. Golden baselines are SDK-sensitive —
     # the first 3.47.0 run in linksys/PrivacyGUI-golden-ci produced 312 failures
     # against a baseline rendered on 3.44.9, with no baseline change involved —
     # and under `channel:` "the SDK moved" and "the baseline moved" are not
     # distinguishable after the fact, which is most of what made #1210 expensive.
+    # (3.47.0 -> 3.47.2 moves no pixels at all: golden-ci run 33214834347 on
+    # 2026-08-28 verified a 3.47.0-rendered baseline under 3.47.2 with 0
+    # failures. Hotfixes are cheap to adopt; that is an argument for tracking
+    # them promptly, not for leaving the digit off.)
     #
     # The cost of pinning is that fixes no longer arrive on their own, so this
     # needs a periodic bump PR rather than being left alone. Moving it means
@@ -55,7 +70,7 @@ runs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.47.0'
+        flutter-version: '3.47.2'
         cache: true
 
     # Deploy Key approach for the private ui_kit dependency.

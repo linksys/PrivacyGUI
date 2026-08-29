@@ -12,20 +12,30 @@ analyzer:
     # Deliberately invalid boundary fixtures are parsed by the Python
     # contract tests and must not be treated as application Dart sources.
     - tools/usp_boundary/fixtures/**
-    # Written by `flutter pub get` itself, not by hand: 3.47.0 migrates this
-    # file to exclude build output and platform directories, announcing
-    # "Upgrading analysis_options.yaml to exclude build and platform
-    # directories". Committed rather than reverted because the migration is
-    # idempotent and re-applies on every `pub get` — reverting it just makes
-    # the tree dirty again on the next command. Most of these directories do
-    # not exist here (only `ios/` does), so the practical effect is `build/**`.
+    # The four below are written by `flutter pub get` itself, not by hand. It
+    # announces "Upgrading analysis_options.yaml to exclude build and platform
+    # directories" and appends them when they are absent. Committed rather than
+    # reverted, because reverting only makes the tree dirty on the next command.
+    #
+    # The list is pin-shaped, which is the reason it is worth a comment. 3.47.0
+    # wrote all six platform names whether the directory existed or not;
+    # flutter/191131, shipped in 3.47.2, narrows it to the ones that do — here
+    # `android/`, `ios/` and `web/`, with `windows/`, `macos/` and `linux/`
+    # absent. Measured rather than inferred: this block was stripped and
+    # re-migrated under 3.47.2 to get these exact four lines.
+    #
+    # The migration is one-way, not re-applied per run: with the block already
+    # present, `pub get` leaves it completely alone (also measured). So a tree
+    # migrated by 3.47.0 keeps its seven lines forever even after the pin moves
+    # to 3.47.2 — these four are deliberate, and no future bump will correct
+    # them on our behalf.
+    #
+    # Practical effect: `build/**` alone. None of the three platform directories
+    # that do exist here holds a single `.dart` file.
     - build/**
     - android/**
     - ios/**
     - web/**
-    - windows/**
-    - macos/**
-    - linux/**
   errors:
     prefer_const_constructors: ignore
 include: package:flutter_lints/flutter.yaml

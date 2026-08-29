@@ -7,25 +7,35 @@ import 'package:flutter_test/flutter_test.dart';
 /// The Flutter SDK `web/assets/canvaskit.*` were vendored from, and the only
 /// version this repo declares anywhere else: `.fvmrc` and the CI setup action
 /// are both asserted against it below.
-const _pinnedFlutterVersion = '3.47.0';
+///
+/// All three digits, and the patch is not decoration. Every 3.47 hotfix ships
+/// its own engine, and `canvaskit.wasm` really does change between them — 3.47.0
+/// is `2898c079…` at 7,284,349 B against 3.47.2's `fbed517a…` at 7,284,602 B —
+/// so a pin of "3.47" would re-open the exact mismatch #1316 closed.
+const _pinnedFlutterVersion = '3.47.2';
 
 /// `engineRevision` of [_pinnedFlutterVersion], from that SDK's
 /// `bin/cache/flutter.version.json`. Recorded for the error messages and for
 /// `doc/web/vendored-canvaskit.md`; the hashes are what actually gate.
-const _pinnedEngineRevision = '5f77625673248ee5846fbcaf5d3e1a3878386fd7';
+const _pinnedEngineRevision = 'a804b261645ef8c13eb3d5c44a5c2fb0340c5539';
 
 /// sha256 and byte size of each vendored file as shipped by
 /// [_pinnedFlutterVersion]. A committed expectation rather than a live
 /// byte-compare, so the check still means something on a machine with no web
 /// SDK unpacked — the same reason `web/usp-artifacts.json` exists.
+///
+/// `canvaskit.js` is byte-identical in 3.47.0 and 3.47.2. That is why both files
+/// are still listed and both are still copied on a bump: which of the two moves
+/// is not knowable in advance, and "only one file showed up in git status" is
+/// the expected outcome of a hotfix bump rather than a sign of a half-copy.
 const _vendoredCanvasKit = <String, ({String sha256, int bytes})>{
   'canvaskit.js': (
     sha256: 'bb559f6080c7d312ac2a912b4abec9f68ff3d3022d4a603c7796b9b31460642b',
     bytes: 86987,
   ),
   'canvaskit.wasm': (
-    sha256: '2898c0795cf4a694e86ee3445c7414c2503fbcb46967154762f50ebde988da04',
-    bytes: 7284349,
+    sha256: 'fbed517a43e82452404446683f00f2e876d835aed84410695759e67b6bb01cd3',
+    bytes: 7284602,
   ),
 };
 
@@ -158,6 +168,18 @@ void main() {
     // silently moved to 3.47.0 on 2026-08-12, never invokes fvm, and so could
     // not agree with .fvmrc's 3.44.0 by construction.
     test('.fvmrc and the CI setup action pin the same Flutter version', () {
+      // A hotfix is not cosmetic here. `channel: stable` carried CI from 3.47.0
+      // to 3.47.2 in seventeen days, each hotfix bringing its own engine and a
+      // different canvaskit.wasm, so a two-digit pin drifts across CanvasKit
+      // versions while looking pinned.
+      expect(
+        _pinnedFlutterVersion,
+        matches(RegExp(r'^\d+\.\d+\.\d+$')),
+        reason:
+            'The pin must name a patch version. "3.47" would let the runner '
+            'pick any 3.47.x, and those do not all ship the same CanvasKit.',
+      );
+
       final fvmrc =
           jsonDecode(File('.fvmrc').readAsStringSync()) as Map<String, dynamic>;
       expect(
