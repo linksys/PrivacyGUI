@@ -119,8 +119,25 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
+      # Warnings ARE fatal here; only infos are exempt. `--no-fatal-warnings` was
+      # in this command until #1316, and it is how three real defects sat in the
+      # tree unseen — including two `invalid_return_type_for_then` that would have
+      # thrown ArgumentError at runtime had those error branches ever been taken.
+      # Nobody saw them because CI's exit code could not care and 469 infos drown
+      # three lines of local output.
+      #
+      # The tree is at exactly 0 warnings, which is what makes this affordable.
+      # Infos cannot join it: there are 469, and zeroing them is not this issue.
+      #
+      # The tradeoff is real and deliberate: a Flutter upgrade that adds a new
+      # warning class now turns some unrelated PR red. That is the intended
+      # failure mode — invalid_return_type_for_then arrived exactly that way, in
+      # Dart 3.13, and silence is what let it land. If it happens, fix the warning
+      # or downgrade that one diagnostic under `analyzer: errors:` in
+      # analysis_options.yaml. Do not put --no-fatal-warnings back: it re-blinds
+      # every diagnostic at once, which is the state this replaced.
       - name: 🔍 Flutter Analyze
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: flutter analyze --no-fatal-infos
 
       # `!cancelled()` rather than the default, so that analyze failing does not
       # hide a format failure. These two are 34s and 4s: there is no reason to
