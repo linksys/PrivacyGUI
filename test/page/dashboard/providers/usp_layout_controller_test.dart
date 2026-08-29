@@ -248,6 +248,59 @@ void main() {
       expect(notifier, isA<UspSliverDashboardControllerNotifier>());
       expect(container.read(uspSliverDashboardControllerProvider), isNotNull);
     });
+
+    /// Deliberately not awaited, and that is the whole test (#1395).
+    ///
+    /// `_initializeLayout` is async — it awaits `SharedPreferences.getInstance()`
+    /// before it can seed anything — while the first frame is laid out
+    /// synchronously off the controller the constructor published. So there is a
+    /// window in which the grid asks the controller for a breakpoint it has no
+    /// cache for, and the package answers with `correctBounds`, which clamps `w`
+    /// to the column count but leaves `minW` where it was: the desktop layout's
+    /// half-width cards arrive in the phone grid declaring `minW: 6` of 4 columns.
+    ///
+    /// On 0.9.1 that frame was survivable — the tiles were laid out over-wide and
+    /// the seed replaced them a frame later. 2.x asserts the invariant instead
+    /// (`layout_engine.dart:963`, `'currentL.minW <= cols'`), so in debug the same
+    /// window is a thrown `FlutterError` on every narrow-window boot, and the
+    /// layout gate's four narrow cells for this page fail: 320 and 480 throw the
+    /// assertion, 601 and 905 report the over-wide frame's own overflow.
+    ///
+    /// Asserted at the seam rather than through the page, because the page can
+    /// only observe it as "the gate is red at four widths". `minW` is the value the
+    /// package asserts on; `w` is checked with it so a fix that clamped only the
+    /// bound the assertion names would not pass.
+    test('every breakpoint is seeded before the first frame is laid out',
+        () async {
+      SharedPreferences.setMockInitialValues(const {});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+
+      for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
+        controller.setSlotCount(slots);
+        final tooWide = controller
+            .exportLayout()
+            .where((item) =>
+                ((item as Map)['minW'] as int) > slots ||
+                (item['w'] as int) > slots)
+            .map((item) => '${(item as Map)['id']}'
+                ' (w: ${item['w']}, minW: ${item['minW']})')
+            .toList();
+        expect(
+          tooWide,
+          isEmpty,
+          reason: 'the $slots-column grid was asked for before the async seed '
+              'finished, and answered with cards wider than it has columns',
+        );
+      }
+
+      // Left where the grid expects to find it, so a later expectation in this
+      // file cannot inherit a phone-sized controller from here.
+      controller.setSlotCount(UspLayoutEnvelope.desktopSlotCount);
+      await pumpAsync();
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -335,8 +388,11 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      final firstItem = layout.first as Map;
-      expect(firstItem['id'], 'stats_panel');
+      // By id, not by position: `exportLayout()` sorts by id ascending (the
+      // sliver-index stability change in sliver_dashboard 1.1.0), so the
+      // first entry is `connected_devices`.
+      final firstItem =
+          layout.firstWhere((i) => i['id'] == 'stats_panel') as Map;
       expect(firstItem['x'], 0);
       expect(firstItem['y'], 0);
       expect(firstItem['w'], 12);
@@ -1332,17 +1388,19 @@ void main() {
       });
     });
 
-    test('a card added straight to the controller is caught, not hung',
+    test('a card added straight to the controller is caught, not stored',
         () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
       // The walk can only reconcile *deletions* into the other breakpoints. A
       // card the live layout gained on its own is placed there by the package at
-      // the width it has here, and `placeNewItems` never terminates when that
-      // width does not fit — a frozen tab with no stack trace. Now that the hook
-      // runs the walk after every controller mutation, the constraint has an
-      // assertion behind it instead of a comment (#1393).
+      // the width it has here, and the placement never narrows it — so the pref
+      // ends up holding a card wider than the grid it sits in, with nothing
+      // raised. Now that the hook runs the walk after every controller mutation,
+      // the constraint has an assertion behind it instead of a comment (#1393).
+      // Under 0.9.1 the same walk hung instead; the assertion predates the bump
+      // and is what still makes this fail (#1395).
       final controller = container.read(uspSliverDashboardControllerProvider);
       expect(
         () => controller.addItem(
@@ -1354,6 +1412,173 @@ void main() {
           contains('addWidget'),
         )),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1395 — the input surface 2.6.0 turns on by default
+  // ---------------------------------------------------------------------------
+  //
+  // Two majors of `sliver_dashboard` arrived with three interaction surfaces
+  // already switched on: an undo/redo history, a rubberband selection over empty
+  // grid space, and a keyboard set that includes Delete and Ctrl/Cmd+A. A bump
+  // is not the place to start shipping gestures, so each is turned off here at
+  // the one seam that builds every controller — and the tests below are what stop
+  // a later refactor from quietly re-arming them.
+  //
+  // The history is not a preference. It is a defect for this notifier: see the
+  // first test.
+  group('2.6.0 input surface (#1395)', () {
+    test('the undo history is off, because ours would restore a foreign grid',
+        () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // `_importQuietly` suppresses *our* persist hook, not the package's
+      // bookkeeping: `importLayout` records a history entry
+      // (`dashboard_controller_impl.dart:1030`), so seeding the 8- and 4-column
+      // caches pushes those two layouts onto the undo stack before the user has
+      // touched anything. `_restoreSnapshot` then re-projects a snapshot taken at
+      // another slot count onto the live grid, and #1393's hook persists the
+      // result. Measured on 2.6.0 with the history left at its default: `canUndo`
+      // was already true here, and the first Ctrl+Z narrowed `stats_panel` from
+      // 12 slots to 8 on the desktop grid and saved it.
+      //
+      // So the entry condition is what is asserted — an empty stack, not a
+      // well-behaved one. Turning the history on belongs to the follow-up that
+      // first keeps this notifier's own imports out of it.
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      expect(controller.maxHistoryLength, 0);
+      expect(controller.canUndo.value, isFalse,
+          reason: 'nothing the user did is undoable, because nothing the user '
+              'did is on the stack — only our own seeding walk was');
+      expect(controller.canRedo.value, isFalse);
+
+      final prefs = await SharedPreferences.getInstance();
+      final before = prefs.getString(pUspSliverDashboardLayout);
+      final geometryBefore = _geometry(controller.exportLayout());
+
+      expect(await controller.undo(), isFalse);
+      expect(await controller.redo(), isFalse);
+      await pumpAsync();
+
+      expect(_geometry(controller.exportLayout()), geometryBefore,
+          reason: 'a keyboard undo in edit mode must not move a card the user '
+              'never moved');
+      expect(prefs.getString(pUspSliverDashboardLayout), before,
+          reason: 'and must not reach the pref');
+    });
+
+    test('every controller this provider publishes carries the input policy',
+        () async {
+      // The same five construction sites as the auto-persist test above. The
+      // policy lives on the controller, not on the view, so an unwired instance
+      // silently reverts to the package defaults for as long as it is published.
+      //
+      // Every field is named, not just the ones this ticket switched off. The
+      // constraint is `^2.6.0` and `pubspec.lock` is gitignored, so a minor with
+      // one more modifier field — or one flipped default — arrives on a
+      // `flutter pub get` with no diff to review. `swapModeModifier` is why this
+      // is written out: it was already live and unnoticed because nothing here
+      // enumerated the set.
+      void expectPolicy(ProviderContainer container, String site) {
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        expect(controller.maxHistoryLength, 0, reason: 'history: $site');
+        expect(controller.lassoStyle.isEnabled, isFalse,
+            reason: 'lasso: $site');
+        expect(controller.dragMode.value, DragMode.cascade,
+            reason: 'drag mode: $site — our geometry rules are written against '
+                'push-neighbours');
+
+        final shortcuts = controller.shortcuts;
+        expect(shortcuts, isNotNull,
+            reason: 'shortcuts: $site — a null config is the package default, '
+                'which binds Delete and Ctrl/Cmd+A');
+
+        // Off (#1395). Each of these is new in 2.x, so an empty set is today's
+        // behaviour rather than one taken away.
+        expect(shortcuts!.delete, isEmpty, reason: 'delete key: $site');
+        expect(shortcuts.selectAll, isEmpty, reason: 'select all: $site');
+        expect(shortcuts.undo, isEmpty, reason: 'undo chord: $site');
+        expect(shortcuts.redo, isEmpty, reason: 'redo chord: $site');
+        expect(shortcuts.swapModeModifier, isEmpty,
+            reason: 'swap-on-Shift: $site');
+
+        // On, and asserted so that "narrow the set" cannot drift into "drop the
+        // keyboard": grab / move / drop is the only way to reorder a card
+        // without a pointer.
+        expect(shortcuts.grab, isNotEmpty, reason: 'grab: $site');
+        expect(shortcuts.drop, isNotEmpty, reason: 'drop: $site');
+        expect(shortcuts.moveUp, isNotEmpty, reason: 'arrows: $site');
+        expect(shortcuts.moveDown, isNotEmpty, reason: 'arrows: $site');
+        expect(shortcuts.moveLeft, isNotEmpty, reason: 'arrows: $site');
+        expect(shortcuts.moveRight, isNotEmpty, reason: 'arrows: $site');
+        expect(shortcuts.cancel, isNotEmpty, reason: 'escape: $site');
+
+        // Left at the package default, and named here so that a change to one
+        // shows up as a failing test rather than as a behaviour report from the
+        // field. `duplicate` and `cloneKeys` are inert while no
+        // `onCloneRequested` is registered; `multiSelectKeys` predates the bump.
+        expect(shortcuts.duplicate, isNotEmpty, reason: 'duplicate: $site');
+        expect(shortcuts.cloneKeys, isNotEmpty, reason: 'clone keys: $site');
+        expect(shortcuts.multiSelectKeys, isNotEmpty,
+            reason: 'multi-select click: $site');
+        expect(shortcuts.lassoModifier, isNotEmpty,
+            reason: 'lasso modifier: $site — inert while the lasso is off, and '
+                'the field that arms it if it is ever turned back on');
+      }
+
+      // The instance a first run keeps, which is `_createDefaultController`'s —
+      // not the bootstrap in the initializer list, which `_swapController`
+      // replaces before anything can read the provider. That one carries the
+      // policy through `_applyInputPolicy` because no test can reach it.
+      final fresh = await createInitializedContainer();
+      addTearDown(fresh.dispose);
+      expectPolicy(fresh, 'a first run, with no stored layout');
+
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(pUspSliverDashboardLayout)!;
+
+      final reloaded = await createInitializedContainer(
+        initialValues: {pUspSliverDashboardLayout: stored},
+      );
+      addTearDown(reloaded.dispose);
+      final notifier =
+          reloaded.read(uspSliverDashboardControllerProvider.notifier);
+      expectPolicy(
+          reloaded, 'the instance the stored layout was imported into');
+
+      await notifier.applyPreset(UspDashboardPreset.essential);
+      expectPolicy(reloaded, 'after a preset');
+
+      await notifier.removeWidget('stats_panel');
+      expectPolicy(reloaded, 'after a membership change replaces the instance');
+
+      await notifier.resetLayout();
+      expectPolicy(reloaded, 'after a reset');
+    });
+
+    test('the shortcut config is one shared instance across controller swaps',
+        () async {
+      // `DashboardItemWidget` rebuilds its two intent maps whenever the config
+      // is not `identical` to the one it cached (`dashboard_item_widget.dart:449`),
+      // and every card holds its own cache. Handing each controller a freshly
+      // built config would re-key all 18 of them on every preset and every
+      // membership change.
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+      final notifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+
+      final first =
+          container.read(uspSliverDashboardControllerProvider).shortcuts;
+      await notifier.applyPreset(UspDashboardPreset.essential);
+      final second =
+          container.read(uspSliverDashboardControllerProvider).shortcuts;
+
+      // Both null would satisfy `identical` while meaning "package defaults".
+      expect(first, isNotNull);
+      expect(identical(first, second), isTrue);
     });
   });
 }

@@ -12,7 +12,13 @@ import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sliver_dashboard/sliver_dashboard.dart';
+// 2.x's barrel opens with `export 'package:state_beacon/state_beacon.dart'`,
+// which brings `lite_ref` and `state_beacon_core` with it — so five Riverpod
+// names arrive from a package three hops away. `Ref` and `AsyncValue` are the two
+// that collided on the bump; the other three are hidden because they only collide
+// at the point of *use*, and the compiler names the file rather than the cause.
+import 'package:sliver_dashboard/sliver_dashboard.dart'
+    hide Ref, AsyncValue, AsyncData, AsyncError, AsyncLoading;
 
 import '../models/usp_dashboard_preset.dart';
 import '../models/usp_widget_specs.dart';
@@ -88,12 +94,21 @@ class UspSliverDashboardControllerNotifier
   /// [_swapController] arms the width lock and the selection mirror, which is
   /// what this constructor used to do by hand. The bootstrap is dropped without
   /// disposing, like every other controller this class replaces.
+  ///
+  /// It still carries the input policy, through [_applyInputPolicy] and the one
+  /// history argument, even though it is replaced on the next line. This is the
+  /// one controller no test can reach — anything that reads the provider reads the
+  /// replacement — so it is the one that has to be right by construction (#1395).
   UspSliverDashboardControllerNotifier(this._ref)
-      : super(DashboardController(
+      : super(_applyInputPolicy(DashboardController(
           initialSlotCount: _desktopSlots,
           initialLayout: UspWidgetSpecs.createDefaultLayout(),
-        )) {
+          maxHistoryLength: 0,
+        ))) {
     _swapController(_createDefaultController());
+    // Synchronously, before [_initializeLayout]'s first `await` — see the method's
+    // own doc for why the seed cannot wait for the pref (#1395).
+    _seedBreakpoints();
     _initializeLayout();
   }
 
@@ -136,16 +151,102 @@ class UspSliverDashboardControllerNotifier
   /// reconciles deletions safely, which is the asymmetry the walk documents.
   Set<String> _seededIds = const {};
 
+  /// The keyboard and modifier set the grid is given, narrower than the
+  /// package's default.
+  ///
+  /// Held as one shared instance rather than built per controller: every card
+  /// caches the intent maps it derives from this and rebuilds them whenever the
+  /// config is not `identical` to the cached one
+  /// (`dashboard_item_widget.dart:449`), so a fresh config per controller would
+  /// re-key all 18 caches on every preset and every membership change.
+  ///
+  /// What is dropped, and why (#1395). None of these existed at 0.9.1, so each
+  /// entry keeps today's behaviour rather than taking one away:
+  ///
+  /// - `delete` (Delete / Backspace) removes the focused card, or the whole
+  ///   selection when the focused card is in it, with no confirmation. Removal is
+  ///   the one edit here that loses information, the history is off (see
+  ///   [_createController]), and Cancel does not fully restore a deletion
+  ///   (#1396) — so a stray Backspace, which is a browser Back reflex, costs the
+  ///   user their arrangement. Deleting from the keyboard is worth having; it
+  ///   wants `DashboardOverlay.onWillDelete` in front of it, which is its own
+  ///   decision because the trash zone has no confirmation either.
+  /// - `selectAll` (Ctrl / Cmd + A) selects every card at once. Nothing here
+  ///   consumes a multi-selection: [selectedCardIdProvider] reads two or more as
+  ///   none, so the form toolbar drops back to its prompt with nothing to say
+  ///   why. Shift- and Ctrl-click reach the same dead end and are deliberately
+  ///   left alone — they predate the bump (0.9.1 `dashboard_overlay.dart:665`),
+  ///   and one card at a time is a gesture a user can see the result of.
+  /// - `undo` / `redo` (Ctrl / Cmd + Z, Ctrl + Y, Cmd + Shift + Z) are bound by
+  ///   the package whether or not there is a history to travel. Left bound they
+  ///   would be swallowed by the grid's `Actions` and do nothing at all; empty,
+  ///   the chords fall through to whatever encloses the dashboard. The history
+  ///   itself is switched off in [_createController], and this is the same
+  ///   decision written where the keys are.
+  /// - `swapModeModifier` (Shift, held during a drag) inverts `dragMode`, so a
+  ///   Shift-drag exchanges two cards outright instead of pushing neighbours
+  ///   aside (`getEffectiveDragMode`). Our geometry rules are written against
+  ///   push-neighbours, and Shift is a key the user is already holding to
+  ///   multi-select, so the same drag would land differently depending on a key
+  ///   that means something else. An empty list removes the toggle and leaves
+  ///   `dragMode` in sole control, which is the field's own documented opt-out.
+  ///
+  /// Everything else is left at the package default. Grab / arrows / drop /
+  /// Escape is the only way to reorder a card without a pointer and is kept for
+  /// that reason; `duplicate` is inert while no `onCloneRequested` is registered.
+  static const _shortcuts = DashboardShortcuts(
+    delete: {},
+    selectAll: {},
+    undo: {},
+    redo: {},
+    swapModeModifier: [],
+  );
+
+  /// Applies the input policy [_shortcuts] belongs to.
+  ///
+  /// Static because the bootstrap controller in the constructor's initializer
+  /// list cannot reach `this` and is therefore the one instance no test can
+  /// observe — see the class doc. Configuring it here rather than in
+  /// [_createController] is what makes the policy hold by construction instead of
+  /// by an assertion nothing can make.
+  static DashboardController _applyInputPolicy(
+          DashboardController controller) =>
+      controller
+        ..lassoStyle = LassoStyle.off
+        ..shortcuts = _shortcuts;
+
   /// A controller carrying [layout] that reports its own edits back here.
   ///
   /// Every construction goes through this, so there is one place where the
   /// auto-persist hook can be forgotten rather than three.
+  ///
+  /// It is also where the interaction surfaces `sliver_dashboard` 2.x switches on
+  /// by default are switched back off (#1395) — a bump is not the place to start
+  /// shipping gestures. Two live here and two more in [_shortcuts]:
+  ///
+  /// - `maxHistoryLength: 0` disables undo/redo, and this one is a defect rather
+  ///   than a preference. [_importQuietly] suppresses this notifier's persist
+  ///   hook, not the package's bookkeeping: `importLayout` records a history entry
+  ///   (`dashboard_controller_impl.dart:1030`), so [_seedBreakpoints]' walk pushes
+  ///   the 8- and 4-column layouts onto the stack before the user has touched
+  ///   anything. A Ctrl+Z then re-projects one of those onto the grid the user is
+  ///   looking at — measured on 2.6.0: `canUndo` was already true on a first run
+  ///   and the first undo narrowed `stats_panel` from 12 slots to 8 on the desktop
+  ///   grid — and [_handleLayoutChanged] persists it. Turning the history on means
+  ///   first calling `clearHistory()` at the end of every internal import, so the
+  ///   stack holds the user's operations and only those.
+  /// - `LassoStyle.off` keeps an empty-space drag doing what it did before: the
+  ///   grid shares its scroll view with other slivers, and a rubberband only
+  ///   makes a multi-selection easier to reach, which nothing here consumes but
+  ///   the trash drag. `LassoSelectionMode.modifierRequired` is the upgrade path
+  ///   upstream recommends for a grid like this one.
   DashboardController _createController(List<LayoutItem> layout) {
-    return DashboardController(
+    return _applyInputPolicy(DashboardController(
       initialSlotCount: _desktopSlots,
       initialLayout: layout,
       onLayoutChanged: _handleLayoutChanged,
-    );
+      maxHistoryLength: 0,
+    ));
   }
 
   DashboardController _createDefaultController() =>
@@ -165,8 +266,13 @@ class UspSliverDashboardControllerNotifier
     // Remote mode: use fixed remote preset layout, skip persistence
     final forcedPreset = GlobalConfig.remote.forcedPreset;
     if (forcedPreset != null) {
+      // Read the live breakpoint at the swap, not before an await: the pref read
+      // below means this method can land several frames after the page was first
+      // laid out — on a phone, several frames after the view moved the outgoing
+      // controller off desktop.
+      final live = state.slotCount.value;
       _swapController(_createController(forcedPreset.createLayout()));
-      _seedBreakpoints();
+      _seedBreakpoints(live: live);
       return;
     }
 
@@ -209,8 +315,9 @@ class UspSliverDashboardControllerNotifier
     if (desktop != null) {
       _importQuietly(newController, desktop);
     }
+    final live = state.slotCount.value;
     _swapController(newController);
-    _seedBreakpoints(stored: envelope);
+    _seedBreakpoints(stored: envelope, live: live);
 
     // A legacy bare list, or an envelope written before we rendered a
     // breakpoint, has nothing stored for the grids we just derived. Write them
@@ -232,9 +339,41 @@ class UspSliverDashboardControllerNotifier
   /// two-column layout collapses.
   ///
   /// Must be called with the controller on the desktop grid (the widest one is
-  /// the source everything else is derived from); it leaves it there.
-  void _seedBreakpoints({UspLayoutEnvelope? stored}) {
+  /// the source everything else is derived from). It ends the walk there too, and
+  /// then puts the controller back on the grid the page is rendering: [live], or
+  /// the one it found the controller on. A caller that has just swapped the
+  /// instance has to pass it, because a fresh controller starts on desktop
+  /// whatever width it is about to be shown at — and the view withholds the grid
+  /// for any frame the two disagree, so getting this wrong is a blank flash
+  /// rather than a wrong layout (#1395).
+  ///
+  /// ## And it cannot wait for the pref (#1395)
+  ///
+  /// The constructor seeds too, off the default layout, before
+  /// [_initializeLayout] has awaited anything. That looks redundant — every path
+  /// through [_initializeLayout] seeds again a moment later, and with better
+  /// input — but the moment is a frame, and the grid lays out in it.
+  ///
+  /// An unseeded breakpoint is not a missing layout, it is a wrong one: the
+  /// package answers `setSlotCount` from `correctBounds`, which clamps `w` to the
+  /// column count but leaves the item's own `minW` alone, so the desktop grid's
+  /// half-width cards arrive on the phone four columns wide while still declaring
+  /// `minW: 6`. 0.9.1 shipped that contradiction silently; 2.x asserts against it
+  /// (`layout_engine.dart:963`, `'currentL.minW <= cols'`), which turns it into a
+  /// thrown `FlutterError` on any debug boot into a window narrower than the
+  /// desktop breakpoint. Reproduced with no code of ours involved: a bare
+  /// `DashboardController(initialSlotCount: 12, initialLayout: <the default>)`
+  /// throws on `setSlotCount(4)`, naming `stats_panel`'s `minW: 6`.
+  ///
+  /// Seeding is the fix rather than a workaround because a seeded breakpoint gets
+  /// its layout from [_normalize], which scales the constraints along with the
+  /// geometry — which is also what the rest of this class already relies on.
+  ///
+  /// The cost is one extra walk per session — three `setSlotCount` calls and two
+  /// imports, in memory, persisting nothing.
+  void _seedBreakpoints({UspLayoutEnvelope? stored, int? live}) {
     final controller = state;
+    final liveSlots = live ?? controller.slotCount.value;
 
     // Desktop is normalised here rather than by its caller because every path
     // into this method imports the desktop layout first and then relies on this
@@ -275,10 +414,17 @@ class UspSliverDashboardControllerNotifier
     // Returns to the layout cached during the first setSlotCount above.
     controller.setSlotCount(_desktopSlots);
 
-    // Every grid's cache now holds the same membership — see [_seededIds].
+    // Every grid's cache now holds the same membership — see [_seededIds]. Read
+    // on the desktop grid because that is the one this walk normalised first;
+    // after the seed every breakpoint agrees, so which one is read is arbitrary.
     _seededIds = {
       for (final item in controller.exportLayout()) item['id'] as String,
     };
+
+    // And back to the grid the page is actually rendering.
+    if (liveSlots != _desktopSlots) {
+      controller.setSlotCount(liveSlots);
+    }
   }
 
   /// The per-grid policy a layout must satisfy before it is imported or stored.
@@ -486,6 +632,14 @@ class UspSliverDashboardControllerNotifier
 
   /// Whether [_exportAllBreakpoints] can safely walk [controller]'s layout.
   ///
+  /// A card only the live grid's cache holds is placed into the narrower grids at
+  /// the width it has here, and the placement does not clamp it, so the walk
+  /// stores a card wider than the grid it sits in. Nothing throws: that breakpoint
+  /// simply renders over-wide until a reload pulls it back in, which is a defect
+  /// with no stack trace attached. Only the addition direction is checked — a
+  /// delete reconciles safely, which is the asymmetry [_exportAllBreakpoints]
+  /// documents.
+  ///
   /// Checked here, on the caller's stack, rather than inside the walk: the walk
   /// runs behind the write queue, where an assertion failure is caught by
   /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
@@ -532,11 +686,10 @@ class UspSliverDashboardControllerNotifier
   /// Deleted, not added: the reconciliation is only safe in that direction, and
   /// the asymmetry constrains every caller. A card the live layout has and the
   /// target grid's cache does not is placed by the package at the width it has
-  /// here, and `placeNewItems` wraps to the next row forever when that width does
-  /// not fit — the wrap branch skips its own safety counter
-  /// (`sliver_dashboard` 0.9.1, `layout_engine.dart:1058`). `stats_panel` is
-  /// `w: 12`, so one full-width card coming back on the desktop grid used to hang
-  /// the isolate here rather than throw (#1393).
+  /// here, and the placement never narrows it: `placeNewItems(cols: 8)` given a
+  /// `w: 12` item appends it below the others, still 12 wide. `stats_panel` is
+  /// `w: 12`, so one full-width card coming back on the desktop grid is stored
+  /// over-wide on the two narrower ones (#1393).
   ///
   /// So an addition has to be aligned into every breakpoint before it reaches the
   /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
@@ -545,12 +698,10 @@ class UspSliverDashboardControllerNotifier
   ///
   /// [_membershipIsAligned] is what a comment cannot do. Now that the hook runs
   /// this walk after *every* controller mutation, a future caller reaching for
-  /// `controller.addItem` instead of [addWidget] gets a frozen tab with no stack
-  /// trace — nothing in `lib/` does today, and the fixture in
-  /// `card_form_toolbar_test.dart` had to be narrowed to a width that fits every
-  /// grid because of it. Failing loudly in debug is the whole defence: the
-  /// non-termination is upstream (fixed in 2.3.0, #1395) and there is no release
-  /// path into it.
+  /// `controller.addItem` instead of [addWidget] persists that over-wide geometry
+  /// silently — nothing in `lib/` does today, and the fixture in
+  /// `card_form_toolbar_test.dart` adds at a width every grid can hold because of
+  /// it. Failing loudly in debug is the whole defence.
   Map<int, List<dynamic>> _exportAllBreakpoints(
       DashboardController controller) {
     final origin = controller.slotCount.value;
@@ -579,11 +730,10 @@ class UspSliverDashboardControllerNotifier
     final controller = _createDefaultController();
     _importQuietly(controller, layouts[_desktopSlots] ?? const []);
     _swapController(controller);
-    _seedBreakpoints(stored: UspLayoutEnvelope(layouts));
+    // `live: origin` is what keeps a delete made on a phone from handing the page
+    // a desktop grid — the seed leaves the controller where the outgoing one was.
+    _seedBreakpoints(stored: UspLayoutEnvelope(layouts), live: origin);
 
-    if (origin != _desktopSlots) {
-      controller.setSlotCount(origin);
-    }
     // Edit mode lives on the controller, so a fresh instance would drop the
     // handles and the trash zone mid-session while dashboardEditModeProvider
     // still believed we were editing.
@@ -598,10 +748,11 @@ class UspSliverDashboardControllerNotifier
     // reset that kept the picks would hand back a "default" layout with cards
     // still pinned and still missing their handles.
     _setForms(CardForms.empty);
+    final live = state.slotCount.value;
     _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
     // correctBounds at tablet width, which collapses the two-column grid.
-    _seedBreakpoints();
+    _seedBreakpoints(live: live);
 
     // Through the queue, so a save started by the drag before the reset cannot
     // land after the removal and leave the pref holding a layout again.
@@ -851,8 +1002,9 @@ class UspSliverDashboardControllerNotifier
   /// rather than generic 2-column packing.
   Future<void> applyPreset(UspDashboardPreset preset) async {
     final layout = preset.createLayout();
+    final live = state.slotCount.value;
     _swapController(_createController(layout));
-    _seedBreakpoints();
+    _seedBreakpoints(live: live);
     await saveLayout();
   }
 

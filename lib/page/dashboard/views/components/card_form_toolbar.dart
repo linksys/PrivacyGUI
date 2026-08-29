@@ -113,10 +113,12 @@ class _CardFormToolbarLayerState extends State<CardFormToolbarLayer> {
 ///
 /// ## Why it is its own widget
 ///
-/// [UspSliverDashboardView] builds its own `ScrollController` on every build, so
-/// making the view rebuild on selection would send the grid back to the top each
-/// time a card is tapped. Watching the selection here keeps the rebuild to the
-/// toolbar.
+/// Watching the selection here keeps the rebuild to the toolbar. Watching it in
+/// [UspSliverDashboardView] would rebuild the whole page — header, banner, grid
+/// and every uncached tile — on each tap of a card, which is a lot of frame for
+/// a chip row moving a few hundred pixels. (It would not lose the scroll offset:
+/// the view's per-build `ScrollController` re-attaches the position it already
+/// had, as the note on that controller records.)
 ///
 /// ## What it does not follow
 ///

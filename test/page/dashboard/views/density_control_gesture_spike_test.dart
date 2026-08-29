@@ -23,14 +23,14 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// arms a drag, `_onPointerMove` has no slop threshold, so one pixel of finger
 /// travel drags the card. That reading is right for **one of two regimes** and
 /// wrong for the other, because every one of those handlers is behind
-/// `_isMobile` (`dashboard_overlay.dart:195`), which is
+/// `_isMobile` (`dashboard_overlay.dart:604`), which is
 /// `defaultTargetPlatform == android || iOS` — **the platform, not the pointer
 /// kind**:
 ///
 /// | | drag is armed by | `onPointerMove` | a tap does |
 /// |---|---|---|---|
-/// | `_isMobile` (Android/iOS, incl. a phone browser) | `onLongPressStart` | not wired | `toggleSelection` only (`:360`) |
-/// | desktop (macOS/Windows/Linux browser) | `onPointerDown` (`:295`) | wired, no slop | commits through `_onPointerUp` |
+/// | `_isMobile` (Android/iOS, incl. a phone browser) | `onLongPressStart` | not wired | `toggleSelection` only (`_handleMobileTap`, `:1061`) |
+/// | desktop (macOS/Windows/Linux browser) | `onPointerDown` (`:876`) | wired, no slop | commits through `_onPointerUp` |
 ///
 /// So on the form factor this ticket exists for — a phone, where the user has no
 /// other influence over density — **a tap cannot start a drag at all**; it takes
@@ -326,7 +326,7 @@ void main() {
                 'phone browser reports, and the phone is the form factor this '
                 'ticket exists for — onPointerDown does not call '
                 '_onPointerDown and onPointerMove is not wired at all '
-                '(dashboard_overlay.dart:295, :303). Drag is reached only '
+                '(dashboard_overlay.dart:876, :887). Drag is reached only '
                 "through onLongPressStart. The ticket's premise that one pixel "
                 'of travel starts a drag does not hold here.');
         expect(geometry(controller), before);
@@ -462,7 +462,7 @@ void main() {
         expect(geometry(controller), isNot(before),
             reason: 'THE DECIDING RESULT, and it is the negative one. '
                 'cancelInteraction() restores originalLayoutOnStart, but '
-                '_onPointerUp (dashboard_overlay.dart:761) still sees '
+                '_onPointerUp (dashboard_overlay.dart:1885) still sees '
                 '_activeItemId set and commits the drag *after* the restore, so '
                 'the card ends up displaced regardless. The only mitigation the '
                 'public controller interface offers therefore does not hold, '

@@ -28,6 +28,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../util/overflow_baseline.dart';
+import '../util/settle.dart';
+
+/// Re-exported, not defined here: the unit lane pumps these pages too, and a
+/// behaviour test importing a gate internal is a path that breaks the moment the
+/// gate is re-shaped (#1395). Gate callers still get it from this library.
+export '../util/settle.dart' show settleIgnoringAnimations;
 import 'incident.dart';
 import 'surface.dart';
 
@@ -122,19 +128,4 @@ Future<List<OverflowIncident>> collectOverflow(
     await settleIgnoringAnimations(tester);
     return sink;
   });
-}
-
-/// Settles pending frames without failing on infinite/looping animations
-/// (spinners, chart tweens). Mirrors the golden runner's `settleWithTimeout`.
-Future<void> settleIgnoringAnimations(WidgetTester tester) async {
-  try {
-    await tester.pumpAndSettle(
-      const Duration(milliseconds: 50),
-      EnginePhase.sendSemanticsUpdate,
-      const Duration(seconds: 2),
-    );
-  } on FlutterError {
-    // Timed out on an infinite animation — pump one last frame and move on.
-    await tester.pump();
-  }
 }

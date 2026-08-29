@@ -187,7 +187,7 @@ class _HangsOnRetryDevices extends DevicesDataNotifier {
 /// The semantics boundary the dashboard grid puts around every card in
 /// production: `sliver_dashboard`'s `DashboardItemWidget` builds
 /// `Semantics(container: true, label: semanticLabel, ...)` around the widget the
-/// factory returned (`dashboard_item_widget.dart:227` in 0.9.1). A tile that does
+/// factory returned (`dashboard_item_widget.dart:592` in 2.6.0). A tile that does
 /// not declare a boundary of its own is absorbed into it — the failure #1301
 /// documents — so the a11y assertions have to be made under this ancestor, not
 /// under a bare `Scaffold`, or they pass for the wrong reason.

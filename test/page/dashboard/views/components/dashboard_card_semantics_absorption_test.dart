@@ -10,7 +10,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Widget-layer regression coverage for PrivacyGUI#1301.
 ///
 /// `sliver_dashboard` wraps every grid item in a semantics boundary spanning the
-/// whole card (`dashboard_item_widget.dart:227`):
+/// whole card (`dashboard_item_widget.dart:592`, 2.6.0):
 ///
 /// ```dart
 /// child: Semantics(

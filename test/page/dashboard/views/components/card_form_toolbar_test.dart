@@ -638,10 +638,11 @@ void main() {
       // `UspSliverDashboardControllerNotifier` does for every breakpoint, and
       // since #1393 that reaches the walk which stores the result: the package
       // places a card the other grids have not seen at the width it has here, and
-      // does not terminate when it does not fit. No production path adds this way
-      // — the settings panel goes through `addWidget`, which is what the notifier
-      // now asserts. A wider card here fails on that assertion; before it existed,
-      // it hung the run instead.
+      // never narrows it to fit. No production path adds this way — the settings
+      // panel goes through `addWidget`, which is what the notifier now asserts. A
+      // wider card here fails on that assertion; before it existed, it hung the
+      // run instead (upstream fixed the non-termination in 2.3.0, brought in by
+      // #1395 — the assertion is what still catches this).
       controllerOf(container)
           .addItem(const LayoutItem(id: 'stats_panel', x: 0, y: 0, w: 4, h: 2));
       await tester.pumpAndSettle();

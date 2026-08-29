@@ -5,15 +5,14 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
-import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
+import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
+import 'package:privacy_gui/page/dashboard/views/components/package_widget_tile.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
-import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
-import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
@@ -47,6 +46,16 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// import this view needed it too; this stays as the name everything already
   /// reads.
   static const double slotHeight = kDashboardSlotHeight;
+
+  /// How long a card must hover the trash zone before the drop deletes it.
+  ///
+  /// Named for the same reason as [slotHeight]: a test that drives the deletion
+  /// has to wait this out, and a copy of the number in the test would keep
+  /// passing if this one were raised — it would simply stop reaching the
+  /// deletion, and a drag that deletes nothing is exactly what the test is there
+  /// to catch. Shorter than the package's 800ms default because the zone only
+  /// slides in once the drag is already under way.
+  static const Duration trashHoverDelay = Duration(milliseconds: 600);
 
   const UspSliverDashboardView({super.key});
 
@@ -149,9 +158,12 @@ class _UspSliverDashboardViewState
     ref.watch(uspDeviceAnalyticsProvider);
     ref.watch(uspSystemMonitorProvider);
 
-    // Watch package widget loader so the view rebuilds when templates
-    // finish loading — without this, pkg_ cards show "Unknown widget"
-    // after page refresh because itemBuilder uses ref.read.
+    // Kept for the load it starts, not for the rebuild it causes: opening the
+    // dashboard is what fetches the templates, and the settings panel's list of
+    // cards available to add is derived from them. The rebuild used to be how
+    // `pkg_` cards stopped reading "unknown widget" — that no longer works and
+    // is no longer needed, because 2.3.1 caches tile content and each card now
+    // resolves its own template inside [PackageWidgetTile] (#1395).
     ref.watch(packageWidgetLoaderProvider);
 
     final isOnline = ref.watch(wanIsUpProvider);
@@ -284,6 +296,63 @@ class _UspSliverDashboardViewState
     final factory = ref.watch(uspWidgetFactoryProvider);
     final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
     final uiKitColumns = context.currentMaxColumns;
+    // Whether the controller has caught up with the breakpoint this frame is
+    // being built at (#1395).
+    //
+    // `breakpoints` does not take effect in the frame that observes the change:
+    // `SliverDashboard` compares the width it was given against
+    // `controller.slotCount` and, when they differ, schedules `setSlotCount` in a
+    // post-frame callback. Until 2.0.0 it also returned an empty sliver for that
+    // one frame — "skip frame optimization" — and 2.x dropped the early return
+    // while keeping the callback, so the outgoing grid's geometry is now laid out
+    // at the incoming grid's width instead of being withheld: at 320px every
+    // half-width desktop card is drawn 6 columns wide in a 4-column viewport, and
+    // the overflow gate reports the whole page overflowing at all four widths
+    // below desktop.
+    //
+    // So the skip is done here instead. What it covers is every frame that
+    // observes a breakpoint the controller has not been moved to yet — the first
+    // frame of a boot into anything narrower than desktop (a fresh controller
+    // starts on the desktop grid), and the frame a window resize crosses a
+    // boundary in. The controller swaps do *not* need it: since #1395 they carry
+    // the live breakpoint across the swap themselves (`_seedBreakpoints(live:)`),
+    // which is the right place for it — the notifier knows the grid it is
+    // replacing, and this build only knows the one it is rendering.
+    //
+    // Post-frame rather than during this build, because `setSlotCount` writes the
+    // controller's layout beacon and half the grid is watching it — which is also
+    // why the slot count is *watched* here and not read: the callback below changes
+    // it without changing the controller instance, so nothing Riverpod publishes
+    // would bring this build back to notice, and the empty sliver would be
+    // permanent. The watch also fires on every save, because the persistence
+    // walk visits each breakpoint in turn and returns.
+    //
+    // One frame with no grid also means one frame with no scroll extent, so a
+    // resize that crosses a boundary while scrolled down lands back at the top.
+    // 0.9.1's own skip did exactly that, so it is not new, and the alternative is
+    // a frame of visibly wrong layout.
+    final slotsAreCurrent = controller.slotCount.watch(context) == uiKitColumns;
+    if (!slotsAreCurrent) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) controller.setSlotCount(uiKitColumns);
+      });
+    }
+
+    // Per build, and it has to be. Hoisting it into the [State] — the obvious
+    // fix for what looks like a leak — crashes on entering edit mode: the
+    // toolbar layer below wraps the grid in a `Stack`/`NotificationListener`,
+    // which changes the tree *shape* above the `Scrollable` and so remounts it.
+    // The new `ScrollPosition` attaches before the old element is unmounted at
+    // the end of the frame, and `DashboardOverlay` reads `scrollController.offset`
+    // during layout, between the two: `ScrollController.position` throws on two
+    // attached positions — the assertion in debug, `Iterable.single` in release.
+    //
+    // A fresh instance is close to free. `ScrollableState.didUpdateWidget`
+    // re-attaches the *same* position to the new controller rather than making
+    // one, so the offset and any in-flight fling survive; the previous instance
+    // is left with no positions and collected. What it costs is that nothing may
+    // hold one across a build — see the same note on [CardFormToolbarLayer],
+    // which is why the toolbar reads the offset from scroll notifications.
     final scrollController = ScrollController();
 
     final editModeGridStyle = GridStyle(
@@ -304,7 +373,7 @@ class _UspSliverDashboardViewState
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
-          return _buildItemWidget(context, item, isEditMode, factory);
+          return _buildItemWidget(context, item, factory);
         },
         slotAspectRatio: ratio,
         mainAxisSpacing: AppSpacing.lg,
@@ -320,7 +389,7 @@ class _UspSliverDashboardViewState
             : (context, isHovered, isActive, activeItemId) {
                 return _buildTrashZone(context, isHovered, isActive);
               },
-        trashHoverDelay: const Duration(milliseconds: 600),
+        trashHoverDelay: UspSliverDashboardView.trashHoverDelay,
         // No onItemsDeleted: the overlay calls `controller.removeItems` before it
         // notifies, so the deletion is already on its way to the pref through the
         // auto-persist hook (#1393).
@@ -329,16 +398,25 @@ class _UspSliverDashboardViewState
           slivers: [
             SliverPadding(
               padding: EdgeInsets.symmetric(horizontal: pageMargin),
-              sliver: SliverDashboard(
-                itemBuilder: (context, item) {
-                  return _buildItemWidget(context, item, isEditMode, factory);
-                },
-                slotAspectRatio: ratio,
-                mainAxisSpacing: AppSpacing.lg,
-                crossAxisSpacing: AppSpacing.lg,
-                breakpoints: {0: uiKitColumns},
-                gridStyle: isEditMode ? editModeGridStyle : null,
-              ),
+              // Empty for the one frame the controller is a breakpoint behind —
+              // see [slotsAreCurrent]. `breakpoints` stays, but not as a second
+              // safety net: a single entry at 0 resolves to `uiKitColumns` at
+              // every width, which pins the package's own width-to-columns map to
+              // ui_kit's. That is what makes the two catch-ups agree — the
+              // package's post-frame call can never ask for a slot count this
+              // build did not already ask for.
+              sliver: !slotsAreCurrent
+                  ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                  : SliverDashboard(
+                      itemBuilder: (context, item) {
+                        return _buildItemWidget(context, item, factory);
+                      },
+                      slotAspectRatio: ratio,
+                      mainAxisSpacing: AppSpacing.lg,
+                      crossAxisSpacing: AppSpacing.lg,
+                      breakpoints: {0: uiKitColumns},
+                      gridStyle: isEditMode ? editModeGridStyle : null,
+                    ),
             ),
             const SliverToBoxAdapter(
               child: SizedBox(height: AppSpacing.md),
@@ -367,17 +445,6 @@ class _UspSliverDashboardViewState
     });
   }
 
-  /// Build package widget with header (title + info icon)
-  Widget _buildPackageWidgetWithHeader(
-    BuildContext context,
-    PackageWidgetTemplate template,
-  ) {
-    return PackageWidgetRenderer(
-      template: template,
-      showHeader: true,
-    );
-  }
-
   // ---------------------------------------------------------------------------
   // Trash Zone (drag-to-delete)
   // ---------------------------------------------------------------------------
@@ -391,8 +458,18 @@ class _UspSliverDashboardViewState
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        height: 56,
-        width: 180,
+        // Minimums rather than fixed sizes, plus padding: the label is
+        // localized, and 180px does not hold "Drag Here to Remove" at
+        // `bodyMedium` in English — let alone in a locale that needs more. The
+        // pill still reads as one shape at rest, and the drop target is
+        // whatever it grew to. Found by #1395's edit-mode test; the overflow
+        // gate cannot see this surface, because it never enters edit mode.
+        //
+        // Both axes, because `TextOverflow.ellipsis` only covers one of them: at
+        // a large system text scale a `maxLines: 1` `bodyMedium` needs more than
+        // 56px, and a fixed `height` would clip the glyphs instead.
+        constraints: const BoxConstraints(minWidth: 180, minHeight: 56),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         margin: const EdgeInsets.only(bottom: AppSpacing.lg),
         decoration: BoxDecoration(
           color: isActive
@@ -413,6 +490,7 @@ class _UspSliverDashboardViewState
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isActive ? Icons.delete_forever : Icons.delete_outline,
@@ -422,10 +500,23 @@ class _UspSliverDashboardViewState
               size: isActive ? 28 : 24,
             ),
             AppGap.sm(),
-            AppText.bodyMedium(
-              isActive
-                  ? loc(context).releaseToRemove
-                  : loc(context).dragHereToRemove,
+            // Flexible, not bare: the pill grows to its label, but a viewport
+            // narrower than the label still has to clip rather than overflow.
+            Flexible(
+              child: AppText.bodyMedium(
+                isActive
+                    ? loc(context).releaseToRemove
+                    : loc(context).dragHereToRemove,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                // The same pair the icon above takes. Without it the label keeps
+                // the text theme's on-surface colour over a saturated `error`
+                // fill — near-black on red in the light theme, on the one string
+                // that confirms a destructive action.
+                color: isActive || isHovered
+                    ? colorScheme.onError
+                    : colorScheme.onErrorContainer,
+              ),
             ),
           ],
         ),
@@ -501,48 +592,29 @@ class _UspSliverDashboardViewState
     }
   }
 
+  /// Builds one card's content.
+  ///
+  /// Reads nothing that can change while the tile lives: 2.3.1 caches what this
+  /// returns and invalidates the cache only on a content-signature or dimension
+  /// change, so anything reactive has to be read one level down, inside the
+  /// widget — see [EditModeAffordance] for the edit-mode flag and
+  /// [PackageWidgetTile] for the templates (#1395).
   Widget _buildItemWidget(
     BuildContext context,
     LayoutItem item,
-    bool isEditMode,
     UspWidgetFactory factory,
   ) {
-    Widget? resolvedWidget = factory.buildWidget(item.id);
-
-    if (resolvedWidget == null) {
-      // Try package widget
-      final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
-      final template = templates?[item.id];
-      if (template != null) {
-        resolvedWidget = _buildPackageWidgetWithHeader(context, template);
-      }
-    }
-
-    resolvedWidget ??= AppCard(
-      child: Center(
-        child: AppText.bodyMedium(loc(context).unknownWidget(item.id)),
-      ),
-    );
+    // The factory's cards are the built-in ones and it answers synchronously;
+    // anything it does not know is either a package card or gone with its
+    // package, which is [PackageWidgetTile]'s question, not this one's.
+    final resolvedWidget =
+        factory.buildWidget(item.id) ?? PackageWidgetTile(itemId: item.id);
 
     // SizedBox.expand ensures cards fill their grid cell.
     // Note: ClipRect was removed because it clips shadows/borders causing
     // visual truncation. Cards handle their own overflow via internal clipping.
     final displayedWidget = SizedBox.expand(child: resolvedWidget);
 
-    if (isEditMode) {
-      // In edit mode: AbsorbPointer blocks content interactions while keeping
-      // the area hittable for DashboardOverlay's drag/resize detection.
-      // Widget removal is handled via drag-to-trash (trashBuilder on the
-      // overlay), NOT via in-cell tap — a GestureDetector here conflicts with
-      // the overlay's raw Listener and causes accidental deletions.
-      return JiggleShake(
-        active: true,
-        child: AbsorbPointer(
-          child: displayedWidget,
-        ),
-      );
-    }
-
-    return displayedWidget;
+    return EditModeAffordance(child: displayedWidget);
   }
 }
