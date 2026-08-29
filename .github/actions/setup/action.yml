@@ -29,10 +29,33 @@ inputs:
 runs:
   using: composite
   steps:
+    # A VERSION, not a channel, and the same one .fvmrc pins. This said
+    # `channel: 'stable'` until #1316, which meant CI chose its own SDK: the
+    # runner moved to 3.47.0 the day it shipped (2026-08-12) with no commit
+    # here, while .fvmrc still said 3.44.0 — and since no step in this file
+    # invokes fvm, that pin was inert in CI either way. Local and CI therefore
+    # could not agree by construction, which is how a 3.44.0 CanvasKit came to
+    # be served under a 3.47.0 engine (see doc/web/vendored-canvaskit.md).
+    #
+    # Two things this buys beyond hygiene. Golden baselines are SDK-sensitive —
+    # the first 3.47.0 run in linksys/PrivacyGUI-golden-ci produced 312 failures
+    # against a baseline rendered on 3.44.9, with no baseline change involved —
+    # and under `channel:` "the SDK moved" and "the baseline moved" are not
+    # distinguishable after the fact, which is most of what made #1210 expensive.
+    #
+    # The cost of pinning is that fixes no longer arrive on their own, so this
+    # needs a periodic bump PR rather than being left alone. Moving it means
+    # moving .fvmrc, re-vendoring web/assets/canvaskit.* and updating the
+    # constants in test/web/canvaskit_variant_test.dart — which asserts this
+    # exact line, so a pin that drifts from .fvmrc is a red test and not a
+    # discovery six weeks later.
+    #
+    # `channel:` must not come back alongside it: the action accepts either, and
+    # having both puts this back to floating.
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        channel: 'stable'
+        flutter-version: '3.47.0'
         cache: true
 
     # Deploy Key approach for the private ui_kit dependency.

@@ -150,6 +150,24 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
+      # Here and in no other job, because only this one needs it and it is not
+      # free. `flutter_web_sdk/` is an on-demand artifact: `flutter test` never
+      # fetches it (only `--platform chrome` does, in commands/test.dart), and
+      # subosito/flutter-action's setup.sh does not precache either — 3.27.4 and
+      # 3.38.5 fvm installs have no `flutter_web_sdk` directory at all. So on a
+      # cold runner the #1316 drift guard in test/web/canvaskit_variant_test.dart
+      # would find no SDK CanvasKit to compare against, and it fails rather than
+      # skips on purpose: a skip is the same blindness that let a 3.44.0
+      # CanvasKit ship under a 3.47.0 engine.
+      #
+      # Job 1 (analyze/format) and job 3 (layout gate) do not run that test, and
+      # job 4 is `flutter build web`, which precaches the web SDK itself. Putting
+      # this in .github/actions/setup instead would pay it four times for one
+      # consumer. If another job ever runs test/web/, it needs this step too —
+      # the test's own failure message says so.
+      - name: 🌐 Precache Web SDK (for the CanvasKit drift guard)
+        run: flutter precache --web
+
       # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
       # `golden||loc||ui` selection in one variable. It exists so the local
       # `./run_tests.sh` can stay complete: a developer's pre-push command must

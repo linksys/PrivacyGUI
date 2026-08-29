@@ -12,6 +12,20 @@ analyzer:
     # Deliberately invalid boundary fixtures are parsed by the Python
     # contract tests and must not be treated as application Dart sources.
     - tools/usp_boundary/fixtures/**
+    # Written by `flutter pub get` itself, not by hand: 3.47.0 migrates this
+    # file to exclude build output and platform directories, announcing
+    # "Upgrading analysis_options.yaml to exclude build and platform
+    # directories". Committed rather than reverted because the migration is
+    # idempotent and re-applies on every `pub get` — reverting it just makes
+    # the tree dirty again on the next command. Most of these directories do
+    # not exist here (only `ios/` does), so the practical effect is `build/**`.
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   errors:
     prefer_const_constructors: ignore
 include: package:flutter_lints/flutter.yaml

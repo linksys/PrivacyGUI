@@ -180,5 +180,13 @@ lib/page/               # Feature-specific pages and screens
 - Run screenshot tests to validate UI layout
 - Test across different locales using test scripts
 
-## Vendored USP Artifacts
-The `tools/usp-codegen` binary and `web/usp_client.{js,wasm}` are built from `linksys/usp_framework` and checked in. See `doc/usp/vendored-artifacts.md` for the version manifest and update procedure before bumping any of them.
+## Vendored Artifacts
+Two manifests, two update procedures. Read the relevant one **before** bumping anything it covers.
+
+- **USP** — `tools/usp-codegen` and `web/usp_client.{js,wasm,d.ts}`, built from `linksys/usp_framework`. See `doc/usp/vendored-artifacts.md`.
+- **CanvasKit** — `web/assets/canvaskit.{js,wasm}`, hand-copied from the pinned Flutter SDK and the only CanvasKit that ever executes (`flutter_bootstrap.js` pins `canvasKitBaseUrl: "./assets/"`). See `doc/web/vendored-canvaskit.md`. The two files are version-locked to each other: copy both or neither.
+
+## Flutter SDK Pin
+**3.47.0**, declared in three places that `test/web/canvaskit_variant_test.dart` asserts agree: `.fvmrc` (local), `flutter-version:` in `.github/actions/setup/action.yml` (CI), and the constants in that test. Moving the pin means re-vendoring CanvasKit and touching all three — see the update procedure in `doc/web/vendored-canvaskit.md`.
+
+Note `flutter`/`dart` on this machine are zsh aliases to `fvm`; a bare `flutter` inside `xargs` or a non-interactive shell silently runs a different SDK.
