@@ -9,6 +9,20 @@
 #   ./build_web.sh 100 false "/" qa false true "" "" true               # Enable theme studio
 #
 # Environment:
+#   These two are the ONLY variables this script reads from its environment, and
+#   the list is exhaustive on purpose: a Jenkins freestyle job exports every
+#   build parameter as an environment variable, so a name here is a contract with
+#   whoever configures that job, and a name that is read but undocumented is
+#   invisible from both sides.
+#
+#   `FlutterVersion` used to be a third, and it is worth knowing why it is gone
+#   rather than rediscovering it. It gated `--web-renderer html` on the literal
+#   "3.27.1" — a flag `flutter build web` removed in 3.44 and which does NOT
+#   degrade gracefully: it exits with `Could not find an option named
+#   "--web-renderer"` (verified on 3.47.0). So any job still passing 3.27.1 was
+#   failing its build outright, and no supported SDK could make that branch
+#   correct. If a Jenkins job still sets FlutterVersion, it is now inert here.
+#
 #   LOCALES  Which language packs to ship. Unset or "all" builds exactly what it
 #            has always built. Anything else strips the other language packs and
 #            the fallback fonts they need before building, and restores them
@@ -50,7 +64,7 @@ function buildWebApp() {
     --dart-define=cloud_env="${cloud}" \
     --dart-define=enable_env_picker="${picker}" \
     --dart-define=ca="${ca}" \
-    $themeSourceFlag $themeJsonFlag $themeStudioFlag $enableHTMLRenderer
+    $themeSourceFlag $themeJsonFlag $themeStudioFlag
 }
 
 # Puts back the language packs and fonts the strip deleted, and regenerates the
@@ -259,11 +273,6 @@ fi
 themeStudioFlag=""
 if [ "$themeStudio" == "true" ]; then
     themeStudioFlag="--dart-define=theme_studio=true"
-fi
-
-enableHTMLRenderer=""
-if [ "$FlutterVersion" == "3.27.1" ]; then
-    enableHTMLRenderer="--web-renderer html"
 fi
 
 locales=${LOCALES:-all}
