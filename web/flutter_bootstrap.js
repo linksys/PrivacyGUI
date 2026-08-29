@@ -59,8 +59,17 @@ _flutter.loader.load({
     canvasKitBaseUrl: "./assets/",
     // Pins every browser to the "full" CanvasKit build so only one variant
     // ships (#1281). Without this, capability detection routes Chromium-based
-    // browsers to assets/chromium/canvaskit.js — which no longer exists — and
-    // the loader has no 404 fallback, so the app never boots.
+    // browsers to a variant subdirectory that this repo does not ship, and the
+    // loader has no 404 fallback, so the app never boots.
+    //
+    // Under 3.47 that is now TWO wrong destinations, not one: the loader checks
+    // `variant !== "full"` first and only then picks between
+    // assets/webparagraph/ (if preferWebParagraph and the browser has
+    // TextCluster) and assets/chromium/. Both are reachable only through that
+    // one negated check, which is why this single line still covers both — but
+    // anyone who deletes it is now opening two holes. The SDK does ship both
+    // (3.47's wasmHashes lists webparagraph/canvaskit.wasm and
+    // chromium/canvaskit.wasm); we vendor neither.
     canvasKitVariant: "full"
   },
   serviceWorkerSettings: {

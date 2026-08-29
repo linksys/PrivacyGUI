@@ -45,7 +45,11 @@ Consequences worth knowing before touching any of this:
   is not what makes the committed copy authoritative. That line above is.
 - Only the `full` variant ships. `web/assets/chromium/` was deleted in #1281 to
   reclaim 1.71 MB, and `canvasKitVariant: "full"` in the bootstrap is what stops
-  capability detection routing Chromium browsers at the deleted path.
+  capability detection routing Chromium browsers at the deleted path. **3.47 adds
+  a second such path**: the loader now chooses between `webparagraph/` and
+  `chromium/`, both behind the same `variant !== "full"` check, and the SDK ships
+  both (they appear in `wasmHashes`). We vendor neither, so that one config line
+  now guards two holes rather than one.
 - `web/flutter_bootstrap.js` is a **template**: the build substitutes three
   `{{...}}` placeholders into the committed file. Do not replace one with a value
   read out of `build/web/`. #1316 found all three frozen as literals, which is
