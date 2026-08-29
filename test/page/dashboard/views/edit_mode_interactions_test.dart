@@ -54,10 +54,51 @@
 /// |---|---|---|---|
 /// | 1 | usp_layout_controller (`_shortcuts`) | add `grab: {}` to the policy, as if Space had been dropped with Delete and Select-All | both keyboard tests, at the grab itself: the card is never picked up, and the arrows and the second Space go to whatever encloses the grid |
 /// | 2 | usp_layout_controller (`_shortcuts`) | add `cancel: {}` — the plausible reading of "we only kept grab, arrows and drop" | 'Escape abandons the move' only, which is why the cancel key is asserted separately from the drop |
-/// | 3 | usp_sliver_dashboard_view | `trashBuilder: null` | both trash tests, at the premise: no pill to drag onto |
+/// | 3 | usp_sliver_dashboard_view | `trashBuilder: null` | all six tests that drag to the trash — #1395's two and #1398's four — at the premise: no pill to drag onto |
 /// | 4 | usp_widget_specs | `device_info`'s `maxH` 6 → 3, so the card is already at its full height | all seven resize tests |
-/// | 5 | this file | make [onHost] ignore its `platform` argument and report android, i.e. the harness bug the docstring above describes | the seven tests that arm a pointer gesture with a mouse — three resize cases, the control, the desktop trash case and both throttle tests. The keyboard pair survives, which is the row's other half: those two are regime-independent, and a reader should not expect a platform mistake to show up there |
+/// | 5 | this file | make [onHost] ignore its `platform` argument and report android, i.e. the harness bug the docstring above describes | the seventeen tests that arm a pointer gesture with a mouse — three resize cases, the control, both throttle tests, three of #1397's four, the three phone-handle drags of #1399, and five trash drops (#1395's desktop case and all four of #1398's). Regime-independent tests survive, which is the row's other half: the three keyboard reorders, both Delete-key cases and #1395's touch trash drop arm through a tap, a chord or a long press, and a reader should not expect a platform mistake to show up there |
 /// | 6 | this file | `web: false` on the two throttle tests | both of them: with no gate in the path no move is ever coalesced, so there is nothing pending for the flush to land and nothing held back at the release. Both had to be given an explicit premise assertion to earn this row — before that, "the commit equals the last frame" was trivially true off web |
+/// | 7 | usp_sliver_dashboard_view | `animateReflow: false` — the state of the world before #1397, since the flag is off by default | all four reflow tests. Two of them die on their premise rather than their claim ("there is a slide in flight to be dropped"), which is what those premises are for: with no transition to observe, "the slide is dropped" would pass on a grid that never animated |
+/// | 8 | usp_widget_specs (`lockToFullWidth`) | `minW: 1` instead of `cols`, leaving `maxW` alone — the narrowest edit that unlocks a phone card | all four #1399 tests, at `phoneGrid`'s shared premise, which reads the caps directly |
+/// | 8b | as row 8, **and** `phoneGrid`'s premise relaxed to `[item.x, item.w]` | the two-step version, run to find out what the claims are worth once the tripwire is out of the way | the left-handle test, on its claim, with `{'x0 w4', 'x1 w3'}` — the inward leak 0.9.1 had, reproduced on 2.6.0 the moment the cap goes; and the bottom-left one, which drives the same inward direction through the corner case. The arrow-key and bottom-handle tests pass, correctly: the arrow clamp reads `w`, which nothing in that test narrows first, and the bottom handle is about the height |
+/// | 9 | usp_sliver_dashboard_view | drop the `onWillDelete:` argument — the state of the world before #1398, since the parameter is optional and the overlay deletes outright without it | all eleven tests that remove a card: #1398's nine and #1395's two. Seven die on `removalDialog` finding nothing to confirm; the three that expect a *decline* to keep the card die on the card being gone. Both entry points are in that list, which is the row worth having: it is the evidence that the keyboard path really does read this one callback rather than needing a confirmation of its own. #1395's pair failing is the same evidence read from the other side — those tests were written against a trash zone that deleted on release, and they now pass only because they were rewritten to answer a dialog |
+/// | 10 | usp_layout_controller (`_shortcuts`) | put `delete: {}` back, i.e. #1395's cleared binding | exactly the five keyboard cases — both keys × confirm and decline, plus the held-key one — and nothing else. The trash drops are untouched, which is the point: un-clearing the shortcut added a second door to the same dialog and changed nothing about the first |
+/// | 11 | usp_sliver_dashboard_view | *(not in the shipped code — see below)* an explicit `cancelInteraction()` in `_confirmRemoval`'s decline branch, removed | nothing. All 30 pass |
+/// | 12 | usp_sliver_dashboard_view | `confirmed != false` instead of `== true`, i.e. read a dialog dismissed without an answer as a yes | 'dismissing the dialog is a decline' only, which is why the barrier is a case of its own rather than a variant of Cancel |
+/// | 13 | usp_sliver_dashboard_view | drop both `identifier:` arguments from the dialog's actions | ten of the eleven removal tests, at [removalAction]: everything that taps Cancel or Confirm. The exception is 'dismissing the dialog is a decline', which leaves by the barrier and touches neither button. §16.2 makes the hook required and E2E is where it is spent, but this row is why the tests look the buttons up by it rather than by their labels — a hook nothing in this repo reads is a hook that rots |
+/// | 14 | usp_sliver_dashboard_view | drop the `_confirmingRemoval` half of the re-entrancy guard, leaving `if (!mounted)` | 'a held key asks once, not once per repeat', on **three** stacked `AppDialog`s. Not a defensive flag: the keyboard intent fires and forgets (`unawaited`, `dashboard_item_widget.dart:356`) and the default activators keep `includeRepeats: true`, so each auto-repeat opens another dialog over the last while the first is still awaiting an answer. The row is the reason the test sends real `sendKeyRepeatEvent`s instead of pressing the key twice |
+///
+/// Row 11 is the one that changed the code instead of documenting it. The first
+/// draft of `_confirmRemoval` cancelled the interaction itself, on the reasoning
+/// that the overlay finishes the drag whichever way the veto goes and would
+/// otherwise persist the abandoned move. The reasoning is sound and the line was
+/// still dead: probing the gesture showed the layout displaced mid-hover (pivot at
+/// `3,10` instead of `0,1`, eleven cards four rows down) and already restored by
+/// the time the dialog was up, because the dialog takes focus off the tile and the
+/// package cancels an active interaction on focus loss. So the line ran second and
+/// could never fail. It was removed, and what the tests keep is the outcome —
+/// exported layout and persisted envelope both unchanged — which holds whichever
+/// mechanism does the unwinding and would fail on a confirmation that took no
+/// focus.
+///
+/// Row 8b is why 8 is written as a premise kill rather than a claim kill. Reading
+/// the caps in the shared helper is deliberate — an unpinned card would make every
+/// assertion below pass for the wrong reason — but it does mean the single-step
+/// mutation never reaches a gesture, and a row claiming otherwise would be
+/// describing a run nobody had done.
+///
+/// Row 8 has a coarser sibling worth knowing about rather than listing: dropping
+/// *both* caps does not unlock anything, it trips the engine's own
+/// `currentL.minW <= cols` assertion while the page is building
+/// (`layout_engine.dart:963`), because the 12-column spec's `minW: 6` then
+/// survives the projection onto a 4-column grid. Pinning the caps is two jobs in
+/// one line, and only the mutation above isolates the one these tests are for.
+///
+/// Not covered by a row: dropping the `reflowDuration:` argument is invisible
+/// while our number and the package default are the same 150ms. The assertion
+/// pairs the render object with [UspSliverDashboardView.reflowDuration], so it
+/// catches the two drifting apart — from either side — but it cannot see an
+/// argument removed today.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -65,10 +106,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
@@ -97,6 +143,19 @@ const _surfaces = <int, Size>{
 /// the package does not export it. Only ever used to pump *past* it or to stay
 /// inside it, so the copy drifting makes a test fail rather than lie.
 const _kThrottleWindow = Duration(milliseconds: 16);
+
+/// Long enough to cover the jiggle's random start delay.
+///
+/// Every edit-mode tile staggers its shake behind
+/// `Future.delayed(Duration(milliseconds: _random.nextInt(50)))`
+/// (`jiggle_shake.dart:88`), and a tile that mounts late — because a viewport
+/// change brought a card into the sliver's cache extent — schedules that timer
+/// with nothing after it to pump. The binding fails a test that unmounts with a
+/// timer pending, so a test whose last act mounts a tile has to drain this
+/// window or it fails on the roughly one run in five where the random draw lands
+/// past the frames it pumps. Read as "the tile has finished arriving", not as a
+/// wait for the shake itself, which never ends.
+const _kJiggleStagger = Duration(milliseconds: 50);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -238,6 +297,178 @@ void main() {
     });
   });
 
+  /// Drags [_id] onto the trash zone and releases it there.
+  ///
+  /// Shared by the removal group below and by the confirmation group after it,
+  /// which is the reason it is a helper rather than one test's body: the two ask
+  /// opposite questions of the same gesture, and a second hand-written copy of a
+  /// drag with two load-bearing waits in it is a second chance to get one of them
+  /// wrong.
+  ///
+  /// Both waits are asserted rather than assumed — the pill's rect is read before
+  /// the drag (parked below the viewport) and again once the zone has slid in — so
+  /// a caller that returns from here has really dropped a card on an armed trash.
+  /// That is what makes "nothing was deleted" a statement about the veto instead
+  /// of about a gesture that never landed. The last assertion before the release
+  /// is the same idea one level down: the layout under the pointer has actually
+  /// moved, so a decline has something to not-save.
+  ///
+  /// Returns with the pointer up and the frame settled, which is the point the
+  /// confirmation dialog is on screen.
+  Future<void> dropOnTrash(
+    WidgetTester tester,
+    DashboardController controller, {
+    required bool touch,
+  }) async {
+    final undragged = controller.exportLayout();
+    final pill = find.text(loc(tester.element(find.byType(
+      UspSliverDashboardView,
+    ))).dragHereToRemove);
+    final viewport = tester.getRect(find.byType(DashboardOverlay));
+    expect(tester.getRect(pill).top, greaterThan(viewport.bottom),
+        reason: 'before the drag the zone is parked below the viewport: the '
+            'pill exists for all of edit mode and only its offset changes, so '
+            '"it is on screen" is a position claim, not a `findsOneWidget`');
+
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(
+      const ValueKey<String>(_id),
+    )));
+    // Touch arms on the long press; a move before it cancels outright.
+    if (touch) await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveBy(const Offset(0, 20));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(controller.isDragging.value, isTrue,
+        reason: touch
+            ? 'a long press then a move is a drag'
+            : 'a press then a move is a drag');
+    expect(controller.activeItemId.value, _id,
+        reason: 'and this card is the one being dragged');
+
+    // The zone slides in over 200ms. Reading its box before that gives a rect
+    // below the viewport — see the docstring.
+    await tester.pump(const Duration(milliseconds: 300));
+    final pillRect = tester.getRect(pill);
+    expect(pillRect.bottom, lessThanOrEqualTo(viewport.bottom),
+        reason: 'the drag brings it inside the viewport, which is what makes '
+            'it droppable');
+
+    await gesture.moveTo(pillRect.center);
+    await tester.pump(const Duration(milliseconds: 100));
+    // Read from production rather than repeated here: a test that waited less
+    // than the real delay would drop on an unarmed zone and delete nothing,
+    // which is precisely the failure it is meant to catch.
+    await tester
+        .pump(UspSliverDashboardView.trashHoverDelay + _kThrottleWindow);
+    expect(controller.exportLayout(), isNot(undragged),
+        reason: 'the drop happens from a displaced layout, not from a gesture '
+            'that only moved a ghost: hovering the pill previews the move into '
+            'the controller (measured as the pivot at 3,10 instead of 0,1, with '
+            'eleven cards pushed four rows down). That is what makes "#1398 '
+            'declined and nothing was saved" a claim about the veto — there was '
+            'a real change in flight for it to drop.');
+    await gesture.up();
+    await settleIgnoringAnimations(tester);
+  }
+
+  /// Focuses [_id]'s tile and presses [key], which is Delete or Backspace.
+  ///
+  /// The tap is what moves focus — the tile's shortcuts are installed by a
+  /// `FocusableActionDetector` and only in edit mode
+  /// (`dashboard_item_widget.dart:572`) — and `warnIfMissed` is off because the
+  /// press lands on the overlay above the tile, which is the arrangement under
+  /// test everywhere else in this file.
+  ///
+  /// That the tap landed is asserted rather than assumed, for the same reason
+  /// [grab] asserts it: a silent miss would send the keypress to nothing, and the
+  /// test would fail one step later on a missing dialog and blame the veto.
+  ///
+  /// Returns with the frame settled, so the dialog is on screen.
+  Future<void> pressDelete(
+    WidgetTester tester,
+    DashboardController controller,
+    LogicalKeyboardKey key,
+  ) async {
+    await tester.tap(find.byKey(const ValueKey<String>(_id)),
+        warnIfMissed: false);
+    await tester.pump();
+    expect(controller.selectedItemIds.value, {_id},
+        reason:
+            'the tap selected this tile and only this tile, which is how the '
+            'test knows the keypress below has a focused target');
+    await tester.sendKeyEvent(key);
+    await settleIgnoringAnimations(tester);
+  }
+
+  /// The removal confirmation, asserted to be up, and its two actions.
+  ///
+  /// Every path that expects a card to disappear goes through this, which is the
+  /// shape of the ticket: the dialog is not an extra assertion bolted onto the
+  /// removal tests, it is a step the gesture does not complete without.
+  ///
+  /// The buttons are found by `identifier` and not by their labels, which is the
+  /// same reason production puts identifiers on them (§16.2): a label lookup is a
+  /// lookup through ARB copy, so an edit to `remove` in `app_en.arb` would break
+  /// five tests here and every E2E spec at once, and neither failure would name
+  /// the cause. Finding the widget by its hook also means a dropped `identifier`
+  /// fails a test rather than only a spec in another repo.
+  Finder removalDialog(WidgetTester tester) {
+    final dialog = find.byType(AppDialog);
+    expect(dialog, findsOneWidget,
+        reason: 'the removal is behind a confirmation (#1398). Both entry '
+            'points reach the same one: the trash drop awaits '
+            '`onWillDelete` in `_onPointerUp`, and the Delete shortcut reads '
+            'the same callback off `DashboardOverlayProvider`.');
+    // The copy, once, here: the AC asks for a localized dialog, and this is the
+    // assertion that the keys resolve to a string rather than to a
+    // `removeCardTitle` placeholder.
+    expect(
+        find.descendant(
+          of: dialog,
+          matching: find.text(loc(tester.element(dialog)).removeCardTitle),
+        ),
+        findsOneWidget,
+        reason: 'and it is the removal one rather than whatever else the page '
+            'could have opened');
+    return dialog;
+  }
+
+  /// The dialog action carrying [identifier].
+  Finder removalAction(Finder dialog, String identifier) {
+    final button = find.descendant(
+      of: dialog,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is AppButton && widget.identifier == identifier,
+      ),
+    );
+    expect(button, findsOneWidget, reason: 'the dialog carries $identifier');
+    return button;
+  }
+
+  /// Confirms the removal.
+  Future<void> confirmRemoval(WidgetTester tester) async {
+    await tester.tap(
+        removalAction(removalDialog(tester), 'dashboard-remove-card-confirm'));
+    await settleIgnoringAnimations(tester);
+    expect(find.byType(AppDialog), findsNothing,
+        reason: 'the dialog closes on its own action');
+  }
+
+  /// Declines the removal, by [dismiss] if given and by Cancel otherwise.
+  Future<void> declineRemoval(
+    WidgetTester tester, {
+    Future<void> Function(WidgetTester)? dismiss,
+  }) async {
+    final dialog = removalDialog(tester);
+    if (dismiss != null) {
+      await dismiss(tester);
+    } else {
+      await tester.tap(removalAction(dialog, 'dashboard-remove-card-cancel'));
+    }
+    await settleIgnoringAnimations(tester);
+    expect(find.byType(AppDialog), findsNothing,
+        reason: 'and it closes either way');
+  }
+
   group('drag-to-trash (#1395)', () {
     // Both regimes, because both ship: touch is the only removal gesture on a
     // phone, where there is no context menu, and the desktop path arms
@@ -258,48 +489,8 @@ void main() {
           final before = controller.exportLayout().map((e) => e['id']).toList();
           expect(before, contains(_id), reason: 'the premise');
 
-          final pill = find.text(loc(tester.element(find.byType(
-            UspSliverDashboardView,
-          ))).dragHereToRemove);
-          final viewport = tester.getRect(find.byType(DashboardOverlay));
-          expect(tester.getRect(pill).top, greaterThan(viewport.bottom),
-              reason: 'before the drag the zone is parked below the viewport: '
-                  'the pill exists for all of edit mode and only its offset '
-                  'changes, so "it is on screen" is a position claim, not a '
-                  '`findsOneWidget`');
-
-          final gesture = await tester.startGesture(tester.getCenter(find.byKey(
-            const ValueKey<String>(_id),
-          )));
-          // Touch arms on the long press; a move before it cancels outright.
-          if (touch) await tester.pump(const Duration(milliseconds: 600));
-          await gesture.moveBy(const Offset(0, 20));
-          await tester.pump(const Duration(milliseconds: 50));
-          expect(controller.isDragging.value, isTrue,
-              reason: touch
-                  ? 'a long press then a move is a drag'
-                  : 'a press '
-                      'then a move is a drag');
-          expect(controller.activeItemId.value, _id,
-              reason: 'and this card is the one being dragged');
-
-          // The zone slides in over 200ms. Reading its box before that gives a
-          // rect below the viewport — see the docstring.
-          await tester.pump(const Duration(milliseconds: 300));
-          final pillRect = tester.getRect(pill);
-          expect(pillRect.bottom, lessThanOrEqualTo(viewport.bottom),
-              reason: 'the drag brings it inside the viewport, which is what '
-                  'makes it droppable');
-
-          await gesture.moveTo(pillRect.center);
-          await tester.pump(const Duration(milliseconds: 100));
-          // Read from production rather than repeated here: a test that waited
-          // less than the real delay would drop on an unarmed zone and delete
-          // nothing, which is precisely the failure it is meant to catch.
-          await tester
-              .pump(UspSliverDashboardView.trashHoverDelay + _kThrottleWindow);
-          await gesture.up();
-          await settleIgnoringAnimations(tester);
+          await dropOnTrash(tester, controller, touch: touch);
+          await confirmRemoval(tester);
 
           final after = controller.exportLayout().map((e) => e['id']).toList();
           expect(after, isNot(contains(_id)));
@@ -308,6 +499,292 @@ void main() {
         });
       });
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Confirming a removal (#1398)
+  //
+  // Removal is the one edit-mode gesture that loses information. The history is
+  // off (`maxHistoryLength: 0`, see `_createController`), #1393's hook persists
+  // the deletion on the frame it happens, and the only way back is to re-add the
+  // card from the settings panel and put it where it was.
+  //
+  // `DashboardOverlay.onWillDelete` is an async veto, and it is the one seam both
+  // removal paths pass through: the trash drop awaits it in `_onPointerUp`
+  // (`dashboard_overlay.dart:1997`), and `DashboardDeleteItemIntent` reads the
+  // same callback off `DashboardOverlayProvider` before it deletes anything
+  // (`dashboard_item_widget.dart:354`). One dialog, two entry points — which is
+  // what let #1395's cleared `DashboardShortcuts.delete` be restored here rather
+  // than needing a second confirmation of its own.
+  //
+  // ## Why every assertion reads the pref as well as the controller
+  //
+  // The controller is what the user is looking at; the pref is what the next
+  // session opens on. A veto that held the in-memory layout but let the write
+  // through would look correct until reload, and that is not a hypothetical
+  // shape: the two paths reach the write differently. The keyboard path simply
+  // does not call `removeItems`, so nothing is notified. The trash path has
+  // already committed to a *drag* — `dropOnTrash` asserts the displacement it is
+  // dropping from — and the package finishes that drag either way: the decline
+  // branch still calls `internal.onDragEnd`, which compacts, records history and
+  // notifies (`dashboard_controller_impl.dart:1659-1674`). What keeps that from
+  // saving the abandoned move is that opening the dialog takes focus off the
+  // tile, and the package cancels an active interaction on focus loss
+  // (`dashboard_item_widget.dart:577-583`), so `onDragEnd` returns at its first
+  // line. These tests deliberately assert the outcome and not that mechanism: a
+  // confirmation that did not happen to steal focus would fail them.
+  //
+  // Nothing here is swept across the grids: the veto is one callback on one
+  // widget and does not vary by breakpoint, while the *drag* that reaches it
+  // does. So the regimes are covered once, where the gesture lives — #1395's
+  // pair above already drops on the trash under both (touch/phone and
+  // mouse/desktop) and now answers this dialog to do it, which is what makes it
+  // the coverage for "the veto is reachable from the touch path" as well. The
+  // cases below then stay on mouse/desktop and spend their assertions on the
+  // veto's answers instead: confirm, Cancel, barrier, retry. The keyboard cases
+  // have no pointer to arm at all.
+  // ---------------------------------------------------------------------------
+  group('a removal has to be confirmed (#1398)', () {
+    /// The persisted envelope, byte for byte.
+    ///
+    /// The whole string rather than a decoded layout: "untouched" is the claim,
+    /// and any difference at all — a card gone from one breakpoint, a geometry
+    /// nudged by the abandoned drag — fails this without the test having to
+    /// enumerate what could have moved.
+    Future<String?> savedLayout() async =>
+        (await SharedPreferences.getInstance())
+            .getString(pUspSliverDashboardLayout);
+
+    /// The ids the pref holds, per breakpoint.
+    Map<int, List<dynamic>> savedIds(String raw) {
+      final envelope = UspLayoutEnvelope.tryDecode(raw);
+      expect(envelope, isNotNull,
+          reason: 'the pref holds an envelope this build can read');
+      return {
+        for (final slots in UspLayoutEnvelope.persistedSlotCounts)
+          slots: (envelope![slots] ?? const [])
+              .map((item) => (item as Map)['id'])
+              .toList(),
+      };
+    }
+
+    testWidgets('a confirmed trash drop is written to every breakpoint',
+        (tester) async {
+      // The control for the two decline cases below, and the reason they are
+      // worth asserting on the pref at all: it shows the pref is a live
+      // observable in this harness rather than a string that never changes.
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+
+        expect(savedIds((await savedLayout())!).values,
+            everyElement(contains(_id)),
+            reason: 'the premise: the card is in the pref at all three '
+                'breakpoints before the gesture');
+
+        await dropOnTrash(tester, controller, touch: false);
+        await confirmRemoval(tester);
+
+        expect(savedIds((await savedLayout())!).values,
+            everyElement(isNot(contains(_id))),
+            reason: 'and gone from all three afterwards. Membership is global '
+                '(#1293) — a card removed on the desktop grid is removed from '
+                'the narrow ones too — so this is both halves of the write: it '
+                'happened, and it happened everywhere.');
+      });
+    });
+
+    testWidgets('declining a trash drop puts the card back and writes nothing',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final before = controller.exportLayout();
+        final stored = await savedLayout();
+        expect(stored, isNotNull,
+            reason: 'the premise: the page has already persisted the layout it '
+                'booted with, so the comparison below is against something');
+
+        await dropOnTrash(tester, controller, touch: false);
+        await declineRemoval(tester);
+
+        expect(controller.exportLayout(), before,
+            reason: 'the card is back where it was grabbed from, and so is '
+                'everything the drag pushed aside on the way down. The whole '
+                'exported layout rather than the one card: the drag reflows the '
+                'column it travels through, and a decline that restored only '
+                'the pivot would leave the rest of it displaced.');
+        expect(await savedLayout(), stored,
+            reason: 'and nothing was written. This is the assertion the ticket '
+                'asks for by name — the in-memory layout and the pref are two '
+                'different failures, and the drag the package finishes on the '
+                'decline branch is a live route to the second one.');
+      });
+    });
+
+    testWidgets('and the next drag onto the zone still deletes',
+        (tester) async {
+      // The overlay's operation state — `_isHoveringTrash`, `_isTrashActive`,
+      // `_trashTimer`, `_isProcessingPointerUp` — is cleared in the `finally`
+      // *after* the veto resolves (`dashboard_overlay.dart:2015-2023`,
+      // `:2027`), so for as long as the dialog is up the zone is still armed
+      // internally. That is invisible while the modal route holds the pointer,
+      // and this test is what says so: the second gesture is a fresh one, and
+      // `dropOnTrash` re-asserts from scratch that the pill starts parked below
+      // the viewport, that the press arms a drag, and that the zone slides in.
+      // A stale flag surviving the decline would fail one of those, on the
+      // gesture a user makes right after changing their mind.
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final before = controller.exportLayout().map((e) => e['id']).toList();
+
+        await dropOnTrash(tester, controller, touch: false);
+        await declineRemoval(tester);
+
+        await dropOnTrash(tester, controller, touch: false);
+        await confirmRemoval(tester);
+
+        final after = controller.exportLayout().map((e) => e['id']).toList();
+        expect(after, isNot(contains(_id)));
+        expect(after.length, before.length - 1,
+            reason: 'the decline cost nothing and the retry cost exactly one '
+                'card, which is also the only place in this group where the '
+                'two answers are given to the same page in sequence');
+      });
+    });
+
+    testWidgets('dismissing the dialog is a decline, not a confirmation',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final before = controller.exportLayout();
+        final stored = await savedLayout();
+
+        await dropOnTrash(tester, controller, touch: false);
+        // The barrier, not Cancel. `showAppDialog` defaults to
+        // `barrierDismissible: true` (`app_dialog.dart:192`) and the barrier
+        // pops with no value, so the veto gets `null` rather than `false` — a
+        // third answer it has to read as "no". Tapping the top corner reaches
+        // the barrier because the dialog is centred and bounded by
+        // `dialogStyle.maxWidth`.
+        await declineRemoval(tester,
+            dismiss: (tester) => tester.tapAt(const Offset(5, 5)));
+
+        expect(controller.exportLayout(), before,
+            reason: 'a dialog dismissed without an answer removes nothing: the '
+                'default for a destructive action is not to do it');
+        expect(await savedLayout(), stored, reason: 'and writes nothing');
+      });
+    });
+
+    // Both default activators, not just Delete. Backspace is the one the ticket
+    // is actually about — it is a browser Back reflex, and on a page with no undo
+    // history it used to cost a card — so a suite that only pressed Delete would
+    // leave the motivating keypress uncovered. They are two separate
+    // `SingleActivator`s in the package default
+    // (`a11y/dashboard_shortcuts.dart:32`), so this is two bindings, not one.
+    for (final key in [
+      LogicalKeyboardKey.delete,
+      LogicalKeyboardKey.backspace
+    ]) {
+      final name = key == LogicalKeyboardKey.delete ? 'Delete' : 'Backspace';
+
+      testWidgets(
+          'the $name key reaches the same dialog, and removes on confirm',
+          (tester) async {
+        await onHost(tester, TargetPlatform.macOS, () async {
+          final container = await pumpDashboardPage(tester,
+              size: _surfaces[12]!, editing: true);
+          final controller =
+              container.read(uspSliverDashboardControllerProvider);
+          final before = controller.exportLayout().map((e) => e['id']).toList();
+          expect(before, contains(_id), reason: 'the premise');
+
+          await pressDelete(tester, controller, key);
+          await confirmRemoval(tester);
+
+          final after = controller.exportLayout().map((e) => e['id']).toList();
+          expect(after, isNot(contains(_id)),
+              reason: 'the shortcut #1395 cleared is bound again, and it '
+                  'deletes the focused card');
+          expect(after.length, before.length - 1,
+              reason:
+                  'and only that one — the tap before the keypress leaves a '
+                  'single-card selection, which is the only kind our page '
+                  'produces (`selectAll` is still cleared and the lasso is off)');
+          expect(savedIds((await savedLayout())!).values,
+              everyElement(isNot(contains(_id))),
+              reason: 'and the removal is persisted, exactly as the trash drop '
+                  'is: both go through `removeItems` and #1393\'s hook');
+        });
+      });
+
+      testWidgets(
+          'declining a $name keypress leaves the card and the pref alone',
+          (tester) async {
+        await onHost(tester, TargetPlatform.macOS, () async {
+          final container = await pumpDashboardPage(tester,
+              size: _surfaces[12]!, editing: true);
+          final controller =
+              container.read(uspSliverDashboardControllerProvider);
+          final before = controller.exportLayout();
+          final stored = await savedLayout();
+
+          await pressDelete(tester, controller, key);
+          await declineRemoval(tester);
+
+          expect(controller.exportLayout(), before,
+              reason:
+                  'nothing moved: unlike the trash path there is no drag to '
+                  'unwind, so the veto only has to not delete');
+          expect(await savedLayout(), stored,
+              reason: 'and nothing was written');
+        });
+      });
+    }
+
+    testWidgets('a held key asks once, not once per repeat', (tester) async {
+      // The keyboard intent fires and forgets — it wraps the veto in `unawaited`
+      // and returns synchronously (`dashboard_item_widget.dart:355-360`) — and the
+      // package's default activators leave `includeRepeats` at true. So the
+      // Actions machinery is free to invoke the deletion again on the next repeat
+      // event, and whether it does depends on how quickly the modal route takes
+      // focus off the tile: a race, not a policy. The repeats here are sent
+      // without a pump between them, which is the losing side of that race.
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final before = controller.exportLayout().map((e) => e['id']).toList();
+
+        await tester.tap(find.byKey(const ValueKey<String>(_id)),
+            warnIfMissed: false);
+        await tester.pump();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.backspace);
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.backspace);
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.backspace);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.backspace);
+        await settleIgnoringAnimations(tester);
+
+        expect(find.byType(AppDialog), findsOneWidget,
+            reason: 'one dialog. A second one stacked on top would take a '
+                'second answer, and the answer under it would already have '
+                'removed the card the top one is asking about.');
+
+        await confirmRemoval(tester);
+        final after = controller.exportLayout().map((e) => e['id']).toList();
+        expect(after.length, before.length - 1,
+            reason:
+                'and one card removed — the confirmation the user gave, not '
+                'one per keyboard repeat');
+      });
+    });
   });
 
   group('resizing by the handle (#1395)', () {
@@ -500,6 +977,461 @@ void main() {
                 'and the committed height likewise. Our persist hook writes '
                 'this straight to the pref (#1393), so a commit that differed '
                 'from the last frame would be saved as well as shown.');
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Reflow animation (#1397)
+  //
+  // `animateReflow` interpolates the *painted* offset of a tile the engine moved,
+  // and nothing else: layout, hit-testing and semantics all use the final slot
+  // immediately. So there is no rect to read and no `pumpAndSettle` that can see
+  // it — `tester.getRect` returns where the card will be, which is exactly the
+  // property that makes the feature free. What the assertions below read instead
+  // are the render object's two `@visibleForTesting` hooks, which is the only
+  // surface the interpolation has.
+  // ---------------------------------------------------------------------------
+  group('cards displaced by a gesture slide to their new slot (#1397)', () {
+    /// The distance between the top of one grid row and the top of the next, in
+    /// the sliver's content coordinates.
+    ///
+    /// The reflow hooks report offsets in that space, and it is the space the
+    /// grid computes from `slotAspectRatio` — which the page derives from
+    /// [kDashboardSlotHeight], so the row pitch is that height plus the spacing
+    /// and is the same at every breakpoint. Only ever used to check where a slide
+    /// *starts*, so getting it wrong fails the premise rather than the claim.
+    const rowPitch = kDashboardSlotHeight + AppSpacing.lg;
+
+    RenderSliverDashboard gridRender(WidgetTester tester) =>
+        tester.renderObject<RenderSliverDashboard>(
+          find.byType(SliverDashboardLayout),
+        );
+
+    /// The ids [after] moved to a lower row than [before] had them on.
+    Set<String> pushedDown(
+      List<dynamic> before,
+      List<dynamic> after,
+    ) {
+      final was = {
+        for (final item in before)
+          (item as Map)['id'] as String: item['y'] as int,
+      };
+      return {
+        for (final item in after)
+          if ((item as Map)['y'] as int > (was[item['id']] ?? -1))
+            item['id'] as String,
+      };
+    }
+
+    /// Presses [_id]'s bottom-right corner and drags down one screenful, leaving
+    /// the pointer down. Returns the layout before the gesture.
+    ///
+    /// Down only: a corner drag would change the card's width as well, and width
+    /// pushes cards sideways, which is a second displacement to reason about for
+    /// no extra coverage.
+    Future<List<dynamic>> growDown(
+      WidgetTester tester,
+      DashboardController controller,
+    ) async {
+      final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+      final before = controller.exportLayout();
+      final gesture =
+          await tester.startGesture(rect.bottomRight - const Offset(8, 8));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(controller.activeItemId.value, _id, reason: 'the premise');
+
+      await gesture.moveBy(const Offset(0, rowPitch * 2));
+      // Past the web move gate, so the move lands on this frame rather than on
+      // the trailing flush — the reflow clock starts when the layout changes, and
+      // a test that measured from the wrong frame would read progress 0 twice.
+      await tester.pump(_kThrottleWindow * 2);
+      return before;
+    }
+
+    testWidgets('the flag and the duration reach the grid', (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        await pumpDashboardPage(tester, size: _surfaces[12]!, editing: true);
+
+        final render = gridRender(tester);
+        expect(render.animateReflow, isTrue,
+            reason: 'the whole ticket is this flag; every assertion below is '
+                'silently vacuous without it, because a grid that does not '
+                'animate never seeds a transition to inspect');
+        expect(render.reflowDuration, UspSliverDashboardView.reflowDuration,
+            reason: 'and the duration is ours rather than the package default '
+                'it happens to equal — see the constant for why 150ms. A '
+                'future upstream change to the default must not silently '
+                'change our timing.');
+      });
+    });
+
+    testWidgets('a resize interpolates the card it pushed, over the duration',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final render = gridRender(tester);
+
+        final before = await growDown(tester, controller);
+        final pushed = pushedDown(before, controller.exportLayout());
+        expect(pushed, isNotEmpty,
+            reason: 'the premise: growing the card downwards displaced at '
+                'least one card below it. Without this the resize would be a '
+                'gesture with nothing to animate and the counts below would '
+                'all be zero for the wrong reason.');
+        expect(pushed, isNot(contains(_id)),
+            reason: 'and the resized card is not one of them — a bottom-edge '
+                'resize keeps its own origin');
+
+        // A subset of `pushed`, and deliberately not compared for equality with
+        // it. A transition is seeded from the child's *previous* paint offset
+        // (`_applyChildGeometry`, guarded by `pd.hasPaintOffset`), so only the
+        // children this pass laid out can have one — and the sliver is lazy, so
+        // that is the viewport plus its cache extent. The eight cards the resize
+        // pushed down include several below the fold; those snap, and nobody is
+        // looking at them. Asserting `pushed.length` here instead would be
+        // asserting that the grid is eager.
+        final sliding = <String>{
+          for (final item in controller.exportLayout())
+            if (render.debugReflowPaintOffsetFor(item['id'] as String) != null)
+              item['id'] as String,
+        };
+        expect(sliding, isNotEmpty,
+            reason: 'at least one of the displaced cards was on screen and is '
+                'mid-slide. This is the claim of the ticket; everything below '
+                'measures the slide it found.');
+        expect(sliding, everyElement(isIn(pushed)),
+            reason: 'and only displaced cards slide — a card the resize left '
+                'alone must be painted where it has always been, or the flag '
+                'would be animating the whole grid on every mutation');
+        expect(render.debugActiveReflowTransitionCount, sliding.length,
+            reason:
+                'the transition map holds exactly those and nothing else: a '
+                'count above what is painted is a leaked entry keeping the '
+                'ticker alive');
+        expect(sliding, isNot(contains(_id)),
+            reason: 'the card under the pointer is painted where it is, not '
+                'interpolated: it is the thing the user is holding, so a lag '
+                'here would be the gesture itself feeling loose. AC: the '
+                'dragged card is unaffected.');
+
+        final id = sliding.first;
+        final startedAt = render.debugReflowPaintOffsetFor(id)!;
+        final wasOnRow = (before.firstWhere(
+          (item) => (item as Map)['id'] == id,
+        ) as Map)['y'] as int;
+        expect(startedAt.dy, closeTo(wasOnRow * rowPitch, 0.5),
+            reason: 'and it starts from the row it was on before the resize, '
+                'not from an arbitrary offset');
+
+        // Two samples inside the window rather than one: a single reading above
+        // the start would also be produced by a two-state jump, which is the
+        // behaviour this replaces.
+        await tester.pump(UspSliverDashboardView.reflowDuration ~/ 3);
+        final third = render.debugReflowPaintOffsetFor(id)!;
+        await tester.pump(UspSliverDashboardView.reflowDuration ~/ 3);
+        final twoThirds = render.debugReflowPaintOffsetFor(id)!;
+        expect(third.dy, greaterThan(startedAt.dy));
+        expect(twoThirds.dy, greaterThan(third.dy),
+            reason: 'the offset closes on the target across frames instead of '
+                'switching between two values');
+
+        await tester.pump(UspSliverDashboardView.reflowDuration);
+        expect(render.debugActiveReflowTransitionCount, 0,
+            reason: 'and the slide ends. A transition that outlived its '
+                'duration would keep the ticker — and `markNeedsPaint` — alive '
+                'for the rest of the session.');
+        expect(render.debugReflowPaintOffsetFor(id), isNull,
+            reason: 'so the card is painted in the slot it was laid out in, '
+                'which is why goldens are unaffected: they capture this state');
+      });
+    });
+
+    testWidgets('a slot-metric change snaps rather than interpolating',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        final render = gridRender(tester);
+
+        await growDown(tester, controller);
+        expect(render.debugActiveReflowTransitionCount, greaterThan(0),
+            reason: 'the premise: there is a slide in flight to be dropped');
+
+        // Narrower, but still 12 columns: the slot *width* changes while the
+        // grid does not, so the same render object sees the metric change. That
+        // is the package rule being tested — a transition's endpoints were
+        // computed in the old metric space, so carrying it across would slide a
+        // card to a place it never was.
+        final narrower = _surfaces[12]!;
+        tester.view.physicalSize = Size(narrower.width - 160, narrower.height);
+        await tester.pump();
+
+        expect(identical(gridRender(tester), render), isTrue,
+            reason: 'still the same grid: the assertion below is about the '
+                'package dropping the transition, not about our own '
+                'breakpoint catch-up unmounting the sliver');
+        expect(controller.slotCount.value, 12,
+            reason: 'and still the same column count');
+        expect(render.debugActiveReflowTransitionCount, 0,
+            reason: 'the slide is dropped, so the resize settles instantly at '
+                'the new metrics');
+
+        // The narrower viewport brought a card into the cache extent, and that
+        // tile is still holding its jiggle stagger — see [_kJiggleStagger].
+        // Nothing above depends on this pump; it is here so the teardown in
+        // [onHost] finds no pending timer.
+        await tester.pump(_kJiggleStagger);
+      });
+    });
+
+    testWidgets('crossing a breakpoint carries no interpolation with it',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final container = await pumpDashboardPage(tester,
+            size: _surfaces[12]!, editing: true);
+        final controller = container.read(uspSliverDashboardControllerProvider);
+
+        await growDown(tester, controller);
+        expect(
+            gridRender(tester).debugActiveReflowTransitionCount, greaterThan(0),
+            reason: 'the premise');
+
+        tester.view.physicalSize = _surfaces[8]!;
+        await settleIgnoringAnimations(tester);
+
+        expect(controller.slotCount.value, 8,
+            reason:
+                'the grid really did change: the whole layout is re-derived '
+                'at the new column count, so every card moves at once');
+        expect(gridRender(tester).debugActiveReflowTransitionCount, 0,
+            reason: 'and none of that motion is animated. Two mechanisms agree '
+                'here — the package drops transitions on a metric change, and '
+                'our own catch-up withholds the sliver for the frame the '
+                'controller is a breakpoint behind (#1395) — which is why this '
+                'is asserted as an observable rather than attributed to one of '
+                'them.');
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The phone grid's width lock, at the gesture (#1399)
+  //
+  // The lock (#1293) used to be held in two places: `minW == maxW == cols` on
+  // every item, and a subscription on the layout beacon that rewrote `x`/`w`
+  // back after the fact — because 0.9.1's resize arithmetic let the left-hand
+  // handles move `x` past the caps and then trimmed `w` to whatever was left
+  // of the row. The correction was a write into `controller.layout.value`, and
+  // one frame of the illegal geometry was drawn before it landed.
+  //
+  // 2.x resolves an anchored resize against the caps instead
+  // (`dashboard_controller_impl.dart:1828-1842`): for a left-family handle it
+  // clamps `newX` into `[max(limitX, originalRight - maxW), originalRight -
+  // minW]`, which for `x == 0, w == minW == maxW == cols` is `[0, 0]`. So the
+  // caps now hold both handles, and the geometry is refused rather than
+  // undone. These tests are the evidence for that — they sample every frame of
+  // a real gesture, which is the only place the difference between "refused"
+  // and "reverted" is visible.
+  //
+  // Which end of that interval the caps actually supply is worth being exact
+  // about, because only one of the two directions is evidence. The lower bound
+  // is `max(limitX, originalRight - maxW)` and `limitX` is already 0 for a card
+  // at the left edge, so dragging *outwards* is held by the row whatever the
+  // caps say. The upper bound, `originalRight - minW`, is the caps' alone: drop
+  // `minW` and the card narrows inwards. So in the drag below the outward half
+  // is a control — it shows the gesture is live and travelling — and the inward
+  // half is the claim.
+  // -------------------------------------------------------------------------
+  group('the phone grid refuses a width change outright (#1399)', () {
+    /// [_id]'s live geometry, formatted so a set of samples reads as one line.
+    String widthOf(DashboardController controller) {
+      final item = controller.layout.value.firstWhere((item) => item.id == _id);
+      return 'x${item.x} w${item.w}';
+    }
+
+    /// Pumps a 4-column page in edit mode and returns its controller.
+    Future<DashboardController> phoneGrid(WidgetTester tester) async {
+      final container =
+          await pumpDashboardPage(tester, size: _surfaces[4]!, editing: true);
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      expect(controller.slotCount.value, 4,
+          reason: 'the premise: this width really is the phone grid');
+
+      final item = controller.layout.value.firstWhere((item) => item.id == _id);
+      expect([item.x, item.w, item.minW, item.maxW], [0, 4, 4, 4.0],
+          reason: 'and the card arrives pinned. The caps are the mechanism '
+              'under test — an item that reached the phone grid without them '
+              'would make everything below pass for the wrong reason, which '
+              'is exactly the failure the deleted beacon correction used to '
+              'hide.');
+      return controller;
+    }
+
+    testWidgets('a left-handle drag moves neither x nor w, on any frame',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        // Inside the 20px band on the left edge and clear of both corners,
+        // which is where `calculateResizeHandle` reads `ResizeHandle.left` —
+        // the handle family the caps alone could not hold at 0.9.1.
+        final gesture =
+            await tester.startGesture(rect.centerLeft + const Offset(8, 0));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id,
+            reason: 'the gesture landed on this card');
+        expect(controller.isDragging.value, isFalse,
+            reason: 'and armed a resize rather than a body drag — a press '
+                'that missed the band would move the card instead, and every '
+                'sample below would be about the wrong gesture');
+
+        final seen = <String>{widthOf(controller)};
+        // Outwards first, into the row's own left edge, then back inwards past
+        // where the card started. 0.9.1 leaked in both directions and leaked
+        // differently — `x: 0, w: 3` outwards, `x: 1, w: 3` inwards — but on
+        // 2.6.0 only the inward half is held by the caps (see the note above
+        // this group). Both are still driven, because a gesture that stopped
+        // travelling would sample one value too.
+        for (final step in [const Offset(-30, 0), const Offset(45, 0)]) {
+          for (var i = 0; i < 8; i++) {
+            await gesture.moveBy(step);
+            await tester.pump(_kThrottleWindow * 2);
+            seen.add(widthOf(controller));
+          }
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+        seen.add(widthOf(controller));
+
+        expect(seen, {'x0 w4'},
+            reason: 'one value across the whole gesture. A set rather than a '
+                'final reading is the whole point: the correction this '
+                'replaces produced the right answer at the end too, and was '
+                'still drawing a narrowed card for a frame each time.');
+      });
+    });
+
+    testWidgets('nor can an arrow key, which is the other way in',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+
+        // Grab exactly as the 12-column keyboard tests do: tap to focus, Space
+        // to grab. The arrows reach `moveActiveItemBy` from there
+        // (`dashboard_item_widget.dart:308-318`), and that is a second mutation
+        // path with its own arithmetic — `targetX.clamp(0, slotCount - bbox.w)`
+        // (`dashboard_controller_impl.dart:1930`) rather than the resize
+        // resolver's anchored clamp. The caps reach it one step removed: they
+        // keep `w == slotCount`, and that is what collapses the clamp to
+        // `[0, 0]`. Worth a test of its own because the deleted correction
+        // covered both paths at once, and because arrows are the one
+        // interaction our shortcut policy deliberately leaves bound.
+        await tester.tap(find.byKey(const ValueKey<String>(_id)),
+            warnIfMissed: false);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pump();
+        expect(controller.isDragging.value, isTrue,
+            reason: 'the premise: the card is grabbed, so the arrows below are '
+                'the move path and not a scroll');
+
+        final seen = <String>{widthOf(controller)};
+        for (var i = 0; i < 3; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          seen.add(widthOf(controller));
+        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        seen.add(widthOf(controller));
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await settleIgnoringAnimations(tester);
+        seen.add(widthOf(controller));
+
+        expect(seen, {'x0 w4'},
+            reason: 'the same single value. The control for this one is the '
+                '12-column test above, which sends the identical chord and '
+                'does move the card — so this is the caps refusing the move, '
+                'not a keyboard path that never arrived.');
+      });
+    });
+
+    testWidgets('the bottom handle still takes the height on a phone',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+        final before = itemOf(controller, _id);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        final gesture =
+            await tester.startGesture(rect.bottomCenter - const Offset(0, 8));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id, reason: 'the premise');
+
+        for (var i = 0; i < 4; i++) {
+          await gesture.moveBy(const Offset(0, 60));
+          await tester.pump(_kThrottleWindow * 2);
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+
+        final after = itemOf(controller, _id);
+        expect(after['h'], greaterThan(before['h'] as num),
+            reason: 'the one dimension the lock leaves alone. Without this '
+                'the group above would also pass on a phone grid that had '
+                'stopped accepting any resize at all.');
+        expect([after['x'], after['w']], [0, 4],
+            reason: 'and taking the height did not cost the width');
+      });
+    });
+
+    testWidgets('a bottom-left drag takes only the half it is allowed',
+        (tester) async {
+      await onHost(tester, TargetPlatform.macOS, () async {
+        final controller = await phoneGrid(tester);
+        final before = itemOf(controller, _id);
+
+        final rect = tester.getRect(find.byKey(const ValueKey<String>(_id)));
+        // Both bands at once: `calculateResizeHandle` returns `bottomLeft`
+        // before it considers the sides (`resize_handle.dart:227-236`), so a
+        // corner is not the two side handles run twice — it is a third case,
+        // and the only one where the two axes are resolved in the same frame.
+        // The vertical branch has the same anchored shape as the horizontal one
+        // (`:1801-1814`), which is why this is the case a rule expressed
+        // per-axis is most likely to get wrong.
+        final gesture =
+            await tester.startGesture(rect.bottomLeft + const Offset(8, -8));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(controller.activeItemId.value, _id, reason: 'the premise');
+        expect(controller.isDragging.value, isFalse,
+            reason: 'and it is a resize, not a body drag');
+
+        final widths = <String>{widthOf(controller)};
+        // Rightwards, not leftwards: inwards is the direction the caps hold, so
+        // a diagonal that pushed out would be resolved by the row edge and this
+        // test would tell us nothing the pure bottom handle does not.
+        for (var i = 0; i < 6; i++) {
+          await gesture.moveBy(const Offset(25, 40));
+          await tester.pump(_kThrottleWindow * 2);
+          widths.add(widthOf(controller));
+        }
+        await gesture.up();
+        await settleIgnoringAnimations(tester);
+        widths.add(widthOf(controller));
+
+        final after = itemOf(controller, _id);
+        expect(widths, {'x0 w4'},
+            reason: 'the width half is refused on every frame, exactly as for '
+                'the pure left handle');
+        expect(after['h'], greaterThan(before['h'] as num),
+            reason: 'and the height half still lands — a corner that refused '
+                'both would pass the assertion above while being a worse bug '
+                'than the one it is guarding');
       });
     });
   });

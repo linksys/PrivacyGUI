@@ -58,6 +58,38 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// slides in once the drag is already under way.
   static const Duration trashHoverDelay = Duration(milliseconds: 600);
 
+  /// How long a card displaced by a drag or a resize takes to slide to the slot
+  /// it was pushed into (#1397).
+  ///
+  /// Named for the same reason as [trashHoverDelay]: a test that reads a card's
+  /// painted offset mid-slide has to pump inside this window and then past it,
+  /// and a copy of the number in the test would keep passing if this one were
+  /// lowered.
+  ///
+  /// ## Why 150ms, which is also the package default
+  ///
+  /// Written out rather than inherited, because the number is a decision about
+  /// *this* grid: a row here is [kDashboardSlotHeight] plus `AppSpacing.lg`, so
+  /// the smallest displacement a card can suffer is 136px. Over 150ms of
+  /// `easeOutCubic` that covers three quarters of the distance in the first
+  /// 60ms, which reads as "the card moved aside" rather than "the card is
+  /// sliding" — the point of the flag is that the user does not lose track of
+  /// where a card went, not that the motion is admired.
+  ///
+  /// Longer is worse rather than merely slower, and for a reason particular to a
+  /// continuous drag: each cell crossing retargets a transition that is still in
+  /// flight (`_seedTransition` mutates in place), so a duration above the time
+  /// between two crossings means the displaced cards never arrive while the
+  /// pointer keeps moving — the grid follows the drag at a visible remove. 150ms
+  /// is under one crossing at any speed a pointer sustains here.
+  ///
+  /// The cost side agrees. The interpolation is a paint-phase translate of an
+  /// already-cached layer, but it does pump `markNeedsPaint` every frame it is
+  /// alive, and we ship web only (`build_web.sh`) — where the package's own doc
+  /// names that pump as the reason the flag is off by default. A shorter window
+  /// is a smaller pump.
+  static const Duration reflowDuration = Duration(milliseconds: 150);
+
   const UspSliverDashboardView({super.key});
 
   @override
@@ -68,6 +100,9 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
 class _UspSliverDashboardViewState
     extends ConsumerState<UspSliverDashboardView> {
   bool _presetDialogShown = false;
+
+  /// Whether a removal confirmation is already on screen — see [_confirmRemoval].
+  bool _confirmingRemoval = false;
 
   @override
   void initState() {
@@ -411,6 +446,7 @@ class _UspSliverDashboardViewState
                 return _buildTrashZone(context, isHovered, isActive);
               },
         trashHoverDelay: UspSliverDashboardView.trashHoverDelay,
+        onWillDelete: _confirmRemoval,
         // No onItemsDeleted: the overlay calls `controller.removeItems` before it
         // notifies, so the deletion is already on its way to the pref through the
         // auto-persist hook (#1393).
@@ -436,6 +472,17 @@ class _UspSliverDashboardViewState
                       crossAxisSpacing: AppSpacing.lg,
                       breakpoints: {0: uiKitColumns},
                       gridStyle: isEditMode ? editModeGridStyle : null,
+                      // Cards pushed aside by a drag or a resize slide to their
+                      // new slot instead of jumping (#1397). Here and not on
+                      // [DashboardOverlay]: the overlay is the gesture layer and
+                      // has no such flag — the tiles it displaces are painted by
+                      // this sliver, so this is the only call that can animate
+                      // them. Unconditional rather than `isEditMode`, because
+                      // the only mutations that displace a card are edit-mode
+                      // gestures anyway, and a flag that flips with the mode
+                      // would clear in-flight transitions on the way out.
+                      animateReflow: true,
+                      reflowDuration: UspSliverDashboardView.reflowDuration,
                     ),
             ),
             const SliverToBoxAdapter(
@@ -466,8 +513,130 @@ class _UspSliverDashboardViewState
   }
 
   // ---------------------------------------------------------------------------
-  // Trash Zone (drag-to-delete)
+  // Removal — the trash zone, the Delete key, and the one confirmation both of
+  // them go through
   // ---------------------------------------------------------------------------
+
+  /// Asks before removing [items], and reports the answer to the grid (#1398).
+  ///
+  /// `DashboardOverlay.onWillDelete` is an async veto, and it is the one seam
+  /// *both* removal paths pass through: the trash drop awaits it in the overlay's
+  /// `_onPointerUp` (`dashboard_overlay.dart:1997`), and the keyboard
+  /// `DashboardDeleteItemIntent` reads the same callback off
+  /// `DashboardOverlayProvider` before it deletes anything
+  /// (`dashboard_item_widget.dart:354-362`). That is why the Delete shortcut could
+  /// be restored in [UspSliverDashboardControllerNotifier] without a second
+  /// confirmation of its own — see the `delete` note on `_shortcuts`.
+  ///
+  /// The binding and the guard sit at different scopes, and the difference is
+  /// worth naming: `_shortcuts` is applied to *every* controller that provider
+  /// publishes, while this veto is one argument on the one [DashboardOverlay] in
+  /// `lib/` — and the keyboard intent falls straight through to `executeDeletion`
+  /// when `DashboardOverlayProvider.maybeOf` returns null. So a second surface
+  /// that built tiles from this controller *without* wrapping them in an overlay
+  /// carrying this callback would inherit an unconfirmed destructive keypress.
+  /// There is no such surface today (one `DashboardOverlay`, and the page's only
+  /// `SliverDashboard` is inside it); a second one has to bring the veto with it.
+  ///
+  /// Removal is worth confirming because it is the one edit here that loses
+  /// information: the undo history is off, #1393's hook persists the deletion on
+  /// the frame it happens, and getting the card back means finding it in the
+  /// settings panel and putting it where it was.
+  ///
+  /// ## Why a decline does not have to unwind the drag itself
+  ///
+  /// It looks like it should have to. The trash drop has already committed to a
+  /// *move*: while the pointer hovers the pill the grid is showing a real preview,
+  /// measured mid-gesture as the pivot at `3,10` instead of `0,1` with eleven other
+  /// cards pushed four rows down. And the overlay finishes the drag whichever way
+  /// the veto goes — the decline branch still calls `internal.onDragEnd`, which
+  /// compacts, records history and notifies our persist hook.
+  ///
+  /// It does not, because opening the dialog is itself the cancel. The tile holds
+  /// the primary focus for the whole drag; the dialog's modal route takes it; and
+  /// the item loses focus while active, which is a case the package handles by
+  /// calling `cancelInteraction()` for us (`dashboard_item_widget.dart:577-583`).
+  /// By the time we are waiting on an answer the layout is already back at `0,1`
+  /// and `isDragging` is false, so the `onDragEnd` that follows returns at its
+  /// first line (`dashboard_controller_impl.dart:1660`) — no compaction, no
+  /// notify, no write. This also decides what a *confirm* deletes: the overlay
+  /// captured `itemsToDelete` before the await, and `removeItems` then runs
+  /// against the restored layout, so the card is removed from where it was
+  /// grabbed rather than from where it was dropped.
+  ///
+  /// An explicit `cancelInteraction()` here was tried and removed: no test could
+  /// be made to fail with it gone, because the focus handler above always got
+  /// there first. What the tests assert instead is the outcome — the exported
+  /// layout and the persisted envelope both unchanged across a declined drop that
+  /// really was displaced. Those hold whichever mechanism unwinds it, and they are
+  /// what would catch a future confirmation that did *not* take focus.
+  ///
+  /// ## Why the copy counts nothing and names nothing
+  ///
+  /// [items] can hold more than one card: the shortcut deletes the whole selection
+  /// when the focused card is in it, and the trash drop does the same. A sentence
+  /// with a count in it needs ICU plural categories authored in all 26 locales,
+  /// and a sentence with a card name in it would mix an unlocalized
+  /// `WidgetSpec.displayName` into a translated string. Neither buys the user
+  /// anything the dialog does not already have: the cards being removed are the
+  /// ones under the pointer or highlighted behind the barrier.
+  ///
+  /// ## Why this is not `showAppConfirmDialog`
+  ///
+  /// The UI Kit's own confirm helper builds exactly this dialog — `AppDialog`, a
+  /// text Cancel and a `dangerText` confirm — and it forwards no `identifier` to
+  /// either button. Removing a card is an E2E interaction path, so §16.2 makes a
+  /// hook Required on both, and the only anchor the helper leaves is ARB copy: a
+  /// rename of `remove` turns a passing spec into a count-0 timeout. Composing the
+  /// same UI Kit pieces one level down is what `wifi_channel_dialog.dart` and
+  /// `confirm_action_dialog.dart` already do for the same reason, so nothing here
+  /// is hand-rolled (Article XV) and nothing is left un-anchored. Adding the
+  /// passthrough upstream would let this collapse back into one call.
+  Future<bool> _confirmRemoval(List<LayoutItem> items) async {
+    // The overlay holds this callback across a gesture, so a page torn down
+    // mid-drag can still reach it. Nothing to ask, and nothing to delete.
+    //
+    // The re-entrancy half is not defensive: the keyboard intent fires and
+    // forgets (`unawaited`, `dashboard_item_widget.dart:356`) and the default
+    // activators keep `includeRepeats: true`, so a *held* Backspace can invoke it
+    // again before the first dialog has an answer. Whether the repeat reaches the
+    // tile depends on how quickly the modal route takes focus — a race this page
+    // would rather not have an opinion about than lose one dialog deep.
+    if (!mounted || _confirmingRemoval) return false;
+    _confirmingRemoval = true;
+
+    try {
+      final confirmed = await showAppDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AppDialog(
+          titleText: loc(context).removeCardTitle,
+          content: AppText.bodyMedium(loc(context).removeCardDescription),
+          actions: [
+            AppButton.text(
+              identifier: 'dashboard-remove-card-cancel',
+              label: loc(context).cancel,
+              onTap: () => Navigator.of(dialogContext).pop(false),
+            ),
+            AppButton.dangerText(
+              identifier: 'dashboard-remove-card-confirm',
+              label: loc(context).remove,
+              onTap: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ],
+        ),
+      );
+
+      // `== true`, not `?? false`: null is the barrier or Escape, i.e. a dialog
+      // closed without an answer, and the default for a destructive action is not
+      // to do it. `mounted` again because the dialog outlives this page — it goes
+      // on the root navigator — so a session drop while it is open would
+      // otherwise have us approve a deletion, and persist it, for a page the user
+      // has already left.
+      return mounted && confirmed == true;
+    } finally {
+      _confirmingRemoval = false;
+    }
+  }
 
   Widget _buildTrashZone(
     BuildContext context,
@@ -548,6 +717,22 @@ class _UspSliverDashboardViewState
   // Edit Mode — resize, settings, item builder
   // ---------------------------------------------------------------------------
 
+  /// Corrects a finished resize that its card's spec does not allow, and says so.
+  ///
+  /// Reachable only when an item's own `minW`/`maxW`/`minH`/`maxH` disagree with
+  /// the bounds its spec implies for the grid it is on — the gesture itself is
+  /// clamped to those caps by `DashboardController`, so a card whose caps describe
+  /// its spec lands *on* a bound and [UspWidgetSpecs.correctedSize] returns null
+  /// (which is what the resize cases in `edit_mode_interactions_test.dart`
+  /// measure). What is left for this to catch is the disagreement: a card added by
+  /// a package rather than a spec, a layout stored by an older build, or a
+  /// projection that scaled the caps differently from how [UspWidgetSpecs] scales
+  /// the spec.
+  ///
+  /// Kept for that reason rather than folded into a `DashboardPolicy` (#1399): a
+  /// policy hook is a boolean asked before the gesture, so it could only refuse
+  /// the resize outright, and the case this handles is one where the *correct*
+  /// bounds are known and the card should come to rest on them.
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
     final factory = ref.read(uspWidgetFactoryProvider);
     final spec = factory.getSpec(item.id) ??

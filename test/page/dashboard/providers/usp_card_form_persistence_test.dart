@@ -464,10 +464,14 @@ void main() {
       expect(item['isResizable'], isFalse);
     });
 
-    test('the live width lock leaves a popup tile alone', () async {
-      // `lockItemsToFullWidth` watches the layout beacon and rewrites anything
-      // that is not `x=0, w=slotCount`. A popup tile on a phone already is, so
-      // the guard has to read as a no-op rather than fighting the pin.
+    test('a popup tile reaches the live beacon already pinned', () async {
+      // The assertion above reads the exported layout; this one reads the beacon
+      // the grid actually renders from, and the two used to be able to disagree
+      // for a frame — the phone width lock was also a subscription on this
+      // beacon, so a popup pick was pinned by `_normalize` and then visited by a
+      // second mechanism. That subscription is gone (#1399); what has to hold
+      // now is that the pick alone leaves the beacon correct, with nothing
+      // arriving after it.
       final container = await boot();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
@@ -479,6 +483,12 @@ void main() {
       expect(beacon.x, 0);
       expect(beacon.w, 4);
       expect(beacon.h, 1);
+      // The caps too, not just the box: since #1399 they are the entire width
+      // lock, and a popup pick is the one path that rewrites `w` *after* the
+      // form arithmetic has had its say. `x`/`w` alone would still read as
+      // pinned on a card whose handles the resolver would happily honour.
+      expect(beacon.minW, 4);
+      expect(beacon.maxW, 4.0);
     });
 
     test('popup is refused on a card that has no popup form', () async {

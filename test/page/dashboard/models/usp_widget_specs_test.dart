@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
-import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
@@ -479,67 +478,126 @@ void main() {
     });
   });
 
-  group('lockItemsToFullWidth', () {
-    const full = LayoutItem(id: 'a', x: 0, y: 0, w: 4, h: 2);
+  // ---------------------------------------------------------------------------
+  // The phone width lock is now these four fields and nothing else (#1399)
+  //
+  // It used to be two mechanisms: this pin, plus `lockItemsToFullWidth`
+  // rewriting the live layout from a beacon listener whenever a left-hand resize
+  // handle got past the pin. `sliver_dashboard` 2.6.0 clamps `x` against the
+  // caps as well as `w`, so the corrector became unreachable and was deleted
+  // along with its seven tests. What is left is a pure projection, and every
+  // guarantee the phone grid makes about width now rests on the map it returns
+  // — hence a group of its own, where the deleted one used to be.
+  //
+  // The gesture half of the proof is `edit_mode_interactions_test.dart`, which
+  // drags both families on a real 4-column page and samples every frame. These
+  // tests only pin what that page is handed.
+  // ---------------------------------------------------------------------------
+  group('lockToFullWidth', () {
+    List<dynamic> oneCard({
+      int x = 0,
+      int y = 0,
+      int w = 4,
+      int h = 2,
+      int minW = 1,
+      num maxW = 4,
+      int minH = 1,
+      num maxH = 6,
+    }) =>
+        [
+          {
+            'id': 'a',
+            'x': x,
+            'y': y,
+            'w': w,
+            'h': h,
+            'minW': minW,
+            'maxW': maxW,
+            'minH': minH,
+            'maxH': maxH,
+          }
+        ];
 
-    test('a locked layout needs no rewrite', () {
-      // Null, not an equal list: the caller is a listener on the very layout it
-      // would be writing back into.
-      expect(UspWidgetSpecs.lockItemsToFullWidth([full], 4), isNull);
+    Map<String, dynamic> firstOf(List<dynamic> layout) =>
+        layout.first as Map<String, dynamic>;
+
+    test('all four width fields collapse onto the grid width', () {
+      // Asserted together rather than one per test: it is the *combination*
+      // that the 2.6.0 resolver reads. `w` inside `[minW, maxW]` bounds the
+      // right-hand handles, and `x` inside `[right - maxW, right - minW]` — a
+      // single point once the caps are equal — bounds the left-hand ones.
+      // Any one of the four alone leaves a handle live.
+      //
+      // The `4` / `4.0` asymmetry mirrors `LayoutItem`'s own fields — `int minW`,
+      // `double maxW` (`layout_item.dart:233,239`) — and is documentation, not
+      // enforcement: `4 == 4.0` in Dart, and `fromMap` coerces with
+      // `(map['maxW'] as num?)?.toDouble()`, so either literal would pass here
+      // and either type would survive a round trip.
+      final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(), 4));
+      expect(
+          [item['x'], item['w'], item['minW'], item['maxW']], [0, 4, 4, 4.0]);
     });
 
-    test('a card the left edge displaced is put back', () {
-      // x=1, w=3 is what dragging the left edge inwards by a column leaves.
-      final locked = UspWidgetSpecs.lockItemsToFullWidth(
-        [full.copyWith(x: 1, w: 3)],
+    test('a card the previous grid left displaced is pinned too', () {
+      // x=1, w=3 is what a left-edge drag produced at 0.9.1, and it is also
+      // what a stored 2.3.1-era layout can still hold. The pin is applied on
+      // every import, so a layout that predates the lock is repaired by being
+      // read rather than needing a migration.
+      final item =
+          firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(x: 1, w: 3), 4));
+      expect([item['x'], item['w']], [0, 4]);
+    });
+
+    test('a scaled maxW below the width is raised, not left to snap', () {
+      // Scaling 12→4 gives a card with `maxW: 8` a maxW of 3 while its width is
+      // set to 4 — a width outside its own cap, which the first resize would
+      // have snapped down to 3 of 4 columns.
+      final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(maxW: 3), 4));
+      expect(item['maxW'], 4.0);
+    });
+
+    test('a desktop maxW wider than the phone grid is brought down', () {
+      // The other side of the same clamp, and the commoner one: a stored
+      // 12-column entry read at 4 columns arrives with `maxW: 12`. Left there,
+      // `x` may range over `[right - 12, right - minW]` and the left handle is
+      // free again — the leak this ticket had to keep closed, so it is asserted
+      // rather than left to the equality in the first test.
+      final item =
+          firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(maxW: 12), 4));
+      expect(item['maxW'], 4.0);
+    });
+
+    test('a spec minW wider than the phone grid is lowered', () {
+      // Not cosmetic: `minW: 6` on a 4-column grid trips the engine's own
+      // `currentL.minW <= cols` assertion (`layout_engine.dart:963`) while the
+      // page is building, so a projection that lowered only `w` would crash
+      // rather than mis-size.
+      final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(minW: 6), 4));
+      expect(item['minW'], 4);
+    });
+
+    test('the height is left to the user, bounds and all', () {
+      final item = firstOf(UspWidgetSpecs.lockToFullWidth(
+        oneCard(y: 5, h: 3, minH: 2, maxH: 6),
         4,
-      );
-      expect(locked, isNotNull);
-      expect(locked!.single.x, 0);
-      expect(locked.single.w, 4);
+      ));
+      expect([item['y'], item['h'], item['minH'], item['maxH']], [5, 3, 2, 6]);
     });
 
-    test('a card narrowed without moving is put back too', () {
-      // Dragging the same edge outwards keeps x at 0 — the row's own edge does
-      // the trimming instead — so a displaced x cannot be the thing looked for.
-      final locked = UspWidgetSpecs.lockItemsToFullWidth(
-        [full.copyWith(w: 3)],
-        4,
-      );
-      expect(locked, isNotNull);
-      expect(locked!.single.w, 4);
+    test('an 8-column grid gets the 8-column pin', () {
+      // The helper takes `cols` rather than reading a breakpoint, and the tablet
+      // grid does not use it — this is here so that a hard-coded 4 in the
+      // implementation cannot pass.
+      final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(w: 3), 8));
+      expect([item['w'], item['minW'], item['maxW']], [8, 8, 8.0]);
     });
 
-    test('a card moved without narrowing is put back too', () {
-      final locked = UspWidgetSpecs.lockItemsToFullWidth(
-        [full.copyWith(x: 1)],
-        4,
-      );
-      expect(locked, isNotNull);
-      expect(locked!.single.x, 0);
-    });
-
-    test('the height is not the width lock\'s business', () {
-      final locked = UspWidgetSpecs.lockItemsToFullWidth(
-        [full.copyWith(x: 1, w: 3, h: 7)],
-        4,
-      );
-      expect(locked!.single.h, 7);
-    });
-
-    test('the row a card sits on is not the width lock\'s business', () {
-      final locked = UspWidgetSpecs.lockItemsToFullWidth(
-        [full.copyWith(x: 1, w: 3, y: 5)],
-        4,
-      );
-      expect(locked!.single.y, 5);
-    });
-
-    test('cards that are already locked keep their identity', () {
-      final displaced = full.copyWith(id: 'b', x: 1, w: 3);
-      final locked = UspWidgetSpecs.lockItemsToFullWidth([full, displaced], 4);
-      expect(identical(locked!.first, full), isTrue);
-      expect(locked.last.x, 0);
+    test('fields the lock has no opinion about survive', () {
+      final locked = UspWidgetSpecs.lockToFullWidth([
+        {'id': 'a', 'x': 1, 'y': 0, 'w': 3, 'h': 2, 'isStatic': true}
+      ], 4);
+      expect(firstOf(locked)['id'], 'a');
+      expect(firstOf(locked)['isStatic'], isTrue);
     });
   });
 }
