@@ -46,6 +46,11 @@ Consequences worth knowing before touching any of this:
 - Only the `full` variant ships. `web/assets/chromium/` was deleted in #1281 to
   reclaim 1.71 MB, and `canvasKitVariant: "full"` in the bootstrap is what stops
   capability detection routing Chromium browsers at the deleted path.
+- `web/flutter_bootstrap.js` is a **template**: the build substitutes three
+  `{{...}}` placeholders into the committed file. Do not replace one with a value
+  read out of `build/web/`. #1316 found all three frozen as literals, which is
+  how a 3.27-era loader and an `engineRevision` belonging to no pinned SDK
+  survived every upgrade. That file's own header comment has the detail.
 
 ## The two files are one artifact
 
@@ -71,9 +76,16 @@ Do all of this in **one** commit.
 
    ```bash
    fvm install <version>
-   fvm use <version>          # rewrites .fvmrc
-   fvm flutter --version      # confirm
+   fvm use <version>              # rewrites .fvmrc
+   fvm flutter --version          # confirm
+   fvm flutter precache --web     # see below — the source directory does not
+                                  # exist until this runs
    ```
+
+   `flutter_web_sdk/` is an **on-demand** artifact. A fresh `fvm install` does
+   not fetch it, and neither does `flutter test`, so without the precache the
+   path in step 2 simply does not exist and `cp` fails as if it were mistyped.
+   CI pays the same cost explicitly, in `ci.yml`'s unit-test job.
 
 2. Re-vendor both files. Copy **only** these two — the source directory also
    holds `chromium/` (must not come back, #1281), `*.js.symbols`, `skwasm*` and
