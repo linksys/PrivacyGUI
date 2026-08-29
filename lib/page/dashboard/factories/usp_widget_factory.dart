@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
@@ -28,23 +29,55 @@ import '../views/components/_components.dart';
 /// Maps widget IDs to card widgets. All cards are constructed with no
 /// arguments — they read data from domain-specific data providers internally.
 class UspWidgetFactory {
-  /// Build a card widget by its spec ID.
+  /// Build a card widget by its spec ID, for a box [cardWidth] pixels wide.
   ///
-  /// The card is wrapped in a [CardDensityHost], which measures the width the
-  /// grid gave it and publishes the resulting `CardDensity` to its subtree
-  /// (#1232). Wrapping happens here because this method is the single place both
-  /// production and the #1183 overflow gate construct cards — anywhere else and
-  /// the form under test could differ from the form users see.
-  Widget? buildWidget(String id) {
+  /// The card is wrapped in a [CardDensityHost], which publishes the
+  /// `CardDensity` that width selects to its subtree (#1232). Wrapping happens
+  /// here because this method is the single place both production and the #1183
+  /// overflow gate construct cards — anywhere else and the form under test could
+  /// differ from the form users see.
+  ///
+  /// [cardWidth] is required and nullable for the reason given on
+  /// [CardDensityHost.cardWidth]: a caller that has no box has to say so. The two
+  /// that have one are the dashboard grid, which computes it as part of laying the
+  /// tile out (#1401), and `dashboard_card_probe.dart`, which computes it from the
+  /// same grid formula before it pumps.
+  Widget? buildWidget(String id, {required double? cardWidth}) {
     final card = _buildCard(id);
     if (card == null) return null;
     return CardDensityHost(
       cardId: id,
       normalAbove: getSpec(id)?.normalAbove,
+      cardWidth: cardWidth,
       normalHeight: _normalHeightOf(id),
       child: card,
     );
   }
+
+  /// The density band a box [width] pixels wide puts card [id] in, before any
+  /// pick or override is applied.
+  ///
+  /// The grid's `breakpointResolver` (#1401): what the dashboard hands
+  /// `DashboardItemBreakpointBuilder` so the package knows when a resize has
+  /// actually changed the form a card renders in, and can hold the cached subtree
+  /// for every width that has not.
+  ///
+  /// Deliberately blind to [cardDensityOverrideProvider] and [cardFormsProvider],
+  /// which are read one level down inside [CardDensityHost]. A resolver that saw
+  /// them would be answering a different question — "which form is on screen"
+  /// rather than "has the width changed the form" — and it has no `ref` to see
+  /// them with anyway, being called from the package's layout path.
+  ///
+  /// Agrees with what the host publishes by construction: both read the threshold
+  /// from `getSpec(id)?.normalAbove` and both resolve through
+  /// [densityForSuppliedWidth]. They have to agree — a resolver that reported no
+  /// transition where the host wanted one would leave the card in its old form
+  /// until something else invalidated the tile. Pinned by test.
+  CardDensity densityBandFor(String id, double? width) =>
+      densityForSuppliedWidth(
+        width: width,
+        normalAbove: getSpec(id)?.normalAbove,
+      );
 
   /// Pixel height the card's whole form needs, from its spec's row count.
   ///

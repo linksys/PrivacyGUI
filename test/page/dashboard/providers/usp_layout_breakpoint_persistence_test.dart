@@ -27,7 +27,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 2. At 4 columns the width is not the user's to change: every card is pinned
 ///    full-width (`x=0, w=4, minW=maxW=4`), leaving height and order editable.
 ///    The package clamps resize deltas to `[minW, maxW]`
-///    (`dashboard_controller_impl.dart`), so pinning those two *is* the lock.
+///    (`dashboard_controller_impl.dart`), so pinning those two *is* the lock —
+///    true of every handle since 2.6.0, which clamps `x` against the same caps
+///    rather than only `w`. Under 0.9.1 the left-hand handles got past it and a
+///    beacon subscription put the layout back; that subscription is gone (#1399).
 ///
 /// Membership is deliberately **not** per-breakpoint: deleting a card on a phone
 /// deletes the card, not just its phone placement. Only geometry is per-grid.

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
@@ -31,9 +29,32 @@ Future<void> pumpAsync() async {
 
 /// The desktop grid out of a persisted layout envelope (#1293 keys it by slot
 /// count), so an assertion can name the grid the test acted on.
-List<dynamic> _savedDesktopLayout(String raw) {
-  final layouts = (jsonDecode(raw) as Map)['layouts'] as Map;
-  return layouts['${UspLayoutEnvelope.desktopSlotCount}'] as List;
+List<dynamic> _savedDesktopLayout(String raw) =>
+    UspLayoutEnvelope.tryDecode(raw)![UspLayoutEnvelope.desktopSlotCount]!;
+
+/// The geometry of [layout], one line per card, id-ordered.
+///
+/// The size caps are part of it, not decoration: the half of #1396 that crashes
+/// is a `minW` scaled past the column count of a grid nobody was looking at
+/// (`layout_engine.dart`'s `assert(currentL.minW <= cols)`), and a comparison of
+/// `x,y,w,h` alone would call that grid restored.
+List<String> _geometry(List<dynamic> layout) => layout
+    .map((i) => '${(i as Map)['id']}: ${i['x']},${i['y']},${i['w']},${i['h']} '
+        'caps ${i['minW']},${i['maxW']},${i['minH']},${i['maxH']}')
+    .toList()
+  ..sort();
+
+/// Every persisted grid's [_geometry], keyed by slot count.
+///
+/// The per-breakpoint shape is what #1396 is about: a single grid's geometry
+/// cannot tell a restore apart from a re-derivation, because on the grid the
+/// user was looking at the two agree.
+Map<int, List<String>> _storedGeometry(String raw) {
+  final envelope = UspLayoutEnvelope.tryDecode(raw)!;
+  return {
+    for (final slots in UspLayoutEnvelope.persistedSlotCounts)
+      slots: _geometry(envelope[slots] ?? const []),
+  };
 }
 
 void main() {
@@ -63,9 +84,11 @@ void main() {
       const state = DashboardEditState();
       final updated = state.copyWith(
         isEditing: true,
-        layoutSnapshot: [
-          {'id': 'test'}
-        ],
+        layoutSnapshot: {
+          12: [
+            {'id': 'test'}
+          ]
+        },
         prefsSnapshot: const UspLayoutPreferences(useCustomLayout: false),
       );
 
@@ -75,12 +98,14 @@ void main() {
     });
 
     test('copyWith with clearSnapshots clears snapshots', () {
-      final state = DashboardEditState(
+      const state = DashboardEditState(
         isEditing: true,
-        layoutSnapshot: [
-          {'id': 'test'}
-        ],
-        prefsSnapshot: const UspLayoutPreferences(),
+        layoutSnapshot: {
+          12: [
+            {'id': 'test'}
+          ]
+        },
+        prefsSnapshot: UspLayoutPreferences(),
       );
       final cleared = state.copyWith(clearSnapshots: true);
 
@@ -109,7 +134,12 @@ void main() {
       final state = container.read(dashboardEditModeProvider);
       expect(state.isEditing, isTrue);
       expect(state.layoutSnapshot, isNotNull);
-      expect(state.layoutSnapshot, isNotEmpty);
+      // One grid per breakpoint, each non-empty (#1396): a cancel has to put
+      // back the two the user is not looking at, and it can only put back what
+      // was captured.
+      expect(state.layoutSnapshot!.keys,
+          containsAll(UspLayoutEnvelope.persistedSlotCounts));
+      expect(state.layoutSnapshot!.values, everyElement(isNotEmpty));
       expect(state.prefsSnapshot, isNotNull);
     });
 
@@ -252,22 +282,32 @@ void main() {
     // Neither is reachable by any sequence of gestures, so each assertion below
     // checks the pick and the box it justifies in the same test.
     //
+    // Since #1400 that pair is one value: the pick rides on the grid item it
+    // shaped, `layoutSnapshot` carries both, and `restoreSnapshot` takes one
+    // argument. The assertions below are unchanged and still worth having — they
+    // are what says the pick is *inside* the snapshot rather than merely absent
+    // from the code — but two of the four mutations they were written against can
+    // no longer be written, which is the whole of what that ticket bought here.
+    //
     // Mutation table — each row is one edit to the real source, run against this
     // file:
     //
     //   | # | mutated                     | mutation                              | killed by |
     //   |---|-----------------------------|---------------------------------------|-----------|
-    //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | 5 |
-    //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | 2 |
+    //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | *retired by #1400* |
+    //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | *retired by #1400* |
     //   | 3 | dashboard_edit_mode_provider| commitEditMode takes the revert path   | 2 |
     //   | 4 | dashboard_edit_mode_provider| _exitEditMode does not clear the selection | 2 — both exits |
     //
-    // Row 1 killing 5 is the interesting count: two of them are the pre-existing
-    // #1293/#1294 tests, because `_exitEditMode` only restores when *both*
-    // snapshots are non-null — so dropping the forms half silently disables the
-    // geometry revert as well. Rows 2 and 3 are the two halves that a single
-    // "cancel works" test would have conflated: 2 fails only the pick assertions,
-    // 3 fails only on commit.
+    // Rows 1 and 2 are retired rather than deleted because their counts are the
+    // measurement of the change. Row 1 killed 5, and two of those were the
+    // pre-existing #1293/#1294 geometry tests: `_exitEditMode` only restored when
+    // *both* snapshots were non-null, so dropping the forms half silently
+    // disabled the geometry revert as well. Row 2 killed 2 — the pick assertions
+    // only — because the restore was two statements that could disagree. There is
+    // now one snapshot and one statement, so neither edit exists to make. Row 3
+    // is the half a single "cancel works" test would have conflated with them: it
+    // fails only on commit.
 
     test('cancel puts back the form the card was in, and its box', () async {
       final container = await createContainer();
@@ -288,14 +328,14 @@ void main() {
 
       await layoutNotifier.setCardForm('device_info', CardDensity.popup);
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.popup,
       );
 
       await notifier.cancelEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         isNull,
         reason: 'the pick was made during the edit, so cancel drops it',
       );
@@ -326,7 +366,7 @@ void main() {
       await notifier.cancelEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.compact,
       );
       final item = container
@@ -351,7 +391,7 @@ void main() {
       await notifier.commitEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.popup,
       );
       final item = container
@@ -436,13 +476,6 @@ void main() {
   // exit ends the interaction instead of storing it, which is what Escape does
   // mid-grab.
   group('exit with an interaction still in flight (#1393)', () {
-    /// The coordinates in [layout], one `id: x,y,w,h` line per card, id-ordered.
-    List<String> geometry(List<dynamic> layout) => layout
-        .map((i) =>
-            '${(i as Map)['id']}: ${i['x']},${i['y']},${i['w']},${i['h']}')
-        .toList()
-      ..sort();
-
     /// Grabs [cardId] with the keyboard and steps it one column right, the way
     /// Space-then-arrow does, and leaves the grab open.
     void grabAndMove(DashboardController controller, String cardId) {
@@ -461,13 +494,13 @@ void main() {
       await notifier.enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final beforeGrab = geometry(controller.exportLayout());
+      final beforeGrab = _geometry(controller.exportLayout());
       final baseline = prefs.getString(pUspSliverDashboardLayout);
       expect(baseline, isNotNull,
           reason: 'the seed writes a baseline layout on first init');
 
       grabAndMove(controller, 'device_info');
-      expect(geometry(controller.exportLayout()), isNot(beforeGrab),
+      expect(_geometry(controller.exportLayout()), isNot(beforeGrab),
           reason: 'the grab is in flight and has moved the card');
 
       await notifier.commitEditMode();
@@ -475,7 +508,7 @@ void main() {
 
       expect(controller.isDragging.value, isFalse,
           reason: 'a grab must not outlive the edit session it was made in');
-      expect(geometry(controller.exportLayout()), beforeGrab,
+      expect(_geometry(controller.exportLayout()), beforeGrab,
           reason: 'the card goes back where the grab started, as it would on '
               'Escape — the move was never dropped');
       expect(prefs.getString(pUspSliverDashboardLayout), baseline,
@@ -494,13 +527,13 @@ void main() {
       await notifier.enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final onEntry = geometry(controller.exportLayout());
+      final onEntry = _geometry(controller.exportLayout());
 
       // A first reorder, dropped: stored as it happens (#1393).
       grabAndMove(controller, 'device_info');
       controller.internal.onDragEnd('device_info');
       await pumpAsync();
-      final afterFirstMove = geometry(controller.exportLayout());
+      final afterFirstMove = _geometry(controller.exportLayout());
       expect(afterFirstMove, isNot(onEntry),
           reason: 'the dropped move changed the grid');
 
@@ -516,12 +549,12 @@ void main() {
       // Re-read: restoring a snapshot can restore a card the session deleted,
       // which is a membership change, and those arrive as a new controller.
       final live = container.read(uspSliverDashboardControllerProvider);
-      expect(geometry(live.exportLayout()), onEntry,
+      expect(_geometry(live.exportLayout()), onEntry,
           reason: 'cancel reverts the whole session. Ending the interaction '
               'after the snapshot is imported rather than before it would put '
               'the grid back to the first move instead.');
       expect(
-        geometry(
+        _geometry(
             _savedDesktopLayout(prefs.getString(pUspSliverDashboardLayout)!)),
         onEntry,
         reason: 'and the revert is stored, so the reload agrees with the grid',
@@ -537,13 +570,16 @@ void main() {
   // `removeItems` on the controller itself and the view only persists the result.
   // So a delete leaves the live layout without the card while the pref is written
   // by the walk that visits every breakpoint — and a cancel then has to put the
-  // card back on all of them at a width each one can hold.
+  // card back on all of them at the geometry each one had.
   //
   // Left to the package, that walk puts the card back at the width it has on the
   // grid the cancel restored: `placeNewItems` places an item the target grid's
   // cache does not hold without ever narrowing it, so `stats_panel`'s `w: 12`
-  // lands in the 8- and 4-column grids as-is. The width assertion at the end of
-  // the test is what catches that.
+  // lands in the 8- and 4-column grids as-is. The per-breakpoint comparison at
+  // the end of the test is what catches that — against the geometry stored before
+  // the session, card by card, since #1396 (AC3). It used to ask only for a width
+  // each grid could hold, which a scaled-down card satisfies while still being
+  // the wrong card.
   //
   // Under `sliver_dashboard` 0.9.1 the same walk *hung* instead — the wrap branch
   // skipped its own safety counter — so without the fix in `restoreSnapshot` this
@@ -560,6 +596,8 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       final notifier = container.read(dashboardEditModeProvider.notifier);
+      final onEntry =
+          _storedGeometry(prefs.getString(pUspSliverDashboardLayout)!);
       await notifier.enterEditMode();
 
       // What the trash zone does: the overlay removes the item, the hook stores
@@ -590,11 +628,173 @@ void main() {
         expect(holds(layout!, 'stats_panel'), isTrue,
             reason: 'membership is global, so the revert restores the card on '
                 'the $slots-column grid too');
-        final card =
-            layout.firstWhere((i) => (i as Map)['id'] == 'stats_panel');
-        expect((card as Map)['w'] as int, lessThanOrEqualTo(slots),
-            reason: 'and it is stored at a width that grid can hold');
+        expect(_geometry(layout), onEntry[slots],
+            reason: 'and it comes back at the geometry it had on that grid '
+                'before the session — not at a width derived from the grid the '
+                'delete happened on (#1396)');
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1396 — a delete on a narrow grid must not rewrite the wide ones
+  // ---------------------------------------------------------------------------
+  //
+  // `restoreSnapshot` used to be handed only the grid the user was looking at and
+  // rebuild the other two by scaling it, so the direction the session was entered
+  // from decides what gets rewritten. The group above enters at the desktop
+  // breakpoint — with the loose "a width that grid can hold" assertion it let all
+  // of it past, which is why AC3 makes that assertion exact; scaling 12 down does
+  // land somewhere legal.
+  //
+  // These two enter from the narrow side, where the same scale runs *upwards* and
+  // has no legal ceiling to land under. A phone card is pinned to `x: 0, w: 4` by
+  // `lockToFullWidth`, so every card on that grid scales to a full-width desktop
+  // card — and `minW: 4` scales to `minW: 12`, which no narrower grid can hold at
+  // all.
+  //
+  // Both tests compare *stored* geometry rather than the live grid, because the
+  // grids the ticket is about are the ones nobody is rendering. The pref is where
+  // they exist.
+  //
+  // Mutation table — each row is one edit to the real source, run against this
+  // file:
+  //
+  //   | # | mutated | mutation | killed by |
+  //   |---|---------|----------|-----------|
+  //   | 1 | usp_layout_controller | `restoreSnapshot` back to the pre-#1396 body: keep the live grid from the snapshot, rebuild the other two with `alignMembership` | 3 — both tests here, and the desktop delete above on its new exact assertion |
+  //   | 2 | dashboard_edit_mode_provider | `enterEditMode` captures `controller.exportLayout()` again, i.e. the live grid only, wrapped in a one-entry map | 13 — every test in this file that cancels, plus the `enterEditMode` shape test |
+  //   | 3 | usp_layout_controller | `restoreSnapshot` restores the picks *after* the swap instead of before | *retired by #1400* |
+  //
+  // Row 2's count is the assert in `restoreSnapshot` doing its job: with asserts
+  // on — every test run — a snapshot that does not cover all three breakpoints
+  // fails loudly on the first cancel rather than subtly in the two tests here.
+  // That is the only guard, and deliberately: in release an incomplete snapshot
+  // falls back to deriving the grids it is missing, which is the behaviour this
+  // ticket replaced, so a fallback would be a branch no test can reach.
+  //
+  // Row 1 is worth reading rather than counting. The phone test dies on an
+  // *assertion inside the package* — `alignMembership` scales `minW: 4` up to
+  // `minW: 12`, which `layout_engine.dart` refuses at 8 columns — so on a phone
+  // the defect is a crash, not a bad number. The tablet test dies on the number:
+  // `device_info` comes back at `x: 2` (its tablet `x: 1`, scaled) instead of the
+  // `x: 0` it has on the desktop grid.
+  //
+  // Row 1 does *not* kill the tablet test without the earlier session that moves
+  // a card — see the comment in that test. That is the whole reason the move is
+  // there, and why "same for a delete at the tablet breakpoint" is not simply the
+  // phone test with a different number in it.
+  //
+  // Row 3 was the reason the two lines of `restoreSnapshot` were in the order
+  // they were: the grids went in through `_seedBreakpoints`, which normalised each
+  // one against the picks, so picks restored second were applied to a grid already
+  // normalised against the session's. Its two kills were both #1299 tests. #1400
+  // deleted the ordering along with the second argument — one snapshot carries
+  // both, so there is no second statement to put in the wrong place.
+  group('cancel after a delete on a narrow grid (#1396)', () {
+    /// Enters edit mode on the [slots]-column grid, deletes [cardId] the way the
+    /// trash zone does, cancels, and returns the stored geometry before and
+    /// after the session.
+    Future<({Map<int, List<String>> onEntry, Map<int, List<String>> after})>
+        deleteAndCancelAt(
+      ProviderContainer container,
+      int slots,
+      String cardId,
+    ) async {
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+
+      // The view drives this off the viewport width. It persists nothing —
+      // `setSlotCount` does not fire the layout hook — so the pref still holds
+      // what the last real save put there, which is the pre-edit truth.
+      container.read(uspSliverDashboardControllerProvider).setSlotCount(slots);
+      await pumpAsync();
+      final onEntry =
+          _storedGeometry(prefs.getString(pUspSliverDashboardLayout)!);
+      // A premise, because [_storedGeometry] reads an absent grid as an empty
+      // list and two empty lists compare equal: every assertion below would pass
+      // on a pref that stored no grids at all.
+      expect(onEntry.values, everyElement(isNotEmpty),
+          reason: 'the seed stores every breakpoint before the session starts');
+
+      await notifier.enterEditMode();
+      container
+          .read(uspSliverDashboardControllerProvider)
+          .removeItems([cardId]);
+      await pumpAsync();
+
+      await notifier.cancelEditMode();
+      await pumpAsync();
+
+      return (
+        onEntry: onEntry,
+        after: _storedGeometry(prefs.getString(pUspSliverDashboardLayout)!),
+      );
+    }
+
+    test('a delete on the phone grid leaves the other two byte-for-byte',
+        () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      // `device_info` is `w: 6` of 12 — a card whose desktop geometry is not
+      // already full width, so scaling 4 → 12 is distinguishable from a
+      // restore. `stats_panel` is `w: 12` and would hide the defect.
+      final geometry = await deleteAndCancelAt(
+          container, UspLayoutEnvelope.mobileSlotCount, 'device_info');
+
+      expect(geometry.after[UspLayoutEnvelope.desktopSlotCount],
+          geometry.onEntry[UspLayoutEnvelope.desktopSlotCount],
+          reason: 'the user never looked at the desktop grid this session, so '
+              'cancel owes them the grid they left');
+      expect(geometry.after[UspLayoutEnvelope.tabletSlotCount],
+          geometry.onEntry[UspLayoutEnvelope.tabletSlotCount],
+          reason: 'and the same for the tablet grid');
+      expect(geometry.after[UspLayoutEnvelope.mobileSlotCount],
+          geometry.onEntry[UspLayoutEnvelope.mobileSlotCount],
+          reason: 'the grid the delete happened on reverts too — that half '
+              'already worked, and it is what makes the other two a fair '
+              'comparison rather than a stale read');
+    });
+
+    test('a delete on the tablet grid leaves the desktop one byte-for-byte',
+        () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(UspLayoutEnvelope.tabletSlotCount);
+      await pumpAsync();
+
+      // An earlier session, in which the user arranged their tablet grid.
+      //
+      // Without it this test proves nothing: the seeded tablet grid is derived
+      // from the desktop one by the very scale the defect applies, so scaling it
+      // back up reproduces the stored desktop layout exactly and the ticket's
+      // "usually the same numbers" row passes either way. One dropped move is
+      // enough to make the two grids hold coordinates neither can be computed
+      // from — which is the state every user who has ever touched a second
+      // breakpoint is in.
+      await notifier.enterEditMode();
+      controller.clearSelection();
+      controller.toggleSelection('device_info');
+      controller.internal.onDragStart('device_info');
+      controller.moveActiveItemBy(1, 0);
+      controller.internal.onDragEnd('device_info');
+      await notifier.commitEditMode();
+      await pumpAsync();
+
+      final geometry = await deleteAndCancelAt(
+          container, UspLayoutEnvelope.tabletSlotCount, 'device_info');
+
+      expect(geometry.after[UspLayoutEnvelope.desktopSlotCount],
+          geometry.onEntry[UspLayoutEnvelope.desktopSlotCount],
+          reason: 'a restore is a restore at every breakpoint, not only at the '
+              'ones where scaling happens to disagree');
+      expect(geometry.after[UspLayoutEnvelope.mobileSlotCount],
+          geometry.onEntry[UspLayoutEnvelope.mobileSlotCount],
+          reason: 'and scaling 8 → 4 is the direction that loses the most');
     });
   });
 

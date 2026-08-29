@@ -190,6 +190,10 @@ Future<List<OverflowIncident>> _pump(
                 child: CardDensityHost(
                   cardId: _kCardId,
                   normalAbove: normalAbove,
+                  // Same number as the box, because in production one number is
+                  // both (#1401): the grid lays the tile out in the width it
+                  // reports.
+                  cardWidth: cardWidth,
                   normalHeight: normalHeight,
                   child: card ?? _card(),
                 ),

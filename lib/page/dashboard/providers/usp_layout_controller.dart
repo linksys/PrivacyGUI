@@ -50,21 +50,34 @@ final uspSliverDashboardControllerProvider = StateNotifierProvider<
 /// whose `minW`/`maxW` had been scaled down with them — permanently, since the
 /// caps then blocked widening them again (#1293).
 ///
-/// ## Two rules constrain the geometry, and they are both applied here
+/// ## The picks travel on the items, so there is one store and not two
 ///
-/// [_normalize] is the single funnel every layout passes through on its way into
-/// the controller or into the pref. It applies, in order:
+/// A card's form — popup, compact, normal — is a pick the user makes and the
+/// geometry it justifies cannot be re-derived from (#1299). It is written into the
+/// grid item it shaped, under `extra`, which `exportLayout`/`importLayout`
+/// round-trip and which `setSlotCount` keeps per grid (#1400). So the pick and its
+/// geometry reach the pref, the edit-mode snapshot and any future undo history as
+/// one value: [restoreSnapshot] takes one argument, [removeWidget] deletes the
+/// pick by deleting the card, and there is no second store for either to fall out
+/// of step with.
 ///
-/// 1. the form each card was picked into (#1299) — pinning a popup tile, raising
-///    a compact card's floor, restoring the spec bounds for normal;
-/// 2. the mobile full-width lock (#1293) — pinning `x`/`w` on the 4-column grid.
+/// [UspWidgetSpecs.withCardForm] is the only writer, and it runs at the pick.
+/// [UspWidgetSpecs.applyPickedForms] re-derives that geometry only where a grid is
+/// *created* rather than restored — the scale in [_seedBreakpoints], and the
+/// one-time migration in [_initializeLayout].
 ///
-/// Each rule owns one axis on a phone: the forms rule abstains from `x`/`w` at 4
-/// columns and the lock only ever touches those, so a popup card there is a short
-/// full-width bar rather than a 2-column tile. That abstention is what makes the
-/// order of the two *not* load-bearing — swapping them produces the same layout,
-/// which is deliberate rather than lucky, and is why neither has to know it runs
-/// second.
+/// [_normalize] is what survives of the funnel every layout used to pass through:
+/// the mobile full-width lock (#1293), pinning `x`/`w` on the 4-column grid.
+/// Popup abstains from those two fields at 4 columns precisely so the lock can own
+/// them, which is why a popup card on a phone is a short full-width bar rather
+/// than a 2-column tile.
+///
+/// That lock used to need a second mechanism behind it: a subscription on the
+/// controller's layout beacon that rewrote whatever a left-hand resize handle had
+/// got past the caps, because 0.9.1 clamped the new width but let `x` move. 2.6.0
+/// clamps `x` against the same caps, so the subscription was deleted and the pin
+/// is now the whole of the rule (#1399) — an illegal width is never produced
+/// rather than corrected a frame later.
 ///
 /// ## An edit is stored by the grid that made it, not by the button that ends it
 ///
@@ -91,9 +104,9 @@ class UspSliverDashboardControllerNotifier
   /// controller they were given, so a hook armed only on the replacements would
   /// miss the sessions that start without a stored layout (#1393).
   ///
-  /// [_swapController] arms the width lock and the selection mirror, which is
-  /// what this constructor used to do by hand. The bootstrap is dropped without
-  /// disposing, like every other controller this class replaces.
+  /// [_swapController] arms the selection mirror, which is what this constructor
+  /// used to do by hand. The bootstrap is dropped without disposing, like every
+  /// other controller this class replaces.
   ///
   /// It still carries the input policy, through [_applyInputPolicy] and the one
   /// history argument, even though it is replaced on the next line. This is the
@@ -117,22 +130,11 @@ class UspSliverDashboardControllerNotifier
   /// Publishes the picked forms to [cardFormsProvider] for the render side.
   final Ref _ref;
 
-  /// Cancels the current controller's width-lock subscription.
-  VoidCallback? _widthLockGuard;
-
   /// Cancels the current controller's selection subscription.
   VoidCallback? _selectionGuard;
 
-  /// The form each card was picked into, per breakpoint (#1299).
-  ///
-  /// The authoritative copy, not a cache of one. Reading it back out of
-  /// [cardFormsProvider] would be synchronous and would look like one field less,
-  /// but that provider is this notifier's *published mirror*: a test or a scope
-  /// that overrode it would then be silently changing which geometry [_normalize]
-  /// derives, rather than only what the cards render. Reading the pref instead is
-  /// not open either — [_normalize] runs on paths that cannot await, the width-lock
-  /// callback and the seeding walk among them.
-  CardForms _forms = CardForms.empty;
+  /// Cancels the current controller's card-forms subscription.
+  VoidCallback? _formsGuard;
 
   /// True while this notifier is putting a layout *into* the controller, as
   /// opposed to the grid reporting one the user made — see [_importQuietly].
@@ -163,14 +165,6 @@ class UspSliverDashboardControllerNotifier
   /// What is dropped, and why (#1395). None of these existed at 0.9.1, so each
   /// entry keeps today's behaviour rather than taking one away:
   ///
-  /// - `delete` (Delete / Backspace) removes the focused card, or the whole
-  ///   selection when the focused card is in it, with no confirmation. Removal is
-  ///   the one edit here that loses information, the history is off (see
-  ///   [_createController]), and Cancel does not fully restore a deletion
-  ///   (#1396) — so a stray Backspace, which is a browser Back reflex, costs the
-  ///   user their arrangement. Deleting from the keyboard is worth having; it
-  ///   wants `DashboardOverlay.onWillDelete` in front of it, which is its own
-  ///   decision because the trash zone has no confirmation either.
   /// - `selectAll` (Ctrl / Cmd + A) selects every card at once. Nothing here
   ///   consumes a multi-selection: [selectedCardIdProvider] reads two or more as
   ///   none, so the form toolbar drops back to its prompt with nothing to say
@@ -194,8 +188,32 @@ class UspSliverDashboardControllerNotifier
   /// Everything else is left at the package default. Grab / arrows / drop /
   /// Escape is the only way to reorder a card without a pointer and is kept for
   /// that reason; `duplicate` is inert while no `onCloneRequested` is registered.
+  ///
+  /// ## `delete` is the one that came back (#1398)
+  ///
+  /// It was cleared here at first, and for a reason that has since been dealt
+  /// with rather than reconsidered: Delete / Backspace removes the focused card —
+  /// or the whole selection, when the focused card is in it — and removal is the
+  /// one edit that loses information. The history is off (see [_createController])
+  /// and #1393's hook persists the deletion on the frame it happens, so a stray
+  /// Backspace, which is a browser Back reflex, cost the user their arrangement
+  /// with nothing to press to get it back.
+  ///
+  /// What restores the binding is `UspSliverDashboardView`'s `onWillDelete`, an
+  /// async veto the *keyboard* path reads too — `DashboardDeleteItemIntent` looks
+  /// it up on `DashboardOverlayProvider` and only calls its `executeDeletion`
+  /// when the answer is true (`dashboard_item_widget.dart:354-362`). So the
+  /// confirmation is not a second mechanism bolted onto the shortcut; it is the
+  /// same dialog the trash drop goes through, and there is no arrangement of this
+  /// page where one path is guarded and the other is not. That is also why the two
+  /// changes are ordered: un-clearing this without the dialog in place would be
+  /// shipping exactly the keypress #1395 cleared this binding to refuse.
+  ///
+  /// Both default activators are taken back, Backspace included. A confirmation
+  /// is what makes the reflex affordable — the mis-press now costs a dialog rather
+  /// than a card — and dropping one of the two would leave a shortcut whose
+  /// behaviour depends on which key the user reached for.
   static const _shortcuts = DashboardShortcuts(
-    delete: {},
     selectAll: {},
     undo: {},
     redo: {},
@@ -209,6 +227,29 @@ class UspSliverDashboardControllerNotifier
   /// observe — see the class doc. Configuring it here rather than in
   /// [_createController] is what makes the policy hold by construction instead of
   /// by an assertion nothing can make.
+  ///
+  /// ## Why there is no `..policy` here (#1399)
+  ///
+  /// 2.2.0 added `DashboardPolicy`, and this is the line it would go on. Both
+  /// geometry rules this page has were considered for it and neither fits, so the
+  /// field is deliberately left unset:
+  ///
+  /// - **The phone width lock.** The hooks are four booleans and none of them
+  ///   takes a width. `canResize(item)` is asked once at `onResizeStart` with no
+  ///   handle, so it can only refuse *every* resize — which would take the height
+  ///   with it, and the height is the one dimension a phone user still chooses.
+  ///   `canMoveTo` is handed the *raw* rounded pointer target before any clamping,
+  ///   so a rule shaped like "x is not yours" refuses the whole event including
+  ///   its vertical component: a diagonal drag would freeze instead of sliding up
+  ///   and down. The caps on the items express it exactly, and 2.6.0's resolver
+  ///   clamps `x` against them — see [UspWidgetSpecs.lockToFullWidth].
+  /// - **Per-card min/max from `WidgetSpec`.** Already per item, which is where
+  ///   the resolver reads them. A boolean veto could only re-derive the arithmetic
+  ///   and then refuse, which stops a card dead at its cap instead of letting it
+  ///   come to rest on it.
+  ///
+  /// A policy that repeated either rule would be a second copy of an invariant
+  /// that already holds — the shape of thing #1399 removed, not added.
   static DashboardController _applyInputPolicy(
           DashboardController controller) =>
       controller
@@ -286,8 +327,8 @@ class UspSliverDashboardControllerNotifier
       return;
     }
 
-    final envelope = UspLayoutEnvelope.tryDecode(layoutJson);
-    if (envelope == null) {
+    final decoded = UspLayoutEnvelope.tryDecode(layoutJson);
+    if (decoded == null) {
       // `w`, not `d`: this discards a layout the user arranged and reseeds the
       // default, and `debugPrint` compiles out of a release build — so in the
       // field the only user-visible evidence was their dashboard resetting.
@@ -306,9 +347,19 @@ class UspSliverDashboardControllerNotifier
     // Create a NEW controller then swap via state= so Riverpod
     // properly notifies listeners (avoids mutating the existing
     // controller in-place which can desync the render tree).
-    // Before the seed, so the walk derives the geometry these picks imply
-    // instead of the geometry the pref happened to hold (#1299).
-    _setForms(envelope.forms);
+    //
+    // A v3 payload kept its card-form picks in a map beside the layouts;
+    // `tryDecode` has moved them onto the items they describe, and this is where
+    // the geometry those picks imply is re-derived (#1400). It has to be derived
+    // rather than trusted: in v3 the stored geometry was recomputed from that map
+    // on every import, so it was never what the grid actually rendered, and a
+    // migration that kept it would preserve bytes the writing build did not
+    // believe either. Once per install — the re-save at the end of this method is
+    // what makes the next boot an ordinary one.
+    final envelope = decoded.migratedPicks
+        ? decoded.mapLayouts(
+            (slots, layout) => UspWidgetSpecs.applyPickedForms(layout, slots))
+        : decoded;
 
     final desktop = envelope[_desktopSlots];
     final newController = _createDefaultController();
@@ -322,9 +373,13 @@ class UspSliverDashboardControllerNotifier
     // A legacy bare list, or an envelope written before we rendered a
     // breakpoint, has nothing stored for the grids we just derived. Write them
     // out now so the first edit made there has a slot of its own to land in.
-    final migrated = UspLayoutEnvelope.persistedSlotCounts
+    //
+    // The second disjunct is what makes a v3 migration cost one boot rather than
+    // every boot: a payload that already holds all three breakpoints is complete,
+    // so nothing else here would write the folded picks back.
+    final incomplete = UspLayoutEnvelope.persistedSlotCounts
         .any((slots) => envelope[slots] == null);
-    if (migrated) {
+    if (incomplete || envelope.migratedPicks) {
       await saveLayout();
     }
   }
@@ -375,17 +430,13 @@ class UspSliverDashboardControllerNotifier
     final controller = state;
     final liveSlots = live ?? controller.slotCount.value;
 
-    // Desktop is normalised here rather than by its caller because every path
-    // into this method imports the desktop layout first and then relies on this
-    // walk for the rest. It used to be skipped, which was invisible while
-    // [_normalize] was mobile-only and identity at 12 columns; with card forms it
-    // would mean the one grid the user starts on is the one grid the picks miss.
-    var desktopLayout = controller.exportLayout();
-    final normalizedDesktop = _normalize(desktopLayout, _desktopSlots);
-    if (!identical(normalizedDesktop, desktopLayout)) {
-      _importQuietly(controller, normalizedDesktop);
-      desktopLayout = controller.exportLayout();
-    }
+    // The desktop layout is taken as it stands. #1299 normalised it here first,
+    // because [_normalize] then re-derived the card-form geometry and the desktop
+    // grid would otherwise have been the one grid the picks missed. #1400 moved
+    // that derivation to where the geometry is written, leaving [_normalize] the
+    // mobile width lock again — identity at 12 columns — so normalising here is a
+    // no-op the next reader would have to re-derive the deadness of.
+    final desktopLayout = controller.exportLayout();
 
     for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
       if (slots == _desktopSlots) continue;
@@ -429,51 +480,80 @@ class UspSliverDashboardControllerNotifier
 
   /// The per-grid policy a layout must satisfy before it is imported or stored.
   ///
-  /// Two rules, in this order:
+  /// One rule now: [UspWidgetSpecs.lockToFullWidth] pins `x`, `w` and both width
+  /// caps on the 4-column grid, so a phone is height-and-order only (#1293). Wider
+  /// grids skip it, which makes this identity for two of the three breakpoints. The
+  /// caps are named here because since `sliver_dashboard` 2.6.0 they are the entire
+  /// enforcement: this call is the last thing that touches the width before the
+  /// layout is imported, and nothing watches it afterwards (#1399).
   ///
-  /// 1. [UspWidgetSpecs.applyCardForms] derives the geometry implied by the form
-  ///    each card was picked into on this grid (#1299). Derived rather than
-  ///    stored, so the pick is the only thing persisted and the sizes it justifies
-  ///    cannot drift away from it.
-  /// 2. [UspWidgetSpecs.lockToFullWidth] pins `x`/`w` on the 4-column grid, so a
-  ///    phone is height-and-order only (#1293). Wider grids skip it.
+  /// It used to derive the card-form geometry here as well, from a sibling map, on
+  /// every import (#1299). It no longer has to: the pick rides on the item and the
+  /// geometry it justifies was written beside it at the pick (#1400), so a layout
+  /// arriving from the pref, a snapshot or another grid's cache already carries
+  /// both. The derivation moved to the two places a grid is *created* — see
+  /// [UspWidgetSpecs.applyPickedForms].
   ///
-  /// The order is not load-bearing — the forms rule abstains from `x`/`w` on the
-  /// phone grid precisely so the two cannot contradict each other — but it is
-  /// written this way round because the lock is the older and blunter of the two,
-  /// and reading it last matches how it is described in #1293.
-  ///
-  /// Both rules are idempotent, which is what lets this run on every import
-  /// rather than only on the edit that caused it.
-  List<dynamic> _normalize(List<dynamic> layout, int slotCount) {
-    final formed = UspWidgetSpecs.applyCardForms(
-      layout,
-      slotCount,
-      _forms.at(slotCount),
-    );
-    return slotCount <= UspLayoutEnvelope.mobileSlotCount
-        ? UspWidgetSpecs.lockToFullWidth(formed, slotCount)
-        : formed;
-  }
+  /// Idempotent, which is what lets this run on every import rather than only on
+  /// the edit that caused it.
+  List<dynamic> _normalize(List<dynamic> layout, int slotCount) =>
+      slotCount <= UspLayoutEnvelope.mobileSlotCount
+          ? UspWidgetSpecs.lockToFullWidth(layout, slotCount)
+          : layout;
 
-  /// Records [forms] and publishes them to the render side.
+  /// Swaps in [controller] and re-arms everything that watches the instance.
   ///
-  /// Kept together because a pick that reaches only one of the two shows up as a
-  /// card whose box was constrained but whose content was not reduced, or the
-  /// reverse.
-  void _setForms(CardForms forms) {
-    _forms = forms;
-    _ref.read(cardFormsProvider.notifier).state = forms;
-  }
-
-  /// Swaps in [controller] and re-arms the width lock on it.
+  /// Each subscription belongs to the instance it watches, so a swap that forgets
+  /// to re-arm leaves the toolbar naming a card the grid no longer highlights, or
+  /// the cards rendering the forms of a layout nobody is looking at.
   ///
-  /// The lock belongs to the instance it watches, so a swap that forgets to
-  /// re-arm leaves the phone grid horizontally editable again.
+  /// There used to be a third, and it is the one that made this rule visible: the
+  /// width lock was re-armed here too, and forgetting it left the phone grid
+  /// horizontally editable again. The rule it enforced is now carried by the items
+  /// themselves (see [_normalize]), so a swap cannot mislay it (#1399).
   void _swapController(DashboardController controller) {
     state = controller;
-    _armWidthLock();
     _armSelectionMirror();
+    _armFormsMirror();
+  }
+
+  /// Mirrors the picks carried by the current controller's live grid into
+  /// [cardFormsProvider] (#1400).
+  ///
+  /// The render side needs the pick keyed by card id — [CardDensityHost] for the
+  /// form a card draws itself in, the edit-mode toolbar for the chip it shows as
+  /// selected — and neither can walk the layout for it. So the projection is
+  /// published from the beacon that holds the layout, which means every way a pick
+  /// can change is already covered: a pick made through [setCardForm], a
+  /// breakpoint change that swaps in another grid's cache, an import from the pref,
+  /// a cancel that puts back a snapshot, a delete that takes the pick with the
+  /// card. None of them has to remember to publish.
+  ///
+  /// That is the whole of why this is a mirror and not a store. Before #1400 this
+  /// notifier held the authoritative copy and pushed it here, and the geometry was
+  /// re-derived from it on import — so an override of this provider silently
+  /// changed which sizes were legal. Now the layout is the authority and this is a
+  /// read of it: an override changes what the cards render and nothing else.
+  ///
+  /// `startNow` is left at its default, so a swap publishes the incoming grid's
+  /// picks immediately rather than at its first mutation. Safe from the
+  /// constructor for the reason [_armSelectionMirror] documents: beacons flush
+  /// their subscriptions on a microtask.
+  void _armFormsMirror() {
+    _formsGuard?.call();
+    _formsGuard = state.layout.subscribe(_publishForms);
+  }
+
+  /// Publishes the picks [items] carry — see [CardForms].
+  ///
+  /// Writes on every layout change, including each leg of the walk in
+  /// [_exportAllBreakpoints], which briefly puts another breakpoint's items on the
+  /// beacon. Those publishes are what [CardForms]'s value equality is for: the
+  /// walk returns to the live grid, so the last write is the right one and the
+  /// equal ones in between rebuild nothing.
+  void _publishForms(List<LayoutItem> items) {
+    _ref.read(cardFormsProvider.notifier).state =
+        CardForms.of(items.map((item) => (item.id, item.extra)));
   }
 
   /// Mirrors the current controller's grid selection into
@@ -483,8 +563,8 @@ class UspSliverDashboardControllerNotifier
   /// beacon on the controller rather than Riverpod state — see
   /// [selectedCardIdProvider] for why it is bridged instead of watched directly.
   ///
-  /// Re-armed on every swap, like the width lock: the subscription belongs to the
-  /// instance it watches, and the new instance starts with nothing selected. The
+  /// Re-armed on every swap — the subscription belongs to the instance it
+  /// watches, and the new instance starts with nothing selected. The
   /// default `startNow: true` is what pushes that fresh state through, so a swap
   /// cannot leave the toolbar naming a card the grid no longer highlights.
   ///
@@ -505,56 +585,10 @@ class UspSliverDashboardControllerNotifier
         ids.length == 1 ? ids.first : null;
   }
 
-  /// Watches the current controller's layout so a horizontal change made on the
-  /// phone grid is undone before it is drawn.
-  ///
-  /// [_normalize] is applied when a layout is imported and when it is stored,
-  /// which covers everything except the case in between: a gesture writes
-  /// straight to the controller's layout beacon, and on mobile the left-hand
-  /// resize handles get past the width caps by moving `x` — see
-  /// [UspWidgetSpecs.lockItemsToFullWidth]. Nothing else re-reads the live
-  /// layout after a resize, so without this the card stays where the drag left
-  /// it until the next import.
-  ///
-  /// Subscribing is what makes the drag look inert rather than rubber-banding:
-  /// the correction is queued alongside the rebuild the same write triggers, and
-  /// runs first because this subscription is registered before any widget starts
-  /// watching. `startNow: false` because the layout as it stands has already
-  /// been normalised by whoever imported it.
-  void _armWidthLock() {
-    _widthLockGuard?.call();
-    final controller = state;
-    _widthLockGuard = controller.layout.subscribe(
-      (items) => _enforceWidthLock(controller, items),
-      startNow: false,
-    );
-  }
-
-  /// Restores the full-width geometry of [items] if a gesture broke it.
-  ///
-  /// Takes the controller it was armed on rather than reading [state]: a swap
-  /// can land between the write and this callback, and the layout being
-  /// corrected belongs to the old instance.
-  void _enforceWidthLock(
-    DashboardController controller,
-    List<LayoutItem> items,
-  ) {
-    final slotCount = controller.slotCount.value;
-    if (slotCount > UspLayoutEnvelope.mobileSlotCount) return;
-
-    final locked = UspWidgetSpecs.lockItemsToFullWidth(items, slotCount);
-    if (locked == null) return;
-
-    // Straight to the beacon rather than through importLayout: that would
-    // compact the whole grid mid-gesture, closing gaps the user is in the
-    // middle of making.
-    controller.layout.value = locked;
-  }
-
   @override
   void dispose() {
-    _widthLockGuard?.call();
     _selectionGuard?.call();
+    _formsGuard?.call();
     super.dispose();
   }
 
@@ -621,13 +655,25 @@ class UspSliverDashboardControllerNotifier
   /// the queue is still the one holding the newest controller.
   Future<void> saveLayout() {
     final controller = state;
+    _assertMembershipAligned(controller);
+    return _enqueue(() => _writeLayout(controller));
+  }
+
+  /// Fails in debug if [controller]'s layout is not safe for the walk to visit.
+  ///
+  /// Called from the two places a walk is *asked for* — [saveLayout] and
+  /// [exportAllBreakpoints] — rather than from inside [_exportAllBreakpoints]
+  /// itself, so that it fires on the caller's stack. [saveLayout]'s own walk runs
+  /// behind the write queue, where an assertion failure is caught by
+  /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
+  /// mutation that caused it.
+  void _assertMembershipAligned(DashboardController controller) {
     assert(
       _membershipIsAligned(controller),
       'A card wider than the narrowest grid reached the live layout without '
       'being aligned into the others — add it through addWidget or applyPreset, '
       'not straight to the controller. See _exportAllBreakpoints (#1393).',
     );
-    return _enqueue(() => _writeLayout(controller));
   }
 
   /// Whether [_exportAllBreakpoints] can safely walk [controller]'s layout.
@@ -639,11 +685,6 @@ class UspSliverDashboardControllerNotifier
   /// with no stack trace attached. Only the addition direction is checked — a
   /// delete reconciles safely, which is the asymmetry [_exportAllBreakpoints]
   /// documents.
-  ///
-  /// Checked here, on the caller's stack, rather than inside the walk: the walk
-  /// runs behind the write queue, where an assertion failure is caught by
-  /// [_handleLayoutChanged]'s error handler and logged instead of pointing at the
-  /// mutation that caused it.
   bool _membershipIsAligned(DashboardController controller) =>
       !controller.exportLayout().any((item) =>
           !_seededIds.contains(item['id'] as String) &&
@@ -667,12 +708,28 @@ class UspSliverDashboardControllerNotifier
   }
 
   Future<void> _writeLayout(DashboardController controller) async {
-    final envelope = UspLayoutEnvelope(
-      _exportAllBreakpoints(controller),
-      forms: _forms,
-    );
+    final envelope = UspLayoutEnvelope(_exportAllBreakpoints(controller));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(pUspSliverDashboardLayout, envelope.encode());
+  }
+
+  /// One layout per breakpoint, for a caller that has to put all of them back
+  /// later.
+  ///
+  /// This is the entry snapshot of edit mode, and the reason [restoreSnapshot]
+  /// can be a plain restore instead of a scale (#1396). It is the same walk
+  /// [_writeLayout] runs after every mutation, so it costs a session nothing new,
+  /// and it ends on the breakpoint it started on — the page does not move under
+  /// the user when they press "Edit".
+  ///
+  /// Guarded like [saveLayout], and for the same reason: the walk this hands out
+  /// is the walk that writes, so an unaligned membership reaching it produces a
+  /// snapshot with an over-wide card in the narrow grids — which a cancel would
+  /// then restore *and* store.
+  Map<int, List<dynamic>> exportAllBreakpoints() {
+    final controller = state;
+    _assertMembershipAligned(controller);
+    return _exportAllBreakpoints(controller);
   }
 
   /// Reads out one layout per breakpoint by visiting each in turn.
@@ -691,10 +748,11 @@ class UspSliverDashboardControllerNotifier
   /// `w: 12`, so one full-width card coming back on the desktop grid is stored
   /// over-wide on the two narrower ones (#1393).
   ///
-  /// So an addition has to be aligned into every breakpoint before it reaches the
-  /// live layout — which is what [_replaceController] and [_seedBreakpoints] are
-  /// for, and why [restoreSnapshot] goes through them rather than importing into
-  /// the controller it is handed.
+  /// So an addition has to be in every breakpoint at a width that grid can hold
+  /// before it reaches the live layout — which is what [_replaceController] is
+  /// for, and why [restoreSnapshot] goes through it rather than importing into the
+  /// controller it is handed. Where that width comes from is the caller's
+  /// business: [addWidget] derives it, [restoreSnapshot] has it on record.
   ///
   /// [_membershipIsAligned] is what a comment cannot do. Now that the hook runs
   /// this walk after *every* controller mutation, a future caller reaching for
@@ -743,11 +801,11 @@ class UspSliverDashboardControllerNotifier
   }
 
   /// Reset to default layout and clear persisted data.
+  ///
+  /// The picks go with it and no line here says so (#1400): they were on the items
+  /// the default layout replaces, so "reset the geometry" and "clear the picks"
+  /// are the same act rather than two that have to agree.
   Future<void> resetLayout() async {
-    // Before the swap and the seed: a pick is a constraint on the geometry, so a
-    // reset that kept the picks would hand back a "default" layout with cards
-    // still pinned and still missing their handles.
-    _setForms(CardForms.empty);
     final live = state.slotCount.value;
     _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
@@ -766,6 +824,18 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Geometry only, and only on the grid the user is looking at: the other
   /// breakpoints keep the sizes they were given there.
+  ///
+  /// The size is floored by the item's own `minW`/`minH` (#1400). This is the one
+  /// writer that can go under them: a resize *gesture* is clamped to
+  /// `[minW, maxW]` by the package, but this method is handed a size computed from
+  /// the card's spec (`UspWidgetSpecs.correctedSize`), and a spec knows nothing
+  /// about a floor a picked compact form raised. The floors used to be re-imposed
+  /// on the way in, back when [_normalize] re-derived the card-form geometry from a
+  /// sibling map on every import; now that the geometry *is* the stored value, the
+  /// guard belongs at the write that could break it rather than on every read.
+  ///
+  /// The floor only. The ceiling is the spec's, and this method's caller is
+  /// precisely the one that exists to pull a card back inside it.
   Future<void> updateItemSize(String id, int w, int h) async {
     final controller = state;
     final currentLayout = controller.exportLayout();
@@ -774,9 +844,13 @@ class UspSliverDashboardControllerNotifier
     final newLayout = currentLayout.map((item) {
       if (item['id'] == id) {
         final mutableItem = Map<String, dynamic>.from(item);
-        if (mutableItem['w'] != w || mutableItem['h'] != h) {
-          mutableItem['w'] = w;
-          mutableItem['h'] = h;
+        final minW = mutableItem['minW'];
+        final minH = mutableItem['minH'];
+        final nextW = minW is int && w < minW ? minW : w;
+        final nextH = minH is int && h < minH ? minH : h;
+        if (mutableItem['w'] != nextW || mutableItem['h'] != nextH) {
+          mutableItem['w'] = nextW;
+          mutableItem['h'] = nextH;
           changed = true;
         }
         return mutableItem;
@@ -799,18 +873,19 @@ class UspSliverDashboardControllerNotifier
   /// Put [cardId] into [density] on the grid the user is looking at (#1299).
   ///
   /// The inverse of #1232: instead of the width choosing the form, the form
-  /// chooses which widths are legal. [UspWidgetSpecs.applyCardForms] holds that
-  /// arithmetic; this method's job is the part that cannot be re-derived — which
+  /// chooses which widths are legal. [UspWidgetSpecs.withCardForm] holds that
+  /// arithmetic and writes the pick onto the item in the same copy of the same
+  /// map (#1400); this method's job is the part that cannot be re-derived — which
   /// form was picked, and the box to give back when a popup is expanded again.
   ///
   /// ## Only this breakpoint
   ///
   /// A pick is per grid, like the geometry it constrains. That is the point of it
   /// on a phone: there the user has no influence over width at all (the 4-column
-  /// grid pins `x: 0, w: cols`, and #1293's left-edge lock forbids horizontal
-  /// resize outright), so picking the form is the only control they have — and
-  /// wanting a card reduced in that one column says nothing about wanting it
-  /// reduced on a laptop.
+  /// grid pins `x`, `w`, `minW` and `maxW` alike, which is now the whole of the
+  /// lock — see [UspWidgetSpecs.lockToFullWidth]), so picking the form is the only
+  /// control they have — and wanting a card reduced in that one column says
+  /// nothing about wanting it reduced on a laptop.
   ///
   /// ## `normal` is not a pin
   ///
@@ -831,7 +906,9 @@ class UspSliverDashboardControllerNotifier
     final item = _findItem(layout, cardId);
     if (item == null) return;
 
-    final previous = _forms.choiceFor(slots, cardId);
+    // The previous pick comes off the item rather than out of a map keyed by this
+    // grid's slot count (#1400). Same answer, one fewer way to ask the wrong grid.
+    final previous = CardFormChoice.readFrom(item['extra']);
     final wasPopup = previous?.density == CardDensity.popup;
     List<dynamic> next = layout;
     final CardFormChoice choice;
@@ -855,59 +932,76 @@ class UspSliverDashboardControllerNotifier
       }
     }
 
-    _setForms(_forms.withChoice(slots, cardId, choice));
     // In place, and on this grid only: the caches for the other breakpoints are
     // what keeps their picks and geometry theirs. The grid rebuilds off the
-    // controller's own layout beacon, the path every drag already uses.
-    _importQuietly(controller, _normalize(next, slots));
+    // controller's own layout beacon, the path every drag already uses — and that
+    // beacon is also what republishes [cardFormsProvider], so the pick reaches the
+    // render side by the same write that reaches the pref.
+    _importQuietly(
+      controller,
+      _normalize(
+        UspWidgetSpecs.withCardForm(next, cardId, choice, cols: slots),
+        slots,
+      ),
+    );
     await saveLayout();
   }
 
-  /// Puts the picks and the geometry back to what they were, as one step.
+  /// Puts every breakpoint's geometry back to what it was.
   ///
   /// Cancelling edit mode reverts what was done in it, and since #1299 that
-  /// includes the forms cards were picked into. The two have to move together:
-  /// reverting the geometry alone leaves a card the user picked popup for sitting
-  /// in its old box with no handles, and reverting the pick alone leaves a 2x1
-  /// tile that is resizable again. Both are states no sequence of gestures could
-  /// have produced.
-  ///
-  /// [layout] is re-normalised rather than trusted, so a snapshot taken before
-  /// this ticket existed — or one carried across a reload — still lands as a
-  /// layout the current rules agree with.
+  /// includes the forms cards were picked into. It takes one argument to do both
+  /// (#1400): the pick is on the item, so the pair the revert has to keep together
+  /// is one value it cannot take apart. Two arguments in the wrong order used to
+  /// mean a card put back in its old box while still carrying the form the user
+  /// chose and then cancelled, or a 2x1 tile that was resizable again — states no
+  /// sequence of gestures could have produced.
   ///
   /// A revert can bring back a card the session deleted, which makes it a
   /// membership change, and those go in the way [addWidget] and [removeWidget]
-  /// put theirs in: aligned across every breakpoint first, then swapped in as a
-  /// fresh instance. Importing the snapshot into the live controller instead left
-  /// the other grids without the card and let the package place it there itself,
-  /// which for a full-width card does not terminate — see
-  /// [_exportAllBreakpoints]. Dragging a full-width card to the trash and
-  /// pressing "Cancel" froze the tab (#1393).
+  /// put theirs in: swapped in as a fresh instance carrying every breakpoint at
+  /// once. Importing the snapshot into the live controller instead left the other
+  /// grids without the card and let the package place it there itself, which for
+  /// a full-width card does not terminate — see [_exportAllBreakpoints].
+  /// Dragging a full-width card to the trash and pressing "Cancel" froze the tab
+  /// (#1393).
   ///
-  /// The other grids keep the geometry they have. Only their membership follows
-  /// the snapshot, because that is the only part of them edit mode could have
-  /// changed from here.
-  Future<void> restoreSnapshot(List<dynamic> layout, CardForms forms) async {
-    _setForms(forms);
-    final slots = state.slotCount.value;
-    final restored = _normalize(layout, slots);
-
-    final layouts = _exportAllBreakpoints(state);
-    for (final grid in layouts.keys.toList()) {
-      layouts[grid] = grid == slots
-          ? restored
-          : _normalize(
-              UspWidgetSpecs.alignMembership(
-                layouts[grid]!,
-                restored,
-                fromCols: slots,
-                toCols: grid,
-              ),
-              grid,
-            );
-    }
-
+  /// ## Why every grid is a snapshot and none is derived (#1396)
+  ///
+  /// This used to take one grid — the one the user was looking at — and rebuild
+  /// the other two from it with `UspWidgetSpecs.alignMembership`, on the grounds
+  /// that membership was the only part of them edit mode could change. That is
+  /// true of *membership* and false of everything the scale touches on the way:
+  /// aligning a 4-column grid up to 12 multiplies the coordinates, so a phone
+  /// card pinned to `x: 0, w: 4` by `lockToFullWidth` came back full-width on the
+  /// desktop — and `minW: 4` came back as `minW: 12`, which is a constraint the
+  /// 8-column grid cannot hold at all (`layout_engine.dart`'s
+  /// `assert(currentL.minW <= cols)`). Cancelling a phone-side delete either
+  /// rewrote the desktop layout or crashed, depending on the card.
+  ///
+  /// A grid the user never opened has nothing to derive from. [enterEditMode]
+  /// captures all three, and putting all three back is both simpler and the only
+  /// answer that is right by construction. `alignMembership` stays where a
+  /// derivation is genuinely all there is: [_seedBreakpoints], for a breakpoint
+  /// that was never stored.
+  ///
+  /// A snapshot missing a grid is a caller bug, and the assert is the whole
+  /// defence — [exportAllBreakpoints] is the only way to make one, and it always
+  /// fills all three. What release does without it is worth knowing rather than
+  /// guarding: [_replaceController] falls back to `const []` for the desktop key
+  /// only, so a missing 8- or 4-column grid is *derived* from desktop by
+  /// [_seedBreakpoints] — exactly the behaviour this ticket replaced — while a
+  /// missing desktop grid wipes the dashboard. A fallback here could only make one
+  /// of those two cases better, and would be a branch no test can reach.
+  Future<void> restoreSnapshot(Map<int, List<dynamic>> layouts) async {
+    assert(
+      UspLayoutEnvelope.persistedSlotCounts
+          .every((slots) => layouts[slots] != null),
+      'restoreSnapshot needs one layout per persisted breakpoint. '
+      'Capture with exportAllBreakpoints().',
+    );
+    // Not normalised here: every grid handed to [_replaceController] is imported
+    // through [_seedBreakpoints], which normalises each one.
     _replaceController(layouts);
     await saveLayout();
   }
@@ -1012,14 +1106,15 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Removal is global: which cards the dashboard shows is not a per-breakpoint
   /// choice, so a card deleted on a phone is gone on a laptop too.
+  ///
+  /// The card's form pick goes with it on every grid, because it is on the item
+  /// being filtered out of each one (#1400). It used to take a second call to a
+  /// second store, whose absence would have left the pick to reapply itself if the
+  /// card were ever added back — arriving pre-collapsed for no visible reason.
   Future<void> removeWidget(String id) async {
     final layouts = _exportAllBreakpoints(state);
     final desktopLayout = layouts[_desktopSlots] ?? const [];
     if (!desktopLayout.any((item) => (item as Map)['id'] == id)) return;
-
-    // A pick outliving the card it was made for would silently reapply itself if
-    // the card were added back, arriving pre-collapsed for no visible reason.
-    _setForms(_forms.withoutCard(id));
 
     _replaceController({
       for (final entry in layouts.entries)

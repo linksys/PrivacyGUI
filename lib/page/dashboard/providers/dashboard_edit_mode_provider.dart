@@ -1,8 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
-import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -23,35 +21,38 @@ final dashboardEditModeProvider =
 /// so a second exit — a route guard and a button press racing, or a logout
 /// arriving after a commit — republishes a state identical to the one already
 /// held; on identity that is a rebuild of every listener for no change. And
-/// [layoutSnapshot] is a `List<Map<String, dynamic>>` freshly built by
-/// `exportLayout()` on every capture, which no two calls could ever share an
-/// identity for. [Equatable] compares it deeply.
+/// [layoutSnapshot] is a map of lists freshly built on every capture, which no
+/// two calls could ever share an identity for. [Equatable] compares it deeply.
 class DashboardEditState extends Equatable {
   final bool isEditing;
-  final List<Map<String, dynamic>>? layoutSnapshot;
-  final UspLayoutPreferences? prefsSnapshot;
 
-  /// The forms cards were picked into when edit mode opened (#1299).
+  /// The geometry of every breakpoint when edit mode opened, keyed by slot count.
   ///
-  /// A third snapshot alongside the geometry and the prefs, because a pick is
-  /// editable in edit mode too — the toolbar's form picker writes them — and a
-  /// cancel that reverted only the geometry would leave the two disagreeing.
-  /// Captured in the same assignment as [layoutSnapshot], so the two are non-null
-  /// together.
-  final CardForms? formsSnapshot;
+  /// All of them, not just the one on screen (#1396): a cancel has to put back
+  /// the grids the user never opened, and those cannot be re-derived from the one
+  /// they were looking at — scaling a phone grid up to 12 columns invents
+  /// coordinates that were never theirs. See
+  /// [UspSliverDashboardControllerNotifier.restoreSnapshot].
+  /// Geometry only, and that includes the card-form picks (#1400).
+  ///
+  /// There used to be a third snapshot here for those, because a pick is editable
+  /// in edit mode too — the toolbar's form picker writes them — and a cancel that
+  /// reverted only the geometry would leave the two disagreeing. The pick now
+  /// travels on the grid item it shaped, so it is inside these layouts and cannot
+  /// be reverted without them.
+  final Map<int, List<dynamic>>? layoutSnapshot;
+  final UspLayoutPreferences? prefsSnapshot;
 
   const DashboardEditState({
     this.isEditing = false,
     this.layoutSnapshot,
     this.prefsSnapshot,
-    this.formsSnapshot,
   });
 
   DashboardEditState copyWith({
     bool? isEditing,
-    List<Map<String, dynamic>>? layoutSnapshot,
+    Map<int, List<dynamic>>? layoutSnapshot,
     UspLayoutPreferences? prefsSnapshot,
-    CardForms? formsSnapshot,
     bool clearSnapshots = false,
   }) {
     return DashboardEditState(
@@ -60,14 +61,11 @@ class DashboardEditState extends Equatable {
           clearSnapshots ? null : (layoutSnapshot ?? this.layoutSnapshot),
       prefsSnapshot:
           clearSnapshots ? null : (prefsSnapshot ?? this.prefsSnapshot),
-      formsSnapshot:
-          clearSnapshots ? null : (formsSnapshot ?? this.formsSnapshot),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [isEditing, layoutSnapshot, prefsSnapshot, formsSnapshot];
+  List<Object?> get props => [isEditing, layoutSnapshot, prefsSnapshot];
 }
 
 class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
@@ -127,19 +125,25 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     // instead of resuming and stranding the controller in edit mode.
     if (!state.isEditing) return;
 
-    final controller = ref.read(uspSliverDashboardControllerProvider);
-    final layoutSnapshot = controller.exportLayout();
+    // Every breakpoint, not the live one (#1396). The walk visits each grid and
+    // returns to the one on screen, so the page does not move under the user.
+    final layoutSnapshot = ref
+        .read(uspSliverDashboardControllerProvider.notifier)
+        .exportAllBreakpoints();
     final prefsSnapshot = ref.read(uspLayoutPreferencesProvider);
-    final formsSnapshot = ref.read(cardFormsProvider);
 
     state = DashboardEditState(
       isEditing: true,
       layoutSnapshot: layoutSnapshot,
       prefsSnapshot: prefsSnapshot,
-      formsSnapshot: formsSnapshot,
     );
 
-    controller.setEditMode(true);
+    // Read here rather than held from before the walk above: edit mode is a flag
+    // on the instance, and the one rule this file has about instances is that a
+    // stale one puts the flag on a controller nobody renders — see the `finally`
+    // in [_exitEditMode]. Nothing swaps between these two lines today; not keeping
+    // a reference is what makes that a non-question rather than an invariant.
+    ref.read(uspSliverDashboardControllerProvider).setEditMode(true);
   }
 
   /// Exit edit mode, keeping the current layout.
@@ -188,13 +192,12 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
       if (revert) {
         final layoutSnapshot = state.layoutSnapshot;
-        final formsSnapshot = state.formsSnapshot;
-        if (layoutSnapshot != null && formsSnapshot != null) {
-          // One call: the picks and the geometry they justify have to be put back
-          // together — see [UspSliverDashboardControllerNotifier.restoreSnapshot].
+        if (layoutSnapshot != null) {
+          // One argument, because the picks are inside these layouts — see
+          // [UspSliverDashboardControllerNotifier.restoreSnapshot].
           await ref
               .read(uspSliverDashboardControllerProvider.notifier)
-              .restoreSnapshot(layoutSnapshot, formsSnapshot);
+              .restoreSnapshot(layoutSnapshot);
         }
         if (state.prefsSnapshot != null) {
           await ref

@@ -5,30 +5,48 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 
 /// #1299 — the inversion, at the seam where a stored pick becomes geometry.
 ///
 /// #1232 runs **width → density**. This ticket runs **density → the sizes that
-/// are legal**, and [UspWidgetSpecs.applyCardForms] is the whole of that arrow:
-/// a pure function from (layout, grid, picks) to a layout whose `isResizable`,
-/// `minW` and `minH` say what the chosen form allows. Everything else in the
-/// feature — the panel, the persistence, the render scope — only moves the pick
-/// around.
+/// are legal**, and `UspWidgetSpecs._applyCardForm` is the whole of that arrow: a
+/// function from (item, grid, pick) to a box whose `isResizable`, `minW` and
+/// `minH` say what the chosen form allows. Everything else in the feature — the
+/// panel, the persistence, the render scope — only moves the pick around.
+///
+/// #1400 changed the doors into that arrow, not the arms behind it. A pick is
+/// *made* through [UspWidgetSpecs.withCardForm], which writes the pick and the
+/// geometry it justifies into one copy of one item map; a grid nobody stored has
+/// its picks re-derived by [UspWidgetSpecs.applyPickedForms]. There is no third
+/// door — a stored grid's geometry was written at that grid's own column count and
+/// travels with the pick on the item, so an import re-derives nothing. The
+/// `(slotCount, cardId)`-keyed map this file used to hand in as an argument is
+/// gone, and with it every way the two halves could disagree.
 ///
 /// ## Mutation table
 ///
-/// Each row is one edit to `usp_widget_specs.dart` — except 19-21, which edit the
-/// models in `card_form_choice.dart` — applied to the real file and run against
-/// this file *and* `usp_card_form_persistence_test.dart` (some of the arithmetic is
-/// only observable once a pick has been through the pref). The counts are what the
-/// run actually reported, not what was predicted; where a mutation is killed by
-/// more than three tests the column names the closest ones.
-/// Re-taken after the suite grew the render, panel and gate files — per §2.6h item
-/// 3, a ledger is a per-revision measurement, and four of these counts moved.
+/// Each row is one edit to `usp_widget_specs.dart` — except 19-21 and 23-25, which
+/// edit the models in `card_form_choice.dart` — applied to the real file and run
+/// against this file *and* `usp_card_form_persistence_test.dart` (some of the
+/// arithmetic is only observable once a pick has been through the pref). The counts
+/// are what the run actually reported, not what was predicted; where a mutation is
+/// killed by more than three tests the column names the closest ones.
+///
+/// Rows 2-18 and 22 are #1321's measurement and were not re-taken for #1400: the
+/// ticket moved which function the arms are reached through, so each of those
+/// mutations is still writable, in the same arm, and still lands in the same tests.
+/// Row 1 had to be rewritten — the argument it guarded no longer exists — and rows
+/// 23-26 are new; those five were measured against this revision, and for them the
+/// count is *this* file's, with the persistence file's written as `(+n there)`.
+/// Split out because the two files are not interchangeable: row 23 dies 7 times
+/// here on the reader alone and 14 more once a pick has to survive a pref, while
+/// row 24 dies twice here and not once there — nothing that goes through the pref
+/// has a second `extra` payload to lose.
 ///
 /// | # | mutation | killed by |
 /// |---|---|---|
-/// | 1 | `if (choices.isEmpty) return layout;` → `return [...layout];` | a layout with no picks is the same object |
+/// | 1 | `applyPickedForms` drops its `if (choice == null) continue;`, treating a card with no pick as normal | 2 — a layout with no picks is the same object; a card with no pick keeps the size the user gave it (+1 there: the AC 6 walk) |
 /// | 2 | drop `map['isResizable'] = false` from the popup arm | 7, incl. popup refuses resize at the source |
 /// | 3 | `popupColumns` 2 → 6 | 5, incl. collapses to a 2x1 tile on the wide grids |
 /// | 4 | `_pinSpan` sets `w`/`h` but writes no caps | 3, incl. states its size in every field that describes it |
@@ -47,9 +65,29 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 /// | 17 | `cardsWithoutPopupForm` emptied | 3, incl. offers popup to every card built through the template |
 /// | 18 | `selectableForms` returns `[normal]` instead of `const []` when nothing else applies | stats_panel offers no form at all |
 /// | 19 | `CardForms.props` → `[]` (equality on type alone) | a pick that differs anywhere is a different value |
-/// | 20 | `CardForms` drops `Equatable` (back to identity) | a rebuilt CardForms equals the one it was rebuilt from |
+/// | 20 | `CardForms` drops `Equatable` (back to identity) | a projection rebuilt from the pref equals the live one |
 /// | 21 | `CardFormChoice.props` → `[density]` | the restore size is part of what makes a choice equal |
 /// | 22 | compact's `specMinW` reads the raw 12-column figure instead of `_scaleFromTwelfths(constraints.minColumns, …)` | so is the spec's own floor, which is also written in twelfths |
+/// | 23 | `readFrom` reads `extra` itself instead of `extra[extraKey]` (the pick unnested) | 7, incl. a pick is written onto the item it shapes (+14 there) |
+/// | 24 | `writeInto` returns `{extraKey: toJson()}`, dropping the rest of `extra` | 2 — a payload another feature owns survives a pick; it is nested under a key of its own |
+/// | 25 | `CardForms.of` keeps every item, defaulting a card with no pick to normal | a card with no pick is absent from the projection, not normal in it (+2 there) |
+/// | 26 | compact arm drops the `_applySpecBounds` restore and only raises the floors | reached from popup, it restores the ceiling before raising the floor (+1 there) |
+///
+/// ### Row 26 was a live bug, not a hypothetical (#1400 review)
+///
+/// The arms are applied one on top of another — a card goes popup, then compact —
+/// and only the `normal` arm said so in its own comment. Compact raised the floors
+/// on whatever caps it found, and `_applyFloors` lifts a cap no further than the
+/// floor it just wrote, so popup → compact left `maxW: 4.0` on a card whose spec
+/// allows 8: capped at its own floor, un-widenable, with the pick and the geometry
+/// perfectly consistent about it. The only way out was picking `normal` and
+/// re-picking compact.
+///
+/// It predates this ticket — the arm bodies are #1299's — and #1400 is what made it
+/// reachable-and-permanent rather than reachable-and-healed: while the geometry was
+/// re-derived from a sibling map on every import, the same wrong figure was simply
+/// recomputed each boot; now it is what the pref holds. The transition tests were
+/// the gap, and both files had one only for popup → normal.
 ///
 /// ### The survivor that stopped surviving (#1321)
 ///
@@ -64,6 +102,17 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 /// `dhcp_reservations` is that card — `minColumns: 4`, so on the 8-column grid its
 /// spec floor and the compact floor agree at 3 only if both are scaled — and the
 /// test named in row 22 is the one that was owed. The survivor list is empty.
+///
+/// ### Two claims that moved out of this file (#1400)
+///
+/// `CardForms` used to be a stored, breakpoint-keyed value with JSON of its own,
+/// and two of its guarantees were asserted here: that the picks round-trip through
+/// the pref, and that an install whose only pick was an explicit normal does not
+/// stamp the payload unreadable to older builds (`hasFormBeyondNormal`). Both are
+/// the envelope's now — the picks ride inside `layouts`, and the stamp is computed
+/// by walking the items — and both are asserted in `usp_layout_envelope_test.dart`.
+/// Neither claim was dropped; what is left here is what `CardForms` still is, a
+/// projection of the live grid's items.
 void main() {
   const desktop = UspLayoutEnvelope.desktopSlotCount;
   const tablet = UspLayoutEnvelope.tabletSlotCount;
@@ -80,6 +129,7 @@ void main() {
     double maxW = 8.0,
     int minH = 2,
     double maxH = 6.0,
+    CardFormChoice? pick,
   }) =>
       {
         'id': id,
@@ -91,6 +141,7 @@ void main() {
         'maxW': maxW,
         'minH': minH,
         'maxH': maxH,
+        if (pick != null) 'extra': pick.writeInto(null),
       };
 
   Map<String, dynamic> applyTo(
@@ -98,11 +149,19 @@ void main() {
     required CardDensity density,
     required int cols,
   }) =>
-      UspWidgetSpecs.applyCardForms(
+      UspWidgetSpecs.withCardForm(
         [subject],
-        cols,
-        {subject['id'] as String: CardFormChoice(density: density)},
+        subject['id'] as String,
+        CardFormChoice(density: density),
+        cols: cols,
       ).single as Map<String, dynamic>;
+
+  /// The picks a grid holding [layout] publishes, built the way
+  /// `UspSliverDashboardControllerNotifier` builds it from its live items.
+  CardForms formsOf(List<dynamic> layout) => CardForms.of(layout.map((item) {
+        final live = LayoutItem.fromMap((item as Map).cast<String, dynamic>());
+        return (live.id, live.extra);
+      }));
 
   // ---------------------------------------------------------------------------
   // The no-pick path has to stay exactly where it was
@@ -112,22 +171,41 @@ void main() {
       final layout = [item('device_info'), item('lan_info')];
 
       expect(
-        UspWidgetSpecs.applyCardForms(layout, desktop, const {}),
+        UspWidgetSpecs.applyPickedForms(layout, desktop),
         same(layout),
-        reason: 'Returning a copy would be harmless in itself, but _normalize '
-            'uses identity to decide whether the desktop grid needs re-importing '
-            'at all, and an unconditional re-import compacts the layout on every '
-            'boot. Byte-identical for an install with no picks is the guarantee.',
+        reason: 'An install that never opened the control gets byte-identical '
+            'output from every derivation the dashboard runs, exactly as it did '
+            'before #1299 — no copies, no restated caps.',
       );
+    });
+
+    test('a card with no pick keeps the size the user gave it', () {
+      // The behavioural half of the row above. The normal arm is a *restore*, so
+      // running it on a card nobody picked for is not a harmless no-op: it pulls
+      // the card inside its spec bounds. device_info declares maxColumns: 8, so a
+      // card dragged to 10 would be snapped back to 8 by every scale.
+      final widened = item('device_info', w: 10, maxW: 12.0);
+
+      final result =
+          UspWidgetSpecs.applyPickedForms([widened], desktop).single as Map;
+
+      expect([result['w'], result['maxW']], [10, 12.0],
+          reason:
+              '"No pick" has to mean untouched, not "treated as normal". An '
+              'absent pick means the width decides the form (#1232), and the '
+              'width is the user\'s.');
     });
 
     test('a card nobody picked a form for is passed through untouched', () {
       final untouched = item('lan_info');
       final layout = [item('device_info'), untouched];
 
-      final result = UspWidgetSpecs.applyCardForms(layout, desktop, {
-        'device_info': const CardFormChoice(density: CardDensity.popup),
-      });
+      final result = UspWidgetSpecs.withCardForm(
+        layout,
+        'device_info',
+        const CardFormChoice(density: CardDensity.popup),
+        cols: desktop,
+      );
 
       expect(result[1], same(untouched),
           reason: 'A pick is per card. Rewriting the neighbours would make one '
@@ -138,13 +216,17 @@ void main() {
       final layout = [item('device_info')];
 
       expect(
-        UspWidgetSpecs.applyCardForms(layout, desktop, {
-          'a_card_from_a_previous_session':
-              const CardFormChoice(density: CardDensity.popup),
-        }),
+        UspWidgetSpecs.withCardForm(
+          layout,
+          'a_card_from_a_previous_session',
+          const CardFormChoice(density: CardDensity.popup),
+          cols: desktop,
+        ),
         [layout.single],
-        reason: 'Picks outlive deletions in a stale pref, and the import path '
-            'must not throw on one.',
+        reason:
+            'A pick can no longer outlive its card in the pref — it is *on* '
+            'the card (#1400) — but the caller is a notifier reading a live grid, '
+            'and a card can be deleted between the tap and the write.',
       );
     });
   });
@@ -211,8 +293,8 @@ void main() {
     });
 
     test('the mobile width lock is a no-op on a popup tile', () {
-      // The order of the two rules must not be load-bearing: whatever
-      // applyCardForms writes for mobile has to be what the lock would write.
+      // The order of the two rules must not be load-bearing: whatever the popup
+      // arm writes for mobile has to be what the lock would write.
       final popped = applyTo(item('device_info', w: 4),
           density: CardDensity.popup, cols: mobile);
 
@@ -316,6 +398,26 @@ void main() {
               '(§2.4).');
     });
 
+    test('reached from popup, it restores the ceiling before raising the floor',
+        () {
+      // Each arm has to be independent of the arm before it, which is the one
+      // property the arms do not get for free: popup pins by writing the caps
+      // *down* to 2x1, and a floor is a raise, so compact applied on top of a
+      // popup box would lift maxW no further than its own new floor. The card
+      // would come out of popup capped at 4 of 12 columns, with no gesture that
+      // could widen it and nothing on the import path to repair it (#1400).
+      final pinned = applyTo(item('device_info', maxW: 8.0, maxH: 6.0),
+          density: CardDensity.popup, cols: desktop);
+      final compacted =
+          applyTo(pinned, density: CardDensity.compact, cols: desktop);
+
+      expect(compacted['maxW'], 8.0);
+      expect(compacted['maxH'], 6.0);
+      expect(compacted['minW'], UspWidgetSpecs.compactMinColumns,
+          reason:
+              'The floor is still raised; it is the ceiling that came back.');
+    });
+
     test('keeps the height floor each card already declares when it is higher',
         () {
       // connected_devices declares minHeightRows: 3.
@@ -392,6 +494,67 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // The pick and the geometry it justifies are one value (#1400)
+  // ---------------------------------------------------------------------------
+  group('a pick and its geometry are written together', () {
+    test('a pick is written onto the item it shapes', () {
+      final popped = applyTo(item('device_info', w: 6, h: 3),
+          density: CardDensity.popup, cols: desktop);
+
+      expect(CardFormChoice.readFrom(popped['extra']),
+          const CardFormChoice(density: CardDensity.popup));
+      expect([popped['w'], popped['h']], [2, 1],
+          reason: 'One copy of one map carries both halves, so whatever '
+              'exportLayout, a snapshot or the undo history takes carries the '
+              'pick and the box it justifies or neither. #1299 wrote them to two '
+              'stores and re-derived one from the other on every import to keep '
+              'them in step.');
+    });
+
+    test('the pick outlives the geometry it wrote, so a re-pick can undo it',
+        () {
+      final popped = applyTo(item('device_info', w: 6, h: 3),
+          density: CardDensity.popup, cols: desktop);
+
+      // What `setCardForm` reads to hand `restoreW`/`restoreH` back on the way
+      // out of popup: the previous pick comes off the item, not out of a map
+      // keyed by this grid's slot count.
+      final reading = CardFormChoice.readFrom(popped['extra']);
+
+      expect(reading?.density, CardDensity.popup);
+      expect(popped['isResizable'], false,
+          reason: 'With the handles gone the item map is the only record of '
+              'what the card was, which is why the pick has to be readable back '
+              'off it rather than inferred from the 2x1 box.');
+    });
+
+    test('a grid nobody stored derives the geometry from the pick it carries',
+        () {
+      final stored = UspWidgetSpecs.withCardForm(
+        [item('device_info')],
+        'device_info',
+        const CardFormChoice(density: CardDensity.popup, restoreW: 6),
+        cols: desktop,
+      );
+
+      final phone =
+          UspWidgetSpecs.scaleLayout(stored, desktop, mobile).single as Map;
+
+      expect([phone['w'], phone['h']], [mobile, 1],
+          reason: 'A scale is proportional and a pin is not: scaled, the 2x1 '
+              'desktop tile arrives 0 or 1 columns wide on a phone. The pick is '
+              'what the derived grid reads, so it gets the phone\'s own popup '
+              'geometry — a short full-width bar.');
+      expect(CardFormChoice.readFrom(phone['extra']),
+          const CardFormChoice(density: CardDensity.popup, restoreW: 6),
+          reason: 'And the pick rides into the derived grid intact, restore '
+              'size included. #1299 keyed the picks by slot count, so a '
+              'breakpoint nobody had stored had no picks at all and rendered '
+              'every card in the form its width implied.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Which cards get a control at all
   // ---------------------------------------------------------------------------
   group('selectableForms', () {
@@ -460,111 +623,103 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // What gets written down
+  // What gets written down, and where a reader finds it again
   // ---------------------------------------------------------------------------
-  group('CardForms round-trips through JSON', () {
-    test('a pick per breakpoint survives encode and decode', () {
-      const forms = CardForms({
-        12: {'device_info': CardFormChoice(density: CardDensity.normal)},
-        4: {
-          'device_info': CardFormChoice(
-              density: CardDensity.popup, restoreW: 4, restoreH: 3),
-        },
-      });
+  group('a pick rides inside the item it was made for', () {
+    test('it survives the trip through the pref', () {
+      const choice =
+          CardFormChoice(density: CardDensity.popup, restoreW: 4, restoreH: 3);
+      final stored = item('device_info', pick: choice);
 
-      final decoded =
-          CardForms.fromJson(jsonDecode(jsonEncode(forms.toJson())));
+      final reloaded = jsonDecode(jsonEncode(stored)) as Map;
 
-      expect(decoded.densityFor(12, 'device_info'), CardDensity.normal);
-      expect(
-          decoded.choiceFor(4, 'device_info'),
-          const CardFormChoice(
-              density: CardDensity.popup, restoreW: 4, restoreH: 3),
+      expect(CardFormChoice.readFrom(reloaded['extra']), choice,
           reason:
               'The restore size is the only thing standing between popup and '
               'a one-way door, so it has to be as durable as the pick itself.');
     });
 
-    test('an unreadable pick is dropped, not fatal', () {
-      final decoded = CardForms.fromJson({
-        '12': {
-          'device_info': {'density': 'a_form_from_the_future'},
-          'lan_info': {'density': 'popup'},
-        },
-        'not_a_grid': {
-          'device_info': {'density': 'popup'}
-        },
-      });
+    test('it is nested under a key of its own', () {
+      final extra = const CardFormChoice(density: CardDensity.popup)
+          .writeInto({'someOtherFeature': 1});
 
-      expect(decoded.densityFor(12, 'device_info'), isNull);
-      expect(decoded.densityFor(12, 'lan_info'), CardDensity.popup,
+      expect(extra.keys, containsAll(['someOtherFeature', 'cardForm']));
+      expect(extra[CardFormChoice.extraKey], isA<Map>(),
+          reason:
+              'Spread across `extra` instead, the next feature that needs a '
+              'per-item payload would have to know this one exists — and a key '
+              'collision would be read as a density.');
+    });
+
+    test('a payload another feature owns survives a pick', () {
+      var extra = const CardFormChoice(density: CardDensity.popup)
+          .writeInto({'k': 'v'});
+      extra =
+          const CardFormChoice(density: CardDensity.compact).writeInto(extra);
+
+      expect(extra['k'], 'v',
+          reason: '`extra` is the item\'s, not this feature\'s. A pick that '
+              'replaced the whole map would silently delete whatever else was '
+              'stored on the card.');
+      expect(CardFormChoice.readFrom(extra)?.density, CardDensity.compact,
+          reason: 'And a second pick replaces the first rather than nesting '
+              'beside it.');
+    });
+
+    test('an unreadable pick is dropped, not fatal', () {
+      expect(
+          CardFormChoice.readFrom({
+            CardFormChoice.extraKey: {'density': 'a_form_from_the_future'}
+          }),
+          isNull);
+      expect(
+          CardFormChoice.readFrom({CardFormChoice.extraKey: 'popup'}), isNull,
+          reason: 'A choice is a map; a bare string is not one to read fields '
+              'off.');
+      expect(CardFormChoice.readFrom('cardForm'), isNull,
+          reason: 'And `extra` itself can be anything — it is a free-form '
+              'payload, and this is not the only feature allowed to write it.');
+      expect(CardFormChoice.readFrom(null), isNull);
+      expect(
+          CardFormChoice.readFrom({
+            CardFormChoice.extraKey: {'density': 'popup'}
+          })?.density,
+          CardDensity.popup,
           reason: 'The geometry stored beside these picks is the user\'s real '
               'work. Losing one density pick is a far smaller loss than '
               'resetting a dashboard they arranged.');
     });
 
-    test('an empty breakpoint is not written down', () {
-      final forms = CardForms.empty
-          .withChoice(12, 'device_info',
-              const CardFormChoice(density: CardDensity.popup))
-          .withChoice(12, 'device_info', null);
+    test('a pick cannot outlive the card it was made for', () {
+      final layout = UspWidgetSpecs.withCardForm(
+        [item('device_info'), item('lan_info')],
+        'device_info',
+        const CardFormChoice(density: CardDensity.popup),
+        cols: desktop,
+      );
 
-      expect(forms.isEmpty, isTrue);
-      expect(forms.toJson(), isEmpty,
-          reason: 'An install that picked a form and then undid it should be '
-              'indistinguishable on disk from one that never picked.');
+      final deleted =
+          layout.where((item) => (item as Map)['id'] != 'device_info').toList();
+
+      expect(formsOf(deleted).byCard['device_info'], isNull,
+          reason: 'Structural now, where #1299 had to prune a sibling map by '
+              'hand (`withoutCard`). Membership is not per breakpoint — deleting '
+              'a card deletes the card — so a surviving pick would silently apply '
+              'a form from a previous session the moment the card was re-added.');
+      expect(formsOf(layout).densityFor('device_info'), CardDensity.popup);
     });
 
-    test('a pick does not outlive the card it was made for', () {
-      final forms = CardForms.empty
-          .withChoice(12, 'device_info',
-              const CardFormChoice(density: CardDensity.popup))
-          .withChoice(4, 'device_info',
-              const CardFormChoice(density: CardDensity.compact))
-          .withChoice(
-              4, 'lan_info', const CardFormChoice(density: CardDensity.popup));
+    test('a card with no pick is absent from the projection, not normal in it',
+        () {
+      final forms = formsOf([item('device_info'), item('lan_info')]);
 
-      final pruned = forms.withoutCard('device_info');
-
-      expect(pruned.densityFor(12, 'device_info'), isNull);
-      expect(pruned.densityFor(4, 'device_info'), isNull);
-      expect(pruned.densityFor(4, 'lan_info'), CardDensity.popup,
-          reason: 'Membership is not per breakpoint — deleting a card deletes '
-              'the card — so a surviving pick would silently apply a form from a '
-              'previous session the moment the card was re-added.');
-    });
-
-    test('only popup and compact count as shaping the geometry', () {
-      // What `UspLayoutEnvelope.version` is a claim about. An explicit normal is
-      // a pick — it out-ranks the width-derived form — but the geometry it writes
-      // is the spec's own bounds with `isResizable` on, which is what a build
-      // carrying no card-form rule writes for itself. Treating it as shaping
-      // stamped the payload unreadable-to-older-builds for the rest of the
-      // install's life the first time anyone tried popup and undid it.
-      expect(CardForms.empty.hasFormBeyondNormal, isFalse);
-
-      const onlyNormal = CardForms({
-        12: {'device_info': CardFormChoice(density: CardDensity.normal)},
-        4: {'lan_info': CardFormChoice(density: CardDensity.normal)},
-      });
-      expect(onlyNormal.hasFormBeyondNormal, isFalse);
-      expect(onlyNormal.isNotEmpty, isTrue,
-          reason: 'Still a pick: it is written down and it still decides the '
-              'form. Only the version stamp treats it as a non-event.');
-
-      for (final shaping in [CardDensity.popup, CardDensity.compact]) {
-        expect(
-            CardForms({
-              12: {
-                'device_info':
-                    const CardFormChoice(density: CardDensity.normal),
-                'lan_info': CardFormChoice(density: shaping),
-              },
-            }).hasFormBeyondNormal,
-            isTrue,
-            reason: 'One ${shaping.name} card is enough — the stamp describes '
-                'the whole payload, not one entry.');
-      }
+      expect(forms.densityFor('device_info'), isNull);
+      expect(forms.isEmpty, isTrue,
+          reason:
+              'Absent means "the width decides" (#1232); an explicit normal '
+              'pins the card to normal at every width. A projection that '
+              'defaulted the first to the second would pin all seventeen cards '
+              'on an install that never touched the control.');
     });
   });
 
@@ -572,58 +727,70 @@ void main() {
   // Both models are Riverpod state, so equality is behaviour
   // ---------------------------------------------------------------------------
   group('two sets of picks that say the same thing are the same value', () {
-    test('a rebuilt CardForms equals the one it was rebuilt from', () {
-      const original = CardForms({
-        12: {'device_info': CardFormChoice(density: CardDensity.popup)},
-        4: {'lan_info': CardFormChoice(density: CardDensity.compact)},
-      });
+    test('a projection rebuilt from the pref equals the live one', () {
+      final layout = UspWidgetSpecs.withCardForm(
+        UspWidgetSpecs.withCardForm(
+          [item('device_info'), item('lan_info')],
+          'device_info',
+          const CardFormChoice(density: CardDensity.popup, restoreW: 6),
+          cols: desktop,
+        ),
+        'lan_info',
+        const CardFormChoice(density: CardDensity.compact),
+        cols: desktop,
+      );
 
-      final rebuilt =
-          CardForms.fromJson(jsonDecode(jsonEncode(original.toJson())) as Map);
+      final live = formsOf(layout);
+      final reloaded = formsOf(jsonDecode(jsonEncode(layout)) as List);
 
-      expect(rebuilt, original,
+      expect(reloaded, live,
           reason:
-              'This is the value of a StateProvider, and a reload, a revert '
-              'and a preset swap each republish a freshly built instance. On '
-              'identity alone every one of those would rebuild every card that '
-              'reads its density, for picks that did not move.');
-      expect(rebuilt.hashCode, original.hashCode,
-          reason: 'The nested map is compared deeply, so it has to be hashed '
-              'deeply too — Map.hashCode is identity, which would put two equal '
-              'values in different buckets.');
+              'This is the value of a StateProvider, and it is republished on '
+              'every write to the layout beacon — which includes each leg of the '
+              'persistence walk\'s visit to the other breakpoints. On identity '
+              'alone every one of those would rebuild every card that reads its '
+              'density, for picks that did not move.');
+      expect(reloaded.hashCode, live.hashCode,
+          reason: 'The map is compared deeply, so it has to be hashed deeply '
+              'too — Map.hashCode is identity, which would put two equal values '
+              'in different buckets.');
     });
 
     test('a pick that differs anywhere is a different value', () {
       const base = CardForms({
-        12: {'device_info': CardFormChoice(density: CardDensity.popup)},
+        'device_info': CardFormChoice(density: CardDensity.popup),
       });
 
       expect(
         base,
         isNot(const CardForms({
-          12: {'device_info': CardFormChoice(density: CardDensity.compact)},
+          'device_info': CardFormChoice(density: CardDensity.compact),
         })),
         reason: 'A different form on the same card.',
       );
       expect(
         base,
         isNot(const CardForms({
-          8: {'device_info': CardFormChoice(density: CardDensity.popup)},
+          'lan_info': CardFormChoice(density: CardDensity.popup),
         })),
-        reason: 'The same form on a different grid. The breakpoint is part of '
-            'the value — that is the whole of #1294 — so equality that ignored '
-            'the key would let a phone pick pass for a desktop one.',
+        reason: 'The same form on another card. The key is part of the value, '
+            'or a rebuild that moved a pick from one card to another would '
+            'republish nothing.',
       );
       expect(
         base,
         isNot(const CardForms({
-          12: {
-            'device_info': CardFormChoice(density: CardDensity.popup),
-            'lan_info': CardFormChoice(density: CardDensity.popup),
-          },
+          'device_info': CardFormChoice(density: CardDensity.popup),
+          'lan_info': CardFormChoice(density: CardDensity.popup),
         })),
         reason: 'A pick added for another card.',
       );
+      // The per-grid half of #1294 is not asserted here any more, because there
+      // is no key left to get wrong: this is a projection of one grid's items,
+      // and each slot count has its own cached list of them. That the phone
+      // grid's pick stays on the phone grid is a property of the stored payload
+      // now, asserted in usp_layout_envelope_test.dart and
+      // usp_card_form_persistence_test.dart.
     });
 
     test('the restore size is part of what makes a choice equal', () {

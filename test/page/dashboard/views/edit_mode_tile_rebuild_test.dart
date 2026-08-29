@@ -4,10 +4,15 @@
 /// `sliver_dashboard` 2.3.1 stopped rebuilding tile content when edit mode
 /// toggles: *"toggling is now nearly free — only the edit chrome rebuilds. If a
 /// tile's content depends on edit mode, read it reactively inside the tile."*
-/// `DashboardItem` caches what `itemBuilder` returned (`_cachedWidget ??=`,
+/// `DashboardItem` caches what the item builder returned (`_cachedWidget ??=`,
 /// `dashboard_item_widget.dart:487`) and invalidates it only on a content-signature
 /// or dimension change (`:239`) — despite a stale comment at `:190` still claiming
 /// the global edit mode is one of the triggers. It is not, and 0.9.1's rebuild was.
+///
+/// Since #1401 the page ships `itemBreakpointBuilder`, which narrows the second
+/// trigger rather than widening it: a pixel-dimension change invalidates only if
+/// the *resolved breakpoint* transitions with it (`:210-236`). The premise group
+/// below is measured on that pair, because that is the pair we ship.
 ///
 /// Our tile content *does* depend on the flag: in edit mode a card is wrapped in
 /// `JiggleShake(child: AbsorbPointer(...))`, and the absorber is not decoration —
@@ -60,6 +65,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
+import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -135,17 +141,24 @@ void main() {
     /// control is what stands in for one: if this harness could not make the
     /// package call `itemBuilder` again at all, the first test would pass for the
     /// wrong reason.
-    Future<int Function()> pumpGrid(
+    /// The builder pair the page ships (`itemBreakpointBuilder` +
+    /// `breakpointResolver`, #1401), not the plain `itemBuilder` this harness used
+    /// to pass. The two cache differently — a breakpoint builder also invalidates
+    /// on a pixel-dimension change, unless the resolved breakpoint comes out the
+    /// same — so a premise measured on `itemBuilder` would be a premise about a
+    /// configuration we do not ship. Same reason #1395 moved its gesture tests
+    /// onto the throttled regime.
+    ///
+    /// Counting is **per item id**: the grid is lazy, so a change that makes rows
+    /// shorter brings new tiles into the viewport, and a total would rise for that
+    /// reason alone. One item that is on screen in both configurations answers
+    /// the question a total cannot.
+    Future<Map<String, int>> pumpGrid(
       WidgetTester tester, {
       required ValueNotifier<double> ratio,
+      required DashboardController controller,
     }) async {
-      var calls = 0;
-      final controller = DashboardController(
-        initialSlotCount: 12,
-        initialLayout: UspWidgetSpecs.createDefaultLayout(),
-        maxHistoryLength: 0,
-      );
-      addTearDown(controller.dispose);
+      final calls = <String, int>{};
 
       await tester.pumpWidget(MaterialApp(
         theme: dashboardTestTheme,
@@ -156,10 +169,14 @@ void main() {
               slivers: [
                 SliverDashboard(
                   controller: controller,
-                  itemBuilder: (context, item) {
-                    calls++;
+                  itemBreakpointBuilder: (context, item, bp, w, h, slots) {
+                    calls.update(item.id, (n) => n + 1, ifAbsent: () => 1);
                     return const SizedBox.expand();
                   },
+                  // The page's own resolver, via the real factory, so the bands
+                  // this premise is measured against are the shipped ones.
+                  breakpointResolver: (w, h, item, slots) =>
+                      UspWidgetFactory().densityBandFor(item.id, w),
                   slotAspectRatio: value,
                   breakpoints: {0: 12},
                 ),
@@ -168,25 +185,41 @@ void main() {
           ),
         ),
       ));
-      return () => calls;
+      return calls;
     }
+
+    /// A fresh controller on the default layout, disposed at teardown.
+    DashboardController newController() {
+      final controller = DashboardController(
+        initialSlotCount: 12,
+        initialLayout: UspWidgetSpecs.createDefaultLayout(),
+        maxHistoryLength: 0,
+      );
+      addTearDown(controller.dispose);
+      return controller;
+    }
+
+    /// The first card of the default layout after the full-width `stats_panel`,
+    /// so it is on screen at every slot ratio these tests use.
+    const subject = 'device_info';
 
     testWidgets(
         'a rebuild that changes nothing about an item does not rebuild '
         'its content', (tester) async {
       final ratio = ValueNotifier<double>(1.5);
       addTearDown(ratio.dispose);
-      final calls = await pumpGrid(tester, ratio: ratio);
+      final calls =
+          await pumpGrid(tester, ratio: ratio, controller: newController());
 
-      final built = calls();
-      expect(built, greaterThan(0), reason: 'the premise of the premise');
+      final built = calls[subject];
+      expect(built, isNotNull, reason: 'the premise of the premise');
 
       // Same items, same geometry, new parent build — which is all a page rebuild
       // is when a provider it watches publishes.
       ratio.notifyListeners();
       await tester.pump();
 
-      expect(calls(), built,
+      expect(calls[subject], built,
           reason: 'this is the boundary: anything a tile reads from the page '
               'build is frozen at the first frame, which is why the edit-mode '
               'flag and the package templates are read inside the tile');
@@ -195,13 +228,24 @@ void main() {
     testWidgets('a dimension change does', (tester) async {
       final ratio = ValueNotifier<double>(1.5);
       addTearDown(ratio.dispose);
-      final calls = await pumpGrid(tester, ratio: ratio);
+      final controller = newController();
+      final calls =
+          await pumpGrid(tester, ratio: ratio, controller: controller);
 
-      final built = calls();
-      ratio.value = 2.5;
+      final built = calls[subject]!;
+
+      // The item's own dimensions, which is what a committed drag-resize changes
+      // and what `LayoutItem.contentSignature` covers. The slot *ratio* is no
+      // longer a control here: it moves pixels only, and the shipped resolver
+      // reads width, so a taller row resolves to the same band and the package
+      // is entitled to keep the cached subtree — which is the whole of #1401.
+      controller.importLayout([
+        for (final item in controller.exportLayout())
+          if (item['id'] == subject) {...item, 'w': 3} else item,
+      ]);
       await tester.pump();
 
-      expect(calls(), greaterThan(built),
+      expect(calls[subject], greaterThan(built),
           reason: 'the positive control: the harness can make the package '
               'rebuild tile content, so the test above measures the cache and '
               'not a harness that cannot trigger anything');

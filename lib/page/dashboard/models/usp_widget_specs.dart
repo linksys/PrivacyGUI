@@ -695,16 +695,27 @@ abstract class UspWidgetSpecs {
   /// * Mobile (12→4): delegates to [lockToFullWidth] — see there for why the
   ///   width stops being the user's to choose at all.
   /// * Constraints (minW / maxW) are scaled with the widths.
+  /// * A card carrying a form pick gets the geometry that pick implies at
+  ///   [toCols], not a scaled copy of the geometry it implied at [fromCols] —
+  ///   see [applyPickedForms].
+  ///
+  /// That last step is why this is the seam #1400 moved the derivation to. A
+  /// scale is proportional and a pin is not: [popupColumns] is two columns of
+  /// however many there are, so scaling a pinned tile 12 → 8 gives it one, and
+  /// scaling one 12 → 4 gives it nothing to be full-width *of*. Both are cases the
+  /// user never chose and never would.
   static List<dynamic> scaleLayout(
     List<dynamic> layout,
     int fromCols,
     int toCols,
   ) {
     if (toCols <= UspLayoutEnvelope.mobileSlotCount) {
-      return lockToFullWidth(layout, toCols);
+      // Forms first, then the lock, in the order [_applyCardForm] documents: the
+      // two rules split the axes and the lock has the last word on the width.
+      return lockToFullWidth(applyPickedForms(layout, toCols), toCols);
     }
 
-    return layout.map((item) {
+    final scaled = layout.map((item) {
       final map = Map<String, dynamic>.from(item as Map);
       final x = map['x'] as int;
       final w = map['w'] as int;
@@ -732,22 +743,46 @@ abstract class UspWidgetSpecs {
         'maxW': newMaxW.toDouble(),
       };
     }).toList();
+
+    return applyPickedForms(scaled, toCols);
   }
 
   /// Pins every item in [layout] to the full width of a [cols]-wide grid.
   ///
   /// Below five columns there is no width worth choosing — every card is either
   /// full-width or unreadably narrow — so on mobile the width stops being
-  /// editable instead of being merely defaulted. `minW == maxW == cols` is half
-  /// of what enforces that: `DashboardController` clamps every resize delta to
-  /// `[minW, maxW]`, which is enough to make the right-hand handles inert. The
-  /// left-hand ones need [lockItemsToFullWidth] on top — see there for why the
-  /// caps alone cannot hold them.
+  /// editable instead of being merely defaulted. `minW == maxW == cols` is the
+  /// whole of what enforces that, as of `sliver_dashboard` 2.6.0 (#1399): the
+  /// resolver clamps the new width to `[minW, maxW]` *and then* clamps `x` into
+  /// `[originalRight - maxW, originalRight - minW]`
+  /// (`dashboard_controller_impl.dart:1828-1842`), which for a card pinned at
+  /// both caps is the single value it already has. The left-hand handles are held
+  /// by the second clamp and the right-hand ones by the first.
   ///
-  /// It also repairs what the old mobile seed produced. Scaling `minW`/`maxW`
+  /// 0.9.1 had only the first, so the left-hand handles moved `x` and the package
+  /// trimmed the width to what was left of the row — `x: 1, w: 3` dragged inwards
+  /// and `x: 0, w: 3` dragged outwards, on a grid where neither width was
+  /// authorised. That is why this used to be backed by a watcher writing the live
+  /// layout back; the watcher is gone, and `edit_mode_interactions_test.dart`
+  /// samples every frame of a left-edge drag, its bottom-left diagonal and an
+  /// arrow-key move to show the geometry is now never produced rather than
+  /// corrected afterwards.
+  ///
+  /// Only the inward end of that second clamp is ours, which is worth knowing
+  /// before reading those tests: its lower bound is
+  /// `max(limitX, originalRight - maxW)`, and `limitX` is already 0 for a card at
+  /// the left edge, so a card cannot be dragged out of the row whatever the caps
+  /// say. `minW` is what stops it being dragged *in*.
+  ///
+  /// Rewriting both caps rather than only lowering `maxW` also repairs what a
+  /// projection from a wider grid produces, in both directions. Scaling
   /// proportionally gave a card with `maxW: 8` at 12 columns a `maxW` of 3 at 4
-  /// columns while its width was set to 4 — a width outside its own cap, which
-  /// the first resize would have snapped down to 3 of 4 columns.
+  /// columns while its width was set to 4 — a width outside its own cap, which the
+  /// first resize would have snapped down to 3 of 4 columns. And a spec that
+  /// declares `minW: 6` for the desktop grid arrives with a floor wider than the
+  /// whole phone grid, which is not a mis-size but a crash: the engine asserts
+  /// `currentL.minW <= cols` (`layout_engine.dart:963`) while the page is
+  /// building.
   static List<dynamic> lockToFullWidth(List<dynamic> layout, int cols) {
     return layout.map((item) {
       return {
@@ -761,7 +796,8 @@ abstract class UspWidgetSpecs {
   }
 
   // ---------------------------------------------------------------------------
-  // Card Forms (#1299) — the chosen density decides which sizes are legal
+  // Card Forms (#1299) — the chosen density decides which sizes are legal, and
+  // the choice rides on the item it shaped (#1400)
   // ---------------------------------------------------------------------------
 
   /// Cards that offer no [CardDensity.popup] entry.
@@ -797,7 +833,7 @@ abstract class UspWidgetSpecs {
   /// The height a popup tile collapses to, on every grid.
   ///
   /// One row is the whole form: an icon, a label and a value on one line. On the
-  /// 4-column grid this is the *only* axis popup touches — see [applyCardForms]
+  /// 4-column grid this is the *only* axis popup touches — see [_applyCardForm]
   /// for why the width there belongs to [lockToFullWidth] instead.
   static const int popupHeightRows = 1;
 
@@ -849,13 +885,69 @@ abstract class UspWidgetSpecs {
     return [CardDensity.normal, ...forms];
   }
 
-  /// Applies each card's chosen form in [choices] to [layout] on a [cols]-wide
-  /// grid, returning the sizes that form makes legal.
+  /// Writes [choice] onto [cardId] in [layout], geometry and pick together, for a
+  /// [cols]-wide grid.
+  ///
+  /// The one place a pick is *made* (#1400). The pick is stored on the item, in
+  /// [CardFormChoice.extraKey] under `extra`, and the geometry it makes legal is
+  /// written in the same copy of the same map — so the two reach the pref, the
+  /// snapshot and the undo history as one value. #1299 stored the pick in a
+  /// sibling map and re-derived the geometry on every import to keep the two in
+  /// step; there is nothing left to keep in step.
+  ///
+  /// Every card other than [cardId] is returned untouched, including its own pick:
+  /// a form is picked for one card on one grid.
+  static List<dynamic> withCardForm(
+    List<dynamic> layout,
+    String cardId,
+    CardFormChoice choice, {
+    required int cols,
+  }) =>
+      layout.map((item) {
+        if ((item as Map)['id'] != cardId) return item;
+        final map = Map<String, dynamic>.from(item);
+        map['extra'] = choice.writeInto(map['extra']);
+        _applyCardForm(map, cols: cols, choice: choice);
+        return map;
+      }).toList();
+
+  /// Re-derives the geometry every pick in [layout] makes legal, for a grid that
+  /// is [cols] wide.
+  ///
+  /// Runs where geometry is *created* rather than on every import (#1400): the
+  /// scale that derives a breakpoint nobody stored ([scaleLayout]), and the
+  /// one-time migration of a payload that kept its picks in a sibling map. A
+  /// stored grid's geometry was written by [withCardForm] at that grid's own
+  /// column count and travels with the pick, so importing it needs no rule at
+  /// all.
+  ///
+  /// It is the scale that needs one: [popupColumns] is an absolute span rather
+  /// than a fraction of the grid, so a pinned tile scaled 12 → 8 would arrive one
+  /// column wide. Re-deriving is applied to every pick and not only to popup
+  /// because the point is that a derived grid's geometry is the pick's, whichever
+  /// pick it is — and each arm is idempotent, so the ones the scale already got
+  /// right cost a rewrite of the same values.
+  ///
+  /// Returns [layout] itself when no item carries a pick, which is how an install
+  /// that never used the control stays byte-identical to one from before #1299.
+  static List<dynamic> applyPickedForms(List<dynamic> layout, int cols) {
+    List<dynamic>? formed;
+    for (var i = 0; i < layout.length; i++) {
+      final item = layout[i] as Map;
+      final choice = CardFormChoice.readFrom(item['extra']);
+      if (choice == null) continue;
+      formed ??= List<dynamic>.of(layout);
+      final map = Map<String, dynamic>.from(item);
+      _applyCardForm(map, cols: cols, choice: choice);
+      formed[i] = map;
+    }
+    return formed ?? layout;
+  }
+
+  /// Writes into [map] the sizes [choice] makes legal on a [cols]-wide grid.
   ///
   /// This is the inversion #1299 is about. #1232 runs width → density; this runs
-  /// density → the sizes that are legal, and it runs on *import*, from the stored
-  /// pick, so the flags are never persisted twice and can be re-derived whenever
-  /// the rules change:
+  /// density → the sizes that are legal:
   ///
   /// | picked | what changes |
   /// |---|---|
@@ -878,59 +970,54 @@ abstract class UspWidgetSpecs {
   /// It does not re-promote a card whose width grew back past `normalAbove`. A
   /// chosen density is what renders or the choice does not stick, and a wide
   /// compact card is sparse, not broken.
-  ///
-  /// Returns [layout] itself when [choices] is empty, which is how an install
-  /// with no picks stays byte-identical to one from before this ticket.
-  static List<dynamic> applyCardForms(
-    List<dynamic> layout,
-    int cols,
-    Map<String, CardFormChoice> choices,
-  ) {
-    if (choices.isEmpty) return layout;
+  static void _applyCardForm(
+    Map<String, dynamic> map, {
+    required int cols,
+    required CardFormChoice choice,
+  }) {
+    final constraints =
+        getById('${map['id']}')?.constraints[DisplayMode.normal];
 
-    return layout.map((item) {
-      final id = (item as Map)['id'];
-      final choice = choices[id];
-      if (choice == null) return item;
+    switch (choice.density) {
+      case CardDensity.popup:
+        // Pinned as caps as well as with the flag. isResizable: false is what
+        // removes the handles, but a `w` outside its own [minW, maxW] is the
+        // shape that made #1293 permanent — correctBounds and setSlotCount both
+        // read the caps — so the box states its size in every field that
+        // describes it.
+        final w = cols <= UspLayoutEnvelope.mobileSlotCount
+            ? cols
+            : popupColumns.clamp(1, cols);
+        _pinSpan(map, cols: cols, w: w, h: popupHeightRows);
+        map['isResizable'] = false;
 
-      final map = Map<String, dynamic>.from(item);
-      final constraints = getById('$id')?.constraints[DisplayMode.normal];
+      case CardDensity.compact:
+        // The spec's bounds back first, then the floor on top of them. Compact
+        // only ever *raises* a floor, and [_applyFloors] lifts a cap no further
+        // than the floor it just wrote — so reached from popup, whose pin wrote
+        // `maxW`/`maxH` down to 2x1, a bare raise leaves the card capped at its
+        // own new floor with no gesture able to widen it again. Restoring first
+        // is what makes this arm independent of the arm before it, which is the
+        // property the `normal` arm below states for itself.
+        _applySpecBounds(map, cols: cols, constraints: constraints);
+        _applyFloors(
+          map,
+          cols: cols,
+          constraints: constraints,
+          floorColumns: compactMinColumns,
+          floorHeightRows: compactMinHeightRows,
+        );
+        map['isResizable'] = true;
 
-      switch (choice.density) {
-        case CardDensity.popup:
-          // Pinned as caps as well as with the flag. isResizable: false is what
-          // removes the handles, but a `w` outside its own [minW, maxW] is the
-          // shape that made #1293 permanent — correctBounds and setSlotCount both
-          // read the caps — so the box states its size in every field that
-          // describes it.
-          final w = cols <= UspLayoutEnvelope.mobileSlotCount
-              ? cols
-              : popupColumns.clamp(1, cols);
-          _pinSpan(map, cols: cols, w: w, h: popupHeightRows);
-          map['isResizable'] = false;
-
-        case CardDensity.compact:
-          _applyFloors(
-            map,
-            cols: cols,
-            constraints: constraints,
-            floorColumns: compactMinColumns,
-            floorHeightRows: compactMinHeightRows,
-          );
-          map['isResizable'] = true;
-
-        case CardDensity.normal:
-          // Not a pin: normal *removes* a constraint, so it puts back exactly the
-          // bounds the card would have had if no form had ever been picked. That
-          // has to be a restore rather than a floor — popup wrote `maxW`/`maxH`
-          // down to pin the tile, and a rule that only ever raises minima would
-          // leave the card un-widenable after it expanded again.
-          _applySpecBounds(map, cols: cols, constraints: constraints);
-          map['isResizable'] = true;
-      }
-
-      return map;
-    }).toList();
+      case CardDensity.normal:
+        // Not a pin: normal *removes* a constraint, so it puts back exactly the
+        // bounds the card would have had if no form had ever been picked. That
+        // has to be a restore rather than a floor — popup wrote `maxW`/`maxH`
+        // down to pin the tile, and a rule that only ever raises minima would
+        // leave the card un-widenable after it expanded again.
+        _applySpecBounds(map, cols: cols, constraints: constraints);
+        map['isResizable'] = true;
+    }
   }
 
   /// Pins [map]'s box to exactly [w] × [h] on a [cols]-wide grid, caps included.
@@ -1024,45 +1111,6 @@ abstract class UspWidgetSpecs {
     if (h is int && h < minH) map['h'] = minH;
     final maxH = (map['maxH'] as num?)?.toDouble() ?? minH.toDouble();
     if (maxH < minH) map['maxH'] = minH.toDouble();
-  }
-
-  /// The [lockToFullWidth] geometry applied to live items, or null when every
-  /// item already has it.
-  ///
-  /// Pinning `minW == maxW == cols` does not finish the job. A resize delta is
-  /// clamped to `[minW, maxW]`, so a right-hand handle cannot move a width that
-  /// is already both floor and ceiling — but the left-hand handles (left,
-  /// topLeft, bottomLeft) move `x` as well, and the package trims the width to
-  /// whatever is left of the row after the clamp:
-  ///
-  /// ```
-  /// newX = x + dW;  newW = (w - dW).clamp(minW, maxW)
-  /// if (newX < 0) { newW += newX; newX = 0; }
-  /// if (newX + newW > cols) newW = cols - newX
-  /// ```
-  ///
-  /// One column of drag on the left edge therefore narrows a card on a 4-column
-  /// grid to three whichever way it is dragged — to `x: 1, w: 3` inwards, and to
-  /// `x: 0, w: 3` outwards, where the row's own edge does the trimming. Neither
-  /// width was authorised, and no cap can express "x may not move", so this has
-  /// to be undone on the live layout by whoever is watching it.
-  ///
-  /// Only `x` and `w` are touched: the height is the one dimension a phone still
-  /// leaves to the user, and the caps are repaired on import by
-  /// [lockToFullWidth]. Returning null rather than an equal list is what keeps a
-  /// watcher from writing back into the layout it was just notified about.
-  static List<LayoutItem>? lockItemsToFullWidth(
-    List<LayoutItem> items,
-    int cols,
-  ) {
-    List<LayoutItem>? locked;
-    for (var i = 0; i < items.length; i++) {
-      final item = items[i];
-      if (item.x == 0 && item.w == cols) continue;
-      locked ??= List<LayoutItem>.of(items);
-      locked[i] = item.copyWith(x: 0, w: cols);
-    }
-    return locked;
   }
 
   /// Rewrites [layout] to hold exactly the cards in [reference], in that order,

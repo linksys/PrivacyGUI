@@ -246,7 +246,7 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
     String cardId,
     List<CardDensity> options,
   ) {
-    final picked = _pickedForm(context, cardId);
+    final picked = _pickedForm(cardId);
 
     return Semantics(
       container: true,
@@ -294,31 +294,22 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
     );
   }
 
-  /// The form [cardId] is in on the breakpoint currently on screen.
+  /// The form [cardId] is in on the grid currently on screen.
   ///
-  /// The breakpoint is read from the context rather than from
-  /// `controller.slotCount`, even though that is the number `setCardForm` writes
-  /// under. The two are the same number — the grid is handed
-  /// `breakpoints: {0: context.currentMaxColumns}` — but the controller is only
-  /// told about a resize in a post-frame callback, so it trails by a frame.
-  /// Reading the context means this follows a window resize across a breakpoint
-  /// at all: `currentMaxColumns` goes through `MediaQuery.sizeOf`, which
-  /// registers the dependency that rebuilds it.
-  ///
-  /// Which leaves the frame where the two disagree: this has already rebuilt at
-  /// the new width, and the controller has not been told yet. A pick made in that
-  /// window would be shown as the new grid's and written as the old one's. No
-  /// gesture can land there. A frame is one synchronous run of Dart — build,
-  /// layout, paint, then the post-frame callbacks — so a pointer event arriving
-  /// mid-frame is delivered after it, by which time `setSlotCount` has run.
+  /// No breakpoint is named, and that is #1400's doing. This used to read
+  /// `context.currentMaxColumns` to key into a per-breakpoint map — the context
+  /// rather than `controller.slotCount`, because the controller is only told about
+  /// a resize in a post-frame callback and so trails the width by a frame. That
+  /// left one frame where the chip would show the new grid's pick while
+  /// `setCardForm` wrote the old grid's; unreachable, since a pointer event
+  /// arriving mid-frame is delivered after it, but it had to be argued rather than
+  /// seen. Now the picks are read off the items of whichever grid the controller
+  /// holds, which is the same grid `setCardForm` writes to, by construction.
   ///
   /// A card with no stored pick reads as normal: normal is the absence of a pick,
   /// not a stored value, so the two have to read the same.
-  CardDensity _pickedForm(BuildContext context, String cardId) =>
-      ref
-          .watch(cardFormsProvider)
-          .densityFor(context.currentMaxColumns, cardId) ??
-      CardDensity.normal;
+  CardDensity _pickedForm(String cardId) =>
+      ref.watch(cardFormsProvider).densityFor(cardId) ?? CardDensity.normal;
 
   /// The card's name, for the toolbar's screen-reader label.
   ///
