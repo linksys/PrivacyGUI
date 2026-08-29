@@ -183,10 +183,10 @@ lib/page/               # Feature-specific pages and screens
 ## Vendored Artifacts
 Two manifests, two update procedures. Read the relevant one **before** bumping anything it covers.
 
-- **USP** — `tools/usp-codegen` and `web/usp_client.{js,wasm,d.ts}`, built from `linksys/usp_framework`. See `doc/usp/vendored-artifacts.md`.
+- **USP** — `tools/usp-codegen`, `web/usp_client.{js,d.ts}` and `web/usp_client_bg.wasm`, built from `linksys/usp_framework`. See `doc/usp/vendored-artifacts.md`.
 - **CanvasKit** — `web/assets/canvaskit.{js,wasm}`, hand-copied from the pinned Flutter SDK and the only CanvasKit that ever executes (`flutter_bootstrap.js` pins `canvasKitBaseUrl: "./assets/"`). See `doc/web/vendored-canvaskit.md`. The two files are version-locked to each other: copy both or neither.
 
 ## Flutter SDK Pin
 **3.47.0**, declared in three places that `test/web/canvaskit_variant_test.dart` asserts agree: `.fvmrc` (local), `flutter-version:` in `.github/actions/setup/action.yml` (CI), and the constants in that test. Moving the pin means re-vendoring CanvasKit and touching all three — see the update procedure in `doc/web/vendored-canvaskit.md`.
 
-Note `flutter`/`dart` on this machine are zsh aliases to `fvm`; a bare `flutter` inside `xargs` or a non-interactive shell silently runs a different SDK.
+Use `fvm flutter` / `fvm dart` explicitly for anything whose result you intend to trust. A bare `flutter` runs whatever SDK is on `PATH`, which is not necessarily the pinned one — and if a shell alias is what makes bare `flutter` work interactively, that alias does not survive into `xargs` or any non-interactive shell, so the command silently runs a different SDK and reports a confidently wrong verdict. `run_tests.sh` and `build_web.sh` already resolve this themselves.
