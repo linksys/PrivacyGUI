@@ -186,13 +186,37 @@ Do all of this in **one** commit.
    opinion on what wasm sits in `web/assets/`, and the golden suite runs in the
    Flutter test VM with no CanvasKit involved at all. Boot a release build in
    Chromium and in WebKit, confirm DevTools shows `assets/canvaskit.wasm` served
-   locally with zero requests to `gstatic.com`, and check CJK / Thai / Arabic /
-   Latin-Ext with WAN disconnected (intersects #1285 and the offline font
-   subsets in `pubspec.yaml`).
+   locally, and check CJK / Thai / Arabic / Latin-Ext with WAN disconnected
+   (intersects #1285 and the offline font subsets in `pubspec.yaml`).
+
+   **Two different gstatic hosts, and only one of them must be silent.**
+   `www.gstatic.com/flutter-canvaskit/<engineRevision>/` is the CDN path the
+   loader falls back to when `canvasKitBaseUrl` is missing, and it must show
+   **zero** requests — a hit there means the offline requirement is already
+   broken. `fonts.gstatic.com` is a different matter: `fontFallbackBaseUrl` in
+   `web/flutter_bootstrap.js` points at it deliberately, so that an online client
+   can still render code points outside the bundled subsets. Requests to it are
+   expected, and offline they fail by design — which is what the bundled subsets
+   cover. Filtering DevTools on "gstatic" alone therefore looks like a failure
+   when it is not; filter on `flutter-canvaskit`.
+
+9. Deploy to the router and verify there, not only behind a local server. A
+   desktop server proves the bundle boots; it does not prove what the device
+   serves. The router's lighttpd (1.4.75) has **no** compression built in — `-V`
+   prints `- brotli support` — so `Compress=true` output is served by the
+   pre-compressed rewrite in `/etc/lighttpd/conf.d/60-brotli-precompressed.conf`,
+   which rewrites `main.dart.js` and `assets/canvaskit.wasm` to their `.br`
+   siblings and restates the headers. Two consequences for a CanvasKit bump:
+   `build_web.sh` deletes the originals, so the `.br` **is** the shipped wasm and
+   a re-vendor that skips recompression ships the previous hotfix's bytes; and
+   because no original survives, a client that does not offer `br` gets a 404
+   (measured: `Accept-Encoding: gzip, deflate` → 404, `br` → 200 +
+   `content-encoding: br` + `application/wasm`). Chrome only offers `br` over
+   TLS, which the router's `:80 → :443` redirect guarantees.
 
 ## What the guard cannot see
 
 The hashes catch a vendored copy that stopped matching the SDK, and the pin
 comparison catches local and CI disagreeing. Neither can see a *rendering*
 difference between two correctly-paired versions — that is browser-only, which
-is why step 8 is a human step and not a test.
+is why steps 8 and 9 are human steps and not tests.
