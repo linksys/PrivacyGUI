@@ -176,15 +176,8 @@ void main() {
             'CI moves SDK on its own schedule, which is what shipped a 3.44.0 '
             'CanvasKit under a 3.47.0 engine for a week.',
       );
-      // Comment lines stripped first: the reason `channel:` is gone belongs in
-      // that file as prose, and asserting over the prose too would forbid
-      // explaining the decision.
-      final setupYaml = const LineSplitter()
-          .convert(setup)
-          .where((line) => !line.trimLeft().startsWith('#'))
-          .join('\n');
       expect(
-        setupYaml,
+        _withoutLineComments(setup, '#'),
         isNot(contains('channel:')),
         reason: 'subosito/flutter-action takes `flutter-version` OR `channel`. '
             'Leaving a live `channel:` key in place lets the pin be overridden '
@@ -225,6 +218,138 @@ void main() {
       }
     });
   });
+
+  // ------------------------------------------------------------------------
+  // #1316 part B. `web/flutter_bootstrap.js` is hand-maintained, and the tool
+  // substitutes `{{...}}` placeholders into whatever this repo commits. Someone
+  // replaced all three with literals, so the shipped loader stopped being
+  // refreshed: `cmp web/flutter_bootstrap.js build/web/flutter_bootstrap.js`
+  // reported the two files IDENTICAL, which is the tell.
+  //
+  // Three things were frozen by that, and none of them announce themselves:
+  // an embedded 3.27-era flutter.js, an engineRevision belonging to no SDK this
+  // repo has ever pinned, and a constant serviceWorkerVersion — so returning
+  // clients could hold a stale bundle across releases.
+  //
+  // Hand-setting the literals to 3.47.0 values would only recreate this at the
+  // next bump, so the fix is placeholders and this test is what keeps them.
+  // ------------------------------------------------------------------------
+  group('flutter_bootstrap.js is a template, not a snapshot (#1316)', () {
+    late final String bootstrap =
+        File('web/flutter_bootstrap.js').readAsStringSync();
+
+    // Written split so this file does not contain the literal placeholders it
+    // asserts on: the tool substitutes EVERY {{name}} it finds, including ones
+    // inside comments, and this test is not a web template — but the day someone
+    // copies one of these strings into web/index.html, being habitually careful
+    // here costs nothing.
+    const placeholders = <String>[
+      'flutter_js',
+      'flutter_build_config',
+      'flutter_service_worker_version',
+    ];
+
+    test('the three tool-filled placeholders are present', () {
+      for (final name in placeholders) {
+        expect(
+          bootstrap,
+          contains('{{$name}}'),
+          reason: 'web/flutter_bootstrap.js must keep {{$name}} for the build '
+              'to fill in. Replacing it with a literal freezes that value at '
+              'whatever the SDK was on the day someone pasted it, which is how '
+              'a 3.27-era loader survived to 3.47.0.',
+        );
+      }
+    });
+
+    // A misspelled placeholder does not fail the build. The substitution is a
+    // regex over known names, so an unknown one is left verbatim and ships into
+    // build/web/flutter_bootstrap.js — a syntax error if it landed in code, and
+    // confusing noise if it landed in a comment. Caught in review exactly once
+    // already, in the header comment of the file under test.
+    test('there are no placeholders other than those three', () {
+      final found = RegExp(r'\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}')
+          .allMatches(bootstrap)
+          .map((m) => m.group(1)!)
+          .toSet();
+
+      expect(
+        found.difference(placeholders.toSet()),
+        isEmpty,
+        reason: 'Unrecognised double-braced token in web/flutter_bootstrap.js. '
+            'The build substitutes only the three names above and leaves any '
+            'other verbatim, so a typo here reaches the browser instead of '
+            'failing the build.',
+      );
+    });
+
+    test('nothing the tool owns is hardcoded', () {
+      // Comments dropped: this file explains at length which literals were
+      // frozen and why, and naming them there is the point.
+      final code = _withoutLineComments(bootstrap, '//');
+
+      // The frozen value was cf56914b326edb0ccb123ffdc60f00060bd513fa, which is
+      // neither 3.44.0's engine nor 3.47.0's. Assert on the KEY rather than that
+      // string: the next freeze will use a different, equally wrong, revision.
+      expect(
+        code,
+        isNot(contains('engineRevision')),
+        reason: 'engineRevision belongs to _flutter.buildConfig, which the '
+            'build generates. Writing it here pins the CanvasKit CDN path to a '
+            'literal and desynchronises it from the engine actually running.',
+      );
+      expect(
+        code,
+        isNot(contains('_flutter.buildConfig =')),
+        reason: 'The whole buildConfig assignment is generated, guard clause '
+            'included. Hand-writing it also drops wasmHashes, which 3.47 emits '
+            'and instantiate_wasm.js reads for Cross-Origin Storage.',
+      );
+      expect(
+        code,
+        isNot(matches(RegExp(r'serviceWorkerVersion:\s*"'))),
+        reason:
+            'serviceWorkerVersion must stay a placeholder. The build puts a '
+            'fresh random value there per build; a quoted literal means the '
+            'service worker never invalidates and returning clients can hold a '
+            'stale bundle across releases.',
+      );
+    });
+
+    // The config: block is ours, not the tool's, and #1281 depends on two of its
+    // three lines. Restoring the placeholders around it must not disturb it —
+    // the group above asserts the same two lines for the same reason, and this
+    // is deliberately not deduplicated with it: that group is about the variant
+    // decision and would still be right if this template were reverted.
+    test('our own config: block survived the template restore', () {
+      expect(bootstrap, contains('canvasKitBaseUrl: "./assets/"'));
+      expect(bootstrap, contains('canvasKitVariant: "full"'));
+      expect(bootstrap, contains('fontFallbackBaseUrl:'));
+      expect(
+        bootstrap,
+        contains('serviceWorkerUrl: "service_worker.js"'),
+        reason: 'We ship our own web/service_worker.js. Dropping this line '
+            'sends the loader to the tool default, flutter_service_worker.js, '
+            'which this project does not generate.',
+      );
+    });
+  });
 }
 
 String _sha256(File file) => sha256.convert(file.readAsBytesSync()).toString();
+
+/// [source] with whole-line comments dropped, for assertions that must read code
+/// rather than the prose explaining it.
+///
+/// Every "must not contain X" check here needs this, because the reason X was
+/// removed belongs in the file it was removed from — and asserting over the
+/// comments too would forbid recording the reason, which is the part that stops
+/// the next person putting X back.
+///
+/// Whole-line only: a trailing comment cannot hide a live key, since the key
+/// would still be on the line before it.
+String _withoutLineComments(String source, String marker) =>
+    const LineSplitter()
+        .convert(source)
+        .where((line) => !line.trimLeft().startsWith(marker))
+        .join('\n');
