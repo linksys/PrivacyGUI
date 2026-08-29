@@ -377,10 +377,11 @@ void main() {
   /// Reads the density in effect below a [CardDensityHost] pumped at [width].
   ///
   /// [width] is the width the *card* is given, not the screen's: that is the
-  /// separation `CardDensityHost` exists to make. The `SizedBox` sets the card's
-  /// own width; `MediaQuery` sets the screen, which the host no longer reads for
-  /// the pick (#1400) but which the tests below still vary, because "a pick applies
-  /// on a phone" is the case the ticket exists for.
+  /// separation `CardDensityHost` exists to make. It is both the `SizedBox`'s
+  /// width and the width the host is told about (#1401 supplies it rather than
+  /// letting the card measure); `MediaQuery` sets the screen, which the host no
+  /// longer reads for the pick (#1400) but which the tests below still vary,
+  /// because "a pick applies on a phone" is the case the ticket exists for.
   Future<CardDensity> densityUnderHost(
     WidgetTester tester, {
     required double width,
@@ -403,6 +404,9 @@ void main() {
               child: CardDensityHost(
                 cardId: 'device_info',
                 normalAbove: normalAbove,
+                // Supplied since #1401, and supplied as the same number the
+                // `SizedBox` uses — the grid does both with one figure.
+                cardWidth: width,
                 child: Builder(builder: (context) {
                   observed = CardDensityScope.of(context);
                   return const SizedBox.shrink();

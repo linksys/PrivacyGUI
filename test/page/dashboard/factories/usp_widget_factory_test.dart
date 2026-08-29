@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
@@ -27,7 +28,7 @@ void main() {
     test('returns non-null for all 18 valid IDs', () {
       for (final spec in UspWidgetSpecs.all) {
         expect(
-          factory.buildWidget(spec.id),
+          factory.buildWidget(spec.id, cardWidth: 400),
           isNotNull,
           reason: '${spec.id} should return a widget',
         );
@@ -35,26 +36,72 @@ void main() {
     });
 
     test('stats_panel returns UspStatsPanel', () {
-      expect(cardOf(factory.buildWidget('stats_panel')), isA<UspStatsPanel>());
+      expect(cardOf(factory.buildWidget('stats_panel', cardWidth: 400)),
+          isA<UspStatsPanel>());
     });
 
     test('device_info returns UspDeviceInfoCard', () {
-      expect(
-          cardOf(factory.buildWidget('device_info')), isA<UspDeviceInfoCard>());
+      expect(cardOf(factory.buildWidget('device_info', cardWidth: 400)),
+          isA<UspDeviceInfoCard>());
     });
 
     test('network_status returns UspNetworkStatusCard', () {
-      expect(cardOf(factory.buildWidget('network_status')),
+      expect(cardOf(factory.buildWidget('network_status', cardWidth: 400)),
           isA<UspNetworkStatusCard>());
     });
 
     test('topology returns UspNetworkTopologyCard', () {
-      expect(cardOf(factory.buildWidget('topology')),
+      expect(cardOf(factory.buildWidget('topology', cardWidth: 400)),
           isA<UspNetworkTopologyCard>());
     });
 
     test('returns null for unknown ID', () {
-      expect(factory.buildWidget('invalid_widget'), isNull);
+      expect(factory.buildWidget('invalid_widget', cardWidth: 400), isNull);
+    });
+
+    test('threads the supplied width down to the host it wraps', () {
+      final host =
+          factory.buildWidget('device_info', cardWidth: 208) as CardDensityHost;
+      expect(host.cardWidth, 208);
+      // A caller with no box says so, rather than saying nothing (#1401).
+      final unmeasured = factory.buildWidget('device_info', cardWidth: null)
+          as CardDensityHost;
+      expect(unmeasured.cardWidth, isNull);
+    });
+  });
+
+  group('densityBandFor', () {
+    // The resolver the grid asks "has this width changed the form" (#1401). It
+    // has to answer with the same band the host would publish from the same
+    // width, or a card would sit in its old form until something else
+    // invalidated the tile.
+    test('agrees with the host for every spec, on both sides of its threshold',
+        () {
+      for (final spec in UspWidgetSpecs.all) {
+        final threshold = spec.normalAbove;
+        final widths = <double?>[
+          null,
+          0,
+          double.nan,
+          150,
+          199,
+          200,
+          320,
+          600,
+          if (threshold != null) ...[threshold - 1, threshold, threshold + 1],
+        ];
+        for (final width in widths) {
+          expect(
+            factory.densityBandFor(spec.id, width),
+            densityForSuppliedWidth(width: width, normalAbove: threshold),
+            reason: '${spec.id} at $width',
+          );
+        }
+      }
+    });
+
+    test('an unknown ID has no threshold, so every width is normal', () {
+      expect(factory.densityBandFor('invalid_widget', 10), CardDensity.normal);
     });
   });
 

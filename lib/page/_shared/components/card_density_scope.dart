@@ -108,34 +108,40 @@ class CardDensityScope extends InheritedWidget {
       oldWidget.liveForm != liveForm;
 }
 
-/// Wraps a dashboard card, measures the width it was actually given, and
-/// publishes the resulting [CardDensity] to its subtree.
+/// Wraps a dashboard card and publishes the [CardDensity] its width selects to
+/// its subtree.
 ///
 /// Applied in `UspWidgetFactory.buildWidget`, the one place both production and
 /// the #1183 overflow gate construct cards — so the two cannot disagree about
 /// which form is on screen.
 ///
-/// The width comes from a `LayoutBuilder`, i.e. from the constraints the grid
-/// hands this card, never from `MediaQuery` or `context.colWidth`. #1231 and
-/// #1251 were spent removing screen-derived widths from cards for the reason
-/// that makes them wrong here too: a card is resizable independently of the
-/// window, so the screen says nothing about how much room this card has.
+/// The width is [cardWidth], handed down by whoever laid the card out, never read
+/// from `MediaQuery` or `context.colWidth`. #1231 and #1251 were spent removing
+/// screen-derived widths from cards for the reason that makes them wrong here too:
+/// a card is resizable independently of the window, so the screen says nothing
+/// about how much room this card has.
 ///
 /// ## Three sources, in this order
 ///
 /// 1. [cardDensityOverrideProvider] — a forced value, used by the #1183 gate to
 ///    render a card in a form the width would not have selected.
 /// 2. [cardFormsProvider] — the form the user picked for this card on this grid
-///    (#1299). It wins over the measurement because that is the whole inversion:
-///    the pick has already constrained which widths the card can be, so the width
-///    has nothing left to decide. `normal` is excluded — it is the *removal* of a
-///    pick, so it falls through to the measurement rather than pinning.
-/// 3. the measured width (#1232).
+///    (#1299). It wins over the width because that is the whole inversion: the
+///    pick has already constrained which widths the card can be, so the width has
+///    nothing left to decide. `normal` is excluded — it is the *removal* of a
+///    pick, so it falls through to the width rather than pinning.
+/// 3. [cardWidth] (#1232, supplied by the grid since #1401).
+///
+/// The first two are read with `ref.watch` from *inside* the tile on purpose. The
+/// grid caches what its item builder returned and will not call it again for a
+/// provider write (#1395), so a pick or an override has to reach a consumer below
+/// that boundary or it would not be seen until the next geometry change.
 class CardDensityHost extends ConsumerWidget {
   const CardDensityHost({
     super.key,
     required this.cardId,
     required this.normalAbove,
+    required this.cardWidth,
     this.normalHeight,
     required this.child,
   });
@@ -146,6 +152,26 @@ class CardDensityHost extends ConsumerWidget {
   /// The card's declared threshold, from its `WidgetSpec`. Null means the card
   /// has no degraded form.
   final double? normalAbove;
+
+  /// Pixel width of the box this card was laid out in, from the caller that
+  /// computed the box — `DashboardItemBreakpointBuilder` in the dashboard, the
+  /// probe's own `SizedBox` on the gate path (#1401).
+  ///
+  /// Required, and required *nullable*: every construction site has to say
+  /// something, and a caller with no box to report says so with `null` rather
+  /// than by omission. Null resolves to [CardDensity.normal] — see
+  /// [densityForSuppliedWidth] for why that, and not popup.
+  ///
+  /// ## Accurate to the band, not to the pixel
+  ///
+  /// The grid re-invokes its builder when the *resolved breakpoint* transitions,
+  /// not on every pixel, so between transitions this holds the width the card was
+  /// built at rather than the width it currently occupies. That is exactly enough
+  /// for the density — a width that would change the answer has by definition
+  /// crossed a boundary, which is what re-invokes the builder — and it is not
+  /// enough for anything reading it as a measurement. Whatever #1240 AC 1 does
+  /// with a card's real box has to say which of the two it needs.
+  final double? cardWidth;
 
   /// Height the card's whole form needs, in pixels — see
   /// [CardDensityScope.normalHeight].
@@ -187,27 +213,21 @@ class CardDensityHost extends ConsumerWidget {
     final picked = ref.watch(cardFormsProvider).densityFor(cardId);
     if (picked != null && picked != CardDensity.normal) return _scope(picked);
 
-    // No threshold declared means the density is a constant: normal at every
-    // width. Measuring a constant would still cost a rebuild of the whole card
-    // subtree on every layout pass while a card is being drag-resized, so the
-    // measurement is skipped rather than performed and discarded. Pinned by
-    // test, because "no LayoutBuilder above the card" is also what keeps this
-    // ticket's output byte-identical for all 18 cards, none of which declares a
-    // threshold (#1240 AC 1/2).
+    // The width the grid already computed, rather than a `LayoutBuilder`
+    // re-deriving it under every card (#1401). The two produced the same number —
+    // the package's `itemWidth` is the same formula this view uses for its own
+    // `slotWidth` — so this is about *when* the number is asked for, not what it
+    // is.
     //
-    // Not a correctness crutch: the gate was also run once with this branch
-    // removed, so every card rendered through the LayoutBuilder, and stayed at
-    // 1644/1644. Inserting the measurement is layout-neutral — so the first card
-    // to declare a threshold is not taking on that risk at the same time.
-    if (normalAbove == null) return _scope(CardDensity.normal);
-
-    return LayoutBuilder(
-      builder: (context, constraints) => _scope(
-        densityForWidth(
-          width: constraints.maxWidth,
-          normalAbove: normalAbove,
-        ),
-      ),
+    // It also retires the branch that used to sit here: a card with no declared
+    // threshold skipped the measurement entirely, because inserting a
+    // `LayoutBuilder` to compute a constant would have cost that card a build
+    // during every layout pass of a drag-resize. There is nothing to skip now —
+    // the width arrives as an argument, and a threshold-less card resolves to a
+    // constant breakpoint, so the grid holds its subtree across a resize for the
+    // same reason the skip used to.
+    return _scope(
+      densityForSuppliedWidth(width: cardWidth, normalAbove: normalAbove),
     );
   }
 }

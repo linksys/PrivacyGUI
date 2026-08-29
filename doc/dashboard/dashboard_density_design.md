@@ -510,10 +510,18 @@ and blinds the gate.
 ### 2.2 The threshold is measured in pixels, never columns
 
 Per §1.5: 2.2× distortion within one span, 433 ordering inversions, and a 55%
-cliff at the breakpoint edge. Cards read their real width (via `LayoutBuilder` or
-the injected value of §2.6). Screen-derived helpers — `context.colWidth`,
-`currentMaxColumns` — are explicitly **not** valid inputs; that mismatch is a
-known bug (§2.8).
+cliff at the breakpoint edge. Cards are *given* their real width — the box the
+grid laid the tile out in, injected per §2.6 — rather than measuring it. Since
+#1401 the source is `DashboardItemBreakpointBuilder`: the grid computed the box to
+place the tile, so nothing under the card has to re-derive it, and the builder is
+re-invoked only when the resolved band transitions. Screen-derived helpers —
+`context.colWidth`, `currentMaxColumns` — are explicitly **not** valid inputs;
+that mismatch is a known bug (§2.8).
+
+One consequence to know before reading a card's width as a measurement: between
+transitions the injected value is the width the card was *built* at, which is
+accurate to the band and not to the pixel. Anything that needs a live box (#1240
+AC 1) has to say so.
 
 ### 2.3 The absolute contract floor is a product decision: 320px minimum screen
 
@@ -575,9 +583,14 @@ values — strictly better than hiding two of them for the sake of a uniform rul
 
 ### 2.6 Density is injected via Provider, not threaded as a parameter
 
-`UspWidgetFactory.buildWidget(String id)` takes no mode parameter, so it cannot
-carry density today. Density will be provided by the card container and read
-through context.
+`UspWidgetFactory.buildWidget` takes no mode parameter, so it cannot carry density
+today. Density will be provided by the card container and read through context.
+
+Since #1401 it does take a `cardWidth`, which is not the same thing: the *width*
+comes in as an argument because whoever laid the card out is the only party that
+knows the box, and the *density* is still selected inside `CardDensityHost` and
+read from context. Required and nullable, so a caller with no box (a card built
+outside a dashboard) has to say so rather than say nothing.
 
 Rationale is **testability plus reach**: over half of the 32 sites are nested 3–4
 levels below the card root (`MetricTile`, `_LegendEntry`, list rows). Threading a
@@ -676,6 +689,19 @@ first card that needs it; nothing degrades until one does.
    whichever ticket declares the first threshold — it will not be taking on that
    risk at the same time as a rendering change.
 
+   **Superseded by #1401.** Both the `LayoutBuilder` and the skip are gone: the
+   width arrives from the grid, which computed the box anyway, so there is no
+   measurement left to skip. The skip's *reason* survives at the grid level rather
+   than in the card — a threshold-less card resolves to a constant band, so
+   `DashboardItemBreakpointBuilder` never reports a transition for it and the
+   package holds its cached subtree across a whole resize. Threshold-less and
+   threshold-declaring cards are now in the same regime, and neither rebuilds per
+   layout pass; pinned in
+   [card_density_from_grid_test.dart](../../test/page/dashboard/views/card_density_from_grid_test.dart)
+   against the real page, with the package-level cache boundary in
+   `edit_mode_tile_rebuild_test.dart`. The layout-neutrality result above still
+   holds and is now unconditional, since every card takes the one path.
+
 3. **A density test under a bounded ancestor can assert nothing.** The test that
    proves selection reads the *card* and not the *screen* pumps a 600px card on a
    320px screen. Under a normal ancestor `SizedBox(width: 600)` silently resolves
@@ -683,6 +709,12 @@ first card that needs it; nothing degrades until one does.
    and a screen-reading implementation passes. It only became a real test once the
    ancestor was made width-unbounded. Same family as §1.6's sampling artifact: the
    harness quietly supplied the number the test was trying to vary.
+
+   #1401 turns this inside out and the lesson holds either way. The width is now an
+   argument, so a bounded ancestor cannot feed the card the screen width — but the
+   box and the argument can be made to *disagree*, which is a sharper test than the
+   unbounded viewport ever was: a 150px box told it is 600px wide must resolve to
+   normal, and only an implementation that reads what it was handed can.
 
 4. **Whether popup is opt-in is now #1239's to settle.** §2.1 states popup applies
    below 200px, but selection is reached only through a declared `normalAbove`, so

@@ -279,6 +279,9 @@ void main() {
             : CardDensityHost(
                 cardId: cardId,
                 normalAbove: spec.normalAbove,
+                // The same width the probe's `SizedBox` gets, because that is
+                // what the factory would have been handed here (#1401).
+                cardWidth: cardWidth,
                 child: UspEthernetPortsCard(ports: ports),
               ),
       );

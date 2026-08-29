@@ -618,7 +618,12 @@ Widget buildDashboardCardApp({
   CardDensity? density,
   List<Override> extraOverrides = const [],
 }) {
-  final card = cardOverride ?? UspWidgetFactory().buildWidget(cardId);
+  // [cardWidth] is handed to the factory rather than left for the card to
+  // measure: since #1401 the density comes from whoever laid the card out, and
+  // on this path that is the `SizedBox` below. It is the same number, computed
+  // from the same grid formula — the gate's geometry is what produced it.
+  final card = cardOverride ??
+      UspWidgetFactory().buildWidget(cardId, cardWidth: cardWidth);
   if (card == null) {
     throw StateError(
       'UspWidgetFactory has no widget for id "$cardId". '

@@ -33,18 +33,28 @@ class _DensitySpy extends StatelessWidget {
   static CardDensity? observed;
 }
 
-/// Pumps a [CardDensityHost] in a box of exactly [cardWidth], on a screen of
-/// [screenWidth]. The two are varied independently on purpose — that is the only
-/// way to tell a width-driven selection from a screen-driven one.
+/// Pumps a [CardDensityHost] told it is [cardWidth] wide, in a box of that same
+/// width, on a screen of [screenWidth].
 ///
-/// The horizontal viewport is what makes them independent: under a bounded
-/// ancestor a `SizedBox(width: 600)` on a 320px screen silently resolves to 320,
-/// so the card would be handed the screen width and the test would assert
-/// nothing. Unbounded, the box tightens to exactly [cardWidth].
+/// The width and the screen are varied independently on purpose — that is the
+/// only way to tell a width-driven selection from a screen-driven one. Since
+/// #1401 the width arrives as an argument rather than being measured, so what
+/// this rules out is a host that ignores what it was handed and reaches for
+/// `MediaQuery` instead.
+///
+/// The box defaults to the supplied width because that is the production
+/// relationship: the grid computes one number and both lays the tile out in it
+/// and reports it. [boxWidth] breaks them apart, which is how a test asks
+/// whether the density reads the argument or the box.
+///
+/// The horizontal viewport keeps the box honest: under a bounded ancestor a
+/// `SizedBox(width: 600)` on a 320px screen silently resolves to 320. Unbounded,
+/// it tightens to exactly the width asked for.
 Future<void> _pumpHost(
   WidgetTester tester, {
-  required double cardWidth,
+  required double? cardWidth,
   required double screenWidth,
+  double? boxWidth,
   double? normalAbove,
   CardDensity? override,
   Widget child = const _DensitySpy(),
@@ -63,11 +73,12 @@ Future<void> _pumpHost(
         home: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
-            width: cardWidth,
+            width: boxWidth ?? cardWidth ?? 400,
             height: 400,
             child: CardDensityHost(
               cardId: _kCardId,
               normalAbove: normalAbove,
+              cardWidth: cardWidth,
               child: child,
             ),
           ),
@@ -108,7 +119,7 @@ void main() {
       expect(_DensitySpy.observed, CardDensity.normal);
     });
 
-    testWidgets('the compact band is measured on the card', (tester) async {
+    testWidgets('the compact band comes from the card width', (tester) async {
       await _pumpHost(
         tester,
         cardWidth: 300,
@@ -174,46 +185,98 @@ void main() {
         );
       }
     });
+  });
 
-    testWidgets('is not measured at all', (tester) async {
-      // With no threshold the density is a constant, so no LayoutBuilder is
-      // inserted. Two things ride on this. It is what made #1232's "no card's
-      // rendered output changes yet" true by construction rather than by luck,
-      // back when all 18 cards were in this branch — 15 still are, since #1288
-      // moved `device_info`, `lan_info` and `time_settings` out of it. And it
-      // keeps a drag-resize from rebuilding those 15 cards' whole subtrees once
-      // per layout pass to recompute a value that cannot change.
-      await _pumpHost(
-        tester,
-        cardWidth: 150,
-        screenWidth: 1920,
-        normalAbove: null,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(CardDensityHost),
-          matching: find.byType(LayoutBuilder),
-        ),
-        findsNothing,
-      );
-    });
+  group('the width is supplied, not measured', () {
+    // #1401 AC 1 and AC 2. The host used to open a `LayoutBuilder` to read its
+    // own box, and skip doing so for cards with no threshold — the skip being
+    // what kept those cards from rebuilding their whole subtrees once per layout
+    // pass of a drag-resize, to recompute a value that could not change.
+    //
+    // Both are gone, and the *reason* for the skip is what these tests keep:
+    // there is no measurement to skip, so a threshold-less card and a card with
+    // one are now in the same regime, and neither builds per layout pass. What
+    // that buys at the grid level — the package holding the cached subtree
+    // across the widths that change no band — is pinned in
+    // `card_density_from_grid_test.dart`, which has a real grid to observe.
+    for (final normalAbove in <double?>[null, 400]) {
+      final label = normalAbove == null ? 'no threshold' : 'a threshold';
+      testWidgets('the host opens no LayoutBuilder, with $label',
+          (tester) async {
+        await _pumpHost(
+          tester,
+          cardWidth: 150,
+          screenWidth: 1920,
+          normalAbove: normalAbove,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(CardDensityHost),
+            matching: find.byType(LayoutBuilder),
+          ),
+          findsNothing,
+        );
+      });
+    }
 
-    testWidgets('a declared threshold is measured', (tester) async {
-      // The converse of the above, so the short-circuit cannot silently become
-      // unconditional and disable the whole mechanism.
+    testWidgets('the scope is published directly under the host',
+        (tester) async {
+      // The converse of the above: "no LayoutBuilder" would also be satisfied by
+      // a host that published nothing at all, so pin that the scope is there and
+      // is what the host returns rather than something further down.
       await _pumpHost(
         tester,
         cardWidth: 150,
         screenWidth: 1920,
         normalAbove: 400,
       );
-      expect(
-        find.descendant(
-          of: find.byType(CardDensityHost),
-          matching: find.byType(LayoutBuilder),
-        ),
-        findsOneWidget,
+      final host = tester.element(find.byType(CardDensityHost));
+      final children = <Widget>[];
+      host.visitChildren((child) => children.add(child.widget));
+      expect(children.single, isA<CardDensityScope>());
+    });
+
+    testWidgets('the supplied width wins over the box the card sits in',
+        (tester) async {
+      // The two agree in production, so make them disagree here: a 150px box
+      // told it is 600px wide. A host that went back to measuring would say
+      // popup. This is the assertion the rest of the file cannot make, since
+      // everywhere else box == supplied and both implementations agree.
+      await _pumpHost(
+        tester,
+        cardWidth: 600,
+        boxWidth: 150,
+        screenWidth: 1920,
+        normalAbove: 400,
       );
+      expect(_DensitySpy.observed, CardDensity.normal);
+    });
+
+    testWidgets('a width there is no answer for resolves to normal',
+        (tester) async {
+      // A supplied width can be missing or degenerate where a measured one could
+      // not: a card built outside a dashboard has no box to report, and the boot
+      // frame is where a zero comes from. Popup would be the wrong fallback in
+      // both directions — #1400 made stored geometry authoritative, so a boot
+      // frame that pinned every card to popup would persist that as the layout
+      // the user comes back to.
+      //
+      // The box stays at 150 throughout, which a measuring host would call
+      // popup, so falling back to normal is a decision and not the box speaking.
+      for (final width in <double?>[null, 0, -1, double.nan, double.infinity]) {
+        await _pumpHost(
+          tester,
+          cardWidth: width,
+          boxWidth: 150,
+          screenWidth: 1920,
+          normalAbove: 400,
+        );
+        expect(
+          _DensitySpy.observed,
+          CardDensity.normal,
+          reason: '$width must not select a degraded form',
+        );
+      }
     });
   });
 
@@ -259,7 +322,7 @@ void main() {
       // density would silently be normal for that card only.
       final factory = UspWidgetFactory();
       for (final spec in UspWidgetSpecs.all) {
-        final widget = factory.buildWidget(spec.id);
+        final widget = factory.buildWidget(spec.id, cardWidth: 600);
         expect(
           widget,
           isA<CardDensityHost>(),
@@ -290,10 +353,12 @@ void main() {
       );
     });
 
-    testWidgets('an unpinned card on the gate path measures itself',
+    testWidgets('an unpinned card on the gate path uses the probe geometry',
         (tester) async {
-      // The control for the above: the gate's own 1644-case sweep passes no
-      // density, and must keep taking the production path.
+      // The control for the above: the gate's own sweep passes no density, and
+      // must keep taking the production path — which since #1401 means the width
+      // the probe computed for the `SizedBox` is also the width the card selects
+      // its form from, rather than something the card reads back out of the box.
       await tester.pumpWidget(buildDashboardCardApp(
         cardId: _kCardId,
         locale: const Locale('en'),
@@ -315,7 +380,8 @@ void main() {
       // hardcoded null.
       final factory = UspWidgetFactory();
       for (final spec in UspWidgetSpecs.all) {
-        final host = factory.buildWidget(spec.id) as CardDensityHost;
+        final host =
+            factory.buildWidget(spec.id, cardWidth: 600) as CardDensityHost;
         expect(
           host.normalAbove,
           spec.normalAbove,

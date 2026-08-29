@@ -63,3 +63,27 @@ CardDensity densityForWidth({required double width, double? normalAbove}) {
   if (width < kPopupBelow) return CardDensity.popup;
   return CardDensity.compact;
 }
+
+/// [densityForWidth] for a width that may be missing or unusable, which is what
+/// a *supplied* width can be and a measured one could not (#1401).
+///
+/// Since #1401 the width comes from the grid rather than from a `LayoutBuilder`
+/// under the card, so there is a caller between the geometry and this function
+/// and a card can be built with no width at all: outside the dashboard, in the
+/// golden stubs' own factory, in a test that hand-builds a host. There is no
+/// answer to "which form does 0px select" that is better than "the one the card
+/// was designed in", so the whole class of unusable readings resolves to
+/// [CardDensity.normal] rather than to the bottom of the ladder.
+///
+/// The degenerate values are worth naming rather than trusting: the boot frame is
+/// the one that has them. #1400 made the stored geometry authoritative — a width
+/// derived from it is no longer re-derived on the next load — so a zero or NaN
+/// width at boot must not be allowed to pin every card to popup and persist that
+/// as the layout the user comes back to.
+CardDensity densityForSuppliedWidth({
+  required double? width,
+  double? normalAbove,
+}) {
+  if (width == null || !width.isFinite || width <= 0) return CardDensity.normal;
+  return densityForWidth(width: width, normalAbove: normalAbove);
+}

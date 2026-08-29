@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
@@ -369,12 +370,32 @@ class _UspSliverDashboardViewState
           (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
       final ratio = slotWidth / UspSliverDashboardView.slotHeight;
 
+      // `itemBreakpointBuilder`, not `itemBuilder`: the tile's pixel box is what
+      // decides a card's density, the grid has already computed it, and 2.1.0
+      // hands it over (#1401). The resolver is what keeps that from costing
+      // anything — the package re-invokes the builder when a card crosses a
+      // density band, and holds the cached subtree for every other width.
+      // `itemLayoutBuilder`, the other builder that reports pixels, rebuilds on
+      // every one of them.
+      Widget buildTile(BuildContext context, LayoutItem item,
+              dynamic breakpoint, double width, double height, int slots) =>
+          _buildItemWidget(context, item, factory, width);
+      CardDensity resolveBand(
+              double width, double height, LayoutItem item, int slots) =>
+          factory.densityBandFor(item.id, width);
+
       final grid = DashboardOverlay(
         controller: controller,
         scrollController: scrollController,
-        itemBuilder: (context, item) {
-          return _buildItemWidget(context, item, factory);
-        },
+        // The same pair the sliver below is given, declared once because it has
+        // to be the same pair: the overlay builds the *feedback* copy of a tile —
+        // the proxy that follows a drag, and the one that carries a card between
+        // grids — from the same item at the same pixel size. Handed the plain
+        // `itemBuilder` instead, a card being dragged would resolve its density
+        // with no width and snap to its normal form for the duration of the
+        // gesture.
+        itemBreakpointBuilder: buildTile,
+        breakpointResolver: resolveBand,
         slotAspectRatio: ratio,
         mainAxisSpacing: AppSpacing.lg,
         crossAxisSpacing: AppSpacing.lg,
@@ -408,9 +429,8 @@ class _UspSliverDashboardViewState
               sliver: !slotsAreCurrent
                   ? const SliverToBoxAdapter(child: SizedBox.shrink())
                   : SliverDashboard(
-                      itemBuilder: (context, item) {
-                        return _buildItemWidget(context, item, factory);
-                      },
+                      itemBreakpointBuilder: buildTile,
+                      breakpointResolver: resolveBand,
                       slotAspectRatio: ratio,
                       mainAxisSpacing: AppSpacing.lg,
                       crossAxisSpacing: AppSpacing.lg,
@@ -592,23 +612,30 @@ class _UspSliverDashboardViewState
     }
   }
 
-  /// Builds one card's content.
+  /// Builds one card's content, for a tile [cardWidth] pixels wide.
   ///
   /// Reads nothing that can change while the tile lives: 2.3.1 caches what this
   /// returns and invalidates the cache only on a content-signature or dimension
   /// change, so anything reactive has to be read one level down, inside the
   /// widget — see [EditModeAffordance] for the edit-mode flag and
   /// [PackageWidgetTile] for the templates (#1395).
+  ///
+  /// [cardWidth] is an argument rather than something read here for exactly that
+  /// reason. It is refreshed each time the grid calls this — which, with a
+  /// breakpoint builder, is each time the card crosses a density band (#1401) —
+  /// and it is a band-accurate width rather than a live one in between, per
+  /// [CardDensityHost.cardWidth].
   Widget _buildItemWidget(
     BuildContext context,
     LayoutItem item,
     UspWidgetFactory factory,
+    double cardWidth,
   ) {
     // The factory's cards are the built-in ones and it answers synchronously;
     // anything it does not know is either a package card or gone with its
     // package, which is [PackageWidgetTile]'s question, not this one's.
-    final resolvedWidget =
-        factory.buildWidget(item.id) ?? PackageWidgetTile(itemId: item.id);
+    final resolvedWidget = factory.buildWidget(item.id, cardWidth: cardWidth) ??
+        PackageWidgetTile(itemId: item.id);
 
     // SizedBox.expand ensures cards fill their grid cell.
     // Note: ClipRect was removed because it clips shadows/borders causing

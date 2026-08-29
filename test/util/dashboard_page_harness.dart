@@ -39,18 +39,28 @@ final dashboardTestTheme = AppTheme.create(
 /// page. A stand-in grid or a stand-in `itemBuilder` would measure a
 /// configuration we do not ship.
 ///
+/// [extraOverrides] are appended after [dashboardPageOverrides], so a provider
+/// listed in both takes the value passed here (Riverpod resolves duplicates
+/// last-wins). It exists for tests that need to *observe* the real page rather
+/// than restate its data — #1401 counts how often the widget factory is asked to
+/// build a card, which means substituting a counting factory for the real one and
+/// leaving every other override alone.
+///
 /// The returned container is disposed, and the view metrics reset, by teardowns
 /// registered here — the caller only has to read from it.
 Future<ProviderContainer> pumpDashboardPage(
   WidgetTester tester, {
   required Size size,
   bool editing = false,
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final container = ProviderContainer(overrides: dashboardPageOverrides());
+  final container = ProviderContainer(
+    overrides: [...dashboardPageOverrides(), ...extraOverrides],
+  );
   addTearDown(container.dispose);
 
   await tester.pumpWidget(UncontrolledProviderScope(
