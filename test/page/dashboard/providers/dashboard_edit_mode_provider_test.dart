@@ -282,22 +282,32 @@ void main() {
     // Neither is reachable by any sequence of gestures, so each assertion below
     // checks the pick and the box it justifies in the same test.
     //
+    // Since #1400 that pair is one value: the pick rides on the grid item it
+    // shaped, `layoutSnapshot` carries both, and `restoreSnapshot` takes one
+    // argument. The assertions below are unchanged and still worth having — they
+    // are what says the pick is *inside* the snapshot rather than merely absent
+    // from the code — but two of the four mutations they were written against can
+    // no longer be written, which is the whole of what that ticket bought here.
+    //
     // Mutation table — each row is one edit to the real source, run against this
     // file:
     //
     //   | # | mutated                     | mutation                              | killed by |
     //   |---|-----------------------------|---------------------------------------|-----------|
-    //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | 5 |
-    //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | 2 |
+    //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | *retired by #1400* |
+    //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | *retired by #1400* |
     //   | 3 | dashboard_edit_mode_provider| commitEditMode takes the revert path   | 2 |
     //   | 4 | dashboard_edit_mode_provider| _exitEditMode does not clear the selection | 2 — both exits |
     //
-    // Row 1 killing 5 is the interesting count: two of them are the pre-existing
-    // #1293/#1294 tests, because `_exitEditMode` only restores when *both*
-    // snapshots are non-null — so dropping the forms half silently disables the
-    // geometry revert as well. Rows 2 and 3 are the two halves that a single
-    // "cancel works" test would have conflated: 2 fails only the pick assertions,
-    // 3 fails only on commit.
+    // Rows 1 and 2 are retired rather than deleted because their counts are the
+    // measurement of the change. Row 1 killed 5, and two of those were the
+    // pre-existing #1293/#1294 geometry tests: `_exitEditMode` only restored when
+    // *both* snapshots were non-null, so dropping the forms half silently
+    // disabled the geometry revert as well. Row 2 killed 2 — the pick assertions
+    // only — because the restore was two statements that could disagree. There is
+    // now one snapshot and one statement, so neither edit exists to make. Row 3
+    // is the half a single "cancel works" test would have conflated with them: it
+    // fails only on commit.
 
     test('cancel puts back the form the card was in, and its box', () async {
       final container = await createContainer();
@@ -318,14 +328,14 @@ void main() {
 
       await layoutNotifier.setCardForm('device_info', CardDensity.popup);
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.popup,
       );
 
       await notifier.cancelEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         isNull,
         reason: 'the pick was made during the edit, so cancel drops it',
       );
@@ -356,7 +366,7 @@ void main() {
       await notifier.cancelEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.compact,
       );
       final item = container
@@ -381,7 +391,7 @@ void main() {
       await notifier.commitEditMode();
 
       expect(
-        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.popup,
       );
       final item = container
@@ -654,7 +664,7 @@ void main() {
   //   |---|---------|----------|-----------|
   //   | 1 | usp_layout_controller | `restoreSnapshot` back to the pre-#1396 body: keep the live grid from the snapshot, rebuild the other two with `alignMembership` | 3 — both tests here, and the desktop delete above on its new exact assertion |
   //   | 2 | dashboard_edit_mode_provider | `enterEditMode` captures `controller.exportLayout()` again, i.e. the live grid only, wrapped in a one-entry map | 13 — every test in this file that cancels, plus the `enterEditMode` shape test |
-  //   | 3 | usp_layout_controller | `restoreSnapshot` restores the picks *after* the swap instead of before | 2 — `cancel puts back the form the card was in, and its box` and `cancel does not drop a pick that was made before the edit` |
+  //   | 3 | usp_layout_controller | `restoreSnapshot` restores the picks *after* the swap instead of before | *retired by #1400* |
   //
   // Row 2's count is the assert in `restoreSnapshot` doing its job: with asserts
   // on — every test run — a snapshot that does not cover all three breakpoints
@@ -675,11 +685,12 @@ void main() {
   // there, and why "same for a delete at the tablet breakpoint" is not simply the
   // phone test with a different number in it.
   //
-  // Row 3 is the reason the two lines of `restoreSnapshot` are in the order they
-  // are: the grids go in through `_seedBreakpoints`, which normalises each one
-  // against the picks, so picks restored second would be applied to a grid already
-  // normalised against the session's. Both kills are #1299 tests — this row only
-  // records that they cover the ordering too.
+  // Row 3 was the reason the two lines of `restoreSnapshot` were in the order
+  // they were: the grids went in through `_seedBreakpoints`, which normalised each
+  // one against the picks, so picks restored second were applied to a grid already
+  // normalised against the session's. Its two kills were both #1299 tests. #1400
+  // deleted the ordering along with the second argument — one snapshot carries
+  // both, so there is no second statement to put in the wrong place.
   group('cancel after a delete on a narrow grid (#1396)', () {
     /// Enters edit mode on the [slots]-column grid, deletes [cardId] the way the
     /// trash zone does, cancels, and returns the stored geometry before and

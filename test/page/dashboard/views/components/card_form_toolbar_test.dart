@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
-import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
@@ -80,14 +79,18 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// ## Mutation table
 ///
-/// Each row is one edit to the real source, run against this file. One row sits
+/// Each row is one edit to the real source, run against this file. Two rows sit
 /// in `usp_layout_controller.dart` rather than in the toolbar: what "the
-/// selection" is is decided there, and this file is where the consequence shows.
+/// selection" is and what the forms mirror publishes are decided there, and this
+/// file is where the consequence shows. Row 2 used to name the toolbar's own read
+/// of `context.currentMaxColumns`, which #1400 deleted along with the
+/// breakpoint-keyed store it indexed into — the toolbar now reads a projection of
+/// whichever grid the controller holds, so the mutation moved to the projection.
 ///
 /// | # | mutated | mutation | killed by |
 /// |---|---|---|---|
 /// | 1 | card_form_toolbar | drop the `options.isEmpty` guard | stats_panel gets a one-chip toolbar |
-/// | 2 | card_form_toolbar | `context.currentMaxColumns` → a hard-coded 12 | the mobile-breakpoint pick reads as normal |
+/// | 2 | usp_layout_controller | `_publishForms` publishes `CardForms.empty` | the chip a picked card shows, and the grid the pick belongs to |
 /// | 3 | card_form_toolbar | `selectedIndices` → always `{0}` | picking popup, and the pick it shows |
 /// | 4 | card_form_toolbar | `Listener(behavior: opaque)` → `HitTestBehavior.deferToChild` | a press on the pill's rounded corner drags the card underneath |
 /// | 5 | card_form_toolbar | drop the `cell.bottom <= 0` visibility check | the toolbar for a scrolled-away card stays on screen |
@@ -808,9 +811,7 @@ void main() {
       await tapForm(tester, CardDensity.popup);
 
       expect(
-        container
-            .read(cardFormsProvider)
-            .densityFor(UspLayoutEnvelope.desktopSlotCount, 'device_info'),
+        container.read(cardFormsProvider).densityFor('device_info'),
         CardDensity.popup,
       );
       final after = readItem(container, 'device_info');
@@ -853,26 +854,36 @@ void main() {
       expect(readItem(container, 'device_info'), afterFirst);
     });
 
-    testWidgets('the pick it shows is the one for the breakpoint on screen',
+    testWidgets('the pick it shows belongs to the grid on screen',
         (tester) async {
       final container = await pumpGrid(tester, surface: _mobileSurface);
       controllerOf(container).setSlotCount(UspLayoutEnvelope.mobileSlotCount);
       await tester.pumpAndSettle();
 
-      // A pick stored on mobile only — the desktop grid has none.
-      container.read(cardFormsProvider.notifier).state =
-          CardForms.empty.withChoice(
-        UspLayoutEnvelope.mobileSlotCount,
-        'device_info',
-        const CardFormChoice(density: CardDensity.popup),
-      );
       await select(tester, container, 'device_info');
+      // The real writer, on the phone grid: since #1400 there is no second store
+      // to stage a pick in, so the only way to have one is to make one.
+      await container
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .setCardForm('device_info', CardDensity.popup);
+      await tester.pumpAndSettle();
 
       expect(pickedForm(tester), 'Popup',
-          reason: 'Picks are per breakpoint (#1294 keeps each breakpoint\'s '
-              'layout to itself, and a form is part of that layout). Reading '
-              'the desktop slot count here would show normal on a phone that '
-              'is rendering a popup.');
+          reason: 'The chip is a read of the picks the grid on screen carries, '
+              'published from the controller\'s layout beacon (#1400). Before '
+              'it, the toolbar keyed into a breakpoint-indexed store with '
+              '`context.currentMaxColumns` — same answer here, one more way to '
+              'ask the wrong grid.');
+      expect(container.read(cardFormsProvider).densityFor('device_info'),
+          CardDensity.popup);
+
+      // That the *desktop* grid keeps no pick from this is asserted in
+      // `usp_card_form_persistence_test.dart` ("a pick on one grid leaves the
+      // others alone"). It cannot be asserted here: the harness mounts a real
+      // `SliverDashboard` with `breakpoints: {0: context.currentMaxColumns}`, so
+      // the sliver puts the controller back on this surface's breakpoint on the
+      // next layout — a `setSlotCount` from a test is undone before it can be
+      // read.
     });
   });
 

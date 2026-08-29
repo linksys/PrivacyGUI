@@ -1125,8 +1125,10 @@ and on a phone there is no such user (§2.1's own "never triggers on a phone" is
 same fact seen from the other side).
 
 Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
-`UspWidgetSpecs.selectableForms` + `applyCardForms`, a per-breakpoint `forms` map in
-`UspLayoutEnvelope`, and a `CardFormToolbar` pill — three glyphs on a frameless
+`UspWidgetSpecs.selectableForms` + `withCardForm`, the pick stored on the grid item
+it shapes in `LayoutItem.extra` (#1400 — it was a per-breakpoint `forms` map beside
+the layouts in `UspLayoutEnvelope` until `sliver_dashboard` 1.2.0 gave items a
+payload of their own), and a `CardFormToolbar` pill — three glyphs on a frameless
 elevated surface — that floats over the card selected in the grid (a `Stack` sibling
 above `DashboardOverlay`, so the press that picks a form never reaches the overlay). `DisplayMode` is **not** revived: it is the abandoned
 three-value enum §2.6 replaced, and a second spelling of the same idea would be two
@@ -1259,12 +1261,24 @@ things to keep in agreement. Eight lessons.
    deleted after no mutation could kill either.
 
 3. **Store the choice, derive the geometry — but store what the derivation cannot
-   recover.** `isResizable`, `minW` and `minH` are re-derived by `applyCardForms` on
-   every import, so a rule change reaches layouts users already saved and no flag can
-   drift from the pick that implies it. The exception is the box popup collapsed: with
-   the handles gone there is no gesture that could recover it, so `restoreW`/`restoreH`
-   travel *with* the choice, per breakpoint. Compact deliberately records nothing — it
-   only ever grows a card, and to a width the card genuinely needs.
+   recover.** `isResizable`, `minW` and `minH` were re-derived by `applyCardForms` on
+   every import, so a rule change reached layouts users already saved and no flag
+   could drift from the pick that implies it. The exception is the box popup
+   collapsed: with the handles gone there is no gesture that could recover it, so
+   `restoreW`/`restoreH` travel *with* the choice, per breakpoint. Compact
+   deliberately records nothing — it only ever grows a card, and to a width the card
+   genuinely needs.
+
+   **#1400 kept the second half of that lesson and inverted the first.** Once the
+   pick rides on the item, the pick and the geometry it implies are written in one
+   copy of one map — they cannot drift because they are one value, which is a
+   stronger guarantee than re-deriving them into agreement on every read. The price
+   is the clause that motivated the derivation: a change to `popupColumns` or
+   `compactMinColumns` now applies to picks made after it and leaves stored layouts
+   alone. Re-deriving those is a migration (the shape the v3 fold has), not a bug
+   fix. The derivation still runs where geometry is *created* — `scaleLayout`, which
+   builds a breakpoint nobody stored — because a pin is absolute and a scale is
+   proportional, so a 2-column tile scaled 12 → 8 would arrive one column wide.
 
 4. **A floor on both axes, with the numeric raise on one of them, is the honest
    shape.** Compact's floor is **4 columns / 260.5px**, not the 3 columns every

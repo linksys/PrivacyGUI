@@ -29,11 +29,19 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// AC 7 — "shrinking is refused" — is the same shape, and was the gap that
 /// prompted the second group. `minW` only becomes a refusal inside the package's
 /// `onResizeUpdate`, which clamps a drag delta to `[minW, maxW]`. The persistence
-/// test goes through `updateItemSize`, and that path re-runs `_normalize` →
-/// `_applyFloors`, which grows the width back to the floor by itself — so it
-/// answers 4 whether or not anything honoured `minW`. Measured, not assumed: with
-/// the package's clamp changed to ignore `minW`, all 31 tests in the persistence
-/// file still pass and two of the three here fail (row 8).
+/// test never reaches that clamp: it goes through `updateItemSize`, which floors
+/// the size itself, so it answers 4 whether or not anything honoured `minW` on a
+/// real drag. Measured, not assumed: with the package's clamp changed to ignore
+/// `minW`, all 31 tests in the persistence file still pass and two of the three
+/// here fail (row 8).
+///
+/// #1400 moved *which* code grows that width back, and left the conclusion where
+/// it was. The floor used to be re-imposed on every import, because `_normalize`
+/// re-derived the whole card-form geometry from the sibling `forms` map; now that
+/// the geometry is the stored value, `updateItemSize` clamps to the item's own
+/// `minW`/`minH` on the way in. Either way the persistence file is answered by us
+/// and not by the package, which is exactly why row 8 is invisible to it — more so
+/// now than when it was measured, at a 31-test revision of that file.
 ///
 /// The second half is the render side. A pick has to reach the *content*, not just
 /// the box: [CardDensityHost] resolves three sources in order — the #1183 gate's
@@ -52,7 +60,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// | 1 | `card_density_scope` | `CardDensityHost` ignores the pick entirely | 3 — every "a pick beats the width" test |
 /// | 2 | `card_density_scope` | the pick is resolved *after* the no-threshold short-circuit | a card with no threshold still honours a pick |
 /// | 3 | `card_density_scope` | drop `picked != CardDensity.normal`, so normal pins | an explicit normal pick does not pin |
-/// | 4 | `card_density_scope` | read the pick at a hardcoded 12 instead of `currentMaxColumns` | 2 — the two phone-grid tests |
+/// | 4 | `card_density_scope` | read the pick at a hardcoded 12 instead of `currentMaxColumns` | *retired by #1400* — 2 at the time; the reader takes no breakpoint any more |
 /// | 5 | `usp_widget_specs` | popup arm drops `isResizable: false` | the popup card has none, and its neighbour still has all eight |
 /// | 6 | `usp_widget_specs` | compact arm writes `isResizable: false` instead of `true` | compact keeps its handles — its floor is a limit, not a lock |
 /// | 7 | `usp_widget_specs` | `_applyFloors` computes `minW` but does not write it | the same drag on a compact card stops at four slots |
@@ -73,46 +81,62 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// added for it, and they are also the case the ticket exists for. §2.6h item 4's
 /// lesson, in a second shape: **a test can be about the right thing and still be
 /// unable to fail.**
+///
+/// #1400 then retired the row rather than fixing it again. The reader is handed the
+/// picks of the grid on screen — [cardFormsProvider] is a projection of the live
+/// layout — so there is no breakpoint in the call to key wrongly. The two tests
+/// stayed, at the phone widths, for what they still say: a phone user gets the form
+/// they picked, and a card with no pick falls back to the measurement.
 void main() {
   // ---------------------------------------------------------------------------
   // AC 6 — popup takes the resize handles away
   // ---------------------------------------------------------------------------
 
-  /// A two-card layout run through the production normalisation, so the geometry
-  /// under test is derived the same way the controller derives it.
+  /// A two-card layout with [choices] written onto it by the production writer,
+  /// so the geometry under test is derived the same way the controller derives it.
   ///
   /// `device_info` is the card that gets picked; `lan_info` is the control. Both
   /// declare `normalAbove`, so both are eligible for every form — the difference
   /// between them in each test is the pick, and nothing else.
-  List<dynamic> pickedLayout(Map<String, CardFormChoice> choices) =>
-      UspWidgetSpecs.applyCardForms(
-        [
-          {
-            'id': 'device_info',
-            'x': 0,
-            'y': 0,
-            'w': 6,
-            'h': 3,
-            'minW': 3,
-            'maxW': 8.0,
-            'minH': 2,
-            'maxH': 6.0,
-          },
-          {
-            'id': 'lan_info',
-            'x': 6,
-            'y': 0,
-            'w': 6,
-            'h': 3,
-            'minW': 3,
-            'maxW': 8.0,
-            'minH': 2,
-            'maxH': 6.0,
-          },
-        ],
-        UspLayoutEnvelope.desktopSlotCount,
-        choices,
+  ///
+  /// One call to [UspWidgetSpecs.withCardForm] per pick, because that is the shape
+  /// of a pick since #1400: it is made on one card, and it writes the choice and
+  /// the geometry that choice justifies into the same item.
+  List<dynamic> pickedLayout(Map<String, CardFormChoice> choices) {
+    var layout = <dynamic>[
+      {
+        'id': 'device_info',
+        'x': 0,
+        'y': 0,
+        'w': 6,
+        'h': 3,
+        'minW': 3,
+        'maxW': 8.0,
+        'minH': 2,
+        'maxH': 6.0,
+      },
+      {
+        'id': 'lan_info',
+        'x': 6,
+        'y': 0,
+        'w': 6,
+        'h': 3,
+        'minW': 3,
+        'maxW': 8.0,
+        'minH': 2,
+        'maxH': 6.0,
+      },
+    ];
+    for (final pick in choices.entries) {
+      layout = UspWidgetSpecs.withCardForm(
+        layout,
+        pick.key,
+        pick.value,
+        cols: UspLayoutEnvelope.desktopSlotCount,
       );
+    }
+    return layout;
+  }
 
   /// Pumps [layout] on a 12-column grid in edit mode, returning the controller
   /// so a gesture's effect can be read off the layout it owns.
@@ -353,9 +377,10 @@ void main() {
   /// Reads the density in effect below a [CardDensityHost] pumped at [width].
   ///
   /// [width] is the width the *card* is given, not the screen's: that is the
-  /// separation `CardDensityHost` exists to make. `MediaQuery` sets the screen so
-  /// `currentMaxColumns` resolves to a real breakpoint — the number a pick is
-  /// keyed by — and the `SizedBox` sets the card's own width independently.
+  /// separation `CardDensityHost` exists to make. The `SizedBox` sets the card's
+  /// own width; `MediaQuery` sets the screen, which the host no longer reads for
+  /// the pick (#1400) but which the tests below still vary, because "a pick applies
+  /// on a phone" is the case the ticket exists for.
   Future<CardDensity> densityUnderHost(
     WidgetTester tester, {
     required double width,
@@ -392,6 +417,16 @@ void main() {
   }
 
   group('a pick decides the form, not the width', () {
+    /// One card's pick, as the live grid's projection would carry it (#1400).
+    ///
+    /// Not keyed by a slot count, because the provider is a read of the grid on
+    /// screen and a grid knows its own width. Before #1400 the harness passed a
+    /// breakpoint here and three tests below asserted the reader keyed off the
+    /// right one; that mistake is now unrepresentable rather than tested.
+    CardForms picked(CardDensity density) => CardForms({
+          'device_info': CardFormChoice(density: density),
+        });
+
     /// 1440px of screen is the 12-column grid, and 600px of card is a width at
     /// which `densityForWidth` would answer normal for every threshold any card
     /// declares. So every pick below is contradicting the measurement, which is
@@ -425,11 +460,7 @@ void main() {
           tester,
           width: wideEnoughForNormal,
           screenWidth: desktop,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.desktopSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.popup),
-          ),
+          forms: picked(CardDensity.popup),
         ),
         CardDensity.popup,
         reason: 'The inversion. The pick has already constrained which widths '
@@ -446,11 +477,7 @@ void main() {
           tester,
           width: wideEnoughForNormal,
           screenWidth: desktop,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.desktopSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.compact),
-          ),
+          forms: picked(CardDensity.compact),
         ),
         CardDensity.compact,
         reason: 'Decision 3 on the issue: widening past normalAbove does not '
@@ -471,11 +498,7 @@ void main() {
           tester,
           width: 250,
           screenWidth: desktop,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.desktopSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.normal),
-          ),
+          forms: picked(CardDensity.normal),
         ),
         CardDensity.compact,
         reason:
@@ -485,67 +508,45 @@ void main() {
       );
     });
 
-    testWidgets('a pick made on another grid does not apply to this one',
+    testWidgets('the phone honours a pick, which is what the form is for',
         (tester) async {
-      // AC 5's no-contamination clause, on the render side: the persistence tests
-      // assert the *storage* is per breakpoint, and this asserts the reader keys
-      // off the breakpoint too rather than off the first pick it finds.
-      expect(
-        await densityUnderHost(
-          tester,
-          width: wideEnoughForNormal,
-          screenWidth: desktop,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.mobileSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.popup),
-          ),
-        ),
-        CardDensity.normal,
-      );
-    });
-
-    testWidgets('the phone grid reads the pick made on the phone grid',
-        (tester) async {
-      // The other half of AC 5's no-contamination clause, and the half a suite
-      // pumped only at desktop cannot state: with every screen 12 columns wide,
-      // reading the pick under a hardcoded 12 and reading it under the current
-      // breakpoint are indistinguishable — a mutation to that effect survived
-      // until this test existed. The phone is also the form factor the ticket is
-      // for, so "a pick applies where it was made" needs stating there and not
-      // only at the width where the measurement could have covered for it.
+      // The form factor the ticket exists for, and the half a suite pumped only
+      // at desktop cannot state. It used to also be the test that caught a pick
+      // read at a hardcoded 12 columns: with every screen 12 wide, a hardcoded key
+      // and `currentMaxColumns` were indistinguishable, and a mutation to that
+      // effect survived until this test existed. #1400 removed the key from the
+      // reader entirely, so what is left here is the plainer claim — a phone user,
+      // whose only control over density this is, gets the form they picked.
       expect(
         await densityUnderHost(
           tester,
           width: phoneCardWidth,
           screenWidth: phone,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.mobileSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.popup),
-          ),
+          forms: picked(CardDensity.popup),
         ),
         CardDensity.popup,
       );
     });
 
-    testWidgets('and not the pick made on the desktop grid', (tester) async {
+    testWidgets(
+        'a card the live grid holds no pick for falls back to the width',
+        (tester) async {
+      // Absence has to read as absence rather than as normal, on the phone as
+      // well as on the desktop control above — this is the branch #1232 keeps.
+      // Before #1400 the same assertion was made by storing the pick under
+      // *another* breakpoint and checking it did not leak; the projection now
+      // holds one grid's picks by construction, so an empty one is how a grid with
+      // no pick is expressed.
       expect(
         await densityUnderHost(
           tester,
           width: phoneCardWidth,
           screenWidth: phone,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.desktopSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.popup),
-          ),
+          forms: CardForms.empty,
         ),
         CardDensity.compact,
         reason: '288px is below the declared 300px threshold and above the '
-            '200px popup floor, so with no pick for this grid #1232 answers '
-            'compact. popup here would mean a desktop pick had leaked onto the '
-            'phone.',
+            '200px popup floor, so with no pick #1232 answers compact.',
       );
     });
 
@@ -562,11 +563,7 @@ void main() {
           width: wideEnoughForNormal,
           screenWidth: desktop,
           normalAbove: null,
-          forms: CardForms.empty.withChoice(
-            UspLayoutEnvelope.desktopSlotCount,
-            'device_info',
-            const CardFormChoice(density: CardDensity.popup),
-          ),
+          forms: picked(CardDensity.popup),
         ),
         CardDensity.popup,
       );

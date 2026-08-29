@@ -7,8 +7,22 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 /// #1299 inverts #1232's mechanism. #1232 reads a card's rendered width and
 /// derives the form from it; this reads the form the user asked for and derives
 /// the sizes that are legal. A [CardFormChoice] is the stored half of that
-/// inversion: the geometry it implies is re-derived on every import by
-/// `UspWidgetSpecs.applyCardForms`, never persisted twice.
+/// inversion.
+///
+/// ## Where it is stored (#1400)
+///
+/// On the grid item it describes, in `LayoutItem.extra`, under [extraKey]. That
+/// is a change of address rather than of meaning: #1299 kept the picks in a
+/// `(slotCount, cardId)`-keyed map beside the geometry, because `LayoutItem` had
+/// a closed field set at the time and `exportLayout()` dropped anything else.
+/// `sliver_dashboard` 1.2.0 added `LayoutItem.extra`, a per-item payload
+/// `exportLayout`/`importLayout` round-trip and `setSlotCount` keeps per grid —
+/// so the pick and the geometry it justifies are now one value that cannot be
+/// written, restored or undone by halves.
+///
+/// Still per breakpoint, and now by construction rather than by a key: each
+/// slot count has its own cached list of items, so a pick made on the phone grid
+/// is on the phone grid's copy of the card and nowhere else.
 ///
 /// Why the inversion does not contradict §2.1's "not a user preference": the
 /// framework still guarantees the layout, it just guarantees it by constraining
@@ -44,6 +58,12 @@ class CardFormChoice extends Equatable {
   /// Whether this choice carries a size to put back.
   bool get hasRestore => restoreW != null || restoreH != null;
 
+  /// The key a choice occupies inside a `LayoutItem.extra` map.
+  ///
+  /// Nested under a key of its own rather than spread across `extra` so the next
+  /// feature that needs a per-item payload does not have to know this one exists.
+  static const String extraKey = 'cardForm';
+
   Map<String, dynamic> toJson() => {
         'density': density.name,
         if (restoreW != null) 'restoreW': restoreW,
@@ -68,6 +88,22 @@ class CardFormChoice extends Equatable {
     );
   }
 
+  /// The pick carried by an item's `extra` payload, or null when it carries
+  /// none.
+  ///
+  /// Takes [Object?] rather than a typed map because the same call reads both a
+  /// live `LayoutItem.extra` and the serialised item maps `exportLayout()`
+  /// produces and `jsonDecode` hands back, and those arrive as three different
+  /// map types.
+  static CardFormChoice? readFrom(Object? extra) =>
+      extra is Map ? tryFromJson(extra[extraKey]) : null;
+
+  /// [extra] with this choice written into it, leaving any other payload alone.
+  Map<String, dynamic> writeInto(Object? extra) => {
+        if (extra is Map) ...extra.cast<String, dynamic>(),
+        extraKey: toJson(),
+      };
+
   @override
   List<Object?> get props => [density, restoreW, restoreH];
 
@@ -76,129 +112,64 @@ class CardFormChoice extends Equatable {
       '${hasRestore ? ', restore ${restoreW}x$restoreH' : ''})';
 }
 
-/// Every card's chosen form, keyed by breakpoint then by card id.
+/// The form each card is in on the grid currently on screen, by card id.
 ///
-/// Per breakpoint because "compact on a phone, normal on a laptop" is the
-/// primary use case this ticket exists for — a single global value would be
-/// wrong by design, and a value stored outside [UspLayoutEnvelope] would repeat
-/// #1293's trap of a preference that is not keyed by the grid it describes.
+/// A read model and nothing else (#1400). The picks themselves live on the grid
+/// items — see [CardFormChoice] — and this is the projection of the *live* grid's
+/// items that the render side watches: [CardDensityHost] for the form a card
+/// draws itself in, and the edit-mode toolbar for the chip it shows as selected.
+///
+/// Not keyed by breakpoint, and that is the point of #1400 rather than a
+/// simplification of it. #1299 keyed a stored map by `(slotCount, cardId)`
+/// because the picks were a second store that had to name the grid it described.
+/// A projection of the live layout has one grid by definition — the one whose
+/// geometry is on screen — so there is no key to get wrong and no second store to
+/// disagree with. `UspSliverDashboardControllerNotifier` republishes this from the
+/// controller's own layout beacon, so it follows a breakpoint change, an import,
+/// a revert and a gesture without any of them having to remember to.
 ///
 /// Absent means "no pick": the card falls back to #1232's width-derived form.
 /// That is not the same as an explicit [CardDensity.normal], which pins the card
-/// to normal at every width — see `UspWidgetSpecs.applyCardForms`.
+/// to normal at every width — see `UspWidgetSpecs.applyPickedForms`.
 ///
 /// Value equality is load-bearing rather than decorative: this is the value of a
-/// `StateProvider` (`cardFormsProvider`), and every reload and every revert
-/// republishes a freshly built instance. On identity alone each of those would
-/// rebuild every card that reads its density, for picks that did not change.
-/// [Equatable] compares the nested map deeply, keys included.
+/// `StateProvider` (`cardFormsProvider`), and it is republished on every write to
+/// the layout beacon — which includes each leg of the persistence walk's visit to
+/// the other breakpoints. On identity alone each of those would rebuild every
+/// card that reads its density, for picks that did not change. [Equatable]
+/// compares the map deeply, keys included.
 class CardForms extends Equatable {
-  const CardForms(this.byBreakpoint);
+  const CardForms(this.byCard);
 
   static const CardForms empty = CardForms({});
 
-  final Map<int, Map<String, CardFormChoice>> byBreakpoint;
+  /// The picks read off the live grid's items, by card id.
+  final Map<String, CardFormChoice> byCard;
 
-  bool get isEmpty => byBreakpoint.values.every((choices) => choices.isEmpty);
-
-  bool get isNotEmpty => !isEmpty;
-
-  /// Whether any pick here implies geometry a build with no card-form rule has
-  /// no explanation for.
+  /// The picks carried by [items], for a caller holding a grid's live items.
   ///
-  /// Only [CardDensity.popup] and [CardDensity.compact] do. An explicit
-  /// [CardDensity.normal] pins the card against the width-derived form, but the
-  /// geometry it writes — the spec's own bounds, `isResizable` back on — is
-  /// exactly what a pre-#1299 build writes for itself, so a payload whose only
-  /// picks are normal is still readable as one of those.
+  /// The one place this projection is built, so "the read model is the live
+  /// layout" is a fact about one function rather than a convention.
   ///
-  /// This is what [UspLayoutEnvelope.version] is a claim about, and why the claim
-  /// cannot be "are there any picks at all": returning a card to normal is how a
-  /// user *undoes* a form, and it must not leave the payload stamped as
-  /// something an older build would reject for the rest of the install's life.
-  bool get hasFormBeyondNormal => byBreakpoint.values.any((choices) =>
-      choices.values.any((choice) => choice.density != CardDensity.normal));
+  /// Takes `(id, extra)` pairs rather than the grid's own item type so that this
+  /// file — a value object under `_shared/`, read by every card that resolves a
+  /// density — does not have to import the dashboard's grid package. The two
+  /// fields are all the projection uses, and the caller that has the items is the
+  /// controller, which imports the package anyway.
+  static CardForms of(Iterable<(String, Object?)> items) => CardForms({
+        for (final (id, extra) in items)
+          if (CardFormChoice.readFrom(extra) case final choice?) id: choice,
+      });
 
-  /// The picks on the [slotCount]-wide grid.
-  Map<String, CardFormChoice> at(int slotCount) =>
-      byBreakpoint[slotCount] ?? const {};
+  bool get isEmpty => byCard.isEmpty;
 
-  CardFormChoice? choiceFor(int slotCount, String cardId) =>
-      at(slotCount)[cardId];
-
-  /// The form picked for [cardId] on the [slotCount]-wide grid, or null when the
-  /// user has not picked one and the width should decide.
-  CardDensity? densityFor(int slotCount, String cardId) =>
-      choiceFor(slotCount, cardId)?.density;
-
-  /// Returns a copy with [cardId]'s pick on [slotCount] replaced, or removed
-  /// when [choice] is null.
-  CardForms withChoice(int slotCount, String cardId, CardFormChoice? choice) {
-    final choices = Map<String, CardFormChoice>.from(at(slotCount));
-    if (choice == null) {
-      choices.remove(cardId);
-    } else {
-      choices[cardId] = choice;
-    }
-    final next = Map<int, Map<String, CardFormChoice>>.from(byBreakpoint);
-    if (choices.isEmpty) {
-      next.remove(slotCount);
-    } else {
-      next[slotCount] = choices;
-    }
-    return CardForms(next);
-  }
-
-  /// Returns a copy with [cardId]'s pick dropped from every breakpoint.
-  ///
-  /// Membership is not per breakpoint — deleting a card deletes the card — so a
-  /// pick that outlived its card would come back the moment the card was re-added
-  /// and silently apply a form the user chose in a previous session.
-  CardForms withoutCard(String cardId) {
-    final next = <int, Map<String, CardFormChoice>>{};
-    for (final entry in byBreakpoint.entries) {
-      final choices = {
-        for (final choice in entry.value.entries)
-          if (choice.key != cardId) choice.key: choice.value,
-      };
-      if (choices.isNotEmpty) next[entry.key] = choices;
-    }
-    return CardForms(next);
-  }
-
-  Map<String, dynamic> toJson() => {
-        for (final entry in byBreakpoint.entries)
-          if (entry.value.isNotEmpty)
-            entry.key.toString(): {
-              for (final choice in entry.value.entries)
-                choice.key: choice.value.toJson(),
-            },
-      };
-
-  /// Parses stored picks, dropping anything unreadable.
-  ///
-  /// Never returns null and never throws: see [CardFormChoice.tryFromJson] for
-  /// why a bad pick must not cost the user their layout.
-  static CardForms fromJson(Object? raw) {
-    if (raw is! Map) return empty;
-    final byBreakpoint = <int, Map<String, CardFormChoice>>{};
-    for (final entry in raw.entries) {
-      final slotCount = int.tryParse('${entry.key}');
-      final choices = entry.value;
-      if (slotCount == null || choices is! Map) continue;
-      final parsed = <String, CardFormChoice>{};
-      for (final choice in choices.entries) {
-        final value = CardFormChoice.tryFromJson(choice.value);
-        if (value != null) parsed['${choice.key}'] = value;
-      }
-      if (parsed.isNotEmpty) byBreakpoint[slotCount] = parsed;
-    }
-    return CardForms(byBreakpoint);
-  }
+  /// The form picked for [cardId], or null when the user has not picked one and
+  /// the width should decide.
+  CardDensity? densityFor(String cardId) => byCard[cardId]?.density;
 
   @override
-  List<Object?> get props => [byBreakpoint];
+  List<Object?> get props => [byCard];
 
   @override
-  String toString() => 'CardForms($byBreakpoint)';
+  String toString() => 'CardForms($byCard)';
 }

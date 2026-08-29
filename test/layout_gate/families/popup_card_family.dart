@@ -283,9 +283,9 @@ class PopupDialogFamily extends CardOverflowFamily {
 ///
 /// [PopupDialogFamily] models the width path: the card degrades because the grid
 /// made it narrow, and its cell keeps whatever height the layout gave it. A pick is
-/// the other path, and it pins the box — `applyCardForms` writes
-/// [UspWidgetSpecs.popupHeightRows], so the cell is one row whatever the card
-/// declares it needs.
+/// the other path, and it pins the box — [UspWidgetSpecs.withCardForm] writes
+/// [UspWidgetSpecs.popupHeightRows] onto the item as it records the pick (#1400),
+/// so the cell is one row whatever the card declares it needs.
 ///
 /// That height is a consequence of the degradation, so it must not be what the
 /// presentation *undoing* the degradation is sized to. Sweeping the two heights

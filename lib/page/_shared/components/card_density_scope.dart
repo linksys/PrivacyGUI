@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 /// Carries the current [CardDensity] down a card's subtree.
 ///
@@ -179,14 +178,13 @@ class CardDensityHost extends ConsumerWidget {
     final override = ref.watch(cardDensityOverrideProvider(cardId));
     if (override != null) return _scope(override);
 
-    // The pick, if there is one for this card on this grid. `currentMaxColumns`
-    // is the breakpoint the picks are keyed by — the view feeds the same value to
-    // `SliverDashboard(breakpoints: …)`, so the grid's slot count and this are the
-    // same number by construction, and it has non-throwing fallbacks so a card
-    // built outside a real MediaQuery still reads something.
-    final picked = ref
-        .watch(cardFormsProvider)
-        .densityFor(context.currentMaxColumns, cardId);
+    // The pick, if there is one for this card. Not keyed by breakpoint here
+    // because it does not need to be (#1400): the picks are read off the items of
+    // the grid that is on screen, so "this grid" is what the provider holds rather
+    // than something this card has to name. It used to pass
+    // `context.currentMaxColumns` and rely on that being the controller's slot
+    // count by construction.
+    final picked = ref.watch(cardFormsProvider).densityFor(cardId);
     if (picked != null && picked != CardDensity.normal) return _scope(picked);
 
     // No threshold declared means the density is a constant: normal at every
