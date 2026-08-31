@@ -31,9 +31,15 @@ const _advancedSettings = 'uspAdvancedSettings';
 const _firewall = 'uspFirewall';
 const _ipv6 = 'uspIpv6PortService';
 
-/// Mirror of `context.navigateBack` (lib/route/navigation_extensions.dart): pop
-/// if possible, else go to the fallback route by name.
-void _navigateBack(BuildContext context, {required String fallback}) {
+/// Test double for `context.navigateBack` (lib/route/navigation_extensions.dart):
+/// pop if possible, else go to the fallback route by name.
+///
+/// The production extension has a third branch that honours
+/// `NavigationExtra.backDestination` between the two. It is left out because no
+/// call site in `lib/` sets `backDestination` (the three `NavigationExtra(...)`
+/// constructions pass only `data` / `naviType`), so that branch is unreachable
+/// for every route in this flow.
+void _stubNavigateBack(BuildContext context, {required String fallback}) {
   if (context.canPop()) {
     context.pop();
     return;
@@ -46,13 +52,19 @@ class _StubPage extends StatelessWidget {
   final Widget? body;
   final VoidCallback? onBack;
   const _StubPage({required this.title, this.body, this.onBack});
+
+  /// Per-page key. A single shared `back_button` key would be ambiguous while
+  /// two routes are mounted at once, and it makes a wrong-page tap silently
+  /// look like a pass.
+  static Key backKey(String title) => Key('back_button_$title');
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: Text('PAGE:$title'),
           leading: onBack != null
               ? IconButton(
-                  key: const Key('back_button'),
+                  key: backKey(title),
                   icon: const Icon(Icons.arrow_back),
                   onPressed: onBack,
                 )
@@ -70,7 +82,11 @@ class _StubPage extends StatelessWidget {
 ///   Firewall -> IPv6 : pushNamed (usp_firewall_view.dart, the fix)
 ///   IPv6 back : navigateBack(fallback: uspFirewall) (usp_ipv6_port_service_view.dart, the fix)
 ///   Firewall back : navigateBack(fallback: uspAdvancedSettings) (unchanged)
-GoRouter _buildRouter() {
+///
+/// [initialLocation] models a cold start / browser refresh straight onto a URL;
+/// the redirect in `router_provider.dart` returns `state.uri` unchanged for
+/// `/usp...` paths when logged in, so a deep link really does land there.
+GoRouter _buildRouter({String initialLocation = '/uspDashboard'}) {
   Widget firewallPage(BuildContext c) => _StubPage(
         title: 'Firewall',
         body: Center(
@@ -80,17 +96,17 @@ GoRouter _buildRouter() {
             child: const Text('IPv6 Port Service'),
           ),
         ),
-        onBack: () => _navigateBack(c, fallback: _advancedSettings),
+        onBack: () => _stubNavigateBack(c, fallback: _advancedSettings),
       );
 
   Widget ipv6Page(BuildContext c) => _StubPage(
         title: 'IPv6',
         // FIX: backFallback -> navigateBack (pop), was goNamed(uspFirewall).
-        onBack: () => _navigateBack(c, fallback: _firewall),
+        onBack: () => _stubNavigateBack(c, fallback: _firewall),
       );
 
   return GoRouter(
-    initialLocation: '/uspDashboard',
+    initialLocation: initialLocation,
     routes: [
       ShellRoute(
         builder: (c, s, child) => child,
@@ -144,8 +160,13 @@ GoRouter _buildRouter() {
 }
 
 void main() {
-  Future<void> back(WidgetTester t) async {
-    await t.tap(find.byKey(const Key('back_button')));
+  /// Taps the back arrow of PAGE:[from], asserting it is on screen first so a
+  /// missing `onBack` names the page instead of throwing a bare StateError.
+  Future<void> back(WidgetTester t, String from) async {
+    final button = find.byKey(_StubPage.backKey(from));
+    expect(button, findsOneWidget,
+        reason: 'expected the back arrow of PAGE:$from to be on screen');
+    await t.tap(button);
     await t.pumpAndSettle();
   }
 
@@ -159,7 +180,9 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('PAGE:Firewall'), findsOneWidget);
 
-      await back(t);
+      await back(t, 'Firewall');
+      // Already true before the fix, while nested: this is the control that
+      // falsifies "the nesting is the root cause".
       expect(find.text('PAGE:Dashboard'), findsOneWidget,
           reason: 'Back from Firewall must return to Dashboard');
     });
@@ -179,13 +202,13 @@ void main() {
       expect(find.text('PAGE:IPv6'), findsOneWidget);
 
       // First back: IPv6 -> Firewall.
-      await back(t);
+      await back(t, 'IPv6');
       expect(find.text('PAGE:Firewall'), findsOneWidget,
           reason: 'Back from IPv6 must return to Firewall');
 
       // Second back: Firewall -> Dashboard (the reported failure was Advanced
       // Settings).
-      await back(t);
+      await back(t, 'Firewall');
       expect(find.text('PAGE:Dashboard'), findsOneWidget,
           reason: 'Final back must return to Dashboard, not Advanced Settings');
     });
@@ -197,6 +220,9 @@ void main() {
       await t.pumpWidget(MaterialApp.router(routerConfig: router));
       await t.pumpAndSettle();
 
+      // Advanced Settings is reached from the menu with `go`
+      // (usp_menu_view.dart:115), so it becomes the stack root — the second real
+      // entry point into Firewall.
       router.goNamed(_advancedSettings);
       await t.pumpAndSettle();
       expect(find.text('PAGE:AdvancedSettings'), findsOneWidget);
@@ -205,7 +231,7 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('PAGE:Firewall'), findsOneWidget);
 
-      await back(t);
+      await back(t, 'Firewall');
       expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
           reason: 'Firewall reached via Advanced Settings must return there');
     });
@@ -217,6 +243,7 @@ void main() {
       await t.pumpWidget(MaterialApp.router(routerConfig: router));
       await t.pumpAndSettle();
 
+      // Same `go`-rooted entry as the previous case.
       router.goNamed(_advancedSettings);
       await t.pumpAndSettle();
 
@@ -226,12 +253,39 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('PAGE:IPv6'), findsOneWidget);
 
-      await back(t); // IPv6 -> Firewall
+      await back(t, 'IPv6'); // IPv6 -> Firewall
       expect(find.text('PAGE:Firewall'), findsOneWidget);
 
-      await back(t); // Firewall -> Advanced Settings
+      await back(t, 'Firewall'); // Firewall -> Advanced Settings
       expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
           reason: 'Entering via Advanced Settings must unwind back to it');
+    });
+
+    // Pins the one behaviour this PR does change outside the reported chain.
+    //
+    // On a cold start / browser refresh straight onto the IPv6 URL there is no
+    // pushed stack, but the URL is nested, so go_router reconstructs
+    // [AdvancedSettings, IPv6] and `canPop()` is TRUE. `backFallback` therefore
+    // never fires: back pops to Advanced Settings, whereas the old
+    // unconditional `goNamed(uspFirewall)` always landed on Firewall.
+    //
+    // Accepted, not a regression to chase: the landing page is the parent in the
+    // URL, which is what every other nested page does on refresh (Local Network,
+    // DMZ, Static Routing all pop to Advanced Settings). Making back land on
+    // Firewall would require nesting uspIpv6PortService under uspFirewall — a
+    // route-tree change, deliberately out of scope for this minimal fix.
+    testWidgets(
+        'deep link straight onto IPv6 pops to Advanced Settings (fallback does '
+        'not fire — canPop is true from the nested URL)', (t) async {
+      await t.pumpWidget(MaterialApp.router(
+          routerConfig: _buildRouter(
+              initialLocation: '/uspAdvancedSettings/uspIpv6PortService')));
+      await t.pumpAndSettle();
+      expect(find.text('PAGE:IPv6'), findsOneWidget);
+
+      await back(t, 'IPv6');
+      expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
+          reason: 'a nested deep link rebuilds the parent, so back pops to it');
     });
   });
 }
