@@ -155,13 +155,6 @@ final uspDashboardRoute = ShellRoute(
           preservableProvider: preservableUspInternetSettingsProvider,
         ),
         LinksysRoute(
-          name: RouteNamed.uspLocalNetwork,
-          path: RouteNamed.uspLocalNetwork,
-          builder: (context, state) => const UspLocalNetworkView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspLocalNetworkProvider,
-        ),
-        LinksysRoute(
           name: RouteNamed.uspFirewall,
           path: RouteNamed.uspFirewall,
           builder: (context, state) => const UspFirewallView(),
@@ -197,6 +190,20 @@ final uspDashboardRoute = ShellRoute(
           preservableProvider: preservableUspIpv6PortServiceProvider,
         ),
       ],
+    ),
+    // #1421 / #1029 pattern: pages reachable from a Dashboard card must be
+    // top-level siblings of uspDashboard, not nested under uspAdvancedSettings.
+    // When nested, pushNamed() from a dashboard card resolves the full path
+    // (/uspAdvancedSettings/uspLocalNetwork) and go_router synthesizes
+    // UspAdvancedSettingsView into the back stack, so back lands on Advanced
+    // Settings instead of the Dashboard. As a sibling, pushNamed from either the
+    // Dashboard or the Advanced Settings list pops back to its real entry point.
+    LinksysRoute(
+      name: RouteNamed.uspLocalNetwork,
+      path: RoutePath.uspLocalNetwork,
+      builder: (context, state) => const UspLocalNetworkView(),
+      enableDirtyCheck: true,
+      preservableProvider: preservableUspLocalNetworkProvider,
     ),
     if (kDebugMode || GlobalConfig.feature.enableTestConsole)
       LinksysRoute(
