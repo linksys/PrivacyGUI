@@ -15,9 +15,9 @@ void main() {
   const suitePath =
       '/Users/x/PrivacyGUI/test/golden_test/page/admin/localizations/admin_test.dart';
 
-  Map<String, dynamic> newTestResult() => {
-        'counting': {'total': 0, 'success': 0, 'fail': 0},
-      };
+  // Empty, like the parser's own initial state: the `counting` map it used to
+  // seed here was never serialised and nothing read it (#1405).
+  Map<String, dynamic> newTestResult() => <String, dynamic>{};
 
   void replay(
       Map<String, dynamic> testResult, List<Map<String, dynamic>> events) {
@@ -90,6 +90,58 @@ void main() {
       }
     });
 
+    test('carries the reporter\'s skipped flag onto the record', () {
+      // The pairing that made #1405 invisible: `hidden` is false, so the record
+      // survives the filter above and is a real row in the report, while `result`
+      // reads 'success' exactly like the case beside it that did run.
+      final testResult = newTestResult();
+
+      replay(testResult, [
+        {
+          'suite': {'id': 0, 'platform': 'vm', 'path': suitePath}
+        },
+        {
+          'group': {'id': 2, 'suiteID': 0, 'name': '', 'testCount': 2}
+        },
+        {
+          'test': {
+            'id': 4,
+            'suiteID': 0,
+            'groupIDs': [2],
+            'name': 'admin - menu - phone480 - nl (variant: Linux)',
+            'metadata': {'skip': false, 'skipReason': null},
+          }
+        },
+        {
+          'test': {
+            'id': 5,
+            'suiteID': 0,
+            'groupIDs': [2],
+            'name': 'admin - data - phone480 - nl (variant: Linux)',
+            // False even for a test skipped at runtime via `markTestSkipped`,
+            // which is why metadata is no substitute for the `testDone` flag.
+            'metadata': {'skip': false, 'skipReason': null},
+          }
+        },
+        {'testID': 4, 'result': 'success', 'hidden': false, 'skipped': false},
+        {'testID': 5, 'result': 'success', 'hidden': false, 'skipped': true},
+      ]);
+
+      final tests = testsOfGroup(testResult, 2);
+      expect(tests, hasLength(2));
+
+      final ran = tests.firstWhere((t) => t['id'] == 4);
+      expect(ran['result'], 'success');
+      // Absent rather than false: only a skip writes the field, and every
+      // consumer reads it as `== true`.
+      expect(ran.containsKey('skipped'), isFalse);
+
+      final skipped = tests.firstWhere((t) => t['id'] == 5);
+      expect(skipped['result'], 'success',
+          reason: 'the value golden CI counts on must not change');
+      expect(skipped['skipped'], isTrue);
+    });
+
     test('keeps a real case that started and never reported a result', () {
       // What a suite killed mid-run leaves behind. It must survive as evidence;
       // `computeCounting` reports it as incomplete rather than as a pass.
@@ -153,7 +205,7 @@ void main() {
     });
 
     test('is a no-op on a stream that produced no suites yet', () {
-      final testResult = <String, dynamic>{'counting': {}};
+      final testResult = <String, dynamic>{};
 
       expect(() => removeTestRecords(5, testResult), returnsNormally);
     });

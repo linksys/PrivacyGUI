@@ -27,13 +27,13 @@ void main(List<String> args) {
   }
 
   Stream<List<int>> inputStream = file.openRead();
-  final Map<String, dynamic> testResult = {
-    'counting': {
-      'total': 0,
-      'success': 0,
-      'fail': 0,
-    }
-  };
+  // No `counting` map here: this file only ever serialises the flat test list
+  // (see the `writeAsStringSync` below), and `combine_results.dart` derives every
+  // number from that list — across all locales, which a per-locale parser cannot
+  // do anyway. The map this used to carry was incremented on every `testDone`
+  // and read by nothing, which is why its skip-decrement never stopped a skipped
+  // golden from being reported as a pass (#1405).
+  final Map<String, dynamic> testResult = {};
 
   inputStream
       .transform(utf8.decoder) // Decode bytes to UTF-8.
@@ -132,10 +132,7 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
       return;
     }
     if (groupJson['name'] == '') {
-      final testCount = groupJson['testCount'];
-      final currentCount = testResult['counting']['total'];
-      testResult['counting']['total'] = currentCount + testCount;
-      targetSuite['total'] = testCount;
+      targetSuite['total'] = groupJson['testCount'];
     }
     addOrAppendData<Map<String, dynamic>>(targetSuite, 'groups', groupJson);
   } else if (json['test'] != null) {
@@ -187,20 +184,27 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     final List<Map<String, dynamic>> result = [];
     findTests(testID, testResult, result);
     if (json['result'] != null) {
-      if (json['result'] == 'success') {
-        if (!json['skipped']) {
-          final successCount = testResult['counting']['success'] ?? 0;
-          testResult['counting']['success'] = successCount + 1;
-        } else {
-          final currentCount = testResult['counting']['total'];
-          testResult['counting']['total'] = currentCount - 1;
-        }
-      } else {
-        final failCount = testResult['counting']['fail'] ?? 0;
-        testResult['counting']['fail'] = failCount + 1;
-      }
       for (var element in result) {
         element['result'] = json['result'];
+        // A skipped test is reported as `result: "success"` — the JSON reporter
+        // normalises it that way for backwards compatibility and carries the
+        // truth in this separate field. `skipped` is the only authoritative
+        // signal: `metadata.skip` reads false for every test under `runSkipped`,
+        // and a test skipped at runtime via `markTestSkipped` never declares it
+        // in metadata at all (measured: a `markTestSkipped` case arrives with
+        // `skipped: true` and `metadata.skip: false`). Discarding it here is what
+        // let a golden that stopped running read as one that ran and matched
+        // (#1405).
+        //
+        // Written alongside `result` rather than replacing it: golden CI's
+        // `triage-agent/collector.py` counts its own `success` by testing
+        // `result == 'success'`, so changing the value would silently move
+        // numbers in another repo. Only set when true, so 13572 records/run do
+        // not each grow a field that is almost always false — read it as
+        // `record['skipped'] == true`.
+        if (json['skipped'] == true) {
+          element['skipped'] = true;
+        }
       }
     }
     if (json['message'] != null) {
