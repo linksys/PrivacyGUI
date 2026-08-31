@@ -1,4 +1,4 @@
-// Regression coverage for linksys/PrivacyGUI#1421
+// The back-navigation stack semantics behind linksys/PrivacyGUI#1421.
 //
 // Bug: Dashboard > LAN Information > "View details" -> Local Network page, then
 // into DHCP Settings ("View DHCP Reservations"), then back twice, landed on
@@ -31,16 +31,29 @@
 // (#1029). The Firewall <-> IPv6 Port Service pair has the same root cause and
 // is fixed in the companion PR for #1420, not on this branch.
 //
-// These tests reproduce the EXACT route topology + the FIXED navigation verbs
-// with stub pages (no USP providers needed) and assert the real navigator
-// stack. go_router's push/go stack behavior is counter-intuitive, so it is
-// proven by an actually-pumped navigator, not by reasoning about the tree.
+// These tests mirror the route nesting and the FIXED navigation verbs with stub
+// pages (no USP providers needed) and assert the real navigator stack.
+// go_router's push/go stack behavior is counter-intuitive, so it is proven by an
+// actually-pumped navigator, not by reasoning about the tree.
 //
-// Scope, stated plainly: the route names, the paths and `navigateBack` come from
+// Scope, stated plainly. The route names, the paths and `navigateBack` come from
 // `lib/`, so a rename or a change to the back-navigation extension breaks this
 // file. The production `pushNamed` call site does not — reverting it leaves these
 // tests green. What is pinned is the stack semantics the fix relies on, and
-// #1421's exact chain through them.
+// #1421's exact chain through them. Two further gaps, on purpose:
+//
+//   - Plain `GoRoute`, not `LinksysRoute`: the dirty guard's `onExit` is not in
+//     this harness. It changes nothing for a clean page (it returns true), and a
+//     dirty page's alert is the guard's own concern, not the stack's.
+//   - In-session back only. On a browser reload / shared link there is no
+//     in-memory stack: go_router rebuilds the match from the URL alone, so a
+//     reload on `/uspAdvancedSettings/uspLocalNetwork` has `canPop() == true`
+//     against the rebuilt parent and back lands on Advanced Settings, and a
+//     reload on `/uspDhcpDetail` unwinds DHCP > Local Network > Advanced
+//     Settings (both measured). That is how every nested page under Advanced
+//     Settings behaves on a cold URL and is tracked separately — no verb at a
+//     call site can change it, because the entry point is simply not in the
+//     history the browser hands back.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
