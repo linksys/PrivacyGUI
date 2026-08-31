@@ -28,39 +28,44 @@
 //
 // Fix: Local Network -> DHCP now uses `pushNamed`; DHCP's back already popped
 // via `backFallback`. This mirrors the working DeviceList <-> DeviceDetail model
-// (#1029) and the sibling fix for Firewall <-> IPv6 Port Service (#1420).
+// (#1029). The Firewall <-> IPv6 Port Service pair has the same root cause and
+// is fixed in the companion PR for #1420, not on this branch.
 //
 // These tests reproduce the EXACT route topology + the FIXED navigation verbs
 // with stub pages (no USP providers needed) and assert the real navigator
 // stack. go_router's push/go stack behavior is counter-intuitive, so it is
 // proven by an actually-pumped navigator, not by reasoning about the tree.
+//
+// Scope, stated plainly: the route names, the paths and `navigateBack` come from
+// `lib/`, so a rename or a change to the back-navigation extension breaks this
+// file. The production `pushNamed` call site does not — reverting it leaves these
+// tests green. What is pinned is the stack semantics the fix relies on, and
+// #1421's exact chain through them.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 
-const _dashboard = 'uspDashboard';
-const _advancedSettings = 'uspAdvancedSettings';
-const _localNetwork = 'uspLocalNetwork';
-const _dhcpDetail = 'uspDhcpDetail';
-
-/// Mirror of `context.navigateBack` (lib/route/navigation_extensions.dart): pop
-/// if possible, else go to the fallback route by name. The production extension
-/// also honours `NavigationExtra.backDestination`; no route in this flow passes
-/// one, so the stub covers the two branches that are actually reachable here.
-void _stubNavigateBack(BuildContext context, {required String fallback}) {
-  if (context.canPop()) {
-    context.pop();
-    return;
-  }
-  context.goNamed(fallback);
-}
+// Aliases for the REAL route constants, so renaming one in
+// lib/route/constants.dart breaks this file at compile time instead of leaving
+// it green against a dead name.
+const _dashboard = RouteNamed.uspDashboard;
+const _advancedSettings = RouteNamed.uspAdvancedSettings;
+const _localNetwork = RouteNamed.uspLocalNetwork;
+const _dhcpDetail = RouteNamed.uspDhcpDetail;
 
 class _StubPage extends StatelessWidget {
   final String title;
   final Widget? body;
-  final VoidCallback? onBack;
-  const _StubPage({required this.title, this.body, this.onBack});
+
+  /// Mirrors `UiKitPageView`'s wiring (ui_kit_page_view.dart:549-552): a page
+  /// with a back arrow calls the production `context.navigateBack` extension
+  /// with this fallback. Null means no back arrow (the Dashboard).
+  final String? backFallback;
+
+  const _StubPage({required this.title, this.body, this.backFallback});
 
   /// Per-page key: a single shared `back_button` key would be ambiguous while
   /// two routes are mounted during a transition.
@@ -70,11 +75,13 @@ class _StubPage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: Text('PAGE:$title'),
-          leading: onBack != null
+          leading: backFallback != null
               ? IconButton(
                   key: backKey(title),
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: onBack,
+                  // The real extension, not a copy: pop if possible, else honour
+                  // NavigationExtra.backDestination, else goNamed(fallback).
+                  onPressed: () => context.navigateBack(fallback: backFallback),
                 )
               : null,
         ),
@@ -100,23 +107,23 @@ GoRouter _buildRouter() {
             child: const Text('View DHCP Reservations'),
           ),
         ),
-        onBack: () => _stubNavigateBack(c, fallback: _advancedSettings),
+        backFallback: _advancedSettings,
       );
 
-  Widget dhcpPage(BuildContext c) => _StubPage(
-        title: 'Dhcp',
-        onBack: () => _stubNavigateBack(c, fallback: _localNetwork),
-      );
+  const dhcpPage = _StubPage(
+    title: 'Dhcp',
+    backFallback: _localNetwork,
+  );
 
   return GoRouter(
-    initialLocation: '/uspDashboard',
+    initialLocation: RoutePath.uspDashboard,
     routes: [
       ShellRoute(
         builder: (c, s, child) => child,
         routes: [
           GoRoute(
             name: _dashboard,
-            path: '/uspDashboard',
+            path: RoutePath.uspDashboard,
             builder: (c, s) => _StubPage(
               title: 'Dashboard',
               body: Center(
@@ -132,12 +139,12 @@ GoRouter _buildRouter() {
           // that is why a `go` to it wiped the whole stack.
           GoRoute(
             name: _dhcpDetail,
-            path: '/uspDhcpDetail',
-            builder: (c, s) => dhcpPage(c),
+            path: RoutePath.uspDhcpDetail,
+            builder: (c, s) => dhcpPage,
           ),
           GoRoute(
             name: _advancedSettings,
-            path: '/uspAdvancedSettings',
+            path: RoutePath.uspAdvancedSettings,
             builder: (c, s) => _StubPage(
               title: 'AdvancedSettings',
               body: Center(
@@ -150,10 +157,12 @@ GoRouter _buildRouter() {
             ),
             routes: [
               // uspLocalNetwork stays NESTED under uspAdvancedSettings: the
-              // nesting is not the bug, so this fix leaves the tree alone.
+              // nesting is not the bug, so this fix leaves the tree alone. The
+              // real tree uses the route NAME as the relative path here
+              // (route_usp_dashboard.dart), so this mirrors it exactly.
               GoRoute(
                 name: _localNetwork,
-                path: 'uspLocalNetwork',
+                path: _localNetwork,
                 builder: (c, s) => localNetworkPage(c),
               ),
             ],
