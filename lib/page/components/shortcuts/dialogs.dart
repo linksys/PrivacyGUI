@@ -333,10 +333,25 @@ Future<bool?> showUnsavedAlert(BuildContext context,
   );
 }
 
+int _routerNotFoundAlertsOnScreen = 0;
+
+/// Whether a router-not-found alert is on screen already.
+///
+/// Read by the background trigger in the app root container, so a failing poll never
+/// stacks a second copy on top of one a deliberate flow has already raised. The
+/// deliberate callers pointedly do not consult it: several of them pop a spinner
+/// from their `onComplete`, so suppressing their alert would leave that spinner
+/// up for good.
+bool get isRouterNotFoundAlertShowing => _routerNotFoundAlertsOnScreen > 0;
+
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
     {FutureOr<T?> Function()? onComplete}) {
   logger.d('[RouterNotFound] show Router not found alert');
-  return showSimpleAppDialog<T>(context,
+  // Counted only once the route is really on its way up: showDialog throws
+  // synchronously when there is no navigator to push onto, and a count raised
+  // for an alert that never appeared would suppress every later one for the rest
+  // of the session.
+  final dialog = showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,
       content: Column(
@@ -371,6 +386,10 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
           },
         ),
       ]);
+  _routerNotFoundAlertsOnScreen++;
+  return dialog.whenComplete(() {
+    _routerNotFoundAlertsOnScreen--;
+  });
 }
 
 Future<T?> showRedirectNewIpAlert<T>(

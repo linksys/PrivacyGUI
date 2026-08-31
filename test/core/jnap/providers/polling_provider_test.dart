@@ -8,7 +8,7 @@
 // one-second first-poll delay, and `tester.pump(duration)` is what lets a test
 // stand at a chosen point in poll time without waiting in real time.
 //
-// Two defects are pinned here, both of which shipped without tests:
+// Three defects are pinned here, the first two of which shipped without tests:
 //
 //   #1418 - a single failed getDeviceMode in startPolling() skipped both the
 //           command-set build and the timer install, so polling stopped for good
@@ -16,10 +16,13 @@
 //   #7    - any failed poll was read as a rejected credential and logged the user
 //           out, so a router that briefly took its HTTP service away ejected the
 //           session.
+//   #1419 - the flip side of #7: once a failed poll no longer logged anyone out,
+//           it said nothing at all, and the dashboard kept presenting the last
+//           good snapshot as if it were live.
 //
-// Both are "the loop must survive one bad request" defects, which is why they
-// share a harness: what needs asserting in each case is what the loop does on
-// the tick *after* the failure.
+// All three are "the loop must survive one bad request" defects, which is why
+// they share a harness: what needs asserting in each case is what the loop does
+// on the tick *after* the failure.
 
 import 'dart:async';
 import 'dart:io';
@@ -147,7 +150,8 @@ void main() {
   /// Stubs `transaction`, recording the builder and delegating to [answer],
   /// which is passed the 1-based number of the poll so a test can fail an
   /// individual tick.
-  void whenTransaction(Future<JNAPTransactionSuccessWrap> Function(int n) answer) {
+  void whenTransaction(
+      Future<JNAPTransactionSuccessWrap> Function(int n) answer) {
     when(mockRepo.transaction(
       any,
       fetchRemote: anyNamed('fetchRemote'),
@@ -156,7 +160,8 @@ void main() {
       retries: anyNamed('retries'),
       sideEffectOverrides: anyNamed('sideEffectOverrides'),
     )).thenAnswer((invocation) {
-      transactions.add(invocation.positionalArguments.first as JNAPTransactionBuilder);
+      transactions
+          .add(invocation.positionalArguments.first as JNAPTransactionBuilder);
       return answer(transactions.length);
     });
   }
@@ -382,7 +387,10 @@ void main() {
       await advanceToFirstPoll(tester);
       await advanceOneTick(tester);
 
-      expect(transactions, hasLength(2));
+      // Three polls, not two: the lost one, the re-try it earns
+      // [pollRetryDelayInSec] later (see 'reporting an unreachable router'), and
+      // then the periodic tick - which is the one this test is about.
+      expect(transactions, hasLength(3));
       expect(container.read(pollingProvider).hasValue, isTrue,
           reason: 'the second tick must have recovered the data');
 
@@ -559,8 +567,8 @@ void main() {
       // The one failure that does mean the session is gone: the router answered,
       // and what it said was that the credential was rejected.
       whenSend((_) async => deviceMode('Master'));
-      whenTransaction((_) async =>
-          throw const JNAPError(result: errorJNAPUnauthorized));
+      whenTransaction(
+          (_) async => throw const JNAPError(result: errorJNAPUnauthorized));
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
@@ -583,6 +591,213 @@ void main() {
       expect(auth.logoutCount, 0);
 
       await stopAndSettle(tester);
+    });
+  });
+
+  group('reporting an unreachable router', () {
+    // #1419. A tolerated failure is still a failure the operator needs to hear
+    // about: the provider keeps the previous snapshot as its value, so every
+    // consumer goes on drawing it and nothing on screen says the router stopped
+    // answering. [pollingFailureCountProvider] is the signal the UI reads, and
+    // what these tests hold to is when it does and does not claim a problem.
+
+    testWidgets('a router that is answering makes no claim', (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      expect(container.read(pollingFailureCountProvider), 0);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('one failed poll is not enough to raise the alert',
+        (tester) async {
+      // The whole point of the delay: a router restarting its HTTP service is
+      // back within seconds, and a blocking dialog for a blip is worse than the
+      // blip.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 1) throw TimeoutException('no answer');
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      expect(container.read(pollingFailureCountProvider),
+          lessThan(pollFailuresBeforeUnreachable));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a failed poll is re-tried without waiting out the interval',
+        (tester) async {
+      // Left to the periodic timer alone the operator would sit in front of a
+      // stale dashboard for two whole intervals - two minutes - before being
+      // told anything.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 1) throw TimeoutException('no answer');
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1));
+
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(transactions, hasLength(2), reason: 'the re-try must have run');
+      expect(container.read(pollingFailureCountProvider), 0,
+          reason: 'a re-try that answers clears the streak');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a failure whose re-try also fails raises the alert',
+        (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+
+      expect(transactions, hasLength(2));
+      expect(container.read(pollingFailureCountProvider),
+          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('the re-try is not a loop of its own', (tester) async {
+      // One extra request per streak. Re-trying every 5s while the router is
+      // away would pile up requests behind a dialog that is already up and
+      // saying so.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(transactions, hasLength(2));
+
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(transactions, hasLength(2),
+          reason: 'only the periodic tick polls from here on');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a router that comes back on its own withdraws the claim',
+        (tester) async {
+      var failing = true;
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async {
+        if (failing) throw TimeoutException('no answer');
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(container.read(pollingFailureCountProvider),
+          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+
+      failing = false;
+      await advanceOneTick(tester);
+
+      expect(container.read(pollingFailureCountProvider), 0);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a stop calls off the pending re-try', (tester) async {
+      // Everything that takes the router away deliberately - a save with a
+      // DeviceRestart side effect, a firmware update, a logout - stops polling
+      // first. A re-try that outlived that stop would poll a router nobody is
+      // waiting on, and count a failure nobody should be told about.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1));
+
+      notifier.stopPolling();
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec + 1));
+
+      expect(transactions, hasLength(1));
+    });
+
+    testWidgets(
+        'a poll still on the wire when polling stops counts for nothing',
+        (tester) async {
+      // The same stop, one moment earlier - and the case the timer check alone
+      // does not cover. Everything that takes the router away deliberately calls
+      // stopPolling() while a poll may still be waiting for an answer it is now
+      // never going to get. That poll lands *after* the stop, and counting it
+      // would raise the background alert over the very flow that took the router
+      // away - which raises its own alert, on top of this one.
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'the poll is on the wire');
+
+      notifier.stopPolling();
+      onTheWire.completeError(TimeoutException('no answer'));
+      await tester.pump();
+
+      expect(container.read(pollingFailureCountProvider), 0,
+          reason: 'the stop said nobody is watching this router any more');
+
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec + 1));
+      expect(transactions, hasLength(1), reason: 'and no re-try was armed');
+    });
+
+    testWidgets('a fresh start makes no claim about the new router',
+        (tester) async {
+      // startPolling is the recovery path the alert's own Try again button runs,
+      // so a streak surviving it would put the dialog straight back up.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(container.read(pollingFailureCountProvider),
+          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+
+      notifier.stopPolling();
+      notifier.startPolling();
+
+      expect(container.read(pollingFailureCountProvider), 0);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a logout clears the streak', (tester) async {
+      // init() is the logout reset. The login page has no dashboard to correct,
+      // and the next login may well be to a router that is perfectly fine.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(container.read(pollingFailureCountProvider),
+          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+
+      await stopAndSettle(tester);
+      notifier.init();
+
+      expect(container.read(pollingFailureCountProvider), 0);
     });
   });
 }

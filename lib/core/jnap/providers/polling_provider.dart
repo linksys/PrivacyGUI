@@ -20,9 +20,36 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 
 const int pollFirstDelayInSec = 1;
 
+/// How long after a failed poll to try the router once more, instead of waiting
+/// out the whole [BuildConfig.refreshTimeInterval].
+///
+/// Short on purpose: this is the difference between telling the operator their
+/// router is unreachable after a quarter of a minute and after two minutes.
+const int pollRetryDelayInSec = 5;
+
+/// Failed polls in a row before the router counts as unreachable.
+///
+/// Two, not one, because [pollRetryDelayInSec] means the second attempt lands
+/// seconds after the first: a router restarting its HTTP service answers again
+/// well inside that window, and a blocking dialog for a blip is worse than the
+/// blip.
+const int pollFailuresBeforeUnreachable = 2;
+
 final pollingProvider =
     AsyncNotifierProvider<PollingNotifier, CoreTransactionData>(
         () => PollingNotifier());
+
+/// How many core polls have failed in a row - 0 whenever the router is
+/// answering.
+///
+/// The signal for 'the router has gone away', which nothing else reports: every
+/// *deliberate* disappearance (a save with a DeviceRestart side effect, a reboot,
+/// a firmware update) is announced by the flow that caused it, and a failing
+/// background poll used to be announced by nobody. [pollingProvider] itself
+/// cannot carry this: a failed poll leaves it in [AsyncError], and Riverpod
+/// hands an AsyncError the *previous* value, so a count written into
+/// [CoreTransactionData] on the way to an error would never be read.
+final pollingFailureCountProvider = StateProvider<int>((ref) => 0);
 
 class CoreTransactionData extends Equatable {
   final int lastUpdate;
@@ -63,11 +90,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// timer that is still running.
   static int _generation = 0;
 
+  /// The one-shot re-poll a failure earns itself, or null when no poll has
+  /// failed. Static for the same reason as [_timer].
+  static Timer? _retryTimer;
+
   bool _paused = false;
   set paused(bool value) {
     _paused = value;
     if (_paused) {
       _timer?.cancel();
+      _retryTimer?.cancel();
     } else {
       checkAndStartPolling();
     }
@@ -106,6 +138,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // own read failed, and give the new router its own repair budget.
     _lastKnownMode = null;
     _modeRetriesLeft = _maxModeRetries;
+    _clearFailureStreak();
     state = AsyncValue.data(
         const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
   }
@@ -149,6 +182,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future _polling(RouterRepository repository, {bool force = false}) async {
+    // Whose poll this is. Read before the first await, because by the time an
+    // answer comes back - or fails to - polling may have been stopped on purpose,
+    // and this poll then speaks for a router nobody is watching any more.
+    final generation = _generation;
+
     // Repair a start-up whose device-mode read failed, rather than polling in a
     // degraded shape until the next login. Once the router has answered once,
     // neither branch runs again.
@@ -196,7 +234,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       throw error ?? '';
     });
 
-    state = await AsyncValue.guard(
+    final result = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
           // Update Fernet key from device info
@@ -224,9 +262,59 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         throw e ?? '';
       }),
     );
+    state = result;
+    // A poll that outlived the reason it was started says nothing about the
+    // router: the flow that stopped polling is the one taking the router away,
+    // and it tells the operator so itself.
+    if (!_isCancelled(generation)) {
+      if (result.hasError) {
+        _recordPollFailure(repository);
+      } else {
+        _clearFailureStreak();
+      }
+    }
 
     benchMark.end();
   }
+
+  /// Counts a failed poll and, on the first one, asks the router again shortly.
+  ///
+  /// Failing quietly is what made #1419: the provider keeps its previous value
+  /// through an [AsyncError], so every consumer goes on drawing the last good
+  /// snapshot and nothing on screen says the router stopped answering. The count
+  /// is what the UI reads to say so - see [pollingFailureCountProvider] - and the
+  /// re-poll is what keeps it honest, since a router that is merely restarting
+  /// its HTTP service answers the second attempt.
+  void _recordPollFailure(RouterRepository repository) {
+    final failures = ref.read(pollingFailureCountProvider) + 1;
+    ref.read(pollingFailureCountProvider.notifier).state = failures;
+    // Only the first failure of a streak earns a re-try: past that the periodic
+    // tick is enough, and the operator is already being told.
+    if (failures > 1) {
+      return;
+    }
+    // No cancellation check in the callback: everything that stops or pauses
+    // polling cancels this timer outright, so a fired callback is by construction
+    // one nobody called off. [_polling] re-checks anyway for the answer it is
+    // still waiting on.
+    _retryTimer?.cancel();
+    _retryTimer = Timer(const Duration(seconds: pollRetryDelayInSec),
+        () => _polling(repository));
+  }
+
+  void _clearFailureStreak() {
+    _retryTimer?.cancel();
+    ref.read(pollingFailureCountProvider.notifier).state = 0;
+  }
+
+  /// Whether the run that started in [generation] is still the one anybody is
+  /// waiting on.
+  ///
+  /// Everything that takes the router away deliberately - a logout, a save with a
+  /// DeviceRestart side effect, a firmware update, PnP - either stops polling or
+  /// pauses it. Anything still in flight across that boundary has to notice, or it
+  /// polls a router nobody is watching and reports on its silence.
+  bool _isCancelled(int generation) => _paused || generation != _generation;
 
   /// Whether the router rejected our credential, as opposed to never having
   /// answered. Only the former means the session is really gone.
@@ -306,9 +394,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // here, and polling would resume against a rebooting router or with no
     // credential at all. The generation is what makes those stops stick.
     final generation = _generation;
-    bool cancelled() => _paused || generation != _generation;
+    bool cancelled() => _isCancelled(generation);
 
     _modeRetriesLeft = _maxModeRetries;
+    // A fresh session makes no claim about this router yet, and this is the
+    // recovery path the router-not-found alert's own Try again button runs: a
+    // streak that survived it would put the alert straight back up.
+    _clearFailureStreak();
     try {
       await _resolveCoreTransaction();
       if (cancelled()) return;
@@ -340,6 +432,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }
+    // The re-try a failed poll left behind would otherwise poll a router nobody
+    // is waiting on any more, and count a failure against it.
+    _retryTimer?.cancel();
   }
 
   _setTimePeriod(RouterRepository routerRepository) {
