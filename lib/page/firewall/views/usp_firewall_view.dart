@@ -257,11 +257,9 @@ class UspFirewallView extends ConsumerWidget {
       identifier: 'firewall-ipv6-port-service',
       title: loc(context).ipv6PortService,
       description: loc(context).manageIpv6PortRules,
-      // Push (not go) so the back stack is preserved: the IPv6 page pops back
-      // to Firewall, and Firewall's own back then pops to the original entry
-      // (e.g. Dashboard). Using goNamed here replaced the location and dropped
-      // the Dashboard from the stack, so back eventually fell through to the
-      // Advanced Settings fallback (#1420).
+      // Detail pages are entered with pushNamed: `go` replaces the location, so
+      // the entry point (e.g. the Dashboard) is dropped from the back stack and
+      // Firewall's own back falls through to backFallback instead (#1420).
       onTap: () => context.pushNamed(RouteNamed.uspIpv6PortService),
     );
   }

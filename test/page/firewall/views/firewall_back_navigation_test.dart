@@ -21,37 +21,37 @@
 // with stub pages (no USP providers needed) and assert the real navigator
 // stack. go_router's nested-route stack behavior is counter-intuitive, so the
 // behavior is proven by an actually-pumped navigator, not by reasoning.
+//
+// Scope, stated plainly: the route names, the paths and `navigateBack` come from
+// `lib/`, so a rename or a change to the back-navigation extension breaks this
+// file. The two production `pushNamed` call sites do not — reverting one of them
+// leaves these tests green. What is pinned is the stack semantics the fix relies
+// on, and #1420's exact chain through them.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 
-const _dashboard = 'uspDashboard';
-const _advancedSettings = 'uspAdvancedSettings';
-const _firewall = 'uspFirewall';
-const _ipv6 = 'uspIpv6PortService';
-
-/// Test double for `context.navigateBack` (lib/route/navigation_extensions.dart):
-/// pop if possible, else go to the fallback route by name.
-///
-/// The production extension has a third branch that honours
-/// `NavigationExtra.backDestination` between the two. It is left out because no
-/// call site in `lib/` sets `backDestination` (the three `NavigationExtra(...)`
-/// constructions pass only `data` / `naviType`), so that branch is unreachable
-/// for every route in this flow.
-void _stubNavigateBack(BuildContext context, {required String fallback}) {
-  if (context.canPop()) {
-    context.pop();
-    return;
-  }
-  context.goNamed(fallback);
-}
+// Aliases for the REAL route constants, so renaming one in
+// lib/route/constants.dart breaks this file at compile time instead of leaving
+// it green against a dead name.
+const _dashboard = RouteNamed.uspDashboard;
+const _advancedSettings = RouteNamed.uspAdvancedSettings;
+const _firewall = RouteNamed.uspFirewall;
+const _ipv6 = RouteNamed.uspIpv6PortService;
 
 class _StubPage extends StatelessWidget {
   final String title;
   final Widget? body;
-  final VoidCallback? onBack;
-  const _StubPage({required this.title, this.body, this.onBack});
+
+  /// Mirrors `UiKitPageView`'s wiring (ui_kit_page_view.dart:549-552): a page
+  /// with a back arrow calls the production `context.navigateBack` extension
+  /// with this fallback. Null means no back arrow (the Dashboard).
+  final String? backFallback;
+
+  const _StubPage({required this.title, this.body, this.backFallback});
 
   /// Per-page key. A single shared `back_button` key would be ambiguous while
   /// two routes are mounted at once, and it makes a wrong-page tap silently
@@ -62,11 +62,13 @@ class _StubPage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: Text('PAGE:$title'),
-          leading: onBack != null
+          leading: backFallback != null
               ? IconButton(
                   key: backKey(title),
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: onBack,
+                  // The real extension, not a copy: pop if possible, else honour
+                  // NavigationExtra.backDestination, else goNamed(fallback).
+                  onPressed: () => context.navigateBack(fallback: backFallback),
                 )
               : null,
         ),
@@ -86,7 +88,7 @@ class _StubPage extends StatelessWidget {
 /// [initialLocation] models a cold start / browser refresh straight onto a URL;
 /// the redirect in `router_provider.dart` returns `state.uri` unchanged for
 /// `/usp...` paths when logged in, so a deep link really does land there.
-GoRouter _buildRouter({String initialLocation = '/uspDashboard'}) {
+GoRouter _buildRouter({String? initialLocation}) {
   Widget firewallPage(BuildContext c) => _StubPage(
         title: 'Firewall',
         body: Center(
@@ -96,24 +98,24 @@ GoRouter _buildRouter({String initialLocation = '/uspDashboard'}) {
             child: const Text('IPv6 Port Service'),
           ),
         ),
-        onBack: () => _stubNavigateBack(c, fallback: _advancedSettings),
+        backFallback: _advancedSettings,
       );
 
-  Widget ipv6Page(BuildContext c) => _StubPage(
-        title: 'IPv6',
-        // FIX: backFallback -> navigateBack (pop), was goNamed(uspFirewall).
-        onBack: () => _stubNavigateBack(c, fallback: _firewall),
-      );
+  const ipv6Page = _StubPage(
+    title: 'IPv6',
+    // FIX: backFallback -> navigateBack (pop), was goNamed(uspFirewall).
+    backFallback: _firewall,
+  );
 
   return GoRouter(
-    initialLocation: initialLocation,
+    initialLocation: initialLocation ?? RoutePath.uspDashboard,
     routes: [
       ShellRoute(
         builder: (c, s, child) => child,
         routes: [
           GoRoute(
             name: _dashboard,
-            path: '/uspDashboard',
+            path: RoutePath.uspDashboard,
             builder: (c, s) => _StubPage(
               title: 'Dashboard',
               body: Center(
@@ -127,7 +129,7 @@ GoRouter _buildRouter({String initialLocation = '/uspDashboard'}) {
           ),
           GoRoute(
             name: _advancedSettings,
-            path: '/uspAdvancedSettings',
+            path: RoutePath.uspAdvancedSettings,
             builder: (c, s) => _StubPage(
               title: 'AdvancedSettings',
               body: Center(
@@ -140,16 +142,18 @@ GoRouter _buildRouter({String initialLocation = '/uspDashboard'}) {
             ),
             routes: [
               // uspFirewall stays NESTED under uspAdvancedSettings (unchanged).
+              // The real tree uses the route NAME as the relative path here
+              // (route_usp_dashboard.dart), so this mirrors it exactly.
               GoRoute(
                 name: _firewall,
-                path: 'uspFirewall',
+                path: _firewall,
                 builder: (c, s) => firewallPage(c),
               ),
               // uspIpv6PortService is its sibling under uspAdvancedSettings.
               GoRoute(
                 name: _ipv6,
-                path: 'uspIpv6PortService',
-                builder: (c, s) => ipv6Page(c),
+                path: _ipv6,
+                builder: (c, s) => ipv6Page,
               ),
             ],
           ),
@@ -279,7 +283,7 @@ void main() {
         'not fire — canPop is true from the nested URL)', (t) async {
       await t.pumpWidget(MaterialApp.router(
           routerConfig: _buildRouter(
-              initialLocation: '/uspAdvancedSettings/uspIpv6PortService')));
+              initialLocation: '${RoutePath.uspAdvancedSettings}/$_ipv6')));
       await t.pumpAndSettle();
       expect(find.text('PAGE:IPv6'), findsOneWidget);
 

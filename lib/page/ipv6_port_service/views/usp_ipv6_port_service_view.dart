@@ -33,9 +33,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      // Pop back to Firewall (the pushing page) instead of goNamed, which would
-      // replace the location and break the back stack. backFallback handles the
-      // deep-link / no-stack case. See #1420.
+      // IPv6 is entered with pushNamed, so back must pop to whoever pushed it.
+      // `backFallback` is only a no-parent safety net: on a deep link the nested
+      // URL rebuilds Advanced Settings, canPop() is true, and it never fires.
       backFallback: RouteNamed.uspFirewall,
       onRefresh: () => ref
           .read(uspIpv6PortServiceProvider.notifier)
