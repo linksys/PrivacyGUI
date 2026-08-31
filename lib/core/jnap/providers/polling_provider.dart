@@ -53,6 +53,16 @@ class CoreTransactionData extends Equatable {
 
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
+
+  /// Bumped by every [stopPolling], so a start-up sequence already in flight can
+  /// tell that it has been called off.
+  ///
+  /// The timer is the only thing [stopPolling] can cancel outright; the sequence
+  /// that installs it runs for a second or more before that and has to check for
+  /// itself. Static like [_timer], since the notifier can be rebuilt under a
+  /// timer that is still running.
+  static int _generation = 0;
+
   bool _paused = false;
   set paused(bool value) {
     _paused = value;
@@ -67,12 +77,35 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _coreTransactions = [];
 
+  /// The mode the router last reported, or null while it has never answered.
+  ///
+  /// Worth remembering because [checkSmartMode] is allowed to fail: falling all
+  /// the way back to 'Unconfigured' builds the command set without
+  /// getBackhaulInfo, which would quietly strip backhaul data from every poll of
+  /// a Master for the rest of the session over one lost request.
+  String? _lastKnownMode;
+
+  /// How many later polls may still re-read a device mode the router has never
+  /// given.
+  ///
+  /// Bounded because that re-read repairs a *transient* failure. A router that
+  /// keeps refusing getDeviceMode would otherwise add the request's full timeout
+  /// to every tick and every pull-to-refresh for the rest of the session, to fix
+  /// nothing.
+  static const int _maxModeRetries = 3;
+  int _modeRetriesLeft = _maxModeRetries;
+
   @override
   FutureOr<CoreTransactionData> build() {
     return const CoreTransactionData(lastUpdate: 0, isReady: false, data: {});
   }
 
   init() {
+    // Called on logout, so the next login may well be to a different router:
+    // forget the mode rather than let it stand in as a fallback for one whose
+    // own read failed, and give the new router its own repair budget.
+    _lastKnownMode = null;
+    _modeRetriesLeft = _maxModeRetries;
     state = AsyncValue.data(
         const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
   }
@@ -116,6 +149,22 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future _polling(RouterRepository repository, {bool force = false}) async {
+    // Repair a start-up whose device-mode read failed, rather than polling in a
+    // degraded shape until the next login. Once the router has answered once,
+    // neither branch runs again.
+    if (_coreTransactions.isEmpty) {
+      // Nothing to ask the router at all. This is the state every forcePolling
+      // was stuck in - pull-to-refresh, the refresh after saving a setting - so
+      // no amount of refreshing could repopulate the dashboard. Building a
+      // command set always succeeds, so this runs at most once.
+      await _resolveCoreTransaction();
+    } else if (_lastKnownMode == null && _modeRetriesLeft > 0) {
+      // The set was built, but without getBackhaulInfo, because the mode was
+      // unknown when it was built. See [_maxModeRetries] for why this is counted.
+      _modeRetriesLeft--;
+      await _resolveCoreTransaction();
+    }
+
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     final previousSnapshot = state.value;
@@ -233,24 +282,61 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       return;
     }
     logger.d('prepare start polling data');
-    final routerRepository = ref.read(routerRepositoryProvider);
-    checkSmartMode().then((mode) {
-      _coreTransactions = _buildCoreTransaction(mode: mode);
+    // Deliberately neither awaited nor returned: callers chain off this call
+    // (PowerTableNotifier.save) and must not be made to wait out the first poll.
+    _runStartupSequence(ref.read(routerRepositoryProvider));
+  }
+
+  /// Reads the device mode, seeds from cache, polls once, then installs the
+  /// periodic timer.
+  ///
+  /// Every step before that last one is best-effort. This used to be an
+  /// unguarded `.then` chain hanging off [checkSmartMode], so one refused socket
+  /// - a router restarting its HTTP service, a connection dropped on the way into
+  /// the dashboard - skipped both the command-set build and the timer install.
+  /// The caller has already cancelled the previous timer by then
+  /// (PrepareDashboardView stops before it starts), so polling stopped for good
+  /// and silently: the dashboard kept showing cached values and only a re-login
+  /// brought it back. The timer is what lets a later tick recover, so it goes in
+  /// no matter what any single step did.
+  Future<void> _runStartupSequence(RouterRepository routerRepository) async {
+    // Guaranteeing the timer install means this sequence must not outlive the
+    // reason it was started: a logout or a DeviceRestart side effect that lands
+    // while it is still running would otherwise have its stopPolling() undone
+    // here, and polling would resume against a rebooting router or with no
+    // credential at all. The generation is what makes those stops stick.
+    final generation = _generation;
+    bool cancelled() => _paused || generation != _generation;
+
+    _modeRetriesLeft = _maxModeRetries;
+    try {
+      await _resolveCoreTransaction();
+      if (cancelled()) return;
       fetchFirstLaunchedCacheData();
-    }).then(
-      (value) =>
-          Future.delayed(const Duration(seconds: pollFirstDelayInSec), () {
-        _polling(routerRepository);
-      }).then(
-        (_) {
-          _setTimePeriod(routerRepository);
-        },
-      ),
-    );
+      await Future.delayed(const Duration(seconds: pollFirstDelayInSec));
+      if (cancelled()) return;
+      await _polling(routerRepository);
+    } catch (e, stackTrace) {
+      logger.e('Polling start-up failed, installing the timer anyway: '
+          '$e, $stackTrace');
+    }
+    if (cancelled()) {
+      logger.d('polling was called off during start-up, no timer installed');
+      return;
+    }
+    _setTimePeriod(routerRepository);
+  }
+
+  /// Rebuilds the poll's command set from the router's current device mode.
+  Future<void> _resolveCoreTransaction() async {
+    _coreTransactions = _buildCoreTransaction(mode: await checkSmartMode());
   }
 
   stopPolling() {
     logger.d('stop polling data');
+    // Calls off any start-up sequence still on its way to installing a timer, as
+    // well as cancelling the one that is already running.
+    _generation++;
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }
@@ -320,13 +406,27 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     return commands;
   }
 
+  /// The router's device mode - 'Master', 'Slave', 'Unconfigured'.
+  ///
+  /// Never rejects. The read goes out with `fetchRemote: true`, so it never
+  /// answers from cache, and a connection-level failure gets no retry from the
+  /// HTTP client (only a TimeoutException does) - which made this the likeliest
+  /// step of the start-up sequence to fail, and it used to take the whole of
+  /// polling down with it. The mode decides one command, so the last known
+  /// answer - or 'Unconfigured' when the router has never given one - is a far
+  /// better outcome here than a rejected future.
   Future<String> checkSmartMode() async {
     final routerRepository = ref.read(routerRepositoryProvider);
-    return await routerRepository
-        .send(
-          JNAPAction.getDeviceMode,
-          fetchRemote: true,
-        )
-        .then((value) => value.output['mode'] ?? 'Unconfigured');
+    try {
+      final result = await routerRepository.send(
+        JNAPAction.getDeviceMode,
+        fetchRemote: true,
+      );
+      _lastKnownMode = result.output['mode'] as String? ?? 'Unconfigured';
+    } catch (e) {
+      logger.e('Polling: could not read the device mode, '
+          'falling back to ${_lastKnownMode ?? 'Unconfigured'}: $e');
+    }
+    return _lastKnownMode ?? 'Unconfigured';
   }
 }
