@@ -45,15 +45,13 @@
 //   - Plain `GoRoute`, not `LinksysRoute`: the dirty guard's `onExit` is not in
 //     this harness. It changes nothing for a clean page (it returns true), and a
 //     dirty page's alert is the guard's own concern, not the stack's.
-//   - In-session back only. On a browser reload / shared link there is no
-//     in-memory stack: go_router rebuilds the match from the URL alone, so a
-//     reload on `/uspAdvancedSettings/uspLocalNetwork` has `canPop() == true`
-//     against the rebuilt parent and back lands on Advanced Settings, and a
-//     reload on `/uspDhcpDetail` unwinds DHCP > Local Network > Advanced
-//     Settings (both measured). That is how every nested page under Advanced
-//     Settings behaves on a cold URL and is tracked separately — no verb at a
-//     call site can change it, because the entry point is simply not in the
-//     history the browser hands back.
+//   - The fix is about in-session back. On a browser reload / shared link there
+//     is no in-memory stack: go_router rebuilds the match from the URL alone, so
+//     the Dashboard is not in the history to return to and back unwinds along
+//     the URL instead. No verb at a call site can change that. The last two
+//     tests pin both cold-URL landings so the limit is asserted rather than
+//     asserted-in-prose; it is how every nested page under Advanced Settings
+//     behaves and is tracked separately.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,7 +108,12 @@ class _StubPage extends StatelessWidget {
 ///   Local Network -> DHCP : pushNamed (usp_local_network_view.dart, the fix)
 ///   DHCP back : navigateBack(fallback: uspLocalNetwork) (usp_dhcp_detail_view.dart:43, unchanged)
 ///   Local Network back : navigateBack(fallback: uspAdvancedSettings) (unchanged)
-GoRouter _buildRouter() {
+///
+/// `initialLocation` models a browser reload or a shared link: F5 gives
+/// go_router nothing but the URL, which is exactly a fresh router at that
+/// location. `redirect` in the real tree only guards login, so a deep link into
+/// a `/usp...` path really does land there.
+GoRouter _buildRouter({String? initialLocation}) {
   Widget localNetworkPage(BuildContext c) => _StubPage(
         title: 'LocalNetwork',
         body: Center(
@@ -129,7 +132,7 @@ GoRouter _buildRouter() {
   );
 
   return GoRouter(
-    initialLocation: RoutePath.uspDashboard,
+    initialLocation: initialLocation ?? RoutePath.uspDashboard,
     routes: [
       ShellRoute(
         builder: (c, s, child) => child,
@@ -285,6 +288,46 @@ void main() {
       await back(t, 'LocalNetwork'); // Local Network -> Advanced Settings
       expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
           reason: 'Entering via Advanced Settings must unwind back to it');
+    });
+
+    // The two cold-URL cases: what a reload or a shared link does. Raised in
+    // review as "does #1421 still reproduce on F5?" — it does end on Advanced
+    // Settings, and these pin why that is the URL's answer and not the fix's.
+
+    testWidgets(
+        'cold URL onto Local Network pops to Advanced Settings (the nested URL '
+        'rebuilds the parent, so canPop is true and the fallback never fires)',
+        (t) async {
+      await t.pumpWidget(MaterialApp.router(
+          routerConfig: _buildRouter(
+              initialLocation:
+                  '${RoutePath.uspAdvancedSettings}/$_localNetwork')));
+      await t.pumpAndSettle();
+      expect(find.text('PAGE:LocalNetwork'), findsOneWidget);
+
+      await back(t, 'LocalNetwork');
+      expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
+          reason: 'a cold nested URL has no entry point to return to');
+    });
+
+    testWidgets(
+        'cold URL onto DHCP unwinds to Advanced Settings (fallback chain, since '
+        'a top-level URL leaves nothing to pop)', (t) async {
+      await t.pumpWidget(MaterialApp.router(
+          routerConfig:
+              _buildRouter(initialLocation: RoutePath.uspDhcpDetail)));
+      await t.pumpAndSettle();
+      expect(find.text('PAGE:Dhcp'), findsOneWidget);
+
+      // canPop() is false here, so this hop is the `backFallback` goNamed —
+      // which then rebuilds Advanced Settings as Local Network's parent.
+      await back(t, 'Dhcp');
+      expect(find.text('PAGE:LocalNetwork'), findsOneWidget);
+
+      await back(t, 'LocalNetwork');
+      expect(find.text('PAGE:AdvancedSettings'), findsOneWidget,
+          reason:
+              'the fallback chain ends at the URL parent, not the Dashboard');
     });
   });
 }
