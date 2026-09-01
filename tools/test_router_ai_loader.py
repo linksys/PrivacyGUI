@@ -4,6 +4,7 @@
 from html.parser import HTMLParser
 from pathlib import Path
 import unittest
+from urllib.parse import urlsplit
 
 
 class ScriptCollector(HTMLParser):
@@ -18,18 +19,37 @@ class ScriptCollector(HTMLParser):
             self.scripts.append(dict(attrs))
 
 
+EXPECTED_LOADER = {"src": "/ai/linksys-ai.js", "defer": None}
+
+
+def router_ai_scripts(html: str) -> list[dict[str, str | None]]:
+    parser = ScriptCollector()
+    parser.feed(html)
+    return [
+        script
+        for script in parser.scripts
+        if urlsplit(script.get("src") or "").path.rsplit("/", 1)[-1]
+        == "linksys-ai.js"
+    ]
+
+
+def assert_loader_contract(html: str) -> None:
+    if router_ai_scripts(html) != [EXPECTED_LOADER]:
+        raise AssertionError("expected exactly one fixed, deferred Router AI loader")
+
+
 class RouterAiLoaderContractTest(unittest.TestCase):
     def test_package_owned_bundle_is_loaded_once_with_defer(self) -> None:
-        parser = ScriptCollector()
-        parser.feed(Path("web/index.html").read_text(encoding="utf-8"))
+        assert_loader_contract(Path("web/index.html").read_text(encoding="utf-8"))
 
-        ai_scripts = [
-            script
-            for script in parser.scripts
-            if (script.get("src") or "").endswith("linksys-ai.js")
-        ]
+    def test_query_or_fragment_variant_is_still_detected_as_a_duplicate(self) -> None:
+        html = """
+        <script src="/ai/linksys-ai.js" defer></script>
+        <script src="/ai/linksys-ai.js?v=2#retry" defer></script>
+        """
 
-        self.assertEqual(ai_scripts, [{"src": "/ai/linksys-ai.js", "defer": None}])
+        with self.assertRaisesRegex(AssertionError, "exactly one fixed"):
+            assert_loader_contract(html)
 
 
 if __name__ == "__main__":
