@@ -27,6 +27,11 @@ void main() {
 
       expect(counting,
           {'success': 2, 'fail': 1, 'skipped': 0, 'incomplete': 0, 'total': 3});
+      // #1404's invariant, in the only shape where it can hold: every record ran.
+      // Once a run holds a skip or a record that never reported, Total is larger
+      // than Pass + Fail by design — that is #1405's own bucket, and reading the
+      // difference as a defect is what the two extra tiles exist to prevent.
+      expect(counting['total'], counting['success']! + counting['fail']!);
     });
 
     test('counts a skipped golden as skipped, not as a pass', () {

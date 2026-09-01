@@ -131,9 +131,12 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (targetSuite == null) {
       return;
     }
-    if (groupJson['name'] == '') {
-      targetSuite['total'] = groupJson['testCount'];
-    }
+    // No suite-level `total` written here either: it was the last unread survivor
+    // of the `counting` map, it never left the process (only the flat leaf list is
+    // serialised), and it held the root group's `testCount` — which counts the
+    // hidden virtual tests `removeTestRecords` deletes, i.e. the inflated number
+    // #1404 is about. Leaving a knowingly-wrong number behind invites the next
+    // reader to trust it.
     addOrAppendData<Map<String, dynamic>>(targetSuite, 'groups', groupJson);
   } else if (json['test'] != null) {
     final Map<String, dynamic> testJson = json['test'];

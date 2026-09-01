@@ -365,7 +365,10 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         <!-- Both hidden while zero, which is every healthy run: a tile that reads
              0 forever teaches a reader to stop looking at it. -->
         <div class="stat-item" id="skippedTile" style="display:none"><div class="stat-value" id="skippedCount" style="color:#8b5cf6">0</div><div class="stat-label">Skipped</div></div>
-        <div class="stat-item" id="incompleteTile" style="display:none"><div class="stat-value" id="incompleteCount" style="color:#f59e0b">0</div><div class="stat-label">Incomplete</div></div>
+        <!-- "No result" everywhere it faces the reader — tile, filter chip and row
+             badge — with `incomplete` kept as the internal key. Three names for one
+             bucket on one screen reads as three different things. -->
+        <div class="stat-item" id="incompleteTile" style="display:none"><div class="stat-value" id="incompleteCount" style="color:#f59e0b">0</div><div class="stat-label">No result</div></div>
         <div class="stat-item"><div class="stat-value" id="overflowCount" style="color:#f59e0b">0</div><div class="stat-label">Overflow</div></div>
         <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
       </div>
@@ -510,7 +513,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const cx = 50, cy = 50, r = 40, inner = 25;
       const startAngle = -Math.PI / 2;
       const endAngle = startAngle + Math.PI * 2;
-      // Violet and amber are the Skipped and Incomplete tiles' colours. Empty
+      // Violet and amber are the Skipped and No-result tiles' colours. Empty
       // buckets are dropped, so a healthy run still draws the same two arcs it
       // always did.
       const segments = [
@@ -630,6 +633,32 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       return 'incomplete';
     }
 
+    // One summary for every level that labels a set of rows — the feature badge
+    // and the locale sub-header. Shared rather than written twice: when only the
+    // badge was taught about the fourth bucket, the sub-header went on printing
+    // "all pass" over rows the same render badged SKIPPED.
+    //
+    // "all pass" is reserved for a set where everything ran and passed. Saying it
+    // over records that were skipped or never reported is the silent green the
+    // Skipped tile exists to remove, one level down (#1405).
+    function statusSummary(tests) {
+      const fail = tests.filter(t => rowStatus(t) === 'error').length;
+      const skip = tests.filter(t => rowStatus(t) === 'skipped').length;
+      const none = tests.filter(t => rowStatus(t) === 'incomplete').length;
+      const parts = [];
+      if (fail > 0) parts.push(fail + ' failed');
+      if (skip > 0) parts.push(skip + ' skipped');
+      if (none > 0) parts.push(none + ' no result');
+      return {
+        fail: fail,
+        text: parts.length ? parts.join(', ') : 'all pass',
+        badgeClass: fail > 0 ? 'badge-fail'
+          : skip > 0 ? 'badge-skip'
+          : none > 0 ? 'badge-incomplete'
+          : 'badge-pass',
+      };
+    }
+
     function getFilters() {
       const locales = [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value);
       const rawDevices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
@@ -678,31 +707,13 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const sortedGroups = Object.keys(groups).sort();
       sortedGroups.forEach(function(groupName) {
         const groupTests = groups[groupName];
-        const failCount = groupTests.filter(t => rowStatus(t) === 'error').length;
-        const skipCount = groupTests.filter(t => rowStatus(t) === 'skipped').length;
-        const noResultCount = groupTests.filter(t => rowStatus(t) === 'incomplete').length;
-        // "all pass" is reserved for a group where everything ran and passed.
-        // Saying it over a group holding skips is the same silent green the Skipped
-        // tile exists to remove, one level down (#1405).
-        let badgeClass, badgeText;
-        if (failCount > 0) {
-          badgeClass = 'badge-fail';
-          badgeText = failCount + ' failed';
-        } else if (skipCount > 0 || noResultCount > 0) {
-          badgeClass = skipCount > 0 ? 'badge-skip' : 'badge-incomplete';
-          const parts = [];
-          if (skipCount > 0) parts.push(skipCount + ' skipped');
-          if (noResultCount > 0) parts.push(noResultCount + ' no result');
-          badgeText = parts.join(', ');
-        } else {
-          badgeClass = 'badge-pass';
-          badgeText = 'all pass';
-        }
+        const summary = statusSummary(groupTests);
+        const failCount = summary.fail;
 
         html += '<div class="feature-group">';
         html += '<div class="feature-header" onclick="toggleFeature(this)">';
         html += '<span>' + groupName + ' (' + groupTests.length + ')</span>';
-        html += '<span class="feature-badge ' + badgeClass + '">' + badgeText + '</span>';
+        html += '<span class="feature-badge ' + summary.badgeClass + '">' + summary.text + '</span>';
         html += '</div>';
         html += '<div class="feature-body' + (failCount > 0 ? ' open' : '') + '">';
 
@@ -719,8 +730,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
           sortedLocales.forEach(function(loc) {
             if (hasMultipleLocales) {
-              const locFails = localeGroups[loc].filter(t => rowStatus(t) === 'error').length;
-              html += '<div class="locale-group-header">' + loc + (locFails > 0 ? ' (' + locFails + ' failed)' : ' (all pass)') + '</div>';
+              html += '<div class="locale-group-header">' + loc + ' (' + statusSummary(localeGroups[loc]).text + ')</div>';
             }
             localeGroups[loc].forEach(function(t) { html += renderTestRow(t); });
           });
@@ -786,7 +796,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         html += '</div>';
       }
 
-      if (!isPass) {
+      // Failures only, not "everything that is not a pass". A skipped record
+      // carries `result: 'success'` while `rowStatus` correctly reports it as not
+      // a pass, so gating on `!isPass` opened a failure-styled panel — and any
+      // stale `failureImages` comparison — for a test that compared nothing.
+      if (status === 'error') {
         html += '<div class="failure-details">';
         if (t.failureImages) {
           // Standard 3-column comparison
