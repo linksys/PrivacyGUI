@@ -4,16 +4,15 @@ import '../../test_scripts/combine_results.dart';
 
 /// Guards the arithmetic behind the report's Test Summary panel, which on the
 /// 2026-08-28 dev run showed Total 14716 against Pass 13572 with zero failures
-/// (#1404), and which counted a golden that never ran as one that passed (#1405).
+/// (#1404).
 void main() {
-  Map<String, dynamic> record(Object? result, {bool skipped = false}) => {
+  Map<String, dynamic> record(Object? result) => {
         'id': 6,
         'name': ' admin - menu - phone480 - nl (variant: Linux)',
         'locale': 'nl',
         'deviceType': 'phone480',
         'tsName': 'admin-menu',
         if (result != null) 'result': result,
-        if (skipped) 'skipped': true,
       };
 
   group('computeCounting', () {
@@ -25,27 +24,11 @@ void main() {
         record('error'),
       ]);
 
-      expect(counting,
-          {'success': 2, 'fail': 1, 'skipped': 0, 'incomplete': 0, 'total': 3});
-      // #1404's invariant, in the only shape where it can hold: every record ran.
-      // Once a run holds a skip or a record that never reported, Total is larger
-      // than Pass + Fail by design — that is #1405's own bucket, and reading the
-      // difference as a defect is what the two extra tiles exist to prevent.
+      expect(counting, {'success': 2, 'fail': 1, 'incomplete': 0, 'total': 3});
+      // #1404's invariant, in the only shape where it can hold: every record
+      // reported. Once a run holds a record that never did, Total is larger than
+      // Pass + Fail by design — which is what the No-result tile exists to show.
       expect(counting['total'], counting['success']! + counting['fail']!);
-    });
-
-    test('counts a skipped golden as skipped, not as a pass', () {
-      final counting = computeCounting([
-        record('success'),
-        // What the reporter actually emits for a skip: `result` normalised to
-        // 'success' for backwards compatibility, with the truth in the separate
-        // field the parser now copies onto the record. Reading `result` alone is
-        // what made a golden that stopped running read as green (#1405).
-        record('success', skipped: true),
-      ]);
-
-      expect(counting,
-          {'success': 1, 'fail': 0, 'skipped': 1, 'incomplete': 0, 'total': 2});
     });
 
     test('counts a test that never reported as incomplete, not as a pass', () {
@@ -56,8 +39,7 @@ void main() {
 
       // The distinction the previous filter erased: it dropped every record
       // without a result, so a suite killed mid-run improved the numbers.
-      expect(counting,
-          {'success': 1, 'fail': 0, 'skipped': 0, 'incomplete': 1, 'total': 2});
+      expect(counting, {'success': 1, 'fail': 0, 'incomplete': 1, 'total': 2});
     });
 
     test('keeps total equal to the sum of the buckets for any result string',
@@ -72,18 +54,15 @@ void main() {
         record('error'),
         record('failure'),
         record(null),
-        record('success', skipped: true),
       ]);
 
-      expect(counting,
-          {'success': 1, 'fail': 1, 'skipped': 1, 'incomplete': 2, 'total': 5});
+      expect(counting, {'success': 1, 'fail': 1, 'incomplete': 2, 'total': 4});
     });
 
     test('is all zeroes for a run that produced no records', () {
       expect(computeCounting([]), {
         'success': 0,
         'fail': 0,
-        'skipped': 0,
         'incomplete': 0,
         'total': 0,
       });

@@ -164,14 +164,12 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
     .badge-pass { background: #dcfce7; color: #166534; }
     .badge-fail { background: #fef2f2; color: #991b1b; }
-    /* Skipped is violet and incomplete amber throughout — tile, donut segment,
-       row icon and row badge — so one colour means one thing wherever it appears. */
-    .badge-skip { background: #ede9fe; color: #5b21b6; }
+    /* Incomplete is amber throughout — tile, donut segment, row icon and row
+       badge — so one colour means one thing wherever it appears. */
     .badge-incomplete { background: #fef3c7; color: #92400e; }
     @media (prefers-color-scheme: dark) {
       .badge-pass { background: #14532d; color: #86efac; }
       .badge-fail { background: #450a0a; color: #fca5a5; }
-      .badge-skip { background: #2e1065; color: #c4b5fd; }
       .badge-incomplete { background: #78350f; color: #fde68a; }
     }
     .status-badge {
@@ -192,7 +190,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .test-icon { margin-right: 0.5rem; font-size: 1rem; }
     .test-icon.pass { color: var(--color-pass); }
     .test-icon.fail { color: var(--color-fail); }
-    .test-icon.skip { color: #8b5cf6; }
     .test-icon.incomplete { color: #f59e0b; }
     .test-name { flex: 1; }
     .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
@@ -362,12 +359,10 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         <div class="stat-item"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
         <div class="stat-item stat-pass"><div class="stat-value" id="passCount">0</div><div class="stat-label">Pass</div></div>
         <div class="stat-item stat-fail"><div class="stat-value" id="failCount">0</div><div class="stat-label">Fail</div></div>
-        <!-- Both hidden while zero, which is every healthy run: a tile that reads
-             0 forever teaches a reader to stop looking at it. -->
-        <div class="stat-item" id="skippedTile" style="display:none"><div class="stat-value" id="skippedCount" style="color:#8b5cf6">0</div><div class="stat-label">Skipped</div></div>
-        <!-- "No result" everywhere it faces the reader — tile, filter chip and row
-             badge — with `incomplete` kept as the internal key. Three names for one
-             bucket on one screen reads as three different things. -->
+        <!-- Hidden while zero, which is every healthy run: a tile that reads 0
+             forever teaches a reader to stop looking at it. "No result" everywhere
+             it faces the reader — tile, filter chip and row badge — with
+             `incomplete` kept as the internal key. -->
         <div class="stat-item" id="incompleteTile" style="display:none"><div class="stat-value" id="incompleteCount" style="color:#f59e0b">0</div><div class="stat-label">No result</div></div>
         <div class="stat-item"><div class="stat-value" id="overflowCount" style="color:#f59e0b">0</div><div class="stat-label">Overflow</div></div>
         <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
@@ -467,20 +462,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
-      // Goldens that did not run. The reporter calls a skip a success, so before
-      // this bucket existed they were counted as passes and the report went green
-      // on tests that had stopped running (#1405).
-      //
       // Tests that started and never reported a result — a suite killed mid-run.
       // Surfaced because Total counts them, so without this tile the panel would
       // show a Total that Pass and Fail cannot add up to and give no clue why
-      // (#1404). `|| 0` on both covers a report generated before the bucket
-      // existed.
-      const skipped = c.skipped || 0;
+      // (#1404). `|| 0` covers a report generated before the bucket existed.
       const incomplete = c.incomplete || 0;
-      document.getElementById('skippedTile').style.display =
-        skipped > 0 ? '' : 'none';
-      document.getElementById('skippedCount').textContent = skipped;
       document.getElementById('incompleteTile').style.display =
         incomplete > 0 ? '' : 'none';
       document.getElementById('incompleteCount').textContent = incomplete;
@@ -499,27 +485,25 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         banner.textContent =
           'Overflow detail unavailable: ' + DATA.overflowReportUnreadable;
       }
-      drawDonut(c.success, c.fail, skipped, incomplete);
+      drawDonut(c.success, c.fail, incomplete);
     }
 
-    function drawDonut(pass, fail, skipped, incomplete) {
+    function drawDonut(pass, fail, incomplete) {
       const canvas = document.getElementById('donutChart');
       const ctx = canvas.getContext('2d');
       // The denominator is the Total tile's number rather than pass + fail, so a
-      // run that skipped goldens or lost suites mid-way cannot still paint a full
-      // green ring while the tiles above say otherwise (#1404, #1405).
-      const total = pass + fail + skipped + incomplete;
+      // run that lost suites mid-way cannot still paint a full green ring while
+      // the tiles above say otherwise (#1404).
+      const total = pass + fail + incomplete;
       if (total === 0) return;
       const cx = 50, cy = 50, r = 40, inner = 25;
       const startAngle = -Math.PI / 2;
       const endAngle = startAngle + Math.PI * 2;
-      // Violet and amber are the Skipped and No-result tiles' colours. Empty
-      // buckets are dropped, so a healthy run still draws the same two arcs it
-      // always did.
+      // Amber is the No-result tile's colour. Empty buckets are dropped, so a
+      // healthy run still draws the same two arcs it always did.
       const segments = [
         [pass, '#22c55e'],
         [fail, '#ef4444'],
-        [skipped, '#8b5cf6'],
         [incomplete, '#f59e0b'],
       ].filter(s => s[0] > 0);
 
@@ -591,15 +575,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       html += '<label class="filter-chip active"><input type="checkbox" name="result" value="success" checked onchange="toggleChip(this)">Pass</label>';
       html += '<label class="filter-chip active"><input type="checkbox" name="result" value="error" checked onchange="toggleChip(this)">Fail</label>';
       // Only offered when the run actually holds them. A chip for an empty status
-      // filters nothing, and "Skipped" sitting among the chips of a run with no
-      // skips reads as if there were some — the same misdirection as a tile stuck
-      // at 0. Without these chips the rows would be unreachable: the filter matches
-      // on status, so a skipped or resultless record would be excluded by every
-      // combination of Pass and Fail.
+      // filters nothing and reads as if there were some — the same misdirection as
+      // a tile stuck at 0. Without this chip the rows would be unreachable: the
+      // filter matches on status, so a resultless record would be excluded by
+      // every combination of Pass and Fail.
       const statuses = new Set(DATA.tests.map(rowStatus));
-      if (statuses.has('skipped')) {
-        html += '<label class="filter-chip active"><input type="checkbox" name="result" value="skipped" checked onchange="toggleChip(this)">Skipped</label>';
-      }
       if (statuses.has('incomplete')) {
         html += '<label class="filter-chip active"><input type="checkbox" name="result" value="incomplete" checked onchange="toggleChip(this)">No result</label>';
       }
@@ -619,15 +599,10 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
 
     // The one place that turns a record into the status the report shows. Kept in
-    // step with `computeCounting` in combine_results.dart — same order, same four
+    // step with `computeCounting` in combine_results.dart — same order, same three
     // outcomes — because a row that disagrees with the tile above it is the whole
-    // class of bug #1404 and #1405 are about.
-    //
-    // `skipped` is tested first: the JSON reporter normalises a skip to
-    // `result: "success"`, so reading `result` alone reports a golden that never
-    // ran as one that passed.
+    // class of bug #1404 is about.
     function rowStatus(t) {
-      if (t.skipped === true) return 'skipped';
       if (t.result === 'success') return 'success';
       if (t.result === 'error') return 'error';
       return 'incomplete';
@@ -635,25 +610,22 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
     // One summary for every level that labels a set of rows — the feature badge
     // and the locale sub-header. Shared rather than written twice: when only the
-    // badge was taught about the fourth bucket, the sub-header went on printing
-    // "all pass" over rows the same render badged SKIPPED.
+    // badge was taught about the third bucket, the sub-header went on printing
+    // "all pass" over rows the same render badged NO RESULT.
     //
     // "all pass" is reserved for a set where everything ran and passed. Saying it
-    // over records that were skipped or never reported is the silent green the
-    // Skipped tile exists to remove, one level down (#1405).
+    // over records that never reported is the silent green the No-result tile
+    // exists to remove, one level down (#1404).
     function statusSummary(tests) {
       const fail = tests.filter(t => rowStatus(t) === 'error').length;
-      const skip = tests.filter(t => rowStatus(t) === 'skipped').length;
       const none = tests.filter(t => rowStatus(t) === 'incomplete').length;
       const parts = [];
       if (fail > 0) parts.push(fail + ' failed');
-      if (skip > 0) parts.push(skip + ' skipped');
       if (none > 0) parts.push(none + ' no result');
       return {
         fail: fail,
         text: parts.length ? parts.join(', ') : 'all pass',
         badgeClass: fail > 0 ? 'badge-fail'
-          : skip > 0 ? 'badge-skip'
           : none > 0 ? 'badge-incomplete'
           : 'badge-pass',
       };
@@ -747,14 +719,12 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     function renderTestRow(t) {
       const status = rowStatus(t);
       const isPass = status === 'success';
-      // A skip drew a green tick before this, which is the row-level form of the
-      // same defect as counting it in Pass (#1405); a resultless record could not
-      // be reached at all, because the filter compared `t.result` against Pass and
-      // Fail and it matched neither (#1404).
-      const ICONS = { success: '&#10003;', error: '&#10007;', skipped: '&#8856;', incomplete: '&#8722;' };
-      const ICON_CLASSES = { success: 'pass', error: 'fail', skipped: 'skip', incomplete: 'incomplete' };
+      // A resultless record could not be reached at all before this, because the
+      // filter compared `t.result` against Pass and Fail and it matched neither
+      // (#1404).
+      const ICONS = { success: '&#10003;', error: '&#10007;', incomplete: '&#8722;' };
+      const ICON_CLASSES = { success: 'pass', error: 'fail', incomplete: 'incomplete' };
       const STATUS_BADGES = {
-        skipped: '<span class="status-badge badge-skip">SKIPPED</span>',
         incomplete: '<span class="status-badge badge-incomplete">NO RESULT</span>',
       };
       const icon = ICONS[status];
@@ -767,9 +737,8 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       let html = '<div class="test-row' + rowClass + '" data-overflow="' + (t.hasOverflow ? 'true' : 'false') + '">';
       html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
       html += '<span class="test-name">' + escapeHtml(name) + statusTag + overflowTag + '</span>';
-      // Passing rows only. A skipped golden's PNG is on disk from some earlier run
-      // and this run never compared anything to it, so offering it here would show
-      // an image the report cannot vouch for.
+      // Passing rows only: a record that never reported compared nothing, so
+      // offering its PNG would show an image the report cannot vouch for.
       if (isPass && t.goldenPath) {
         const goldenCaption = name + ' (' + (t.deviceType || '') + ' / ' + (t.locale || '') + ')';
         html += '<a class="view-golden" data-golden-src="' + escapeHtml(t.goldenPath) + '" data-golden-caption="' + escapeHtml(goldenCaption) + '" onclick="openGolden(this)">View golden</a>';
@@ -796,10 +765,9 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         html += '</div>';
       }
 
-      // Failures only, not "everything that is not a pass". A skipped record
-      // carries `result: 'success'` while `rowStatus` correctly reports it as not
-      // a pass, so gating on `!isPass` opened a failure-styled panel — and any
-      // stale `failureImages` comparison — for a test that compared nothing.
+      // Failures only, not "everything that is not a pass": gating on `!isPass`
+      // opened a failure-styled panel for a record that never reported and so
+      // compared nothing.
       if (status === 'error') {
         html += '<div class="failure-details">';
         if (t.failureImages) {

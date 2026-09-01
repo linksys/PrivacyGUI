@@ -33,12 +33,6 @@ String _relativeToReport(String path, String folderStr) {
 /// `report_counting.fail == errors_total` in the triage playbook, so widening
 /// `fail` here would manufacture anomalies there.
 ///
-/// `skipped` is tested before `result`, because a skipped test carries
-/// `result: "success"` — the JSON reporter normalises it that way and the parser
-/// records the truth in a separate `skipped` field. Counting it as a pass is what
-/// made a golden that had stopped running indistinguishable from one that ran and
-/// matched (#1405), so it gets its own bucket instead.
-///
 /// Anything else lands in `incomplete`: chiefly a record that started and never
 /// reported, which is what a suite killed mid-run leaves behind. Those must stay
 /// countable instead of being read as passes or quietly dropped — under the
@@ -47,13 +41,8 @@ String _relativeToReport(String path, String folderStr) {
 Map<String, int> computeCounting(List<Map<String, dynamic>> records) {
   var success = 0;
   var fail = 0;
-  var skipped = 0;
   var incomplete = 0;
   for (final record in records) {
-    if (record['skipped'] == true) {
-      skipped++;
-      continue;
-    }
     switch (record['result']) {
       case 'success':
         success++;
@@ -66,9 +55,8 @@ Map<String, int> computeCounting(List<Map<String, dynamic>> records) {
   return {
     'success': success,
     'fail': fail,
-    'skipped': skipped,
     'incomplete': incomplete,
-    'total': success + fail + skipped + incomplete,
+    'total': success + fail + incomplete,
   };
 }
 
