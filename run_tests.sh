@@ -36,12 +36,29 @@ fi
 # that let a 3.44.0 CanvasKit ship under a 3.47.0 engine. So the environment is
 # what has to be fixed, not the assertion.
 #
-# Silent and ~1s once cached, so it does not read as work being done. It is not
-# dead on CI either: flutter-action restores the SDK from a cache keyed on the SDK
-# VERSION, so the first run after a pin bump is the cold one — the same run where
-# the vendored CanvasKit is what is in question. See the comment in ci.yml's
-# unit-test job for the measurement.
+# Silent and ~1s once cached (measured: 0.76s, no output, exit 0), so it does not
+# read as work being done. It is not dead on CI either: flutter-action restores the
+# SDK from a cache keyed on the SDK VERSION, so the first run after a pin bump is
+# the cold one — the same run where the vendored CanvasKit is what is in question.
+# See the comment in ci.yml's unit-test job for the measurement.
+#
+# Warn, do not exit. A failure here is almost always the network, and the rest of
+# the suite does not need the web SDK — aborting would cost 6,000 tests to protect
+# one. But it must be attributed out loud: without this, a failed precache
+# resurfaces six minutes later as the guard's own "No flutter_web_sdk in …; run
+# flutter precache --web", which tells the reader to do the thing they just watched
+# fail. Naming it here is the difference between a diagnosis and a loop.
+#
+# Status captured, not read from `$?` after `if ! …`: the negation succeeds, so
+# `$?` inside the branch is 0 and the warning would report a failure as exit 0
+# (measured: `if ! (exit 7); then echo $?` prints 0).
 $FLUTTER precache --web
+precache_status=$?
+if [ $precache_status -ne 0 ]; then
+  echo "WARNING: 'precache --web' failed (exit $precache_status). test/web/ needs the SDK's"
+  echo "         flutter_web_sdk/ and will fail below for THAT reason, not because"
+  echo "         web/assets/canvaskit.* drifted. Fix this line before re-vendoring."
+fi
 
 # The PR-blocking selection, in exactly one place. What makes `layout-gate`
 # PR-blocking is its *absence* from this list, which is the same thing

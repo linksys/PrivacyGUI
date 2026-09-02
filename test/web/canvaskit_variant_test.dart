@@ -280,6 +280,76 @@ void main() {
       );
     });
 
+    // The scoping above is only worth having if the slice really stops at the
+    // step. It is an indentation walk, not a parser, so its boundary is asserted
+    // against YAML written to break it rather than against the file it happens to
+    // read today — where the Flutter step sits in the middle of the list and both
+    // terminators would look equally correct.
+    test('the step slice stops at the step, including the last one', () {
+      // The case that used to over-extend: target step is LAST in `steps:`, and a
+      // later top-level key carries a `channel:`. Without the dedent break the
+      // slice ran to EOF and the assertion above accused the Flutter pin of
+      // floating because of an unrelated output name.
+      const lastInList = '''
+runs:
+  using: composite
+  steps:
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.47.2'
+
+outputs:
+  notify:
+    channel: stable
+''';
+      expect(
+        _stepBlock(lastInList, 'subosito/flutter-action'),
+        isNot(matches(RegExp(r'^\s*channel\s*:', multiLine: true))),
+        reason:
+            'A `channel:` outside the step was read as being inside it. The '
+            'slice ran past the end of `steps:`, so this assertion would have '
+            'failed a PR that never touched the Flutter pin.',
+      );
+
+      // The other direction: a sibling step after it must still end the slice,
+      // and its own inputs must stay outside.
+      const midList = '''
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.47.2'
+    - name: Notify
+      uses: slackapi/slack-github-action@v1
+      with:
+        channel: releases
+''';
+      final mid = _stepBlock(midList, 'subosito/flutter-action');
+      expect(
+        mid,
+        isNot(matches(RegExp(r'^\s*channel\s*:', multiLine: true))),
+        reason: 'The next sibling step must end the slice.',
+      );
+      expect(
+        mid,
+        contains("flutter-version: '3.47.2'"),
+        reason: 'A slice that stops too early asserts nothing. It must still '
+            'carry the step body it exists to read.',
+      );
+
+      // Indented comments must not terminate it — this repo writes the rationale
+      // for a step above the step, at the step's own indentation, and one of those
+      // comments is the record of why `channel:` must not come back.
+      expect(
+        _stepBlock(File('.github/actions/setup/action.yml').readAsStringSync(),
+                'subosito/flutter-action')
+            .contains("flutter-version: '$_pinnedFlutterVersion'"),
+        isTrue,
+        reason:
+            'The slice of the real file lost the value it is scoped to read.',
+      );
+    });
+
     // CLAUDE.md tells readers to consult the vendored-artifact manifest before
     // bumping one. CanvasKit was missing from every manifest in the repo, which
     // is how a 3.44.0 copy survived a 3.47.0 CI move unnoticed. A manifest that
@@ -501,10 +571,16 @@ String _withoutLineComments(String source, String marker) =>
 /// Indentation-sliced rather than YAML-parsed, and that is a deliberate ceiling:
 /// this repo has no YAML dependency in its dev_dependencies, and adding one to
 /// scope a single negative assertion is a worse trade than a slice that fails
-/// loudly. It is only ever used to narrow a "must not contain" check, so the
-/// failure mode of getting the boundary wrong is a slice too small — a missed
-/// assertion, not a false accusation. Throws if the step is not found, because a
-/// silently empty slice is a check that passes while reading nothing.
+/// loudly. Throws if the step is not found, because a silently empty slice is a
+/// check that passes while reading nothing.
+///
+/// An earlier version of this comment claimed the only failure mode was a slice
+/// too small — a missed assertion rather than a false accusation. That was wrong,
+/// and the test below proves it: without the dedent break, a step that is LAST in
+/// its `steps:` list runs to end-of-file, so a `channel:` key under a later
+/// top-level mapping is read as the Flutter pin going back to floating. Both
+/// terminators are therefore needed — the next sibling `- ` ends a step in the
+/// middle of a list, and a dedent ends the last one.
 String _stepBlock(String yaml, String action) {
   final lines = const LineSplitter().convert(yaml);
   final usesAt = lines.indexWhere(
@@ -527,11 +603,19 @@ String _stepBlock(String yaml, String action) {
   var end = start + 1;
   while (end < lines.length) {
     final line = lines[end];
-    if (line.trim().isNotEmpty &&
-        line.indexOf('-') == indent &&
-        line.trimLeft().startsWith('-')) {
-      break;
+    if (line.trim().isEmpty) {
+      end++;
+      continue;
     }
+    // The next sibling list item ends this step.
+    if (line.indexOf('-') == indent && line.trimLeft().startsWith('-')) break;
+    // So does dedenting out of the list, which is what ends the LAST step —
+    // otherwise the slice runs to end-of-file and swallows unrelated keys.
+    // Comments are exempt: a comment column-aligned above the list would
+    // otherwise cut the slice short, and this file indents its comments to the
+    // step level anyway.
+    final lineIndent = line.length - line.trimLeft().length;
+    if (lineIndent < indent && !line.trimLeft().startsWith('#')) break;
     end++;
   }
   return lines.sublist(start, end).join('\n');
