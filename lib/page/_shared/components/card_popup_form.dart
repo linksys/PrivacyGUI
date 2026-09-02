@@ -181,6 +181,12 @@ class CardPopupForm extends StatelessWidget {
       // a form with no host above it — see [CardDensityScope.liveForm].
       normalForm: CardDensityScope.liveFormOf(context) ?? normalForm,
       cardHeight: candidates.isEmpty ? null : candidates.reduce(math.max),
+      // The presented card is the same card, so it publishes the same id — and
+      // it has to, because the full form is where the detail-entry button lives
+      // (#1450): a degraded tile shows no footer, so for a picked card the
+      // presentation holds the *only* copy of that button. Left out, its handle
+      // would differ from the one the same card publishes in the grid.
+      cardId: CardDensityScope.cardIdOf(context),
     );
   }
 }
@@ -207,6 +213,15 @@ class CardPopupForm extends StatelessWidget {
 /// ring of dialog padding. The override paints nothing and spends nothing, which
 /// leaves the card's own surface as the only frame on screen.
 ///
+/// ## Why [cardId] is required and nullable
+///
+/// Same convention as [cardHeight], for the same reason: a caller with no card to
+/// name says so, rather than by omission. Left optional, a second call site added
+/// later — a gallery, a preview, a deep link — would compile clean and present a
+/// card whose detail button publishes no hook at all, and nothing would fail:
+/// not the analyzer, not the widget test (which only reaches this through
+/// [CardPopupForm._open]), and not E2E until a spec could not find the button.
+///
 /// ## Why a sheet on a narrow screen
 ///
 /// A screen narrower than the presentation plus [kCardPresentationInset] on each
@@ -220,6 +235,7 @@ Future<void> showCardNormalForm(
   BuildContext context, {
   required Widget normalForm,
   required double? cardHeight,
+  required String? cardId,
 }) {
   final screen = MediaQuery.sizeOf(context);
   final theme = Theme.of(context);
@@ -252,6 +268,10 @@ Future<void> showCardNormalForm(
       // element, and republishing it would offer the presentation a way to
       // present itself.
       density: CardDensity.normal,
+      // Republished, unlike the live form above: the id says *which* card this
+      // is, which does not change by being presented, and the card's own hooks
+      // are derived from it (#1450).
+      cardId: cardId,
       presented: true,
       child: normalForm,
     ),

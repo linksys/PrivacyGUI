@@ -16,6 +16,7 @@ class CardDensityScope extends InheritedWidget {
   const CardDensityScope({
     super.key,
     required this.density,
+    this.cardId,
     this.normalHeight,
     this.liveForm,
     this.presented = false,
@@ -23,6 +24,27 @@ class CardDensityScope extends InheritedWidget {
   });
 
   final CardDensity density;
+
+  /// Which card this subtree belongs to — the widget registry's id
+  /// (`'wifi_status'`), not a display name.
+  ///
+  /// Travels alongside the density because it travels the same route: the id is
+  /// known only to whoever looked the card up, and the blocks that need it are
+  /// several levels below with shared widgets in between. Threading it through
+  /// constructors would mean a parameter on every one of them, which is the
+  /// argument this class already makes for the density itself.
+  ///
+  /// The one thing that needs it is the E2E handle on the card's detail-entry
+  /// button (#1450): the identifier has to be unique per card, and the card's own
+  /// route is not — `wifi_status` and `wifi_networks` both enter `uspWifiSettings`,
+  /// `system_status` and `traffic_analysis` both enter `uspStatistics`. Registry
+  /// ids are unique by construction, so deriving the handle from this one cannot
+  /// collide, and a card added later gets its handle without an edit.
+  ///
+  /// Null outside a [CardDensityHost] — a shared block built by a settings page
+  /// belongs to no card, and saying so is more useful than a placeholder id that
+  /// reads like a real one.
+  final String? cardId;
 
   /// Height, in pixels, the card's *whole* form needs — carried down alongside
   /// the density because the presentation the popup form opens needs it.
@@ -81,6 +103,11 @@ class CardDensityScope extends InheritedWidget {
     return scope?.density ?? CardDensity.normal;
   }
 
+  /// The id of the card [context] is inside, or null outside any card — see
+  /// [cardId].
+  static String? cardIdOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<CardDensityScope>()?.cardId;
+
   /// The declared whole-form height in effect at [context], or null outside any
   /// card.
   static double? normalHeightOf(BuildContext context) => context
@@ -103,6 +130,7 @@ class CardDensityScope extends InheritedWidget {
   @override
   bool updateShouldNotify(CardDensityScope oldWidget) =>
       oldWidget.density != density ||
+      oldWidget.cardId != cardId ||
       oldWidget.normalHeight != normalHeight ||
       oldWidget.presented != presented ||
       oldWidget.liveForm != liveForm;
@@ -193,6 +221,7 @@ class CardDensityHost extends ConsumerWidget {
   /// path only is a bug that shows up in one of the two and not the other.
   CardDensityScope _scope(CardDensity density) => CardDensityScope(
         density: density,
+        cardId: cardId,
         normalHeight: normalHeight,
         // The card widget, not the built card: see [CardDensityScope.liveForm].
         liveForm: child,

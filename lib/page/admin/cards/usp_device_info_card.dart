@@ -167,6 +167,11 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 container: true,
                 button: true,
                 label: label,
+                // Same derivation as the template's footer (#1450), so this
+                // card's entry is addressable even though it needs a
+                // `deviceId` the template cannot pass and so hand-rolls the
+                // footer.
+                identifier: cardDetailIdentifier(context),
                 child: InkWell(
                   onTap: () => context.pushNamed(
                     RouteNamed.uspNodeDetail,

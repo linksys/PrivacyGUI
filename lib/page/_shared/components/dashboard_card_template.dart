@@ -4,8 +4,41 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/card_scroll_region.dart';
+import 'package:privacy_gui/page/_shared/helpers/card_detail_identifier.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// The E2E handle for the card at [context] — its entry into its detail page, the
+/// `View details` / `View all` button (#1450).
+///
+/// ## Why this button needs one at all
+///
+/// It is how the Dashboard enters every detail page, and `pushNamed` on it is the
+/// whole of the #1420 / #1421 / #1029 / #1435 bug family — so it is the one place
+/// an E2E spec can assert that a real user pressing back arrives back at the
+/// Dashboard. It could not: the only handle was a localized label, and thirteen
+/// buttons share two label strings, so reaching one needed a text locator plus an
+/// ordinal — which trips `lint:ids` on a click site, and would be unstable anyway
+/// since card order is user-configurable.
+///
+/// The slug itself is composed by [cardDetailIdentifierFor], which is pure and
+/// unit-tested per Article XVI §16.3; see there for why the key is the card's
+/// registry id and not its route. This wrapper is only the part that needs a
+/// `BuildContext`: finding out which card it is standing in.
+///
+/// ## Null means "not inside a card"
+///
+/// The id is read from [CardDensityScope], which only a [CardDensityHost] publishes
+/// — and the factory is the only thing that builds a dashboard card, so in the app
+/// there is always one. Outside it (a shared block on a settings page, a card a test
+/// hand-builds) there is no card to name, and no handle is more honest than one
+/// derived from something else: an id whose shape depended on where the widget was
+/// mounted would be a contract E2E could not rely on.
+String? cardDetailIdentifier(BuildContext context) {
+  final cardId = CardDensityScope.cardIdOf(context);
+  if (cardId == null) return null;
+  return cardDetailIdentifierFor(cardId);
+}
 
 /// A section within a multi-section dashboard card.
 ///
@@ -505,6 +538,10 @@ class DashboardCardTemplate extends StatelessWidget {
                   container: true,
                   button: true,
                   label: label,
+                  // On that same node, not a new one: the boundary is what keeps
+                  // the tap action off the card's node, and a handle above it
+                  // would be a handle on the whole card (#1450).
+                  identifier: cardDetailIdentifier(context),
                   child: InkWell(
                     onTap: () => context.pushNamed(detailRoute!),
                     borderRadius: BorderRadius.circular(4),

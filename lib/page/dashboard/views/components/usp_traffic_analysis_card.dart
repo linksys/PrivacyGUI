@@ -173,6 +173,11 @@ class _UspTrafficAnalysisCardState
               container: true,
               button: true,
               label: label,
+              // See `usp_system_status_card.dart`: same derivation as the
+              // template's footer, and the tab is not part of the handle
+              // (#1450). This card and that one both enter `uspStatistics`,
+              // which is why the handle is the card's id and not the route.
+              identifier: cardDetailIdentifier(context),
               child: InkWell(
                 onTap: () => context.pushNamed(
                   RouteNamed.uspStatistics,

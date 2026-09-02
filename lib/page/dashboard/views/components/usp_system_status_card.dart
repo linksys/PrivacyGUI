@@ -154,6 +154,13 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
                 container: true,
                 button: true,
                 label: label,
+                // Through the same derivation the template uses, so this card's
+                // hand-rolled footer carries the same shape of handle as the ten
+                // rendered cards that go through it (#1450) — eleven declare a
+                // `detailRoute`, but `speed_test` is unregistered. The tab is
+                // deliberately not part of it: E2E has to be able to press the
+                // button without knowing which tab is selected.
+                identifier: cardDetailIdentifier(context),
                 child: InkWell(
                   onTap: () => context.pushNamed(
                     RouteNamed.uspStatistics,
