@@ -17,6 +17,41 @@ String _relativeToReport(String path, String folderStr) {
   return path;
 }
 
+/// Buckets [records] into the Test Summary panel's numbers.
+///
+/// `total` is the record count, i.e. the number of rows the report renders, so
+/// `total == success + fail` is a check on the parser rather than an identity. On
+/// the 2026-08-28 dev run it read 14716 against Pass 13572 because the parser kept
+/// the framework's hidden records; it holds now that the parser deletes them
+/// (#1404).
+///
+/// `fail` counts `'error'` and nothing else, deliberately. A golden mismatch
+/// reports `result: "error"` — measured against 5016 real failures in the
+/// published 2026-08-22..24 dev reports, and mechanically because every golden
+/// case is a `testWidgets`, where flutter_test routes both a failed `expect` and
+/// a thrown exception through `FlutterErrorDetails` (only a plain `test()`
+/// yields `'failure'`). `PrivacyGUI-golden-ci` keys off that same string in
+/// `detect_golden_failures.sh` and cross-checks
+/// `report_counting.fail == errors_total` in the triage playbook, so widening
+/// `fail` here would manufacture anomalies there.
+Map<String, int> computeCounting(List<Map<String, dynamic>> records) {
+  var success = 0;
+  var fail = 0;
+  for (final record in records) {
+    switch (record['result']) {
+      case 'success':
+        success++;
+      case 'error':
+        fail++;
+    }
+  }
+  return {
+    'success': success,
+    'fail': fail,
+    'total': records.length,
+  };
+}
+
 Map<String, dynamic> scanCoverage() {
   final viewDir = Directory('lib/page');
   final testDir = Directory('test/golden_test/page');
@@ -187,11 +222,7 @@ void main(List<String> args) {
   }
 
   final resultObj = <String, dynamic>{};
-  resultObj['counting'] = {
-    'success': jsonObjects.where((e) => e['result'] == 'success').length,
-    'fail': jsonObjects.where((e) => e['result'] == 'error').length,
-    'total': jsonObjects.length,
-  };
+  resultObj['counting'] = computeCounting(jsonObjects);
   resultObj['tests'] = jsonObjects;
   resultObj['locales'] = locales;
   resultObj['devices'] = devices;
