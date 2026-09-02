@@ -80,10 +80,23 @@ class MeshNetworkBuilder {
         masterMeshInfo?.deviceId ??
         'GATEWAY';
 
-    // Clients for master: those with null parentNodeId or matching master ID
+    // Clients for master: those with matching master ID.
+    //
+    // A null parentNodeId means different things by network shape. In a
+    // non-mesh network (no DataElements topology) every active client legit-
+    // imately hangs off the gateway, and _buildClientDevice already set
+    // parentNodeName = gatewayName for them, so they belong on the master.
+    // In a mesh network a null (or otherwise unresolvable) parentNodeId is an
+    // *orphan*: the client belongs to the network but to no known node. It
+    // must not be silently asserted onto the master — that is a wrong
+    // attribution, not a missing one (issue #1439). Orphans are collected into
+    // the unassigned bucket below instead.
+    final isMesh = meshTopology.nodes.isNotEmpty;
     final masterClients = <ClientDevice>[];
     final nullParentClients = clientsByNodeId[null] ?? [];
-    masterClients.addAll(nullParentClients);
+    if (!isMesh) {
+      masterClients.addAll(nullParentClients);
+    }
     if (clientsByNodeId.containsKey(masterNodeId)) {
       masterClients.addAll(clientsByNodeId[masterNodeId]!);
     }
@@ -169,17 +182,26 @@ class MeshNetworkBuilder {
       );
     }).toList();
 
-    // 8. Find unassigned clients (parentNodeId doesn't match any known node)
+    // 8. Find unassigned (orphan) clients: those whose parentNodeId cannot be
+    // resolved to a known node. Two shapes, handled the same way (issue #1439):
+    //   - null parentNodeId in a mesh network (collected above but not placed
+    //     on the master),
+    //   - a non-null parentNodeId that matches no known node.
+    // In a non-mesh network null-parent clients are on the master, not orphans,
+    // so they are excluded here. Each orphan is flagged isUnattributed so the
+    // UI can mark it explicitly instead of drawing it as a master client.
     final assignedNodeIds = <String>{
       masterNodeId,
       if (masterMeshInfo != null) masterMeshInfo.deviceId,
       ...slaves.map((s) => s.deviceId),
       ...slaves.map((s) => s.dataElementsId).whereType<String>(),
     };
-    final unassigned = clientsByNodeId.entries
-        .where((e) => e.key != null && !assignedNodeIds.contains(e.key))
-        .expand((e) => e.value)
-        .toList();
+    final unassigned = <ClientDevice>[
+      for (final e in clientsByNodeId.entries)
+        if ((e.key == null && isMesh) ||
+            (e.key != null && !assignedNodeIds.contains(e.key)))
+          for (final c in e.value) c.copyWith(isUnattributed: true),
+    ];
 
     return MeshNetwork(
       master: patchedMaster,

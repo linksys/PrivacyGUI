@@ -325,7 +325,14 @@ bool _matches(ClientDevice device, DeviceFilterConfig filter) {
   }
 
   // Node (multi-select OR). Offline devices pass through.
-  if (filter.nodeIds.isNotEmpty && device.isActive) {
+  //
+  // Unattributed devices (no resolvable parent node — issue #1439) are always
+  // shown regardless of the node selection: they belong to the network but to
+  // no specific node, so a node filter can neither include nor exclude them
+  // meaningfully. Dropping them would hide a real, online device the moment
+  // any node is selected. They are surfaced with an explicit marker in the
+  // list instead of being silently filtered out.
+  if (filter.nodeIds.isNotEmpty && device.isActive && !device.isUnattributed) {
     if (device.parentNodeId == null ||
         !filter.nodeIds.contains(device.parentNodeId)) {
       return false;

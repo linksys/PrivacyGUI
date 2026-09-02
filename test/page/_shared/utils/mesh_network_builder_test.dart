@@ -602,5 +602,125 @@ void main() {
       expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
       expect(result.allClients.first.mac, '11:22:33:44:55:01');
     });
+
+    // Issue #1439: a device whose parent node cannot be resolved must not be
+    // attributed to the master. Both orphan shapes — a null parentNodeId (in a
+    // mesh network) and a non-null parentNodeId matching no known node — land
+    // in the unassigned bucket, flagged isUnattributed.
+    group('unattributed (orphan) clients — issue #1439', () {
+      ConnectedDevices meshWithOrphans() => ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:01',
+              deviceRole: 'master',
+              hostName: 'Router',
+            ),
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              deviceRole: 'slave',
+              hostName: 'Extender',
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:01',
+              deviceRole: 'client',
+              hostName: 'AttributedPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:02',
+              deviceRole: 'client',
+              hostName: 'NullParentPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:03',
+              deviceRole: 'client',
+              hostName: 'UnknownParentPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+          ]);
+
+      MeshTopologyInfo meshTopologyWithOrphans() => MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: {
+              // Attributed to the master (known node).
+              '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01',
+              // 55:02 is absent from the map → null parentNodeId (orphan shape A).
+              // 55:03 points at a node that is not in `nodes` (orphan shape B).
+              '11:22:33:44:55:03': 'GHOST-NODE-ID',
+            },
+          );
+
+      test(
+          'both orphan shapes land in unassignedClients, flagged, and are '
+          'NOT on the master', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: meshWithOrphans(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopologyWithOrphans(),
+          gatewayName: 'Router',
+        );
+
+        // The attributed device is on the master; neither orphan is.
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(masterMacs, contains('11:22:33:44:55:01'));
+        expect(masterMacs, isNot(contains('11:22:33:44:55:02')));
+        expect(masterMacs, isNot(contains('11:22:33:44:55:03')));
+
+        // Both orphan shapes are in the unassigned bucket and flagged.
+        final unassignedMacs =
+            result.unassignedClients.map((c) => c.mac).toSet();
+        expect(unassignedMacs,
+            containsAll(['11:22:33:44:55:02', '11:22:33:44:55:03']));
+        expect(
+          result.unassignedClients.every((c) => c.isUnattributed),
+          isTrue,
+        );
+
+        // The attributed device is not flagged.
+        final attributed =
+            result.allClients.firstWhere((c) => c.mac == '11:22:33:44:55:01');
+        expect(attributed.isUnattributed, isFalse);
+      });
+
+      test('non-mesh null-parent clients stay on the master (not orphans)', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+            isActive: true,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty, // non-mesh
+          gatewayName: 'Router',
+        );
+
+        expect(result.unassignedClients, isEmpty);
+        expect(result.master.connectedClients.map((c) => c.mac),
+            contains('11:22:33:44:55:01'));
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+      });
+    });
   });
 }
