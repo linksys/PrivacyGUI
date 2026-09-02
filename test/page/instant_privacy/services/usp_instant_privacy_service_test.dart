@@ -15,6 +15,7 @@ ConnectedDevice _device({
   bool isActive = true,
   String interface_ = 'Device.Ethernet.Interface.1',
   String addressSource = 'DHCP',
+  String? deviceRole,
 }) =>
     ConnectedDevice(
       instancePath: instancePath,
@@ -24,6 +25,7 @@ ConnectedDevice _device({
       isActive: isActive,
       interface_: interface_,
       addressSource: addressSource,
+      deviceRole: deviceRole,
       ipv4Addresses: const [],
       ipv6Addresses: const [],
     );
@@ -183,6 +185,47 @@ void main() {
       final result = service.activeDevices(data);
 
       expect(result[0].isPrivateMac, isFalse);
+    });
+
+    test(
+        'excludes a mesh node (deviceRole slave) in its post-firmware-fix '
+        'shape — isActive true and a populated interface (REQ-10a)', () {
+      // The point of the fix: after the firmware node-row PhysAddress bug
+      // (FWDEV#166) is fixed, a slave node row looks exactly like a normal
+      // active device — truthful Active, a real interface, a real MAC. The
+      // ONLY thing that distinguishes it is deviceRole, so today's masking
+      // shape (Active=0 / empty interface) is deliberately NOT used here.
+      final data = ConnectedDevices(items: [
+        _device(
+          instancePath: 'p.node.',
+          macAddress: 'AA:BB:CC:DD:EE:99',
+          isActive: true,
+          interface_: 'Device.WiFi.Radio.1',
+          deviceRole: 'slave',
+        ),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result, isEmpty);
+    });
+
+    test(
+        'includes an ordinary client row (no deviceRole) — exclusion has not '
+        'widened', () {
+      final data = ConnectedDevices(items: [
+        _device(
+          macAddress: 'AA:BB:CC:DD:EE:10',
+          isActive: true,
+          interface_: 'Device.Ethernet.Interface.1',
+          deviceRole: null,
+        ),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result, hasLength(1));
+      expect(result[0].mac, 'AA:BB:CC:DD:EE:10');
     });
   });
 

@@ -57,9 +57,19 @@ class UspInstantPrivacyService {
   // ---------------------------------------------------------------------------
 
   /// Filters [data] to only currently active devices and maps to UI models.
+  ///
+  /// Mesh nodes are excluded explicitly by [deviceRole] (REQ-10a: a customer
+  /// must not be able to block their own mesh node). This exclusion is by role,
+  /// not a side effect of [isActive] or an empty interface, so it keeps working
+  /// after the firmware node-row PhysAddress fix (FWDEV#166) gives node rows a
+  /// real MAC, interface, and truthful Active.
   List<InstantPrivacyDeviceUIModel> activeDevices(ConnectedDevices data) {
     return data.items
-        .where((d) => d.isActive && d.interface_.isNotEmpty)
+        .where((d) =>
+            d.deviceRole != 'master' &&
+            d.deviceRole != 'slave' &&
+            d.isActive &&
+            d.interface_.isNotEmpty)
         .map((d) {
       final mac = normalizeMac(d.macAddress);
       return InstantPrivacyDeviceUIModel(
