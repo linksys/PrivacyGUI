@@ -24,31 +24,20 @@ void main() {
         record('error'),
       ]);
 
-      expect(counting, {'success': 2, 'fail': 1, 'incomplete': 0, 'total': 3});
-      // #1404's invariant, in the only shape where it can hold: every record
-      // reported. Once a run holds a record that never did, Total is larger than
-      // Pass + Fail by design — which is what the No-result tile exists to show.
+      expect(counting, {'success': 2, 'fail': 1, 'total': 3});
+      // #1404's invariant: every record the parser hands over has a result, so
+      // the record count and the buckets agree. The 2026-08-28 dev run failed
+      // this by 1144.
       expect(counting['total'], counting['success']! + counting['fail']!);
     });
 
-    test('counts a test that never reported as incomplete, not as a pass', () {
-      final counting = computeCounting([
-        record('success'),
-        record(null),
-      ]);
-
-      // The distinction the previous filter erased: it dropped every record
-      // without a result, so a suite killed mid-run improved the numbers.
-      expect(counting, {'success': 1, 'fail': 0, 'incomplete': 1, 'total': 2});
-    });
-
-    test('keeps total equal to the sum of the buckets for any result string',
-        () {
+    test('never counts an unrecognised result as a pass or a fail', () {
       // `'failure'` is unreachable for a golden case — every one is a
       // `testWidgets`, where flutter_test reports both a failed `expect` and a
-      // thrown exception as `'error'`. It is here to pin down that an
-      // unrecognised result still cannot escape the total, rather than to widen
-      // `fail`, which CI cross-checks against its own `'error'` count.
+      // thrown exception as `'error'`. It is here to pin down that neither it nor
+      // a resultless record widens `fail`, which CI cross-checks against its own
+      // `'error'` count — while both stay in `total`, so losing records cannot
+      // improve the numbers.
       final counting = computeCounting([
         record('success'),
         record('error'),
@@ -56,16 +45,11 @@ void main() {
         record(null),
       ]);
 
-      expect(counting, {'success': 1, 'fail': 1, 'incomplete': 2, 'total': 4});
+      expect(counting, {'success': 1, 'fail': 1, 'total': 4});
     });
 
     test('is all zeroes for a run that produced no records', () {
-      expect(computeCounting([]), {
-        'success': 0,
-        'fail': 0,
-        'incomplete': 0,
-        'total': 0,
-      });
+      expect(computeCounting([]), {'success': 0, 'fail': 0, 'total': 0});
     });
   });
 }

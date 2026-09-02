@@ -91,8 +91,9 @@ void main() {
     });
 
     test('keeps a real case that started and never reported a result', () {
-      // What a suite killed mid-run leaves behind. It must survive as evidence;
-      // `computeCounting` reports it as incomplete rather than as a pass.
+      // Only `hidden` may delete a record. A record that merely has no result
+      // yet — the last `testStart` before a suite is killed mid-run — must
+      // survive, so Total still accounts for it.
       final testResult = newTestResult();
 
       replay(testResult, [

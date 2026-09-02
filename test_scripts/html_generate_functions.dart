@@ -164,17 +164,9 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
     .badge-pass { background: #dcfce7; color: #166534; }
     .badge-fail { background: #fef2f2; color: #991b1b; }
-    /* Incomplete is amber throughout — tile, donut segment, row icon and row
-       badge — so one colour means one thing wherever it appears. */
-    .badge-incomplete { background: #fef3c7; color: #92400e; }
     @media (prefers-color-scheme: dark) {
       .badge-pass { background: #14532d; color: #86efac; }
       .badge-fail { background: #450a0a; color: #fca5a5; }
-      .badge-incomplete { background: #78350f; color: #fde68a; }
-    }
-    .status-badge {
-      font-size: 0.65rem; padding: 0.125rem 0.375rem; border-radius: 3px;
-      font-weight: 600; margin-left: 0.5rem;
     }
     .feature-body { display: none; }
     .feature-body.open { display: block; }
@@ -190,7 +182,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .test-icon { margin-right: 0.5rem; font-size: 1rem; }
     .test-icon.pass { color: var(--color-pass); }
     .test-icon.fail { color: var(--color-fail); }
-    .test-icon.incomplete { color: #f59e0b; }
     .test-name { flex: 1; }
     .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
     .view-golden {
@@ -359,11 +350,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         <div class="stat-item"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
         <div class="stat-item stat-pass"><div class="stat-value" id="passCount">0</div><div class="stat-label">Pass</div></div>
         <div class="stat-item stat-fail"><div class="stat-value" id="failCount">0</div><div class="stat-label">Fail</div></div>
-        <!-- Hidden while zero, which is every healthy run: a tile that reads 0
-             forever teaches a reader to stop looking at it. "No result" everywhere
-             it faces the reader — tile, filter chip and row badge — with
-             `incomplete` kept as the internal key. -->
-        <div class="stat-item" id="incompleteTile" style="display:none"><div class="stat-value" id="incompleteCount" style="color:#f59e0b">0</div><div class="stat-label">No result</div></div>
         <div class="stat-item"><div class="stat-value" id="overflowCount" style="color:#f59e0b">0</div><div class="stat-label">Overflow</div></div>
         <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
       </div>
@@ -462,14 +448,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
-      // Tests that started and never reported a result — a suite killed mid-run.
-      // Surfaced because Total counts them, so without this tile the panel would
-      // show a Total that Pass and Fail cannot add up to and give no clue why
-      // (#1404). `|| 0` covers a report generated before the bucket existed.
-      const incomplete = c.incomplete || 0;
-      document.getElementById('incompleteTile').style.display =
-        incomplete > 0 ? '' : 'none';
-      document.getElementById('incompleteCount').textContent = incomplete;
       // A '?' rather than a 0 when the overflow report could not be read. Zero is
       // a measurement and this is the absence of one, and the two used to render
       // identically — a run full of overflows read as all-clean off this tile.
@@ -485,49 +463,42 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         banner.textContent =
           'Overflow detail unavailable: ' + DATA.overflowReportUnreadable;
       }
-      drawDonut(c.success, c.fail, incomplete);
+      drawDonut(c.success, c.fail);
     }
 
-    function drawDonut(pass, fail, incomplete) {
+    function drawDonut(pass, fail) {
       const canvas = document.getElementById('donutChart');
       const ctx = canvas.getContext('2d');
-      // The denominator is the Total tile's number rather than pass + fail, so a
-      // run that lost suites mid-way cannot still paint a full green ring while
-      // the tiles above say otherwise (#1404).
-      const total = pass + fail + incomplete;
+      const total = pass + fail;
       if (total === 0) return;
       const cx = 50, cy = 50, r = 40, inner = 25;
+      const passAngle = (pass / total) * Math.PI * 2;
       const startAngle = -Math.PI / 2;
-      const endAngle = startAngle + Math.PI * 2;
-      // Amber is the No-result tile's colour. Empty buckets are dropped, so a
-      // healthy run still draws the same two arcs it always did.
-      const segments = [
-        [pass, '#22c55e'],
-        [fail, '#ef4444'],
-        [incomplete, '#f59e0b'],
-      ].filter(s => s[0] > 0);
 
-      let angle = startAngle;
-      segments.forEach(function(s, i) {
-        // The last segment closes on the exact start angle: summing sweeps
-        // instead would leave a hairline gap at twelve o'clock.
-        const to = i === segments.length - 1
-          ? endAngle
-          : angle + (s[0] / total) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, angle, to);
-        ctx.arc(cx, cy, inner, to, angle, true);
-        ctx.closePath();
-        ctx.fillStyle = s[1];
-        ctx.fill();
-        angle = to;
-      });
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, startAngle, startAngle + passAngle);
+      ctx.arc(cx, cy, inner, startAngle + passAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, startAngle + passAngle, startAngle + Math.PI * 2);
+      ctx.arc(cx, cy, inner, startAngle + Math.PI * 2, startAngle + passAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
 
       ctx.fillStyle = getComputedStyle(document.body).color;
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round((pass / total) * 100) + '%', cx, cy);
+      // Only a run with nothing failing may print 100. Rounding reached it from
+      // below — 13571 of 13572 passing rounds to 100% — so the ring showed one
+      // red hairline beside a number that said there was nothing to look at, and
+      // it took 68 failures out of that many to move the digits at all.
+      const pct = pass === total ? 100 : Math.min(99, Math.floor((pass / total) * 100));
+      ctx.fillText(pct + '%', cx, cy);
     }
 
     function renderCoverage() {
@@ -574,15 +545,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       html += '<div class="chip-container">';
       html += '<label class="filter-chip active"><input type="checkbox" name="result" value="success" checked onchange="toggleChip(this)">Pass</label>';
       html += '<label class="filter-chip active"><input type="checkbox" name="result" value="error" checked onchange="toggleChip(this)">Fail</label>';
-      // Only offered when the run actually holds them. A chip for an empty status
-      // filters nothing and reads as if there were some — the same misdirection as
-      // a tile stuck at 0. Without this chip the rows would be unreachable: the
-      // filter matches on status, so a resultless record would be excluded by
-      // every combination of Pass and Fail.
-      const statuses = new Set(DATA.tests.map(rowStatus));
-      if (statuses.has('incomplete')) {
-        html += '<label class="filter-chip active"><input type="checkbox" name="result" value="incomplete" checked onchange="toggleChip(this)">No result</label>';
-      }
       html += '</div></div>';
 
       bar.innerHTML = html;
@@ -596,39 +558,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
     function isStandardDevice(d) {
       return d.startsWith('phone') || d.startsWith('desktop');
-    }
-
-    // The one place that turns a record into the status the report shows. Kept in
-    // step with `computeCounting` in combine_results.dart — same order, same three
-    // outcomes — because a row that disagrees with the tile above it is the whole
-    // class of bug #1404 is about.
-    function rowStatus(t) {
-      if (t.result === 'success') return 'success';
-      if (t.result === 'error') return 'error';
-      return 'incomplete';
-    }
-
-    // One summary for every level that labels a set of rows — the feature badge
-    // and the locale sub-header. Shared rather than written twice: when only the
-    // badge was taught about the third bucket, the sub-header went on printing
-    // "all pass" over rows the same render badged NO RESULT.
-    //
-    // "all pass" is reserved for a set where everything ran and passed. Saying it
-    // over records that never reported is the silent green the No-result tile
-    // exists to remove, one level down (#1404).
-    function statusSummary(tests) {
-      const fail = tests.filter(t => rowStatus(t) === 'error').length;
-      const none = tests.filter(t => rowStatus(t) === 'incomplete').length;
-      const parts = [];
-      if (fail > 0) parts.push(fail + ' failed');
-      if (none > 0) parts.push(none + ' no result');
-      return {
-        fail: fail,
-        text: parts.length ? parts.join(', ') : 'all pass',
-        badgeClass: fail > 0 ? 'badge-fail'
-          : none > 0 ? 'badge-incomplete'
-          : 'badge-pass',
-      };
     }
 
     function getFilters() {
@@ -651,7 +580,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const tests = DATA.tests.filter(function(t) {
         if (!filters.locales.includes(t.locale)) return false;
         if (!matchDevice(t.deviceType || '', filters)) return false;
-        if (!filters.results.includes(rowStatus(t))) return false;
+        if (!filters.results.includes(t.result)) return false;
         if (quickFilter === 'overflow' && !t.hasOverflow) return false;
         if (filters.search) {
           const name = (t.tsName || t.name || '').toLowerCase();
@@ -679,13 +608,14 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const sortedGroups = Object.keys(groups).sort();
       sortedGroups.forEach(function(groupName) {
         const groupTests = groups[groupName];
-        const summary = statusSummary(groupTests);
-        const failCount = summary.fail;
+        const failCount = groupTests.filter(t => t.result === 'error').length;
+        const badgeClass = failCount > 0 ? 'badge-fail' : 'badge-pass';
+        const badgeText = failCount > 0 ? failCount + ' failed' : 'all pass';
 
         html += '<div class="feature-group">';
         html += '<div class="feature-header" onclick="toggleFeature(this)">';
         html += '<span>' + groupName + ' (' + groupTests.length + ')</span>';
-        html += '<span class="feature-badge ' + summary.badgeClass + '">' + summary.text + '</span>';
+        html += '<span class="feature-badge ' + badgeClass + '">' + badgeText + '</span>';
         html += '</div>';
         html += '<div class="feature-body' + (failCount > 0 ? ' open' : '') + '">';
 
@@ -702,7 +632,8 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
           sortedLocales.forEach(function(loc) {
             if (hasMultipleLocales) {
-              html += '<div class="locale-group-header">' + loc + ' (' + statusSummary(localeGroups[loc]).text + ')</div>';
+              const locFails = localeGroups[loc].filter(t => t.result === 'error').length;
+              html += '<div class="locale-group-header">' + loc + (locFails > 0 ? ' (' + locFails + ' failed)' : ' (all pass)') + '</div>';
             }
             localeGroups[loc].forEach(function(t) { html += renderTestRow(t); });
           });
@@ -717,28 +648,16 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
 
     function renderTestRow(t) {
-      const status = rowStatus(t);
-      const isPass = status === 'success';
-      // A resultless record could not be reached at all before this, because the
-      // filter compared `t.result` against Pass and Fail and it matched neither
-      // (#1404).
-      const ICONS = { success: '&#10003;', error: '&#10007;', incomplete: '&#8722;' };
-      const ICON_CLASSES = { success: 'pass', error: 'fail', incomplete: 'incomplete' };
-      const STATUS_BADGES = {
-        incomplete: '<span class="status-badge badge-incomplete">NO RESULT</span>',
-      };
-      const icon = ICONS[status];
-      const iconClass = ICON_CLASSES[status];
-      const rowClass = status === 'error' ? ' fail' : '';
-      const statusTag = STATUS_BADGES[status] || '';
+      const isPass = t.result === 'success';
+      const icon = isPass ? '&#10003;' : '&#10007;';
+      const iconClass = isPass ? 'pass' : 'fail';
+      const rowClass = isPass ? '' : ' fail';
       const name = t.tsName || t.name || 'unknown';
       const overflowTag = t.hasOverflow ? '<span class="overflow-badge">OVERFLOW</span>' : '';
 
       let html = '<div class="test-row' + rowClass + '" data-overflow="' + (t.hasOverflow ? 'true' : 'false') + '">';
       html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
-      html += '<span class="test-name">' + escapeHtml(name) + statusTag + overflowTag + '</span>';
-      // Passing rows only: a record that never reported compared nothing, so
-      // offering its PNG would show an image the report cannot vouch for.
+      html += '<span class="test-name">' + escapeHtml(name) + overflowTag + '</span>';
       if (isPass && t.goldenPath) {
         const goldenCaption = name + ' (' + (t.deviceType || '') + ' / ' + (t.locale || '') + ')';
         html += '<a class="view-golden" data-golden-src="' + escapeHtml(t.goldenPath) + '" data-golden-caption="' + escapeHtml(goldenCaption) + '" onclick="openGolden(this)">View golden</a>';
@@ -765,10 +684,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         html += '</div>';
       }
 
-      // Failures only, not "everything that is not a pass": gating on `!isPass`
-      // opened a failure-styled panel for a record that never reported and so
-      // compared nothing.
-      if (status === 'error') {
+      if (!isPass) {
         html += '<div class="failure-details">';
         if (t.failureImages) {
           // Standard 3-column comparison
