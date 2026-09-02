@@ -11,6 +11,7 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class PersonalWiFiStep extends PnpStep {
   static int id = 0;
@@ -121,6 +122,7 @@ class PersonalWiFiStep extends PnpStep {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildOptionalNotice(context),
         WiFiSSIDField(
           controller: _ssidEditController,
           label: loc(context).wifiName,
@@ -150,6 +152,7 @@ class PersonalWiFiStep extends PnpStep {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildOptionalNotice(context),
         for (final radio in _wifiSettings!.radios) ...[
           AppCard(
             child: Column(
@@ -184,6 +187,19 @@ class PersonalWiFiStep extends PnpStep {
         _buildInfoSection(context),
         const AppGap.large5(),
       ],
+    );
+  }
+
+  // Personalizing is optional: the shipped WiFi credentials are already
+  // secure, so state that up front - before the fields - so users who already
+  // have devices on the printed default network know they can just continue.
+  Widget _buildOptionalNotice(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.large2),
+      child: AppText.bodyMedium(
+        loc(context).pnpPersonalizeOptionalInfo,
+        maxLines: 10,
+      ),
     );
   }
 
@@ -282,20 +298,33 @@ class PersonalWiFiStep extends PnpStep {
               },
             ),
           ],
+          // The body holds six paragraphs, which can exceed the viewport on
+          // short screens or in locales with longer copy. Scroll the body only,
+          // so the title and the Close action stay visible.
           content: SizedBox(
             width: 400.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc1),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc2),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc3),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc4),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(loc(context).modalPnpWiFiOptionalDesc1),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(loc(context).modalPnpWiFiOptionalDesc2),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc1),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc2),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc3),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc4),
+                ],
+              ),
             ),
           ),
         );
