@@ -187,7 +187,11 @@ Two manifests, two update procedures. Read the relevant one **before** bumping a
 - **CanvasKit** — `web/assets/canvaskit.{js,wasm}`, hand-copied from the pinned Flutter SDK and the only CanvasKit that ever executes (`flutter_bootstrap.js` pins `canvasKitBaseUrl: "./assets/"`). See `doc/web/vendored-canvaskit.md`. The two files are version-locked to each other: copy both or neither.
 
 ## Flutter SDK Pin
-**3.47.2**, declared in three places that `test/web/canvaskit_variant_test.dart` asserts agree: `.fvmrc` (local), `flutter-version:` in `.github/actions/setup/action.yml` (CI), and the constants in that test. Moving the pin means re-vendoring CanvasKit and touching all three — see the update procedure in `doc/web/vendored-canvaskit.md`.
+**3.47.2**, and `test/web/canvaskit_variant_test.dart` asserts every copy of that number agrees. Three of them decide behaviour — `.fvmrc` (local), `flutter-version:` in `.github/actions/setup/action.yml` (CI), and the test's own constants — and two are prose that goes stale silently, so the test greps them too: **this paragraph** and the header comment in `build_web.sh`. The literal `3.47.2` above is therefore load-bearing; editing it without editing the test is a red suite, which is the intended way to find out.
+
+A sixth check is conditional rather than declared: when `bin/cache/flutter.version.json` is readable, the test also compares the **running** SDK's version and `engineRevision` against the pin. That one is diagnosing your shell, not the repo — a failure there means you invoked an unpinned `flutter`, so re-run under `fvm` rather than re-vendoring anything.
+
+Moving the pin means re-vendoring CanvasKit and touching all of the above — see the update procedure in `doc/web/vendored-canvaskit.md`.
 
 All three digits, including the hotfix. Every 3.47 hotfix ships a different engine and a different `canvaskit.wasm`, so a `3.47` pin drifts across CanvasKit versions while looking pinned; the guard test rejects a version that is not `major.minor.patch`.
 
