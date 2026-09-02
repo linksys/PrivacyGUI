@@ -92,6 +92,7 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                         child: AppIconButton(
                           icon: AppIcon.font(Icons.apps,
                               color: colorScheme.onSurface),
+                          identifier: 'topbar-apps',
                           // pushNamed, not goNamed: this button lives in the
                           // global top bar, so it is pressed from whichever
                           // page the user is on. `go` replaced the location and

@@ -18,11 +18,17 @@
 //      only honest way to assert "this call site uses the right verb", and it is
 //      what makes reverting a production one-word fix turn this file red.
 //
-// Scanner limitations, stated rather than discovered later: only whole-line `//`
-// comments are stripped, and block comments are not handled (`lib/` currently
-// uses none in the scanned files). A trailing comment holding a navigation call
-// would therefore be counted — a false positive that fails loudly, never a
-// silent miss.
+// Scanner limitations, stated rather than discovered later:
+//
+//   - Only whole-line `//` comments are stripped, and block comments are not
+//     handled (`lib/` currently uses none in the scanned files). A trailing
+//     comment holding a navigation call would therefore be counted — a false
+//     positive that fails loudly, never a silent miss.
+//   - The verb rules read a LITERAL `RouteNamed.*` target, so a call whose
+//     argument is a variable is invisible to them. That is not left implicit:
+//     there are exactly three such calls in `lib/`, two of them shared entry
+//     components covering twelve pages between them, and all three are pinned by
+//     name and verb in `the indirect entry points are enumerated and push`.
 
 import 'dart:io';
 
@@ -101,31 +107,31 @@ Iterable<File> _dartFiles(String dir) => Directory(dir)
     .whereType<File>()
     .where((f) => f.path.endsWith('.dart'));
 
-/// Top-level class name -> the file declaring it.
-final Map<String, String> _classFile = () {
-  final map = <String, String>{};
-  final pattern = RegExp(r'^class (\w+)');
+/// Every single-capture match of [pattern] across `lib/`, as (file, capture).
+///
+/// One line-oriented sweep shared by the two registers below, so they cannot
+/// drift apart in how they read the source.
+Iterable<(String, String)> _scanLib(RegExp pattern) sync* {
   for (final file in _dartFiles('lib')) {
     for (final line in _codeLines(file)) {
       final m = pattern.firstMatch(line);
-      if (m != null) map[m.group(1)!] = file.path;
+      if (m != null) yield (file.path, m.group(1)!);
     }
   }
-  return map;
-}();
+}
+
+/// Top-level class name -> the file declaring it.
+final Map<String, String> _classFile = {
+  for (final (file, name) in _scanLib(RegExp(r'^class (\w+)'))) name: file,
+};
 
 /// File -> the `backFallback:` values it declares. A page declares exactly one;
 /// the set shape exists so a second, disagreeing declaration fails loudly.
 final Map<String, Set<String>> _fileFallbacks = () {
   final map = <String, Set<String>>{};
   final pattern = RegExp(r'backFallback:\s*RouteNamed\.(\w+)');
-  for (final file in _dartFiles('lib')) {
-    for (final line in _codeLines(file)) {
-      final m = pattern.firstMatch(line);
-      if (m != null) {
-        (map[file.path] ??= <String>{}).add(m.group(1)!);
-      }
-    }
+  for (final (file, fallback) in _scanLib(pattern)) {
+    (map[file] ??= <String>{}).add(fallback);
   }
   return map;
 }();
@@ -165,6 +171,15 @@ final Map<String, String> _routeViewClass = () {
   return map;
 }();
 
+/// go_router's named-navigation verbs. `pushNamed` is the only one that keeps
+/// the caller on the stack; the other three all overwrite a location, which is
+/// what makes back land somewhere the user never was. `replaceNamed` and
+/// `pushReplacementNamed` have no call site in `lib/` today — they are matched
+/// anyway because their absence is a fact about today, not a property of the
+/// rule, and a rule that names only two of the three replacing verbs would read
+/// as if the other two were acceptable.
+const _navVerbs = r'goNamed|pushNamed|replaceNamed|pushReplacementNamed';
+
 class _NavSite {
   final String file;
   final int line;
@@ -172,6 +187,10 @@ class _NavSite {
   final String target;
 
   const _NavSite(this.file, this.line, this.verb, this.target);
+
+  /// Whether this verb overwrites the current location instead of stacking on
+  /// it — the property every rule below is actually about.
+  bool get replaces => verb != 'pushNamed';
 
   @override
   String toString() => '$file:$line  $verb($target)';
@@ -181,11 +200,13 @@ class _NavSite {
 ///
 /// Matched across line breaks because the formatter wraps most of them, and the
 /// line number is recovered from the offset so a failure names the call site.
+///
+/// A literal target is required, so a call whose argument is a variable is
+/// invisible here. There are exactly three, and they are pinned separately in
+/// `the indirect entry points are enumerated and push` below — that test is what
+/// keeps this restriction from being a silent hole.
 final List<_NavSite> _navSites = () {
-  final pattern = RegExp(
-    r'\.(goNamed|pushNamed|replaceNamed|pushReplacementNamed)\(\s*'
-    r'RouteNamed\.(\w+)',
-  );
+  final pattern = RegExp(r'\.(' '$_navVerbs' r')\(\s*RouteNamed\.(\w+)');
   final sites = <_NavSite>[];
   for (final file in _dartFiles('lib')) {
     if (file.path.startsWith('lib/route/')) continue; // the tree, not a caller
@@ -194,6 +215,25 @@ final List<_NavSite> _navSites = () {
     for (final m in pattern.allMatches(source)) {
       final line = source.substring(0, m.start).split('\n').length;
       sites.add(_NavSite(file.path, line, m.group(1)!, m.group(2)!));
+    }
+  }
+  return sites;
+}();
+
+/// Every named-navigation call in `lib/` whose target is NOT a literal, as
+/// (file, verb, argument). These are the shared entry components and the menu:
+/// one call site standing in for many pages, so a wrong verb here is worth more
+/// than a wrong verb anywhere else.
+final List<(String, String, String)> _indirectNavSites = () {
+  final pattern = RegExp(r'\.(' '$_navVerbs' r')\(\s*([^\s,)]+)');
+  final sites = <(String, String, String)>[];
+  for (final file in _dartFiles('lib')) {
+    if (file.path.startsWith('lib/route/')) continue;
+    final source = _codeLines(file).join('\n');
+    for (final m in pattern.allMatches(source)) {
+      final target = m.group(2)!;
+      if (target.startsWith('RouteNamed.')) continue;
+      sites.add((file.path, m.group(1)!, target));
     }
   }
   return sites;
@@ -481,9 +521,6 @@ void main() {
   }
 
   group('#1434 backFallback reachability, on a pumped navigator', () {
-    Future<GoRouter> coldStart(WidgetTester t, String location) =>
-        pumpMirror(t, location);
-
     // One case per declaration. Every landing below is measured on a real
     // navigator rather than derived from the nesting a second time.
     for (final name in _fallbackRoutes) {
@@ -494,7 +531,7 @@ void main() {
             ? route.parent!
             : fallbackByRoute[name]!; // the fallback, which now has to fire
 
-        final router = await coldStart(t, _realRouter.namedLocation(name));
+        final router = await pumpMirror(t, _realRouter.namedLocation(name));
         expect(find.text('PAGE:$name'), findsOneWidget,
             reason: 'the cold URL must land on $name itself');
 
@@ -597,17 +634,39 @@ void main() {
       return viewClass == null ? null : _classFile[viewClass];
     }
 
+    /// Whether entering [routeName] with `goNamed` really does come back to its
+    /// declared hub — the premise the exemption above rests on.
+    ///
+    /// For a shell child it does: `go` leaves nothing to pop, so the fallback
+    /// fires. For a NESTED route it does not. The reachability group above
+    /// measures why: the URL parent is always in the rebuilt match list, so
+    /// `canPop()` is true and back goes to the parent no matter what the
+    /// fallback says. The exemption is therefore only honest when that parent
+    /// *is* the hub — which is exactly where #1420 lived. `uspIpv6PortService`
+    /// is nested under `/uspAdvancedSettings` but declares
+    /// `backFallback: uspFirewall`, so a `goNamed` from the Firewall page looks
+    /// like a hub entry and lands on Advanced Settings instead.
+    bool returnsToItsHub(String routeName) {
+      final fact = _byName[routeName];
+      if (fact == null) return false;
+      if (!fact.isNested) return true;
+      return fact.parent == fallbackByRoute[routeName];
+    }
+
     test('a page with a return address is only replaced-into from its own hub',
         () {
       final offenders = <String>[];
       for (final site in _navSites) {
-        if (site.verb == 'pushNamed') continue;
+        if (!site.replaces) continue;
         if (!fallbackByRoute.containsKey(site.target)) continue;
         final hub = hubFileFor(site.target);
-        if (site.file == hub) continue;
+        if (site.file == hub && returnsToItsHub(site.target)) continue;
+        final parent = _byName[site.target]?.parent;
         offenders.add('$site — ${site.target} declares '
             'backFallback: ${fallbackByRoute[site.target]}, whose page is '
-            '${hub ?? '(unresolved)'}');
+            '${hub ?? '(unresolved)'}'
+            '${site.file == hub ? ', but it is nested under $parent, so back '
+                'goes there and not to the hub' : ''}');
       }
       expect(offenders, isEmpty,
           reason: 'use pushNamed so back returns to the caller:\n'
@@ -620,7 +679,7 @@ void main() {
       // loses the entry point. This is #1421's exact shape.
       final offenders = _navSites
           .where((s) =>
-              s.verb != 'pushNamed' &&
+              s.replaces &&
               (s.file.startsWith('lib/page/dashboard/') ||
                   s.file.contains('/cards/')) &&
               _byName.containsKey(s.target))
@@ -628,6 +687,39 @@ void main() {
           .toList();
       expect(offenders, isEmpty,
           reason: 'a dashboard entry must push:\n${offenders.join('\n')}');
+    });
+
+    test('the indirect entry points are enumerated and push', () {
+      // The three calls whose target is a variable, so the rules above cannot
+      // see them. Two of the three are shared entry components: one call site
+      // standing in for many pages, which makes them the highest-value verbs in
+      // `lib/` and the ones a rule reading only literals would miss entirely.
+      //
+      // The set is pinned, not just filtered, because a fourth indirect site is
+      // a decision — is it an entry point that must push, or a hub replacing
+      // itself? — and this failing is how that decision gets made instead of
+      // defaulted.
+      const expected = <(String, String, String)>[
+        // #1435's own fix: the health dialog's action buttons.
+        ('lib/page/shell/usp_dashboard_shell.dart', 'pushNamed', 'routeName'),
+        // Every dashboard card's detail link (11 `detailRoute` call sites).
+        (
+          'lib/page/_shared/components/dashboard_card_template.dart',
+          'pushNamed',
+          'detailRoute!'
+        ),
+        // The Menu replacing itself — the hub idiom, correct with `goNamed`.
+        (
+          'lib/components/styled/menus/widgets/menu_holder.dart',
+          'goNamed',
+          'path'
+        ),
+      ];
+      expect(_indirectNavSites.toSet(), expected.toSet(),
+          reason:
+              'an indirect navigation call changed verb or appeared: decide '
+              'whether it is an entry point (pushNamed) or a hub replacing '
+              'itself (goNamed), then update this register');
     });
 
     test('no page declares the Dashboard as its return address', () {
