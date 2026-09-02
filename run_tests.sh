@@ -17,6 +17,26 @@ else
   echo "Using system flutter"
 fi
 
+# test/web/canvaskit_variant_test.dart compares web/assets/canvaskit.* against
+# the copy in the SDK's own flutter_web_sdk/, and that directory is an on-demand
+# artifact: `flutter test` never fetches it (only `--platform chrome` does), and
+# neither does subosito/flutter-action's setup.sh. A fresh `fvm install` has no
+# flutter_web_sdk at all — measured, 3.27.4 and 3.38.5 installs on this machine
+# have none — so without this line the guard fails on the first run after any pin
+# bump, on every machine, for an environment reason and not a real drift.
+#
+# It belongs here rather than in one CI job because this script is what both a
+# developer and CI job 2 invoke, so the prerequisite travels with the command that
+# needs it instead of with a runner. A job that runs test/web/ WITHOUT going
+# through this script still needs its own precache; the test's failure message
+# says so.
+#
+# The guard fails rather than skips when the SDK copy is missing, on purpose — a
+# skipped guard reports green while checking nothing, which is the exact mechanism
+# that let a 3.44.0 CanvasKit ship under a 3.47.0 engine. So the environment is
+# what has to be fixed, not the assertion. No-op once cached.
+$FLUTTER precache --web
+
 # The PR-blocking selection, in exactly one place. What makes `layout-gate`
 # PR-blocking is its *absence* from this list, which is the same thing
 # dart_test.yaml says from the other side — so moving `layout-gate` into

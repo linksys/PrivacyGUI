@@ -123,11 +123,16 @@ jobs:
       # in this command until #1316, and it is how three real defects sat in the
       # tree unseen — including two `invalid_return_type_for_then` that would have
       # thrown ArgumentError at runtime had those error branches ever been taken.
-      # Nobody saw them because CI's exit code could not care and 469 infos drown
-      # three lines of local output.
+      # Nobody saw them because CI's exit code could not care and several hundred
+      # infos drown three lines of local output.
       #
-      # The tree is at exactly 0 warnings, which is what makes this affordable.
-      # Infos cannot join it: there are 469, and zeroing them is not this issue.
+      # The tree was at zero warnings when this landed, which is what made it
+      # affordable. Infos are a different order of magnitude and zeroing them was
+      # not that issue's job — which is why the split is warnings-fatal,
+      # infos-exempt rather than one setting for both. Counts are deliberately not
+      # written here: nothing asserts them, so a number in this comment is wrong
+      # within weeks and then argues for the wrong policy. `flutter analyze` prints
+      # today's.
       #
       # The tradeoff is real and deliberate: a Flutter upgrade that adds a new
       # warning class now turns some unrelated PR red. That is the intended
@@ -167,24 +172,18 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
-      # Here and in no other job, because only this one needs it and it is not
-      # free. `flutter_web_sdk/` is an on-demand artifact: `flutter test` never
-      # fetches it (only `--platform chrome` does, in commands/test.dart), and
-      # subosito/flutter-action's setup.sh does not precache either — 3.27.4 and
-      # 3.38.5 fvm installs have no `flutter_web_sdk` directory at all. So on a
-      # cold runner the #1316 drift guard in test/web/canvaskit_variant_test.dart
-      # would find no SDK CanvasKit to compare against, and it fails rather than
-      # skips on purpose: a skip is the same blindness that let a 3.44.0
-      # CanvasKit ship under a 3.47.0 engine.
+      # No precache step here: `run_tests.sh` does it, right after it resolves
+      # $FLUTTER. `flutter_web_sdk/` is on-demand — `flutter test` never fetches
+      # it and subosito/flutter-action's setup.sh does not either — so the #1316
+      # drift guard in test/web/canvaskit_variant_test.dart has nothing to compare
+      # against on a cold runner, and it fails rather than skips on purpose.
       #
-      # Job 1 (analyze/format) and job 3 (layout gate) do not run that test, and
-      # job 4 is `flutter build web`, which precaches the web SDK itself. Putting
-      # this in .github/actions/setup instead would pay it four times for one
-      # consumer. If another job ever runs test/web/, it needs this step too —
-      # the test's own failure message says so.
-      - name: 🌐 Precache Web SDK (for the CanvasKit drift guard)
-        run: flutter precache --web
-
+      # This step used to live here, which fixed CI and left every developer's
+      # `./run_tests.sh` red on the first run after the pin bump. Putting it in
+      # the script instead makes the prerequisite travel with the command that
+      # needs it, so both entry points are covered by one line. A job that runs
+      # test/web/ WITHOUT going through this script still needs its own precache.
+      #
       # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
       # `golden||loc||ui` selection in one variable. It exists so the local
       # `./run_tests.sh` can stay complete: a developer's pre-push command must
@@ -267,6 +266,35 @@ jobs:
       # `--no-pub` is safe: the setup action has already run `flutter pub get`.
       - name: 🏗️ Smoke Build (Web)
         run: flutter build web --release --no-pub
+
+      # The one thing test/web/canvaskit_variant_test.dart cannot check: it reads
+      # the committed TEMPLATE, and no test in this repo has ever read the
+      # substituted output. `flutter build web` does not validate it either —
+      # WebTemplate.withSubstitutions is a regex replace, so a name it does not
+      # recognise survives verbatim into a file the browser then parses. That is
+      # exactly how #1316's three frozen values shipped unnoticed.
+      #
+      # Both lines are needed and the second is the one that matters. `node --check`
+      # alone passes a stray placeholder that landed inside a comment — the failure
+      # mode the template's own header warns about, because every double-braced name
+      # is substituted, comments included. The grep alone would pass a template that
+      # substituted cleanly into broken JavaScript.
+      #
+      # The pattern is NAME-shaped and not a bare `{{`, and that is measured rather
+      # than cautious: the template's first line explains itself with the literal
+      # `{{...}}`, which is copied to the output verbatim, so a bare `{{` fails every
+      # build. `...` is not a substitutable name; `{{anything_like_this}}` is, which
+      # is precisely the token that survives substitution. Same regex the Dart guard
+      # uses on the template side, so the two ends agree.
+      #
+      # `node` is preinstalled on ubuntu-latest; this adds no setup step. It runs
+      # only here, and only after a real build, because there is no other artifact
+      # to check — a developer's equivalent is `flutter build web` then these two
+      # commands.
+      - name: 🔎 Verify substituted bootstrap
+        run: |
+          node --check build/web/flutter_bootstrap.js
+          ! grep -nE '\{\{[A-Za-z_][A-Za-z0-9_]*\}\}' build/web/flutter_bootstrap.js
 
   # ========================================================================
   # Required status checks are a repository setting, and there are none today
