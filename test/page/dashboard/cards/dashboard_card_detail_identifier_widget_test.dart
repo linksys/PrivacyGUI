@@ -266,6 +266,15 @@ void main() {
   /// necessary: the tile publishes nothing, then the presentation publishes
   /// exactly the card's own handle.
   ///
+  /// What the hook being *present* here does not mean: **#1453**. This button
+  /// pushes the detail route without closing the presentation it sits in, so the
+  /// page it opens is mounted under a modal barrier and its own controls —
+  /// including its back arrow — are not hit-testable until one tap has been spent
+  /// dismissing the presentation. Measured with a real router on both branches
+  /// (dialog and phone sheet). That is a defect of the navigation and not of the
+  /// identifier: the handle is what lets an E2E spec reach the button at all, and
+  /// a spec that clicks it will hit #1453 immediately after.
+  ///
   /// ## Which of the three density paths this drives
   ///
   /// `density:` pins [cardDensityOverrideProvider], the first of the three sources
