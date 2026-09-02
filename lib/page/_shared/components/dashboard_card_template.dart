@@ -4,6 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/card_scroll_region.dart';
+import 'package:privacy_gui/page/_shared/components/nav_tap_guard.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -505,28 +506,33 @@ class DashboardCardTemplate extends StatelessWidget {
                   container: true,
                   button: true,
                   label: label,
-                  child: InkWell(
+                  // Swallow the second tap of a double-tap so the detail page
+                  // is pushed once per gesture, not twice (#1445).
+                  child: NavTapGuard(
                     onTap: () => context.pushNamed(detailRoute!),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // The arrow keeps its 14px; the label is what shortens.
-                        Flexible(
-                          child: AppText.labelMedium(
-                            label,
-                            color: Theme.of(context).colorScheme.primary,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    builder: (context, guardedTap) => InkWell(
+                      onTap: guardedTap,
+                      borderRadius: BorderRadius.circular(4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // The arrow keeps its 14px; the label is what shortens.
+                          Flexible(
+                            child: AppText.labelMedium(
+                              label,
+                              color: Theme.of(context).colorScheme.primary,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        AppGap.xs(),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
+                          AppGap.xs(),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
