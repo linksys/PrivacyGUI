@@ -665,6 +665,10 @@ void main() {
     // Node liveness → MeshNodeStatus (#1430)
     //
     // AC2: node status is mapped from isOnline, not hardcoded online.
+    // AC1: slave liveness is a DataElements match (dataElementsId != null); the
+    //      Hosts row's `Active` is not a liveness signal for nodes (it reads 0
+    //      whether the node is up or powered off). The master is the data source
+    //      itself and stays online unconditionally.
     // AC5: an offline node carries no fabricated backhaul level.
     // AC6: an offline node reaches MeshNodeStatus.offline, which is the gate for
     //      usp_topology_view.dart:142 (offline nodes are not navigable) and
@@ -673,10 +677,14 @@ void main() {
     // =========================================================================
 
     group('node liveness → status (#1430)', () {
-      test('online slave maps to MeshNodeStatus.online', () {
+      test('a DataElements-matched slave maps to MeshNodeStatus.online', () {
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
-          slaves: [DevicesTestData.createWifiSlave()], // isActive defaults true
+          slaves: [
+            // Matched a DataElements agent ⇒ online, regardless of isActive.
+            DevicesTestData.createWifiSlave(
+                dataElementsId: DevicesTestData.slaveMac1),
+          ],
         );
 
         final topology = UspTopologyBuilder.buildFromMeshNetwork(
@@ -690,14 +698,17 @@ void main() {
         expect(extender.isOffline, isFalse);
       });
 
-      test('offline slave maps to MeshNodeStatus.offline with no signal level',
-          () {
+      test(
+          'an unmatched slave maps to MeshNodeStatus.offline with no signal '
+          'level', () {
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
           slaves: [
+            // No DataElements match (dataElementsId == null) ⇒ offline. This is
+            // the powered-off shape: the Hosts row survives, the agent is gone.
             DevicesTestData.createWifiSlave(
               backhaul: DevicesTestData.emptyBackhaul,
-            ).copyWith(isActive: false),
+            ),
           ],
         );
 
@@ -715,24 +726,15 @@ void main() {
         expect(extender.level, 0.0);
       });
 
-      test('offline gateway maps to MeshNodeStatus.offline', () {
+      test(
+          'the gateway stays online unconditionally, even without a '
+          'DataElements match (AC1)', () {
+        // The master is the data source itself; its liveness is not gated on a
+        // DataElements agent match, so a null dataElementsId must not make it
+        // offline (the retracted isActive-based remedy would have).
         final meshNetwork = MeshNetwork(
-          master: DevicesTestData.createMaster().copyWith(isActive: false),
-        );
-
-        final topology = UspTopologyBuilder.buildFromMeshNetwork(
-          meshNetwork: meshNetwork,
-          info: sysInfo,
-        );
-
-        final gateway =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-        expect(gateway.status, MeshNodeStatus.offline);
-      });
-
-      test('online gateway maps to MeshNodeStatus.online', () {
-        final meshNetwork = MeshNetwork(
-          master: DevicesTestData.createMaster(), // isActive defaults true
+          master:
+              DevicesTestData.createMaster(), // dataElementsId defaults null
         );
 
         final topology = UspTopologyBuilder.buildFromMeshNetwork(

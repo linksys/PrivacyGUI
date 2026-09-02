@@ -89,8 +89,10 @@ void main() {
         expect(node.id, DevicesTestData.masterMac);
       });
 
-      test('isOnline always returns true', () {
-        final node = DevicesTestData.createMaster();
+      test('isOnline is always true (master stays online unconditionally)', () {
+        // The master is the data source itself; per #1430 AC1 its liveness is
+        // not gated on a DataElements agent match.
+        final node = DevicesTestData.createMaster(); // dataElementsId null
         expect(node.isOnline, isTrue);
       });
     });

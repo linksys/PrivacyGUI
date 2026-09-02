@@ -57,11 +57,14 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   List<ClientDevice> get connectedClients;
 
   // ─── Status ───
-  /// Whether this node's Hosts row is currently active (online).
+  /// The Hosts row's `Device.Hosts.Host.{i}.Active` value.
   ///
-  /// Sourced from `Device.Hosts.Host.{i}.Active` — the same field that drives
-  /// client online/offline. Nodes and clients share one Hosts table and this
-  /// one field (#1430).
+  /// This is the same field that drives client online/offline, but it is **not**
+  /// a liveness signal for node rows: firmware leaves it `0` for a node whether
+  /// the node is up or powered off (measured on the live bench, #1430), because
+  /// node rows key on a STA-side MAC the backfill lookup never matches. Node
+  /// liveness is derived from [isOnline] (a DataElements match) instead. Kept as
+  /// raw Hosts data; do not use it to decide whether a node is online.
   bool get isActive;
 
   // ─── NetworkEntity implementation ───
@@ -77,7 +80,7 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   }
 
   @override
-  bool get isOnline => isActive;
+  bool get isOnline => dataElementsId != null;
 
   // ─── Computed ───
   /// Whether this is the master (gateway) node.
@@ -151,6 +154,12 @@ final class MasterNode extends NodeEntity {
 
   @override
   bool get isMaster => true;
+
+  /// The master is the data source itself — it is online whenever the topology
+  /// is being rendered at all, independent of any DataElements agent match
+  /// (#1430, AC1).
+  @override
+  bool get isOnline => true;
 
   MasterNode copyWith({
     String? deviceId,
