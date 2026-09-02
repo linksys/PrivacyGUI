@@ -26,6 +26,22 @@ on:
   # first. `v*.*.*` is deliberately absent: 15 such branches exist but they are
   # 1.x-era leftovers that take tags, not PRs.
   #
+  # That warning stopped being hypothetical on 2026-09-02. Until then NO ruleset
+  # required any check — `dev-2.7.0` was unprotected and the "version branch"
+  # ruleset carried only pull_request/deletion/non_fast_forward, so all four jobs
+  # here plus `dart-wasm-boundary` ran advisory and a red PR could merge. Ruleset
+  # `22061561` ("required checks (dev-2.7.0)") now requires all five.
+  #
+  # Its ref condition is ONE branch, and the trigger list above is why it cannot
+  # be `dev-*` or `main`: measured the same day, `main` and `dev-1.3.0` have no
+  # `.github/workflows` directory at all, and `usp` and `dev-2.6.1` carry a
+  # different, older ci.yml whose jobs are `pr_quality_check` and
+  # `main_snapshot_baseline`. Requiring these five contexts on `~DEFAULT_BRANCH`
+  # or `dev-*` would therefore not have made those PRs stricter — it would have
+  # deadlocked them permanently, four open ones included. Widening the ruleset
+  # means first making this file exist, with these job names, on the branch being
+  # added.
+  #
   # This file is NOT portable to the 1.x or pre-2.7 lines, and the reason is job 3.
   # Counted 2026-08-27, `layout-gate`-tagged test files: dev-2.7.0 has 56, and
   # main, dev-1.3.0 and dev-2.6.1 have zero. `flutter test --tags layout-gate`
