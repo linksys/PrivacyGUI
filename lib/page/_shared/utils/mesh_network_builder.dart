@@ -280,7 +280,15 @@ class MeshNetworkBuilder {
     // Build WiFi info if applicable
     WifiConnectionInfo? wifi;
     if (isWifi) {
-      final signalStrength = device.signalStrength ??
+      // `Hosts.Host.{i}.SignalStrength` uses `0` to mean "no reading" (the key
+      // is present with value 0 rather than being omitted), so the generated
+      // parser yields `0`, not `null`. A non-null `0` would short-circuit the
+      // `??` chain and hide the `WifiClient` / DataElements readings that may
+      // carry a real value for this MAC. Treat a Hosts `0` as absent so the
+      // chain can fall through. See linksys/PrivacyGUI#1438.
+      final hostsSignal =
+          (device.signalStrength == 0) ? null : device.signalStrength;
+      final signalStrength = hostsSignal ??
           wifiClient?.signalStrength ??
           meshTopology.clientSignalMap[mac];
       // Fallback to DataElements band/SSID for slave node clients.
