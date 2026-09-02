@@ -184,6 +184,16 @@ jobs:
       # needs it, so both entry points are covered by one line. A job that runs
       # test/web/ WITHOUT going through this script still needs its own precache.
       #
+      # On this runner it is normally a silent no-op, and the reason is worth
+      # knowing before anyone decides it is therefore dead code. flutter-action
+      # restores the whole SDK tree from actions/cache — 1.64 GB, key
+      # `flutter-linux-stable-<version>-x64-<hash>` (run 33575533299) — so it
+      # carries whatever the run that populated it had precached, and setup.sh
+      # itself precaches nothing (measured: it returns in 200ms and prints
+      # nothing). The cache key contains the SDK version. So the run that finds a
+      # cold cache is exactly the first run after a pin bump, which is exactly
+      # when the vendored CanvasKit is what is under suspicion.
+      #
       # EXTRA_EXCLUDE_TAGS is read by run_tests.sh, which keeps the base
       # `golden||loc||ui` selection in one variable. It exists so the local
       # `./run_tests.sh` can stay complete: a developer's pre-push command must

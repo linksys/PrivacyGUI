@@ -34,7 +34,13 @@ fi
 # The guard fails rather than skips when the SDK copy is missing, on purpose — a
 # skipped guard reports green while checking nothing, which is the exact mechanism
 # that let a 3.44.0 CanvasKit ship under a 3.47.0 engine. So the environment is
-# what has to be fixed, not the assertion. No-op once cached.
+# what has to be fixed, not the assertion.
+#
+# Silent and ~1s once cached, so it does not read as work being done. It is not
+# dead on CI either: flutter-action restores the SDK from a cache keyed on the SDK
+# VERSION, so the first run after a pin bump is the cold one — the same run where
+# the vendored CanvasKit is what is in question. See the comment in ci.yml's
+# unit-test job for the measurement.
 $FLUTTER precache --web
 
 # The PR-blocking selection, in exactly one place. What makes `layout-gate`
