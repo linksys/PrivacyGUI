@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
-import 'package:privacy_gui/page/_shared/helpers/card_detail_identifier.dart';
+import 'package:privacy_gui/page/_shared/helpers/card_identifier.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -95,8 +95,33 @@ class CardPopupForm extends StatelessWidget {
   /// once.
   final String? value;
 
+  /// The E2E handle for the tile's tap (#1450), and the reason [build] is a
+  /// two-line branch over [_tile].
+  ///
+  /// The identifier has to be spelled inline as a template at the argument site,
+  /// because that is the only shape `gen-identifiers.mts` harvests — see the header
+  /// of `card_identifier.dart`. A literal cannot express "absent", so the no-card
+  /// case is a second call rather than a `null` in one, and the id is read from the
+  /// scope rather than passed in: every caller of this widget is
+  /// `DashboardCardTemplate`'s popup branch, which is already *inside* the scope
+  /// that knows the id, so a constructor parameter would be a second place the same
+  /// fact is written and the one that can disagree.
+  ///
+  /// Null for the same reason [showCardNormalForm]'s `cardId` is nullable: a form
+  /// built with no host above it names no card. `AppCard` normalizes a null
+  /// identifier to "attach nothing", and the `semanticLabel` node is unaffected
+  /// either way, since the label is never null here.
   @override
   Widget build(BuildContext context) {
+    final cardId = CardDensityScope.cardIdOf(context);
+    if (cardId == null) return _tile(context, identifier: null);
+    return _tile(
+      context,
+      identifier: 'card-popup-${cardIdentifierKey(cardId)}',
+    );
+  }
+
+  Widget _tile(BuildContext context, {required String? identifier}) {
     final colorScheme = Theme.of(context).colorScheme;
     final hasValue = value != null;
 
@@ -105,20 +130,7 @@ class CardPopupForm extends StatelessWidget {
       // width a button large enough to hit would leave no room for the value.
       onTap: () => _open(context),
       semanticLabel: hasValue ? '$title, $value' : title,
-      // The E2E handle for that tap (#1450). Nullable for the same reason
-      // [showCardNormalForm]'s `cardId` is: a form built with no host above it
-      // names no card, and `AppCard` normalizes a null identifier to "attach
-      // nothing" — the `semanticLabel` node is unaffected either way, since the
-      // label is never null here.
-      //
-      // Derived from the scope rather than passed in, because every caller of this
-      // widget is `DashboardCardTemplate`'s popup branch, which is *inside* the
-      // scope that knows the id — a constructor parameter would be a second place
-      // the same fact is written, and the one that can disagree.
-      identifier: switch (CardDensityScope.cardIdOf(context)) {
-        final String id => cardPopupIdentifierFor(id),
-        null => null,
-      },
+      identifier: identifier,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

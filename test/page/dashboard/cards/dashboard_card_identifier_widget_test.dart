@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+// The two constants the sheet-branch case derives its screen width from, so the
+// case follows `showCardNormalForm`'s own condition instead of naming a pixel.
+import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/dashboard/dashboard_card_probe.dart';
 // The collector, `setLayoutSurface` and `settleIgnoringAnimations`, all through
@@ -385,14 +389,22 @@ void main() {
         UspWidgetSpecs.selectableForms(spec.id).contains(CardDensity.popup));
 
     for (final spec in pickable) {
-      final expectedTile = kCardPopupIdentifiers[spec.id]!;
       final expected = kCardDetailIdentifiers[spec.id];
       final what = expected == null
-          ? 'publishes "$expectedTile" and opens a presentation with no detail '
-              'hook'
-          : 'publishes "$expectedTile", opening "$expected"';
+          ? 'publishes its tile hook and opens a presentation with no detail hook'
+          : 'publishes its tile hook, opening "$expected"';
 
       testWidgets('${spec.id} $what', (tester) async {
+        // Read inside the body, and the test name says "its tile hook" rather
+        // than naming it, for one reason: at group-collection time a `!` on a
+        // card the table has no entry for throws while the file's tests are
+        // still being *enumerated*, which takes the whole file down — including
+        // the two meta-tests written to report exactly that omission. Here it is
+        // one failing case, and those two still name the table to fix.
+        final expectedTile = kCardPopupIdentifiers[spec.id] ??
+            fail('${spec.id} renders a popup tile with no entry in '
+                'kCardPopupIdentifiers');
+
         final handle = tester.ensureSemantics();
 
         // The tile is one grid row on a screen tall enough that the dialog the
@@ -467,5 +479,80 @@ void main() {
         }
       });
     }
+
+    /// The presentation's other branch, at the width that selects it.
+    ///
+    /// Every case above runs at [pickedTileCase]'s screen, which is wide enough for
+    /// `showCardNormalForm` to seat a dialog — so seventeen cases pin one branch and
+    /// nothing pins the other. A phone too narrow for the dialog gets an
+    /// [AppBottomSheet] instead: a pushed *route*, built by a different `show*` call
+    /// with its own subtree, sharing nothing with the dialog beyond the
+    /// [CardDensityScope] both wrap the card in. That scope is precisely what carries
+    /// the id, so "both branches republish it" is a claim worth one case rather than
+    /// an assumption worth none.
+    ///
+    /// The width is derived from the branch's own condition rather than picked, so it
+    /// stays the widest screen that still takes the sheet if either constant moves —
+    /// and a case that silently drifted onto the dialog branch would be a copy of the
+    /// seventeen with this branch left unmeasured, which is why the branch itself is
+    /// asserted before the hooks are.
+    ///
+    /// One card, not seventeen: which presentation is built is this case's subject,
+    /// and which card publishes what is the seventeen's.
+    testWidgets('the phone branch presents a sheet and republishes the id',
+        (tester) async {
+      const cardId = 'wifi_status';
+      final expectedTile = kCardPopupIdentifiers[cardId]!;
+      final expected = kCardDetailIdentifiers[cardId]!;
+      // The condition is `screen.width - inset * 2 < kCardPresentationWidth`, so
+      // one pixel under is the widest screen the sheet branch claims.
+      const screenWidth =
+          kCardPresentationWidth + kCardPresentationInset * 2 - 1;
+
+      final handle = tester.ensureSemantics();
+
+      try {
+        await _withPumpedCard(
+          tester,
+          cardId: cardId,
+          screenWidth: screenWidth,
+          cardWidth: cardWidthAt(screenWidth, UspWidgetSpecs.popupColumns),
+          cardHeight: dashboardCardHeight(UspWidgetSpecs.popupHeightRows),
+          surfaceHeight: dashboardCardHeight(_kPresentationScreenRows),
+          density: CardDensity.popup,
+          body: () async {
+            await tester.tap(find.bySemanticsIdentifier(expectedTile));
+            await settleIgnoringAnimations(tester);
+
+            expect(
+              find.byType(AppBottomSheet),
+              findsOneWidget,
+              reason:
+                  'at ${screenWidth.toStringAsFixed(0)}px the dialog cannot '
+                  'be seated, so the presentation has to be the sheet',
+            );
+            expect(find.byType(AppDialog), findsNothing);
+
+            expect(
+              _publishedDetailIdentifiers(tester),
+              {expected},
+              reason:
+                  'the sheet mounts its own subtree, so the id has to travel '
+                  'into it the same way it travels into the dialog',
+            );
+            expect(
+              tester.getSemantics(find.bySemanticsIdentifier(expected)),
+              isSemantics(
+                  identifier: expected, isButton: true, hasTapAction: true),
+              reason:
+                  'a hook on a node with no tap is a handle E2E can find and '
+                  'cannot click — true on this branch as much as the other',
+            );
+          },
+        );
+      } finally {
+        handle.dispose();
+      }
+    });
   });
 }
