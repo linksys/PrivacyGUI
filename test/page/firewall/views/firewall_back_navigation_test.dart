@@ -27,6 +27,12 @@
 // file. The two production `pushNamed` call sites do not — reverting one of them
 // leaves these tests green. What is pinned is the stack semantics the fix relies
 // on, and #1420's exact chain through them.
+//
+// That last gap is now covered one level up:
+// `test/route/usp_navigation_invariants_test.dart` reads the entry verbs out of
+// `lib/` as source text and walks the real route tree (#1434), so a `pushNamed`
+// reverted to `goNamed` — and a re-nesting this file would mirror silently — fails
+// there. This file stays as the readable proof of WHY the verb matters.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,8 +148,9 @@ GoRouter _buildRouter({String? initialLocation}) {
             ),
             routes: [
               // uspFirewall stays NESTED under uspAdvancedSettings (unchanged).
-              // The real tree uses the route NAME as the relative path here
-              // (route_usp_dashboard.dart), so this mirrors it exactly.
+              // The real tree's relative path here is `RoutePath.uspFirewall`,
+              // which is the same string as the name (route_usp_dashboard.dart +
+              // constants.dart), so this mirrors it exactly.
               GoRoute(
                 name: _firewall,
                 path: _firewall,

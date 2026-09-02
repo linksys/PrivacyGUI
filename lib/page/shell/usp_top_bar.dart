@@ -92,7 +92,14 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                         child: AppIconButton(
                           icon: AppIcon.font(Icons.apps,
                               color: colorScheme.onSurface),
-                          onTap: () => context.goNamed(RouteNamed.uspApps),
+                          // pushNamed, not goNamed: this button lives in the
+                          // global top bar, so it is pressed from whichever
+                          // page the user is on. `go` replaced the location and
+                          // dropped that page, leaving Apps' back arrow to fall
+                          // through to its `backFallback: uspMenu` — so back
+                          // from Apps landed on the Menu no matter where you
+                          // came from (#1434, the shape of #1421).
+                          onTap: () => context.pushNamed(RouteNamed.uspApps),
                         ),
                       ),
                     const Padding(

@@ -26,11 +26,13 @@
 //     this file at compile time, and the target SET is checked against the real
 //     `HealthDimensions` registry, so adding a tenth target fails here until its
 //     nesting is declared.
-//   - What is NOT guarded: `_targets`' locations mirror `route_usp_dashboard.dart`
-//     by hand. Re-nest a route there without touching this file and these stay
-//     green while production breaks. Deriving the tree from `lib/` would need the
-//     real page widgets and every provider behind them; the same trade is made by
-//     the two back-navigation suites this sits beside.
+//   - What is NOT guarded HERE: `_targets`' locations mirror
+//     `route_usp_dashboard.dart` by hand, so re-nesting a route there without
+//     touching this file leaves these green. That gap is now closed one level up
+//     — `test/route/usp_navigation_invariants_test.dart` walks the real tree and
+//     pins every location it produces (#1434), so a re-nesting fails there. This
+//     file keeps its hand-written mirror on purpose: it is what makes the `push`
+//     vs `pushNamed` mechanism visible at all.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,13 +45,16 @@ import 'package:privacy_gui/route/constants.dart';
 /// Every distinct health-action target, mapped to the location the REAL tree
 /// gives it (`lib/route/route_usp_dashboard.dart`).
 ///
-/// The two odd ones are odd in `lib/`, not here. `uspInternetSettings` is the one
-/// `RoutePath` constant with no leading slash (`constants.dart:41`), and
-/// `uspUnifiedDiagnostics` is declared **absolute** (`'/uspUnifiedDiagnostics'`,
-/// `constants.dart:44`) while being a child of `/uspMenu` — `concatenatePaths`
-/// splits on `/` and drops empty segments, so the leading slash is silently
-/// discarded. Both are mirrored verbatim below so the expected locations are the
-/// ones the real declarations actually produce.
+/// The four nested locations below used to be the odd ones, and they were odd in
+/// `lib/`, not here: `uspInternetSettings` was the only nested `RoutePath`
+/// constant written relative, while `uspUnifiedDiagnostics`, `uspFirewall` and
+/// `uspDmz` were declared **absolute** despite being children — `concatenatePaths`
+/// splits on `/` and drops empty segments, so the leading slash was silently
+/// discarded and the declaration read root-level. #1434 made the slash mean what
+/// it says (relative for a nested child) and pins it in
+/// `test/route/usp_navigation_invariants_test.dart`. The locations below are
+/// unchanged by that, which is exactly the point: it was a declaration fix, not a
+/// routing change.
 const _targets = <String, String>{
   // Nested — these four were the dead buttons.
   RouteNamed.uspUnifiedDiagnostics: '/uspMenu/uspUnifiedDiagnostics',
