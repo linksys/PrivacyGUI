@@ -285,7 +285,7 @@ class UspNodeDetailView extends ConsumerWidget {
       BuildContext context, SlaveNode node, NodeEntity? parentNode) {
     final colorScheme = Theme.of(context).colorScheme;
     final backhaul = node.backhaul;
-    final isWifiBackhaul = !backhaul.isEthernet;
+    final isWifiBackhaul = backhaul.isWifi;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -378,7 +378,7 @@ class UspNodeDetailView extends ConsumerWidget {
               ],
             ),
             AppGap.sm(),
-          ] else ...[
+          ] else if (backhaul.isEthernet) ...[
             // Ethernet backhaul — just interface block
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),

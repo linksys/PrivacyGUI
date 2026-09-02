@@ -229,7 +229,7 @@ void main() {
         expect(extender.level, 0.9);
       });
 
-      test('Ethernet backhaul has default level', () {
+      test('Ethernet backhaul level is full (wired)', () {
         final slave = DevicesTestData.createEthernetSlave();
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
@@ -243,8 +243,9 @@ void main() {
 
         final extender =
             topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
-        // No signal → 0.5 default
-        expect(extender.level, 0.5);
+        // Ethernet backhaul has no RSSI by design → full level, not a
+        // fabricated 0.5 (#1430).
+        expect(extender.level, 1.0);
       });
 
       test('parentId defaults to gateway', () {
@@ -657,6 +658,91 @@ void main() {
             .firstWhere((n) => n.type == MeshNodeType.client)
             .identifier!;
         expect(clientId(strong), clientId(weak));
+      });
+    });
+
+    // =========================================================================
+    // Node liveness → MeshNodeStatus (#1430)
+    //
+    // AC2: node status is mapped from isOnline, not hardcoded online.
+    // AC5: an offline node carries no fabricated backhaul level.
+    // AC6: an offline node reaches MeshNodeStatus.offline, which is the gate for
+    //      usp_topology_view.dart:142 (offline nodes are not navigable) and
+    //      node_detail_popup.dart:99 (Details button hidden when not online) —
+    //      previously dead code because nodes were always online.
+    // =========================================================================
+
+    group('node liveness → status (#1430)', () {
+      test('online slave maps to MeshNodeStatus.online', () {
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [DevicesTestData.createWifiSlave()], // isActive defaults true
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extender =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+        expect(extender.status, MeshNodeStatus.online);
+        expect(extender.isOffline, isFalse);
+      });
+
+      test('offline slave maps to MeshNodeStatus.offline with no signal level',
+          () {
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              backhaul: DevicesTestData.emptyBackhaul,
+            ).copyWith(isActive: false),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extender =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+        // AC2 + AC6: reaches the offline state (was hardcoded online).
+        expect(extender.status, MeshNodeStatus.offline);
+        expect(extender.isOffline, isTrue);
+        // AC5: no backhaul data ⇒ no fabricated mid-strength level.
+        expect(extender.level, 0.0);
+      });
+
+      test('offline gateway maps to MeshNodeStatus.offline', () {
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster().copyWith(isActive: false),
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+        expect(gateway.status, MeshNodeStatus.offline);
+      });
+
+      test('online gateway maps to MeshNodeStatus.online', () {
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(), // isActive defaults true
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+        expect(gateway.status, MeshNodeStatus.online);
       });
     });
   });

@@ -602,5 +602,75 @@ void main() {
       expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
       expect(result.allClients.first.mac, '11:22:33:44:55:01');
     });
+
+    // #1430 — node liveness comes from the Hosts row's Active field (isActive),
+    // the same field that already drives client online/offline. An offline node
+    // (Active=false) must be reported offline, with no fabricated backhaul.
+    group('node liveness (#1430)', () {
+      test('an inactive slave Hosts row produces an offline node', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            isActive: false, // dropped off the network
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.first;
+        // Liveness is read from the Hosts row, not hardcoded true.
+        expect(slave.isActive, isFalse);
+        expect(slave.isOnline, isFalse);
+        // No DataElements match ⇒ empty backhaul, which must NOT be reported as
+        // a real (wireless) backhaul with a signal.
+        expect(slave.backhaul.hasInfo, isFalse);
+        expect(slave.backhaul.isWifi, isFalse,
+            reason: 'an absent backhaul is neither Ethernet nor WiFi');
+        expect(slave.backhaul.signalStrength, isNull);
+      });
+
+      test('an active slave Hosts row produces an online node', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            isActive: true,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.single.isOnline, isTrue);
+        expect(result.master.isOnline, isTrue);
+      });
+    });
   });
 }

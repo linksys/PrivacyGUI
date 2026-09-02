@@ -122,6 +122,7 @@ class MeshNetworkBuilder {
       ipv6Addresses: master.ipv6Addresses,
       instancePath: master.instancePath,
       connectedClients: patchedMasterClients,
+      isActive: master.isActive,
       hostsDeviceId: master.hostsDeviceId,
     );
 
@@ -165,6 +166,7 @@ class MeshNetworkBuilder {
         ipv6Addresses: slave.ipv6Addresses,
         instancePath: slave.instancePath,
         connectedClients: patchedSlaveClients,
+        isActive: slave.isActive,
         backhaul: slave.backhaul,
       );
     }).toList();
@@ -426,6 +428,7 @@ class MeshNetworkBuilder {
           [],
       instancePath: masterMeshInfo?.instancePath,
       connectedClients: connectedClients,
+      isActive: masterDevice?.isActive ?? true,
       hostsDeviceId: masterDevice?.deviceId,
     );
   }
@@ -462,6 +465,7 @@ class MeshNetworkBuilder {
           .toList(),
       instancePath: slaveMeshInfo?.instancePath,
       connectedClients: connectedClients,
+      isActive: slaveDevice.isActive,
       backhaul: backhaul,
     );
   }

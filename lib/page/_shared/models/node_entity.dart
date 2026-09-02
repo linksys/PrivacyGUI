@@ -56,6 +56,14 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   /// Client devices connected to this node.
   List<ClientDevice> get connectedClients;
 
+  // ─── Status ───
+  /// Whether this node's Hosts row is currently active (online).
+  ///
+  /// Sourced from `Device.Hosts.Host.{i}.Active` — the same field that drives
+  /// client online/offline. Nodes and clients share one Hosts table and this
+  /// one field (#1430).
+  bool get isActive;
+
   // ─── NetworkEntity implementation ───
   @override
   String get id => deviceId;
@@ -69,7 +77,7 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   }
 
   @override
-  bool get isOnline => true; // Nodes are always online if visible
+  bool get isOnline => isActive;
 
   // ─── Computed ───
   /// Whether this is the master (gateway) node.
@@ -110,6 +118,8 @@ final class MasterNode extends NodeEntity {
   final String? instancePath;
   @override
   final List<ClientDevice> connectedClients;
+  @override
+  final bool isActive;
 
   /// WAN IPv4 address.
   final String? wanIpAddress;
@@ -133,6 +143,7 @@ final class MasterNode extends NodeEntity {
     this.ipv6Addresses = const [],
     this.instancePath,
     this.connectedClients = const [],
+    this.isActive = true,
     this.wanIpAddress,
     this.wanIpv6Address,
     this.hostsDeviceId,
@@ -154,6 +165,7 @@ final class MasterNode extends NodeEntity {
     List<String>? ipv6Addresses,
     String? instancePath,
     List<ClientDevice>? connectedClients,
+    bool? isActive,
     String? wanIpAddress,
     String? wanIpv6Address,
     String? hostsDeviceId,
@@ -171,6 +183,7 @@ final class MasterNode extends NodeEntity {
       ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
       instancePath: instancePath ?? this.instancePath,
       connectedClients: connectedClients ?? this.connectedClients,
+      isActive: isActive ?? this.isActive,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       wanIpv6Address: wanIpv6Address ?? this.wanIpv6Address,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
@@ -191,6 +204,7 @@ final class MasterNode extends NodeEntity {
         ipv6Addresses,
         instancePath,
         connectedClients,
+        isActive,
         wanIpAddress,
         wanIpv6Address,
         hostsDeviceId,
@@ -213,6 +227,7 @@ final class MasterNode extends NodeEntity {
         'ipv6Addresses': ipv6Addresses,
         'instancePath': instancePath,
         'connectedClients': connectedClients,
+        'isActive': isActive,
         'wanIpAddress': wanIpAddress,
         'wanIpv6Address': wanIpv6Address,
         'hostsDeviceId': hostsDeviceId,
@@ -247,6 +262,8 @@ final class SlaveNode extends NodeEntity {
   final String? instancePath;
   @override
   final List<ClientDevice> connectedClients;
+  @override
+  final bool isActive;
 
   /// Backhaul connection info to parent node.
   final BackhaulInfo backhaul;
@@ -264,6 +281,7 @@ final class SlaveNode extends NodeEntity {
     this.ipv6Addresses = const [],
     this.instancePath,
     this.connectedClients = const [],
+    this.isActive = true,
     required this.backhaul,
   });
 
@@ -289,6 +307,7 @@ final class SlaveNode extends NodeEntity {
     List<String>? ipv6Addresses,
     String? instancePath,
     List<ClientDevice>? connectedClients,
+    bool? isActive,
     BackhaulInfo? backhaul,
   }) {
     return SlaveNode(
@@ -304,6 +323,7 @@ final class SlaveNode extends NodeEntity {
       ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
       instancePath: instancePath ?? this.instancePath,
       connectedClients: connectedClients ?? this.connectedClients,
+      isActive: isActive ?? this.isActive,
       backhaul: backhaul ?? this.backhaul,
     );
   }
@@ -322,6 +342,7 @@ final class SlaveNode extends NodeEntity {
         ipv6Addresses,
         instancePath,
         connectedClients,
+        isActive,
         backhaul,
       ];
 
@@ -342,6 +363,7 @@ final class SlaveNode extends NodeEntity {
         'ipv6Addresses': ipv6Addresses,
         'instancePath': instancePath,
         'connectedClients': connectedClients,
+        'isActive': isActive,
         'backhaul': backhaul,
       };
 }

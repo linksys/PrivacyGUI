@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
@@ -40,7 +41,7 @@ class UspTopologyBuilder {
       name:
           master.displayName.isNotEmpty ? master.displayName : info.gatewayName,
       type: MeshNodeType.gateway,
-      status: MeshNodeStatus.online,
+      status: master.isOnline ? MeshNodeStatus.online : MeshNodeStatus.offline,
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
       extra: master.manufacturer.isNotEmpty
           ? master.manufacturer
@@ -122,10 +123,10 @@ class UspTopologyBuilder {
         identifier: topologySlaveIdentifier(slaveIdKeys[slave.deviceId] ?? ''),
         name: slave.displayName,
         type: MeshNodeType.extender,
-        status: MeshNodeStatus.online,
+        status: slave.isOnline ? MeshNodeStatus.online : MeshNodeStatus.offline,
         parentId: parentId,
         image: DeviceImageHelper.getRouterImage(extenderIconName),
-        level: _backhaulRssiToLevel(slave.backhaul.signalStrength),
+        level: _backhaulLevel(slave.backhaul),
         metadata: {
           'deviceId': slave.deviceId,
           'model': slave.model,
@@ -240,10 +241,18 @@ class UspTopologyBuilder {
     return _rssiToLinkQuality(client.signalStrength);
   }
 
-  /// Converts backhaul RSSI to level for extender nodes.
-  static double _backhaulRssiToLevel(int? rssi) {
-    if (rssi == null) return 0.5; // Default when no data
-    return _rssiValueToLevel(rssi);
+  /// Converts a slave node's backhaul to a display level.
+  ///
+  /// - Ethernet backhaul: full level (1.0), matching how wired links are shown
+  ///   elsewhere — a wired connection has no RSSI by design, not by absence.
+  /// - Wi-Fi backhaul with an RSSI: the RSSI-derived level.
+  /// - No backhaul data at all (e.g. an offline node with no DataElements
+  ///   match): 0.0 — no signal, not a fabricated mid-strength 0.5 that looks
+  ///   like a real reading (#1430).
+  static double _backhaulLevel(BackhaulInfo backhaul) {
+    if (backhaul.isEthernet) return 1.0;
+    if (backhaul.signalStrength == null) return 0.0;
+    return _rssiValueToLevel(backhaul.signalStrength);
   }
 
   /// Common RSSI to level conversion. Uses [getWifiSignalLevel] as the single
