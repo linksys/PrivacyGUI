@@ -42,6 +42,27 @@ final uspMenuController = Provider((ref) => MenuController(
       pathResolver: (type) => type.resolveUspPath(),
     ));
 
+/// Navigates to the target of a health-dialog action button.
+///
+/// `pushNamed`, not `push`: every dimension supplies a `RouteNamed.*` value, and
+/// `push` takes a *location*. go_router normalizes a location without a leading
+/// slash by prepending one, so `'uspFirewall'` becomes the root-level
+/// `/uspFirewall` — which matches nothing for the four targets registered as
+/// nested children (Firewall and DMZ under `/uspAdvancedSettings`, Internet
+/// Settings likewise, Unified Diagnostics under `/uspMenu`). The five top-level
+/// targets appeared to work only because a top-level route's name and its path
+/// happen to be the same string. The named API resolves through the route tree
+/// and builds the nested location, which is what the call site always meant
+/// (#1435).
+///
+/// A top-level function rather than a closure inside `build` so the verb is
+/// reachable from a test; the guard lives in
+/// `test/page/dashboard/mascot/health/health_dialog_navigation_test.dart`.
+void pushHealthActionTarget(BuildContext context, String routeName) {
+  if (!context.mounted) return;
+  context.pushNamed(routeName);
+}
+
 /// USP Dashboard shell — wraps USP child routes with a shared Scaffold.
 ///
 /// Uses the shared [MenuHolder] widget (same as JNAP) with the USP-specific
@@ -129,9 +150,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     final dialogProvider = ref.watch(mascotHealthDialogProvider(
       HealthDialogProviderArgs(
         widgetRef: ref,
-        onNavigate: (routeName) {
-          if (context.mounted) context.push(routeName);
-        },
+        onNavigate: (routeName) => pushHealthActionTarget(context, routeName),
         onOpenAiAssistant: () => openAiAssistantWithTransition(context),
         getFaqCategoryTitle: (category) => category.displayString(context),
         getFaqItemTitle: (item) => item.displayString(context),
