@@ -2,8 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/helpers/card_detail_identifier.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
-/// Unit coverage for the detail-entry hook's derivation (#1450), required of a
-/// per-instance identifier key by constitution Article XVI §16.3.
+/// Unit coverage for both card hooks' derivation — the detail-entry button and the
+/// popup tile (#1450) — required of a per-instance identifier key by constitution
+/// Article XVI §16.3.
 ///
 /// The widget-level contract — which card publishes which hook, and that it lands
 /// on the link's own semantics node — is
@@ -62,6 +63,54 @@ void main() {
         hasLength(ids.length),
         reason: 'the hook is only worth having if it names one card: two cards '
             'sharing it is the defect #1450 exists to remove',
+      );
+    });
+  });
+
+  group('cardPopupIdentifierFor', () {
+    test('turns a registry id into a kebab hook under the popup prefix', () {
+      expect(cardPopupIdentifierFor('wifi_status'), 'card-popup-wifi-status');
+      expect(cardPopupIdentifierFor('topology'), 'card-popup-topology');
+      expect(
+        cardPopupIdentifierFor('dhcp_reservations'),
+        'card-popup-dhcp-reservations',
+      );
+    });
+
+    /// Same silent-drop trap as the detail sweep above, and swept over the whole
+    /// registry for a sharper reason: every card but `stats_panel` has a popup
+    /// path, so this is very nearly the registry already.
+    test('every registered card id derives a hook the E2E generator accepts',
+        () {
+      for (final spec in UspWidgetSpecs.all) {
+        final identifier = cardPopupIdentifierFor(spec.id);
+        expect(
+          identifier,
+          matches(kE2eIdentifierPattern),
+          reason: 'card "${spec.id}" derives "$identifier", which '
+              'gen-identifiers.mts would silently drop',
+        );
+      }
+    });
+
+    /// The property that makes two prefixes better than one namespace: a tile and
+    /// a detail button are different controls, and no spec should be able to click
+    /// one believing it clicked the other. Over both families at once, because
+    /// within one family the uniqueness tests above already hold — what is new here
+    /// is that the two cannot meet, for any pair of cards.
+    test('no tile hook can collide with any card\'s detail hook', () {
+      final ids = UspWidgetSpecs.all.map((s) => s.id).toList();
+      final all = [
+        ...ids.map(cardDetailIdentifierFor),
+        ...ids.map(cardPopupIdentifierFor),
+      ];
+      expect(
+        all.toSet(),
+        hasLength(all.length),
+        reason:
+            'the two hook families must stay disjoint: a tile answering to a '
+            'detail handle would let a spec open a dialog where it meant to '
+            'enter a page',
       );
     });
   });

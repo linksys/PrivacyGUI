@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
@@ -89,16 +88,57 @@ const Set<String> kCardsWithoutDetailEntry = {
   'wifi_performance',
 };
 
+/// Card id → the identifier its **popup tile** must publish.
+///
+/// A second literal table for the reason the first one is literal: derived from
+/// `cardPopupIdentifierFor` it would agree with any renaming, including one that
+/// pointed two cards at one tile.
+///
+/// Seventeen, not thirteen. A tile is not the detail button — it is the control
+/// that opens the presentation — so the set is every card with a popup path, which
+/// is the whole registry except `stats_panel` (`UspWidgetSpecs.cardsWithoutPopupForm`:
+/// it is the one card not built through `DashboardCardTemplate`, so it has no popup
+/// form to render). That deliberately includes the four cards with no detail entry:
+/// for them the presentation is the only place their content can be read once
+/// degraded, so the tile is the only handle that matters at all.
+const Map<String, String> kCardPopupIdentifiers = {
+  'device_info': 'card-popup-device-info',
+  'network_status': 'card-popup-network-status',
+  'topology': 'card-popup-topology',
+  'lan_info': 'card-popup-lan-info',
+  'system_status': 'card-popup-system-status',
+  'connected_devices': 'card-popup-connected-devices',
+  'wifi_status': 'card-popup-wifi-status',
+  'wifi_networks': 'card-popup-wifi-networks',
+  'time_settings': 'card-popup-time-settings',
+  'dhcp_reservations': 'card-popup-dhcp-reservations',
+  'port_forwarding': 'card-popup-port-forwarding',
+  'firewall_overview': 'card-popup-firewall-overview',
+  'traffic_analysis': 'card-popup-traffic-analysis',
+  'ethernet_ports': 'card-popup-ethernet-ports',
+  'device_analytics': 'card-popup-device-analytics',
+  'network_health': 'card-popup-network-health',
+  'wifi_performance': 'card-popup-wifi-performance',
+};
+
 /// Every `card-detail-*` identifier declared anywhere in the pumped tree.
 ///
 /// Read off the [Semantics] *widgets* rather than through
 /// `find.bySemanticsIdentifier`, which needs the id it is looking for: the
 /// question here is what the card publishes, including an id nobody expected.
-Set<String> _publishedDetailIdentifiers(WidgetTester tester) => tester
+Set<String> _publishedDetailIdentifiers(WidgetTester tester) =>
+    _publishedIdentifiers(tester, 'card-detail-');
+
+/// Every `card-popup-*` identifier declared anywhere in the pumped tree — the tile
+/// half of the same question.
+Set<String> _publishedPopupIdentifiers(WidgetTester tester) =>
+    _publishedIdentifiers(tester, 'card-popup-');
+
+Set<String> _publishedIdentifiers(WidgetTester tester, String prefix) => tester
     .widgetList<Semantics>(find.byType(Semantics))
     .map((s) => s.properties.identifier)
     .whereType<String>()
-    .where((id) => id.startsWith('card-detail-'))
+    .where((id) => id.startsWith(prefix))
     .toSet();
 
 /// Rows of viewport the popup group's screen gets — six, or 800px, a laptop.
@@ -167,6 +207,49 @@ void main() {
       hasLength(kCardDetailIdentifiers.length),
       reason: 'two cards sharing an identifier is the defect #1450 exists to '
           'remove: E2E could not tell which card it entered from',
+    );
+  });
+
+  /// The tile table's own partition, and the reason it is a *different* one.
+  ///
+  /// A tile exists wherever a popup form can be rendered, which is a property of
+  /// the registry (`cardsWithoutPopupForm`) and not of whether the card has a
+  /// detail page — so the two tables cover different sets and neither can be
+  /// derived from the other. Checked against `selectableForms` as well, because
+  /// that is the predicate the cases below enumerate with: if the two ever
+  /// disagree, the group silently stops covering a card instead of failing.
+  test('the tile expectation partitions the widget registry', () {
+    final registry = UspWidgetSpecs.all.map((s) => s.id).toSet();
+    expect(
+      {...kCardPopupIdentifiers.keys, ...UspWidgetSpecs.cardsWithoutPopupForm},
+      registry,
+      reason: 'every registered card either renders a popup tile — and must be '
+          'in the table — or is excluded from the popup form by the registry',
+    );
+    expect(
+      registry
+          .where((id) =>
+              UspWidgetSpecs.selectableForms(id).contains(CardDensity.popup))
+          .toSet(),
+      kCardPopupIdentifiers.keys.toSet(),
+      reason: 'the table must be exactly the cards the cases below enumerate, '
+          'so a card gaining or losing its popup form fails here rather than '
+          'dropping out of the coverage unnoticed',
+    );
+    expect(
+      kCardPopupIdentifiers.values.toSet(),
+      hasLength(kCardPopupIdentifiers.length),
+      reason:
+          'two tiles sharing an identifier would let a spec open one card\'s '
+          'presentation believing it opened another\'s',
+    );
+    expect(
+      kCardPopupIdentifiers.values
+          .toSet()
+          .intersection(kCardDetailIdentifiers.values.toSet()),
+      isEmpty,
+      reason: 'a tile and a detail button are different controls: the two '
+          'families must stay disjoint',
     );
   });
 
@@ -262,9 +345,16 @@ void main() {
   /// into the presented scope, such a card would be unenterable by E2E, or worse
   /// would answer to a different handle than the same card does in the grid.
   ///
-  /// Both halves are asserted, because the first is what makes the second
-  /// necessary: the tile publishes nothing, then the presentation publishes
-  /// exactly the card's own handle.
+  /// Three things are asserted per card, and each is what makes the next
+  /// necessary: the tile publishes its **own** handle and no detail hook, tapping
+  /// that handle opens the presentation, and the presentation publishes exactly the
+  /// card's detail handle. The tap goes through `find.bySemanticsIdentifier` rather
+  /// than `find.byType(CardPopupForm)` on purpose — it is the E2E path, so a tile
+  /// hook that reached the widget but not the semantics tree fails here.
+  ///
+  /// Four of these cards have no detail entry, so their third assertion is that the
+  /// presentation publishes *nothing*. They are in the group anyway because for
+  /// them the tile is the only handle there is.
   ///
   /// What the hook being *present* here does not mean: **#1453**. This button
   /// pushes the detail route without closing the presentation it sits in, so the
@@ -287,17 +377,22 @@ void main() {
   /// the cards a user *can* pick into popup, entered through the override.
   ///
   /// Mutation run: dropping `cardId:` from either `showCardNormalForm`'s call or
-  /// the scope it builds fails every case here and none above.
+  /// the scope it builds fails every case here and none above; dropping
+  /// `identifier:` from `CardPopupForm`'s `AppCard` fails every case here at the
+  /// tile assertion, before any tap.
   group('a card degraded to popup', () {
     final pickable = UspWidgetSpecs.all.where((spec) =>
-        kCardDetailIdentifiers.containsKey(spec.id) &&
         UspWidgetSpecs.selectableForms(spec.id).contains(CardDensity.popup));
 
     for (final spec in pickable) {
-      final expected = kCardDetailIdentifiers[spec.id]!;
+      final expectedTile = kCardPopupIdentifiers[spec.id]!;
+      final expected = kCardDetailIdentifiers[spec.id];
+      final what = expected == null
+          ? 'publishes "$expectedTile" and opens a presentation with no detail '
+              'hook'
+          : 'publishes "$expectedTile", opening "$expected"';
 
-      testWidgets('${spec.id} publishes "$expected" in its presentation',
-          (tester) async {
+      testWidgets('${spec.id} $what', (tester) async {
         final handle = tester.ensureSemantics();
 
         // The tile is one grid row on a screen tall enough that the dialog the
@@ -316,22 +411,54 @@ void main() {
             density: CardDensity.popup,
             body: () async {
               expect(
+                _publishedPopupIdentifiers(tester),
+                {expectedTile},
+                reason: 'the tile is the control that opens the presentation, '
+                    'so it must publish its own card\'s handle and only that '
+                    'one',
+              );
+              expect(
                 _publishedDetailIdentifiers(tester),
                 isEmpty,
                 reason:
-                    'the degraded tile has no footer, so it has no hook — an '
-                    'E2E spec has to open the presentation to enter this card',
+                    'the degraded tile has no footer, so it has no detail hook '
+                    '— an E2E spec has to open the presentation to enter this '
+                    'card',
               );
 
-              await tester.tap(find.byType(CardPopupForm));
+              final tile = find.bySemanticsIdentifier(expectedTile);
+              expect(tile, findsOneWidget,
+                  reason:
+                      'the identifier must reach the semantics tree, not just '
+                      'the widget');
+              expect(
+                  tester.getSemantics(tile),
+                  isSemantics(
+                      identifier: expectedTile,
+                      isButton: true,
+                      hasTapAction: true),
+                  reason:
+                      'the whole tile is the tap target, so the hook has to land '
+                      'on the node carrying that tap — a hook on a node without '
+                      'one is a handle E2E can find and cannot click');
+
+              // Through the hook and not through `find.byType(CardPopupForm)`:
+              // that is the E2E path, so a tile whose identifier reached the
+              // widget but not the semantics tree fails at the tap.
+              await tester.tap(tile);
               await settleIgnoringAnimations(tester);
 
               expect(
                 _publishedDetailIdentifiers(tester),
-                {expected},
-                reason: 'the presented card is the same card, so its detail '
-                    'button must answer to the same handle it does in the grid',
+                expected == null ? isEmpty : {expected},
+                reason: expected == null
+                    ? 'this card enters no detail page, so its presentation '
+                        'must publish no detail hook either'
+                    : 'the presented card is the same card, so its detail '
+                        'button must answer to the same handle it does in the '
+                        'grid',
               );
+              if (expected == null) return;
               expect(find.bySemanticsIdentifier(expected), findsOneWidget);
             },
           );

@@ -1,5 +1,6 @@
-/// Pure derivation of the E2E `identifier` on a dashboard card's entry into its
-/// detail page — the `View details` / `View all` button (#1450, unblocks
+/// Pure derivation of the E2E `identifier`s a dashboard card publishes: its entry
+/// into its detail page — the `View details` / `View all` button — and, for a card
+/// degraded to the popup form, the tile that opens it (#1450, unblocks
 /// PrivacyGUI-USP-E2E#115).
 ///
 /// Pure and in its own library per constitution Article XVI §16.3, which requires
@@ -46,4 +47,43 @@ final RegExp kE2eIdentifierPattern = RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)+$');
 /// generator's pattern rather than trusting that they do. An id that broke the
 /// pattern would otherwise ship a hook the generator drops in silence.
 String cardDetailIdentifierFor(String cardId) =>
-    '$kCardDetailIdentifierPrefix${cardId.replaceAll('_', '-')}';
+    '$kCardDetailIdentifierPrefix${_kebab(cardId)}';
+
+/// Prefix every popup tile's hook carries: feature `card`, control `popup`,
+/// instance the card's registry id.
+///
+/// `popup` and not `tile`, because that is the vocabulary the code is written in —
+/// `CardPopupForm`, `CardDensity.popup`, `selectableForms` — and a slug is read
+/// alongside the widget it names. "Tile" appears only in prose.
+const String kCardPopupIdentifierPrefix = 'card-popup-';
+
+/// Composes the hook for [cardId]'s popup tile — the degraded, one-value form that
+/// opens the card's full form in a presentation (#1239 by width, #1299 by pick).
+///
+/// ## Why the tile needs a handle of its own
+///
+/// It is a real control: the *whole card* is the tap target (`AppCard(onTap:)`, so
+/// ui_kit gives it a `button: true` semantics node), and it is the only way to
+/// reach the presentation. A card in this form shows no footer, so for the thirteen
+/// cards with a detail entry the presentation holds the **only** copy of that
+/// button — [cardDetailIdentifierFor]'s hook is unreachable without this one. For
+/// the four cards with no detail entry it is stronger still: the presentation is
+/// the only place their content can be read at all when degraded.
+///
+/// Before this, the tile's sole handle was `AppCard.semanticLabel` — the localized
+/// `'$title, $value'`, which is precisely the locator Article XVI §16.1 exists to
+/// replace, and which additionally moves with the card's data.
+///
+/// ## A second prefix rather than a suffix on the first
+///
+/// The tile and the detail button are two different controls on two different
+/// surfaces, and §16.3's shape is `{feature}-{control}[-{instance}]` — `popup` and
+/// `detail` are the controls. It also keeps the two families disjoint by
+/// construction, which the unit test pins: no card's tile can ever answer to
+/// another card's detail hook.
+String cardPopupIdentifierFor(String cardId) =>
+    '$kCardPopupIdentifierPrefix${_kebab(cardId)}';
+
+/// Registry ids are `snake_case`, identifiers are kebab — shared by both hooks so
+/// the two families cannot transform an id differently.
+String _kebab(String cardId) => cardId.replaceAll('_', '-');
