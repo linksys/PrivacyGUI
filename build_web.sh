@@ -9,19 +9,27 @@
 #   ./build_web.sh 100 false "/" qa false true "" "" true               # Enable theme studio
 #
 # Environment:
-#   These two are the ONLY variables this script reads from its environment, and
-#   the list is exhaustive on purpose: a Jenkins freestyle job exports every
-#   build parameter as an environment variable, so a name here is a contract with
-#   whoever configures that job, and a name that is read but undocumented is
-#   invisible from both sides.
+#   LOCALES and Compress are the two variables this script reads from its
+#   environment. The list is meant to be exhaustive — a Jenkins freestyle job
+#   exports every build parameter as an environment variable, so a name here is a
+#   contract with whoever configures that job, and a name that is read but
+#   undocumented is invisible from both sides. Nothing enforces it, though: adding
+#   a `$SOMETHING` below without adding it here is a silent contract change, and
+#   the reviewer's only cue is this paragraph.
 #
 #   `FlutterVersion` used to be a third, and it is worth knowing why it is gone
 #   rather than rediscovering it. It gated `--web-renderer html` on the literal
 #   "3.27.1" — a flag `flutter build web` removed in 3.44 and which does NOT
 #   degrade gracefully: it exits with `Could not find an option named
-#   "--web-renderer"` (verified on the pinned 3.47.2). So any job still passing 3.27.1 was
-#   failing its build outright, and no supported SDK could make that branch
-#   correct. If a Jenkins job still sets FlutterVersion, it is now inert here.
+#   "--web-renderer"` (verified on the pinned 3.47.2). So any job still passing
+#   3.27.1 was failing its build outright, and no supported SDK could make that
+#   branch correct.
+#
+#   Removing it made that misconfiguration quiet rather than fixing it: the job
+#   still passes a parameter nobody reads, and now gets a green build. Jenkins is
+#   outside this repo, so the guard below is the only place it can be said out
+#   loud — it warns and continues, because the parameter genuinely does not affect
+#   the output any more and failing the build would be a worse trade.
 #
 #   LOCALES  Which language packs to ship. Unset or "all" builds exactly what it
 #            has always built. Anything else strips the other language packs and
@@ -42,6 +50,16 @@
 #            boolean parameter named Compress, no shell-step change.
 #
 #   Compress=true ./build_web.sh 100 false "/" prod false true          # Pre-compressed
+
+# Say so when a caller passes the parameter this script stopped reading (#1316).
+# Warn, do not fail: the value cannot change the output any more, so a hard exit
+# would break a job that is otherwise fine. Delete this block once the Jenkins
+# jobs no longer define the parameter.
+if [ -n "$FlutterVersion" ]; then
+  echo "WARNING: FlutterVersion=$FlutterVersion is set but no longer read by this script."
+  echo "         The SDK comes from .fvmrc; see the Environment section of this file."
+  echo "         Remove the parameter from the Jenkins job configuration."
+fi
 
 # Detect fvm: use fvm flutter if available, otherwise use flutter directly
 if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then

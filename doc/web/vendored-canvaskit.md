@@ -134,7 +134,11 @@ Do all of this in **one** commit.
    `flutter_web_sdk/` is an **on-demand** artifact. A fresh `fvm install` does
    not fetch it, and neither does `flutter test`, so without the precache the
    path in step 2 simply does not exist and `cp` fails as if it were mistyped.
-   CI pays the same cost explicitly, in `ci.yml`'s unit-test job.
+   `run_tests.sh` runs the same precache itself, right after it resolves
+   `$FLUTTER`, so both a developer's pre-push command and CI's unit-test job are
+   covered by that one line — the prerequisite travels with the command instead of
+   with a runner. Any job that runs `test/web/` *without* going through that
+   script needs its own precache; the guard's failure message says so.
 
 2. Re-vendor both files. Copy **only** these two — the source directory also
    holds `chromium/` (must not come back, #1281), `*.js.symbols`, `skwasm*` and
@@ -163,7 +167,12 @@ Do all of this in **one** commit.
    `.github/actions/setup/action.yml`.
 
 5. Move the constants in `test/web/canvaskit_variant_test.dart`
-   (`_pinnedFlutterVersion`, `_pinnedEngineRevision`, `_vendoredCanvasKit`).
+   (`_pinnedFlutterVersion`, `_pinnedEngineRevision`, `_vendoredCanvasKit`), and
+   the two **prose** copies of the version the guard also greps: the
+   `## Flutter SDK Pin` section of `CLAUDE.md` and the `Environment:` header
+   comment in `build_web.sh`. The guard will name whichever you forget, so this
+   is a checklist and not a trap — but it fails the suite, so do it in the same
+   commit.
 
 6. Run the guard, then **prove it still bites** — a guard nobody has seen fail
    is not yet a guard:
@@ -172,6 +181,23 @@ Do all of this in **one** commit.
    fvm flutter test test/web/canvaskit_variant_test.dart
    # revert one file on purpose; the run above must now fail
    ```
+
+   Then run `fvm flutter analyze`, and read the result as a bump artefact rather
+   than a surprise. Warnings are **fatal** in CI (`ci.yml`, job 1), so an SDK that
+   introduces a new diagnostic class turns some unrelated PR red — that is the
+   deliberate tradeoff, and `invalid_return_type_for_then` arrived exactly that
+   way in Dart 3.13. Fix the warnings in this commit, or downgrade that one
+   diagnostic under `analyzer: errors:` in `analysis_options.yaml`. Do not reach
+   for `--no-fatal-warnings`.
+
+   Two more things the same SDK swap can move, both cheap to re-check and both
+   silent when they drift:
+
+   * `analysis_options.yaml`'s `exclude:` block — `flutter pub get` rewrites it,
+     and 3.47.0 vs 3.47.2 already disagree about it. See the comment there.
+   * the `serviceWorkerVersion` reasoning in `web/flutter_bootstrap.js`, which is
+     measured against the SDK's own `flutter_js/flutter.js`. That comment names
+     the one-line grep that re-verifies it.
 
 7. Golden baselines are SDK-sensitive: the first 3.47.0 run in
    `linksys/PrivacyGUI-golden-ci` produced 312 failures against a baseline

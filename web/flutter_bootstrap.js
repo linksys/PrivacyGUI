@@ -23,21 +23,11 @@
 //                                   Cross-Origin Storage).
 //   flutter_service_worker_version  a constant "3346174710" where the build puts
 //                                   a fresh value per build. Currently INERT for
-//                                   this project, and worth knowing why rather
-//                                   than assuming a staleness bug was fixed here:
-//                                   the loader's only use of the value is
-//                                   `active.scriptURL.endsWith(version)` in
-//                                   _getNewServiceWorker, and the URL it tests is
-//                                   serviceWorkerUrl below — ours, with no `?v=`
-//                                   query. So that check fails for every value,
-//                                   frozen or fresh, and registration.update() is
-//                                   called unconditionally on every load either
-//                                   way. The value becomes load-bearing again the
-//                                   moment the serviceWorkerUrl override goes,
-//                                   because the tool's default URL is
-//                                   flutter_service_worker.js?v=<version>. It is
-//                                   restored because it is the tool's value to
-//                                   fill, not because it was breaking anything.
+//                                   this project — see the note under
+//                                   serviceWorkerVersion below for the measurement
+//                                   and its expiry date. It is restored because it
+//                                   is the tool's value to fill, not because it
+//                                   was breaking anything.
 //
 // Guarded by test/web/canvaskit_variant_test.dart, which asserts the placeholders
 // are here and that none of the values above is written by hand.
@@ -87,6 +77,30 @@ _flutter.loader.load({
   serviceWorkerSettings: {
     // Unquoted: the substitution supplies its own quotes (and a deprecation
     // notice comment). Wrapping this in quotes produces a syntax error.
+    //
+    // INERT for this project as configured, measured against the loader we
+    // actually ship — 3.47.2's bin/cache/flutter_web_sdk/flutter_js/flutter.js,
+    // which is what the flutter_js placeholder above substitutes (named without
+    // braces here for the reason that comment gives). That file destructures the
+    // value exactly once, and both of its uses are dead here:
+    //
+    //   let {serviceWorkerVersion: r,
+    //        serviceWorkerUrl: i = m(`flutter_service_worker.js?v=${r}`)} = e
+    //   ... .register(c).then(l => this._getNewServiceWorker(l, r))
+    //   _getNewServiceWorker(e, s) { ... if (e.active.scriptURL.endsWith(s)) ... }
+    //
+    // The `?v=` URL is a DEFAULT, so supplying serviceWorkerUrl below skips it;
+    // and the only other consumption is endsWith(version) against that same URL,
+    // which has no `?v=` query, so it is false for every value — frozen or fresh
+    // — and registration.update() runs on every load either way.
+    //
+    // Expiry, both halves of it: this holds only while serviceWorkerUrl below is
+    // overridden (the tool's default URL embeds the version, so removing the
+    // override makes it load-bearing immediately), and only while the SDK's
+    // flutter.js consumes it this way. Re-measure on a pin bump rather than
+    // trusting this paragraph — `grep -c serviceWorkerVersion` on that file
+    // returns 1 today, and a second occurrence means the reasoning changed. That
+    // file is a precached artifact, so `flutter precache --web` first.
     serviceWorkerVersion: {{flutter_service_worker_version}},
     // Ours, and it does more than rename the file. web/service_worker.js
     // importScripts the generated flutter_service_worker.js (the build DOES emit

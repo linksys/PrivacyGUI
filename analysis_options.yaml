@@ -14,24 +14,35 @@ analyzer:
     - tools/usp_boundary/fixtures/**
     # The four below are written by `flutter pub get` itself, not by hand. It
     # announces "Upgrading analysis_options.yaml to exclude build and platform
-    # directories" and appends them when they are absent. Committed rather than
-    # reverted, because reverting only makes the tree dirty on the next command.
+    # directories" and appends whichever of them are absent. Committed rather
+    # than reverted, and not editable in isolation either: `pub get` re-adds any
+    # one of the four you delete, on the next command, silently. Removing a line
+    # here means opting out at the tool level, not at this file.
     #
-    # The list is pin-shaped, which is the reason it is worth a comment. 3.47.0
-    # wrote all six platform names whether the directory existed or not;
-    # flutter/191131, shipped in 3.47.2, narrows it to the ones that do — here
-    # `android/`, `ios/` and `web/`, with `windows/`, `macos/` and `linux/`
-    # absent. Measured rather than inferred: this block was stripped and
-    # re-migrated under 3.47.2 to get these exact four lines.
+    # The list is pin-shaped. 3.47.0 wrote all six platform names whether the
+    # directory existed or not; flutter/191131, shipped in 3.47.2, narrows it to
+    # the ones that do — here `android/`, `ios/` and `web/`, with `windows/`,
+    # `macos/` and `linux/` absent. Measured, not inferred: this block was
+    # stripped and re-migrated under 3.47.2 to get these exact four lines.
     #
-    # The migration is one-way, not re-applied per run: with the block already
-    # present, `pub get` leaves it completely alone (also measured). So a tree
-    # migrated by 3.47.0 keeps its seven lines forever even after the pin moves
-    # to 3.47.2 — these four are deliberate, and no future bump will correct
-    # them on our behalf.
+    # And the migration is not symmetric, which is the part that will surprise you.
+    # 3.47.2 leaves these four alone (measured). But running any 3.47.0-era
+    # `flutter`/`dart` against this tree — an unpinned shell, a bisect, a second
+    # SDK invoked by absolute path — appends `windows/**`, `macos/**` and
+    # `linux/**` on the spot, because that version reads a four-line block as
+    # incomplete. It happened while this comment was being written. Nothing
+    # removes them afterwards, so if you see seven entries here, an older SDK
+    # touched the tree: delete the three and re-run `fvm flutter pub get`.
     #
-    # Practical effect: `build/**` alone. None of the three platform directories
-    # that do exist here holds a single `.dart` file.
+    # WHAT THIS COSTS, which matters more than the archaeology: `web/**` is an
+    # exclusion with no expiry, added in the same change that made warnings fatal
+    # in CI (.github/workflows/ci.yml). Today it forbids nothing — none of the
+    # three platform directories holds a single `.dart` file — but the first JS
+    # interop shim written under `web/` lands outside both `flutter analyze` and
+    # that gate, and nothing will say so. `web/` is also the directory the CanvasKit
+    # vendoring touches most. So: if you add Dart under `web/`, narrow this entry
+    # to the generated subpaths instead of leaving it whole, and expect `pub get`
+    # to fight you (see above) rather than assuming the edit stuck.
     - build/**
     - android/**
     - ios/**
