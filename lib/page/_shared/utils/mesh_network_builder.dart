@@ -122,7 +122,6 @@ class MeshNetworkBuilder {
       ipv6Addresses: master.ipv6Addresses,
       instancePath: master.instancePath,
       connectedClients: patchedMasterClients,
-      isActive: master.isActive,
       hostsDeviceId: master.hostsDeviceId,
     );
 
@@ -146,6 +145,9 @@ class MeshNetworkBuilder {
         slaveDevice: d,
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
+        // An empty topology carries no liveness information for any node, so an
+        // unmatched row must not be read as "offline" (#1430 review).
+        livenessKnown: meshTopology.isNotEmpty,
       );
 
       // Patch slave's connected clients with parentNodeName
@@ -166,8 +168,8 @@ class MeshNetworkBuilder {
         ipv6Addresses: slave.ipv6Addresses,
         instancePath: slave.instancePath,
         connectedClients: patchedSlaveClients,
-        isActive: slave.isActive,
         backhaul: slave.backhaul,
+        livenessKnown: slave.livenessKnown,
       );
     }).toList();
 
@@ -428,7 +430,6 @@ class MeshNetworkBuilder {
           [],
       instancePath: masterMeshInfo?.instancePath,
       connectedClients: connectedClients,
-      isActive: masterDevice?.isActive ?? true,
       hostsDeviceId: masterDevice?.deviceId,
     );
   }
@@ -441,6 +442,7 @@ class MeshNetworkBuilder {
     required ConnectedDevice slaveDevice,
     required SlaveNode? slaveMeshInfo,
     required List<ClientDevice> connectedClients,
+    required bool livenessKnown,
   }) {
     final deviceId = slaveDevice.macAddress.trim().toUpperCase();
 
@@ -465,8 +467,8 @@ class MeshNetworkBuilder {
           .toList(),
       instancePath: slaveMeshInfo?.instancePath,
       connectedClients: connectedClients,
-      isActive: slaveDevice.isActive,
       backhaul: backhaul,
+      livenessKnown: livenessKnown,
     );
   }
 

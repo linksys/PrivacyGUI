@@ -613,8 +613,8 @@ void main() {
     // persists, so an unmatched node row is the offline shape.
     group('node liveness (#1430)', () {
       test(
-          'a slave Hosts row that matches NO DataElements agent is offline '
-          '(AC5)', () {
+          'a slave Hosts row that matches NO DataElements agent in a working '
+          'DataElements set is offline (AC5)', () {
         final connectedDevices = ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:01',
@@ -631,7 +631,75 @@ void main() {
           ),
         ]);
 
-        // Empty topology ⇒ no DataElements agents ⇒ the slave matches none.
+        // A DataElements set that IS working — the master plus one *other*
+        // agent — so the absent match for AA:BB:CC:DD:EE:02 is a verdict about
+        // that node, not about the subtree. Do NOT use MeshTopologyInfo.empty
+        // here: that shape says nothing about any node and is asserted to stay
+        // online by the `DataElements unavailable` test below.
+        final meshTopology = MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:09'),
+          ],
+          clientToNodeMap: {},
+        );
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopology,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.first;
+        // No DataElements match ⇒ liveness is derived as offline.
+        expect(slave.livenessKnown, isTrue);
+        expect(slave.dataElementsId, isNull);
+        expect(slave.isOnline, isFalse);
+        // And an absent backhaul must NOT be reported as a real (wireless)
+        // backhaul with a signal.
+        expect(slave.backhaul.hasInfo, isFalse);
+        expect(slave.backhaul.isWifi, isFalse,
+            reason: 'an absent backhaul is neither Ethernet nor WiFi');
+        expect(slave.backhaul.signalStrength, isNull);
+      });
+
+      test(
+          'a slave stays online when DataElements is unavailable for the whole '
+          'network', () {
+        // The regression the DataElements-match rule opens up. This shape is
+        // produced by every one of:
+        //   - UspDevicesDataService.fetch's first build pass, which always
+        //     passes MeshTopologyInfo.empty (the background fetch updates it
+        //     later);
+        //   - fetchMeshTopology returning MeshTopologyInfo.empty because the
+        //     router does not implement Device.WiFi.DataElements;
+        //   - fetchMeshTopology's `catch (e)` turning ANY transport failure,
+        //     timeout or non-OK result into the same empty value.
+        // The last two are terminal for the session: _fetchMeshAndUpdate bails
+        // on `if (meshTopology.isEmpty) return;` and never updates state. If an
+        // unmatched row were read as offline here, a healthy extender would be
+        // painted offline, its tap would be swallowed by
+        // usp_topology_view.dart's offline guard and its Details button hidden
+        // — with no error surfaced anywhere.
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02',
+            isActive: false, // node rows read 0 even when up
+          ),
+        ]);
+
         final result = MeshNetworkBuilder.build(
           connectedDevices: connectedDevices,
           wifiClientMap: {},
@@ -641,15 +709,16 @@ void main() {
         );
 
         expect(result.slaves.length, 1);
-        final slave = result.slaves.first;
-        // No DataElements match ⇒ liveness is derived as offline.
+        final slave = result.slaves.single;
+        expect(slave.livenessKnown, isFalse,
+            reason: 'an empty topology carries no liveness information');
         expect(slave.dataElementsId, isNull);
-        expect(slave.isOnline, isFalse);
-        // And an absent backhaul must NOT be reported as a real (wireless)
-        // backhaul with a signal.
+        expect(slave.isOnline, isTrue,
+            reason: 'liveness is unknown, not offline — the node must stay '
+                'navigable');
+        // Still no fabricated backhaul: unknown liveness does not invent data.
         expect(slave.backhaul.hasInfo, isFalse);
-        expect(slave.backhaul.isWifi, isFalse,
-            reason: 'an absent backhaul is neither Ethernet nor WiFi');
+        expect(slave.backhaul.isWifi, isFalse);
         expect(slave.backhaul.signalStrength, isNull);
       });
 
@@ -694,8 +763,12 @@ void main() {
 
         expect(result.slaves.length, 1);
         final slave = result.slaves.single;
-        // Matched a DataElements agent ⇒ online, despite isActive:false.
-        expect(slave.isActive, isFalse);
+        // Matched a DataElements agent ⇒ online, even though the Hosts row that
+        // produced it carries Active=0. The node no longer carries that field at
+        // all (it was write-only and fed Equatable), so the fixture above is
+        // what pins the behaviour: flipping `isActive:false` there must not
+        // change any assertion here.
+        expect(slave.livenessKnown, isTrue);
         expect(slave.dataElementsId, isNotNull);
         expect(slave.isOnline, isTrue,
             reason: 'a DataElements-matched node is online even when the '

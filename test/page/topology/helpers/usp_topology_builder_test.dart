@@ -727,6 +727,115 @@ void main() {
       });
 
       test(
+          'an unmatched slave stays online when DataElements is unavailable '
+          'for the whole network', () {
+        // The C1 regression, at the layer that decides navigability. With
+        // livenessKnown false the absent DataElements match is not a verdict, so
+        // the node must NOT reach MeshNodeStatus.offline — that state gates the
+        // tap handler (usp_topology_view.dart:142) and the Details button
+        // (node_detail_popup.dart:99), and nothing on the page recovers from it
+        // (devices_data_provider's _fetchMeshAndUpdate bails on an empty
+        // topology, so the state never updates).
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              livenessKnown: false,
+              backhaul: DevicesTestData.emptyBackhaul,
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extender =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+        expect(extender.status, MeshNodeStatus.online);
+        expect(extender.isOffline, isFalse);
+        // Unknown liveness still fabricates no signal: no backhaul ⇒ 0.0.
+        expect(extender.level, 0.0);
+      });
+
+      test(
+          'an online WiFi slave whose backhaul carries no RSSI keeps a neutral '
+          'level, not zero', () {
+        // Firmware ships RCPI 0 for a backhaul whose BackhaulStats are not
+        // populated yet; rcpiToRssi maps that to null while mediaType stays set,
+        // so hasInfo is true. Reading 0.0 there paints a healthy node's water
+        // level empty — visually identical to a dead node. AC4's "no fabricated
+        // 0.5" is about an ABSENT backhaul (asserted 0.0 in the test above),
+        // not about a real backhaul with a missing reading.
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              dataElementsId: DevicesTestData.slaveMac1,
+              backhaul: DevicesTestData.createWifiBackhaul(
+                signalStrength: null,
+              ),
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extender =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+        expect(extender.status, MeshNodeStatus.online);
+        expect(extender.level, 0.5,
+            reason:
+                'a real WiFi backhaul with no reading is unknown, not dead');
+      });
+
+      test(
+          'a slave with no backhaul info gets an unknown-quality link, not a '
+          'graded one', () {
+        // AC3 / qodo#3. ui_kit's ConnectionType has only ethernet and wifi and
+        // MeshLink.connectionType is non-nullable, so an absent backhaul must
+        // claim one of them; `wifi` is chosen because it routes BOTH views
+        // through topologySpec.linkStyleFor(linkQuality) — with `unknown` that
+        // lands on the neutral wifiUnknownStyle, whereas `ethernet` would
+        // hard-wire ethernetLinkStyle and assert a wired backhaul.
+        //
+        // So the assertion that carries the correctness is linkQuality, not
+        // connectionType: no RSSI ⇒ unknown ⇒ neutral. When ui_kit ships
+        // ConnectionType.unknown (linksys/privacyGUI-UI-kit#87), the
+        // connectionType expectation below is the one to change.
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              livenessKnown: false,
+              backhaul: DevicesTestData.emptyBackhaul,
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final link = topology.links
+            .firstWhere((l) => l.targetId.startsWith('extender-'));
+        expect(link.linkQuality, LinkQuality.unknown,
+            reason: 'no backhaul reading ⇒ neutral style in both views');
+        expect(link.rssi, isNull);
+        expect(link.throughput, isNull);
+        // The forced claim. Not correct, only least-wrong — see the comment
+        // above and at the call site.
+        expect(link.connectionType, ConnectionType.wifi);
+        expect(link.isEthernet, isFalse,
+            reason: 'an absent backhaul must not be styled as a wired link');
+      });
+
+      test(
           'the gateway stays online unconditionally, even without a '
           'DataElements match (AC1)', () {
         // The master is the data source itself; its liveness is not gated on a

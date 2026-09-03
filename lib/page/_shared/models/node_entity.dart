@@ -56,17 +56,6 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   /// Client devices connected to this node.
   List<ClientDevice> get connectedClients;
 
-  // ─── Status ───
-  /// The Hosts row's `Device.Hosts.Host.{i}.Active` value.
-  ///
-  /// This is the same field that drives client online/offline, but it is **not**
-  /// a liveness signal for node rows: firmware leaves it `0` for a node whether
-  /// the node is up or powered off (measured on the live bench, #1430), because
-  /// node rows key on a STA-side MAC the backfill lookup never matches. Node
-  /// liveness is derived from [isOnline] (a DataElements match) instead. Kept as
-  /// raw Hosts data; do not use it to decide whether a node is online.
-  bool get isActive;
-
   // ─── NetworkEntity implementation ───
   @override
   String get id => deviceId;
@@ -79,8 +68,18 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
     return deviceId;
   }
 
+  /// Node liveness. Deliberately left abstract: the master and a slave derive it
+  /// from different facts, and a wrong inherited default is how #1430 shipped
+  /// (`=> true` for every node) — see the overrides on [MasterNode] and
+  /// [SlaveNode].
+  ///
+  /// Do **not** derive this from the Hosts row's `Device.Hosts.Host.{i}.Active`
+  /// value. That field drives client online/offline, but firmware leaves it `0`
+  /// for a *node* row whether the node is up or powered off (measured on the
+  /// live bench, #1430), because node rows key on a STA-side MAC the backfill
+  /// lookup never matches.
   @override
-  bool get isOnline => dataElementsId != null;
+  bool get isOnline;
 
   // ─── Computed ───
   /// Whether this is the master (gateway) node.
@@ -121,8 +120,6 @@ final class MasterNode extends NodeEntity {
   final String? instancePath;
   @override
   final List<ClientDevice> connectedClients;
-  @override
-  final bool isActive;
 
   /// WAN IPv4 address.
   final String? wanIpAddress;
@@ -146,7 +143,6 @@ final class MasterNode extends NodeEntity {
     this.ipv6Addresses = const [],
     this.instancePath,
     this.connectedClients = const [],
-    this.isActive = true,
     this.wanIpAddress,
     this.wanIpv6Address,
     this.hostsDeviceId,
@@ -174,7 +170,6 @@ final class MasterNode extends NodeEntity {
     List<String>? ipv6Addresses,
     String? instancePath,
     List<ClientDevice>? connectedClients,
-    bool? isActive,
     String? wanIpAddress,
     String? wanIpv6Address,
     String? hostsDeviceId,
@@ -192,7 +187,6 @@ final class MasterNode extends NodeEntity {
       ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
       instancePath: instancePath ?? this.instancePath,
       connectedClients: connectedClients ?? this.connectedClients,
-      isActive: isActive ?? this.isActive,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       wanIpv6Address: wanIpv6Address ?? this.wanIpv6Address,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
@@ -213,7 +207,6 @@ final class MasterNode extends NodeEntity {
         ipv6Addresses,
         instancePath,
         connectedClients,
-        isActive,
         wanIpAddress,
         wanIpv6Address,
         hostsDeviceId,
@@ -236,7 +229,6 @@ final class MasterNode extends NodeEntity {
         'ipv6Addresses': ipv6Addresses,
         'instancePath': instancePath,
         'connectedClients': connectedClients,
-        'isActive': isActive,
         'wanIpAddress': wanIpAddress,
         'wanIpv6Address': wanIpv6Address,
         'hostsDeviceId': hostsDeviceId,
@@ -271,11 +263,23 @@ final class SlaveNode extends NodeEntity {
   final String? instancePath;
   @override
   final List<ClientDevice> connectedClients;
-  @override
-  final bool isActive;
 
   /// Backhaul connection info to parent node.
   final BackhaulInfo backhaul;
+
+  /// Whether DataElements liveness information was available for this node's
+  /// network at all.
+  ///
+  /// `false` means the DataElements subtree carried nothing for the whole
+  /// network — the router does not implement it, the fetch failed (every error
+  /// is swallowed into `MeshTopologyInfo.empty`, see
+  /// `UspDevicesDataService.fetchMeshTopology`), or the first build pass ran
+  /// before the background fetch returned. In that state nothing is known about
+  /// any node, so [isOnline] must not read the absent match as a verdict.
+  ///
+  /// Defaults to `true`: a caller that has a topology to match against gets the
+  /// strict reading, and only the whole-subtree-absent case opts out.
+  final bool livenessKnown;
 
   SlaveNode({
     required this.deviceId,
@@ -290,12 +294,26 @@ final class SlaveNode extends NodeEntity {
     this.ipv6Addresses = const [],
     this.instancePath,
     this.connectedClients = const [],
-    this.isActive = true,
     required this.backhaul,
+    this.livenessKnown = true,
   });
 
   @override
   bool get isMaster => false;
+
+  /// A slave is online when it matched a DataElements agent. A powered-off node
+  /// leaves `DataElements.Network.Device.` within ~20-50s while its
+  /// `Device.Hosts.Host` row persists, so an unmatched node row is the offline
+  /// shape (#1430, AC1).
+  ///
+  /// The match is only a verdict when there was something to match against. With
+  /// [livenessKnown] false the absent match says nothing, and asserting offline
+  /// there would render a healthy mesh offline and non-navigable
+  /// (`usp_topology_view.dart` blocks taps on an offline node, and
+  /// `node_detail_popup.dart` hides its Details button) for the whole session on
+  /// any firmware or transport state that does not deliver DataElements.
+  @override
+  bool get isOnline => !livenessKnown || dataElementsId != null;
 
   /// Whether backhaul is Ethernet.
   bool get isEthernetBackhaul => backhaul.isEthernet;
@@ -316,8 +334,8 @@ final class SlaveNode extends NodeEntity {
     List<String>? ipv6Addresses,
     String? instancePath,
     List<ClientDevice>? connectedClients,
-    bool? isActive,
     BackhaulInfo? backhaul,
+    bool? livenessKnown,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -332,8 +350,8 @@ final class SlaveNode extends NodeEntity {
       ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
       instancePath: instancePath ?? this.instancePath,
       connectedClients: connectedClients ?? this.connectedClients,
-      isActive: isActive ?? this.isActive,
       backhaul: backhaul ?? this.backhaul,
+      livenessKnown: livenessKnown ?? this.livenessKnown,
     );
   }
 
@@ -351,8 +369,8 @@ final class SlaveNode extends NodeEntity {
         ipv6Addresses,
         instancePath,
         connectedClients,
-        isActive,
         backhaul,
+        livenessKnown,
       ];
 
   @override
@@ -372,8 +390,8 @@ final class SlaveNode extends NodeEntity {
         'ipv6Addresses': ipv6Addresses,
         'instancePath': instancePath,
         'connectedClients': connectedClients,
-        'isActive': isActive,
         'backhaul': backhaul,
+        'livenessKnown': livenessKnown,
       };
 }
 
