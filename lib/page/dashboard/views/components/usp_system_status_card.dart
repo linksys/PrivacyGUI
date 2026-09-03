@@ -147,12 +147,14 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
             // *start* where it is invisible, and a row that already fits lays
             // out exactly as before.
             Flexible(
-              child: Semantics(
-                // Own boundary, or the grid item absorbs this tap action across
-                // the whole card — see DashboardCardTemplate._buildDetailFooter
-                // for the full reasoning (#1301).
-                container: true,
-                button: true,
+              // Through the shared wrapper, so this hand-rolled footer carries
+              // the same boundary and the same handle as the ten rendered by the
+              // template (#1301, #1450) — eleven declare a `detailRoute`, but
+              // `speed_test` is unregistered. The tab is deliberately not part of
+              // the handle: E2E has to be able to press the button without
+              // knowing which tab is selected.
+              child: cardDetailLink(
+                context,
                 label: label,
                 child: InkWell(
                   onTap: () => context.pushNamed(

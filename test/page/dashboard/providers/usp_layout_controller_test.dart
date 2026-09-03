@@ -1310,8 +1310,8 @@ void main() {
         final counter =
             _LayoutWriteCounter(SharedPreferencesStorePlatform.instance);
         SharedPreferencesStorePlatform.instance = counter;
-        addTearDown(() => SharedPreferencesStorePlatform.instance =
-            counter.inner as SharedPreferencesStorePlatform);
+        addTearDown(
+            () => SharedPreferencesStorePlatform.instance = counter.inner);
 
         final container = ProviderContainer();
         container.read(uspSliverDashboardControllerProvider);

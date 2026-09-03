@@ -1,14 +1,48 @@
-(()=>{var P=()=>navigator.vendor==="Google Inc."||navigator.agent==="Edg/",E=()=>typeof ImageDecoder>"u"?!1:P(),L=()=>typeof Intl.v8BreakIterator<"u"&&typeof Intl.Segmenter<"u",W=()=>{let n=[0,97,115,109,1,0,0,0,1,5,1,95,1,120,0];return WebAssembly.validate(new Uint8Array(n))},w={hasImageCodecs:E(),hasChromiumBreakIterators:L(),supportsWasmGC:W(),crossOriginIsolated:window.crossOriginIsolated};function l(...n){return new URL(C(...n),document.baseURI).toString()}function C(...n){return n.filter(t=>!!t).map((t,i)=>i===0?_(t):j(_(t))).filter(t=>t.length).join("/")}function j(n){let t=0;for(;t<n.length&&n.charAt(t)==="/";)t++;return n.substring(t)}function _(n){let t=n.length;for(;t>0&&n.charAt(t-1)==="/";)t--;return n.substring(0,t)}function T(n,t){return n.canvasKitBaseUrl?n.canvasKitBaseUrl:t.engineRevision&&!t.useLocalCanvasKit?C("https://www.gstatic.com/flutter-canvaskit",t.engineRevision):"canvaskit"}var v=class{constructor(){this._scriptLoaded=!1}setTrustedTypesPolicy(t){this._ttPolicy=t}async loadEntrypoint(t){let{entrypointUrl:i=l("main.dart.js"),onEntrypointLoaded:r,nonce:e}=t||{};return this._loadJSEntrypoint(i,r,e)}async load(t,i,r,e,a){a??=o=>{o.initializeEngine(r).then(c=>c.runApp())};let{entryPointBaseUrl:s}=r;if(t.compileTarget==="dart2wasm")return this._loadWasmEntrypoint(t,i,s,a);{let o=t.mainJsPath??"main.dart.js",c=l(s,o);return this._loadJSEntrypoint(c,a,e)}}didCreateEngineInitializer(t){typeof this._didCreateEngineInitializerResolve=="function"&&(this._didCreateEngineInitializerResolve(t),this._didCreateEngineInitializerResolve=null,delete _flutter.loader.didCreateEngineInitializer),typeof this._onEntrypointLoaded=="function"&&this._onEntrypointLoaded(t)}_loadJSEntrypoint(t,i,r){let e=typeof i=="function";if(!this._scriptLoaded){this._scriptLoaded=!0;let a=this._createScriptTag(t,r);if(e)console.debug("Injecting <script> tag. Using callback."),this._onEntrypointLoaded=i,document.head.append(a);else return new Promise((s,o)=>{console.debug("Injecting <script> tag. Using Promises. Use the callback approach instead!"),this._didCreateEngineInitializerResolve=s,a.addEventListener("error",o),document.head.append(a)})}}async _loadWasmEntrypoint(t,i,r,e){if(!this._scriptLoaded){this._scriptLoaded=!0,this._onEntrypointLoaded=e;let{mainWasmPath:a,jsSupportRuntimePath:s}=t,o=l(r,a),c=l(r,s);this._ttPolicy!=null&&(c=this._ttPolicy.createScriptURL(c));let d=(await import(c)).compileStreaming(fetch(o)),f;t.renderer==="skwasm"?f=(async()=>{let m=await i.skwasm;return window._flutter_skwasmInstance=m,{skwasm:m.wasmExports,skwasmWrapper:m,ffi:{memory:m.wasmMemory}}})():f=Promise.resolve({}),await(await(await d).instantiate(await f)).invokeMain()}}_createScriptTag(t,i){let r=document.createElement("script");r.type="application/javascript",i&&(r.nonce=i);let e=t;return this._ttPolicy!=null&&(e=this._ttPolicy.createScriptURL(t)),r.src=e,r}};async function I(n,t,i){if(t<0)return n;let r,e=new Promise((a,s)=>{r=setTimeout(()=>{s(new Error(`${i} took more than ${t}ms to resolve. Moving on.`,{cause:I}))},t)});return Promise.race([n,e]).finally(()=>{clearTimeout(r)})}var y=class{setTrustedTypesPolicy(t){this._ttPolicy=t}loadServiceWorker(t){if(!t)return console.debug("Null serviceWorker configuration. Skipping."),Promise.resolve();if(!("serviceWorker"in navigator)){let o="Service Worker API unavailable.";return window.isSecureContext||(o+=`
-The current context is NOT secure.`,o+=`
-Read more: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts`),Promise.reject(new Error(o))}let{serviceWorkerVersion:i,serviceWorkerUrl:r=l(`flutter_service_worker.js?v=${i}`),timeoutMillis:e=4e3}=t,a=r;this._ttPolicy!=null&&(a=this._ttPolicy.createScriptURL(a));let s=navigator.serviceWorker.register(a).then(o=>this._getNewServiceWorker(o,i)).then(this._waitForServiceWorkerActivation);return I(s,e,"prepareServiceWorker")}async _getNewServiceWorker(t,i){if(!t.active&&(t.installing||t.waiting))return console.debug("Installing/Activating first service worker."),t.installing||t.waiting;if(t.active.scriptURL.endsWith(i))return console.debug("Loading from existing service worker."),t.active;{let r=await t.update();return console.debug("Updating service worker."),r.installing||r.waiting||r.active}}async _waitForServiceWorkerActivation(t){if(!t||t.state==="activated")if(t){console.debug("Service worker already active.");return}else throw new Error("Cannot activate a null service worker!");return new Promise((i,r)=>{t.addEventListener("statechange",()=>{t.state==="activated"&&(console.debug("Activated new service worker."),i())})})}};var g=class{constructor(t,i="flutter-js"){let r=t||[/\.js$/,/\.mjs$/];window.trustedTypes&&(this.policy=trustedTypes.createPolicy(i,{createScriptURL:function(e){if(e.startsWith("blob:"))return e;let a=new URL(e,window.location),s=a.pathname.split("/").pop();if(r.some(c=>c.test(s)))return a.toString();console.error("URL rejected by TrustedTypes policy",i,":",e,"(download prevented)")}}))}};var k=n=>{let t=WebAssembly.compileStreaming(fetch(n));return(i,r)=>((async()=>{let e=await t,a=await WebAssembly.instantiate(e,i);r(a,e)})(),{})};var b=(n,t,i,r)=>(window.flutterCanvasKitLoaded=(async()=>{if(window.flutterCanvasKit)return window.flutterCanvasKit;let e=i.hasChromiumBreakIterators&&i.hasImageCodecs;if(!e&&t.canvasKitVariant=="chromium")throw"Chromium CanvasKit variant specifically requested, but unsupported in this browser";let a=e&&t.canvasKitVariant!=="full",s=r;a&&(s=l(s,"chromium"));let o=l(s,"canvaskit.js");n.flutterTT.policy&&(o=n.flutterTT.policy.createScriptURL(o));let c=k(l(s,"canvaskit.wasm")),p=await import(o);return window.flutterCanvasKit=await p.default({instantiateWasm:c}),window.flutterCanvasKit})(),window.flutterCanvasKitLoaded);var U=async(n,t,i,r)=>{let e=i.crossOriginIsolated&&!t.forceSingleThreadedSkwasm?"skwasm":"skwasm_st",s=l(r,`${e}.js`);n.flutterTT.policy&&(s=n.flutterTT.policy.createScriptURL(s));let o=k(l(r,`${e}.wasm`));return await(await import(s)).default({instantiateWasm:o,mainScriptUrlOrBlob:new Blob([`import '${s}'`],{type:"application/javascript"})})};var S=class{async loadEntrypoint(t){let{serviceWorker:i,...r}=t||{},e=new g,a=new y;a.setTrustedTypesPolicy(e.policy),await a.loadServiceWorker(i).catch(o=>{console.warn("Exception while loading service worker:",o)});let s=new v;return s.setTrustedTypesPolicy(e.policy),this.didCreateEngineInitializer=s.didCreateEngineInitializer.bind(s),s.loadEntrypoint(r)}async load({serviceWorkerSettings:t,onEntrypointLoaded:i,nonce:r,config:e}={}){e??={};let a=_flutter.buildConfig;if(!a)throw"FlutterLoader.load requires _flutter.buildConfig to be set";let s=u=>{switch(u){case"skwasm":return w.hasChromiumBreakIterators&&w.hasImageCodecs&&w.supportsWasmGC;default:return!0}},o=(u,m)=>{switch(u.renderer){case"auto":return m=="canvaskit"||m=="html";default:return u.renderer==m}},c=u=>u.compileTarget==="dart2wasm"&&!w.supportsWasmGC||e.renderer&&!o(u,e.renderer)?!1:s(u.renderer),p=a.builds.find(c);if(!p)throw"FlutterLoader could not find a build compatible with configuration and environment.";let d={};d.flutterTT=new g,t&&(d.serviceWorkerLoader=new y,d.serviceWorkerLoader.setTrustedTypesPolicy(d.flutterTT.policy),await d.serviceWorkerLoader.loadServiceWorker(t).catch(u=>{console.warn("Exception while loading service worker:",u)}));let f=T(e,a);p.renderer==="canvaskit"?d.canvasKit=b(d,e,w,f):p.renderer==="skwasm"&&(d.skwasm=U(d,e,w,f));let h=new v;return h.setTrustedTypesPolicy(d.flutterTT.policy),this.didCreateEngineInitializer=h.didCreateEngineInitializer.bind(h),h.load(p,d,e,r,i)}};window._flutter||(window._flutter={});window._flutter.loader||(window._flutter.loader=new S);})();
-//# sourceMappingURL=flutter.js.map
-
-if (!window._flutter) {
-  window._flutter = {};
-}
-_flutter.buildConfig = {"engineRevision":"cf56914b326edb0ccb123ffdc60f00060bd513fa","builds":[{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"}]};
-
-
+// THIS FILE IS A TEMPLATE. The three {{...}} placeholders below are filled in
+// by `flutter build web` — it reads this committed file and substitutes into it
+// (WebTemplate.withSubstitutions). Do NOT replace one with the value you see in
+// build/web/flutter_bootstrap.js.
+//
+// That is not a hypothetical warning. All three had been replaced with literals,
+// and because the substitution then had nothing to do, the shipped loader stopped
+// being refreshed by any SDK upgrade. The tell was that
+// `cmp web/flutter_bootstrap.js build/web/flutter_bootstrap.js` reported the two
+// files IDENTICAL — for a template, that means it is not one. Three things had
+// silently frozen (#1316):
+//
+//   flutter_js                      an embedded, minified 3.27-era flutter.js,
+//                                   identifiable by its `navigator.agent==="Edg/"`
+//                                   test — not a real property, so that Edge
+//                                   branch never fired. 3.44+ replaced it with
+//                                   navigator.userAgent.includes("Edg/").
+//   flutter_build_config            engineRevision pinned to
+//                                   cf56914b326edb0ccb123ffdc60f00060bd513fa,
+//                                   which is neither 3.44.0's engine nor 3.47.0's,
+//                                   and no wasmHashes at all (3.47 emits them and
+//                                   instantiate_wasm.js reads them for
+//                                   Cross-Origin Storage).
+//   flutter_service_worker_version  a constant "3346174710" where the build puts
+//                                   a fresh value per build. Currently INERT for
+//                                   this project — see the note under
+//                                   serviceWorkerVersion below for the measurement
+//                                   and its expiry date. It is restored because it
+//                                   is the tool's value to fill, not because it
+//                                   was breaking anything.
+//
+// Guarded by test/web/canvaskit_variant_test.dart, which asserts the placeholders
+// are here and that none of the values above is written by hand.
+//
+// The placeholders are named without braces throughout this comment on purpose:
+// the substitution is a plain regex over the whole file and rewrites every
+// double-braced name it matches, comments included. A name it does not recognise
+// survives verbatim instead, so writing one here would ship a stray token into
+// build/web/flutter_bootstrap.js.
+//
+// The `config:` and `serviceWorkerSettings.serviceWorkerUrl` values below are
+// OURS, not the tool's. Nothing substitutes them, and #1281 depends on two of
+// them — keep them across any upgrade.
+{{flutter_js}}
+{{flutter_build_config}}
 _flutter.loader.load({
   config: {
     // Offline-first fonts are eager-loaded via pubspec fonts: (CJK/non-Latin
@@ -27,12 +61,58 @@ _flutter.loader.load({
     canvasKitBaseUrl: "./assets/",
     // Pins every browser to the "full" CanvasKit build so only one variant
     // ships (#1281). Without this, capability detection routes Chromium-based
-    // browsers to assets/chromium/canvaskit.js — which no longer exists — and
-    // the loader has no 404 fallback, so the app never boots.
+    // browsers to a variant subdirectory that this repo does not ship, and the
+    // loader has no 404 fallback, so the app never boots.
+    //
+    // Under 3.47 that is now TWO wrong destinations, not one: the loader checks
+    // `variant !== "full"` first and only then picks between
+    // assets/webparagraph/ (if preferWebParagraph and the browser has
+    // TextCluster) and assets/chromium/. Both are reachable only through that
+    // one negated check, which is why this single line still covers both — but
+    // anyone who deletes it is now opening two holes. The SDK does ship both
+    // (3.47's wasmHashes lists webparagraph/canvaskit.wasm and
+    // chromium/canvaskit.wasm); we vendor neither.
     canvasKitVariant: "full"
   },
   serviceWorkerSettings: {
-    serviceWorkerVersion: "3346174710",
+    // Unquoted: the substitution supplies its own quotes (and a deprecation
+    // notice comment). Wrapping this in quotes produces a syntax error.
+    //
+    // INERT for this project as configured, measured against the loader we
+    // actually ship — 3.47.2's bin/cache/flutter_web_sdk/flutter_js/flutter.js,
+    // which is what the flutter_js placeholder above substitutes (named without
+    // braces here for the reason that comment gives). That file destructures the
+    // value exactly once, and both of its uses are dead here:
+    //
+    //   let {serviceWorkerVersion: r,
+    //        serviceWorkerUrl: i = m(`flutter_service_worker.js?v=${r}`)} = e
+    //   ... .register(c).then(l => this._getNewServiceWorker(l, r))
+    //   _getNewServiceWorker(e, s) { ... if (e.active.scriptURL.endsWith(s)) ... }
+    //
+    // The `?v=` URL is a DEFAULT, so supplying serviceWorkerUrl below skips it;
+    // and the only other consumption is endsWith(version) against that same URL,
+    // which has no `?v=` query, so it is false for every value — frozen or fresh
+    // — and registration.update() runs on every load either way.
+    //
+    // Expiry, both halves of it: this holds only while serviceWorkerUrl below is
+    // overridden (the tool's default URL embeds the version, so removing the
+    // override makes it load-bearing immediately), and only while the SDK's
+    // flutter.js consumes it this way. Re-measure on a pin bump rather than
+    // trusting this paragraph — `grep -c serviceWorkerVersion` on that file
+    // returns 1 today, and a second occurrence means the reasoning changed. That
+    // file is a precached artifact, so `flutter precache --web` first.
+    serviceWorkerVersion: {{flutter_service_worker_version}},
+    // Ours, and it does more than rename the file. web/service_worker.js
+    // importScripts the generated flutter_service_worker.js (the build DOES emit
+    // it — 784 bytes, and identical in 3.44 and 3.47) and adds skipWaiting +
+    // clients.claim on top, which is what the PWA install prompt needs.
+    //
+    // Setting this key at all also changes registration: the loader registers
+    // unconditionally when a custom URL is given, whereas the default path first
+    // checks getRegistration() and does nothing if there is none. It logs
+    // flutter/flutter#156910 ("loading the service worker using Flutter
+    // bootstrap is deprecated") for exactly that reason, so this line is a known
+    // future migration and not a settled decision.
     serviceWorkerUrl: "service_worker.js"
   }
 });
