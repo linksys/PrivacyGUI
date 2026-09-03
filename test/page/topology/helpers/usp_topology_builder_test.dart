@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
@@ -854,6 +855,102 @@ void main() {
         final gateway =
             topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
         expect(gateway.status, MeshNodeStatus.online);
+      });
+    });
+
+    // The backhaul level's inputs are two independent strings and one nullable
+    // int, and nothing in `BackhaulInfo` couples them: `isEthernet` reads
+    // `linkType`, `hasInfo` reads `mediaType`. So the four states are a table,
+    // not a ladder, and the row that matters is the one the field-by-field
+    // fixtures never produce — `linkType:'Ethernet'` with an empty `mediaType`.
+    // A guard order that answered that row differently from the link's
+    // `connectionType` and from the node-detail card's arm chain is what this
+    // table exists to pin (#1449 review).
+    group('backhaul level decision table', () {
+      double levelFor(BackhaulInfo backhaul) {
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: MeshNetwork(
+            master: DevicesTestData.createMaster(),
+            slaves: [
+              DevicesTestData.createWifiSlave(
+                dataElementsId: DevicesTestData.slaveMac1,
+                backhaul: backhaul,
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+        return topology.nodes
+            .firstWhere((n) => n.type == MeshNodeType.extender)
+            .level;
+      }
+
+      ConnectionType connectionTypeFor(BackhaulInfo backhaul) {
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: MeshNetwork(
+            master: DevicesTestData.createMaster(),
+            slaves: [
+              DevicesTestData.createWifiSlave(
+                dataElementsId: DevicesTestData.slaveMac1,
+                backhaul: backhaul,
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+        return topology.links
+            .firstWhere((l) => l.targetId.startsWith('extender-'))
+            .connectionType;
+      }
+
+      const cases = <String, (BackhaulInfo, double)>{
+        'absent (no mediaType, no linkType) → 0.0': (
+          BackhaulInfo(mediaType: ''),
+          0.0,
+        ),
+        'Ethernet, both fields set → 1.0': (
+          BackhaulInfo(mediaType: 'Ethernet', linkType: 'Ethernet'),
+          1.0,
+        ),
+        'Wi-Fi with a reading → the RSSI level': (
+          BackhaulInfo(
+            mediaType: 'IEEE 802.11ax',
+            linkType: 'Wi-Fi',
+            signalStrength: -50,
+          ),
+          0.9,
+        ),
+        'Wi-Fi with no reading → neutral 0.5': (
+          BackhaulInfo(mediaType: 'IEEE 802.11ax', linkType: 'Wi-Fi'),
+          0.5,
+        ),
+        // The uncoupled row. `linkType` is a positive statement and
+        // `mediaType` is merely missing, so the positive one wins.
+        'linkType Ethernet with an empty mediaType → 1.0, not 0.0': (
+          BackhaulInfo(mediaType: '', linkType: 'Ethernet'),
+          1.0,
+        ),
+      };
+
+      cases.forEach((name, row) {
+        final (backhaul, expected) = row;
+        test(name, () => expect(levelFor(backhaul), expected));
+      });
+
+      test('the level and the link agree on every row', () {
+        // The divergence this table was added for is not a wrong level on its
+        // own — it is one builder answering the same fields two ways in one
+        // pass, so the graph draws a wired link into a node painted dead.
+        // Both sides are read from the same build, not compared against the
+        // table's expectation: an assertion against `expected` would agree with
+        // itself and pass under the very guard order that caused the split.
+        for (final entry in cases.entries) {
+          final (backhaul, _) = entry.value;
+          final isWired =
+              connectionTypeFor(backhaul) == ConnectionType.ethernet;
+          expect(isWired, levelFor(backhaul) == 1.0,
+              reason: '${entry.key}: connectionType and level disagree');
+        }
       });
     });
   });

@@ -265,11 +265,11 @@ class UspTopologyBuilder {
 
   /// Converts a slave node's backhaul to a display level.
   ///
+  /// - Ethernet backhaul: full level (1.0), matching how wired links are shown
+  ///   elsewhere — a wired connection has no RSSI by design, not by absence.
   /// - No backhaul data at all (e.g. an offline node with no DataElements
   ///   match): 0.0 — no signal, not a fabricated mid-strength 0.5 that looks
   ///   like a real reading (#1430, AC4).
-  /// - Ethernet backhaul: full level (1.0), matching how wired links are shown
-  ///   elsewhere — a wired connection has no RSSI by design, not by absence.
   /// - Wi-Fi backhaul with an RSSI: the RSSI-derived level.
   /// - Wi-Fi backhaul whose stats are missing (`BackhaulStats` absent, or an
   ///   RCPI of `0` that [rcpiToRssi] maps to null): the neutral 0.5. The node is
@@ -278,9 +278,17 @@ class UspTopologyBuilder {
   ///   backhaul, which is the first case above. A truthful third state needs a
   ///   nullable level in the ui_kit `MeshNode` (`level` is a non-nullable
   ///   `double`), so this is the least-wrong value the current API allows.
+  ///
+  /// `isEthernet` is tested **before** `hasInfo`, and the order is load-bearing:
+  /// the two read different fields (`linkType` and `mediaType`) and nothing
+  /// couples them, so `linkType:'Ethernet'` with an empty `mediaType` is
+  /// representable. Checking `hasInfo` first painted that node at 0.0 — dead —
+  /// while the `connectionType` above and the node-detail card's arm chain both
+  /// resolve `isEthernet` first and call it Ethernet. Same node, same fields,
+  /// three answers. All three sites now agree that a positive `linkType` wins.
   static double _backhaulLevel(BackhaulInfo backhaul) {
-    if (!backhaul.hasInfo) return 0.0;
     if (backhaul.isEthernet) return 1.0;
+    if (!backhaul.hasInfo) return 0.0;
     if (backhaul.signalStrength == null) return 0.5;
     return _rssiValueToLevel(backhaul.signalStrength);
   }

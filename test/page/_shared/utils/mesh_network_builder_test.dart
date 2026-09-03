@@ -1170,6 +1170,61 @@ void main() {
         // The master is the data source itself and stays online unconditionally.
         expect(result.master.isOnline, isTrue);
       });
+
+      test(
+          'a DataElements set holding only the master still counts as liveness '
+          'information', () {
+        // The boundary between the two tests above, and the shape both reviewers
+        // of #1449 asked to be handed `livenessKnown: false` instead — either by
+        // requiring "some slave agent answered" (`meshTopology.nodes.hasMesh`)
+        // or by counting only non-master nodes.
+        //
+        // It must stay `true`, because this is what a single-extender house
+        // looks like while its one extender is powered off: DataElements
+        // enumerates only the router's own agent (MeshTopologyBuilder adds the
+        // master unconditionally) while the extender's Hosts row persists for
+        // another ~20-50s. Reading that as "no liveness information" renders a
+        // powered-off extender online, i.e. reverts #1430 for the commonest
+        // topology. The `livenessKnown: false` escape hatch is for the subtree
+        // answering *nothing at all* — asserted in the empty-topology test
+        // above — not for it answering with one node.
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02',
+            isActive: false,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          // The master is the only agent — no slave agent to match against.
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+            clientToNodeMap: {},
+          ),
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.single;
+        expect(slave.livenessKnown, isTrue,
+            reason: 'a non-empty topology carries liveness information even '
+                'when every agent in it is the master');
+        expect(slave.dataElementsId, isNull);
+        expect(slave.isOnline, isFalse,
+            reason: 'the powered-off extender #1430 exists to catch');
+      });
     });
   });
 }
