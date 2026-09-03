@@ -34,24 +34,47 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
 
+/// Deliberately unrelated to the production policy in `kIdleLogoutWindow` —
+/// these cases test the mechanism, not how long the product chooses to wait.
+/// `root_container_test.dart` pins the policy value.
 const _idleTime = Duration(seconds: 10);
 
-/// Half the idle window: long enough that a second wait of the same length
-/// crosses it, so a missing reset shows up as a logout.
-const _halfWindow = Duration(seconds: 6);
+/// Long enough that two consecutive waits cross the window, so a missing reset
+/// shows up as a logout.
+///
+/// Derived rather than written out: the invariant these cases rely on is
+/// `2 * _halfWindow > _idleTime`, and spelling `6` next to `10` leaves that
+/// silently breakable the next time someone edits [_idleTime].
+final _halfWindow = _idleTime * 0.6;
 
-/// Stands in for an installed PWA. [PwaInstallService.isStandalone] is a DOM
-/// query that is always false off the web, so the only way to exercise the
-/// standalone guard on the VM is to override the notifier. Hand-written rather
-/// than a mocktail mock because Riverpod drives the real `Notifier` lifecycle,
-/// which a `Mock implements` stub cannot satisfy.
-class _StandalonePwaService extends PwaInstallService {
+/// Stands in for the browser/installed-PWA distinction.
+///
+/// [PwaInstallService.isStandalone] is a `matchMedia` query that is always false
+/// off the web, so overriding the notifier is the only way to exercise the
+/// standalone guard on the VM. Hand-written rather than a mocktail mock because
+/// Riverpod drives the real `Notifier` lifecycle, which a `Mock implements` stub
+/// cannot satisfy.
+///
+/// Takes the answer as a flag rather than being two classes because a test that
+/// pumps twice must override the *same* provider both times: Riverpod keeps the
+/// earlier override when a scope at the same position is rebuilt with a shorter
+/// list, so dropping the override does not return the real service.
+class _FakePwaService extends PwaInstallService {
+  _FakePwaService({required this.standalone});
+
+  final bool standalone;
+
   @override
   PwaMode build() => PwaMode.none;
 
   @override
-  bool get isStandalone => true;
+  bool get isStandalone => standalone;
 }
+
+List<Override> _pwaOverride({required bool standalone}) => [
+      pwaInstallServiceProvider
+          .overrideWith(() => _FakePwaService(standalone: standalone)),
+    ];
 
 /// Pumps an [IdleChecker] around [child] and returns a getter for whether
 /// `onIdle` has fired.
@@ -75,6 +98,17 @@ Future<bool Function()> _pumpChecker(
   );
   return () => idled;
 }
+
+/// Removes the whole tree, so a second [_pumpChecker] in the same test starts
+/// clean.
+///
+/// Required, and measured rather than assumed: rebuilding a `ProviderScope` at
+/// the same position with a *new* `overrideWith` factory does **not** rebuild
+/// the notifier, so phase two silently keeps phase one's override. Taking the
+/// scope out of the tree is what forces a fresh container - and it disposes the
+/// first checker, whose `State` would otherwise be reused and never re-armed.
+Future<void> _teardownTree(WidgetTester tester) =>
+    tester.pumpWidget(const SizedBox.shrink());
 
 Widget _list([ScrollController? controller]) => ListView.builder(
       controller: controller,
@@ -119,6 +153,36 @@ void main() {
       await tester.pump(const Duration(seconds: 11));
       expect(idled(), isTrue,
           reason: 'the countdown must still expire after activity stops');
+    });
+
+    testWidgets('honours idleTime to the millisecond', (tester) async {
+      // Without this, nothing would notice the widget quietly rounding, padding
+      // or doubling the window it was handed.
+      final idled = await _pumpChecker(tester, child: const SizedBox.expand());
+
+      await tester.pump(_idleTime - const Duration(milliseconds: 1));
+      expect(idled(), isFalse, reason: 'must not fire early');
+
+      await tester.pump(const Duration(milliseconds: 2));
+      expect(idled(), isTrue, reason: 'must fire as the window elapses');
+    });
+
+    testWidgets('a held-down key does not hold the session open',
+        (tester) async {
+      // A paperweight on the keyboard emits one press and then repeats for as
+      // long as it sits there. Counting the repeats would defeat the timeout
+      // entirely, so only the initial press counts as activity.
+      final idled = await _pumpChecker(tester, child: const SizedBox.expand());
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+
+      for (var i = 0; i < 120; i++) {
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.keyA);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(idled(), isTrue,
+          reason: 'repeats from one held key are not fresh activity');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
     });
 
     testWidgets('scrolling the app itself does not count as activity',
@@ -324,34 +388,53 @@ void main() {
     });
   });
 
+  // Each case here pairs its `isFalse` with a positive control in the same
+  // test. On its own, "did not log out" also passes against a widget that never
+  // starts a timer at all, which would make this group worthless exactly when it
+  // matters most.
   group('PWA standalone mode', () {
     testWidgets('never logs out, however long it sits idle', (tester) async {
-      final idled = await _pumpChecker(
+      final standalone = await _pumpChecker(
         tester,
         child: const SizedBox.expand(),
-        overrides: [
-          pwaInstallServiceProvider.overrideWith(_StandalonePwaService.new),
-        ],
+        overrides: _pwaOverride(standalone: true),
       );
 
       await tester.pump(const Duration(minutes: 30));
+      expect(standalone(), isFalse);
 
-      expect(idled(), isFalse);
+      await _teardownTree(tester);
+      final browser = await _pumpChecker(
+        tester,
+        child: const SizedBox.expand(),
+        overrides: _pwaOverride(standalone: false),
+      );
+      await tester.pump(_idleTime + const Duration(seconds: 1));
+      expect(browser(), isTrue,
+          reason: 'control: the same wait must log out without the override');
     });
 
     testWidgets('activity does not start a countdown either', (tester) async {
-      final idled = await _pumpChecker(
+      final standalone = await _pumpChecker(
         tester,
         child: const SizedBox.expand(),
-        overrides: [
-          pwaInstallServiceProvider.overrideWith(_StandalonePwaService.new),
-        ],
+        overrides: _pwaOverride(standalone: true),
       );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
       await tester.pump(const Duration(minutes: 30));
+      expect(standalone(), isFalse);
 
-      expect(idled(), isFalse);
+      await _teardownTree(tester);
+      final browser = await _pumpChecker(
+        tester,
+        child: const SizedBox.expand(),
+        overrides: _pwaOverride(standalone: false),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.pump(_idleTime + const Duration(seconds: 1));
+      expect(browser(), isTrue,
+          reason: 'control: the same keystroke must not stop a browser logout');
     });
   });
 }
