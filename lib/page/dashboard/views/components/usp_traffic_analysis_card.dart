@@ -166,12 +166,12 @@ class _UspTrafficAnalysisCardState
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Semantics(
-              // Own boundary, or the grid item absorbs this tap action across
-              // the whole card — see DashboardCardTemplate._buildDetailFooter
-              // for the full reasoning (#1301).
-              container: true,
-              button: true,
+            // Through the shared wrapper (#1301, #1450). See
+            // `usp_system_status_card.dart`: the tab is not part of the handle,
+            // and this card and that one both enter `uspStatistics` — which is
+            // why the handle is the card's id and not the route.
+            cardDetailLink(
+              context,
               label: label,
               child: InkWell(
                 onTap: () => context.pushNamed(

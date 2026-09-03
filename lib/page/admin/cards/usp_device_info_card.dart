@@ -160,12 +160,12 @@ class UspDeviceInfoCard extends ConsumerWidget {
             // *start* where it is invisible, and a row that already fits lays
             // out exactly as before.
             Flexible(
-              child: Semantics(
-                // Own boundary, or the grid item absorbs this tap action across
-                // the whole card — see DashboardCardTemplate._buildDetailFooter
-                // for the full reasoning (#1301).
-                container: true,
-                button: true,
+              // Through the shared wrapper, so this hand-rolled footer carries
+              // the same boundary and the same handle as the ten rendered by the
+              // template — this card only hand-rolls because its route needs a
+              // `deviceId` the template cannot pass (#1301, #1450).
+              child: cardDetailLink(
+                context,
                 label: label,
                 child: InkWell(
                   onTap: () => context.pushNamed(
