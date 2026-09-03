@@ -165,9 +165,48 @@ final masterNodeWithDevices = UspNodeDetailState(
   connectedClients: _meshMasterClients,
 );
 
+/// A slave carrying **no** DataElements match, which since #1430 makes it
+/// `isOnline` false — see [slaveNodeOnlineWithDevices] for the same node with the
+/// match, and `SlaveNode.isOnline` for why one field decides it.
+///
+/// Left offline rather than "fixed" to online, for two reasons. It is a real
+/// reachable state, not fixture rot: the powered-off extender #1430 exists to
+/// catch looks exactly like this. And every width sweep that pumps this state —
+/// the golden suite's `slave_with_devices`, `usp_node_detail_backhaul_overflow_test`
+/// — renders the *wider* of the two liveness labels: `offline` is longer than
+/// `online` in every one of the 26 locales where the two differ, and equal in the
+/// rest (measured across `lib/l10n/app_*.arb`, #1465). An online fixture would
+/// quietly narrow all of them.
 final slaveNodeWithDevices = UspNodeDetailState(
   node: SlaveNode(
     deviceId: 'AA:BB:CC:DD:FF:01',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789012',
+    softwareVersion: '1.0.10.200000',
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
+/// [slaveNodeWithDevices] plus the single field that decides a slave's liveness —
+/// a DataElements match (`SlaveNode.isOnline`). Nothing else differs, so the two
+/// are a pair: same role, opposite liveness.
+///
+/// The pair is what makes the node-detail header's two facts *independently*
+/// testable (#1465). A header that derived liveness from the role instead —
+/// `isMaster ? online : offline`, which is the shape the old hardcoded
+/// `isActive: true` badge invited — passes any suite that only ever pumps an
+/// online master and an offline slave. This is the slave that is online.
+///
+/// `dataElementsId` is deliberately not the `deviceId`: a node answers on three
+/// MACs and DataElements keys on the backhaul one, so the two ids differing is the
+/// normal live shape rather than an edge case (`NodeEntity.dataElementsId`).
+final slaveNodeOnlineWithDevices = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:01',
+    dataElementsId: 'AA:BB:CC:DD:FF:11',
     model: 'MX2000',
     manufacturer: 'Linksys',
     serialNumber: 'DEF789012',

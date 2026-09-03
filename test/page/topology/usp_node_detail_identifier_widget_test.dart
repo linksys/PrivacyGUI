@@ -26,6 +26,12 @@ void main() {
     'node-device-open-aa-bb-cc-dd-ee-01',
     'node-device-open-aa-bb-cc-dd-ee-02',
   ];
+  // The header's two chips (#1465). Both render *translated* labels and nothing
+  // else on the page distinguishes them, so without these hooks a spec asserting
+  // the node's role or liveness would have to match on `Master`/`Slave` and
+  // `Online`/`Offline` in 26 languages.
+  const roleHook = 'node-detail-role';
+  const livenessHook = 'node-detail-liveness';
 
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -90,6 +96,43 @@ void main() {
 
       expect(find.bySemanticsIdentifier(anchor), findsOneWidget,
           reason: 'the arrival anchor "$anchor" must be locatable');
+
+      handle.dispose();
+    });
+
+    testWidgets(
+        'the header role and liveness chips are locatable by identifier',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(wrap());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Asserted here rather than in the header's own behaviour suite
+      // (`usp_node_detail_header_liveness_test.dart`) because an identifier that
+      // does not survive into the semantics tree is a *hook* failure, and this is
+      // the file that owns the page's hooks. That suite reads the chips through
+      // their widgets, which would stay green with the hooks dropped.
+      expect(find.bySemanticsIdentifier(roleHook), findsOneWidget,
+          reason: 'the role chip hook "$roleHook" must be locatable');
+      expect(find.bySemanticsIdentifier(livenessHook), findsOneWidget,
+          reason: 'the liveness badge hook "$livenessHook" must be locatable');
+
+      // The state has to be readable *through* the hook, not just next to it:
+      // an E2E spec locates the badge by identifier and then asserts on the text
+      // inside it. `masterNodeWithDevices` is online (`MasterNode.isOnline`).
+      expect(
+        find.descendant(
+          of: find.bySemanticsIdentifier(livenessHook),
+          matching: find.text('Online'),
+        ),
+        findsOneWidget,
+        reason: 'the liveness state must live inside the hooked element',
+      );
 
       handle.dispose();
     });

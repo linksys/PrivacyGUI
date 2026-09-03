@@ -131,7 +131,36 @@ class UspNodeDetailView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header — image, name, role badge
+          // Header — image, name, role chip, liveness badge.
+          //
+          // Role and liveness are two independent facts and get two widgets
+          // (#1465). One badge used to carry both badly: `isActive: true` with
+          // the role as its *active* label, so the dot was unconditionally green
+          // and `node.isOnline` — the value #1430 made meaningful — appeared
+          // nowhere on the page. Passing `isActive: node.isOnline` to that same
+          // badge would only have traded the facts, replacing the role label
+          // with the literal "Offline".
+          //
+          // So the role is an `AppTag` from the kit rather than a chip grown here
+          // (Article XV), and `DetailStatusBadge` goes back to meaning what it
+          // already means one page over (`usp_device_detail_view.dart:170`) —
+          // liveness.
+          //
+          // Both chips sit *under* the name rather than the badge trailing the
+          // row, which is where the device-detail page puts it. Measured, on the
+          // golden this page already had: this card is `colWidth(4)` on desktop,
+          // so at 1280px the header row divides 232px, and a trailing badge
+          // leaves the name 75 of them — enough to break `MX2000` across two
+          // lines *mid-word*. All 234 gate cells stay green through that, because
+          // a wrap is not an overflow; it is the class of defect
+          // `doc/testing/overflow_gate_architecture.md` §7 keeps outside the
+          // sweep. Under the name the two chips share the row's full width and
+          // the name keeps all 156px it had before this change.
+          //
+          // `Wrap` and not `Row`: both labels are translated, and the widest pair
+          // is `el` at 24 characters (`Δευτερεύων` + `Εκτός σύνδεσης`) against
+          // `en`'s 12 — measured across `lib/l10n/app_*.arb`. The pair has to be
+          // able to take a second line rather than overflow.
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
@@ -157,11 +186,30 @@ class UspNodeDetailView extends ConsumerWidget {
                     children: [
                       AppText.titleLarge(node.displayName),
                       AppGap.xs(),
-                      DetailStatusBadge(
-                        isActive: true,
-                        activeLabel: node.isMaster
-                            ? loc(context).master
-                            : loc(context).slave,
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          AppTag(
+                            label: node.isMaster
+                                ? loc(context).master
+                                : loc(context).slave,
+                            // Spelled inline: the E2E identifier harvester reads
+                            // this file as text, so a composed value never
+                            // reaches the specs' SSOT. The role label is
+                            // translated and has no other stable locator.
+                            identifier: 'node-detail-role',
+                          ),
+                          DetailStatusBadge(
+                            isActive: node.isOnline,
+                            // Also spelled inline, and for the same reason: the
+                            // badge's label is `online`/`offline` translated, so
+                            // the hook is what lets a spec find the element and
+                            // read the state out of its text.
+                            identifier: 'node-detail-liveness',
+                          ),
+                        ],
                       ),
                     ],
                   ),
