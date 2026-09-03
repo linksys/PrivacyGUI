@@ -441,6 +441,47 @@ void main() {
         expect(copied.hostName, original.hostName);
       });
     });
+
+    // Issue #1439: the device card badge, analytics grouping and the detail
+    // view all read parentNodeName rather than the flag, so a name surviving
+    // alongside isUnattributed makes one device claim both "unattributed" and
+    // "on <node>". The model, not its callers, has to rule that out — copyWith
+    // merges with `?? this` and so can never null a field on its own.
+    group('isUnattributed clears the parent attribution', () {
+      test('parentNodeName reads null once the flag is set', () {
+        final attributed = DevicesTestData.createWifiClient(
+          parentNodeId: 'NODE-01',
+          parentNodeName: 'Living Room',
+        );
+        expect(attributed.parentNodeName, 'Living Room');
+
+        final orphan = attributed.copyWith(isUnattributed: true);
+        expect(orphan.parentNodeName, isNull,
+            reason: 'an orphan has no parent to name');
+      });
+
+      test('the constructor honours the invariant too', () {
+        final orphan = DevicesTestData.createWifiClient(
+          parentNodeId: 'GHOST-NODE',
+          parentNodeName: 'Some Node',
+        ).copyWith(isUnattributed: true);
+
+        expect(orphan.parentNodeName, isNull);
+        expect(orphan.namedProps['parentNodeName'], isNull,
+            reason: 'diagnostics must not print a parent for an orphan either');
+      });
+
+      test('parentNodeId is kept — it is the router\'s raw, unresolved claim',
+          () {
+        final orphan = DevicesTestData.createWifiClient(
+          parentNodeId: 'GHOST-NODE',
+          parentNodeName: 'Some Node',
+        ).copyWith(isUnattributed: true);
+
+        expect(orphan.parentNodeId, 'GHOST-NODE',
+            reason: 'kept for logs and diagnostics; nothing renders it');
+      });
+    });
   });
 
   // ===========================================================================

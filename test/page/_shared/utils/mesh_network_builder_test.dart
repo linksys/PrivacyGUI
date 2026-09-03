@@ -683,10 +683,122 @@ void main() {
           isTrue,
         );
 
+        // …and neither still names a parent. The ghost-parent shape is the one
+        // that can: the resolver had already filled parentNodeName in from the
+        // unmatched node's model, or from the gateway name when that model is
+        // empty. A name surviving here is what makes the device card badge and
+        // analytics grouping keep attributing the orphan to a node.
+        expect(
+          result.unassignedClients.map((c) => c.parentNodeName),
+          everyElement(isNull),
+          reason: 'an orphan must not name a parent on any surface',
+        );
+
         // The attributed device is not flagged.
         final attributed =
             result.allClients.firstWhere((c) => c.mac == '11:22:33:44:55:01');
         expect(attributed.isUnattributed, isFalse);
+      });
+
+      // The orphan predicate must be no broader than the orphan population.
+      // clientToNodeMap is written in exactly one place — the DataElements
+      // Wi-Fi station loop — so a wired client and an offline client are absent
+      // from it whatever node they are really on, and a null parentNodeId is no
+      // evidence about them. Reading it as evidence relabels every wired device
+      // in a mesh house as "Unattributed", drops it from the master's client
+      // count, and makes it bypass the node filter entirely. Only an *online
+      // Wi-Fi* client missing from the map is genuinely unplaceable.
+      test(
+          'mesh with an extender: wired and offline clients stay on the '
+          'master; only the online Wi-Fi client with no station row is an '
+          'orphan', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+          ),
+          // Wi-Fi client with a station row → resolves to the master.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'WifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+          // Wired desktop on the master: never a Wi-Fi station key.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            deviceRole: 'client',
+            hostName: 'DesktopPC',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            isActive: true,
+          ),
+          // Offline tablet: never a Wi-Fi station key.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:03',
+            deviceRole: 'client',
+            hostName: 'OldTablet',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: false,
+          ),
+          // Online Wi-Fi client absent from the station map → the real orphan.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:04',
+            deviceRole: 'client',
+            hostName: 'OrphanWifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: const {
+              '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01',
+            },
+          ),
+          gatewayName: 'Router',
+        );
+
+        // A real mesh — the standalone-router exemption does not apply here.
+        expect(result.slaves, hasLength(1));
+
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(
+          masterMacs,
+          containsAll([
+            '11:22:33:44:55:01', // Wi-Fi, resolved
+            '11:22:33:44:55:02', // wired
+            '11:22:33:44:55:03', // offline
+          ]),
+          reason: 'wired and offline clients are not orphans in a mesh either',
+        );
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+
+        // Exactly one orphan, and it is the online Wi-Fi client.
+        expect(
+            result.unassignedClients.map((c) => c.mac), ['11:22:33:44:55:04']);
+        expect(result.unassignedClients.single.isUnattributed, isTrue);
       });
 
       test('non-mesh null-parent clients stay on the master (not orphans)', () {
