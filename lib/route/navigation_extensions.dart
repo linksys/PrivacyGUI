@@ -27,12 +27,36 @@ extension NavigationExtension on BuildContext {
   /// a nested page lands on its URL parent rather than on the Dashboard.
   ///
   /// That asymmetry — Dashboard in-session, URL parent after F5 — was reviewed
-  /// and **accepted** as the intended behaviour (#1436, decided 2026-09-02): for
-  /// a cold entry the URL *is* the history, and this app ships web only, so
-  /// synthesizing a Dashboard-rooted stack would make this arrow disagree with
-  /// the browser's own Back button on every page. No call site can change it and
-  /// none should try. Both landings are asserted in
+  /// and **accepted** as the intended behaviour (#1436, decided on that issue —
+  /// see the thread there, which is the artefact this comment records): for a
+  /// cold entry the URL *is* the history, and this app ships web only — CI builds
+  /// `flutter build web --release` and nothing else, and `build_web.sh` is the
+  /// only build script — so synthesizing a Dashboard-rooted stack would make this
+  /// arrow disagree with the browser's own Back button on every page. No call
+  /// site can change it and none should try. Both landings are asserted in
   /// `test/page/local_network/views/usp_local_network_back_navigation_test.dart`.
+  /// Pushes [name] unless it is already the page on top.
+  ///
+  /// The entry verb for **global chrome** — a control that is present on every
+  /// page, *including the page it navigates to*. Such a control still has to
+  /// push: it is an entry point, and `goNamed` would throw away the page the user
+  /// was on, which is the whole of #1420/#1421/#1434. But nothing in go_router
+  /// de-duplicates a push onto the location already on top, and the screen does
+  /// not change either, so every extra tap silently adds one more back the user
+  /// has to press to leave. Measured: three `pushNamed` calls onto the same shell
+  /// child need three pops to get back, the location unchanged throughout.
+  ///
+  /// `goNamed` used to hide this by being idempotent — replacing a location with
+  /// itself is the same location — so it only became visible once the verb was
+  /// corrected. A hub chip that replaces itself (the Menu) is idempotent for that
+  /// same reason and does not need this.
+  ///
+  /// Both halves are pinned in `test/route/usp_navigation_invariants_test.dart`.
+  void pushNamedIfNotCurrent(String name) {
+    if (GoRouter.of(this).state.topRoute?.name == name) return;
+    pushNamed(name);
+  }
+
   void navigateBack({String? fallback}) {
     if (canPop()) {
       pop();

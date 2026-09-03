@@ -171,14 +171,20 @@ final Map<String, String> _routeViewClass = () {
   return map;
 }();
 
-/// go_router's named-navigation verbs. `pushNamed` is the only one that keeps
-/// the caller on the stack; the other three all overwrite a location, which is
-/// what makes back land somewhere the user never was. `replaceNamed` and
-/// `pushReplacementNamed` have no call site in `lib/` today — they are matched
-/// anyway because their absence is a fact about today, not a property of the
-/// rule, and a rule that names only two of the three replacing verbs would read
-/// as if the other two were acceptable.
-const _navVerbs = r'goNamed|pushNamed|replaceNamed|pushReplacementNamed';
+/// go_router's named-navigation verbs, plus the one this app adds.
+///
+/// `pushNamed` and [NavigationExtension.pushNamedIfNotCurrent] keep the caller on
+/// the stack; the other three overwrite a location, which is what makes back land
+/// somewhere the user never was. `replaceNamed` and `pushReplacementNamed` have
+/// no call site in `lib/` today — they are matched anyway because their absence
+/// is a fact about today, not a property of the rule, and a rule that names only
+/// two of the three replacing verbs would read as if the other two were
+/// acceptable.
+const _navVerbs = r'goNamed|pushNamed|pushNamedIfNotCurrent|replaceNamed|'
+    r'pushReplacementNamed';
+
+/// The verbs that leave the caller on the stack, so back returns to it.
+const _stackingVerbs = {'pushNamed', 'pushNamedIfNotCurrent'};
 
 class _NavSite {
   final String file;
@@ -190,7 +196,7 @@ class _NavSite {
 
   /// Whether this verb overwrites the current location instead of stacking on
   /// it — the property every rule below is actually about.
-  bool get replaces => verb != 'pushNamed';
+  bool get replaces => !_stackingVerbs.contains(verb);
 
   @override
   String toString() => '$file:$line  $verb($target)';
@@ -219,6 +225,20 @@ final List<_NavSite> _navSites = () {
   }
   return sites;
 }();
+
+/// The files whose navigation controls are GLOBAL CHROME: present on every page,
+/// *including the page they navigate to*. That last part is what makes them their
+/// own case — an entry point must push so back returns to it (#1420, #1421), but
+/// a push aimed at the page already on top changes nothing on screen while
+/// costing one more back per press, so chrome pushes through
+/// [NavigationExtension.pushNamedIfNotCurrent].
+///
+/// The Menu's nav chips are global chrome too and are deliberately absent: they
+/// replace the location (the hub idiom), and replacing a location with itself is
+/// the same location, so they are idempotent by construction.
+const _globalChromeFiles = <String>{
+  'lib/page/shell/usp_top_bar.dart',
+};
 
 /// Every named-navigation call in `lib/` whose target is NOT a literal, as
 /// (file, verb, argument). These are the shared entry components and the menu:
@@ -620,6 +640,88 @@ void main() {
     });
   });
 
+  // Global chrome is on the page it opens, so the corrected verb could be aimed
+  // at the page already on top. Same shape as the pair above: what the guard
+  // does, and what an unguarded push did. Found reviewing #1437.
+  group('#1434 global chrome, pressed on the page it opens', () {
+    /// Presses the global Apps control the way the top bar does — from whatever
+    /// page is on screen, through the same `BuildContext` a chrome widget holds.
+    Future<void> pressApps(WidgetTester t, String from,
+        {required bool guarded}) async {
+      final context = t.element(find.text('PAGE:$from'));
+      if (guarded) {
+        context.pushNamedIfNotCurrent(RouteNamed.uspApps);
+      } else {
+        context.pushNamed(RouteNamed.uspApps);
+      }
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('extra presses while Apps is showing do not grow the stack',
+        (t) async {
+      final router = await pumpMirror(t, RoutePath.uspDashboard);
+
+      await pressApps(t, RouteNamed.uspDashboard, guarded: true);
+      expect(find.text('PAGE:${RouteNamed.uspApps}'), findsOneWidget);
+
+      // Three more presses of the still-visible icon. The screen does not change
+      // either way, which is why nothing would report this.
+      for (var i = 0; i < 3; i++) {
+        await pressApps(t, RouteNamed.uspApps, guarded: true);
+      }
+
+      router.pop();
+      await t.pumpAndSettle();
+      expect(find.text('PAGE:${RouteNamed.uspDashboard}'), findsOneWidget,
+          reason: 'one back must leave Apps however many times the icon was '
+              'pressed while Apps was already on top');
+    });
+
+    testWidgets('an unguarded push cost one back per press', (t) async {
+      final router = await pumpMirror(t, RoutePath.uspDashboard);
+
+      await pressApps(t, RouteNamed.uspDashboard, guarded: false);
+      for (var i = 0; i < 3; i++) {
+        await pressApps(t, RouteNamed.uspApps, guarded: false);
+      }
+
+      router.pop();
+      await t.pumpAndSettle();
+      expect(find.text('PAGE:${RouteNamed.uspApps}'), findsOneWidget,
+          reason: 'four pushes onto the same location, so the first back only '
+              'uncovers Apps again — the user is behind a run of identical '
+              'history entries, and on web the browser Back button behaves the '
+              'same way');
+
+      var backs = 1;
+      while (find.text('PAGE:${RouteNamed.uspDashboard}').evaluate().isEmpty &&
+          backs < 8) {
+        router.pop();
+        await t.pumpAndSettle();
+        backs++;
+      }
+      expect(backs, 4,
+          reason: 'n presses needed n+1 backs; `goNamed` used to hide this by '
+              'being idempotent');
+    });
+
+    testWidgets(
+        'the guard is not a dedup: Apps is reachable again from another '
+        'page', (t) async {
+      final router = await pumpMirror(t, RoutePath.uspDashboard);
+
+      await pressApps(t, RouteNamed.uspDashboard, guarded: true);
+      router.pushNamed(RouteNamed.uspTopology);
+      await t.pumpAndSettle();
+
+      await pressApps(t, RouteNamed.uspTopology, guarded: true);
+      expect(find.text('PAGE:${RouteNamed.uspApps}'), findsOneWidget,
+          reason:
+              'the guard only swallows a press aimed at the page already on '
+              'top — it must not remember that Apps was visited earlier');
+    });
+  });
+
   group('#1434 entry verb', () {
     /// The one legitimate `goNamed` into a page that declares a return address:
     /// its own declared hub. `goNamed` from the hub replaces the location, so on
@@ -720,6 +822,27 @@ void main() {
               'an indirect navigation call changed verb or appeared: decide '
               'whether it is an entry point (pushNamed) or a hub replacing '
               'itself (goNamed), then update this register');
+    });
+
+    test('global chrome pushes with the guarded verb', () {
+      // The third shape of this mistake, found reviewing #1437: the top bar is
+      // present on the page it opens, so the corrected `pushNamed` could be
+      // aimed at the page already on top. The behavioural pair below measures
+      // both halves; this is the rule that keeps the next piece of chrome from
+      // having to rediscover it.
+      final chromeSites =
+          _navSites.where((s) => _globalChromeFiles.contains(s.file)).toList();
+      expect(chromeSites, isNotEmpty,
+          reason: 'the global-chrome register names a file with no navigation '
+              'call left in it — was it renamed or its entry point moved?');
+
+      final offenders = chromeSites
+          .where((s) => s.verb != 'pushNamedIfNotCurrent')
+          .map((s) => s.toString())
+          .toList();
+      expect(offenders, isEmpty,
+          reason: 'chrome is on the page it navigates to, so use '
+              'pushNamedIfNotCurrent:\n${offenders.join('\n')}');
     });
 
     test('no page declares the Dashboard as its return address', () {

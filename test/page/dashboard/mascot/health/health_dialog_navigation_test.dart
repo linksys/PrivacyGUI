@@ -106,7 +106,7 @@ GoRouter _buildRouter(void Function(BuildContext) onShellContext) {
         routes: [
           route(RouteNamed.uspDashboard, RoutePath.uspDashboard),
           route(RouteNamed.uspMenu, RoutePath.uspMenu, routes: [
-            // Absolute child path, exactly as declared at :55.
+            // Relative child path, exactly as `RoutePath` now declares it.
             route(RouteNamed.uspUnifiedDiagnostics,
                 RoutePath.uspUnifiedDiagnostics),
           ]),
@@ -117,12 +117,14 @@ GoRouter _buildRouter(void Function(BuildContext) onShellContext) {
           route(RouteNamed.uspWifiSettings, RoutePath.uspWifiSettings),
           route(RouteNamed.uspAdvancedSettings, RoutePath.uspAdvancedSettings,
               routes: [
-                // The real tree passes RoutePath here for Internet Settings and
-                // RouteNamed for the other two (:151 vs :166, :173).
+                // `RoutePath` for all three, as the real tree now does. It used
+                // to pass `RouteNamed` for Firewall and DMZ, and mirroring that
+                // here worked only because the two strings are equal — the exact
+                // coincidence this suite exists to disbelieve.
                 route(RouteNamed.uspInternetSettings,
                     RoutePath.uspInternetSettings),
-                route(RouteNamed.uspFirewall, RouteNamed.uspFirewall),
-                route(RouteNamed.uspDmz, RouteNamed.uspDmz),
+                route(RouteNamed.uspFirewall, RoutePath.uspFirewall),
+                route(RouteNamed.uspDmz, RoutePath.uspDmz),
               ]),
         ],
       ),

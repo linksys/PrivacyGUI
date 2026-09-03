@@ -12,9 +12,9 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/app_utils.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified TopBar for the app.
@@ -93,14 +93,20 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                           icon: AppIcon.font(Icons.apps,
                               color: colorScheme.onSurface),
                           identifier: 'topbar-apps',
-                          // pushNamed, not goNamed: this button lives in the
-                          // global top bar, so it is pressed from whichever
-                          // page the user is on. `go` replaced the location and
-                          // dropped that page, leaving Apps' back arrow to fall
-                          // through to its `backFallback: uspMenu` — so back
-                          // from Apps landed on the Menu no matter where you
-                          // came from (#1434, the shape of #1421).
-                          onTap: () => context.pushNamed(RouteNamed.uspApps),
+                          // Pushing, not going: this button lives in the global
+                          // top bar, so it is pressed from whichever page the
+                          // user is on. `go` replaced the location and dropped
+                          // that page, leaving Apps' back arrow to fall through
+                          // to its `backFallback: uspMenu` — so back from Apps
+                          // landed on the Menu no matter where you came from
+                          // (#1434, the shape of #1421).
+                          //
+                          // And guarded, because the Apps page hosts this same
+                          // top bar: a plain push onto the page already on top
+                          // changes nothing on screen while costing one more
+                          // back per tap.
+                          onTap: () =>
+                              context.pushNamedIfNotCurrent(RouteNamed.uspApps),
                         ),
                       ),
                     const Padding(
