@@ -270,15 +270,30 @@ final class SlaveNode extends NodeEntity {
   /// Whether DataElements liveness information was available for this node's
   /// network at all.
   ///
-  /// `false` means the DataElements subtree carried nothing for the whole
-  /// network — the router does not implement it, the fetch failed (every error
-  /// is swallowed into `MeshTopologyInfo.empty`, see
-  /// `UspDevicesDataService.fetchMeshTopology`), or the first build pass ran
-  /// before the background fetch returned. In that state nothing is known about
-  /// any node, so [isOnline] must not read the absent match as a verdict.
+  /// A **whole-network** fact, not a per-node one: every slave produced by one
+  /// build receives the same value. It answers "did the DataElements subtree
+  /// answer at all", never "was this row found in it" — that second question is
+  /// [dataElementsId], and it is only a verdict when this is `true`.
   ///
-  /// Defaults to `true`: a caller that has a topology to match against gets the
-  /// strict reading, and only the whole-subtree-absent case opts out.
+  /// `false` means the subtree carried nothing: the router does not implement
+  /// it, the fetch failed (every error is swallowed into
+  /// `MeshTopologyInfo.empty`, see `UspDevicesDataService.fetchMeshTopology`),
+  /// or the first build pass ran before the background fetch returned. Nothing
+  /// is known about any node there, so [isOnline] must not read the absent match
+  /// as a verdict.
+  ///
+  /// `true` does not claim the set is *complete*. A slave absent from a
+  /// non-empty set is judged offline, and that is intended — it is the
+  /// powered-off extender #1430 exists to catch. See the producer at
+  /// `MeshNetworkBuilder.build` for why the predicate is the topology being
+  /// non-empty rather than the narrower "some slave agent answered".
+  ///
+  /// Defaults to `true` so that every construction site keeps AC1's rule
+  /// unchanged; defaulting to `false` would not be a default but a rule change,
+  /// making every node built anywhere else online unconditionally. The cost is
+  /// that the default is the *unsafe* direction: a site with no topology to match
+  /// against, such as `MeshTopologyBuilder`, silently reproduces the offline
+  /// verdict with no analyzer signal. Making it `required` is #1466.
   final bool livenessKnown;
 
   SlaveNode({

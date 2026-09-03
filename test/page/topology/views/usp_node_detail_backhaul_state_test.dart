@@ -56,6 +56,30 @@ void main() {
   final state = slaveNodeNoBackhaul;
   final node = state.node as SlaveNode;
 
+  /// Pumps the real node-detail page for [state] at a desktop surface.
+  ///
+  /// [pageSurfaceHost] rather than a local tree: it is the repo's one answer to
+  /// "how do I pump a real view" (`test/util/detail_view_probe.dart`'s header
+  /// argues the case, and `test/util/settle.dart`'s says the unit lane pumps the
+  /// same pages to assert behaviour). A copy here would be the drift both warn
+  /// about.
+  Future<void> pumpNodeDetail(WidgetTester tester) async {
+    await setLayoutSurface(tester, const Size(1280, 1800));
+    await tester.pumpWidget(pageSurfaceHost(
+      view: UspNodeDetailView(deviceId: node.deviceId),
+      locale: const Locale('en'),
+      overrides: nodeDetailOverrides(state),
+    ));
+    // The node card renders an `AppImage.provider` whose stream never completes
+    // under the test binding, so `pumpAndSettle` would time out on it.
+    await settleIgnoringAnimations(tester);
+  }
+
+  Finder interfaceBlock() => find.ancestor(
+        of: find.text('Interface'),
+        matching: find.byType(LayoutBlock),
+      );
+
   test('the fixture is the no-medium state the arm exists for', () {
     // Asserted rather than assumed: every test below reads a green result from a
     // fixture that still carries no medium, and a drifted fixture would route
@@ -80,30 +104,6 @@ void main() {
             'a node with no DataElements liveness information stays online, '
             'which is what puts a detail page in front of this backhaul');
   });
-
-  /// Pumps the real node-detail page for [state] at a desktop surface.
-  ///
-  /// [pageSurfaceHost] rather than a local tree: it is the repo's one answer to
-  /// "how do I pump a real view" (`test/util/detail_view_probe.dart`'s header
-  /// argues the case, and `test/util/settle.dart`'s says the unit lane pumps the
-  /// same pages to assert behaviour). A copy here would be the drift both warn
-  /// about.
-  Future<void> pumpNodeDetail(WidgetTester tester) async {
-    await setLayoutSurface(tester, const Size(1280, 1800));
-    await tester.pumpWidget(pageSurfaceHost(
-      view: UspNodeDetailView(deviceId: node.deviceId),
-      locale: const Locale('en'),
-      overrides: nodeDetailOverrides(state),
-    ));
-    // The node card renders an `AppImage.provider` whose stream never completes
-    // under the test binding, so `pumpAndSettle` would time out on it.
-    await settleIgnoringAnimations(tester);
-  }
-
-  Finder interfaceBlock() => find.ancestor(
-        of: find.text('Interface'),
-        matching: find.byType(LayoutBlock),
-      );
 
   testWidgets(
       'a backhaul with no medium renders the interface block as Unknown',
