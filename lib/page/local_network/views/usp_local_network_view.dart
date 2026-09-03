@@ -394,7 +394,10 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             // Reservations Link Block
             LayoutBlock(
               identifier: 'local-network-dhcp-reservations',
-              onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
+              // Detail pages are entered with pushNamed: `go` replaces the
+              // location, so the entry point (e.g. the Dashboard) is dropped from
+              // the back stack and back falls through to backFallback (#1421).
+              onTap: () => context.pushNamed(RouteNamed.uspDhcpDetail),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

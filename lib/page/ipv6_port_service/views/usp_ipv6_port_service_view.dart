@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
@@ -34,7 +33,10 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.goNamed(RouteNamed.uspFirewall),
+      // IPv6 is entered with pushNamed, so back must pop to whoever pushed it.
+      // `backFallback` is only a no-parent safety net: on a deep link the nested
+      // URL rebuilds Advanced Settings, canPop() is true, and it never fires.
+      backFallback: RouteNamed.uspFirewall,
       onRefresh: () => ref
           .read(uspIpv6PortServiceProvider.notifier)
           .fetch(forceRemote: true),

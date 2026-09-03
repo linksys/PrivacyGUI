@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/_shared/helpers/card_identifier.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -96,6 +97,32 @@ class CardPopupForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Two calls and not one argument, because the E2E handle has to be spelled
+    // inline as a template at the attribute site — the only shape
+    // `gen-identifiers.mts` harvests (see the header of `card_identifier.dart`) —
+    // and a literal cannot express "absent".
+    final cardId = CardDensityScope.cardIdOf(context);
+    if (cardId == null) return _tile(context, identifier: null);
+    return _tile(
+      context,
+      identifier: 'card-popup-${cardIdentifierKey(cardId)}',
+    );
+  }
+
+  /// The tile itself, with [identifier] as the E2E handle on its tap (#1450).
+  ///
+  /// The id behind that handle is read from [CardDensityScope] by [build] rather
+  /// than passed into this widget: every caller is `DashboardCardTemplate`'s popup
+  /// branch, which is already *inside* the scope that knows the id, so a
+  /// constructor parameter would be a second place the same fact is written and
+  /// the one that can disagree.
+  ///
+  /// [identifier] is null for the same reason [showCardNormalForm]'s `cardId` is
+  /// nullable: a form built with no host above it names no card. `AppCard`
+  /// normalizes a null identifier to "attach nothing", and the `semanticLabel`
+  /// node is unaffected either way, since the label is never null here. Covered by
+  /// `dashboard_card_identifier_widget_test.dart`'s 'outside a card' group.
+  Widget _tile(BuildContext context, {required String? identifier}) {
     final colorScheme = Theme.of(context).colorScheme;
     final hasValue = value != null;
 
@@ -104,6 +131,7 @@ class CardPopupForm extends StatelessWidget {
       // width a button large enough to hit would leave no room for the value.
       onTap: () => _open(context),
       semanticLabel: hasValue ? '$title, $value' : title,
+      identifier: identifier,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -181,6 +209,12 @@ class CardPopupForm extends StatelessWidget {
       // a form with no host above it — see [CardDensityScope.liveForm].
       normalForm: CardDensityScope.liveFormOf(context) ?? normalForm,
       cardHeight: candidates.isEmpty ? null : candidates.reduce(math.max),
+      // The presented card is the same card, so it publishes the same id — and
+      // it has to, because the full form is where the detail-entry button lives
+      // (#1450): a degraded tile shows no footer, so for a picked card the
+      // presentation holds the *only* copy of that button. Left out, its handle
+      // would differ from the one the same card publishes in the grid.
+      cardId: CardDensityScope.cardIdOf(context),
     );
   }
 }
@@ -207,6 +241,15 @@ class CardPopupForm extends StatelessWidget {
 /// ring of dialog padding. The override paints nothing and spends nothing, which
 /// leaves the card's own surface as the only frame on screen.
 ///
+/// ## Why [cardId] is required and nullable
+///
+/// Same convention as [cardHeight], for the same reason: a caller with no card to
+/// name says so, rather than by omission. Left optional, a second call site added
+/// later — a gallery, a preview, a deep link — would compile clean and present a
+/// card whose detail button publishes no hook at all, and nothing would fail:
+/// not the analyzer, not the widget test (which only reaches this through
+/// [CardPopupForm._open]), and not E2E until a spec could not find the button.
+///
 /// ## Why a sheet on a narrow screen
 ///
 /// A screen narrower than the presentation plus [kCardPresentationInset] on each
@@ -220,6 +263,7 @@ Future<void> showCardNormalForm(
   BuildContext context, {
   required Widget normalForm,
   required double? cardHeight,
+  required String? cardId,
 }) {
   final screen = MediaQuery.sizeOf(context);
   final theme = Theme.of(context);
@@ -252,6 +296,10 @@ Future<void> showCardNormalForm(
       // element, and republishing it would offer the presentation a way to
       // present itself.
       density: CardDensity.normal,
+      // Republished, unlike the live form above: the id says *which* card this
+      // is, which does not change by being presented, and the card's own hooks
+      // are derived from it (#1450).
+      cardId: cardId,
       presented: true,
       child: normalForm,
     ),

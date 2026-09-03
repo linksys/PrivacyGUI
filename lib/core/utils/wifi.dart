@@ -68,6 +68,20 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
   if (signalStrength == null) {
     return NodeSignalLevel.wired;
   }
+  // A `0` reading is not a real measurement. `Hosts.Host.{i}.SignalStrength`
+  // uses `0` to mean "no reading" (present-but-absent), and a genuine 0 dBm
+  // RSSI is not physically meaningful for these links. Treating it as a real
+  // value would clear `rssiExcellent` (0 >= -65) and grade "Excellent" for a
+  // device that has no signal. Grade it as [none] (unknown / no signal). See
+  // linksys/PrivacyGUI#1438 (FWDEV#166 AC5).
+  if (signalStrength == 0) {
+    return NodeSignalLevel.none;
+  }
+  // A positive value here is an SNR reading, not RSSI, so compare against the
+  // SNR thresholds. RCPI values are also positive, but they are converted to
+  // (negative) dBm upstream by [rcpiToRssi] before reaching this call site, so
+  // they never take this branch. The only positive values that arrive here are
+  // true SNR figures. (No behaviour change — this branch is unchanged.)
   var signalThreshold =
       signalStrength > 0 ? signalThresholdSNR : signalThresholdRSSI;
   var index =

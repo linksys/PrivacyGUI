@@ -354,6 +354,75 @@ void main() {
       });
     });
 
+    // The four cells of the issue #1439 table: an online device with no
+    // resolvable parent (isUnattributed) vs. an online device with a real
+    // parent, crossed with no-node-filter vs. node-filter-active. Unattributed
+    // devices are never silently dropped (AC4 — decision: always shown).
+    group('Unattributed devices (issue #1439)', () {
+      final onlineUnattributed = ClientDevice(
+        mac: 'BB:BB:BB:BB:BB:01',
+        ip: '192.168.1.201',
+        hostName: 'OrphanPhone',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        wifi: const WifiConnectionInfo(band: '5GHz', ssidName: 'Home'),
+        // No resolvable parent node.
+        isUnattributed: true,
+      );
+      final onlineRealParent = wifiOnlineExcellent; // parentNodeId: NODE-01
+
+      test(
+          'no node filter: both an unattributed and a real-parent device '
+          'are shown', () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac));
+        expect(filtered.map((d) => d.mac), contains(onlineRealParent.mac));
+        container.dispose();
+      });
+
+      test(
+          'node filter active: the unattributed device is NOT dropped, '
+          'the real-parent device follows node membership', () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+        // Select NODE-02 — onlineRealParent is on NODE-01, so it drops out;
+        // the unattributed device must remain regardless of the selection.
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeIds({'NODE-02'});
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac),
+            reason: 'unattributed device must not be hidden by a node filter');
+        expect(filtered.any((d) => d.mac == onlineRealParent.mac), isFalse,
+            reason: 'real-parent device on NODE-01 is excluded by NODE-02');
+        container.dispose();
+      });
+
+      test('node filter active including the real parent: both shown',
+          () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeIds({'NODE-01'});
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac));
+        expect(filtered.map((d) => d.mac), contains(onlineRealParent.mac));
+        container.dispose();
+      });
+    });
+
     group('SSID / Band (multi-select OR)', () {
       test('single SSID filter shows matching WiFi devices', () async {
         final container = await createReadyContainer();

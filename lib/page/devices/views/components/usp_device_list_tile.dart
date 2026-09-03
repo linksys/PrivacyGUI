@@ -205,7 +205,12 @@ class UspDeviceListTile extends StatelessWidget {
     } else {
       parts.add(loc(context).ethernet);
     }
-    if (device.parentNodeName != null) {
+    // An unattributed device (no resolvable parent node — issue #1439) is
+    // marked explicitly instead of being drawn as if it were on a node. The
+    // marker is driven by the isUnattributed flag, not by an empty node name.
+    if (device.isUnattributed) {
+      parts.add(loc(context).unattributedDevice);
+    } else if (device.parentNodeName != null) {
       parts.add(loc(context).viaNode(device.parentNodeName!));
     }
     return parts.join(' · ');

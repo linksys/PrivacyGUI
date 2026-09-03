@@ -1484,6 +1484,10 @@
       }
     }
   },
+  "unattributedDevice": "Unattributed",
+  "@unattributedDevice": {
+    "description": "Marker shown in the device list for a device whose parent mesh node cannot be resolved (issue #1439)."
+  },
   "connectingToRouter": "Connecting to router...",
   "reconnecting": "Reconnecting...",
   "reconnectedToRouter": "Reconnected to router",

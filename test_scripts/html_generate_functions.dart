@@ -493,7 +493,12 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round((pass / total) * 100) + '%', cx, cy);
+      // Only a run with nothing failing may print 100. Rounding reached it from
+      // below — 13571 of 13572 passing rounds to 100% — so the ring showed one
+      // red hairline beside a number that said there was nothing to look at, and
+      // it took 68 failures out of that many to move the digits at all.
+      const pct = pass === total ? 100 : Math.min(99, Math.floor((pass / total) * 100));
+      ctx.fillText(pct + '%', cx, cy);
     }
 
     function renderCoverage() {

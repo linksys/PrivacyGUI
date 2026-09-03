@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
+// Narrowed for the same reason `client_device.dart` narrows it: the barrel
+// exports a `ConnectionType` that collides with this model's own enum.
+import 'package:ui_kit_library/ui_kit.dart' show AppStateTokens;
 
 import '../../../mocks/test_data/devices_test_data.dart';
 
@@ -330,12 +333,20 @@ void main() {
         expect(inactive.isInteractive, isFalse);
       });
 
-      test('displayOpacity returns 1.0 for online, 0.5 for offline', () {
+      test('displayOpacity dims an offline device and leaves an online one',
+          () {
         final online = DevicesTestData.createWifiClient(isActive: true);
         final offline = DevicesTestData.createWifiClient(isActive: false);
 
         expect(online.displayOpacity, 1.0);
-        expect(offline.displayOpacity, 0.5);
+        // The token, not the literal `0.5` this used to assert. The point of
+        // #1456 moving the getter onto `AppStateTokens` is that the number became
+        // upstream's to choose — pinning it here would turn a ui_kit design
+        // decision into a red test in a file whose subject is the device model,
+        // and the message would name neither. What this file owns is the branch:
+        // offline dims, online does not.
+        expect(offline.displayOpacity, AppStateTokens.disabledLabelAlpha);
+        expect(offline.displayOpacity, lessThan(1.0));
       });
     });
 
@@ -439,6 +450,47 @@ void main() {
         expect(copied.mac, 'NEW:MAC:ADDR');
         expect(copied.isActive, isFalse);
         expect(copied.hostName, original.hostName);
+      });
+    });
+
+    // Issue #1439: the device card badge, analytics grouping and the detail
+    // view all read parentNodeName rather than the flag, so a name surviving
+    // alongside isUnattributed makes one device claim both "unattributed" and
+    // "on <node>". The model, not its callers, has to rule that out — copyWith
+    // merges with `?? this` and so can never null a field on its own.
+    group('isUnattributed clears the parent attribution', () {
+      test('parentNodeName reads null once the flag is set', () {
+        final attributed = DevicesTestData.createWifiClient(
+          parentNodeId: 'NODE-01',
+          parentNodeName: 'Living Room',
+        );
+        expect(attributed.parentNodeName, 'Living Room');
+
+        final orphan = attributed.copyWith(isUnattributed: true);
+        expect(orphan.parentNodeName, isNull,
+            reason: 'an orphan has no parent to name');
+      });
+
+      test('the constructor honours the invariant too', () {
+        final orphan = DevicesTestData.createWifiClient(
+          parentNodeId: 'GHOST-NODE',
+          parentNodeName: 'Some Node',
+        ).copyWith(isUnattributed: true);
+
+        expect(orphan.parentNodeName, isNull);
+        expect(orphan.namedProps['parentNodeName'], isNull,
+            reason: 'diagnostics must not print a parent for an orphan either');
+      });
+
+      test('parentNodeId is kept — it is the router\'s raw, unresolved claim',
+          () {
+        final orphan = DevicesTestData.createWifiClient(
+          parentNodeId: 'GHOST-NODE',
+          parentNodeName: 'Some Node',
+        ).copyWith(isUnattributed: true);
+
+        expect(orphan.parentNodeId, 'GHOST-NODE',
+            reason: 'kept for logs and diagnostics; nothing renders it');
       });
     });
   });

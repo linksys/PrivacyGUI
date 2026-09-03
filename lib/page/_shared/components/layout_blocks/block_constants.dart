@@ -22,8 +22,10 @@ abstract final class BlockConstants {
   /// Border/outline alpha
   static const double borderAlpha = 0.2;
 
-  /// Disabled/muted element alpha
-  static const double disabledAlpha = 0.5;
+  /// Disabled/muted element alpha — the *colour* case only (a muted icon, a
+  /// muted label). Dimming a whole subtree is `AppLowEmphasis`, which is
+  /// per-language and cannot be expressed as a number here.
+  static const double disabledAlpha = AppStateTokens.disabledLabelAlpha;
 
   // ---------------------------------------------------------------------------
   // Border radius

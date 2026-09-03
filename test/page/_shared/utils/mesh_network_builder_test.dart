@@ -492,6 +492,87 @@ void main() {
       expect(client.uplinkRate, 50000);
     });
 
+    // linksys/PrivacyGUI#1438 — a present-but-zero Hosts SignalStrength means
+    // "no reading", not 0 dBm. It must be treated as absent so the `??` chain
+    // can reach the WifiClient / DataElements sources.
+    test('Hosts signalStrength 0 falls through to wifiClient value (#1438)',
+        () {
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'Phone',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+          signalStrength: 0, // "no reading" from Hosts, not a real 0 dBm
+        ),
+      ]);
+
+      final wifiClientMap = {
+        '11:22:33:44:55:01': WifiClientUIModel(
+          macAddress: '11:22:33:44:55:01',
+          signalStrength: -50,
+          noise: -90,
+          lastDataDownlinkRate: 100000,
+          lastDataUplinkRate: 50000,
+          active: true,
+        ),
+      };
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: wifiClientMap,
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.signalStrength, -50,
+          reason: 'Hosts 0 must not short-circuit the WifiClient reading');
+    });
+
+    // linksys/PrivacyGUI#1438 — a WiFi device with no signal from any source
+    // (Hosts 0, no WifiClient, no DataElements) must render as unknown, not as
+    // a bar level: signalStrength null → hasSignalDisplay false.
+    test('Hosts signalStrength 0 with no other source yields unknown (#1438)',
+        () {
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'Phone',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+          signalStrength: 0, // "no reading" and nothing anywhere else
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.signalStrength, isNull,
+          reason: 'Hosts 0 with no fallback must normalize to null');
+      expect(client.hasSignalDisplay, isFalse,
+          reason: 'unknown signal must not render a bar level');
+    });
+
     test('detects WiFi client via interfaceType containing wi-fi', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
@@ -601,6 +682,319 @@ void main() {
 
       expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
       expect(result.allClients.first.mac, '11:22:33:44:55:01');
+    });
+
+    // Issue #1439: a device whose parent node cannot be resolved must not be
+    // attributed to the master. Both orphan shapes — a null parentNodeId (in a
+    // mesh network) and a non-null parentNodeId matching no known node — land
+    // in the unassigned bucket, flagged isUnattributed.
+    group('unattributed (orphan) clients — issue #1439', () {
+      ConnectedDevices meshWithOrphans() => ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:01',
+              deviceRole: 'master',
+              hostName: 'Router',
+            ),
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              deviceRole: 'slave',
+              hostName: 'Extender',
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:01',
+              deviceRole: 'client',
+              hostName: 'AttributedPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:02',
+              deviceRole: 'client',
+              hostName: 'NullParentPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+            buildConnectedDevice(
+              macAddress: '11:22:33:44:55:03',
+              deviceRole: 'client',
+              hostName: 'UnknownParentPhone',
+              interface_: 'Device.WiFi.Radio.1',
+              isActive: true,
+            ),
+          ]);
+
+      MeshTopologyInfo meshTopologyWithOrphans() => MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: {
+              // Attributed to the master (known node).
+              '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01',
+              // 55:02 is absent from the map → null parentNodeId (orphan shape A).
+              // 55:03 points at a node that is not in `nodes` (orphan shape B).
+              '11:22:33:44:55:03': 'GHOST-NODE-ID',
+            },
+          );
+
+      test(
+          'both orphan shapes land in unassignedClients, flagged, and are '
+          'NOT on the master', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: meshWithOrphans(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopologyWithOrphans(),
+          gatewayName: 'Router',
+        );
+
+        // The attributed device is on the master; neither orphan is.
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(masterMacs, contains('11:22:33:44:55:01'));
+        expect(masterMacs, isNot(contains('11:22:33:44:55:02')));
+        expect(masterMacs, isNot(contains('11:22:33:44:55:03')));
+
+        // Both orphan shapes are in the unassigned bucket and flagged.
+        final unassignedMacs =
+            result.unassignedClients.map((c) => c.mac).toSet();
+        expect(unassignedMacs,
+            containsAll(['11:22:33:44:55:02', '11:22:33:44:55:03']));
+        expect(
+          result.unassignedClients.every((c) => c.isUnattributed),
+          isTrue,
+        );
+
+        // …and neither still names a parent. The ghost-parent shape is the one
+        // that can: the resolver had already filled parentNodeName in from the
+        // unmatched node's model, or from the gateway name when that model is
+        // empty. A name surviving here is what makes the device card badge and
+        // analytics grouping keep attributing the orphan to a node.
+        expect(
+          result.unassignedClients.map((c) => c.parentNodeName),
+          everyElement(isNull),
+          reason: 'an orphan must not name a parent on any surface',
+        );
+
+        // The attributed device is not flagged.
+        final attributed =
+            result.allClients.firstWhere((c) => c.mac == '11:22:33:44:55:01');
+        expect(attributed.isUnattributed, isFalse);
+      });
+
+      // The orphan predicate must be no broader than the orphan population.
+      // clientToNodeMap is written in exactly one place — the DataElements
+      // Wi-Fi station loop — so a wired client and an offline client are absent
+      // from it whatever node they are really on, and a null parentNodeId is no
+      // evidence about them. Reading it as evidence relabels every wired device
+      // in a mesh house as "Unattributed", drops it from the master's client
+      // count, and makes it bypass the node filter entirely. Only an *online
+      // Wi-Fi* client missing from the map is genuinely unplaceable.
+      test(
+          'mesh with an extender: wired and offline clients stay on the '
+          'master; only the online Wi-Fi client with no station row is an '
+          'orphan', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+          ),
+          // Wi-Fi client with a station row → resolves to the master.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'WifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+          // Wired desktop on the master: never a Wi-Fi station key.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            deviceRole: 'client',
+            hostName: 'DesktopPC',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            isActive: true,
+          ),
+          // Offline tablet: never a Wi-Fi station key.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:03',
+            deviceRole: 'client',
+            hostName: 'OldTablet',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: false,
+          ),
+          // Online Wi-Fi client absent from the station map → the real orphan.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:04',
+            deviceRole: 'client',
+            hostName: 'OrphanWifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: const {
+              '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01',
+            },
+          ),
+          gatewayName: 'Router',
+        );
+
+        // A real mesh — the standalone-router exemption does not apply here.
+        expect(result.slaves, hasLength(1));
+
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(
+          masterMacs,
+          containsAll([
+            '11:22:33:44:55:01', // Wi-Fi, resolved
+            '11:22:33:44:55:02', // wired
+            '11:22:33:44:55:03', // offline
+          ]),
+          reason: 'wired and offline clients are not orphans in a mesh either',
+        );
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+
+        // Exactly one orphan, and it is the online Wi-Fi client.
+        expect(
+            result.unassignedClients.map((c) => c.mac), ['11:22:33:44:55:04']);
+        expect(result.unassignedClients.single.isUnattributed, isTrue);
+      });
+
+      test('non-mesh null-parent clients stay on the master (not orphans)', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+            isActive: true,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty, // non-mesh
+          gatewayName: 'Router',
+        );
+
+        expect(result.unassignedClients, isEmpty);
+        expect(result.master.connectedClients.map((c) => c.mac),
+            contains('11:22:33:44:55:01'));
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+      });
+
+      // A standalone router that supports DataElements reports a single
+      // (master) node, so `meshTopology.nodes` is non-empty even though there
+      // is no extender. Such a network is NOT a mesh (no slaves), so its
+      // null-parent clients — every wired and every offline client, which are
+      // never Wi-Fi STA keys in clientToNodeMap — must stay on the master, not
+      // be swept into the unassigned bucket. Guards against classifying a
+      // single-router-with-DataElements network as a mesh via nodes.isNotEmpty.
+      test(
+          'standalone DataElements router (no slaves): wired/offline '
+          'null-parent clients stay on the master, not unattributed', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          // Wi-Fi client with an STA row → resolves to the master.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'WifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+          // Wired desktop: never a Wi-Fi STA key → null parentNodeId.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            deviceRole: 'client',
+            hostName: 'DesktopPC',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            isActive: true,
+          ),
+          // Offline tablet: never a Wi-Fi STA key → null parentNodeId.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:03',
+            deviceRole: 'client',
+            hostName: 'OldTablet',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: false,
+          ),
+        ]);
+
+        // DataElements present, but only the master node (no slaves).
+        final meshTopology = MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {
+            '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01', // Wi-Fi STA on master
+          },
+        );
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopology,
+          gatewayName: 'Router',
+        );
+
+        // No slaves → not a mesh → nothing is unattributed.
+        expect(result.slaves, isEmpty);
+        expect(result.unassignedClients, isEmpty);
+
+        // All three clients are on the master, none flagged.
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(
+          masterMacs,
+          containsAll([
+            '11:22:33:44:55:01',
+            '11:22:33:44:55:02',
+            '11:22:33:44:55:03',
+          ]),
+        );
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+      });
     });
 
     // #1430 — node liveness comes from whether the Hosts node row matched a

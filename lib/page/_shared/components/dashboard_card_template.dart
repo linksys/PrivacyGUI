@@ -4,8 +4,77 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/card_scroll_region.dart';
+import 'package:privacy_gui/page/_shared/components/nav_tap_guard.dart';
+import 'package:privacy_gui/page/_shared/helpers/card_identifier.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// Wraps a card's detail-entry link — the `View details` / `View all` button — in
+/// the semantics node it needs to be pressable, and hooks it for E2E (#1450).
+///
+/// Every card's footer goes through here: [DashboardCardTemplate._buildDetailFooter]
+/// and the three cards that hand-roll a footer because they need a query parameter
+/// the template cannot pass (`usp_device_info_card`, `usp_system_status_card`,
+/// `usp_traffic_analysis_card`). [child] is the link itself — an `InkWell`, whose
+/// `onTap` is the only thing that differs between them.
+///
+/// ## Why the boundary is load-bearing
+///
+/// The grid item that wraps every card is a semantics boundary (sliver_dashboard's
+/// `Semantics(container: true)`), so without a boundary of its own the link's tap
+/// action and `button` flag are absorbed *up* into it — and that node's rect is the
+/// whole card. Release web builds keep the semantics tree alive for E2E and clicks
+/// there route through the DOM overlay, so the absorbed action makes the entire card
+/// navigate (#1301). The identifier goes on that same node, not a new one: a handle
+/// above the boundary would be a handle on the whole card.
+///
+/// ## Why this button needs a hook at all
+///
+/// It is how the Dashboard enters every detail page, and `pushNamed` on it is the
+/// whole of the #1420 / #1421 / #1029 / #1435 bug family — so it is the one place
+/// an E2E spec can assert that a real user pressing back arrives back at the
+/// Dashboard. It could not: the only handle was a localized label, and thirteen
+/// buttons share two label strings, so reaching one needed a text locator plus an
+/// ordinal — which trips `lint:ids` on a click site, and would be unstable anyway
+/// since card order is user-configurable.
+///
+/// ## Two branches for one property, because the generator reads source text
+///
+/// The identifier is spelled inline as a template rather than composed by a
+/// function, because that is the only shape `gen-identifiers.mts` harvests — see
+/// [cardIdentifierKey]'s library header. A literal cannot express "absent", so the
+/// no-card case is a second `Semantics` rather than a `null` argument, and this
+/// wrapper exists so that branch is written once instead of at four footers.
+///
+/// Null means "not inside a card": the id comes from [CardDensityScope], which only
+/// a [CardDensityHost] publishes, and the factory is the only thing that builds a
+/// dashboard card — so in the app there is always one. Outside it (a shared block on
+/// a settings page, a card a test hand-builds) there is no card to name, and no
+/// handle is more honest than one derived from something else: an id whose shape
+/// depended on where the widget was mounted would be a contract E2E could not rely
+/// on.
+Widget cardDetailLink(
+  BuildContext context, {
+  required String label,
+  required Widget child,
+}) {
+  final cardId = CardDensityScope.cardIdOf(context);
+  if (cardId == null) {
+    return Semantics(
+      container: true,
+      button: true,
+      label: label,
+      child: child,
+    );
+  }
+  return Semantics(
+    container: true,
+    button: true,
+    label: label,
+    identifier: 'card-detail-${cardIdentifierKey(cardId)}',
+    child: child,
+  );
+}
 
 /// A section within a multi-section dashboard card.
 ///
@@ -493,40 +562,39 @@ class DashboardCardTemplate extends StatelessWidget {
               // half of the free space and clip them at widths where the whole
               // row still fits (#1227).
               Flexible(
-                child: Semantics(
-                  // The grid item that wraps every card is a semantics boundary
-                  // (sliver_dashboard's `Semantics(container: true)`), so
-                  // without a boundary of our own this button's tap action and
-                  // `button` flag are absorbed *up* into it — and that node's
-                  // rect is the whole card. Release web builds keep the
-                  // semantics tree alive for E2E, and clicks there route through
-                  // the DOM overlay, so the absorbed action makes the entire
-                  // card navigate (#1301).
-                  container: true,
-                  button: true,
+                // The boundary node and the E2E hook, both of which every card's
+                // footer needs and none of which differs between them — see
+                // [cardDetailLink] for why (#1301, #1450).
+                child: cardDetailLink(
+                  context,
                   label: label,
-                  child: InkWell(
+                  // Swallow the second tap of a double-tap so the detail page
+                  // is pushed once per gesture, not twice (#1445).
+                  child: NavTapGuard(
                     onTap: () => context.pushNamed(detailRoute!),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // The arrow keeps its 14px; the label is what shortens.
-                        Flexible(
-                          child: AppText.labelMedium(
-                            label,
-                            color: Theme.of(context).colorScheme.primary,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    builder: (context, guardedTap) => InkWell(
+                      onTap: guardedTap,
+                      borderRadius: BorderRadius.circular(4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // The arrow keeps its 14px; the label is what shortens.
+                          Flexible(
+                            child: AppText.labelMedium(
+                              label,
+                              color: Theme.of(context).colorScheme.primary,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        AppGap.xs(),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
+                          AppGap.xs(),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

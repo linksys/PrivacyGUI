@@ -292,7 +292,11 @@ class _UspSliverDashboardViewState
       identifier: 'dashboard-offline-banner',
       child: InkWell(
         onTap: () {
-          context.goNamed(RouteNamed.uspUnifiedDiagnostics);
+          // pushNamed, not goNamed: Unified Diagnostics is a child of
+          // /uspMenu, so `go` rebuilt the stack as [Menu, Diagnostics] and back
+          // from here landed on the Menu — a page the user never visited.
+          // Pushing keeps the Dashboard underneath (#1434, the shape of #1421).
+          context.pushNamed(RouteNamed.uspUnifiedDiagnostics);
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),

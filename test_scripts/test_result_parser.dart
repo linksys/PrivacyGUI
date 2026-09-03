@@ -27,13 +27,12 @@ void main(List<String> args) {
   }
 
   Stream<List<int>> inputStream = file.openRead();
-  final Map<String, dynamic> testResult = {
-    'counting': {
-      'total': 0,
-      'success': 0,
-      'fail': 0,
-    }
-  };
+  // No `counting` map here: this file only ever serialises the flat test list
+  // (see the `writeAsStringSync` below), and `combine_results.dart` derives every
+  // number from that list — across all locales, which a per-locale parser cannot
+  // do anyway. The map this used to carry was incremented on every `testDone`
+  // and read by nothing.
+  final Map<String, dynamic> testResult = {};
 
   inputStream
       .transform(utf8.decoder) // Decode bytes to UTF-8.
@@ -131,12 +130,12 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (targetSuite == null) {
       return;
     }
-    if (groupJson['name'] == '') {
-      final testCount = groupJson['testCount'];
-      final currentCount = testResult['counting']['total'];
-      testResult['counting']['total'] = currentCount + testCount;
-      targetSuite['total'] = testCount;
-    }
+    // No suite-level `total` written here either: it was the last unread survivor
+    // of the `counting` map, it never left the process (only the flat leaf list is
+    // serialised), and it held the root group's `testCount` — which counts the
+    // hidden virtual tests `removeTestRecords` deletes, i.e. the inflated number
+    // #1404 is about. Leaving a knowingly-wrong number behind invites the next
+    // reader to trust it.
     addOrAppendData<Map<String, dynamic>>(targetSuite, 'groups', groupJson);
   } else if (json['test'] != null) {
     final Map<String, dynamic> testJson = json['test'];
@@ -178,26 +177,15 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     testJson.remove('root_url');
     extractInfo(testJson);
   } else if (json['testID'] != null) {
+    final int testID = json['testID'];
     if (json['hidden'] ?? false) {
+      removeTestRecords(testID, testResult);
       return;
     }
-    final int testID = json['testID'];
     // find tests by test ID
     final List<Map<String, dynamic>> result = [];
     findTests(testID, testResult, result);
     if (json['result'] != null) {
-      if (json['result'] == 'success') {
-        if (!json['skipped']) {
-          final successCount = testResult['counting']['success'] ?? 0;
-          testResult['counting']['success'] = successCount + 1;
-        } else {
-          final currentCount = testResult['counting']['total'];
-          testResult['counting']['total'] = currentCount - 1;
-        }
-      } else {
-        final failCount = testResult['counting']['fail'] ?? 0;
-        testResult['counting']['fail'] = failCount + 1;
-      }
       for (var element in result) {
         element['result'] = json['result'];
       }
@@ -317,6 +305,44 @@ addOrAppendData<T>(Map<String, dynamic> json, String key, T data) {
     json[key] = list;
   }
   json[key].add(data);
+}
+
+/// Deletes every record of [testID] from the suite/group tree in [testResult].
+///
+/// `package:test` synthesises a virtual test per group that declares
+/// `setUpAll`/`tearDownAll` (plus one per suite for loading) and marks its
+/// `testDone` `hidden: true`, because the engine keeps those out of
+/// `liveTests`. Measured against the real reporter stream, those events carry
+/// `result: "success"` like any other, so this flag is the only thing that tells
+/// them apart from a golden case.
+///
+/// The record has to be deleted rather than annotated because [handleTestRecord]
+/// inserts it on `testStart`, when `hidden` is not yet known. Leaving it in was
+/// the whole of #1404: `combine_results.dart` derived `total` from the record
+/// count while `success`/`fail` filtered on `result`, and the early return here
+/// meant these records never got one — the 2026-08-28 dev report read Total
+/// 14716 against Pass 13572 with zero failures, the gap being 44 groups over 26
+/// locales. Annotating instead would also break `PrivacyGUI-golden-ci`'s
+/// `triage-agent/collector.py`, which drops these same rows by testing for the
+/// absence of a `result` key.
+///
+/// Removal covers every group, because the `test` branch inserts one record per
+/// group ID the test carries and a test nested in a group has more than one.
+void removeTestRecords(int testID, Map<String, dynamic> testResult) {
+  final suites = testResult['suites'] as List<Map<String, dynamic>>?;
+  if (suites == null) {
+    return;
+  }
+  for (final suite in suites) {
+    final groups = suite['groups'] as List<Map<String, dynamic>>?;
+    if (groups == null) {
+      continue;
+    }
+    for (final group in groups) {
+      final tests = group['tests'] as List<Map<String, dynamic>>?;
+      tests?.removeWhere((test) => test['id'] == testID);
+    }
+  }
 }
 
 findTests(

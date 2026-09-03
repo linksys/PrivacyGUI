@@ -17,6 +17,49 @@ else
   echo "Using system flutter"
 fi
 
+# test/web/canvaskit_variant_test.dart compares web/assets/canvaskit.* against
+# the copy in the SDK's own flutter_web_sdk/, and that directory is an on-demand
+# artifact: `flutter test` never fetches it (only `--platform chrome` does), and
+# neither does subosito/flutter-action's setup.sh. A fresh `fvm install` has no
+# flutter_web_sdk at all — measured, 3.27.4 and 3.38.5 installs on this machine
+# have none — so without this line the guard fails on the first run after any pin
+# bump, on every machine, for an environment reason and not a real drift.
+#
+# It belongs here rather than in one CI job because this script is what both a
+# developer and CI job 2 invoke, so the prerequisite travels with the command that
+# needs it instead of with a runner. A job that runs test/web/ WITHOUT going
+# through this script still needs its own precache; the test's failure message
+# says so.
+#
+# The guard fails rather than skips when the SDK copy is missing, on purpose — a
+# skipped guard reports green while checking nothing, which is the exact mechanism
+# that let a 3.44.0 CanvasKit ship under a 3.47.0 engine. So the environment is
+# what has to be fixed, not the assertion.
+#
+# Silent and ~1s once cached (measured: 0.76s, no output, exit 0), so it does not
+# read as work being done. It is not dead on CI either: flutter-action restores the
+# SDK from a cache keyed on the SDK VERSION, so the first run after a pin bump is
+# the cold one — the same run where the vendored CanvasKit is what is in question.
+# See the comment in ci.yml's unit-test job for the measurement.
+#
+# Warn, do not exit. A failure here is almost always the network, and the rest of
+# the suite does not need the web SDK — aborting would cost 6,000 tests to protect
+# one. But it must be attributed out loud: without this, a failed precache
+# resurfaces six minutes later as the guard's own "No flutter_web_sdk in …; run
+# flutter precache --web", which tells the reader to do the thing they just watched
+# fail. Naming it here is the difference between a diagnosis and a loop.
+#
+# Status captured, not read from `$?` after `if ! …`: the negation succeeds, so
+# `$?` inside the branch is 0 and the warning would report a failure as exit 0
+# (measured: `if ! (exit 7); then echo $?` prints 0).
+$FLUTTER precache --web
+precache_status=$?
+if [ $precache_status -ne 0 ]; then
+  echo "WARNING: 'precache --web' failed (exit $precache_status). test/web/ needs the SDK's"
+  echo "         flutter_web_sdk/ and will fail below for THAT reason, not because"
+  echo "         web/assets/canvaskit.* drifted. Fix this line before re-vendoring."
+fi
+
 # The PR-blocking selection, in exactly one place. What makes `layout-gate`
 # PR-blocking is its *absence* from this list, which is the same thing
 # dart_test.yaml says from the other side — so moving `layout-gate` into

@@ -257,7 +257,10 @@ class UspFirewallView extends ConsumerWidget {
       identifier: 'firewall-ipv6-port-service',
       title: loc(context).ipv6PortService,
       description: loc(context).manageIpv6PortRules,
-      onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
+      // Detail pages are entered with pushNamed: `go` replaces the location, so
+      // the entry point (e.g. the Dashboard) is dropped from the back stack and
+      // Firewall's own back falls through to backFallback instead (#1420).
+      onTap: () => context.pushNamed(RouteNamed.uspIpv6PortService),
     );
   }
 

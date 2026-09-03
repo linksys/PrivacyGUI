@@ -15,6 +15,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+// Reaches past the public barrel on purpose, and only because there is no way
+// not to: measured at ui_kit v3.1.0, neither `ui_kit.dart` nor `testing.dart`
+// exports `WcagLevel`, `Severity`, `InsightSeverity` or `WcagAnalysisEngine`
+// (`testing.dart` covers `TargetSizeReporter` alone). Swapping this line for the
+// barrel leaves ~40 undefined names, so it stays until ui_kit exports
+// `reporting/report_format.dart` and `analysis/`. Deep `src/` paths carry no
+// compatibility promise — this file is the first thing a ui_kit bump breaks.
 import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 
 void main() {
