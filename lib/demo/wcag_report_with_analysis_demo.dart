@@ -5,6 +5,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+// Deep `src/` import for the same measured reason as `wcag_analysis_demo.dart`:
+// the WCAG analysis API is not exported from either public entry point at
+// ui_kit v3.1.0. See that file's note before "fixing" this one.
 import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 
 void main() {

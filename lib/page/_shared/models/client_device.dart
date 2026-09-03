@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
+// Only for the shared disabled alpha; the model declares its own ConnectionType,
+// so the barrel is narrowed to the one token it is imported for.
+import 'package:ui_kit_library/ui_kit.dart' show AppStateTokens;
 
 /// Connection type for client devices.
 enum ConnectionType { wifi, wired }
@@ -272,7 +275,16 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   bool get isInteractive => isActive;
 
   /// Display opacity for list items (dimmed when offline).
-  double get displayOpacity => isActive ? 1.0 : 0.5;
+  ///
+  /// Stays a number, and stays a plain `Opacity` at the call site, because that
+  /// is what ui_kit's own 2.42.0 migration note asks for — the model publishes a
+  /// value and the tile consumes it. The consequence is worth knowing: under a
+  /// non-Flat visual language an offline row keeps fading by 0.5 while a
+  /// switched-off Wi-Fi row picks up that language's low-emphasis treatment. Which
+  /// of the two an offline device should be is a design question (#1456 §5), not a
+  /// mechanical swap.
+  double get displayOpacity =>
+      isActive ? 1.0 : AppStateTokens.disabledLabelAlpha;
 
   /// Creates a copy with optional field overrides.
   ClientDevice copyWith({

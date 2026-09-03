@@ -18,8 +18,19 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 2.7.0+100000
 
 environment:
+  # Deliberately below the toolchain we build with: the language version this
+  # package compiles at is ours to choose, and nothing here needs a newer one
+  # (#1456 §2).
   sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.3.0 <4.0.0"
+  # The real floor since ui_kit 3.0.0, held at `.fvmrc`'s major.minor.
+  #
+  # This line protects nothing that was unprotected — pub already refuses on an
+  # older toolchain, naming `ui_kit_library requires Flutter SDK version
+  # >=3.47.0` from the kit's own pubspec, so the failure was already loud and
+  # already pointed at the cause. What it fixes is a false claim: a package that
+  # says `>=3.3.0` while being unbuildable on anything under 3.47 is describing
+  # someone else's repository (#1456).
+  flutter: ">=3.47.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -56,14 +67,18 @@ dependencies:
   collection: ^1.19.0
   flutter_secure_storage: ^10.3.1
 
+  # One repository, two entries — `generative_ui` only adds `path:`. Bump both or
+  # neither. A mismatch is loud rather than silent today: both halves pull the same
+  # `gen_ui_contracts` path dependency, so pub refuses to resolve two commits of it
+  # (#1456). Requires Flutter >= 3.47 since ui_kit 3.0.0; see `.fvmrc`.
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.40.2
+      ref: v3.1.0
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.40.2
+      ref: v3.1.0
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
