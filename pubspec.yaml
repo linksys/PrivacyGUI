@@ -18,8 +18,19 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 2.7.0+100000
 
 environment:
+  # Deliberately below the toolchain we build with: the language version this
+  # package compiles at is ours to choose, and nothing here needs a newer one
+  # (#1456 §2).
   sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.3.0 <4.0.0"
+  # The real floor since ui_kit 3.0.0, held at `.fvmrc`'s major.minor.
+  #
+  # This line protects nothing that was unprotected — pub already refuses on an
+  # older toolchain, naming `ui_kit_library requires Flutter SDK version
+  # >=3.47.0` from the kit's own pubspec, so the failure was already loud and
+  # already pointed at the cause. What it fixes is a false claim: a package that
+  # says `>=3.3.0` while being unbuildable on anything under 3.47 is describing
+  # someone else's repository (#1456).
+  flutter: ">=3.47.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
