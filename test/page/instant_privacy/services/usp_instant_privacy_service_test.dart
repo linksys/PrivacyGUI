@@ -43,6 +43,26 @@ MacFilterAccessPoint _ap({
       allowedMACAddress: allowedMACAddress,
     );
 
+/// A `Hosts.Host` response with one ordinary client and one slave node, the
+/// node in its **post-firmware-fix** shape (FWDEV#166): a real MAC, a real
+/// `Layer1Interface`, and a truthful `Active`. Today's masking shape would let
+/// the existing predicates hide the node for the wrong reason.
+const _devicesResponseWithSlaveNode = {
+  'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+  'Device.Hosts.Host.1.IPAddress': '192.168.1.10',
+  'Device.Hosts.Host.1.HostName': 'Laptop',
+  'Device.Hosts.Host.1.Active': true,
+  'Device.Hosts.Host.1.Layer1Interface': 'Device.Ethernet.Interface.1',
+  'Device.Hosts.Host.1.AddressSource': 'DHCP',
+  'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:99',
+  'Device.Hosts.Host.2.IPAddress': '192.168.1.11',
+  'Device.Hosts.Host.2.HostName': 'Node-Bedroom',
+  'Device.Hosts.Host.2.Active': true,
+  'Device.Hosts.Host.2.Layer1Interface': 'Device.WiFi.Radio.1',
+  'Device.Hosts.Host.2.AddressSource': 'DHCP',
+  'Device.Hosts.Host.2.DeviceRole': 'slave',
+};
+
 void main() {
   late MockUspClient mockUsp;
   late UspInstantPrivacyService service;
@@ -187,27 +207,49 @@ void main() {
       expect(result[0].isPrivateMac, isFalse);
     });
 
-    test(
-        'excludes a mesh node (deviceRole slave) in its post-firmware-fix '
-        'shape — isActive true and a populated interface (REQ-10a)', () {
-      // The point of the fix: after the firmware node-row PhysAddress bug
-      // (FWDEV#166) is fixed, a slave node row looks exactly like a normal
-      // active device — truthful Active, a real interface, a real MAC. The
-      // ONLY thing that distinguishes it is deviceRole, so today's masking
-      // shape (Active=0 / empty interface) is deliberately NOT used here.
+    // Both role literals live in one boolean expression, so line coverage looks
+    // complete with only one of them tested — table-drive instead. 'master' is
+    // the gateway the customer is connected through, the worst row of all to
+    // leak into a customer-facing list.
+    for (final role in ['master', 'slave']) {
+      test(
+          'excludes a mesh node (deviceRole $role) in its post-firmware-fix '
+          'shape — isActive true and a populated interface (REQ-10a)', () {
+        // The point of the fix: after the firmware node-row PhysAddress bug
+        // (FWDEV#166) is fixed, a node row looks exactly like a normal active
+        // device — truthful Active, a real interface, a real MAC. The ONLY
+        // thing that distinguishes it is deviceRole, so today's masking shape
+        // (Active=0 / empty interface) is deliberately NOT used here.
+        final data = ConnectedDevices(items: [
+          _device(
+            instancePath: 'p.node.',
+            macAddress: 'AA:BB:CC:DD:EE:99',
+            isActive: true,
+            interface_: 'Device.WiFi.Radio.1',
+            deviceRole: role,
+          ),
+        ]);
+
+        final result = service.activeDevices(data);
+
+        expect(result, isEmpty);
+      });
+    }
+
+    test('excludes a mesh node whose deviceRole casing differs from firmware',
+        () {
+      // DeviceRole is an unvalidated wire string; a build reporting 'Slave'
+      // must not turn the node back into a customer-facing row.
       final data = ConnectedDevices(items: [
         _device(
-          instancePath: 'p.node.',
           macAddress: 'AA:BB:CC:DD:EE:99',
           isActive: true,
           interface_: 'Device.WiFi.Radio.1',
-          deviceRole: 'slave',
+          deviceRole: ' Slave ',
         ),
       ]);
 
-      final result = service.activeDevices(data);
-
-      expect(result, isEmpty);
+      expect(service.activeDevices(data), isEmpty);
     });
 
     test(
@@ -226,6 +268,59 @@ void main() {
 
       expect(result, hasLength(1));
       expect(result[0].mac, 'AA:BB:CC:DD:EE:10');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // meshNodeMacs
+  // ---------------------------------------------------------------------------
+
+  group('UspInstantPrivacyService — meshNodeMacs', () {
+    test('collects master and slave MACs and ignores clients', () {
+      final data = ConnectedDevices(items: [
+        _device(macAddress: 'AA:BB:CC:DD:EE:01', deviceRole: 'master'),
+        _device(macAddress: 'aa:bb:cc:dd:ee:02', deviceRole: 'slave'),
+        _device(macAddress: 'AA:BB:CC:DD:EE:03', deviceRole: 'client'),
+        _device(macAddress: 'AA:BB:CC:DD:EE:04', deviceRole: null),
+      ]);
+
+      expect(service.meshNodeMacs(data),
+          ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
+    });
+
+    test('includes a node firmware currently reports as down', () {
+      // REQ-10a is about the node keeping its place in the allow-list. A node
+      // dropped because it looked offline for one poll cannot come back: on an
+      // allow-list-mode filter, absent means denied. This is exactly the shape
+      // node rows have TODAY under FWDEV#166 (Active = 0, empty interface).
+      final data = ConnectedDevices(items: [
+        _device(
+          macAddress: 'AA:BB:CC:DD:EE:99',
+          isActive: false,
+          interface_: '',
+          deviceRole: 'slave',
+        ),
+      ]);
+
+      expect(service.meshNodeMacs(data), ['AA:BB:CC:DD:EE:99']);
+    });
+
+    test('skips node rows with no MAC and de-duplicates', () {
+      final data = ConnectedDevices(items: [
+        _device(macAddress: '', deviceRole: 'slave'),
+        _device(macAddress: 'AA:BB:CC:DD:EE:01', deviceRole: 'master'),
+        _device(macAddress: 'AA-BB-CC-DD-EE-01', deviceRole: 'master'),
+      ]);
+
+      expect(service.meshNodeMacs(data), ['AA:BB:CC:DD:EE:01']);
+    });
+
+    test('returns empty for a client-only network', () {
+      final data = ConnectedDevices(items: [
+        _device(macAddress: 'AA:BB:CC:DD:EE:10'),
+      ]);
+
+      expect(service.meshNodeMacs(data), isEmpty);
     });
   });
 
@@ -340,6 +435,47 @@ void main() {
 
       expect(updates[0].allowedMACAddress, '');
     });
+
+    test('always-allowed MACs are unioned into the written list (REQ-10a)', () {
+      final data = MacFilterAccessPoints(items: [_ap()]);
+
+      final updates = service.buildEnableUpdates(
+        ['AA:BB:CC:DD:EE:10'],
+        data,
+        alwaysAllowedMacs: ['AA:BB:CC:DD:EE:99'],
+      );
+
+      expect(
+          updates[0].allowedMACAddress, 'AA:BB:CC:DD:EE:10,AA:BB:CC:DD:EE:99');
+    });
+
+    test('always-allowed MACs are not duplicated when already in the snapshot',
+        () {
+      final data = MacFilterAccessPoints(items: [_ap()]);
+
+      final updates = service.buildEnableUpdates(
+        ['AA:BB:CC:DD:EE:99', 'AA:BB:CC:DD:EE:10'],
+        data,
+        alwaysAllowedMacs: ['aa-bb-cc-dd-ee-99'],
+      );
+
+      expect(
+          updates[0].allowedMACAddress, 'AA:BB:CC:DD:EE:99,AA:BB:CC:DD:EE:10');
+    });
+
+    test('always-allowed MACs are written even when the snapshot is empty', () {
+      // The node must be allowed regardless of what the customer's snapshot
+      // happened to contain — enabling the feature must never lock a node out.
+      final data = MacFilterAccessPoints(items: [_ap()]);
+
+      final updates = service.buildEnableUpdates(
+        [],
+        data,
+        alwaysAllowedMacs: ['AA:BB:CC:DD:EE:99'],
+      );
+
+      expect(updates[0].allowedMACAddress, 'AA:BB:CC:DD:EE:99');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -408,6 +544,39 @@ void main() {
 
       expect(updates, hasLength(1));
       expect(updates[0].allowedMACAddress, 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('restores always-allowed MACs missing from the stored list (REQ-10a)',
+        () {
+      // A list written before this fix (or by an older build) has no node MACs
+      // in it. Adding a device is a write, so it is also a chance to put the
+      // invariant back rather than perpetuate the omission.
+      final data = MacFilterAccessPoints(items: [
+        _ap(allowedMACAddress: 'AA:BB:CC:DD:EE:01'),
+      ]);
+
+      final updates = service.buildAddMacUpdates(
+        'AA:BB:CC:DD:EE:02',
+        data,
+        alwaysAllowedMacs: ['AA:BB:CC:DD:EE:99'],
+      );
+
+      expect(updates[0].allowedMACAddress,
+          'AA:BB:CC:DD:EE:01,AA:BB:CC:DD:EE:02,AA:BB:CC:DD:EE:99');
+    });
+
+    test('always-allowed MACs do not change the already-present verdict', () {
+      final data = MacFilterAccessPoints(items: [
+        _ap(allowedMACAddress: 'AA:BB:CC:DD:EE:01'),
+      ]);
+
+      final updates = service.buildAddMacUpdates(
+        'AA:BB:CC:DD:EE:01',
+        data,
+        alwaysAllowedMacs: ['AA:BB:CC:DD:EE:99'],
+      );
+
+      expect(updates, isEmpty);
     });
   });
 
@@ -490,6 +659,27 @@ void main() {
       expect(result.allowedDevices[1].mac, '74:12:13:21:56:3B');
       expect(result.allowedDevices[1].isPrivateMac, isFalse);
     });
+
+    test('a mesh node stays off both customer-facing lists (REQ-10a)',
+        () async {
+      // The node is already on the wire's allow-list, as REQ-10a requires — it
+      // still must not show up as a row the customer reads as blockable.
+      stubFetchAll(
+        mockUsp,
+        devicesResponse: _devicesResponseWithSlaveNode,
+        apResponse: {
+          'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
+          'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': true,
+          'Device.WiFi.AccessPoint.1.AllowedMACAddress':
+              'AA:BB:CC:DD:EE:01,AA:BB:CC:DD:EE:99',
+        },
+      );
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => d.mac), ['AA:BB:CC:DD:EE:01']);
+      expect(result.allowedDevices.map((d) => d.mac), ['AA:BB:CC:DD:EE:01']);
+    });
   });
 
   group('UspInstantPrivacyService — enable', () {
@@ -526,6 +716,47 @@ void main() {
           containsPair(
             'Device.WiFi.AccessPoint.1.AllowedMACAddress',
             'AA:BB:CC:DD:EE:01',
+          ));
+    });
+
+    test(
+        'writes the mesh node MAC the customer-facing list omits — a node can '
+        'never be locked out (REQ-10a)', () async {
+      // This is where the requirement actually lives: the MAC set that reaches
+      // the wire. The node is absent from connectedDevices by design, so the
+      // notifier's snapshot cannot carry it — the service must.
+      stubFetchAll(
+        mockUsp,
+        devicesResponse: _devicesResponseWithSlaveNode,
+        apResponse: {
+          'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
+          'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': false,
+          'Device.WiFi.AccessPoint.1.AllowedMACAddress': '',
+        },
+      );
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      final result = await service.fetchAll();
+      // Exactly what UspInstantPrivacyNotifier.enable() sends.
+      final snapshot = result.connectedDevices.map((d) => d.mac).toList();
+      expect(snapshot, ['AA:BB:CC:DD:EE:01']);
+
+      await service.enable(snapshot, result.macFilterContext);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final params = captured.first as Map<String, dynamic>;
+      expect(
+          params,
+          containsPair(
+            'Device.WiFi.AccessPoint.1.AllowedMACAddress',
+            'AA:BB:CC:DD:EE:01,AA:BB:CC:DD:EE:99',
           ));
     });
   });
