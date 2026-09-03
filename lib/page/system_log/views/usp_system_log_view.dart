@@ -157,6 +157,18 @@ class _LogFileCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _PersistentBadge extends StatelessWidget {
+  /// Fill alpha for the tinted pill behind the label.
+  ///
+  /// Its own number rather than `AppStateTokens.disabledContainerAlpha`, even
+  /// though both are 0.12. This badge is never disabled, and the kit does not
+  /// treat 0.12 as a shared token either: measured at ui_kit v3.1.0, that token
+  /// has **one** consumer inside the kit against **22** raw `alpha: 0.12`
+  /// literals across 12 files. Borrowing the disabled spelling would tie a badge
+  /// fill to a state token free to move for reasons that have nothing to do with
+  /// this pill. The real answer is a per-language badge tint on the theme, which
+  /// is a design decision and not a rename (#1456).
+  static const double _fillAlpha = 0.12;
+
   final bool persistent;
 
   const _PersistentBadge({required this.persistent});
@@ -174,10 +186,7 @@ class _PersistentBadge extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        // The kit's container-tint alpha, which it only spells for the disabled
-        // case — this badge is never disabled, it just wants the same 0.12 rather
-        // than a fourth copy of it.
-        color: color.withValues(alpha: AppStateTokens.disabledContainerAlpha),
+        color: color.withValues(alpha: _fillAlpha),
         borderRadius: BorderRadius.circular(4),
       ),
       child: AppText.labelSmall(label, color: color),
