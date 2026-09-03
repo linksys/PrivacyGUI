@@ -91,7 +91,17 @@ class MeshNetworkBuilder {
     // must not be silently asserted onto the master — that is a wrong
     // attribution, not a missing one (issue #1439). Orphans are collected into
     // the unassigned bucket below instead.
-    final isMesh = meshTopology.nodes.isNotEmpty;
+    //
+    // "Mesh" here means the topology actually has extender nodes (slaves), not
+    // merely that DataElements returned a topology. A standalone router that
+    // supports DataElements still reports a single (master) node, so
+    // `nodes.isNotEmpty` would be true even though there is no other node a
+    // client could belong to. In that shape a null parentNodeId (every wired
+    // and every offline client — they are never Wi-Fi STA keys in
+    // clientToNodeMap) legitimately means the gateway, exactly as in the
+    // non-mesh case. Use the topology's own `hasMesh` (any SlaveNode present),
+    // which matches MeshNetwork.hasMesh, so those clients stay on the master.
+    final isMesh = meshTopology.nodes.hasMesh;
     final masterClients = <ClientDevice>[];
     final nullParentClients = clientsByNodeId[null] ?? [];
     if (!isMesh) {

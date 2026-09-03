@@ -721,6 +721,87 @@ void main() {
           isTrue,
         );
       });
+
+      // A standalone router that supports DataElements reports a single
+      // (master) node, so `meshTopology.nodes` is non-empty even though there
+      // is no extender. Such a network is NOT a mesh (no slaves), so its
+      // null-parent clients — every wired and every offline client, which are
+      // never Wi-Fi STA keys in clientToNodeMap — must stay on the master, not
+      // be swept into the unassigned bucket. Guards against classifying a
+      // single-router-with-DataElements network as a mesh via nodes.isNotEmpty.
+      test(
+          'standalone DataElements router (no slaves): wired/offline '
+          'null-parent clients stay on the master, not unattributed', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          // Wi-Fi client with an STA row → resolves to the master.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            deviceRole: 'client',
+            hostName: 'WifiPhone',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+          // Wired desktop: never a Wi-Fi STA key → null parentNodeId.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            deviceRole: 'client',
+            hostName: 'DesktopPC',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            isActive: true,
+          ),
+          // Offline tablet: never a Wi-Fi STA key → null parentNodeId.
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:03',
+            deviceRole: 'client',
+            hostName: 'OldTablet',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: false,
+          ),
+        ]);
+
+        // DataElements present, but only the master node (no slaves).
+        final meshTopology = MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {
+            '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01', // Wi-Fi STA on master
+          },
+        );
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopology,
+          gatewayName: 'Router',
+        );
+
+        // No slaves → not a mesh → nothing is unattributed.
+        expect(result.slaves, isEmpty);
+        expect(result.unassignedClients, isEmpty);
+
+        // All three clients are on the master, none flagged.
+        final masterMacs = result.master.connectedClients.map((c) => c.mac);
+        expect(
+          masterMacs,
+          containsAll([
+            '11:22:33:44:55:01',
+            '11:22:33:44:55:02',
+            '11:22:33:44:55:03',
+          ]),
+        );
+        expect(
+          result.master.connectedClients.every((c) => !c.isUnattributed),
+          isTrue,
+        );
+      });
     });
   });
 }
