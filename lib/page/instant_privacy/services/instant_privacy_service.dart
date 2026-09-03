@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
@@ -22,7 +23,7 @@ class MacFilterContext extends Equatable {
   final MacFilterAccessPoints _data;
 
   /// MACs that every write must keep in the allow-list (REQ-10a) — the mesh's
-  /// own nodes.
+  /// own nodes, both their host MACs and their backhaul MACs.
   ///
   /// Captured at fetch time and carried here rather than passed by the caller,
   /// because the write methods never see [ConnectedDevices] and because an
@@ -80,10 +81,10 @@ class UspInstantPrivacyService {
   /// MAC, interface, and truthful Active.
   ///
   /// This list is **display only**. Mesh-node MACs are still written to the
-  /// firmware allow-list on every write — see [meshNodeMacs]. On an
-  /// allow-list-mode MAC filter an absent MAC is a denied MAC, so dropping a
-  /// node here *and* on the wire would lock the customer's own node out of its
-  /// network, which is the other half of REQ-10a.
+  /// firmware allow-list on every write — see [meshNodeMacs] and
+  /// [meshBackhaulMacs]. On an allow-list-mode MAC filter an absent MAC is a
+  /// denied MAC, so dropping a node here *and* on the wire would lock the
+  /// customer's own node out of its network, which is the other half of REQ-10a.
   List<InstantPrivacyDeviceUIModel> activeDevices(ConnectedDevices data) {
     return data.items
         .where((d) =>
@@ -100,11 +101,16 @@ class UspInstantPrivacyService {
     }).toList();
   }
 
-  /// The MACs of the mesh's own nodes, which must always be in the allow-list.
+  /// The nodes' *host* MACs — `Device.Hosts.Host.{i}.PhysAddress` of every row
+  /// whose `DeviceRole` marks it as one of the mesh's own nodes.
   ///
   /// REQ-10a — "Nodes can never be locked out": device-blocking features always
   /// include the mesh's own nodes. 1.x does the same union at write time
   /// (`InstantPrivacyNotifier.save()` on `main`); this is the 2.x equivalent.
+  ///
+  /// **This is not sufficient on its own.** A node's host MAC is not the MAC it
+  /// associates with — see [meshBackhaulMacs]. Both sets belong in the
+  /// allow-list.
   ///
   /// Unlike [activeDevices] this deliberately does **not** test
   /// [ConnectedDevice.isActive] or the interface: a node that firmware reports
@@ -116,6 +122,46 @@ class UspInstantPrivacyService {
       if (!isMeshNodeRole(d.deviceRole)) continue;
       if (d.macAddress.trim().isEmpty) continue;
       macs.add(normalizeMac(d.macAddress));
+    }
+    return macs.toList();
+  }
+
+  /// The nodes' *backhaul* MACs — the station-side address each wirelessly
+  /// backhauled node uses to associate with its parent.
+  ///
+  /// A node owns three distinct MACs, and MAC filtering only ever sees the
+  /// third. Measured on an M60TB gateway with two wireless-backhaul slaves
+  /// (2026-09-03):
+  ///
+  /// | DataElements `ID`   | `Hosts.Host.PhysAddress` | `Backhaul.BackhaulMACAddress` |
+  /// |---------------------|--------------------------|-------------------------------|
+  /// | `80:69:1A:13:16:1A` | `80:69:1A:13:16:1B`      | `86:69:1A:13:16:1C`           |
+  /// | `74:12:13:06:C6:E7` | `74:12:13:06:C6:E8`      | `7A:12:13:06:C6:E9`           |
+  ///
+  /// The right-hand column is what showed up in
+  /// `AccessPoint.2.AssociatedDevice.{i}.MACAddress`, so it is the address the
+  /// AP's allow-list is checked against. [meshNodeMacs] alone would therefore
+  /// let an enable deny both backhauls — the node's own network locking the node
+  /// out, which is exactly what REQ-10a forbids. 1.x avoids this by unioning
+  /// `getSTABSSIDs` into the written list; this is the 2.x equivalent.
+  ///
+  /// Both fields firmware exposes the value in are read, since they carry the
+  /// same address and populating only one is a plausible firmware variation.
+  /// The gateway reports both as empty (it has no upstream backhaul), so it
+  /// drops out here and enters the allow-list through [meshNodeMacs] instead.
+  /// `LinkType` / `BackhaulMediaType` are deliberately not consulted: an
+  /// Ethernet-backhauled node's MAC on the allow-list costs nothing, whereas a
+  /// node that switches to a wireless backhaul after this read needs it there.
+  List<String> meshBackhaulMacs(DataElementsNetwork data) {
+    final macs = <String>{};
+    for (final node in data.items) {
+      for (final mac in [
+        node.backhaulBackhaulMacAddress,
+        node.backhaulMacAddress,
+      ]) {
+        if (mac.trim().isEmpty) continue;
+        macs.add(normalizeMac(mac));
+      }
     }
     return macs.toList();
   }
@@ -244,12 +290,22 @@ class UspInstantPrivacyService {
   // ---------------------------------------------------------------------------
 
   /// Fetch all data needed for Instant Privacy and return UI-safe result.
+  ///
+  /// [DataElementsNetwork] is fetched as a **required** third source, not
+  /// best-effort: it is the only place the nodes' backhaul MACs appear (see
+  /// [meshBackhaulMacs]), and silently proceeding without them is what produces
+  /// the REQ-10a lockout. An empty subtree parses to zero nodes, which is the
+  /// right answer for a single router — nothing to protect. Firmware that
+  /// *errors* on the paths instead would take this page down; that trade is
+  /// deliberate, since the alternative is writing an allow-list known to be
+  /// incomplete. Three other 2.x features already read this subtree.
   Future<InstantPrivacyFetchResult> fetchAll() async {
     final List<Object> results;
     try {
       results = await Future.wait([
         ConnectedDevices.fetch(_usp),
         MacFilterAccessPoints.fetch(_usp),
+        DataElementsNetwork.fetch(_usp),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -257,9 +313,16 @@ class UspInstantPrivacyService {
 
     final devices = results[0] as ConnectedDevices;
     final macAps = results[1] as MacFilterAccessPoints;
+    final network = results[2] as DataElementsNetwork;
 
     final active = activeDevices(devices);
-    final nodeMacs = meshNodeMacs(devices);
+    // Both halves of a node's identity: the host row's MAC and the address it
+    // associates with. Neither implies the other.
+    final nodeMacSet = <String>{
+      ...meshNodeMacs(devices),
+      ...meshBackhaulMacs(network),
+    };
+    final nodeMacs = nodeMacSet.toList();
 
     // Build a MAC → hostname lookup from all known hosts (active + inactive)
     final hostnameByMac = {
@@ -271,10 +334,13 @@ class UspInstantPrivacyService {
 
     // Allowed list shows all whitelisted MACs with hostname if known, else MAC.
     // Mesh nodes are always on the wire (REQ-10a) but stay out of both
-    // customer-facing lists, so they are hidden here too — matching 1.x
-    // (`instantPrivacyDeviceListProvider` on `main`).
-    final allowed =
-        allowedDevices(macAps).where((d) => !nodeMacs.contains(d.mac)).map((d) {
+    // customer-facing lists, so they are hidden here too — matching 1.x, which
+    // filters node MACs *and* STA BSSIDs out of the display
+    // (`instantPrivacyDeviceListProvider` on `main`). A backhaul MAC has no
+    // hostname, so leaving it in would render a bare unexplained address.
+    final allowed = allowedDevices(macAps)
+        .where((d) => !nodeMacSet.contains(d.mac))
+        .map((d) {
       final name = hostnameByMac[d.mac] ?? d.mac;
       return InstantPrivacyDeviceUIModel(
         mac: d.mac,
