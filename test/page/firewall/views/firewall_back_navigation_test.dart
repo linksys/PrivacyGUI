@@ -148,18 +148,20 @@ GoRouter _buildRouter({String? initialLocation}) {
             ),
             routes: [
               // uspFirewall stays NESTED under uspAdvancedSettings (unchanged).
-              // The real tree's relative path here is `RoutePath.uspFirewall`,
-              // which is the same string as the name (route_usp_dashboard.dart +
-              // constants.dart), so this mirrors it exactly.
+              // `path:` takes the path family and `name:` the name family, as the
+              // real tree now does throughout. The two constants happen to hold
+              // the same string, so passing the name here also worked — on the
+              // coincidence #1435 was about. Spelling it correctly means this
+              // mirror breaks when the real path changes, which is its job.
               GoRoute(
                 name: _firewall,
-                path: _firewall,
+                path: RoutePath.uspFirewall,
                 builder: (c, s) => firewallPage(c),
               ),
               // uspIpv6PortService is its sibling under uspAdvancedSettings.
               GoRoute(
                 name: _ipv6,
-                path: _ipv6,
+                path: RoutePath.uspIpv6PortService,
                 builder: (c, s) => ipv6Page,
               ),
             ],
