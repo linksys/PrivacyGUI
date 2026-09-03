@@ -15,10 +15,15 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
   /// Slave (extender) nodes.
   final List<SlaveNode> slaves;
 
-  /// Clients not yet assigned to a node (mesh data timing issue).
+  /// Clients that belong to the network but to no node.
   ///
-  /// When Hosts data arrives before DataElements, clients may not have
-  /// parentNodeId. These are stored here until mesh topology is available.
+  /// Two populations share this bucket. One is transient: when Hosts data
+  /// arrives before DataElements, clients have no parentNodeId yet and land here
+  /// until the topology shows up. The other is not — a client whose parent
+  /// genuinely cannot be resolved on a mesh stays here for as long as that is
+  /// true, and carries [ClientDevice.isUnattributed] to say so, because
+  /// attributing it to the master would be a wrong answer rather than a late one
+  /// (issue #1439). Read the flag to tell the two apart.
   final List<ClientDevice> unassignedClients;
 
   MeshNetwork({
@@ -80,7 +85,14 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
   }
 
   /// Find the parent node for a client device.
+  ///
+  /// Returns null for an [ClientDevice.isUnattributed] client: its parent could
+  /// not be resolved, so there is no node to name, and answering `master` here
+  /// would reintroduce the false attribution the builder now avoids (issue
+  /// #1439). A null [ClientDevice.parentNodeId] on a client that is *not*
+  /// flagged still means the gateway — that is the ordinary non-mesh case.
   NodeEntity? findParentNode(ClientDevice client) {
+    if (client.isUnattributed) return null;
     if (client.parentNodeId == null) return master;
     return findNode(client.parentNodeId!);
   }

@@ -122,10 +122,43 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   final WifiConnectionInfo? wifi;
 
   /// Parent mesh node ID this device is connected to.
+  ///
+  /// For an [isUnattributed] device this is the raw, unresolvable ID the router
+  /// claimed (or null if it claimed none) — kept for logs and diagnostics, and
+  /// not rendered anywhere. Read [parentNodeName] for what to show.
   final String? parentNodeId;
 
+  final String? _parentNodeName;
+
   /// Parent mesh node display name (for UI).
-  final String? parentNodeName;
+  ///
+  /// Always null when [isUnattributed]: an orphan has no parent to name. The
+  /// invariant is enforced here rather than left to callers because several
+  /// surfaces key off this name instead of the flag — the device card's
+  /// parent-node badge, analytics grouping, the detail view — and a name left
+  /// in place makes one device assert both "unattributed" and "on <node>",
+  /// which is exactly the false attribution issue #1439 is about. Note
+  /// [copyWith] cannot express the invariant on its own: it merges with
+  /// `?? this`, so it can never null a field.
+  String? get parentNodeName => isUnattributed ? null : _parentNodeName;
+
+  /// Whether this device's parent node could not be resolved.
+  ///
+  /// True only in a mesh network — one with at least one extender, so there is
+  /// more than one node a client could belong to — and only for a device whose
+  /// parent genuinely cannot be resolved: an *online Wi-Fi* client absent from
+  /// the DataElements station map, or a client whose parent ID matches no known
+  /// node. Such a device is *unattributed*: it belongs to the network but to no
+  /// specific node, and must not be presented as if it were on the master.
+  ///
+  /// Wired and offline clients are never unattributed. They are absent from the
+  /// station map by construction — DataElements lists associated Wi-Fi stations
+  /// only — so a null parent ID says nothing about them, and flagging them
+  /// would relabel every wired device in a mesh (issue #1439).
+  ///
+  /// The UI reads this flag directly rather than inferring orphan-hood from an
+  /// empty [parentNodeName].
+  final bool isUnattributed;
 
   // ─── Device Info ───
   /// Device manufacturer.
@@ -155,13 +188,14 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     required this.connectionType,
     this.wifi,
     this.parentNodeId,
-    this.parentNodeName,
+    String? parentNodeName,
+    this.isUnattributed = false,
     this.manufacturer,
     this.modelName,
     this.operatingSystem,
     this.hostsDeviceId,
     this.additionalInterfaces = const [],
-  });
+  }) : _parentNodeName = parentNodeName;
 
   // ─── NetworkEntity implementation ───
 
@@ -253,6 +287,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     WifiConnectionInfo? wifi,
     String? parentNodeId,
     String? parentNodeName,
+    bool? isUnattributed,
     String? manufacturer,
     String? modelName,
     String? operatingSystem,
@@ -270,7 +305,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       connectionType: connectionType ?? this.connectionType,
       wifi: wifi ?? this.wifi,
       parentNodeId: parentNodeId ?? this.parentNodeId,
-      parentNodeName: parentNodeName ?? this.parentNodeName,
+      // Carries the raw field, not the getter: a copy keeps whatever name the
+      // router claimed, and [parentNodeName] goes on hiding it while the
+      // device is unattributed.
+      parentNodeName: parentNodeName ?? _parentNodeName,
+      isUnattributed: isUnattributed ?? this.isUnattributed,
       manufacturer: manufacturer ?? this.manufacturer,
       modelName: modelName ?? this.modelName,
       operatingSystem: operatingSystem ?? this.operatingSystem,
@@ -292,6 +331,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         wifi,
         parentNodeId,
         parentNodeName,
+        isUnattributed,
         manufacturer,
         modelName,
         operatingSystem,
@@ -315,6 +355,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'wifi': wifi,
         'parentNodeId': parentNodeId,
         'parentNodeName': parentNodeName,
+        'isUnattributed': isUnattributed,
         'manufacturer': manufacturer,
         'modelName': modelName,
         'operatingSystem': operatingSystem,
