@@ -38,7 +38,9 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
-        idleTime: const Duration(minutes: 5),
+        // Matches 1.x. The two trees ship the same product, so an operator
+        // should not get a shorter leash for being on the newer one.
+        idleTime: const Duration(minutes: 15),
         onIdle: () {
           // not for debug
           if (!kReleaseMode) {
