@@ -15,10 +15,15 @@ import 'package:privacy_gui/page/_shared/helpers/card_identifier.dart';
 /// call, a ternary or a `switch` is invisible to it, and the failure is silent in
 /// both directions: the widget renders the hook, `find.bySemanticsIdentifier` finds
 /// it, `flutter test` is green — and the generator emits nothing, so the spec that
-/// needs the hook cannot import it and E2E stays blocked. Measured: that is the
-/// state `topology-node-slave-${…}` is in (composed inside
-/// `topology/helpers/node_identifier.dart`, absent from the committed snapshot,
-/// `e2e/tests/P15-topology.spec.ts` deferring the test that needs it).
+/// needs the hook cannot import it and E2E stays blocked.
+///
+/// One mechanism escapes that, by name rather than by shape: `extractIndirectHooks`
+/// also scans helper *declarations*, for the hook families listed in its
+/// `INDIRECT_HOOK_PREFIXES` allowlist — today `['topology-node-']`, which is what
+/// lets `topology-node-slave-$key` reach the specs from inside a function. Nothing
+/// in this repo can extend that list; it is the generator's. So for a hook this repo
+/// adds, "harvestable" means "spelled inline", and that is the property measured
+/// here.
 ///
 /// This file therefore re-runs the generator's own extraction over `lib/` and
 /// asserts the two card prefixes come out of it. The regexes below are copies of
@@ -30,12 +35,20 @@ import 'package:privacy_gui/page/_shared/helpers/card_identifier.dart';
 /// Deliberately untagged, so the PR-blocking unit lane runs it.
 
 /// The attributes the generator treats as identifier hooks (IDENTIFIER_ATTRS).
+///
+/// All six, `itemIdentifier` included. In practice that one is never an inline
+/// literal — `AppDropdown` takes a `(item) => …` mapper, which the generator reads
+/// in `extractItemIdentifierHooks` instead — so it contributes nothing to the two
+/// checks below today. It is listed for the same reason the generator lists it: an
+/// inline call site added later is a hook, and a list that quietly disagreed with
+/// IDENTIFIER_ATTRS would stop being the generator's own extraction.
 const List<String> _identifierAttrs = [
   'identifier',
   'startIdentifier',
   'endIdentifier',
   'positiveIdentifier',
   'negativeIdentifier',
+  'itemIdentifier',
 ];
 
 /// The generator's extraction: an attribute followed by a single-quoted literal.
@@ -138,9 +151,21 @@ void main() {
   /// A hook the generator cannot classify is worse than one it drops: `extract()`
   /// **throws** on an interpolated value that is not `prefix-${expr}`, which fails
   /// `npm run gen:ids -- --check` and blocks the whole E2E run rather than one
-  /// spec. Swept over every hook in `lib/`, not just the card ones, because the
-  /// blast radius is the same for all of them and nothing else in this repo looks.
-  test('no interpolated hook in lib/ would make the generator throw', () {
+  /// spec. Swept over every attribute-site hook in `lib/`, not just the card ones,
+  /// because the blast radius is the same for all of them and nothing else in this
+  /// repo looks.
+  ///
+  /// Scoped exactly to that one site, and it is one of eight the generator can throw
+  /// from: the other seven live in `extractIndirectHooks`, `extractItemIdentifierHooks`
+  /// (three, including the enum it cannot enumerate), `enumerateEnum` (two) and the
+  /// final identifier/`semanticLabel` collision guard. Reproducing those would mean
+  /// reimplementing a helper-declaration scan, a Dart enum parser and a cross-family
+  /// collision check from copied regexes — at which point the copy is the risk. What
+  /// makes the narrow check worth having anyway is that this is the site every hook
+  /// in this PR goes through, and the shape it rejects is the one a hand-written
+  /// call site actually produces.
+  test('no inline interpolated hook in lib/ would make the generator throw',
+      () {
     final unhandled = <String, String>{};
     for (final file in _dartFiles('lib')) {
       for (final m in _hookRe.allMatches(file.readAsStringSync())) {

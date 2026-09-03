@@ -95,24 +95,12 @@ class CardPopupForm extends StatelessWidget {
   /// once.
   final String? value;
 
-  /// The E2E handle for the tile's tap (#1450), and the reason [build] is a
-  /// two-line branch over [_tile].
-  ///
-  /// The identifier has to be spelled inline as a template at the argument site,
-  /// because that is the only shape `gen-identifiers.mts` harvests — see the header
-  /// of `card_identifier.dart`. A literal cannot express "absent", so the no-card
-  /// case is a second call rather than a `null` in one, and the id is read from the
-  /// scope rather than passed in: every caller of this widget is
-  /// `DashboardCardTemplate`'s popup branch, which is already *inside* the scope
-  /// that knows the id, so a constructor parameter would be a second place the same
-  /// fact is written and the one that can disagree.
-  ///
-  /// Null for the same reason [showCardNormalForm]'s `cardId` is nullable: a form
-  /// built with no host above it names no card. `AppCard` normalizes a null
-  /// identifier to "attach nothing", and the `semanticLabel` node is unaffected
-  /// either way, since the label is never null here.
   @override
   Widget build(BuildContext context) {
+    // Two calls and not one argument, because the E2E handle has to be spelled
+    // inline as a template at the attribute site — the only shape
+    // `gen-identifiers.mts` harvests (see the header of `card_identifier.dart`) —
+    // and a literal cannot express "absent".
     final cardId = CardDensityScope.cardIdOf(context);
     if (cardId == null) return _tile(context, identifier: null);
     return _tile(
@@ -121,6 +109,19 @@ class CardPopupForm extends StatelessWidget {
     );
   }
 
+  /// The tile itself, with [identifier] as the E2E handle on its tap (#1450).
+  ///
+  /// The id behind that handle is read from [CardDensityScope] by [build] rather
+  /// than passed into this widget: every caller is `DashboardCardTemplate`'s popup
+  /// branch, which is already *inside* the scope that knows the id, so a
+  /// constructor parameter would be a second place the same fact is written and
+  /// the one that can disagree.
+  ///
+  /// [identifier] is null for the same reason [showCardNormalForm]'s `cardId` is
+  /// nullable: a form built with no host above it names no card. `AppCard`
+  /// normalizes a null identifier to "attach nothing", and the `semanticLabel`
+  /// node is unaffected either way, since the label is never null here. Covered by
+  /// `dashboard_card_identifier_widget_test.dart`'s 'outside a card' group.
   Widget _tile(BuildContext context, {required String? identifier}) {
     final colorScheme = Theme.of(context).colorScheme;
     final hasValue = value != null;

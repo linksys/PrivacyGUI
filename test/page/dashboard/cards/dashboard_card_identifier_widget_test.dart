@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 // The two constants the sheet-branch case derives its screen width from, so the
 // case follows `showCardNormalForm`'s own condition instead of naming a pixel.
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
+// `cardDetailLink`, for the one case that calls it with no host above it.
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/dashboard/dashboard_card_probe.dart';
@@ -170,6 +173,19 @@ const int _kPresentationScreenRows = 6;
 ///
 /// No [OverflowCell]: this is not a sweep coordinate and must stay out of the
 /// baseline dataset.
+/// A themed app around one hand-built widget, with no [CardDensityHost] anywhere
+/// above it — which is the whole point, and the one thing
+/// [buildDashboardCardApp] cannot express: it goes through the factory, and the
+/// factory always wraps what it builds in a host.
+///
+/// The theme is the app's own (`ThemeJsonConfig.defaultConfig()`), because
+/// `AppCard` reads `AppDesignTheme` for its surface and `showCardNormalForm`
+/// reads it for the dialog it overrides.
+Widget _hostlessApp({required Widget child}) => MaterialApp(
+      theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
+      home: Scaffold(body: Center(child: child)),
+    );
+
 Future<void> _withPumpedCard(
   WidgetTester tester, {
   required String cardId,
@@ -550,6 +566,173 @@ void main() {
             );
           },
         );
+      } finally {
+        handle.dispose();
+      }
+    });
+  });
+
+  /// The branch that publishes *nothing*, which nothing above can reach.
+  ///
+  /// Both hooks are written as two calls over `cardIdOf(context) == null`, and
+  /// every case above mounts through [buildDashboardCardApp] — which goes through
+  /// the factory, and the factory always wraps a card in a [CardDensityHost]. So
+  /// the null arm has no coverage there, and it is not dead code: the scope is
+  /// published only by that host, while both widgets are shared and can be
+  /// mounted outside it (a settings-page block, a hand-built card).
+  ///
+  /// What these two cases pin is the choice made there — that "no card to name"
+  /// degrades to *no handle* rather than to a handle derived from something else,
+  /// since an identifier whose shape depended on where the widget was mounted is
+  /// a contract E2E could not rely on — and that nothing else the node carries is
+  /// lost with it: the button role, the tap, and the localized label are what a
+  /// screen reader has either way.
+  ///
+  /// Hand-mounted rather than pumped through the harness, because the *absence*
+  /// of the host is the subject and the harness cannot express it.
+  group('outside a card', () {
+    testWidgets('cardDetailLink publishes no hook and stays a labelled button',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await runWithOverflowCollection((_) async {
+          await setLayoutSurface(tester, const Size(800, 600));
+          await tester.pumpWidget(
+            _hostlessApp(
+              child: Builder(
+                builder: (context) => cardDetailLink(
+                  context,
+                  label: 'View details',
+                  // A childless box, so the only node carrying that label is the
+                  // link's own — a `Text` of the same string would make the
+                  // finder below ambiguous rather than wrong.
+                  child: InkWell(
+                    onTap: () {},
+                    child: const SizedBox(width: 120, height: 32),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await settleIgnoringAnimations(tester);
+
+          expect(
+            _publishedDetailIdentifiers(tester),
+            isEmpty,
+            reason: 'there is no card above this link, so there is no id to '
+                'derive a handle from and it must publish none',
+          );
+          final node = tester.getSemantics(find.byType(InkWell));
+          expect(
+            node,
+            isSemantics(
+                label: 'View details', isButton: true, hasTapAction: true),
+            reason:
+                'losing the identifier must not cost the node its role, its '
+                'tap or its label — outside a card those are all it has',
+          );
+          expect(
+            node.identifier,
+            isEmpty,
+            reason: 'an unset identifier reaches the semantics tree as the '
+                'empty string, which is what E2E sees as "no hook"',
+          );
+        });
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    /// The tile's own null arm, all the way through the tap.
+    ///
+    /// Also the only case that drives [showCardNormalForm] with `cardId: null` and
+    /// with no live form to present — so it is where the two documented fallbacks
+    /// are measured: the presentation falls back to the `normalForm` it was handed
+    /// (there being no host to publish a live one), and the scope it republishes
+    /// names no card, so nothing inside it publishes a detail hook either.
+    testWidgets('CardPopupForm publishes no tile hook and still opens',
+        (tester) async {
+      const screenWidth = 800.0;
+      final handle = tester.ensureSemantics();
+      try {
+        await runWithOverflowCollection((_) async {
+          await setLayoutSurface(
+            tester,
+            Size(screenWidth, dashboardCardHeight(_kPresentationScreenRows)),
+          );
+          await tester.pumpWidget(
+            _hostlessApp(
+              // The real tile geometry, from the same helpers the cases above
+              // use: a form given an unbounded box is not the widget that ships.
+              child: SizedBox(
+                width: cardWidthAt(screenWidth, UspWidgetSpecs.popupColumns),
+                height: dashboardCardHeight(UspWidgetSpecs.popupHeightRows),
+                child: const CardPopupForm(
+                  title: 'Wi-Fi',
+                  value: 'On',
+                  normalForm: Text('the fallback form'),
+                ),
+              ),
+            ),
+          );
+          await settleIgnoringAnimations(tester);
+
+          expect(
+            _publishedPopupIdentifiers(tester),
+            isEmpty,
+            reason: 'no host means no card id, and `AppCard` normalizes the '
+                'null identifier to attaching nothing',
+          );
+          final tile = find.byType(CardPopupForm);
+          final node = tester.getSemantics(tile);
+          expect(
+            node,
+            isSemantics(isButton: true, hasTapAction: true),
+            reason: 'the whole tile is still the tap target with no card above '
+                'it: what is missing is the handle, not the control',
+          );
+          // `startsWith`, because the tile's node merges its two runs of text in
+          // after the card's own `semanticLabel` ("Wi-Fi, On\nOn\nWi-Fi") — the
+          // assertion is that the label leads with what `AppCard` was given, not
+          // that it is only that.
+          expect(
+            node.label,
+            startsWith('Wi-Fi, On'),
+            reason:
+                'the label has to survive the missing identifier: without a '
+                'card to name it is the tile\'s only handle',
+          );
+          expect(node.identifier, isEmpty);
+
+          expect(
+            find.text('the fallback form'),
+            findsNothing,
+            reason: 'the full form is what the tap opens, not something the '
+                'tile renders behind itself',
+          );
+
+          await tester.tap(tile);
+          await settleIgnoringAnimations(tester);
+
+          expect(
+            find.byType(AppDialog),
+            findsOneWidget,
+            reason: 'the tile must still open its presentation with no card '
+                'above it — the id is a handle, not a precondition',
+          );
+          expect(
+            find.text('the fallback form'),
+            findsOneWidget,
+            reason: 'with no host there is no live form to publish, so the '
+                'presentation shows the widget it was handed',
+          );
+          expect(
+            _publishedDetailIdentifiers(tester),
+            isEmpty,
+            reason: 'the presented scope republishes a null id, so the card '
+                'inside it names nothing either',
+          );
+        });
       } finally {
         handle.dispose();
       }

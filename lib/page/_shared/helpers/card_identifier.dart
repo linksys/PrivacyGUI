@@ -19,14 +19,25 @@
 /// A single-quoted literal directly after `identifier:`, and nothing else. A
 /// `prefix-${expr}` template becomes a builder in `identifiers.generated.ts`
 /// (`idFor.cardDetail('wifi-status')`); a value arriving from a helper call, a
-/// ternary or a `switch` is **invisible**. Nothing fails: the app renders the hook,
-/// `find.bySemanticsIdentifier` finds it in a widget test, the generator emits
-/// nothing, and the gap surfaces one repo away as a count-0 timeout that reads like
-/// a flake. Measured on this branch — `topology-node-slave-${…}`, composed inside
-/// `topology/helpers/node_identifier.dart`, is absent from the committed snapshot,
-/// and `e2e/tests/P15-topology.spec.ts` records the consequence as a deferred test.
-/// `devices/views/components/usp_device_list_tile.dart` documents the same trap and
-/// suppresses an analyzer lint rather than lose the shape.
+/// ternary or a `switch` is **invisible to that scan**. Nothing fails: the app
+/// renders the hook, `find.bySemanticsIdentifier` finds it in a widget test, the
+/// generator emits nothing, and the gap surfaces one repo away as a count-0 timeout
+/// that reads like a flake. `devices/views/components/usp_device_list_tile.dart`
+/// documents the same trap and suppresses an analyzer lint rather than lose the
+/// shape.
+///
+/// ### The escape hatch exists, and it is in the other repo
+///
+/// `extractIndirectHooks` harvests hook strings out of helper *declarations*
+/// (`= '…'`, `=> '…'`, `return '…'`) — but only for the families named in its
+/// `INDIRECT_HOOK_PREFIXES` allowlist, which today is `['topology-node-']`. That is
+/// how `topology/helpers/node_identifier.dart` composes `topology-node-slave-$key`
+/// behind a function and still reaches the specs (`idFor.topologyNodeSlave` is used
+/// in `tests/P15-topology.spec.ts`). So indirection is not impossible — it is a
+/// per-family exception this repo cannot grant itself. Choosing it here would mean a
+/// PR against PrivacyGUI-USP-E2E landing before or with this one, plus a second
+/// declaration of the same prefix to keep in step, in exchange for nothing an inline
+/// template does not already provide. Hence inline.
 ///
 /// So this library exports the **key** and not the whole identifier: each hook is
 /// written inline at its own attribute site as
