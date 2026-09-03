@@ -35,11 +35,12 @@ firmware parameter is `UI_VER=550`, not the dotted installed version. A
 firmware build request is not proof of integration: retain the generated
 firmware metadata and verify the installed version after flashing.
 
-Jenkins v2 firmware build #504 is the retained build-level proof for this
-example. Its generated manifest records `ui_ver=550`, and image inspection
-finds `/www/version.json` with `1.3.0.700550` plus the package-owned
-`/www/ai/linksys-ai.js`. Installed-device loader behavior remains a separate
-browser-acceptance gate and must not be inferred from image contents alone.
+Firmware integration validation confirmed both the package-owned
+`/www/ai/linksys-ai.js` asset and the optional loader on an installed device.
+The device-hosted browser suite covers package-present rendering and
+package-absent non-interference. Exact build identities and hashes belong in
+the private release evidence record; a build request alone is not proof of
+integration.
 
 ## Getting Started
 
