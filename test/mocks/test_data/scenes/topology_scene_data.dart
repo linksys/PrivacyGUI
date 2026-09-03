@@ -210,6 +210,34 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
       connectedClients: _meshSlaveClients,
     );
 
+/// Slave node with **no backhaul at all** — `BackhaulInfo.hasInfo` is false, so
+/// it is neither Wi-Fi nor Ethernet.
+///
+/// The fixture for `_buildBackhaulCard`'s third arm
+/// (`usp_node_detail_view.dart:403`). Every other block in that card is gated on
+/// data this state does not have — no parent node, no rates, `phyRate` 0, no
+/// `lastContactTime` — so before the arm existed the card rendered as a bare
+/// header. `parentNode` is left unset on purpose: the connected-to row comes from
+/// the topology, which is the thing that is missing here.
+///
+/// `livenessKnown: false` is what makes the state reachable rather than
+/// hypothetical: it is the DataElements-unavailable node that #1430's review kept
+/// online (see `SlaveNode.livenessKnown`), so the page is navigable in exactly
+/// the state that carries no backhaul.
+final slaveNodeNoBackhaul = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:04',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789015',
+    softwareVersion: '1.0.10.200000',
+    connectedClients: _meshSlaveClients,
+    backhaul: const BackhaulInfo(mediaType: ''),
+    livenessKnown: false,
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
 final masterNodeEmptyDevices = UspNodeDetailState(
   node: MasterNode(
     deviceId: '11:22:33:44:55:66',

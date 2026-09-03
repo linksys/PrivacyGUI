@@ -56,7 +56,13 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
   bool get isEthernet => linkType == 'Ethernet';
 
   /// Whether the backhaul is WiFi (wireless).
-  bool get isWifi => !isEthernet;
+  ///
+  /// Requires actual backhaul data ([hasInfo]): an absent backhaul (empty
+  /// [mediaType]) is neither Ethernet nor WiFi, so it must not be reported as
+  /// wireless. Without the [hasInfo] guard `!isEthernet` treats a null
+  /// [linkType] as WiFi and fabricates a wireless backhaul for a node we have
+  /// no backhaul data for (#1430).
+  bool get isWifi => hasInfo && !isEthernet;
 
   /// Whether backhaul info is available.
   bool get hasInfo => mediaType.isNotEmpty;

@@ -285,7 +285,7 @@ class UspNodeDetailView extends ConsumerWidget {
       BuildContext context, SlaveNode node, NodeEntity? parentNode) {
     final colorScheme = Theme.of(context).colorScheme;
     final backhaul = node.backhaul;
-    final isWifiBackhaul = !backhaul.isEthernet;
+    final isWifiBackhaul = backhaul.isWifi;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -378,7 +378,7 @@ class UspNodeDetailView extends ConsumerWidget {
               ],
             ),
             AppGap.sm(),
-          ] else ...[
+          ] else if (backhaul.isEthernet) ...[
             // Ethernet backhaul — just interface block
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -396,6 +396,40 @@ class UspNodeDetailView extends ConsumerWidget {
                   ),
                   AppGap.xs(),
                   AppText.bodyMedium(backhaul.linkType ?? backhaul.mediaType),
+                ],
+              ),
+            ),
+            AppGap.sm(),
+          ] else ...[
+            // Backhaul present in the topology but with no medium reported
+            // (`hasInfo` false): neither Wi-Fi nor Ethernet. Without this arm
+            // the card renders as a bare header — every block below is also
+            // gated on data this state does not have (no rates, `phyRate` 0,
+            // no `lastContactTime`), so the user gets a titled empty card with
+            // nothing saying why.
+            //
+            // Reachable since #1430's liveness change: a node whose
+            // DataElements subtree never arrived now stays online and
+            // navigable (see `SlaveNode.livenessKnown`), so this page is
+            // reachable in exactly the state that carries no backhaul.
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.help_outline,
+                          size: 16, color: colorScheme.onSurfaceVariant),
+                      AppGap.xs(),
+                      AppText.labelSmall(loc(context).labelInterface,
+                          color: colorScheme.onSurfaceVariant),
+                    ],
+                  ),
+                  AppGap.xs(),
+                  // Deliberately not "no backhaul": the node is connected (it
+                  // is in the topology), only the medium is unreported.
+                  AppText.bodyMedium(loc(context).unknown),
                 ],
               ),
             ),

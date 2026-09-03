@@ -68,8 +68,18 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
     return deviceId;
   }
 
+  /// Node liveness. Deliberately left abstract: the master and a slave derive it
+  /// from different facts, and a wrong inherited default is how #1430 shipped
+  /// (`=> true` for every node) — see the overrides on [MasterNode] and
+  /// [SlaveNode].
+  ///
+  /// Do **not** derive this from the Hosts row's `Device.Hosts.Host.{i}.Active`
+  /// value. That field drives client online/offline, but firmware leaves it `0`
+  /// for a *node* row whether the node is up or powered off (measured on the
+  /// live bench, #1430), because node rows key on a STA-side MAC the backfill
+  /// lookup never matches.
   @override
-  bool get isOnline => true; // Nodes are always online if visible
+  bool get isOnline;
 
   // ─── Computed ───
   /// Whether this is the master (gateway) node.
@@ -140,6 +150,12 @@ final class MasterNode extends NodeEntity {
 
   @override
   bool get isMaster => true;
+
+  /// The master is the data source itself — it is online whenever the topology
+  /// is being rendered at all, independent of any DataElements agent match
+  /// (#1430, AC1).
+  @override
+  bool get isOnline => true;
 
   MasterNode copyWith({
     String? deviceId,
@@ -251,6 +267,35 @@ final class SlaveNode extends NodeEntity {
   /// Backhaul connection info to parent node.
   final BackhaulInfo backhaul;
 
+  /// Whether DataElements liveness information was available for this node's
+  /// network at all.
+  ///
+  /// A **whole-network** fact, not a per-node one: every slave produced by one
+  /// build receives the same value. It answers "did the DataElements subtree
+  /// answer at all", never "was this row found in it" — that second question is
+  /// [dataElementsId], and it is only a verdict when this is `true`.
+  ///
+  /// `false` means the subtree carried nothing: the router does not implement
+  /// it, the fetch failed (every error is swallowed into
+  /// `MeshTopologyInfo.empty`, see `UspDevicesDataService.fetchMeshTopology`),
+  /// or the first build pass ran before the background fetch returned. Nothing
+  /// is known about any node there, so [isOnline] must not read the absent match
+  /// as a verdict.
+  ///
+  /// `true` does not claim the set is *complete*. A slave absent from a
+  /// non-empty set is judged offline, and that is intended — it is the
+  /// powered-off extender #1430 exists to catch. See the producer at
+  /// `MeshNetworkBuilder.build` for why the predicate is the topology being
+  /// non-empty rather than the narrower "some slave agent answered".
+  ///
+  /// Defaults to `true` so that every construction site keeps AC1's rule
+  /// unchanged; defaulting to `false` would not be a default but a rule change,
+  /// making every node built anywhere else online unconditionally. The cost is
+  /// that the default is the *unsafe* direction: a site with no topology to match
+  /// against, such as `MeshTopologyBuilder`, silently reproduces the offline
+  /// verdict with no analyzer signal. Making it `required` is #1466.
+  final bool livenessKnown;
+
   SlaveNode({
     required this.deviceId,
     this.dataElementsId,
@@ -265,10 +310,25 @@ final class SlaveNode extends NodeEntity {
     this.instancePath,
     this.connectedClients = const [],
     required this.backhaul,
+    this.livenessKnown = true,
   });
 
   @override
   bool get isMaster => false;
+
+  /// A slave is online when it matched a DataElements agent. A powered-off node
+  /// leaves `DataElements.Network.Device.` within ~20-50s while its
+  /// `Device.Hosts.Host` row persists, so an unmatched node row is the offline
+  /// shape (#1430, AC1).
+  ///
+  /// The match is only a verdict when there was something to match against. With
+  /// [livenessKnown] false the absent match says nothing, and asserting offline
+  /// there would render a healthy mesh offline and non-navigable
+  /// (`usp_topology_view.dart` blocks taps on an offline node, and
+  /// `node_detail_popup.dart` hides its Details button) for the whole session on
+  /// any firmware or transport state that does not deliver DataElements.
+  @override
+  bool get isOnline => !livenessKnown || dataElementsId != null;
 
   /// Whether backhaul is Ethernet.
   bool get isEthernetBackhaul => backhaul.isEthernet;
@@ -290,6 +350,7 @@ final class SlaveNode extends NodeEntity {
     String? instancePath,
     List<ClientDevice>? connectedClients,
     BackhaulInfo? backhaul,
+    bool? livenessKnown,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -305,6 +366,7 @@ final class SlaveNode extends NodeEntity {
       instancePath: instancePath ?? this.instancePath,
       connectedClients: connectedClients ?? this.connectedClients,
       backhaul: backhaul ?? this.backhaul,
+      livenessKnown: livenessKnown ?? this.livenessKnown,
     );
   }
 
@@ -323,6 +385,7 @@ final class SlaveNode extends NodeEntity {
         instancePath,
         connectedClients,
         backhaul,
+        livenessKnown,
       ];
 
   @override
@@ -343,6 +406,7 @@ final class SlaveNode extends NodeEntity {
         'instancePath': instancePath,
         'connectedClients': connectedClients,
         'backhaul': backhaul,
+        'livenessKnown': livenessKnown,
       };
 }
 
