@@ -821,7 +821,9 @@ void main() {
           reason:
               'an indirect navigation call changed verb or appeared: decide '
               'whether it is an entry point (pushNamed) or a hub replacing '
-              'itself (goNamed), then update this register');
+              'itself (goNamed), then update this register. A site that only '
+              'MOVED reads the same way here, because the register is keyed on '
+              'file path — check the paths before reading the verbs');
     });
 
     test('global chrome pushes with the guarded verb', () {
@@ -858,11 +860,19 @@ void main() {
       expect(_navSites.length, greaterThanOrEqualTo(40),
           reason: 'the navigation scanner found almost nothing — check that '
               'lib/ is on the test working directory');
-      expect(_fileFallbacks, hasLength(20),
-          reason:
-              'the backFallback scanner should see one declaration per page '
-              'plus the disabled speed-test view');
-      expect(fallbackByRoute, hasLength(19));
+      // Lower bounds on purpose. What the register CONTAINS is pinned exactly
+      // twice already — the fires/dead classification and the one declaration
+      // with no route — and both of those carry a reason message that tells you
+      // which decision to take. An exact count here would add nothing except a
+      // second file to edit when a page is added, which teaches bumping a
+      // constant instead of reading the message.
+      expect(_fileFallbacks.length, greaterThanOrEqualTo(15),
+          reason: 'the backFallback scanner found almost nothing — it should '
+              'see one declaration per page that has a return address');
+      expect(fallbackByRoute.length, greaterThanOrEqualTo(15),
+          reason: 'almost no declaration resolved to a route — the join '
+              'through the view class is broken, which would make the rules '
+              'below vacuous');
       expect(_routeViewClass.keys.toSet(), _byName.keys.toSet(),
           reason:
               'every route in the tree must resolve to a view class, or the '
