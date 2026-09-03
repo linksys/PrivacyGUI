@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -131,6 +132,37 @@ void main() async {
     final state =
         tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations(
+      'Instant Setup - PnP: Personalize your wifi (edited, QR warning)',
+      (tester, locale) async {
+    final view = testableSingleRoute(
+      child: PnpSetupView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
+      ),
+      locale: locale,
+      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+    );
+    await tester.pumpWidget(view);
+    await tester.pump(const Duration(seconds: 3));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    // Editing the shipped SSID is what escalates the reminder into the warning
+    // that the printed QR codes will stop working.
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(WiFiSSIDField),
+        matching: find.byType(TextField),
+      ),
+      'MyHomeWiFi',
+    );
     await tester.pumpAndSettle();
   });
 

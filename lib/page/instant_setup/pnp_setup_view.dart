@@ -76,7 +76,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _forceLogin = false;
   bool _fetchError = false;
   bool _showAutoMasterConnectionError = false;
-  bool _wifiVerificationRetried = false; // Prevent infinite loop in WiFi verification
+  bool _wifiVerificationRetried =
+      false; // Prevent infinite loop in WiFi verification
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -418,6 +419,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   else
                     _unifiedWiFiCard(
                         headlineSSID, bands.firstOrNull?.password ?? ''),
+                  const AppGap.medium(),
+                  // Where to find the QR again once setup is over.
+                  AppText.bodySmall(
+                    loc(context).pnpWiFiReadyReshareInfo,
+                    maxLines: 5,
+                  ),
                 ],
               ),
             ),
@@ -459,18 +466,25 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 ),
               ),
               const AppGap.medium(),
+              // Printing or saving the regenerated QR is the main thing to do
+              // here - the printed card no longer works - so give both actions
+              // button weight instead of plain text links.
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  AppTextButton(
-                    loc(context).print,
-                    icon: LinksysIcons.print,
-                    onTap: () => _printWiFi(wifiSSID, wifiPassword),
+                  Expanded(
+                    child: AppOutlinedButton.fillWidth(
+                      loc(context).print,
+                      icon: LinksysIcons.print,
+                      onTap: () => _printWiFi(wifiSSID, wifiPassword),
+                    ),
                   ),
-                  AppTextButton(
-                    loc(context).downloadQR,
-                    icon: LinksysIcons.download,
-                    onTap: () => _downloadWiFi(wifiSSID, wifiPassword),
+                  const AppGap.medium(),
+                  Expanded(
+                    child: AppOutlinedButton.fillWidth(
+                      loc(context).downloadQR,
+                      icon: LinksysIcons.download,
+                      onTap: () => _downloadWiFi(wifiSSID, wifiPassword),
+                    ),
                   ),
                 ],
               ),
@@ -535,15 +549,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   ],
                 ),
                 const AppGap.small2(),
-                Row(
+                // Wrap, not Row - the band card is narrow and these labels get
+                // long in other locales.
+                Wrap(
+                  spacing: Spacing.medium,
+                  runSpacing: Spacing.small1,
                   children: [
-                    AppTextButton.noPadding(
+                    AppOutlinedButton(
                       loc(context).print,
                       icon: LinksysIcons.print,
                       onTap: () => _printWiFi(ssid, password),
                     ),
-                    const AppGap.medium(),
-                    AppTextButton.noPadding(
+                    AppOutlinedButton(
                       loc(context).downloadQR,
                       icon: LinksysIcons.download,
                       onTap: () => _downloadWiFi(ssid, password),
@@ -661,14 +678,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                       if (expectedSSIDs.isNotEmpty) {
                         try {
                           // Fetch current WiFi settings from router
-                          final radioInfoResult = await ref
-                              .read(routerRepositoryProvider)
-                              .send(
-                                JNAPAction.getRadioInfo,
-                                auth: true,
-                                fetchRemote: true,
-                                cacheLevel: CacheLevel.noCache,
-                              );
+                          final radioInfoResult =
+                              await ref.read(routerRepositoryProvider).send(
+                                    JNAPAction.getRadioInfo,
+                                    auth: true,
+                                    fetchRemote: true,
+                                    cacheLevel: CacheLevel.noCache,
+                                  );
                           final radioInfo =
                               GetRadioInfo.fromMap(radioInfoResult.output);
                           final currentSSIDs = radioInfo.radios
@@ -687,7 +703,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                             await _saveChanges();
                             return;
                           }
-                          logger.d('[PnP]: WiFi settings verified - SSID matches');
+                          logger.d(
+                              '[PnP]: WiFi settings verified - SSID matches');
                         } catch (e) {
                           // API call failed, log warning but continue flow
                           logger.w(
@@ -769,7 +786,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           // below already uses. Not `localLoginPassword`: that page belongs to a
           // finished setup (userAcknowledgedAutoConfiguration == true), and this
           // one never got saved.
-          logger.w('[PnP]: Auto Master completed before save - password changed');
+          logger
+              .w('[PnP]: Auto Master completed before save - password changed');
           context.goNamed(RouteNamed.pnp);
           return;
         case AutoMasterFlowResult.proceed:
