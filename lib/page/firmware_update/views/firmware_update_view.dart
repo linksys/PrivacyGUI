@@ -106,6 +106,18 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   }
 
   Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
+    // Anchor every phase card by its phase name so the E2E phase-sequence walk
+    // (PrivacyGUI-USP-E2E#114) keys on a stable identifier rather than the
+    // translatable, live-updating copy inside each card — in particular so the
+    // whole-flow verdict `done` vs `failed` is distinguishable structurally.
+    // One boundary here covers all phases via `_buildActionCardBody`.
+    return Semantics(
+      identifier: 'firmware-phase-${state.phase.name}',
+      child: _buildActionCardBody(context, state),
+    );
+  }
+
+  Widget _buildActionCardBody(BuildContext context, FirmwareUpdateState state) {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
       case FirmwareUpdatePhase.checkingOta:
@@ -237,6 +249,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           AppGap.xl(),
           AppButton.primaryOutline(
             label: loc(context).cancel,
+            // The only exit from `isUpdating`, so it is the release side of the
+            // firmware `onExit` route guard (PrivacyGUI-USP-E2E#114). As a click
+            // target it cannot be driven by localized text under lint:ids
+            // Rules 1/2, unlike the read-only fields on this page.
+            identifier: 'firmware-upload-cancel',
             onTap: () =>
                 ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
           ),
@@ -757,38 +774,46 @@ class _BankRow extends StatelessWidget {
     final version = bank.version.isEmpty ? '(empty)' : bank.version;
     final slot = bank.instance;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Left accent bar
-            Container(width: 4, color: accentColor),
-            AppGap.md(),
-            // Slot badge
-            _SlotBadge(number: slot, isActive: isActive),
-            AppGap.md(),
-            // Version + status
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppText.bodyMedium(version),
-                    AppGap.xs(),
-                    _StatusLabel(isActive: isActive),
-                  ],
+    return Semantics(
+      // Per-row E2E anchor so "slot N became Active" is expressible instead of
+      // the whole banks card flattening to one string (PrivacyGUI-USP-E2E#114).
+      // Matches the dynamic-hook convention (`pf-rule-enable-${...}`,
+      // `admin-timezone-item-${...}`). The version/status/label inside stay
+      // text-asserted: lint:ids exempts assertions once the row is anchorable.
+      identifier: 'firmware-bank-${bank.instance}',
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Left accent bar
+              Container(width: 4, color: accentColor),
+              AppGap.md(),
+              // Slot badge
+              _SlotBadge(number: slot, isActive: isActive),
+              AppGap.md(),
+              // Version + status
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AppText.bodyMedium(version),
+                      AppGap.xs(),
+                      _StatusLabel(isActive: isActive),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            AppGap.md(),
-          ],
+              AppGap.md(),
+            ],
+          ),
         ),
       ),
     );

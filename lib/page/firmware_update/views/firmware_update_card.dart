@@ -26,6 +26,10 @@ class FirmwareUpdateCard extends ConsumerWidget {
     return SizedBox(
       width: double.infinity,
       child: AppCard(
+        // E2E arrival anchor for the Administration-page entry into the manual
+        // firmware update flow (PrivacyGUI-USP-E2E#85). Naming matches the
+        // `firmware-*` convention already used on the update page itself.
+        identifier: 'firmware-card',
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +54,15 @@ class FirmwareUpdateCard extends ConsumerWidget {
                         else if (activeVersion == null)
                           AppText.bodyMedium(loc(context).notAvailable)
                         else
-                          AppText.bodyMedium(activeVersion),
+                          // Pin the current-version value so E2E can assert it
+                          // without a localized text match. AppText carries no
+                          // identifier of its own, so the hook goes on a
+                          // wrapping Semantics boundary — the shape
+                          // usp_statistics_view.dart uses for its tab hooks.
+                          Semantics(
+                            identifier: 'firmware-card-version',
+                            child: AppText.bodyMedium(activeVersion),
+                          ),
                       ],
                     ),
                   ),
@@ -62,6 +74,9 @@ class FirmwareUpdateCard extends ConsumerWidget {
                   if (!isLoading)
                     AppButton.text(
                       label: loc(context).update,
+                      // The CTA that blocks automation today — the real user
+                      // entry into the manual update page (PrivacyGUI-USP-E2E#85).
+                      identifier: 'firmware-card-update',
                       onTap: () =>
                           context.pushNamed(RouteNamed.uspFirmwareUpdate),
                     ),
