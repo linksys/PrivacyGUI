@@ -710,7 +710,13 @@ void main() {
 
         Object? error;
         var done = false;
-        service.saveAll(original, edited).then(
+        // then<void>, not bare then: without the type argument R infers to bool
+        // from `done = true`, which then requires onError to return bool too.
+        // It returns Object, and Future rejects that at RUNTIME with
+        // "ArgumentError: The error handler of Future.then must return a value
+        // of the returned future's type" — an uncaught async error, not this
+        // test's assertion. Dart 3.13 reports it as invalid_return_type_for_then.
+        service.saveAll(original, edited).then<void>(
               (_) => done = true,
               onError: (Object e) => error = e,
             );
