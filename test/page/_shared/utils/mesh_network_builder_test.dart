@@ -492,6 +492,87 @@ void main() {
       expect(client.uplinkRate, 50000);
     });
 
+    // linksys/PrivacyGUI#1438 — a present-but-zero Hosts SignalStrength means
+    // "no reading", not 0 dBm. It must be treated as absent so the `??` chain
+    // can reach the WifiClient / DataElements sources.
+    test('Hosts signalStrength 0 falls through to wifiClient value (#1438)',
+        () {
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'Phone',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+          signalStrength: 0, // "no reading" from Hosts, not a real 0 dBm
+        ),
+      ]);
+
+      final wifiClientMap = {
+        '11:22:33:44:55:01': WifiClientUIModel(
+          macAddress: '11:22:33:44:55:01',
+          signalStrength: -50,
+          noise: -90,
+          lastDataDownlinkRate: 100000,
+          lastDataUplinkRate: 50000,
+          active: true,
+        ),
+      };
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: wifiClientMap,
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.signalStrength, -50,
+          reason: 'Hosts 0 must not short-circuit the WifiClient reading');
+    });
+
+    // linksys/PrivacyGUI#1438 — a WiFi device with no signal from any source
+    // (Hosts 0, no WifiClient, no DataElements) must render as unknown, not as
+    // a bar level: signalStrength null → hasSignalDisplay false.
+    test('Hosts signalStrength 0 with no other source yields unknown (#1438)',
+        () {
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'Phone',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+          signalStrength: 0, // "no reading" and nothing anywhere else
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.signalStrength, isNull,
+          reason: 'Hosts 0 with no fallback must normalize to null');
+      expect(client.hasSignalDisplay, isFalse,
+          reason: 'unknown signal must not render a bar level');
+    });
+
     test('detects WiFi client via interfaceType containing wi-fi', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
