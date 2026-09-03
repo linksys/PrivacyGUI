@@ -141,6 +141,16 @@ final class MasterNode extends NodeEntity {
   @override
   bool get isMaster => true;
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// A nullable field cannot be *cleared* through this method: every parameter
+  /// merges with `?? this.field`, so passing `null` (or omitting it) both keep
+  /// the current value — `copyWith(dataElementsId: null)` is indistinguishable
+  /// from `copyWith()`. This is deliberate: no caller needs to null a field on
+  /// a node, and the merge form keeps the builder call sites (which only ever
+  /// set values) terse. To clear a field, construct a new [MasterNode]
+  /// directly. Pinned by node_entity_test.dart. (Same idiom as
+  /// ClientDevice.copyWith.)
   MasterNode copyWith({
     String? deviceId,
     String? dataElementsId,
@@ -276,6 +286,16 @@ final class SlaveNode extends NodeEntity {
   /// Whether backhaul info is available.
   bool get hasBackhaul => backhaul.hasInfo;
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// A nullable field cannot be *cleared* through this method: every parameter
+  /// merges with `?? this.field`, so passing `null` (or omitting it) both keep
+  /// the current value — `copyWith(dataElementsId: null)` is indistinguishable
+  /// from `copyWith()`. This is deliberate: no caller needs to null a field on
+  /// a node, and the merge form keeps the builder call sites (which only ever
+  /// set values) terse. To clear a field, construct a new [SlaveNode]
+  /// directly. Pinned by node_entity_test.dart. (Same idiom as
+  /// ClientDevice.copyWith.)
   SlaveNode copyWith({
     String? deviceId,
     String? dataElementsId,

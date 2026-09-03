@@ -79,9 +79,16 @@ class MeshTopologyBuilder {
       // Master node = no backhaul parent (backhaulAlId is empty)
       final isMaster = node.backhaulAlId.trim().isEmpty;
 
+      // These nodes are built from DataElements, so `deviceId` *is* the
+      // DataElements identifier; carry it in `dataElementsId` too so a
+      // topology-derived node matches the same way a Hosts-derived one does.
+      // Liveness (`isOnline`) is deliberately not set from it here: NodeEntity
+      // reports `isOnline => true` unconditionally, so these nodes do not — and
+      // must not appear to — report liveness of their own.
       if (isMaster) {
         nodes.add(MasterNode(
           deviceId: nodeDeviceId,
+          dataElementsId: nodeDeviceId,
           model: node.manufacturerModel.trim(),
           manufacturer: node.manufacturer.trim(),
           serialNumber: node.serialNumber.trim(),
@@ -91,6 +98,7 @@ class MeshTopologyBuilder {
       } else {
         nodes.add(SlaveNode(
           deviceId: nodeDeviceId,
+          dataElementsId: nodeDeviceId,
           model: node.manufacturerModel.trim(),
           manufacturer: node.manufacturer.trim(),
           serialNumber: node.serialNumber.trim(),

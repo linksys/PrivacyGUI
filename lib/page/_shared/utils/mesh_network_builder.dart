@@ -131,21 +131,8 @@ class MeshNetworkBuilder {
     final patchedMasterClients = masterClients
         .map((c) => c.copyWith(parentNodeName: masterDisplayName))
         .toList();
-    final patchedMaster = MasterNode(
-      deviceId: master.deviceId,
-      dataElementsId: master.dataElementsId,
-      friendlyName: master.friendlyName,
-      hostName: master.hostName,
-      model: master.model,
-      manufacturer: master.manufacturer,
-      serialNumber: master.serialNumber,
-      softwareVersion: master.softwareVersion,
-      ipAddress: master.ipAddress,
-      ipv6Addresses: master.ipv6Addresses,
-      instancePath: master.instancePath,
-      connectedClients: patchedMasterClients,
-      hostsDeviceId: master.hostsDeviceId,
-    );
+    final patchedMaster =
+        master.copyWith(connectedClients: patchedMasterClients);
 
     // 7. Build SlaveNodes
     final slaves = meshDevices.where((d) => d.deviceRole == 'slave').map((d) {
@@ -174,21 +161,7 @@ class MeshNetworkBuilder {
       final patchedSlaveClients = slaveClients
           .map((c) => c.copyWith(parentNodeName: slaveDisplayName))
           .toList();
-      return SlaveNode(
-        deviceId: slave.deviceId,
-        dataElementsId: slave.dataElementsId,
-        friendlyName: slave.friendlyName,
-        hostName: slave.hostName,
-        model: slave.model,
-        manufacturer: slave.manufacturer,
-        serialNumber: slave.serialNumber,
-        softwareVersion: slave.softwareVersion,
-        ipAddress: slave.ipAddress,
-        ipv6Addresses: slave.ipv6Addresses,
-        instancePath: slave.instancePath,
-        connectedClients: patchedSlaveClients,
-        backhaul: slave.backhaul,
-      );
+      return slave.copyWith(connectedClients: patchedSlaveClients);
     }).toList();
 
     // 8. Collect the unassigned (orphan) clients — those whose parent cannot be
