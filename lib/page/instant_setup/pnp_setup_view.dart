@@ -430,6 +430,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   else
                     _unifiedWiFiCard(
                         headlineSSID, bands.firstOrNull?.password ?? ''),
+                  const AppGap.medium(),
+                  // Where to find the QR again once setup is over.
+                  AppText.bodySmall(
+                    loc(context).pnpWiFiReadyReshareInfo,
+                    maxLines: 5,
+                  ),
                 ],
               ),
             ),
@@ -471,18 +477,25 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 ),
               ),
               const AppGap.medium(),
+              // Printing or saving the regenerated QR is the main thing to do
+              // here - the printed card no longer works - so give both actions
+              // button weight instead of plain text links.
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  AppTextButton(
-                    loc(context).print,
-                    icon: LinksysIcons.print,
-                    onTap: () => _printWiFi(wifiSSID, wifiPassword),
+                  Expanded(
+                    child: AppOutlinedButton.fillWidth(
+                      loc(context).print,
+                      icon: LinksysIcons.print,
+                      onTap: () => _printWiFi(wifiSSID, wifiPassword),
+                    ),
                   ),
-                  AppTextButton(
-                    loc(context).downloadQR,
-                    icon: LinksysIcons.download,
-                    onTap: () => _downloadWiFi(wifiSSID, wifiPassword),
+                  const AppGap.medium(),
+                  Expanded(
+                    child: AppOutlinedButton.fillWidth(
+                      loc(context).downloadQR,
+                      icon: LinksysIcons.download,
+                      onTap: () => _downloadWiFi(wifiSSID, wifiPassword),
+                    ),
                   ),
                 ],
               ),
@@ -547,15 +560,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   ],
                 ),
                 const AppGap.small2(),
-                Row(
+                // Wrap, not Row - the band card is narrow and these labels get
+                // long in other locales.
+                Wrap(
+                  spacing: Spacing.medium,
+                  runSpacing: Spacing.small1,
                   children: [
-                    AppTextButton.noPadding(
+                    AppOutlinedButton(
                       loc(context).print,
                       icon: LinksysIcons.print,
                       onTap: () => _printWiFi(ssid, password),
                     ),
-                    const AppGap.medium(),
-                    AppTextButton.noPadding(
+                    AppOutlinedButton(
                       loc(context).downloadQR,
                       icon: LinksysIcons.download,
                       onTap: () => _downloadWiFi(ssid, password),

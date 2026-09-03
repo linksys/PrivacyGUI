@@ -14,8 +14,10 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import '../../common/di.dart';
 import '../../common/testable_router.dart';
 import '../../common/theme_data.dart';
@@ -119,5 +121,65 @@ void main() async {
     await tester.scrollUntilVisible(lastParagraph, 300, scrollable: scrollable);
     await tester.pumpAndSettle();
     expect(lastParagraph, findsOneWidget);
+  });
+
+  // The QR warning must track the fields, not the visit: keeping the shipped
+  // credentials changes nothing, so warning about the printed QR codes would be
+  // wrong until something is actually edited.
+  testWidgets('QR warning follows edits to the shipped WiFi credentials',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 1200));
+    tester.view.physicalSize = const Size(1280, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+    await loadTestFonts();
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: const Locale('en'),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+
+    final reminder = find.textContaining("what's printed on the Quick Start");
+    final warning = find.textContaining('will stop the QR codes');
+    final ssidField = find.descendant(
+      of: find.byType(WiFiSSIDField),
+      matching: find.byType(TextField),
+    );
+
+    // Untouched defaults - plain reminder only.
+    expect(reminder, findsOneWidget);
+    expect(warning, findsNothing);
+
+    await tester.enterText(ssidField, 'MyHomeWiFi');
+    await tester.pumpAndSettle();
+    expect(warning, findsOneWidget);
+    expect(reminder, findsNothing);
+    // The defaults modal stays reachable from the warning card.
+    expect(
+      find.descendant(
+        of: find.byType(AppSettingCard),
+        matching: find.byIcon(LinksysIcons.infoCircle),
+      ),
+      findsOneWidget,
+    );
+
+    // Typing the shipped SSID back takes the warning away again.
+    await tester.enterText(ssidField, 'Linksys1234567');
+    await tester.pumpAndSettle();
+    expect(warning, findsNothing);
+    expect(reminder, findsOneWidget);
   });
 }
