@@ -174,11 +174,13 @@ GoRouter _buildRouter({String? initialLocation}) {
             routes: [
               // uspLocalNetwork stays NESTED under uspAdvancedSettings: the
               // nesting is not the bug, so this fix leaves the tree alone. The
-              // real tree uses the route NAME as the relative path here
-              // (route_usp_dashboard.dart), so this mirrors it exactly.
+              // relative path is `RoutePath.uspLocalNetwork`, as the real tree
+              // now declares it (route_usp_dashboard.dart:158-159). It used to be
+              // the NAME here, which mirrored the pre-#1434 tree and passed only
+              // because the two constants hold the same string.
               GoRoute(
                 name: _localNetwork,
-                path: _localNetwork,
+                path: RoutePath.uspLocalNetwork,
                 builder: (c, s) => localNetworkPage(c),
               ),
             ],
