@@ -174,7 +174,10 @@ class _PersistentBadge extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        // The kit's container-tint alpha, which it only spells for the disabled
+        // case — this badge is never disabled, it just wants the same 0.12 rather
+        // than a fourth copy of it.
+        color: color.withValues(alpha: AppStateTokens.disabledContainerAlpha),
         borderRadius: BorderRadius.circular(4),
       ),
       child: AppText.labelSmall(label, color: color),

@@ -56,14 +56,18 @@ dependencies:
   collection: ^1.19.0
   flutter_secure_storage: ^10.3.1
 
+  # One repository, two entries — `generative_ui` only adds `path:`. Bump both or
+  # neither. A mismatch is loud rather than silent today: both halves pull the same
+  # `gen_ui_contracts` path dependency, so pub refuses to resolve two commits of it
+  # (#1456). Requires Flutter >= 3.47 since ui_kit 3.0.0; see `.fvmrc`.
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.40.2
+      ref: v3.1.0
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.40.2
+      ref: v3.1.0
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
