@@ -125,6 +125,50 @@ final singleNodeDevicesData = DevicesData(
   ),
 );
 
+/// A **healthy** two-level mesh: gateway, one extender, clients on both. The
+/// widest tree the golden suite draws, which is why the layout gate picks this
+/// state over [singleNodeDevicesData] (`kTopologyPageCase`,
+/// `test/layout_gate/families/page_surface_cases.dart`). Neither consumer is
+/// about liveness — both want the tree at its full width and depth.
+///
+/// `dataElementsId` is what says "healthy" out loud, and it has to be said here
+/// because a slave's liveness is now data: `isOnline => !livenessKnown ||
+/// dataElementsId != null` (#1430). Before that the renderer hardcoded
+/// `status: MeshNodeStatus.online` for every node, so the green dot on this
+/// extender was a constant and this fixture could not have expressed liveness
+/// even deliberately. It now has to.
+///
+/// Deliberately not the `deviceId`: a node answers on three MACs and
+/// DataElements keys the backhaul one, so the two ids differing is the normal
+/// live shape (`NodeEntity.dataElementsId`, #1440).
+///
+/// Dropping the field again reads as a **powered-off** extender: no status dot,
+/// a desaturated image, a dashed grey backhaul, and — because
+/// `_nodeComparator` sorts offline last (`usp_topology_view.dart`, since #882) —
+/// the extender falls below the gateway's clients, which is a different tree
+/// from the one this scene exists to draw. Only one width notices: measured
+/// against the pre-#1430 render, that omission moves 4.2% of the pixels at
+/// `phone480` but 1.4% at `screen1080` and 0.9% at `desktop1280`, both under the
+/// suite's `diffThreshold: 0.025` (#1472) — the footprint is laid out at a fixed
+/// size while the allowance grows with canvas area, which is #1475. So the guard
+/// for this is not a golden: `topology_scene_reachability_test.dart` asserts
+/// every node here reads online and fails on exactly this omission. #1466 fixes
+/// the same "liveness dropped by construction" shape one layer down, at the two
+/// builder sites.
+///
+/// And that tree is not merely a different one — it is one the builder cannot
+/// produce, so omitting the field puts this scene outside the states the page can
+/// ever be in. Measured on the M60TB-EU bench (FW `1.2.3.26072920`, two wireless
+/// slaves): `_findMatchingMeshNode` matches the last 12 hex of the Hosts
+/// `DeviceID` UUID against the DataElements node id, and that single result feeds
+/// both `dataElementsId` *and* the only key that can attach clients —
+/// `clientToNodeMap` is keyed by the DataElements id (`mesh_topology_builder.dart`),
+/// while `Hosts.PhysAddress` is the node's Radio.1 BSSID, one above the AL-MAC
+/// (`80:69:1A:BB:46:95` vs `…:94`), so the `PhysAddress` lookup in
+/// `MeshNetworkBuilder` never hits on real hardware. No match therefore means
+/// offline **and** childless. An offline extender with a live wired client
+/// hanging off it, on a solid green link, is reachable from a fixture and nowhere
+/// else.
 final meshNetworkDevicesData = DevicesData(
   meshNetwork: MeshNetwork(
     master: MasterNode(
@@ -138,6 +182,7 @@ final meshNetworkDevicesData = DevicesData(
     slaves: [
       SlaveNode(
         deviceId: 'AA:BB:CC:DD:FF:01',
+        dataElementsId: 'AA:BB:CC:DD:FF:11',
         model: 'MX2000',
         manufacturer: 'Linksys',
         serialNumber: 'DEF789012',
