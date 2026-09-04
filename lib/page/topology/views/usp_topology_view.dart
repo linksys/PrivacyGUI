@@ -138,27 +138,10 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     final node = topology.nodes.where((n) => n.id == nodeId).firstOrNull;
     if (node == null) return;
 
-    // Offline nodes are not navigable
-    if (node.status == MeshNodeStatus.offline) return;
+    final target = topologyNavTargetFor(node);
+    if (target == null) return;
 
-    if (node.type == MeshNodeType.gateway ||
-        node.type == MeshNodeType.extender) {
-      final deviceId = node.metadata?['deviceId'] as String?;
-      if (deviceId != null && deviceId.isNotEmpty) {
-        router.pushNamed(
-          RouteNamed.uspNodeDetail,
-          queryParameters: {'deviceId': deviceId},
-        );
-      }
-    } else if (node.type == MeshNodeType.client) {
-      final mac = node.metadata?['mac'] as String?;
-      if (mac != null && mac.isNotEmpty) {
-        router.pushNamed(
-          RouteNamed.uspDeviceDetail,
-          queryParameters: {'mac': mac},
-        );
-      }
-    }
+    router.pushNamed(target.route, queryParameters: target.queryParameters);
   }
 
   /// Comparator for sorting nodes: online first, then infra nodes before clients, then alphabetical.
@@ -200,5 +183,56 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       ),
       child: child,
     );
+  }
+}
+
+/// A resolved navigation target for a tapped topology node: the named route
+/// plus its query parameters.
+@immutable
+class TopologyNavTarget {
+  const TopologyNavTarget(this.route, this.queryParameters);
+
+  final String route;
+  final Map<String, String> queryParameters;
+}
+
+/// Pure mapping from a tapped [MeshNode] to its navigation target, or `null`
+/// when the node is not navigable.
+///
+/// Extracted so the decision is unit-testable without a widget/router.
+///
+/// The two node families are deliberately treated differently:
+///
+/// - **Clients** are navigable regardless of status. An offline client opens
+///   its Device Detail page just like it does from the device list and from a
+///   node's "Connected devices" list; the destination already renders the
+///   correct online/offline state, so there is nothing to gate against.
+/// - **Gateway / extender** keep an offline gate. Their Node Detail page still
+///   hardcodes an active status badge, so opening it for a powered-off node
+///   would show a wrong (green) status. That is tracked by #1465; until it is
+///   fixed, the node arm stays gated. Do NOT "tidy" the client arm to match
+///   the node arm — the difference is intentional.
+@visibleForTesting
+TopologyNavTarget? topologyNavTargetFor(MeshNode node) {
+  switch (node.type) {
+    case MeshNodeType.gateway:
+    case MeshNodeType.extender:
+      // Offline gate for infra nodes only — see #1465 (doc above).
+      if (node.status == MeshNodeStatus.offline) return null;
+      final deviceId = node.metadata?['deviceId'] as String?;
+      if (deviceId == null || deviceId.isEmpty) return null;
+      return TopologyNavTarget(
+        RouteNamed.uspNodeDetail,
+        {'deviceId': deviceId},
+      );
+    case MeshNodeType.client:
+      final mac = node.metadata?['mac'] as String?;
+      if (mac == null || mac.isEmpty) return null;
+      return TopologyNavTarget(
+        RouteNamed.uspDeviceDetail,
+        {'mac': mac},
+      );
+    case MeshNodeType.internet:
+      return null;
   }
 }
