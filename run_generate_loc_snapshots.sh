@@ -39,6 +39,11 @@ echo "Version: $version"
 # fixed. Only this file is removed: the golden PNGs must survive, because -f/-l/-s
 # regenerate a subset and clear_goldens.sh is the opt-in way to wipe them all.
 rm -f goldens/overflow_warnings.json
+# And the diff record (#1475), for a reason specific to a generation run: it
+# compares nothing, so it writes no report and would leave the *verify* run's file
+# in place. Read afterwards by `golden_diff_summary.dart`, that file describes
+# baselines this run has just replaced, and nothing in its output is dated.
+rm -f goldens/golden_diff_percent.jsonl
 
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"

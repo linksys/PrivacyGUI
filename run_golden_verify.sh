@@ -43,6 +43,11 @@ echo "Version: $version"
 # file is still readable for debugging once the run ends. Placed ahead of the
 # branch below because both paths generate a report.
 rm -f goldens/overflow_warnings.json
+# Same reasoning for the diff record (#1475), and more so: it is append-only, so
+# every locale in the loop below adds to it on purpose — a run's floor is measured
+# over every cell it swept — and that only holds if the previous run's cells are
+# gone first.
+rm -f goldens/golden_diff_percent.jsonl
 
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
@@ -71,6 +76,13 @@ else
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 fi
+
+# How far every golden moved from its baseline, including the cells that passed
+# (#1475). Printed for both branches above, and deliberately not allowed to
+# change the exit code: the thresholds are what decide pass or fail, and a
+# diagnostic that can fail a run is a second, undocumented gate.
+echo ""
+$DART run test_scripts/golden_diff_summary.dart || true
 
 echo "Golden Test Verification Finished!******************************************"
 exit $FAILED

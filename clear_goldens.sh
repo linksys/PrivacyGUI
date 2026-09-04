@@ -16,6 +16,7 @@ echo "---------------------------------"
 echo "(2/2) Clearing intermediate artifacts..."
 
 rm -f goldens/overflow_warnings.json
+rm -f goldens/golden_diff_percent.jsonl
 rm -f test/golden_test/golden_gallery_report.html
 
 echo "Done. Ready for a clean regeneration."
