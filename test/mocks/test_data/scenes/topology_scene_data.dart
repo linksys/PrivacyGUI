@@ -125,6 +125,32 @@ final singleNodeDevicesData = DevicesData(
   ),
 );
 
+/// A **healthy** two-level mesh: gateway, one extender, clients on both. The
+/// widest tree the golden suite draws, which is why the layout gate picks this
+/// state over [singleNodeDevicesData] (`kTopologyPageCase`,
+/// `test/layout_gate/families/page_surface_cases.dart`). Neither consumer is
+/// about liveness — both want the tree at its full width and depth.
+///
+/// `dataElementsId` is what says "healthy" out loud, and it has to be said here
+/// because a slave's liveness is now data: `isOnline => !livenessKnown ||
+/// dataElementsId != null` (#1430). Before that the renderer hardcoded
+/// `status: MeshNodeStatus.online` for every node, so the green dot on this
+/// extender was a constant and this fixture could not have expressed liveness
+/// even deliberately. It now has to.
+///
+/// Deliberately not the `deviceId`: a node answers on three MACs and
+/// DataElements keys the backhaul one, so the two ids differing is the normal
+/// live shape (`NodeEntity.dataElementsId`, #1440).
+///
+/// Dropping the field again reads as a **powered-off** extender: no status dot,
+/// a desaturated image, a dashed grey backhaul, and — because
+/// `_nodeComparator` sorts offline last (`usp_topology_view.dart`, since #882) —
+/// the extender falls below the gateway's clients, which is a different tree
+/// from the one this scene exists to draw. Only one width notices: measured
+/// against the pre-#1430 render, that omission moves 4.2% of the pixels at
+/// `phone480` but 1.4% at `screen1080` and 0.9% at `desktop1280`, both under the
+/// suite's `diffThreshold: 0.025` (#1472). Making the field impossible to omit
+/// is #1466.
 final meshNetworkDevicesData = DevicesData(
   meshNetwork: MeshNetwork(
     master: MasterNode(
@@ -138,6 +164,7 @@ final meshNetworkDevicesData = DevicesData(
     slaves: [
       SlaveNode(
         deviceId: 'AA:BB:CC:DD:FF:01',
+        dataElementsId: 'AA:BB:CC:DD:FF:11',
         model: 'MX2000',
         manufacturer: 'Linksys',
         serialNumber: 'DEF789012',
