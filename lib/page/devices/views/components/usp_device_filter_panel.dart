@@ -488,6 +488,16 @@ class _ChipGroupRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final group = AppChipGroup(
+      chips: chips,
+      selectedIndices: selectedIndices,
+      selectionMode: ChipSelectionMode.multiple,
+      onSelectionChanged: onSelectionChanged,
+      wrap: true,
+      spacing: AppSpacing.xs,
+      size: ChipSize.compact,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -515,18 +525,7 @@ class _ChipGroupRow extends StatelessWidget {
         AppGap.xs(),
         IgnorePointer(
           ignoring: disabled,
-          child: Opacity(
-            opacity: disabled ? 0.5 : 1.0,
-            child: AppChipGroup(
-              chips: chips,
-              selectedIndices: selectedIndices,
-              selectionMode: ChipSelectionMode.multiple,
-              onSelectionChanged: onSelectionChanged,
-              wrap: true,
-              spacing: AppSpacing.xs,
-              size: ChipSize.compact,
-            ),
-          ),
+          child: disabled ? AppLowEmphasis(child: group) : group,
         ),
       ],
     );
@@ -816,6 +815,6 @@ class _FilterChip extends StatelessWidget {
       selected: isActive,
       onSelected: disabled ? null : (_) => onTap(),
     );
-    return disabled ? Opacity(opacity: 0.5, child: chip) : chip;
+    return disabled ? AppLowEmphasis(child: chip) : chip;
   }
 }

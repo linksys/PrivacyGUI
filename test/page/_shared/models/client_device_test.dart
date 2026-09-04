@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
+// Narrowed for the same reason `client_device.dart` narrows it: the barrel
+// exports a `ConnectionType` that collides with this model's own enum.
+import 'package:ui_kit_library/ui_kit.dart' show AppStateTokens;
 
 import '../../../mocks/test_data/devices_test_data.dart';
 
@@ -330,12 +333,20 @@ void main() {
         expect(inactive.isInteractive, isFalse);
       });
 
-      test('displayOpacity returns 1.0 for online, 0.5 for offline', () {
+      test('displayOpacity dims an offline device and leaves an online one',
+          () {
         final online = DevicesTestData.createWifiClient(isActive: true);
         final offline = DevicesTestData.createWifiClient(isActive: false);
 
         expect(online.displayOpacity, 1.0);
-        expect(offline.displayOpacity, 0.5);
+        // The token, not the literal `0.5` this used to assert. The point of
+        // #1456 moving the getter onto `AppStateTokens` is that the number became
+        // upstream's to choose — pinning it here would turn a ui_kit design
+        // decision into a red test in a file whose subject is the device model,
+        // and the message would name neither. What this file owns is the branch:
+        // offline dims, online does not.
+        expect(offline.displayOpacity, AppStateTokens.disabledLabelAlpha);
+        expect(offline.displayOpacity, lessThan(1.0));
       });
     });
 

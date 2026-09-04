@@ -154,6 +154,23 @@ class MeshNetworkBuilder {
         slaveDevice: d,
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
+        // An empty topology carries no liveness information for any node, so an
+        // unmatched row must not be read as "offline" (#1430 review).
+        //
+        // Deliberately `isNotEmpty` and NOT the `topologyHasMesh` predicate
+        // built at the top of this method, even though both read
+        // `meshTopology.nodes` and the narrower one looks like the safer
+        // choice. `hasMesh` is "at least one *slave* agent answered", and the
+        // whole point of #1430 is the single-extender house whose extender is
+        // powered off: DataElements then enumerates only the router's own agent
+        // (`MeshTopologyBuilder` adds the master unconditionally) while the
+        // extender's `Device.Hosts.Host` row persists for another ~20-50s.
+        // `hasMesh` would be false there, this node would be handed
+        // `livenessKnown: false`, and a powered-off extender would render
+        // online — i.e. narrowing the predicate reverts the ticket for the
+        // commonest topology. The two predicates answer different questions on
+        // the same object; do not unify them.
+        livenessKnown: meshTopology.isNotEmpty,
       );
 
       // Patch slave's connected clients with parentNodeName
@@ -473,6 +490,7 @@ class MeshNetworkBuilder {
     required ConnectedDevice slaveDevice,
     required SlaveNode? slaveMeshInfo,
     required List<ClientDevice> connectedClients,
+    required bool livenessKnown,
   }) {
     final deviceId = slaveDevice.macAddress.trim().toUpperCase();
 
@@ -498,6 +516,7 @@ class MeshNetworkBuilder {
       instancePath: slaveMeshInfo?.instancePath,
       connectedClients: connectedClients,
       backhaul: backhaul,
+      livenessKnown: livenessKnown,
     );
   }
 

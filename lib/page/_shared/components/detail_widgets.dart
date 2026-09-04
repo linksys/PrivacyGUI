@@ -47,17 +47,29 @@ class DetailStatusBadge extends StatelessWidget {
   final String? activeLabel;
   final String? inactiveLabel;
 
+  /// Stable E2E hook, mapped to `flt-semantics-identifier` on the web — same
+  /// contract as `AppTag.identifier` in the kit.
+  ///
+  /// The badge's own text is the state, and it is translated in 26 locales, so
+  /// a spec asserting liveness has nothing else to match on. With the hook the
+  /// element is locatable and the state is read from the text inside it.
+  ///
+  /// Applied only when non-null: the wrapper introduces a semantics container,
+  /// and call sites that do not ask for a hook keep the tree they had.
+  final String? identifier;
+
   const DetailStatusBadge({
     super.key,
     required this.isActive,
     this.activeLabel,
     this.inactiveLabel,
+    this.identifier,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
+    final badge = Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
@@ -83,6 +95,15 @@ class DetailStatusBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (identifier == null) return badge;
+    // `container: true` so the identifier owns a node of its own instead of
+    // merging into whatever the call site wrapped the badge in.
+    return Semantics(
+      identifier: identifier,
+      container: true,
+      child: badge,
     );
   }
 }

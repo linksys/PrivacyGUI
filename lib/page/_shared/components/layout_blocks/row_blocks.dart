@@ -374,71 +374,72 @@ class NetworkRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Opacity(
-      opacity: isEnabled ? 1.0 : BlockConstants.disabledAlpha,
-      child: AppListTile(
-        backgroundColor: colorScheme.surfaceContainerHighest
-            .withValues(alpha: BlockConstants.backgroundAlpha),
-        title: Row(
-          children: [
-            Flexible(
-              child: AppText.bodyLarge(
-                ssidName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+    final tile = AppListTile(
+      backgroundColor: colorScheme.surfaceContainerHighest
+          .withValues(alpha: BlockConstants.backgroundAlpha),
+      title: Row(
+        children: [
+          Flexible(
+            child: AppText.bodyLarge(
+              ssidName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (isGuest) ...[
-              AppGap.sm(),
-              _GuestBadge(),
-            ],
-          ],
-        ),
-        subtitle: Row(
-          children: [
-            ...bands.map((band) => Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.xs),
-                  child: NetworkBadgeWidget(badge: NetworkBadge.fromBand(band)),
-                )),
+          ),
+          if (isGuest) ...[
             AppGap.sm(),
-            Icon(
-              Icons.devices,
-              size: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            AppGap.xxs(),
-            AppText.labelSmall(
-              '$clientCount',
-              color: colorScheme.onSurfaceVariant,
-            ),
+            _GuestBadge(),
           ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isLoading && isEnabled && onShareTap != null) ...[
-              _ShareButton(onTap: onShareTap!),
-              AppGap.sm(),
-            ],
-            isLoading
-                ? SizedBox(
-                    width: 52,
-                    height: 32,
-                    child: Center(
-                      child: SizedBox.square(
-                        dimension: 24,
-                        child: AppLoader(strokeWidth: 2),
-                      ),
+        ],
+      ),
+      subtitle: Row(
+        children: [
+          ...bands.map((band) => Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: NetworkBadgeWidget(badge: NetworkBadge.fromBand(band)),
+              )),
+          AppGap.sm(),
+          Icon(
+            Icons.devices,
+            size: 14,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          AppGap.xxs(),
+          AppText.labelSmall(
+            '$clientCount',
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isLoading && isEnabled && onShareTap != null) ...[
+            _ShareButton(onTap: onShareTap!),
+            AppGap.sm(),
+          ],
+          isLoading
+              ? SizedBox(
+                  width: 52,
+                  height: 32,
+                  child: Center(
+                    child: SizedBox.square(
+                      dimension: 24,
+                      child: AppLoader(strokeWidth: 2),
                     ),
-                  )
-                : AppSwitch(
-                    value: isEnabled,
-                    onChanged: onChanged,
                   ),
-          ],
-        ),
+                )
+              : AppSwitch(
+                  value: isEnabled,
+                  onChanged: onChanged,
+                ),
+        ],
       ),
     );
+
+    // A switched-off network is still listed and still operable, so it reads as
+    // lower priority rather than dimmer by a number this file picked.
+    return isEnabled ? tile : AppLowEmphasis(child: tile);
   }
 }
 

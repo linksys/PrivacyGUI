@@ -816,6 +816,16 @@ void main() {
           'goNamed',
           'path'
         ),
+        // #1468: the topology tap now routes through a pure decision
+        // (`topologyNavTargetFor` → `TopologyNavTarget`), so the route argument
+        // is a variable (`target.route`) rather than a literal. It is an entry
+        // point — it opens a client's Device Detail (or a node's Node Detail)
+        // and back must return to the topology — so `pushNamed` is correct.
+        (
+          'lib/page/topology/views/usp_topology_view.dart',
+          'pushNamed',
+          'target.route'
+        ),
       ];
       expect(_indirectNavSites.toSet(), expected.toSet(),
           reason:

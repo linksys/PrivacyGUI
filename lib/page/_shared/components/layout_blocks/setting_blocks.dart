@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../nav_tap_guard.dart';
 import 'base_blocks.dart';
 import 'block_constants.dart';
 
@@ -170,43 +171,48 @@ class NavLinkBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Semantics(
-      identifier: identifier,
-      button: true,
-      child: LayoutBlock(
-        onTap: onTap,
-        padding: BlockConstants.paddingMd,
-        child: Row(
-          children: [
-            if (icon != null) ...[
+    // Swallow the second tap of a double-tap so this link pushes its page once
+    // per gesture, not twice (#1445).
+    return NavTapGuard(
+      onTap: onTap,
+      builder: (context, guardedTap) => Semantics(
+        identifier: identifier,
+        button: true,
+        child: LayoutBlock(
+          onTap: guardedTap,
+          padding: BlockConstants.paddingMd,
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                AppIcon.font(
+                  icon!,
+                  size: BlockConstants.iconLg,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppGap.md(),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(title),
+                    if (description != null) ...[
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        description!,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               AppIcon.font(
-                icon!,
-                size: BlockConstants.iconLg,
+                Icons.chevron_right,
+                size: BlockConstants.iconMd,
                 color: colorScheme.onSurfaceVariant,
               ),
-              AppGap.md(),
             ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall(title),
-                  if (description != null) ...[
-                    AppGap.xs(),
-                    AppText.bodySmall(
-                      description!,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            AppIcon.font(
-              Icons.chevron_right,
-              size: BlockConstants.iconMd,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
+          ),
         ),
       ),
     );

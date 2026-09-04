@@ -996,5 +996,235 @@ void main() {
         );
       });
     });
+
+    // #1430 — node liveness comes from whether the Hosts node row matched a
+    // DataElements agent (dataElementsId != null), NOT from the Hosts row's
+    // `Active` field. Measured on the live bench: a node row's `Active` is `0`
+    // whether the node is up or powered off (it keys on a STA-side MAC the
+    // backfill never matches), so `isActive` carries no liveness information for
+    // nodes. The truthful signal is DataElements membership: a powered-off node
+    // leaves `DataElements.Network.Device.` within ~20-50s while its Hosts row
+    // persists, so an unmatched node row is the offline shape.
+    group('node liveness (#1430)', () {
+      test(
+          'a slave Hosts row that matches NO DataElements agent in a working '
+          'DataElements set is offline (AC5)', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02', // DeviceID with no DataElements match
+            isActive: false, // node rows read 0 regardless — irrelevant here
+          ),
+        ]);
+
+        // A DataElements set that IS working — the master plus one *other*
+        // agent — so the absent match for AA:BB:CC:DD:EE:02 is a verdict about
+        // that node, not about the subtree. Do NOT use MeshTopologyInfo.empty
+        // here: that shape says nothing about any node and is asserted to stay
+        // online by the `DataElements unavailable` test below.
+        final meshTopology = MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:09'),
+          ],
+          clientToNodeMap: {},
+        );
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopology,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.first;
+        // No DataElements match ⇒ liveness is derived as offline.
+        expect(slave.livenessKnown, isTrue);
+        expect(slave.dataElementsId, isNull);
+        expect(slave.isOnline, isFalse);
+        // And an absent backhaul must NOT be reported as a real (wireless)
+        // backhaul with a signal.
+        expect(slave.backhaul.hasInfo, isFalse);
+        expect(slave.backhaul.isWifi, isFalse,
+            reason: 'an absent backhaul is neither Ethernet nor WiFi');
+        expect(slave.backhaul.signalStrength, isNull);
+      });
+
+      test(
+          'a slave stays online when DataElements is unavailable for the whole '
+          'network', () {
+        // The regression the DataElements-match rule opens up. This shape is
+        // produced by every one of:
+        //   - UspDevicesDataService.fetch's first build pass, which always
+        //     passes MeshTopologyInfo.empty (the background fetch updates it
+        //     later);
+        //   - fetchMeshTopology returning MeshTopologyInfo.empty because the
+        //     router does not implement Device.WiFi.DataElements;
+        //   - fetchMeshTopology's `catch (e)` turning ANY transport failure,
+        //     timeout or non-OK result into the same empty value.
+        // The last two are terminal for the session: _fetchMeshAndUpdate bails
+        // on `if (meshTopology.isEmpty) return;` and never updates state. If an
+        // unmatched row were read as offline here, a healthy extender would be
+        // painted offline, its tap would be swallowed by
+        // usp_topology_view.dart's offline guard and its Details button hidden
+        // — with no error surfaced anywhere.
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02',
+            isActive: false, // node rows read 0 even when up
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.single;
+        expect(slave.livenessKnown, isFalse,
+            reason: 'an empty topology carries no liveness information');
+        expect(slave.dataElementsId, isNull);
+        expect(slave.isOnline, isTrue,
+            reason: 'liveness is unknown, not offline — the node must stay '
+                'navigable');
+        // Still no fabricated backhaul: unknown liveness does not invent data.
+        expect(slave.backhaul.hasInfo, isFalse);
+        expect(slave.backhaul.isWifi, isFalse);
+        expect(slave.backhaul.signalStrength, isNull);
+      });
+
+      test(
+          'a slave Hosts row with isActive:false that DOES match a '
+          'DataElements agent is online (AC5b)', () {
+        // The measured online shape: the node reports Active=0 (isActive:false)
+        // yet its DeviceID matches a live DataElements agent. This is exactly
+        // the case the retracted `isOnline => isActive` remedy would have
+        // rendered offline; isActive:false is the point of the test.
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02', // last 12 hex == the agent's deviceId
+            isActive: false, // node rows read 0 even when up — the point
+          ),
+        ]);
+
+        final meshTopology = MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'), // live agent
+          ],
+          clientToNodeMap: {},
+        );
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: meshTopology,
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.single;
+        // Matched a DataElements agent ⇒ online, even though the Hosts row that
+        // produced it carries Active=0. The node no longer carries that field at
+        // all (it was write-only and fed Equatable), so the fixture above is
+        // what pins the behaviour: flipping `isActive:false` there must not
+        // change any assertion here.
+        expect(slave.livenessKnown, isTrue);
+        expect(slave.dataElementsId, isNotNull);
+        expect(slave.isOnline, isTrue,
+            reason: 'a DataElements-matched node is online even when the '
+                'Hosts Active field reads 0');
+        // The master is the data source itself and stays online unconditionally.
+        expect(result.master.isOnline, isTrue);
+      });
+
+      test(
+          'a DataElements set holding only the master still counts as liveness '
+          'information', () {
+        // The boundary between the two tests above, and the shape both reviewers
+        // of #1449 asked to be handed `livenessKnown: false` instead — either by
+        // requiring "some slave agent answered" (`meshTopology.nodes.hasMesh`)
+        // or by counting only non-master nodes.
+        //
+        // It must stay `true`, because this is what a single-extender house
+        // looks like while its one extender is powered off: DataElements
+        // enumerates only the router's own agent (MeshTopologyBuilder adds the
+        // master unconditionally) while the extender's Hosts row persists for
+        // another ~20-50s. Reading that as "no liveness information" renders a
+        // powered-off extender online, i.e. reverts #1430 for the commonest
+        // topology. The `livenessKnown: false` escape hatch is for the subtree
+        // answering *nothing at all* — asserted in the empty-topology test
+        // above — not for it answering with one node.
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+            isActive: true,
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02',
+            isActive: false,
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          // The master is the only agent — no slave agent to match against.
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+            clientToNodeMap: {},
+          ),
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves.length, 1);
+        final slave = result.slaves.single;
+        expect(slave.livenessKnown, isTrue,
+            reason: 'a non-empty topology carries liveness information even '
+                'when every agent in it is the master');
+        expect(slave.dataElementsId, isNull);
+        expect(slave.isOnline, isFalse,
+            reason: 'the powered-off extender #1430 exists to catch');
+      });
+    });
   });
 }
