@@ -1,7 +1,8 @@
 # Golden diff noise floor — the measurement #1475's numbers come from
 
-**Status**: instrument shipped, measurement not taken. Nothing in the suite's
-thresholds has changed.
+**Status**: instrument shipped, policy drafted, measurement not taken. Nothing in
+the suite's thresholds has changed, and no number is picked — the three candidate
+shapes are written down with the reading of the measurement that would select each.
 
 ## What is wrong
 
@@ -171,9 +172,83 @@ amount each run, which is why two or three CI runs are needed rather than one.
    investigate if the number is surprising.
 6. **Only then pick per-width thresholds**, above the observed max by a margin the
    run's own spread justifies, and land them as a separate change so a red suite
-   is attributable. Candidate mechanism: `AlchemistConfig.runWithConfig` per width,
-   which works because alchemist reads the config synchronously when the test
-   registers.
+   is attributable. What shape those numbers take is the next section, and the
+   measurement is what decides it.
+
+## Picking the number: absolute pixels or a fraction of the canvas
+
+### What the SDK actually computes
+
+The chain is `GoldenDiffRecordingComparator.compare` →
+`AlchemistFileComparator.compareImageBytes` → `GoldenFileComparator.compareLists`,
+which is `flutter_test/lib/src/_goldens_io.dart:176` in SDK 3.47.2. Three facts
+from that function, and everything below follows from them:
+
+- `totalPixels = width * height` of the rendered image (`:216`). If the two images'
+  dimensions differ at all, it returns `diffPercent: 1.0` before counting anything
+  (`:202-213`) — a canvas change is an immediate hard failure, not a large diff, so
+  the height is an *identity*, not just a scale.
+- A pixel counts as differing iff `|ΔR| + |ΔG| + |ΔB| + |ΔA| != 0` (`:231-237`).
+  There is no per-channel tolerance: one least-significant bit on one channel makes
+  the whole pixel differ, exactly as much as black-to-white does.
+- `diffPercent = pixelDiffCount / totalPixels` (`:254`).
+
+Two consequences.
+
+**The conversion is exact in both directions.** `px = round(diffPercent × area)`
+recovers the integer the SDK divided, so the `max px` column is the true count and
+not an estimate. And an absolute-pixel policy is *already expressible* as a
+fraction: a budget of `B` pixels on a canvas of `A` is `diffThreshold = B / A`,
+which is the same predicate `compare` already evaluates. It therefore needs **no new
+comparator** — alchemist stays the only judge, which is the property the recorder
+deliberately preserves and asserts as parity. Mechanically:
+`AlchemistConfig.current()` is captured when a cell *registers*
+(`alchemist/lib/src/golden_test.dart:163`) and carried into the test body through
+the variant (`:195`), so wrapping the runner's per-cell `goldenTest` call in
+`AlchemistConfig.runWithConfig` (`alchemist_config.dart:158`) sets a threshold per
+canvas — and the runner knows the canvas there, because it already has the device
+width and `GoldenTestConfig.height`.
+
+**The floor is a count of touched pixels, not an intensity.** Font rasterisation,
+hinting and CanvasKit build differences move the *edges* of glyphs and shapes, so
+the number of touched pixels tracks drawn perimeter rather than area — and these
+pages *reflow* rather than scale, so a wider canvas holds roughly the same text at
+roughly the same size. The current policy assumes the floor grows with area. Nobody
+has checked whether it does, and that single fact decides the shape of the fix.
+
+### Three shapes, and what the measurement would have to show
+
+| policy | assumes the floor is | right if the run shows |
+|:--|:--|:--|
+| **P1** fraction per width (the ticket's option A) | ∝ area | the px floor grows about linearly with area, i.e. the % floor is roughly flat across canvases |
+| **P2** absolute pixel budget, as `threshold = B / area` | ~constant | the px floor is roughly flat across canvases while the % floor falls with area |
+| **P3** hybrid, `threshold = max(B, k × area) / area` | constant + area term | the px floor has a floor of its own *and* grows |
+
+All three are the same one-line mechanism; only the arithmetic inside it differs.
+The choice is not an engineering preference, it is a reading of the measurement —
+which is why nothing is picked here, and why the table above prints `max px` next to
+`max diff`.
+
+### The outcome that would kill option A
+
+The signal is fixed-size and now measured: the liveness chip is **1,628 px** (above),
+and #1472 — a whole node card, two links and a re-ordered row — was **10,982 px** at
+`desktop1280`. A threshold policy can catch a defect only if the environment's floor
+sits below it with margin, so the first no-change run is already decisive:
+
+- **floor of a few hundred px at 1080/1280** — all three shapes work, and P2/P3 buy
+  roughly an order of magnitude of sensitivity at the wide widths over P1.
+- **floor above ~1,600 px** — no threshold of any shape can see a badge, because the
+  noise exceeds the signal. Option A would then be worth having only for mid-sized
+  defects, and small-area semantic facts must be *asserted* rather than photographed.
+
+Read that off the `max px` column, not `max diff`. It is the falsification criterion
+for the whole ticket, and it costs one run.
+
+One caveat that survives in every shape: the budget is compared against a count over
+the *whole canvas*, so a page with more text carries more edge and more floor. A
+per-width budget has to clear the noisiest canvas at that width, which is what the
+summary's "worst tolerated movement per width" block reports.
 
 ## What this does not fix
 
