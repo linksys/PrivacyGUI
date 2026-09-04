@@ -51,4 +51,17 @@ void main() {
     await service.logout();
     expect(jsonDecode(observed.body), {'action': 'logout'});
   });
+
+  test('logout notifies the browser before server revocation can fail',
+      () async {
+    var notifications = 0;
+    final service = HttpAiSessionService(
+      client: MockClient((_) async => throw StateError('router unavailable')),
+      baseUri: Uri.parse('https://192.168.1.1/'),
+      onLogout: () => notifications++,
+    );
+
+    await expectLater(service.logout(), throwsStateError);
+    expect(notifications, 1);
+  });
 }

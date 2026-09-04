@@ -13,12 +13,17 @@ abstract interface class AiSessionService {
 }
 
 class HttpAiSessionService implements AiSessionService {
-  HttpAiSessionService({required http.Client client, required Uri baseUri})
-      : _client = client,
+  HttpAiSessionService({
+    required http.Client client,
+    required Uri baseUri,
+    void Function()? onLogout,
+  })  : _onLogout = onLogout,
+        _client = client,
         _endpoint = baseUri.resolve('/cgi-bin/ai-session.cgi');
 
   final http.Client _client;
   final Uri _endpoint;
+  final void Function()? _onLogout;
 
   Future<http.Response> _post(Map<String, String> body) => _client.post(
         _endpoint,
@@ -41,6 +46,7 @@ class HttpAiSessionService implements AiSessionService {
 
   @override
   Future<void> logout() async {
+    _onLogout?.call();
     await _post(const {'action': 'logout'});
   }
 
