@@ -149,10 +149,12 @@ final singleNodeDevicesData = DevicesData(
 /// from the one this scene exists to draw. Only one width notices: measured
 /// against the pre-#1430 render, that omission moves 4.2% of the pixels at
 /// `phone480` but 1.4% at `screen1080` and 0.9% at `desktop1280`, both under the
-/// suite's `diffThreshold: 0.025` (#1472). Nothing stops the next scene from
-/// omitting it again: #1466 fixes the same "liveness dropped by construction"
-/// shape at the two builder sites, but a fixture-side guard — a required
-/// `dataElementsId`, or a test that pins each scene's node states — has no ticket.
+/// suite's `diffThreshold: 0.025` (#1472) — the footprint is laid out at a fixed
+/// size while the allowance grows with canvas area, which is #1475. So the guard
+/// for this is not a golden: `topology_scene_reachability_test.dart` asserts
+/// every node here reads online and fails on exactly this omission. #1466 fixes
+/// the same "liveness dropped by construction" shape one layer down, at the two
+/// builder sites.
 ///
 /// And that tree is not merely a different one — it is one the builder cannot
 /// produce, so omitting the field puts this scene outside the states the page can
