@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -42,27 +40,20 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// `login_local_view.dart` uses `compactSingle`, whose `_buildCompactPanel` has
 /// no `AnimatedSize` at all, and is unaffected.
 ///
-/// ## What is skipped, and what is not
+/// ## These tests are known to be capable of failing
 ///
-/// The zero-duration arms are red until ui_kit v3.1.1 (fixed upstream as
-/// `linksys/privacyGUI-UI-kit#88`), so they ship skipped. The control and the
-/// pin tripwire do not: the control keeps the harness honest — if the panel or
-/// theme API moves, it fails now rather than at un-skip time — and the tripwire
-/// fails the moment the ui_kit ref leaves v3.1.0, which is the only event that
-/// makes the skips wrong.
+/// Fixed upstream in ui_kit **v3.2.0** — `fix(expansion_panel): drop the tween
+/// instead of handing AnimatedSize a zero`, ui_kit#88 — which is the ref this
+/// repository now pins.
 ///
-/// Measured at v3.1.0 with `flutter test <this file> --run-skipped`: **3 pass, 3
-/// fail** — the control, the sweep guard and the tripwire pass; reduce motion,
-/// `pixel` and `terminal` fail, each on the line above. That is the reading that
-/// makes the red attributable to `Duration.zero` rather than to the harness, and
-/// it is how to check the fix when the pin moves.
+/// The three zero-duration cases were written first, against v3.1.0, and shipped
+/// skipped. Measured there with `--run-skipped`: **3 fail, 3 pass** — reduce
+/// motion, `pixel` and `terminal` each failed on the line above, while the
+/// control, the sweep guard and a since-deleted pin tripwire passed. That is the
+/// one thing a green test cannot establish about itself, and it is why the
+/// control below is worth its lines: it fails if the panel or theme API moves,
+/// which would otherwise make all four green for the wrong reason.
 void main() {
-  /// The ui_kit ref the skips below are waiting on. See the tripwire.
-  const blockedAtRef = 'v3.1.0';
-  const blockedBy =
-      'AnimatedSize cannot take Duration.zero — fixed upstream in '
-      'privacyGUI-UI-kit#88, lands in v3.1.1 (#1471)';
-
   const header = 'What is a mesh node?';
   const content = 'A node extends the network.';
 
@@ -145,8 +136,6 @@ void main() {
     expect(find.text(content), findsOneWidget);
   });
 
-  // Grouped so the skip carries a reason: `testWidgets` narrows `skip` to
-  // `bool?`, while `group` keeps package:test's `Object?` and prints the string.
   group('a zero-duration transition', () {
     testWidgets('expands the panel under reduce motion', (tester) async {
       // The path the whole golden suite takes, on the app's own style. Zero comes
@@ -176,30 +165,5 @@ void main() {
         expect(find.text(content), findsOneWidget);
       });
     }
-  }, skip: blockedBy);
-
-  test('the skips above expire when ui_kit moves', () {
-    // A skip with a reason still proves nothing, and this one is only correct
-    // while the fix is unreleased. `ui_kit_pin_test.dart` guards the ref's shape
-    // and parity; this guards its *value*, and only for as long as #1471 is
-    // open — the failure message is the instruction, and deleting this test is
-    // part of taking the skips off.
-    final pubspec = File('pubspec.yaml');
-    expect(pubspec.existsSync(), isTrue,
-        reason: 'run from the package root, or this guard passes vacuously');
-
-    final ref = RegExp(r'^ +ref: *"?([^"\n]+?)"? *$', multiLine: true)
-        .allMatches(pubspec.readAsStringSync())
-        .map((m) => m.group(1))
-        .toSet();
-
-    expect(
-      ref,
-      contains(blockedAtRef),
-      reason:
-          'ui_kit no longer resolves to $blockedAtRef, so the skips in this '
-          'file may be hiding a fix: drop `skip: blockedBy` from both arms, run '
-          'this file, and delete this test if they pass',
-    );
   });
 }
