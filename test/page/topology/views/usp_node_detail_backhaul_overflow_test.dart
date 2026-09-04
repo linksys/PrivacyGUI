@@ -79,7 +79,7 @@ void main() {
 
   // The interface tile renders for any Wi-Fi backhaul; the last-contact tile
   // needs a fixture that carries a lastContactTime, which only this one does.
-  final interfaceState = slaveNodeWithDevices;
+  final interfaceState = slaveNodeOffline;
   final interfaceNode = interfaceState.node as SlaveNode;
   final timingState = slaveNodeWithBackhaulTiming;
   final timingNode = timingState.node as SlaveNode;
@@ -92,7 +92,7 @@ void main() {
     expect(
       interfaceNode.backhaul.isEthernet,
       isFalse,
-      reason: 'slaveNodeWithDevices must keep a Wi-Fi backhaul — the interface '
+      reason: 'slaveNodeOffline must keep a Wi-Fi backhaul — the interface '
           'tile is only built for one',
     );
     expect(

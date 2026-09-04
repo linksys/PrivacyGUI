@@ -39,8 +39,14 @@ import '../../../util/settle.dart';
 /// slave would satisfy it — while leaving `isMaster ? online : offline` green.
 /// That is the shape the old hardcoded badge invited, and it is wrong for exactly
 /// one node: the slave that *is* online. [slaveNodeOnlineWithDevices] is
-/// [slaveNodeWithDevices] with only its DataElements match added, so the pair
-/// varies liveness with the role held fixed and the mutation dies.
+/// [slaveNodeOffline]'s slave with its DataElements match, so the pair varies
+/// liveness with the **role held fixed** and the mutation dies.
+///
+/// The pair used to differ in that one field alone, which is tidier but not a
+/// state the builder can produce: the match that makes a slave read online is the
+/// same one that attaches its clients, so the offline half is childless (#1476).
+/// Nothing here reads the client list — both assertions are on the header — so
+/// what varies is still liveness and what is held fixed is still the role.
 ///
 /// ## Mutation
 ///
@@ -103,11 +109,11 @@ void main() {
       () {
     // Asserted rather than assumed. Every test below reads a verdict out of a
     // fixture, and a fixture that drifts to the other liveness value would pass
-    // the wrong assertion with no other signal — `slaveNodeWithDevices` is
+    // the wrong assertion with no other signal — `slaveNodeOffline` is
     // offline only because it carries no DataElements match, which is one field
     // away from silently flipping.
-    expect(slaveNodeWithDevices.node!.isMaster, isFalse);
-    expect(slaveNodeWithDevices.node!.isOnline, isFalse,
+    expect(slaveNodeOffline.node!.isMaster, isFalse);
+    expect(slaveNodeOffline.node!.isOnline, isFalse,
         reason: 'the offline case: a slave with no DataElements match (#1430)');
 
     expect(slaveNodeOnlineWithDevices.node!.isMaster, isFalse);
@@ -120,7 +126,7 @@ void main() {
 
   testWidgets('an offline slave presents as offline, and keeps its role',
       (tester) async {
-    await pumpNodeDetail(tester, slaveNodeWithDevices);
+    await pumpNodeDetail(tester, slaveNodeOffline);
 
     // Liveness — the AC's "does not present as online", stated three ways
     // because the badge can lie in three places: the dot's colour, the label it
@@ -155,7 +161,8 @@ void main() {
     expect(roleChipLabel(tester), 'Slave',
         reason:
             'the role is unchanged by liveness — this and the offline slave '
-            'differ in exactly one field, and it is not this one');
+            'are the same slave, and nothing that differs between them is the '
+            'role');
   });
 
   testWidgets('the master presents as online, and keeps its role',

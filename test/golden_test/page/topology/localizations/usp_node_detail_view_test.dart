@@ -15,8 +15,8 @@ void main() {
         'master_with_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeWithDevices),
             ),
-        'slave_with_devices': (overrides) => overrides.addAll(
-              nodeDetailOverrides(slaveNodeWithDevices),
+        'slave_offline': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeOffline),
             ),
         // LAN IPv6 global address — rendered without a scope badge.
         'global_ipv6': (overrides) => overrides.addAll(
