@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/cloud/device_token_store.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/guardians_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
@@ -83,7 +83,6 @@ class DeviceCloudService {
   Future<GRASessionInfo> getSessionInfo({
     required LinksysDevice master,
     required String sessionId,
-    String? serialNumber,
   }) async {
     final linksysToken = await fetchDeviceToken(
         serialNumber: master.unit.serialNumber ?? '',
@@ -118,55 +117,52 @@ class DeviceCloudService {
     required String sessionId,
     String? serialNumber,
   }) async {
+    // The token has to be the one issued for the device this request is sent
+    // for, otherwise the cloud is handed a token that belongs to another device.
+    final targetSerialNumber = serialNumber ?? master.unit.serialNumber ?? '';
     final linksysToken = await fetchDeviceToken(
-        serialNumber: master.unit.serialNumber ?? '',
+        serialNumber: targetSerialNumber,
         macAddress: master.getMacAddress(),
-        deviceUUID: master.deviceID);
-    _httpClient.deleteSession(
+        deviceUUID: master.deviceID,
+        // Ending a session runs while the user is on the way out, and logging
+        // out clears the stored token right after. Storing a token here would
+        // either land after that clear or file a token minted for the master
+        // under another device's serial number.
+        persistToken: false);
+    // Awaited so the caller can tell whether the session was actually closed:
+    // logging out right after a fire-and-forget request can tear the client down
+    // before it leaves.
+    await _httpClient.deleteSession(
         token: linksysToken,
         sessionId: sessionId,
-        serialNumber: serialNumber ?? master.unit.serialNumber ?? '');
+        serialNumber: targetSerialNumber);
   }
 
-  // Fetch device token from cloud via UUID
+  /// Fetch device token from cloud via UUID.
+  ///
+  /// Pass [persistToken] as false to keep a freshly fetched token out of the
+  /// store. Reading is unaffected, so a token already stored for
+  /// [serialNumber] is still reused.
   Future<String> fetchDeviceToken({
     required String serialNumber,
     required String macAddress,
     required String deviceUUID,
+    bool persistToken = true,
   }) async {
-    String linksysToken = await _loadToken() ??
-        await _fetchToken(
-          serialNumber: serialNumber,
-          deviceUUID: deviceUUID,
-          macAddress: macAddress,
-        ).then((value) async {
-          const storage = FlutterSecureStorage();
-          await storage.write(key: pLinksysToken, value: value);
-          await storage.write(
-              key: pLinksysTokenTs,
-              value: '${DateTime.now().millisecondsSinceEpoch}');
-          return value;
-        });
-
-    return linksysToken;
-  }
-
-  Future<bool> _isLinksysTokenExpired() async {
-    const storage = FlutterSecureStorage();
-    final tokenTs =
-        int.tryParse(await storage.read(key: pLinksysTokenTs) ?? '');
-    if (tokenTs == null) {
-      return true;
+    const tokenStore = DeviceTokenStore();
+    final cachedToken = await tokenStore.read(serialNumber);
+    if (cachedToken != null) {
+      return cachedToken;
     }
-    const tokenExpiration = 60 * 60 * 24 * 1000;
-    return DateTime.now().millisecondsSinceEpoch - tokenTs > tokenExpiration;
-  }
-
-  Future<String?> _loadToken() async {
-    final isExpired = await _isLinksysTokenExpired();
-    const storage = FlutterSecureStorage();
-
-    return isExpired ? null : await storage.read(key: pLinksysToken);
+    final linksysToken = await _fetchToken(
+      serialNumber: serialNumber,
+      deviceUUID: deviceUUID,
+      macAddress: macAddress,
+    );
+    if (persistToken) {
+      await tokenStore.save(linksysToken, serialNumber);
+    }
+    return linksysToken;
   }
 
   Future<String> _fetchToken({
