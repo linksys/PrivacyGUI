@@ -31,7 +31,7 @@ python3 tools/test_router_ai_loader.py
 ## JNAP firmware build path
 
 JNAP PrivacyGUI branches are built by the Jenkins Cloud
-`private-gui-olympus` job with Flutter `3.27.2` and `BUILD_MODE=Upload`. The job
+`private-gui-olympus` job with Flutter `3.27.1` and `BUILD_MODE=Upload`. The job
 publishes `linksysnow.tgz`; its integer Jenkins build number is then passed to
 the Jenkins v2 firmware pipeline as `UI_VER`.
 
