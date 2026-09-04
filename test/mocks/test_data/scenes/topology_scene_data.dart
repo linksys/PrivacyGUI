@@ -149,8 +149,10 @@ final singleNodeDevicesData = DevicesData(
 /// from the one this scene exists to draw. Only one width notices: measured
 /// against the pre-#1430 render, that omission moves 4.2% of the pixels at
 /// `phone480` but 1.4% at `screen1080` and 0.9% at `desktop1280`, both under the
-/// suite's `diffThreshold: 0.025` (#1472). Making the field impossible to omit
-/// is #1466.
+/// suite's `diffThreshold: 0.025` (#1472). Nothing stops the next scene from
+/// omitting it again: #1466 fixes the same "liveness dropped by construction"
+/// shape at the two builder sites, but a fixture-side guard — a required
+/// `dataElementsId`, or a test that pins each scene's node states — has no ticket.
 ///
 /// And that tree is not merely a different one — it is one the builder cannot
 /// produce, so omitting the field puts this scene outside the states the page can
