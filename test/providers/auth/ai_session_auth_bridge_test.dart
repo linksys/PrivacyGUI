@@ -6,7 +6,9 @@ import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../mocks/router_repository_mocks.dart';
 
@@ -52,6 +54,7 @@ void main() {
 
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
   });
 
   test('successful router login bootstraps the AI cookie once', () async {
@@ -87,5 +90,25 @@ void main() {
 
     expect(container.read(authProvider).hasError, isFalse);
     expect(container.read(authProvider).value?.loginType, LoginType.local);
+  });
+
+  test('UI idle logout revokes the AI session through the shared logout path',
+      () async {
+    final router = MockRouterRepository();
+    final aiSession = _RecordingAiSessionService();
+    stubLogin(router, jnapResultOk);
+    final container = ProviderContainer(overrides: [
+      routerRepositoryProvider.overrideWithValue(router),
+      aiSessionServiceProvider.overrideWithValue(aiSession),
+    ]);
+    addTearDown(container.dispose);
+
+    await container.read(authProvider.future);
+    await container.read(authProvider.notifier).localLogin('CandidateSecret!');
+    await container.read(idleLogoutProvider)();
+
+    expect(aiSession.logouts, 1);
+    expect(container.read(authProvider).value?.loginType, LoginType.none);
+    expect(container.read(uiIdleDurationProvider), const Duration(minutes: 15));
   });
 }
