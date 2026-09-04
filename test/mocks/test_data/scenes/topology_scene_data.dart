@@ -214,30 +214,47 @@ final masterNodeWithDevices = UspNodeDetailState(
 /// `isOnline` false — see [slaveNodeOnlineWithDevices] for the same node with the
 /// match, and `SlaveNode.isOnline` for why one field decides it.
 ///
-/// Left offline rather than "fixed" to online, for two reasons. It is a real
-/// reachable state, not fixture rot: the powered-off extender #1430 exists to
-/// catch looks exactly like this. And every width sweep that pumps this state —
-/// the golden suite's `slave_with_devices`, `usp_node_detail_backhaul_overflow_test`
-/// — renders the *wider* of the two liveness labels: `offline` is longer than
+/// The suite's one offline node-detail scene, and it stays offline on purpose. It
+/// is a real reachable state, not fixture rot: the powered-off extender #1430
+/// exists to catch looks exactly like this. And every width sweep that pumps it —
+/// the golden suite's `slave_offline`, `usp_node_detail_backhaul_overflow_test` —
+/// renders the *wider* of the two liveness labels: `offline` is longer than
 /// `online` in every one of the 26 locales where the two differ, and equal in the
 /// rest (measured across `lib/l10n/app_*.arb`, #1465). An online fixture would
 /// quietly narrow all of them.
-final slaveNodeWithDevices = UspNodeDetailState(
+///
+/// **Childless, which is what #1476 changed.** This was `slaveNodeWithDevices`,
+/// an offline slave with one wired client — and liveness and client attribution
+/// come out of the *same* match (see `topology_scene_reachability_test.dart`'s
+/// header for the bench measurement), so no match means offline **and** childless.
+/// The name went with the clients: a scene called `WithDevices` that renders
+/// `DetailEmptyBlock` is the same kind of lie the field was.
+///
+/// Nothing that pumps this state needed the clients. The three-state liveness
+/// ledger reads the header badge and the role chip; the backhaul overflow sweep
+/// reads two tiles in the backhaul card. Both are above the connected-devices
+/// card and neither is laid out by it.
+final slaveNodeOffline = UspNodeDetailState(
   node: SlaveNode(
     deviceId: 'AA:BB:CC:DD:FF:01',
     model: 'MX2000',
     manufacturer: 'Linksys',
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
-    connectedClients: _meshSlaveClients,
+    connectedClients: const [],
     backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
   ),
-  connectedClients: _meshSlaveClients,
+  connectedClients: const [],
 );
 
-/// [slaveNodeWithDevices] plus the single field that decides a slave's liveness —
-/// a DataElements match (`SlaveNode.isOnline`). Nothing else differs, so the two
-/// are a pair: same role, opposite liveness.
+/// [slaveNodeOffline]'s node with the single field that decides a slave's
+/// liveness — a DataElements match (`SlaveNode.isOnline`) — and the client list
+/// that match brings with it. Same role, opposite liveness.
+///
+/// The two used to differ in exactly that one field, which is a cleaner pair but
+/// not a reachable one: an offline slave cannot carry clients (#1476). The clients
+/// are therefore part of what liveness varies, and the role is what is held fixed.
+/// That is the axis the mutation below is about.
 ///
 /// The pair is what makes the node-detail header's two facts *independently*
 /// testable (#1465). A header that derived liveness from the role instead —
@@ -276,9 +293,17 @@ final slaveNodeOnlineWithDevices = UspNodeDetailState(
 /// its own baseline the next day. `Just now` (`diff.inSeconds < 60`) is the one
 /// branch of that formatter that does not move, and recomputing per access keeps
 /// every read inside that window however long a suite runs.
+///
+/// `dataElementsId` is what lets it keep its client list (#1476): the match that
+/// attaches clients is the same one that makes a slave read online, so a
+/// populated `connectedClients` on a matchless slave is a state the builder
+/// cannot produce. It is also the layout gate's `page.node_detail` fixture, whose
+/// `requires` names [UspDeviceListTile] — so emptying the clients instead would
+/// have taken the connected-devices card out of all 234 cells.
 UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
       node: SlaveNode(
         deviceId: 'AA:BB:CC:DD:FF:03',
+        dataElementsId: 'AA:BB:CC:DD:FF:13',
         model: 'MX2000',
         manufacturer: 'Linksys',
         serialNumber: 'DEF789014',
@@ -335,9 +360,14 @@ final masterNodeEmptyDevices = UspNodeDetailState(
 );
 
 // Slave node with a global (routable) LAN IPv6 — shown without a scope badge.
+//
+// `dataElementsId` for the reason [slaveNodeWithBackhaulTiming] gives: a slave
+// with clients is a slave with a match (#1476). Nothing about the IPv6 row it
+// exists for reads either field.
 final slaveNodeGlobalIpv6 = UspNodeDetailState(
   node: SlaveNode(
     deviceId: 'AA:BB:CC:DD:FF:02',
+    dataElementsId: 'AA:BB:CC:DD:FF:12',
     model: 'MX2000',
     manufacturer: 'Linksys',
     serialNumber: 'DEF789013',
@@ -351,9 +381,12 @@ final slaveNodeGlobalIpv6 = UspNodeDetailState(
 
 // Slave node whose only LAN IPv6 is link-local (fe80::/10) — shown with a
 // scope badge in place of the leading icon.
+//
+// `dataElementsId` for the same reason as its sibling above (#1476).
 final slaveNodeLinkLocalIpv6 = UspNodeDetailState(
   node: SlaveNode(
     deviceId: 'AA:BB:CC:DD:FF:03',
+    dataElementsId: 'AA:BB:CC:DD:FF:13',
     model: 'MX2000',
     manufacturer: 'Linksys',
     serialNumber: 'DEF789014',

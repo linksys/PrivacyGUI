@@ -12,6 +12,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'golden_diff_record.dart';
 import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
@@ -69,7 +70,12 @@ void runViewGoldenTests(GoldenTestConfig config) {
   final devices = _resolveDevices(config);
 
   group('${config.viewName} golden tests', () {
-    tearDownAll(() => _writeOverflowReport());
+    tearDownAll(() {
+      _writeOverflowReport();
+      // Alongside the overflow report and for the same reason: a number the run
+      // already computed, kept where a measurement can read it (#1475).
+      writeGoldenDiffReport();
+    });
 
     for (final stateEntry in config.states.entries) {
       for (final device in devices) {
@@ -99,6 +105,15 @@ void runViewGoldenTests(GoldenTestConfig config) {
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
                 _currentGoldenName = name;
+                // Here and not in a setUp: alchemist installs its own
+                // comparator inside `goldenTestRunner.run` and restores the
+                // original in that method's `finally`, so this is the one point
+                // where the comparator for this cell can be wrapped (#1475).
+                installGoldenDiffRecorder(
+                  golden: name,
+                  width: effectiveSize.width.toInt(),
+                  height: effectiveSize.height.toInt(),
+                );
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
@@ -159,6 +174,11 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
                   _currentGoldenName = name;
+                  installGoldenDiffRecorder(
+                    golden: name,
+                    width: effectiveSize.width.toInt(),
+                    height: effectiveSize.height.toInt(),
+                  );
                   await tester.binding.setSurfaceSize(effectiveSize);
                   tester.view.physicalSize = effectiveSize;
                   tester.view.devicePixelRatio = 1.0;

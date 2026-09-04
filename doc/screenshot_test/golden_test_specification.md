@@ -609,6 +609,7 @@ AlchemistConfig(
 ```
 
 - **`diffThreshold: 0.025`** — Allows up to 2.5% pixel difference. Required for tests involving non-deterministic animations (e.g., `JiggleShake` uses `Random()` without a seed for delay/direction). Without this tolerance, edit-mode tests would produce flaky failures.
+  - **It is a fraction of the whole canvas, so its sensitivity falls as the canvas grows.** The canvas is the device width by `GoldenTestConfig.height ?? 800`, and suites pin their own height — at width 480 alone the baselines hold heights from 140 to 4200, so the allowance at one width varies 30×. On `usp_topology_view`'s `height: 1000`, 2.5% is 12,000px at `phone480` and 32,000px at `desktop1280`, while a defect confined to a badge, a chip or a status dot is laid out at a fixed size. #1472's dropped liveness moved 4.209% of `phone480` — 20,203px, so it failed — but 1.376% of `screen1080` and 0.858% of `desktop1280` (14,861px and 10,982px, both passed): the footprint halved as the allowance nearly tripled. Small-area semantic regressions above `phone480` are therefore invisible to this suite by construction — assert them in a widget test instead (`topology_scene_reachability_test.dart` is the worked example), and see [golden_diff_noise_floor.md](golden_diff_noise_floor.md) for the per-width measurement #1475 needs before the numbers can be changed.
 - **`renderShadows: false`** — Shadows are platform-dependent; disabling them prevents cross-machine diffs.
 
 ### Font Loading
