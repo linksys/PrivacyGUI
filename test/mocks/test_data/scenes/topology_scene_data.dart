@@ -151,6 +151,20 @@ final singleNodeDevicesData = DevicesData(
 /// `phone480` but 1.4% at `screen1080` and 0.9% at `desktop1280`, both under the
 /// suite's `diffThreshold: 0.025` (#1472). Making the field impossible to omit
 /// is #1466.
+///
+/// And that tree is not merely a different one — it is one the builder cannot
+/// produce, so omitting the field puts this scene outside the states the page can
+/// ever be in. Measured on the M60TB-EU bench (FW `1.2.3.26072920`, two wireless
+/// slaves): `_findMatchingMeshNode` matches the last 12 hex of the Hosts
+/// `DeviceID` UUID against the DataElements node id, and that single result feeds
+/// both `dataElementsId` *and* the only key that can attach clients —
+/// `clientToNodeMap` is keyed by the DataElements id (`mesh_topology_builder.dart`),
+/// while `Hosts.PhysAddress` is the node's Radio.1 BSSID, one above the AL-MAC
+/// (`80:69:1A:BB:46:95` vs `…:94`), so the `PhysAddress` lookup in
+/// `MeshNetworkBuilder` never hits on real hardware. No match therefore means
+/// offline **and** childless. An offline extender with a live wired client
+/// hanging off it, on a solid green link, is reachable from a fixture and nowhere
+/// else.
 final meshNetworkDevicesData = DevicesData(
   meshNetwork: MeshNetwork(
     master: MasterNode(
