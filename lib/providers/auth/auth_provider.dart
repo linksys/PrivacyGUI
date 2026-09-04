@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
@@ -103,8 +104,6 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
-  bool _isInit = false;
-
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.e('Http Response Error: $error');
@@ -163,6 +162,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         loginType = LoginType.remote;
       } else if (localPassword != null) {
         loginType = LoginType.local;
+        await _bootstrapAiSession(localPassword);
       }
       logger.d(
           '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
@@ -267,7 +267,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         password: password,
       );
     });
-    logger.d('[Auth]: Cloud login done: Auth state = $state');
+    logger.d('[Auth]: Cloud login done: authenticated = ${state.hasValue}');
   }
 
   Future<AuthState> updateCloudCredientials({
@@ -341,6 +341,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         // Save the new local credentials
         const storage = FlutterSecureStorage();
         await storage.write(key: pLocalPassword, value: password);
+        await _bootstrapAiSession(password);
         return previousState.copyWith(
           localPassword: password,
           loginType: LoginType.local,
@@ -349,7 +350,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         throw response;
       }
     }, (error) => guardError);
-    logger.d('[Auth]: Local login done: Auth state = $state');
+    logger.d(
+        '[Auth]: Local login done: authenticated=${state.value?.loginType == LoginType.local}');
   }
 
   Future<void> getPasswordHint() async {
@@ -388,6 +390,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future logout() async {
     logger.d('[Prepare]: Logout');
+    await ref
+        .read(aiSessionServiceProvider)
+        .logout()
+        .onError((error, stackTrace) {
+      logger.w('[Auth]: AI session logout was unavailable');
+    });
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
@@ -420,6 +428,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+  }
+
+  Future<void> _bootstrapAiSession(String password) async {
+    try {
+      final active =
+          await ref.read(aiSessionServiceProvider).bootstrap(password);
+      if (!active) {
+        logger.w('[Auth]: Instant AI session bootstrap was unavailable');
+      }
+    } catch (_) {
+      logger.w('[Auth]: Instant AI session bootstrap was unavailable');
+    }
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;
