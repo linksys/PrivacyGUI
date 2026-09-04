@@ -45,19 +45,48 @@ rm -f goldens/overflow_warnings.json
 # baselines this run has just replaced, and nothing in its output is dated.
 rm -f goldens/golden_diff_percent.jsonl
 
+FAILED=0
+FAILED_LOCALES=()
+
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
   for((i=0; i < ${#LOCS[@]}; i++))
   do
     locale="${LOCS[$i]}"
     echo "Start run screenshot testing with screen: $screens, locales: $locale"
-    $FLUTTER test test/golden_test/ --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0
+    # Each locale is independent work, so one failing locale must not cost the
+    # rest of the list (#1477). `set -e` above would abort the loop on the first
+    # non-zero exit, and a single crashing page is enough to produce one — which
+    # turned a 26-locale generation into one locale of output, with no report
+    # and nothing saying so. `if !` puts the command in a condition, where `set
+    # -e` does not apply; the failure is remembered instead of being fatal.
+    # `run_golden_verify.sh` has always accumulated this way.
+    if ! $FLUTTER test test/golden_test/ --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0; then
+      FAILED=1
+      FAILED_LOCALES+=("$locale")
+    fi
   done
 else
   echo "Target file: $file"
+  # One file, one exit code: there is no list here to be resilient about, and the
+  # caller asked for this file's verdict.
   $FLUTTER test $file --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=visualEffects=0
   exit $?
 fi
 echo 'Generating Localization snapshots Finished!******************************************'
 
-$DART run test_scripts/generate_gallery_report.dart "$version"
+# Generated even after a failure, as the verify script does with its own report:
+# a partial refresh still has to be reviewable, and the gallery is how it is read.
+$DART run test_scripts/generate_gallery_report.dart "$version" || FAILED=1
+
+if [ "$FAILED" -ne 0 ]; then
+  # Last, so it survives the report's output. The exit code says a locale failed;
+  # only this says which ones have to be re-run — and that the PNGs on disk are a
+  # partial refresh rather than a complete one.
+  echo ""
+  echo "WARNING: failed locales: ${FAILED_LOCALES[*]}"
+  echo "Their goldens are incomplete. Re-run those locales before treating"
+  echo "goldens/ as refreshed."
+fi
+
+exit $FAILED
