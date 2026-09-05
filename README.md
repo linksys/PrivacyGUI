@@ -16,6 +16,11 @@ The web shell contains one deferred reference to
   bundle and must not create a duplicate loader.
 - Keep the tag root-relative and deferred so it works independently of the
   Flutter base path and does not block application startup.
+- After local `CheckAdminPassword3` succeeds, PrivacyGUI posts the password once
+  to `/cgi-bin/ai-session.cgi`. The endpoint validates it natively and returns
+  an HttpOnly cookie; the chat JavaScript never receives the password. Logout
+  revokes that server-side AI session. Failure or absence of the optional AI
+  endpoint must not break the normal router login/logout workflow.
 
 Run the loader contract before submitting a web-shell change:
 

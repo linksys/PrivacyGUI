@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,14 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+
+final uiIdleDurationProvider = Provider<Duration>((ref) {
+  return const Duration(minutes: 15);
+});
+
+final idleLogoutProvider = Provider<Future<void> Function()>((ref) {
+  return () => ref.read(authProvider.notifier).logout();
+});
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -45,7 +55,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
-        idleTime: const Duration(minutes: 15),
+        idleTime: ref.watch(uiIdleDurationProvider),
         onIdle: () {
           // not for debug
           if (!kReleaseMode) {
@@ -69,7 +79,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
             return;
           }
           logger.d('Idled!');
-          ref.read(authProvider.notifier).logout();
+          unawaited(ref.read(idleLogoutProvider)());
         },
         child: Container(
           color: Theme.of(context).colorScheme.background,
