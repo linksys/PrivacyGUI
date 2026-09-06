@@ -229,6 +229,30 @@ void main() {
         isNull);
   });
 
+  testWidgets('route change dismisses a pending restart confirmation',
+      (tester) async {
+    final router =
+        GoRouter(initialLocation: '/instant-prototype?instant=3', routes: [
+      GoRoute(
+          path: '/instant-prototype',
+          builder: (_, __) => const InstantTestPage()),
+    ]);
+    addTearDown(router.dispose);
+    await mount(tester,
+        child: Router(
+          routerDelegate: router.routerDelegate,
+          routeInformationParser: router.routeInformationParser,
+          routeInformationProvider: router.routeInformationProvider,
+        ));
+    await tapText(tester, 'My device uses an Ethernet cable');
+    await tapText(tester, 'Restart Router');
+    expect(find.text('Restart your router?'), findsOneWidget);
+    router.go('/instant-prototype');
+    await tester.pumpAndSettle();
+    expect(find.text('Restart your router?'), findsNothing);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
   testWidgets('six direct symptoms and full-page help hide home controls',
       (tester) async {
     await mount(tester);

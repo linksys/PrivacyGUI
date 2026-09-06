@@ -30,8 +30,11 @@ async function check(name, run, mobile = false) {
   });
   try {
     await page.goto(url);
-    await visible(page, 'Instant-Test — Front-End Prototypes');
+    await visible(page, 'Instant-Test preview');
     await button(page, 'Device details').waitFor();
+    for (const oldLayout of ['Single page', 'Home card', 'A · 2-tab + glance', 'B · Verify top-tab', 'Current · 4-tab']) {
+      assert.equal(await page.getByText(oldLayout,{exact:true}).count(),0,'Retired preview layout is still visible');
+    }
     await run(page);
     await page.screenshot({path:`${output}/${name}.png`,fullPage:false});
     assert.deepEqual(errors, [], 'Uncaught browser errors');
@@ -104,6 +107,59 @@ try {
     await activate('Office-Printer 2.4 GHz');await button(p,'Yes — I can see it').waitFor();
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
+  await check('device-details-handoff',async p=>{
+    await button(p,'Device details').click();
+    // Device details exposes an InkWell row with a merged name/band/health label.
+    await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
+    await button(p,'Troubleshoot this device').click();
+    await visible(p,'Help for Office-Printer');
+    assert.match(p.url(),/instant=devices/);
+    await button(p,'Back to device details').first().click();
+    await visible(p,'4 devices connected');
+    // Device details exposes an InkWell row with a merged name/band/health label.
+    await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
+    await button(p,'Troubleshoot this device').waitFor();
+    await p.keyboard.press('Escape');
+  },true);
+  await check('confirmation-cancellation',async p=>{
+    await button(p,'Restart Router').first().click();
+    await visible(p,'Restart your router?');
+    await button(p,'Cancel').click();
+    await button(p,'Restart Router').first().click();
+    await visible(p,'Restart your router?');
+    await p.keyboard.press('Escape');
+    await button(p,"Device won't connect").click();
+    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Keeps disconnecting').click();
+    await button(p,'Force reconnect a device').click();
+    await visible(p,'Force reconnect?');
+    await button(p,'Cancel').click();
+    await button(p,'Force reconnect a device').click();
+    await visible(p,'Force reconnect?');
+    await p.keyboard.press('Escape');
+    await visible(p,'Device keeps dropping WiFi');
+  });
+  await check('browser-back-during-confirmation',async p=>{
+    await button(p,"Device won't connect").click();
+    await button(p,'My device uses an Ethernet cable').click();
+    await button(p,'Restart Router').click();
+    await visible(p,'Restart your router?');
+    await p.goBack();
+    await button(p,'Whole internet is slow').waitFor();
+    assert.equal(await p.getByText('Restart your router?',{exact:true}).count(),0,
+      'Leaving a workflow must dismiss its pending confirmation');
+  });
+  await check('leave-running-monitor',async p=>{
+    await button(p,'Keeps cutting out').click();
+    await button(p,'A few times a day').click();
+    await button(p,'All devices').click();
+    await button(p,'Start connection test').click();
+    await p.getByText(/Monitoring…/).waitFor();
+    await p.goBack();await button(p,'Whole internet is slow').waitFor();
+    await p.goForward();await button(p,'Start connection test').waitFor();
+    assert.equal(await button(p,'Start connection test').isEnabled(),false);
+    assert.equal(await p.getByText(/Monitoring…/).count(),0);
+  });
   await check('remaining-workflows',async p=>{
     await button(p,'Whole internet is slow').click();await button(p,'Check my speed').click();
     await button(p,'Just one specific device').waitFor();

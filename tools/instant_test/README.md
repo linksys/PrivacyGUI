@@ -13,7 +13,7 @@ Use the repository's Flutter version (3.27.2 on this prototype branch), with dep
 
 Set `FLUTTER_BIN` to an explicit Flutter executable if needed. `--build` uses the local JNAP deployment build flags and writes to `build/instant_test`. It does not deploy. The local build includes internal scenario controls and must not be treated as a customer release artifact.
 
-The suites cover six symptom entries, finding routing, mesh health, missing/stale device data, device paging/search, mouse selection, qualifiers, retained lateral returns, speed failure/retry, monitor cancellation and stale results, preview action isolation, and route restoration. The original legacy workflow regressions run too.
+The suites cover six symptom entries, finding routing, mesh health, missing/stale device data, device paging/search, mouse selection, qualifiers, retained lateral returns, speed failure/retry, monitor cancellation and stale results, preview action isolation, route restoration, and dismissal of pending confirmations when leaving a workflow. The original legacy workflow regressions run too.
 
 ## Browser acceptance
 
@@ -36,7 +36,9 @@ Run the browser checks from the repository root:
 npm test --prefix tools/instant_test -- 'http://127.0.0.1:8105/#/instant-prototype'
 ```
 
-The runner accepts only localhost prototype URLs and checks the prototype heading before interacting. It uses fresh Chromium contexts, dark desktop and light mobile viewports, and records screenshots plus `tools/instant_test/artifacts/results.json`. Any failed assertion, uncaught page error, or unexpected failed request gives a nonzero exit code. The three previously reproduced font/version asset 404 paths are recorded separately as known baseline failures; the report is not a claim of a clean console.
+The runner accepts only localhost prototype URLs, checks the single-page preview heading, and verifies that retired layout options are absent before interacting. It uses fresh Chromium contexts, dark desktop and light mobile viewports, and records screenshots plus `tools/instant_test/artifacts/results.json`. Any failed assertion, uncaught page error, or unexpected failed request gives a nonzero exit code. The three previously reproduced font/version asset 404 paths are recorded separately as known baseline failures; the report is not a claim of a clean console.
+
+The browser pass also covers mobile device-details handoff, Cancel/Escape for restart and reconnect confirmations, browser Back during confirmation, and leaving an active monitor. Action headings use compact theme-colored strips, while diagnostic status remains visually separate.
 
 ## Navigation contract
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'user_step_heading.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -816,11 +817,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Check your connection to the router',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Check your connection to the router'),
             const SizedBox(height: 8),
             _checklistItem(context,
                 'Make sure you\'re connected to your Linksys WiFi network (not a neighbor\'s)'),
@@ -850,11 +847,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Check the connection to your modem',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Check the connection to your modem'),
             const SizedBox(height: 8),
             _checklistItem(context,
                 'Find the box from your internet company (Comcast, Spectrum, AT&T, etc.) — it\'s separate from your Linksys router'),
@@ -876,11 +869,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('If cables are fine, contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('If cables are fine, contact your internet provider'),
             const SizedBox(height: 8),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
@@ -906,11 +895,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Try restarting your router',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Try restarting your router'),
             const SizedBox(height: 8),
             Text(
               'Restarting clears DNS cache issues and usually resolves this.',
@@ -936,11 +921,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
           _stepCard(context, Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('If restarting didn\'t fix it:',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              UserStepHeading('If restarting didn\'t fix it:'),
               const SizedBox(height: 8),
               _ispScript(context,
                   'My router is connected and has an IP address, but websites won\'t load and domain names can\'t be resolved. I restarted my router but the problem persists.'),
@@ -968,11 +949,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Still seeing an issue?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Still seeing an issue?'),
             const SizedBox(height: 8),
             Text(
               'The connection looks healthy from the router\'s side. '
@@ -1177,11 +1154,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Run a speed test',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Run a speed test'),
           const SizedBox(height: 12),
           if (_isRunning) ...[
             const Row(children: [
@@ -1327,11 +1300,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Let\'s figure out what\'s slow',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Let\'s figure out what\'s slow'),
           const SizedBox(height: 12),
 
           // Show jitter warning if relevant (gaming/call lag)
@@ -1355,11 +1324,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const SizedBox(height: 10),
           ],
 
-          Text('Where is it slow?',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Where is it slow?'),
           const SizedBox(height: 8),
 
           SizedBox(
@@ -1470,11 +1435,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Contact your internet provider'),
             const SizedBox(height: 8),
             Text(
               'Since restarting didn\'t fix it, the issue is likely outside your router.',
@@ -1505,8 +1466,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Latency / lag troubleshooting',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Latency / lag troubleshooting'),
           const SizedBox(height: 8),
           _infoBox(context,
               'Gaming and video calls are sensitive to latency and jitter, not just download speed. '
@@ -1761,7 +1721,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final visible = matches.skip(page * _devicesPerPage).take(_devicesPerPage);
     final theme = Theme.of(context);
     final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('1. Choose a device', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+      UserStepHeading('1. Choose a device'),
       const SizedBox(height: 8),
       const Text('Select a device below to see help for its connection.'),
       const SizedBox(height: 16),
@@ -1825,7 +1785,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
       if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('2. What is happening?', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('2. What is happening?'),
           const SizedBox(height: 8),
           Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.bodyMedium),
           const SizedBox(height: 16),
@@ -1851,7 +1811,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
       ] else if (_selectedDevice == null)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Start with the device that needs help', style: theme.textTheme.titleMedium),
+          UserStepHeading('Start with the device that needs help'),
           const SizedBox(height: 12),
           const Text('Choose a device from the list. Its connection details and the next troubleshooting step will appear here.'),
         ])),
@@ -1923,11 +1883,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Wired device troubleshooting',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Wired device troubleshooting'),
             const SizedBox(height: 8),
             SelectableText(
               'Check each item as you try it:',
@@ -1946,11 +1902,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Still not working?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Still not working?'),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -2048,8 +2000,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Which device is slow?',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        UserStepHeading('Which device is slow?'),
         const SizedBox(height: 4),
         Text('Select it to get specific advice based on its signal and connection.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
@@ -2397,11 +2348,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Device keeps dropping WiFi',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Device keeps dropping WiFi'),
           const SizedBox(height: 8),
           Text('Check each item as you try it:',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2432,11 +2379,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Things we can try from here',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Things we can try from here'),
           const SizedBox(height: 10),
 
           // Force reconnect — deauthenticates the device so it re-associates fresh
@@ -2920,8 +2863,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (widget.singlePage) {
       return [
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Check the WiFi network name',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Check the WiFi network name'),
           const SizedBox(height: 12),
           Text('Can you see $ssidLabel in your device\'s WiFi list?',
               style: Theme.of(context).textTheme.bodyLarge),
@@ -2992,11 +2934,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('General troubleshooting',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('General troubleshooting'),
           const SizedBox(height: 8),
           Text(
             'Your device is connected but something doesn\'t seem right. '
@@ -3013,11 +2951,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('If those didn\'t help',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('If those didn\'t help'),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -3043,11 +2977,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Check your WiFi details',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Check your WiFi details'),
           const SizedBox(height: 12),
           _wifiCredRow(context, 'Network name', ssid),
           const SizedBox(height: 6),
@@ -3103,11 +3033,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Still not connecting?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Still not connecting?'),
           const SizedBox(height: 8),
           Text(
             'If the steps above haven\'t worked, restarting your router often '
@@ -3147,11 +3073,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Connect your smart home device',
-              style: Theme.of(context)
-                  .textTheme
-                  ?.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Connect your smart home device'),
           const SizedBox(height: 12),
           _checklistItem(context,
               'Make sure your phone is on the same WiFi network you want the device on — not a guest network'),
@@ -3258,7 +3180,7 @@ class _Flow4State extends ConsumerState<_Flow4> {
         (n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical)).toList();
     return [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Improve coverage in that room', style: Theme.of(context).textTheme.titleSmall),
+        UserStepHeading('Improve coverage in that room'),
         const SizedBox(height: 8),
         if (weakNodes.isNotEmpty)
           for (final node in weakNodes)
@@ -3283,11 +3205,7 @@ class _Flow4State extends ConsumerState<_Flow4> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Where is your router right now?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Where is your router right now?'),
           const SizedBox(height: 12),
           for (final (val, label) in options)
             RadioListTile<_RouterPlacement>(
@@ -3577,7 +3495,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Check for connection drops', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        UserStepHeading('Check for connection drops'),
         const SizedBox(height: 8),
         const Text('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
         const SizedBox(height: 12),
@@ -3709,11 +3627,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Run a 2-minute connection test',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Run a 2-minute connection test'),
             const SizedBox(height: 8),
             _infoBox(
               context,
@@ -4188,11 +4102,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                   'with port forwarding, gaming, and VoIP calls. '
                   'Your internet works, but some features are limited.'),
             const SizedBox(height: 12),
-            Text('What would you like to do?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('What would you like to do?'),
             const SizedBox(height: 8),
             if (!isCgnat) ...[
               ListTile(
@@ -4245,11 +4155,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enabling bridge mode',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Enabling bridge mode'),
             const SizedBox(height: 8),
             _infoBox(context,
                 'Bridge mode turns off the routing features on your internet '
@@ -4293,11 +4199,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Switch Linksys to access point mode',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Switch Linksys to access point mode'),
             const SizedBox(height: 8),
             _infoBox(context,
                 'In access point mode, your Linksys handles WiFi but your internet '
@@ -4335,11 +4237,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Contact your internet provider'),
             const SizedBox(height: 8),
             Text(
               isCgnat

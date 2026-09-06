@@ -61,6 +61,12 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
     final location = InstantTestLocation.parse(uri.queryParameters['instant']);
     if (location.value ==
         InstantTestLocation(details: _details, flows: _flowPath).value) return;
+    // Query navigation keeps the page's Navigator route mounted. Its popup
+    // routes must not outlive the workflow that requested confirmation.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) navigator.popUntil((route) => route is! PopupRoute);
+    });
     setState(() {
       _details = location.details;
       _flowPath = location.flows;
