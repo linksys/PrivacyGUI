@@ -34,154 +34,156 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
   /// menu. The host owns the menu; this widget only renders the active flow.
   final VoidCallback? onExitToHome;
 
+  final bool singlePage;
+
   const HelpMeFixItTab({
     super.key,
     this.pendingFlowNotifier,
     this.pendingFlowDeviceNotifier,
     this.onNavigateToMyDevices,
     this.onExitToHome,
+    this.singlePage = false,
   });
 
   @override
   ConsumerState<HelpMeFixItTab> createState() => _HelpMeFixItTabState();
 }
 
+class _FlowVisit {
+  _FlowVisit(this.flow, {this.device});
+  final int flow;
+  final DiagnosticClient? device;
+  final key = UniqueKey();
+  final back = ValueNotifier<VoidCallback?>(null);
+  final indicator = ValueNotifier<String?>(null);
+  void dispose() {
+    back.dispose();
+    indicator.dispose();
+  }
+}
+
 class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
-  int? _activeFlow;
-  /// Flows set this to their step-back function when they have history.
-  /// Shell back arrow calls this if non-null; otherwise exits flow.
-  final _flowStepBackNotifier = ValueNotifier<VoidCallback?>(null);
-  /// Flows update this as steps advance: "Step N of M" or null when not applicable.
-  final _stepIndicatorNotifier = ValueNotifier<String?>(null);
+  final List<_FlowVisit> _visits = [];
 
   @override
   void initState() {
     super.initState();
     widget.pendingFlowNotifier?.addListener(_onPendingFlow);
-    // Tab 3 may be built AFTER the notifier was set (TabBarView lazy build).
-    // Check on first frame so we catch a pending value set before this initState ran.
     WidgetsBinding.instance.addPostFrameCallback((_) => _onPendingFlow());
+  }
+
+  void _retire(List<_FlowVisit> visits) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final visit in visits) { visit.dispose(); }
+    });
   }
 
   @override
   void dispose() {
     widget.pendingFlowNotifier?.removeListener(_onPendingFlow);
-    _flowStepBackNotifier.dispose();
-    _stepIndicatorNotifier.dispose();
+    for (final visit in _visits) { visit.dispose(); }
     super.dispose();
   }
 
   void _onPendingFlow() {
     final flow = widget.pendingFlowNotifier?.value;
     if (flow == null || !mounted) return;
-    widget.pendingFlowNotifier!.value = null; // consume
-    if (flow == -1) {
-      // -1 = reset to landing (tab re-selected while in a flow)
-      setState(() => _activeFlow = null);
-    } else {
-      setState(() => _activeFlow = flow);
-    }
+    widget.pendingFlowNotifier!.value = null;
+    final device = widget.pendingFlowDeviceNotifier?.value;
+    widget.pendingFlowDeviceNotifier?.value = null;
+    _retire(List.of(_visits));
+    setState(() {
+      _visits.clear();
+      if (flow != -1) _visits.add(_FlowVisit(flow, device: device));
+    });
+    if (flow != -1) _recordFlow(flow);
+  }
+
+  void _recordFlow(int flow) {
+    const names = {1: 'internet_not_working', 2: 'internet_slow',
+      3: 'device_connectivity', 30: 'device_connectivity', 31: 'device_slow',
+      4: 'wifi_coverage', 5: 'connection_drops', 6: 'bridge_mode'};
+    ref.read(instantVerifyPivotProvider.notifier)
+        .recordFlowEntered(names[flow] ?? 'flow_$flow');
   }
 
   void _launchFlow(int flow) {
-    const flowNames = {1: 'internet_not_working', 2: 'internet_slow', 3: 'device_connectivity', 4: 'wifi_coverage', 5: 'connection_drops', 6: 'bridge_mode'};
-    ref.read(instantVerifyPivotProvider.notifier).recordFlowEntered(flowNames[flow] ?? 'flow_$flow');
-    setState(() => _activeFlow = flow);
+    _recordFlow(flow);
+    setState(() => _visits.add(_FlowVisit(flow)));
   }
+
   void _exitFlow() {
-    _flowStepBackNotifier.value = null;
-    _stepIndicatorNotifier.value = null;
-    setState(() => _activeFlow = null);
-    // Single-page mode: hand control back to the host (the Instant-Test page).
+    _retire(List.of(_visits));
+    setState(_visits.clear);
     widget.onExitToHome?.call();
   }
 
   void _handleShellBack() {
-    final stepBack = _flowStepBackNotifier.value;
-    if (stepBack != null) {
-      stepBack();
+    final back = _visits.last.back.value;
+    if (back != null) {
+      back();
+    } else if (_visits.length > 1) {
+      final removed = _visits.last;
+      setState(() => _visits.removeLast());
+      _retire([removed]);
     } else {
       _exitFlow();
     }
   }
 
+  Widget _flow(_FlowVisit visit) {
+    final back = visit.back;
+    final indicator = visit.indicator;
+    return switch (visit.flow) {
+      1 => _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow, stepBackNotifier: back),
+      2 => _Flow2(onDone: _exitFlow, onNavigateToFlow: _launchFlow,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      3 || 30 || 31 => _Flow3(onDone: _exitFlow,
+          onNavigateToMyDevices: widget.onNavigateToMyDevices,
+          initialConnected: visit.flow == 30 || visit.flow == 31,
+          initialSlowDevice: visit.flow == 31,
+          initialDevice: visit.device, singlePage: widget.singlePage,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      4 => _Flow4(onDone: _exitFlow, stepBackNotifier: back, singlePage: widget.singlePage),
+      5 => _Flow5(onDone: _exitFlow, onNavigateToFlow: _launchFlow,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator, singlePage: widget.singlePage),
+      6 => _Flow6BridgeMode(onDone: _exitFlow, stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_activeFlow == null) {
-      // Single-page host owns the menu — render nothing while idle.
+    if (_visits.isEmpty) {
       if (widget.onExitToHome != null) return const SizedBox.shrink();
       return _FlowMenu(onSelect: _launchFlow);
     }
-
-    Widget flowWidget;
-    switch (_activeFlow!) {
-      case 1:
-        flowWidget = _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow, stepBackNotifier: _flowStepBackNotifier);
-      case 2:
-        flowWidget = _Flow2(
-          onDone: _exitFlow,
-          onNavigateToFlow: _launchFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 3:
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 30: // Flow 3 launched from My Devices — device verified connected
-        final device = widget.pendingFlowDeviceNotifier?.value;
-        widget.pendingFlowDeviceNotifier?.value = null; // consume
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          initialConnected: true,
-          initialDevice: device,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 31: // Flow 3 launched from Flow 2 "Just one specific device" — skip to slow-device path
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          initialConnected: true,
-          initialSlowDevice: true,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 4:
-        flowWidget = _Flow4(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
-      case 5:
-        flowWidget = _Flow5(
-          onDone: _exitFlow,
-          onNavigateToFlow: _launchFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 6:
-        flowWidget = _Flow6BridgeMode(
-          onDone: _exitFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      default:
-        flowWidget = const SizedBox.shrink();
-    }
-
+    final active = _visits.last;
     return _FlowShell(
-      title: _flowTitle(_activeFlow!),
+      title: _flowTitle(active.flow),
       onBack: _handleShellBack,
-      stepIndicatorNotifier: _stepIndicatorNotifier,
-      child: flowWidget,
+      stepIndicatorNotifier: active.indicator,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // Preserve each origin's selected device and result while visiting
+        // another flow. Removed visits are disposed, including their timers.
+        for (final visit in _visits)
+          Offstage(
+            key: visit.key,
+            offstage: visit != active,
+            child: ExcludeFocus(excluding: visit != active,
+                child: TickerMode(enabled: visit == active, child: _flow(visit))),
+          ),
+        if (widget.singlePage)
+          TextButton(onPressed: _exitFlow, child: const Text('Done — back to Instant-Test')),
+      ]),
     );
   }
 
   static String _flowTitle(int flow) => switch (flow) {
         1 => 'My internet isn\'t working',
         2 => 'My internet is slow',
-        3 => 'Device connectivity issues',
+        3 || 30 => 'Device connectivity issues',
+        31 => 'One device is slow',
         4 => 'WiFi doesn\'t reach a room',
         5 => 'My connection keeps cutting out',
         6 => 'Two routers / Combo gateway',
@@ -965,7 +967,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
   // Smart QoS (CAKE bufferbloat shaping) — proto: local toggle, not wired to the
   // live smartqos JNAP action yet. The gaming/latency path is its home (bufferbloat
   // = latency-under-load). Backend: linksys/JNAP#11.
-  bool _smartQosEnabled = false;
+
 
   // Item 2: within-flow back navigation
   final List<int> _stepHistory = [];
@@ -1440,31 +1442,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 'Devices connected through that node will experience higher latency.',
                 icon: Icons.warning_amber, color: Colors.orange),
           ],
-          // Smart QoS — the real fix for lag under load (bufferbloat).
-          const SizedBox(height: 16),
-          Text('Smart QoS',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          if (!_smartQosEnabled) ...[
-            _infoBox(context,
-                'Smart QoS keeps calls and gaming smooth by managing your upload queue — '
-                'it prevents the lag spikes that happen when something else is uploading. '
-                'One tap, no settings to fiddle with.'),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => setState(() => _smartQosEnabled = true),
-                icon: const Icon(Icons.speed),
-                label: const Text('Enable Smart QoS'),
-              ),
-            ),
-          ] else ...[
-            _infoBox(context,
-                'Smart QoS is on — your connection is now shaped to keep latency low '
-                'under load. Re-run the speed test to see the improvement.',
-                icon: Icons.check_circle, color: Colors.green),
-          ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -1596,7 +1573,8 @@ class _Flow3 extends ConsumerStatefulWidget {
   final DiagnosticClient? initialDevice;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
   final ValueNotifier<String?>? stepIndicatorNotifier;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier, this.stepIndicatorNotifier});
+  final bool singlePage;
+  const _Flow3({this.singlePage = false, required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1636,7 +1614,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   void _pushStep(int newStep) {
     setState(() {
-      _stepHistory.add(_step);
+      if (!widget.singlePage) _stepHistory.add(_step);
       _step = newStep;
     });
     _syncStepBackNotifier();
@@ -1657,6 +1635,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
+    if (widget.singlePage) return _singlePage(context, state);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: Column(
@@ -1675,6 +1654,66 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       ),
     );
+  }
+
+  Widget _singlePage(BuildContext context, InstantVerifyPivotState state) {
+    final loading = state.phase == PivotLoadPhase.idle || state.phase == PivotLoadPhase.loading;
+    final selectedPresent = _selectedDevice != null &&
+        state.clients.any((c) => c.macAddress == _selectedDevice!.macAddress);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Which device needs help?', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (loading) const LinearProgressIndicator(),
+        if (!loading && state.clients.isEmpty)
+          const Text('No device list is available. This does not tell us whether your device is connected.'),
+        if (state.clients.isNotEmpty)
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            value: selectedPresent ? _selectedDevice!.macAddress : null,
+            hint: const Text('Select a device'),
+            items: [for (final device in state.clients)
+              DropdownMenuItem(value: device.macAddress, child: Text(device.displayNameWithOui))],
+            onChanged: loading ? null : (mac) => setState(() {
+              _selectedDevice = state.clients.firstWhere((c) => c.macAddress == mac);
+              _connectState = _selectedDevice!.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
+              _connectIssue = _ConnectIssue.slowOnDevice;
+              _step = 2;
+            }),
+          ),
+        if (_selectedDevice != null && !selectedPresent)
+          const Text('The selected device is not in the latest list. Its connection status is unknown.'),
+        TextButton(onPressed: () => setState(() {
+          _selectedDevice = null;
+          _connectState = _ConnectState.cantConnect;
+          _canSeeSsid = null;
+          _step = 1;
+        }), child: const Text("I don't see my device")),
+        TextButton(onPressed: () => setState(() {
+          _selectedDevice = null;
+          _connectState = _ConnectState.wired;
+          _step = 1;
+        }), child: const Text('My device uses an Ethernet cable')),
+      ])),
+      if (_connectState == _ConnectState.cantConnect) ...[
+        _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
+        ..._step1CantConnect(context),
+      ] else if (_connectState == _ConnectState.wired) ..._step1Wired(context)
+      else if (_selectedDevice != null && selectedPresent) ...[
+        Wrap(spacing: 8, children: [
+          for (final item in const [
+            (_ConnectIssue.slowOnDevice, 'Slow connection'),
+            (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
+            (_ConnectIssue.other, 'Something else'),
+          ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
+              onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
+        ]),
+        if (_connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state)
+        else if (_connectIssue == _ConnectIssue.other) ..._pathOther(context, state)
+        else ..._deviceAnalysisCards(context, state,
+            state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
+      ],
+    ]);
   }
 
   List<Widget> _step0(BuildContext context) => [
@@ -3011,16 +3050,17 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
 enum _RouterPlacement { center, corner, enclosed }
 
-class _Flow4 extends StatefulWidget {
+class _Flow4 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow4({required this.onDone, this.stepBackNotifier});
+  final bool singlePage;
+  const _Flow4({this.singlePage = false, required this.onDone, this.stepBackNotifier});
 
   @override
-  State<_Flow4> createState() => _Flow4State();
+  ConsumerState<_Flow4> createState() => _Flow4State();
 }
 
-class _Flow4State extends State<_Flow4> {
+class _Flow4State extends ConsumerState<_Flow4> {
   int _step = 0;
   _RouterPlacement? _placement;
 
@@ -3036,10 +3076,34 @@ class _Flow4State extends State<_Flow4> {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_step == 0) ..._step0(context),
-          if (_step == 1) ..._step1(context),
+          if (widget.singlePage) ..._singlePage(context)
+          else ...[
+            if (_step == 0) ..._step0(context),
+            if (_step == 1) ..._step1(context),
+          ],
         ],
       );
+
+  List<Widget> _singlePage(BuildContext context) {
+    final state = ref.watch(instantVerifyPivotProvider);
+    final weakNodes = state.meshNodes.where((n) => n.isOnline &&
+        (n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical)).toList();
+    return [
+      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Improve coverage in that room', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (weakNodes.isNotEmpty)
+          for (final node in weakNodes)
+            Text('${node.name} has a weak connection to the main router. Move it closer to the router, toward the room that needs coverage, or use Ethernet.'),
+        if (weakNodes.isEmpty)
+          const Text('Keep the router or a child node in the open, between the main router and the room with weak WiFi. A node needs a good connection back to the router.'),
+        if (state.phase != PivotLoadPhase.complete || state.meshNodes.isEmpty)
+          const Text('Mesh information is unavailable or incomplete; placement advice is general.'),
+      ])),
+      ..._step0(context),
+      ..._step1(context),
+    ];
+  }
 
   List<Widget> _step0(BuildContext context) {
     final options = [
@@ -3067,7 +3131,7 @@ class _Flow4State extends State<_Flow4> {
               dense: true,
             ),
           const SizedBox(height: 12),
-          SizedBox(
+          if (!widget.singlePage) SizedBox(
             width: double.infinity,
             child: FilledButton(
               onPressed:
@@ -3086,8 +3150,9 @@ class _Flow4State extends State<_Flow4> {
         'Move your router out into the open. Enclosures block WiFi signals significantly — even a shelf in the open can double your range.',
       _RouterPlacement.corner =>
         'Move your router toward the center of your home — halfway between the router and the room with weak signal.',
-      _ =>
-        'Your placement is good. The issue may be building materials (concrete, brick, or metal studs between rooms).',
+      _RouterPlacement.center =>
+        'Central placement can help. Building materials (concrete, brick, or metal studs) can still weaken the signal.',
+      null => 'Choose your current placement above for a tailored tip. Keep the router elevated and in the open.',
     };
 
     return [
@@ -3178,7 +3243,8 @@ class _Flow5 extends ConsumerStatefulWidget {
   final ValueChanged<int> onNavigateToFlow;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
   final ValueNotifier<String?>? stepIndicatorNotifier;
-  const _Flow5({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
+  final bool singlePage;
+  const _Flow5({this.singlePage = false, required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow5> createState() => _Flow5State();
@@ -3186,6 +3252,9 @@ class _Flow5 extends ConsumerStatefulWidget {
 
 class _Flow5State extends ConsumerState<_Flow5> {
   int _step = 0;
+  int _monitorGeneration = 0;
+  bool _probeInFlight = false;
+  String? _monitorError;
   _DropFrequency? _frequency;
   _DropScope? _scope;
 
@@ -3202,7 +3271,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   void _pushStep(int newStep) {
     setState(() {
-      _stepHistory.add(_step);
+      if (!widget.singlePage) _stepHistory.add(_step);
       _step = newStep;
     });
     _syncStepBackNotifier();
@@ -3213,6 +3282,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
       // Stepping back out of the live monitor must stop it — otherwise the
       // periodic timer keeps firing and re-runs the 2-minute test (Q-18).
       _monitorTimer?.cancel();
+      _monitorGeneration++;
       setState(() {
         _isMonitoring = false;
         _step = _stepHistory.removeLast();
@@ -3229,14 +3299,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
   @override
   void dispose() {
     _monitorTimer?.cancel();
+      _monitorGeneration++;
     super.dispose();
   }
 
   Future<void> _startMonitor() async {
+    if (_isMonitoring) return;
+    final generation = ++_monitorGeneration;
     setState(() {
       _isMonitoring = true;
       _dropsDetected = 0;
       _checksCompleted = 0;
+      _monitorError = null;
     });
     final svc = ref.read(browserDiagnosticServiceProvider);
     _monitorTimer = Timer.periodic(const Duration(seconds: 24), (timer) async {
@@ -3244,8 +3318,23 @@ class _Flow5State extends ConsumerState<_Flow5> {
         timer.cancel();
         return;
       }
-      final ping = await svc.pingGateway();
-      if (!mounted) return;
+      if (_probeInFlight || generation != _monitorGeneration) return;
+      _probeInFlight = true;
+      final GatewayPingResult ping;
+      try { ping = await svc.pingGateway(); }
+      catch (_) {
+        timer.cancel();
+        if (mounted && generation == _monitorGeneration) {
+          setState(() {
+            _isMonitoring = false;
+            _checksCompleted = 0;
+            _monitorError = 'The connection check could not finish. Try again; no conclusion is available.';
+          });
+        }
+        return;
+      }
+      finally { _probeInFlight = false; }
+      if (!mounted || generation != _monitorGeneration) return;
       bool shouldAdvance = false;
       setState(() {
         _checksCompleted++;
@@ -3292,7 +3381,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedSwitcher(
+  Widget build(BuildContext context) => widget.singlePage
+      ? _singlePage(context)
+      : AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         child: Column(
           key: ValueKey(_step),
@@ -3306,6 +3397,47 @@ class _Flow5State extends ConsumerState<_Flow5> {
           ],
         ),
       );
+
+  void _resetResult() {
+    _step = 0;
+    _checksCompleted = 0;
+    _dropsDetected = 0;
+    _monitorError = null;
+  }
+
+  Widget _singlePage(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Check for connection drops', style: Theme.of(context).textTheme.titleSmall),
+        const Text('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
+        const SizedBox(height: 12),
+        const Text('How often does it drop?'),
+        Wrap(spacing: 8, children: [
+          for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
+            ChoiceChip(label: Text(item.$2), selected: _frequency == item.$1,
+              onSelected: _isMonitoring ? null : (_) => setState(() { _frequency = item.$1; _resetResult(); })),
+        ]),
+        const Text('Which devices are affected?'),
+        Wrap(spacing: 8, children: [
+          for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
+            ChoiceChip(label: Text(item.$2), selected: _scope == item.$1,
+              onSelected: _isMonitoring ? null : (_) => setState(() { _scope = item.$1; _resetResult(); })),
+        ]),
+      ])),
+      if (_scope == _DropScope.specificDevices)
+        OutlinedButton.icon(onPressed: () => widget.onNavigateToFlow(3),
+          icon: const Icon(Icons.devices), label: const Text('Choose the affected device'))
+      else if (_step == 3) ..._step3Result(context)
+      else if (_step == 4) ..._step4PostRestart(context)
+      else ...[
+        if (_monitorError != null) Text(_monitorError!),
+        if (_frequency == null || _scope == null)
+          const Text('Select frequency and affected devices above to start the check.'),
+        ..._step2Monitor(context),
+      ],
+    ],
+  );
 
   List<Widget> _step0(BuildContext context) => [
         _stepCard(context, Column(
@@ -3415,14 +3547,15 @@ class _Flow5State extends ConsumerState<_Flow5> {
             const SizedBox(height: 8),
             _infoBox(
               context,
-              'We\'ll check every ~25 seconds whether your router can reach the internet. This runs for about 2 minutes. Keep this page open.',
+              'We check the connection from this device to your router every 24 seconds for two minutes. This does not test your internet provider. Keep this page open.',
             ),
             const SizedBox(height: 12),
             if (!_isMonitoring && _checksCompleted == 0) ...[
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _startMonitor,
+                  onPressed: widget.singlePage && (_frequency == null || _scope == null)
+                      ? null : _startMonitor,
                   icon: const Icon(Icons.monitor_heart),
                   label: const Text('Start connection test'),
                 ),

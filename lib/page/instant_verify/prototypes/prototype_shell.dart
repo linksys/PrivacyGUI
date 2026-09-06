@@ -1,10 +1,12 @@
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
-import 'package:privacy_gui/page/instant_verify/prototypes/instant_test_card.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_card.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
+import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_pivot_view.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
@@ -23,6 +25,7 @@ class PrototypeRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProviderScope(
       overrides: [
+        browserDiagnosticServiceProvider.overrideWithValue(MockBrowserDiagnosticService()),
         instantVerifyPivotProvider
             .overrideWith(MockInstantVerifyPivotNotifier.new),
       ],
@@ -39,15 +42,6 @@ enum _Layout {
   current('Current · 4-tab');
 
   const _Layout(this.label);
-  final String label;
-}
-
-/// How a fix workflow is presented when launched from a card on the single page.
-enum _LaunchMode {
-  overlay('Full-screen'),
-  sheet('Bottom sheet');
-
-  const _LaunchMode(this.label);
   final String label;
 }
 
@@ -97,7 +91,7 @@ class _PrototypeShellState extends ConsumerState<_PrototypeShell> {
         ),
       ),
       body: switch (_layout) {
-        _Layout.single => const _SinglePage(),
+        _Layout.single => const InstantTestPage(),
         _Layout.homeCard => _HomeCardPreview(
             onEnter: () => setState(() => _layout = _Layout.single)),
         _Layout.protoA => const _ProtoA(),
@@ -115,119 +109,6 @@ class _PrototypeShellState extends ConsumerState<_PrototypeShell> {
 // matching live workflow as an overlay or a bottom sheet, returning here when
 // done. Simplicity for the customer is the target: one page, shortest fix.
 // ════════════════════════════════════════════════════════════════════════
-
-class _SinglePage extends ConsumerStatefulWidget {
-  const _SinglePage();
-
-  @override
-  ConsumerState<_SinglePage> createState() => _SinglePageState();
-}
-
-class _SinglePageState extends ConsumerState<_SinglePage> {
-  _LaunchMode _mode = _LaunchMode.overlay;
-  // Active flow id (1-6) for the full-screen overlay; null = page only.
-  int? _overlayFlow;
-  final _overlayNotifier = ValueNotifier<int?>(null);
-  final _flowDevice = ValueNotifier<DiagnosticClient?>(null);
-
-  @override
-  void dispose() {
-    _overlayNotifier.dispose();
-    _flowDevice.dispose();
-    super.dispose();
-  }
-
-  /// OverviewTab hands us a 0-indexed symptom; flows are 1-indexed.
-  void _launch(int flowIndex) {
-    final flowId = flowIndex + 1;
-    switch (_mode) {
-      case _LaunchMode.overlay:
-        _overlayNotifier.value = flowId;
-        setState(() => _overlayFlow = flowId);
-      case _LaunchMode.sheet:
-        _openSheet(flowId);
-    }
-  }
-
-  void _closeOverlay() => setState(() => _overlayFlow = null);
-
-  void _openSheet(int flowId) {
-    final sheetFlow = ValueNotifier<int?>(flowId);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      // Bounded height — _FlowShell is a Column with an Expanded scroll view,
-      // so it must NOT be wrapped in another scrollable. It scrolls itself.
-      builder: (ctx) => SizedBox(
-        height: MediaQuery.of(ctx).size.height * 0.9,
-        child: HelpMeFixItTab(
-          pendingFlowNotifier: sheetFlow,
-          pendingFlowDeviceNotifier: _flowDevice,
-          onExitToHome: () => Navigator.of(ctx).pop(),
-        ),
-      ),
-    ).then((_) => sheetFlow.dispose());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final page = OverviewTab(
-      onViewClients: () {},
-      onNavigateToFlow: _launch,
-      // Cards now live in the top nav strip — hide the in-body duplicates.
-      showProblemCards: false,
-    );
-
-    return Column(
-      children: [
-        // Our comparison control (prototype only) — how a workflow appears.
-        Container(
-          width: double.infinity,
-          color: scheme.surfaceContainerHighest,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              Text('Workflow opens as:',
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-              const SizedBox(width: 12),
-              SegmentedButton<_LaunchMode>(
-                segments: _LaunchMode.values
-                    .map((m) => ButtonSegment(value: m, label: Text(m.label)))
-                    .toList(),
-                selected: {_mode},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _mode = s.first),
-              ),
-            ],
-          ),
-        ),
-        // Picker cards as a top nav strip — "almost like navigation", but
-        // tapping one launches the workflow over this same page.
-        _PickerStrip(onLaunch: _launch),
-        Expanded(
-          child: Stack(
-            children: [
-              page,
-              if (_overlayFlow != null)
-                Positioned.fill(
-                  child: Material(
-                    color: scheme.surface,
-                    child: HelpMeFixItTab(
-                      pendingFlowNotifier: _overlayNotifier,
-                      pendingFlowDeviceNotifier: _flowDevice,
-                      onExitToHome: _closeOverlay,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// Preview of the Instant-Test home-page entry card among the dashboard tiles.
 /// Tapping the card "enters" Instant-Test (here: switches to the single page).
@@ -259,70 +140,6 @@ class _HomeCardPreview extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               InstantTestCard(onTap: onEnter),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Top "navigation" strip of symptom pickers. Each launches its workflow over
-/// the same single page (via [onLaunch] with the 0-indexed flow).
-class _PickerStrip extends StatelessWidget {
-  const _PickerStrip({required this.onLaunch});
-  final void Function(int flowIndex) onLaunch;
-
-  static const _items = <(IconData, String)>[
-    (Icons.wifi_off, "Internet\nisn't working"),
-    (Icons.speed, 'Internet\nis slow'),
-    (Icons.device_unknown, "Device won't\nconnect"),
-    (Icons.meeting_room_outlined, "Doesn't reach\na room"),
-    (Icons.sync_problem, 'Keeps\ncutting out'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.surface,
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var i = 0; i < _items.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: InkWell(
-                    onTap: () => onLaunch(i),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: 132,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: scheme.outlineVariant),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(_items[i].$1, size: 20, color: scheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(_items[i].$2,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.15)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

@@ -134,8 +134,8 @@ final menus = [
     path: RoutePath.menuInstantTest,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
-    // Instant-Test: the customer-facing 4-tab diagnostic tool.
-    builder: (context, state) => const InstantVerifyPivotView(),
+    // Instant-Test uses the existing authenticated route and session.
+    builder: (context, state) => const InstantTestPage(),
   ),
   LinksysRoute(
     name: RouteNamed.devicePicker,

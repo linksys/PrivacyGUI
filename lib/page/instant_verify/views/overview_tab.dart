@@ -1615,14 +1615,18 @@ class _SummaryRowWidget extends StatelessWidget {
                         fontSize: 12, fontWeight: FontWeight.w500)),
               ),
               if (row.detail.isNotEmpty)
-                Text(
-                  row.detail,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: row.state == _CheckDisplayState.fail
-                          ? Colors.red.shade700
-                          : scheme.onSurfaceVariant),
-                  overflow: TextOverflow.ellipsis,
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    row.detail,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: row.state == _CheckDisplayState.fail
+                            ? Colors.red.shade700
+                            : scheme.onSurfaceVariant),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               const SizedBox(width: 4),
               Icon(
