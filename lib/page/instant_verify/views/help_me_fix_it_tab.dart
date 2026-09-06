@@ -181,16 +181,21 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
             key: visit.key,
             offstage: visit != active,
             child: ExcludeFocus(excluding: visit != active,
-                child: TickerMode(enabled: visit == active, child: _flow(visit))),
+                child: TickerMode(enabled: visit == active, child: SelectionArea(child: _flow(visit)))),
           ),
         if (widget.singlePage) ...[
-          const SizedBox(height: 16),
-          if (widget.onCheckAgain != null) ...[
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+          if (widget.onCheckAgain != null)
             const Text('After trying a fix, check again to see the latest results.'),
-            FilledButton.icon(onPressed: widget.onCheckAgain,
-                icon: const Icon(Icons.refresh), label: const Text('Check again')),
-          ],
-          TextButton(onPressed: _exitFlow, child: Text(widget.exitLabel)),
+          const SizedBox(height: 12),
+          Wrap(spacing: 12, runSpacing: 8, children: [
+            if (widget.onCheckAgain != null)
+              FilledButton.icon(onPressed: widget.onCheckAgain,
+                  icon: const Icon(Icons.refresh), label: const Text('Check again')),
+            TextButton(onPressed: _exitFlow, child: Text(widget.exitLabel)),
+          ]),
         ],
       ]),
     );
@@ -413,10 +418,10 @@ class _FlowShell extends StatelessWidget {
 // so border color, surface, and radius exactly match the rest of the app.
 Widget _stepCard(BuildContext context, Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: AppCard(
-        padding: const EdgeInsets.all(16),
+      child: SizedBox(width: double.infinity, child: AppCard(
+        padding: const EdgeInsets.all(20),
         child: child,
-      ),
+      )),
     );
 
 Widget _infoBox(BuildContext context, String text,
@@ -1630,6 +1635,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
   _ConnectState? _connectState;
   _ConnectIssue? _connectIssue;
   _DeviceType? _deviceType;
+  String _deviceQuery = '';
+  int _devicePage = 0;
+  static const _devicesPerPage = 8;
   bool _isDisablingMacFilter = false;
   bool _macFilterDisabled = false;
   // null = not yet answered, true = can see SSID, false = can't see SSID (Item 12)
@@ -1705,62 +1713,114 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final loading = state.phase == PivotLoadPhase.idle || state.phase == PivotLoadPhase.loading;
     final selectedPresent = _selectedDevice != null &&
         state.clients.any((c) => c.macAddress == _selectedDevice!.macAddress);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Which device needs help?', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        if (loading) const LinearProgressIndicator(),
-        if (!loading && state.clients.isEmpty)
-          const Text('No device list is available. This does not tell us whether your device is connected.'),
-        if (state.clients.isNotEmpty)
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            value: selectedPresent ? _selectedDevice!.macAddress : null,
-            hint: const Text('Select a device'),
-            items: [for (final device in state.clients)
-              DropdownMenuItem(value: device.macAddress, child: Text(device.displayNameWithOui))],
-            onChanged: loading ? null : (mac) => setState(() {
-              _selectedDevice = state.clients.firstWhere((c) => c.macAddress == mac);
-              _connectState = _selectedDevice!.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
+    final matches = state.clients.where((device) =>
+        device.displayNameWithOui.toLowerCase().contains(_deviceQuery.toLowerCase()) ||
+        device.macAddress.toLowerCase().contains(_deviceQuery.toLowerCase())).toList();
+    final lastPage = matches.isEmpty ? 0 : (matches.length - 1) ~/ _devicesPerPage;
+    final page = _devicePage.clamp(0, lastPage);
+    final visible = matches.skip(page * _devicesPerPage).take(_devicesPerPage);
+    final theme = Theme.of(context);
+    final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('1. Choose a device', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      const Text('Select a device below to see help for its connection.'),
+      const SizedBox(height: 16),
+      if (state.clients.length > _devicesPerPage) ...[
+        TextField(
+          decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+          onChanged: (value) => setState(() { _deviceQuery = value; _devicePage = 0; }),
+        ),
+        const SizedBox(height: 12),
+      ],
+      if (loading) const LinearProgressIndicator(),
+      if (!loading && state.clients.isEmpty)
+        const Text('No device list is available. This does not tell us whether your device is connected.'),
+      if (state.clients.isNotEmpty && matches.isEmpty)
+        const Text('No devices match your search.'),
+      for (final device in visible) ...[
+        Material(
+          color: _selectedDevice?.macAddress == device.macAddress
+              ? theme.colorScheme.secondaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: ListTile(
+            key: ValueKey('device-choice-${device.macAddress}'),
+            selected: _selectedDevice?.macAddress == device.macAddress,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            leading: Icon(_selectedDevice?.macAddress == device.macAddress
+                ? Icons.radio_button_checked : Icons.radio_button_off, size: 20),
+            title: Text(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
+            subtitle: Text(device.isWireless ? device.band : 'Ethernet'),
+            onTap: loading ? null : () => setState(() {
+              _selectedDevice = device;
+              _connectState = device.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
               _canSeeSsid = null;
               _step = 2;
             }),
           ),
-        if (_selectedDevice != null && !selectedPresent)
-          const Text('The selected device is not in the latest list. Its connection status is unknown.'),
-        TextButton(onPressed: () => setState(() {
-          _selectedDevice = null;
-          _connectState = _ConnectState.cantConnect;
-          _canSeeSsid = null;
-          _step = 1;
-        }), child: const Text("I don't see my device")),
-        TextButton(onPressed: () => setState(() {
-          _selectedDevice = null;
-          _connectState = _ConnectState.wired;
-          _step = 1;
-        }), child: const Text('My device uses an Ethernet cable')),
-      ])),
+        ),
+        const SizedBox(height: 4),
+      ],
+      if (matches.length > _devicesPerPage)
+        Row(children: [
+          Expanded(child: Text('${page * _devicesPerPage + 1}–${page * _devicesPerPage + visible.length} of ${matches.length}')),
+          IconButton(tooltip: 'Previous devices', onPressed: page == 0 ? null : () => setState(() => _devicePage = page - 1), icon: const Icon(Icons.chevron_left)),
+          IconButton(tooltip: 'Next devices', onPressed: page == lastPage ? null : () => setState(() => _devicePage = page + 1), icon: const Icon(Icons.chevron_right)),
+        ]),
+      const Divider(height: 24),
+      Text('Device not listed?', style: theme.textTheme.titleSmall),
+      TextButton(onPressed: () => setState(() {
+        _selectedDevice = null;
+        _connectState = _ConnectState.cantConnect;
+        _canSeeSsid = null;
+        _step = 1;
+      }), child: const Text("I don't see my device")),
+      TextButton(onPressed: () => setState(() {
+        _selectedDevice = null;
+        _connectState = _ConnectState.wired;
+        _step = 1;
+      }), child: const Text('My device uses an Ethernet cable')),
+    ]));
+    final help = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (_selectedDevice != null && !selectedPresent)
+        _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
+      if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('2. What is happening?', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 16),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final item in const [
+              (_ConnectIssue.cantConnect, "Won't connect"),
+              (_ConnectIssue.slowOnDevice, 'Slow connection'),
+              (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
+              (_ConnectIssue.other, 'Something else'),
+            ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
+                onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
+          ]),
+        ])),
       if (_connectState == _ConnectState.cantConnect) ...[
         _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
         ..._step1CantConnect(context),
       ] else if (_connectState == _ConnectState.wired) ..._step1Wired(context)
       else if (_selectedDevice != null && selectedPresent) ...[
-        Wrap(spacing: 8, children: [
-          for (final item in const [
-            (_ConnectIssue.cantConnect, "Won't connect"),
-            (_ConnectIssue.slowOnDevice, 'Slow connection'),
-            (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
-            (_ConnectIssue.other, 'Something else'),
-          ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
-              onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
-        ]),
         if (_connectIssue == _ConnectIssue.cantConnect) ..._step1CantConnect(context)
         else if (_connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state)
         else if (_connectIssue == _ConnectIssue.other) ..._pathOther(context, state)
         else ..._deviceAnalysisCards(context, state,
             state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
-      ],
+      ] else if (_selectedDevice == null)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Start with the device that needs help', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          const Text('Choose a device from the list. Its connection details and the next troubleshooting step will appear here.'),
+        ])),
     ]);
+    return LayoutBuilder(builder: (context, constraints) => constraints.maxWidth >= 840
+        ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(width: 320, child: picker), const SizedBox(width: 24), Expanded(child: help),
+          ])
+        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [picker, help]));
   }
 
   List<Widget> _step0(BuildContext context) => [
@@ -2097,7 +2157,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               child: Text(device.displayNameWithOui,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
-            TextButton(
+            if (!widget.singlePage) TextButton(
               onPressed: () => setState(() => _selectedDevice = null),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
               child: const Text('Switch Device'),
@@ -2820,9 +2880,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (widget.singlePage) {
       return [
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Check the WiFi network name',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
           Text('Can you see $ssidLabel in your device\'s WiFi list?',
-              style: Theme.of(context).textTheme.titleSmall),
-          Wrap(spacing: 8, children: [
+              style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 16),
+          Wrap(spacing: 8, runSpacing: 8, children: [
             ChoiceChip(label: const Text('Yes — I can see it'), selected: _canSeeSsid == true,
                 onSelected: (_) => setState(() => _canSeeSsid = true)),
             ChoiceChip(label: const Text('No — I don\'t see it'), selected: _canSeeSsid == false,
@@ -3473,17 +3537,21 @@ class _Flow5State extends ConsumerState<_Flow5> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Check for connection drops', style: Theme.of(context).textTheme.titleSmall),
+        Text('Check for connection drops', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
         const Text('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
         const SizedBox(height: 12),
-        const Text('How often does it drop?'),
-        Wrap(spacing: 8, children: [
+        Text('How often does it drop?', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
           for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
             ChoiceChip(label: Text(item.$2), selected: _frequency == item.$1,
               onSelected: _isMonitoring ? null : (_) => setState(() { _frequency = item.$1; _resetResult(); })),
         ]),
-        const Text('Which devices are affected?'),
-        Wrap(spacing: 8, children: [
+        const SizedBox(height: 20),
+        Text('Which devices are affected?', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
           for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
             ChoiceChip(label: Text(item.$2), selected: _scope == item.$1,
               onSelected: _isMonitoring ? null : (_) => setState(() { _scope = item.$1; _resetResult(); })),
@@ -3496,8 +3564,6 @@ class _Flow5State extends ConsumerState<_Flow5> {
       else if (_step == 4) ..._step4PostRestart(context)
       else ...[
         if (_monitorError != null) Text(_monitorError!),
-        if (_frequency == null || _scope == null)
-          const Text('Select frequency and affected devices above to start the check.'),
         ..._step2Monitor(context),
       ],
     ],
@@ -3614,9 +3680,13 @@ class _Flow5State extends ConsumerState<_Flow5> {
               'We check the connection from this device to your router every 24 seconds for two minutes. This does not test your internet provider. Keep this page open.',
             ),
             const SizedBox(height: 12),
+            if (widget.singlePage && (_frequency == null || _scope == null)) ...[
+              const Text('Select frequency and affected devices above to start the check.'),
+              const SizedBox(height: 12),
+            ],
             if (!_isMonitoring && _checksCompleted == 0) ...[
               SizedBox(
-                width: double.infinity,
+                width: widget.singlePage ? null : double.infinity,
                 child: FilledButton.icon(
                   onPressed: widget.singlePage && (_frequency == null || _scope == null)
                       ? null : _startMonitor,

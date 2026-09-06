@@ -53,95 +53,106 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (!_showFlow && _details == null)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+  Widget build(BuildContext context) => SelectionArea(
+      child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final (id, icon, label) in symptoms)
-                    OutlinedButton.icon(
-                      onPressed: () => _launch(id),
-                      icon: Icon(icon, size: 20),
-                      label: Text(label),
+                  if (!_showFlow && _details == null)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final (id, icon, label) in symptoms)
+                            OutlinedButton.icon(
+                              onPressed: () => _launch(id),
+                              icon: Icon(icon, size: 20),
+                              label: Text(label),
+                            ),
+                        ],
+                      ),
                     ),
-                ],
-              ),
-            ),
-          if (!_showFlow && _details == null)
-            Wrap(spacing: 8, children: [
-              TextButton(
-                  onPressed: () => setState(() => _details = 1),
-                  child: const Text('Device details')),
-              TextButton(
-                  onPressed: () => setState(() => _details = 2),
-                  child: const Text('Network details')),
-            ]),
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Offstage(
-                  offstage: _showFlow || _details != null,
-                  child: ExcludeFocus(
-                    excluding: _showFlow || _details != null,
-                    child: OverviewTab(
-                      showProblemCards: false,
-                      onViewClients: () => setState(() => _details = 1),
-                      onNavigateToFlow: (index) => _launch(index + 1),
-                    ),
-                  ),
-                ),
-                if (_details != null)
-                  Offstage(
-                    offstage: _showFlow,
-                    child: ExcludeFocus(
-                        excluding: _showFlow,
-                        child: Column(children: [
-                          ListTile(
-                            leading: IconButton(
-                                tooltip: 'Back to Instant-Test',
-                                icon: const Icon(Icons.arrow_back),
-                                onPressed: () =>
-                                    setState(() => _details = null)),
-                            title: Text(_details == 1
-                                ? 'Device details'
-                                : 'Network details'),
+                  if (!_showFlow && _details == null)
+                    Wrap(spacing: 8, children: [
+                      TextButton(
+                          onPressed: () => setState(() => _details = 1),
+                          child: const Text('Device details')),
+                      TextButton(
+                          onPressed: () => setState(() => _details = 2),
+                          child: const Text('Network details')),
+                    ]),
+                  Expanded(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Offstage(
+                          offstage: _showFlow || _details != null,
+                          child: ExcludeFocus(
+                            excluding: _showFlow || _details != null,
+                            child: SelectionArea(
+                                child: OverviewTab(
+                              showProblemCards: false,
+                              onViewClients: () => setState(() => _details = 1),
+                              onNavigateToFlow: (index) => _launch(index + 1),
+                            )),
                           ),
-                          Expanded(
-                              child: _details == 1
-                                  ? MyDevicesTab(
-                                      onNavigateToFlow: (flow, {device}) =>
-                                          _launch(flow, device: device))
-                                  : const MyNetworkTab()),
-                        ])),
-                  ),
-                if (_showFlow)
-                  Positioned.fill(
-                    child: HelpMeFixItTab(
-                      pendingFlowNotifier: _pendingFlow,
-                      pendingFlowDeviceNotifier: _pendingDevice,
-                      exitLabel: _details == 1
-                          ? 'Back to device details'
-                          : 'Back to Instant-Test',
-                      singlePage: true,
-                      onCheckAgain: () {
-                        setState(() {
-                          _showFlow = false;
-                          _details = null;
-                        });
-                        ref.read(instantVerifyPivotProvider.notifier).fetch();
-                      },
-                      onExitToHome: () => setState(() => _showFlow = false),
+                        ),
+                        if (_details != null)
+                          Offstage(
+                            offstage: _showFlow,
+                            child: ExcludeFocus(
+                                excluding: _showFlow,
+                                child: SelectionArea(
+                                    child: Column(children: [
+                                  ListTile(
+                                    leading: IconButton(
+                                        tooltip: 'Back to Instant-Test',
+                                        icon: const Icon(Icons.arrow_back),
+                                        onPressed: () =>
+                                            setState(() => _details = null)),
+                                    title: Text(_details == 1
+                                        ? 'Device details'
+                                        : 'Network details'),
+                                  ),
+                                  Expanded(
+                                      child: _details == 1
+                                          ? MyDevicesTab(
+                                              onNavigateToFlow: (flow,
+                                                      {device}) =>
+                                                  _launch(flow, device: device))
+                                          : const MyNetworkTab()),
+                                ]))),
+                          ),
+                        if (_showFlow)
+                          Positioned.fill(
+                            child: HelpMeFixItTab(
+                              pendingFlowNotifier: _pendingFlow,
+                              pendingFlowDeviceNotifier: _pendingDevice,
+                              exitLabel: _details == 1
+                                  ? 'Back to device details'
+                                  : 'Back to Instant-Test',
+                              singlePage: true,
+                              onCheckAgain: () {
+                                setState(() {
+                                  _showFlow = false;
+                                  _details = null;
+                                });
+                                ref
+                                    .read(instantVerifyPivotProvider.notifier)
+                                    .fetch();
+                              },
+                              onExitToHome: () =>
+                                  setState(() => _showFlow = false),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-              ],
-            ),
-          ),
-        ],
-      );
+                ],
+              ))));
 }

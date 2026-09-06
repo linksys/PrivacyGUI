@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ui' show PointerDeviceKind;
+import 'package:flutter/rendering.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,11 +27,13 @@ const printer = DiagnosticClient(
     txRateMbps: 20);
 
 class FixtureNotifier extends InstantVerifyPivotNotifier {
+  FixtureNotifier({this.clients = const [printer]});
+  final List<DiagnosticClient> clients;
   @override
-  InstantVerifyPivotState build() => const InstantVerifyPivotState(
+  InstantVerifyPivotState build() => InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
-        clients: [printer],
-        meshNodes: [
+        clients: clients,
+        meshNodes: const [
           MeshNodeInfo(
               deviceId: 'node',
               name: 'Bedroom',
@@ -107,7 +111,7 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
     await tapText(tester, 'One device is slow');
-    expect(find.text('Which device needs help?'), findsOneWidget);
+    expect(find.text('1. Choose a device'), findsOneWidget);
     expect(find.text('Everything in my home'), findsNothing);
     expect(find.text('Run Again'), findsNothing);
     await tapText(tester, 'Back to Instant-Test');
@@ -118,7 +122,6 @@ void main() {
       (tester) async {
     await mount(tester);
     await tapText(tester, "Device won't connect");
-    await tapText(tester, 'Select a device');
     await tapText(tester, 'Office printer');
     expect(find.text('Yes — I can see it'), findsOneWidget);
     expect(
@@ -136,7 +139,6 @@ void main() {
     await tapText(tester, 'A few times a day');
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
-    await tapText(tester, 'Select a device');
     await tapText(tester, 'Office printer');
     expect(
         tester
@@ -259,13 +261,62 @@ void main() {
         isTrue);
   });
 
+  testWidgets(
+      'visible device list caps at eight and supports paging and search',
+      (tester) async {
+    final clients = List.generate(
+        12,
+        (i) => DiagnosticClient(
+            macAddress: '00:00:00:00:00:${i.toString().padLeft(2, '0')}',
+            hostname: 'Test device $i',
+            band: '5 GHz',
+            isWireless: true));
+    await mount(tester, notifier: FixtureNotifier(clients: clients));
+    await tapText(tester, "Device won't connect");
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+    expect(find.text('Test device 0'), findsOneWidget);
+    expect(find.text('Test device 7'), findsOneWidget);
+    expect(find.text('Test device 8'), findsNothing);
+    await tester.ensureVisible(find.byTooltip('Next devices'));
+    await tester.tap(find.byTooltip('Next devices'));
+    await tester.pumpAndSettle();
+    expect(find.text('Test device 8'), findsOneWidget);
+    expect(find.text('Test device 0'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'Test device 11');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Test device 11'), findsOneWidget);
+    expect(find.text('Test device 8'), findsNothing);
+    await tapText(tester, 'Test device 11');
+    expect(find.text('Help for Test device 11'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'missing');
+    await tester.pumpAndSettle();
+    expect(find.text('No devices match your search.'), findsOneWidget);
+    expect(find.text('Help for Test device 11'), findsOneWidget);
+  });
+
+  testWidgets('workflow heading supports mouse text selection', (tester) async {
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    final heading = find.text('1. Choose a device');
+    final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: heading, matching: find.byType(RichText)));
+    final rect = tester.getRect(heading);
+    final drag = await tester.startGesture(rect.centerLeft + const Offset(1, 0),
+        kind: PointerDeviceKind.mouse);
+    await tester.pump();
+    await drag.moveTo(rect.centerRight - const Offset(1, 0));
+    await tester.pump();
+    await drag.up();
+    await tester.pump();
+    expect(paragraph.selections.any((s) => !s.isCollapsed), isTrue);
+  });
+
   testWidgets('device selection is inline and a lost list remains unknown',
       (tester) async {
     final notifier = FixtureNotifier();
     await mount(tester, notifier: notifier);
     await tapText(tester, "Device won't connect");
     expect(find.text('Can your device connect to your WiFi?'), findsNothing);
-    await tapText(tester, 'Select a device');
     await tapText(tester, 'Office printer');
     expect(find.text("Won't connect"), findsOneWidget);
     notifier.loseClientList();
@@ -303,7 +354,7 @@ void main() {
     await tapText(tester, 'A few times a day');
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
-    expect(find.text('Which device needs help?'), findsOneWidget);
+    expect(find.text('1. Choose a device'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to connection check'));
     await tester.pumpAndSettle();
     expect(
@@ -405,7 +456,7 @@ void main() {
     await tapText(tester, 'A few times a day');
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
-    expect(find.text('Which device needs help?'), findsOneWidget);
+    expect(find.text('1. Choose a device'), findsOneWidget);
     expect(find.text('Run Again'), findsNothing);
   });
 
