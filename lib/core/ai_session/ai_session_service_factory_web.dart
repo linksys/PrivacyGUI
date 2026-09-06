@@ -9,8 +9,15 @@ AiSessionService createAiSessionService() {
   return HttpAiSessionService(
     client: client,
     baseUri: Uri.base,
-    onLogout: () => html.window.dispatchEvent(
-      html.CustomEvent('linksys-ai-session-ended'),
-    ),
+    onLogout: () {
+      // sessionStorage survives the route change back to the login screen.
+      // Clear the per-tab engine conversation explicitly so teardown remains
+      // complete even if navigation replaces the widget before its event
+      // listener runs.
+      html.window.sessionStorage.remove('aiMsdmSid');
+      html.window.dispatchEvent(
+        html.CustomEvent('linksys-ai-session-ended'),
+      );
+    },
   );
 }
