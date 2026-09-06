@@ -37,6 +37,8 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
   final bool singlePage;
   final VoidCallback? onCheckAgain;
   final String exitLabel;
+  final List<int>? flowPath;
+  final ValueChanged<List<int>>? onFlowPathChanged;
 
   const HelpMeFixItTab({
     super.key,
@@ -47,6 +49,8 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
     this.singlePage = false,
     this.onCheckAgain,
     this.exitLabel = 'Back to Instant-Test',
+    this.flowPath,
+    this.onFlowPathChanged,
   });
 
   @override
@@ -73,8 +77,40 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   void initState() {
     super.initState();
     widget.pendingFlowNotifier?.addListener(_onPendingFlow);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onPendingFlow());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.flowPath != null) { _syncFlowPath(); } else { _onPendingFlow(); }
+    });
   }
+
+  @override
+  void didUpdateWidget(covariant HelpMeFixItTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.flowPath != null) _syncFlowPath();
+  }
+
+  void _syncFlowPath() {
+    final path = widget.flowPath!;
+    var shared = 0;
+    while (shared < path.length && shared < _visits.length &&
+        path[shared] == _visits[shared].flow) { shared++; }
+    if (shared == path.length && shared == _visits.length) return;
+    _retire(_visits.sublist(shared));
+    final device = widget.pendingFlowDeviceNotifier?.value;
+    widget.pendingFlowDeviceNotifier?.value = null;
+    setState(() {
+      _visits.removeRange(shared, _visits.length);
+      for (var i = shared; i < path.length; i++) {
+        _visits.add(_FlowVisit(path[i], device: i == path.length - 1 ? device : null));
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && path.isNotEmpty) _recordFlow(path.last);
+    });
+  }
+
+  void _publishPath() => widget.onFlowPathChanged?.call(
+      _visits.map((visit) => visit.flow).toList());
 
   void _retire(List<_FlowVisit> visits) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,6 +150,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   void _launchFlow(int flow) {
     _recordFlow(flow);
     setState(() => _visits.add(_FlowVisit(flow)));
+    _publishPath();
   }
 
   void _exitFlow() {
@@ -130,6 +167,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
       final removed = _visits.last;
       setState(() => _visits.removeLast());
       _retire([removed]);
+      _publishPath();
     } else {
       _exitFlow();
     }
@@ -719,7 +757,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Running diagnostics…',
+        Text(_phase == _Flow1Phase.running ? 'Running diagnostics…'
+            : _phase == _Flow1Phase.allOk ? 'Diagnostics complete' : 'Connection problem found',
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
@@ -744,10 +783,10 @@ class _Flow1State extends ConsumerState<_Flow1> {
   Widget _checkRow(BuildContext context, String label, bool? result) {
     Widget indicator;
     if (result == null) {
-      indicator = const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2));
+      indicator = _phase == _Flow1Phase.running
+          ? const SizedBox(width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.remove, size: 18);
     } else if (result) {
       indicator =
           const Icon(Icons.check_circle, color: Colors.green, size: 18);
@@ -759,7 +798,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
       child: Row(children: [
         indicator,
         const SizedBox(width: 10),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        Expanded(child: Text(result == null && _phase != _Flow1Phase.running
+            ? '$label — Not run' : label, style: Theme.of(context).textTheme.bodyMedium)),
       ]),
     );
   }

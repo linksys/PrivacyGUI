@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_location.dart';
 import 'dart:ui' show PointerDeviceKind;
 import 'package:flutter/rendering.dart';
 
@@ -14,6 +17,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_widget.dart';
@@ -27,20 +31,23 @@ const printer = DiagnosticClient(
     txRateMbps: 20);
 
 class FixtureNotifier extends InstantVerifyPivotNotifier {
-  FixtureNotifier({this.clients = const [printer]});
+  FixtureNotifier({this.clients = const [printer], this.meshNodes});
+  final List<MeshNodeInfo>? meshNodes;
   final List<DiagnosticClient> clients;
   @override
   InstantVerifyPivotState build() => InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
         clients: clients,
-        meshNodes: const [
-          MeshNodeInfo(
-              deviceId: 'node',
-              name: 'Bedroom',
-              isController: false,
-              backhaulType: 'Wireless',
-              backhaulRssi: -80)
-        ],
+        deviceScores: clients.map(DeviceScore.compute).toList(),
+        meshNodes: meshNodes ??
+            const [
+              MeshNodeInfo(
+                  deviceId: 'node',
+                  name: 'Bedroom',
+                  isController: false,
+                  backhaulType: 'Wireless',
+                  backhaulRssi: -80)
+            ],
       );
   int fetchCount = 0;
   @override
@@ -56,6 +63,7 @@ class ProbeService extends MockBrowserDiagnosticService {
   Completer<GatewayPingResult>? pending;
   bool fail = false;
   bool speedFail = false;
+  bool gatewayUnavailable = false;
   Completer<SpeedTestResult>? pendingSpeed;
   @override
   Future<SpeedTestResult> runInternetSpeedTest(
@@ -69,6 +77,7 @@ class ProbeService extends MockBrowserDiagnosticService {
   @override
   Future<GatewayPingResult> pingGateway() async {
     calls++;
+    if (gatewayUnavailable) return const GatewayPingResult(reachable: false);
     if (fail) throw StateError('test probe unavailable');
     return pending == null ? super.pingGateway() : pending!.future;
   }
@@ -96,6 +105,129 @@ void main() {
     ], child: child));
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+      'weak WiFi finding opens connection analysis, not cannot-connect advice',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Troubleshoot these devices');
+    await tapText(tester, 'Office printer');
+    expect(
+        tester
+            .widget<ChoiceChip>(
+                find.widgetWithText(ChoiceChip, 'Slow connection'))
+            .selected,
+        isTrue);
+    expect(find.text('Yes — I can see it'), findsNothing);
+  });
+
+  testWidgets('network detail health includes link speed and unknown telemetry',
+      (tester) async {
+    await mount(tester,
+        child: const MyNetworkTab(),
+        notifier: FixtureNotifier(meshNodes: const [
+          MeshNodeInfo(deviceId: 'parent', name: 'Main', isController: true),
+          MeshNodeInfo(
+              deviceId: 'weak',
+              name: 'Bedroom',
+              isController: false,
+              backhaulType: 'Wireless',
+              backhaulRssi: -52,
+              backhaulSpeedMbps: 45),
+          MeshNodeInfo(
+              deviceId: 'moderate',
+              name: 'Hall',
+              isController: false,
+              backhaulType: 'Wireless',
+              backhaulSpeedMbps: 100),
+          MeshNodeInfo(
+              deviceId: 'unknown',
+              name: 'Garage',
+              isController: false,
+              backhaulType: 'Wireless'),
+        ]));
+    expect(find.text('Connected wirelessly — Weak (45 Mbps)'), findsOneWidget);
+    expect(find.text('Connected wirelessly — Moderate (100 Mbps)'),
+        findsOneWidget);
+    expect(find.text('Connected wirelessly — Health unknown'), findsOneWidget);
+    expect(find.textContaining('Good'), findsNothing);
+  });
+
+  testWidgets('completed internet diagnostics stop reporting running',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, "Internet isn't working");
+    expect(find.text('Diagnostics complete'), findsOneWidget);
+    expect(find.text('Running diagnostics…'), findsNothing);
+  });
+
+  testWidgets('failed internet check marks later checks as not run',
+      (tester) async {
+    await mount(tester, service: ProbeService()..gatewayUnavailable = true);
+    await tester.tap(find.text("Internet isn't working"));
+    await tester.pumpAndSettle();
+    expect(find.text('Connection problem found'), findsOneWidget);
+    expect(find.text('Your router reached the internet — Not run'),
+        findsOneWidget);
+    expect(find.text('Websites are loading — Not run'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  test('navigation URL accepts only known views and flows', () {
+    expect(InstantTestLocation.parse('devices/5/32').value, 'devices/5/32');
+    for (final invalid in [
+      'devices/password',
+      'restart',
+      '999',
+      '1/1/1/1/1/1/1/1/1'
+    ]) {
+      expect(InstantTestLocation.parse(invalid).value, isEmpty);
+    }
+  });
+
+  testWidgets(
+      'route restores details and return clears the navigation parameter',
+      (tester) async {
+    final router = GoRouter(
+        initialLocation: '/instant-prototype?instant=network',
+        routes: [
+          GoRoute(
+              path: '/instant-prototype',
+              builder: (_, __) => const InstantTestPage()),
+        ]);
+    addTearDown(router.dispose);
+    await mount(tester,
+        child: Router(
+          routerDelegate: router.routerDelegate,
+          routeInformationParser: router.routeInformationParser,
+          routeInformationProvider: router.routeInformationProvider,
+        ));
+    expect(find.text('Internet Connection'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.queryParameters['instant'],
+        isNull);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+    router.go('/instant-prototype?instant=5/32');
+    await tester.pumpAndSettle();
+    expect(find.text('Device keeps disconnecting'), findsOneWidget);
+    expect(find.byTooltip('Back to connection check'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to connection check'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.queryParameters['instant'],
+        '5');
+    expect(find.text('Start connection test'), findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(find
+                .ancestor(
+                    of: find.text('Start connection test'),
+                    matching: find
+                        .byWidgetPredicate((widget) => widget is FilledButton))
+                .first)
+            .onPressed,
+        isNull);
+  });
 
   testWidgets('six direct symptoms and full-page help hide home controls',
       (tester) async {
@@ -223,6 +355,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Device details'), findsOneWidget);
     expect(find.text('Office printer'), findsOneWidget);
+  });
+
+  testWidgets('all bridge advice branches return to their choices',
+      (tester) async {
+    await mount(tester);
+    tester.widget<OverviewTab>(find.byType(OverviewTab)).onNavigateToFlow!(5);
+    await tester.pumpAndSettle();
+    for (final label in [
+      'Enable bridge mode on the ISP gateway',
+      'Switch Linksys to WiFi access point mode',
+      'Leave it as two routers — contact my internet provider',
+      'Leave as-is — internet is working fine',
+    ]) {
+      await tapText(tester, label);
+      await tester.tap(find.byTooltip('Back to previous step'));
+      await tester.pumpAndSettle();
+      expect(find.text('Two routers detected'), findsOneWidget);
+    }
   });
 
   testWidgets('network details and bridge finding remain reachable',

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'instant_test_location.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
@@ -17,8 +19,10 @@ class InstantTestPage extends ConsumerStatefulWidget {
 }
 
 class _InstantTestPageState extends ConsumerState<InstantTestPage> {
-  final _pendingFlow = ValueNotifier<int?>(null);
-  bool _showFlow = false;
+  List<int> _flowPath = [];
+  bool get _showFlow => _flowPath.isNotEmpty;
+  GoRouter? _router;
+  String? _routePath;
   int? _details;
   final _pendingDevice = ValueNotifier<DiagnosticClient?>(null);
 
@@ -40,16 +44,54 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (router == _router) return;
+    _router?.routeInformationProvider.removeListener(_readRoute);
+    _router = router;
+    _routePath = router?.routeInformationProvider.value.uri.path;
+    router?.routeInformationProvider.addListener(_readRoute);
+    _readRoute();
+  }
+
+  void _readRoute() {
+    final uri = _router?.routeInformationProvider.value.uri;
+    if (uri == null || uri.path != _routePath || !mounted) return;
+    final location = InstantTestLocation.parse(uri.queryParameters['instant']);
+    if (location.value ==
+        InstantTestLocation(details: _details, flows: _flowPath).value) return;
+    setState(() {
+      _details = location.details;
+      _flowPath = location.flows;
+    });
+  }
+
+  void _navigate({int? details, List<int> flows = const []}) {
+    final location = InstantTestLocation(details: details, flows: flows);
+    setState(() {
+      _details = details;
+      _flowPath = List.of(flows);
+    });
+    final router = _router;
+    if (router == null) return; // Embedded widget/test without a route host.
+    final uri = router.routeInformationProvider.value.uri;
+    final query = Map<String, String>.of(uri.queryParameters)
+      ..remove('instant');
+    if (location.value.isNotEmpty) query['instant'] = location.value;
+    router.go(uri.replace(queryParameters: query).toString());
+  }
+
+  @override
   void dispose() {
-    _pendingFlow.dispose();
+    _router?.routeInformationProvider.removeListener(_readRoute);
     _pendingDevice.dispose();
     super.dispose();
   }
 
   void _launch(int flow, {DiagnosticClient? device}) {
     _pendingDevice.value = device;
-    _pendingFlow.value = flow;
-    setState(() => _showFlow = true);
+    _navigate(details: _details, flows: [flow]);
   }
 
   @override
@@ -80,10 +122,10 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                   if (!_showFlow && _details == null)
                     Wrap(spacing: 8, children: [
                       TextButton(
-                          onPressed: () => setState(() => _details = 1),
+                          onPressed: () => _navigate(details: 1),
                           child: const Text('Device details')),
                       TextButton(
-                          onPressed: () => setState(() => _details = 2),
+                          onPressed: () => _navigate(details: 2),
                           child: const Text('Network details')),
                     ]),
                   Expanded(
@@ -97,8 +139,9 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                             child: SelectionArea(
                                 child: OverviewTab(
                               showProblemCards: false,
-                              onViewClients: () => setState(() => _details = 1),
+                              onViewClients: () => _navigate(details: 1),
                               onNavigateToFlow: (index) => _launch(index + 1),
+                              onTroubleshootWeakDevices: () => _launch(31),
                             )),
                           ),
                         ),
@@ -113,8 +156,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                                     leading: IconButton(
                                         tooltip: 'Back to Instant-Test',
                                         icon: const Icon(Icons.arrow_back),
-                                        onPressed: () =>
-                                            setState(() => _details = null)),
+                                        onPressed: () => _navigate()),
                                     title: Text(_details == 1
                                         ? 'Device details'
                                         : 'Network details'),
@@ -131,23 +173,21 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                         if (_showFlow)
                           Positioned.fill(
                             child: HelpMeFixItTab(
-                              pendingFlowNotifier: _pendingFlow,
+                              flowPath: _flowPath,
+                              onFlowPathChanged: (flows) =>
+                                  _navigate(details: _details, flows: flows),
                               pendingFlowDeviceNotifier: _pendingDevice,
                               exitLabel: _details == 1
                                   ? 'Back to device details'
                                   : 'Back to Instant-Test',
                               singlePage: true,
                               onCheckAgain: () {
-                                setState(() {
-                                  _showFlow = false;
-                                  _details = null;
-                                });
+                                _navigate();
                                 ref
                                     .read(instantVerifyPivotProvider.notifier)
                                     .fetch();
                               },
-                              onExitToHome: () =>
-                                  setState(() => _showFlow = false),
+                              onExitToHome: () => _navigate(details: _details),
                             ),
                           ),
                       ],
