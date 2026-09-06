@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/ai_session/ai_session_service_factory_web.dart'
 void main() {
   test('web logout dispatches the shared session-ended event', () async {
     final events = <html.Event>[];
+    html.window.sessionStorage['aiMsdmSid'] = 'stale-conversation';
     void listener(html.Event event) => events.add(event);
 
     html.window.addEventListener('linksys-ai-session-ended', listener);
@@ -22,5 +23,6 @@ void main() {
     await createAiSessionService().logout();
 
     expect(events, hasLength(1));
+    expect(html.window.sessionStorage['aiMsdmSid'], isNull);
   });
 }
