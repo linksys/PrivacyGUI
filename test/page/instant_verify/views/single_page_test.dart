@@ -38,8 +38,12 @@ class FixtureNotifier extends InstantVerifyPivotNotifier {
               backhaulRssi: -80)
         ],
       );
+  int fetchCount = 0;
   @override
-  Future<void> fetch({bool forceSpeedTest = false}) async {}
+  Future<void> fetch({bool forceSpeedTest = false}) async {
+    fetchCount++;
+  }
+
   void loseClientList() => state = state.copyWith(clients: []);
 }
 
@@ -47,6 +51,17 @@ class ProbeService extends MockBrowserDiagnosticService {
   int calls = 0;
   Completer<GatewayPingResult>? pending;
   bool fail = false;
+  bool speedFail = false;
+  Completer<SpeedTestResult>? pendingSpeed;
+  @override
+  Future<SpeedTestResult> runInternetSpeedTest(
+      {void Function(String)? onStep}) async {
+    if (speedFail) throw StateError('speed unavailable');
+    return pendingSpeed == null
+        ? super.runInternetSpeedTest()
+        : pendingSpeed!.future;
+  }
+
   @override
   Future<GatewayPingResult> pingGateway() async {
     calls++;
@@ -66,7 +81,8 @@ void main() {
   mockDependencyRegister();
 
   Future<void> mount(WidgetTester tester,
-      {FixtureNotifier? notifier, BrowserDiagnosticService? service,
+      {FixtureNotifier? notifier,
+      BrowserDiagnosticService? service,
       Widget child = const InstantTestPage()}) async {
     await tester.pumpWidget(testableWidget(overrides: [
       instantVerifyPivotProvider
@@ -94,8 +110,153 @@ void main() {
     expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Everything in my home'), findsNothing);
     expect(find.text('Run Again'), findsNothing);
-    await tapText(tester, 'Done — back to Instant-Test');
+    await tapText(tester, 'Back to Instant-Test');
     expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
+  testWidgets('cannot-connect entry keeps its symptom after choosing a device',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    await tapText(tester, 'Select a device');
+    await tapText(tester, 'Office printer');
+    expect(find.text('Yes — I can see it'), findsOneWidget);
+    expect(
+        tester
+            .widget<ChoiceChip>(
+                find.widgetWithText(ChoiceChip, "Won't connect"))
+            .selected,
+        isTrue);
+  });
+
+  testWidgets('drop entry keeps its symptom after choosing a device',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Keeps cutting out');
+    await tapText(tester, 'A few times a day');
+    await tapText(tester, 'Specific devices');
+    await tapText(tester, 'Choose the affected device');
+    await tapText(tester, 'Select a device');
+    await tapText(tester, 'Office printer');
+    expect(
+        tester
+            .widget<ChoiceChip>(
+                find.widgetWithText(ChoiceChip, 'Keeps disconnecting'))
+            .selected,
+        isTrue);
+    expect(find.text('Device keeps dropping WiFi'), findsOneWidget);
+  });
+
+  testWidgets('check again returns home and fetches fresh diagnostic data',
+      (tester) async {
+    final notifier = FixtureNotifier();
+    await mount(tester, notifier: notifier);
+    final before = notifier.fetchCount;
+    await tapText(tester, "Doesn't reach a room");
+    expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
+    await tapText(tester, 'Check again');
+    expect(notifier.fetchCount, before + 1);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+    expect(find.text('Improve coverage in that room'), findsNothing);
+  });
+
+  testWidgets('speed result and scope share a screen and Back preserves result',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Whole internet is slow');
+    await tapText(tester, 'Check my speed');
+    expect(find.textContaining('120 Mbps down'), findsOneWidget);
+    expect(find.text('No — something still feels slow'), findsNothing);
+    await tapText(tester, 'Just one specific device');
+    await tester.tap(find.byTooltip('Back to speed check'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('120 Mbps down'), findsOneWidget);
+    await tapText(tester, 'Everything in my home is slow');
+    expect(find.byTooltip('Back to previous step'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to previous step'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('120 Mbps down'), findsOneWidget);
+  });
+
+  testWidgets('failed speed check offers retry instead of an empty result',
+      (tester) async {
+    final service = ProbeService()..speedFail = true;
+    await mount(tester, service: service);
+    await tapText(tester, 'Whole internet is slow');
+    await tapText(tester, 'Check my speed');
+    expect(find.textContaining('no speed conclusion'), findsOneWidget);
+    service.speedFail = false;
+    await tapText(tester, 'Check my speed');
+    expect(find.textContaining('120 Mbps down'), findsOneWidget);
+  });
+
+  testWidgets('leaving a pending speed check ignores its late result',
+      (tester) async {
+    final service = ProbeService()..pendingSpeed = Completer<SpeedTestResult>();
+    await mount(tester, service: service);
+    await tapText(tester, 'Whole internet is slow');
+    await tester.tap(find.text('Check my speed'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Back to Instant-Test'));
+    await tester.tap(find.text('Back to Instant-Test'));
+    await tester.pumpAndSettle();
+    service.pendingSpeed!.complete(const SpeedTestResult(
+        downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
+  testWidgets(
+      'device details pass the selected device into help and restore origin',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Device details');
+    await tapText(tester, 'Office printer');
+    await tapText(tester, 'Troubleshoot this device');
+    expect(find.text('Select a device'), findsNothing);
+    expect(find.text('Office printer'), findsOneWidget);
+    expect(find.byTooltip('Back to device details'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to device details'));
+    await tester.pumpAndSettle();
+    expect(find.text('Device details'), findsOneWidget);
+    expect(find.text('Office printer'), findsOneWidget);
+  });
+
+  testWidgets('network details and bridge finding remain reachable',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Network details');
+    expect(find.text('Internet Connection'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
+    tester.widget<OverviewTab>(find.byType(OverviewTab)).onNavigateToFlow!(5);
+    await tester.pumpAndSettle();
+    expect(find.text('Two routers / Combo gateway'), findsOneWidget);
+  });
+
+  testWidgets(
+      'WiFi visibility choices remain editable beside connection advice',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    await tapText(tester, "I don't see my device");
+    await tapText(tester, 'Yes — I can see it');
+    expect(find.text("No — I don't see it"), findsOneWidget);
+    await tapText(tester, "No — I don't see it");
+    expect(
+        tester
+            .widget<ChoiceChip>(
+                find.widgetWithText(ChoiceChip, "No — I don't see it"))
+            .selected,
+        isTrue);
+    await tapText(tester, 'Yes — I can see it');
+    expect(
+        tester
+            .widget<ChoiceChip>(
+                find.widgetWithText(ChoiceChip, 'Yes — I can see it'))
+            .selected,
+        isTrue);
   });
 
   testWidgets('device selection is inline and a lost list remains unknown',
@@ -106,7 +267,7 @@ void main() {
     expect(find.text('Can your device connect to your WiFi?'), findsNothing);
     await tapText(tester, 'Select a device');
     await tapText(tester, 'Office printer');
-    expect(find.text('Slow connection'), findsOneWidget);
+    expect(find.text("Won't connect"), findsOneWidget);
     notifier.loseClientList();
     await tester.pumpAndSettle();
     expect(find.textContaining('connection status is unknown'), findsOneWidget);
@@ -143,7 +304,7 @@ void main() {
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
     expect(find.text('Which device needs help?'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to flows'));
+    await tester.tap(find.byTooltip('Back to connection check'));
     await tester.pumpAndSettle();
     expect(
         tester
@@ -157,7 +318,7 @@ void main() {
                 find.widgetWithText(ChoiceChip, 'Specific devices'))
             .selected,
         isTrue);
-    await tapText(tester, 'Done — back to Instant-Test');
+    await tapText(tester, 'Back to Instant-Test');
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
@@ -174,8 +335,8 @@ void main() {
     expect(service.calls, 1);
     await tester.pump(const Duration(seconds: 24));
     expect(service.calls, 1, reason: 'pending probes must not overlap');
-    await tester.ensureVisible(find.text('Done — back to Instant-Test'));
-    await tester.tap(find.text('Done — back to Instant-Test'));
+    await tester.ensureVisible(find.text('Back to Instant-Test'));
+    await tester.tap(find.text('Back to Instant-Test'));
     await tester.pump();
     service.pending!.complete(const GatewayPingResult(reachable: false));
     await tester.pump(const Duration(seconds: 48));
@@ -221,7 +382,8 @@ void main() {
     expect(find.text('Start connection test'), findsOneWidget);
   });
 
-  testWidgets('overview diagnostic summary fits a mobile viewport', (tester) async {
+  testWidgets('overview diagnostic summary fits a mobile viewport',
+      (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
