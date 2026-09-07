@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/mode/app_mode.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -66,6 +67,17 @@ class DemoProviders {
 
       // 9. Package Widget Loader: Use demo templates from assets
       packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),
+
+      // 10. App mode: demo.
+      //
+      // Behaviour-neutral — demo composes the local strategies (see
+      // `LocalModeProfile.aliasedAs`) and overrides 6, 7 and 5 above mean it never
+      // reaches a transport anyway. This override exists so `AppMode.demo` is
+      // *reachable*: `AppMode.resolve()` reads `ForceCommand`, which has no demo
+      // value because demo is an entry point rather than a build flag. Without
+      // this line the exhaustive `switch` in `appModeProfileProvider` — the guard
+      // the whole of #1474 rests on — would carry an arm nothing could produce.
+      appModeProvider.overrideWithValue(AppMode.demo),
     ];
   }
 }

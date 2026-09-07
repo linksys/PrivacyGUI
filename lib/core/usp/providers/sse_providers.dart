@@ -1,55 +1,68 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/impl/bridge_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
-import 'package:privacy_gui/core/usp/services/sse_local_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
-import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
-import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
-import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+/// How this build's transport is described — the mode-dependent half of
+/// [uspBridgeClientProvider], split out so a test can read it.
+///
+/// The answer comes from `TransportStrategy.bridgeConfig`, so there is no `if`
+/// here. Before #1474 phase 3 the five arguments below were chosen by an inline
+/// `if (GlobalConfig.remote.isActive)` and handed straight to a constructor that
+/// the VM stub *discards* — no getters, nothing to assert on — so the difference
+/// between talking to the router and talking to Guardian was unobservable from a
+/// unit test. This provider is that observation point.
+///
+/// Null means "no transport yet", which is a real state in Remote Assistance: the
+/// mode is known at build time but the Guardian session only arrives with the
+/// agent's link. See `RemoteTransportStrategy.bridgeConfig`.
+final bridgeConfigProvider = Provider<BridgeConfig?>((ref) {
+  final transport = ref.watch(appModeProfileProvider).transport;
+  // `ref` is forwarded rather than resolved here: the remote answer watches
+  // `remoteAssistanceProvider`, so the dependency has to be registered against
+  // this provider. That is why the contract takes a Ref instead of being a getter.
+  return transport.bridgeConfig(ref);
+});
+
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
 ///
-/// In Remote Assistance mode, uses Guardian proxy endpoints.
-/// In local mode, uses on-router usp-bridge endpoints.
+/// A pure assembler since #1474 phase 3: which endpoints, host, token and auth
+/// behaviour to use is [bridgeConfigProvider]'s answer, and this provider only
+/// builds the client and wires its auth-failure callback. `endpoints: local` /
+/// `baseUrl: null` is exactly what the omitted arguments used to mean —
+/// `_endpoints = endpoints ?? BridgeEndpoints.local` and
+/// `_baseUrl => _overrideBaseUrl ?? _usp.baseUrl` — so naming them changes
+/// nothing but makes the local case as inspectable as the remote one.
 final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
 
-  final UspBridgeClient bridge;
+  final config = ref.watch(bridgeConfigProvider);
+  if (config == null) return null;
 
-  if (GlobalConfig.remote.isActive) {
-    // W-4 fix: use select to avoid rebuilds on unrelated state changes
-    final config = ref.watch(
-      remoteAssistanceProvider.select((s) => s.config),
-    );
-    if (config == null) return null;
-
-    bridge = UspBridgeClient(
-      usp,
-      endpoints: BridgeEndpoints.remote(config.sessionId),
-      // Same host as the Guardian session REST API — NOT the app's own origin.
-      baseUrl: config.guardianOrigin,
-      authToken: config.temporaryAccessToken,
-      clientTypeId: config.clientTypeId,
-      authBehavior: AuthBehavior.remote,
-    );
-  } else {
-    bridge = UspBridgeClient(
-      usp,
-      authBehavior: AuthBehavior.local,
-    );
-  }
+  final bridge = UspBridgeClient(
+    usp,
+    endpoints: config.endpoints,
+    // Remotely, the same host as the Guardian session REST API — NOT the app's
+    // own origin. Locally null, which the client reads as "same origin".
+    baseUrl: config.baseUrl,
+    authToken: config.authToken,
+    clientTypeId: config.clientTypeId,
+    authBehavior: config.authBehavior,
+  );
 
   // W-1 fix: wire auth failure to logout (both modes)
   bridge.onAuthFailed = () {
@@ -67,16 +80,21 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
 /// - [SseSubscriptionRegistry] — OBUSPA + bridge subscription tracking
 /// - [SseEventRouter] — event demux by subscription_id
 ///
-/// Uses [LocalSseStrategy] or [RemoteSseStrategy] based on mode.
+/// Uses `LocalSseStrategy` or `RemoteSseStrategy` based on mode — reached
+/// *through* the transport since #1474 phase 3, not by its own `if`.
+///
+/// The strategy itself is unchanged; only who picks it moved. "Which subscription
+/// dance" is a consequence of "which path": the Guardian proxy rejects duplicate
+/// subscription IDs and scopes them to the stream, the on-router bridge is
+/// idempotent. Asking the transport keeps that consequence expressed as one, so a
+/// third transport cannot arrive with a matching SSE discipline nobody wired up.
 final sseManagerProvider = Provider<SseManager?>((ref) {
   final usp = ref.watch(uspClientProvider);
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
-  // Select strategy based on mode
-  final SseOperationStrategy strategy = GlobalConfig.remote.isActive
-      ? RemoteSseStrategy(bridge)
-      : LocalSseStrategy(bridge);
+  final SseOperationStrategy strategy =
+      ref.watch(appModeProfileProvider).transport.sseStrategy(bridge);
 
   final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 
@@ -173,6 +191,15 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // If the bridge is busy (504) or slow, we still attempt SSE connection
   // because SseConnectionManager has its own retry/backoff logic.
   // Skip in Remote mode — Guardian proxy has no health endpoint.
+  //
+  // #1474 phase 3 deliberately left this read alone, taking the file from 3 mode
+  // reads to 1. It is not a mode *cause*: it exists because
+  // `BridgeEndpoints.remote()`'s `health` path is a fabrication — Guardian has no
+  // such endpoint — so this `if` is compensating for a wrong endpoint table, and
+  // the fix is to delete that path, not to give the mode a strategy member for
+  // "does my transport have a health check". That is transport-layer cleanup
+  // outside this epic; wrapping it in a strategy first would freeze the
+  // fabrication into a contract.
   if (!GlobalConfig.remote.isActive) {
     try {
       await bridge.health().timeout(const Duration(seconds: 5));

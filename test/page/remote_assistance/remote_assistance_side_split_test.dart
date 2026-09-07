@@ -94,6 +94,44 @@ const _sharedTransport = <String>{
   'lib/core/usp/services/sse_remote_strategy.dart',
 };
 
+/// The mode framework: code that decides *which side this build is*, and is
+/// therefore on neither.
+///
+/// Added by phase 3 (#1493). These files are named "remote" and so the glob
+/// finds them, but none of them belongs to either RA subsystem: they touch
+/// neither `remoteClientProvider` nor `remoteAccessProvider`. `RemoteModeProfile`
+/// composes the four core strategies the remote build uses; `RemoteSurface` is
+/// cause 5's page-layer arm. What they answer is the question the two sides are
+/// downstream of — which is the distinction `_bothSidesHosts` below already
+/// draws, in the same words: a decider is not a side.
+///
+/// Filing them as `_agentSide` instead would be *true* by that set's own test —
+/// they only ever run in a remote build — and it would misfire. The epic's core
+/// composition root, `lib/core/mode/app_mode_profile.dart`, imports the local and
+/// the remote profile by design; classifying either half as a side makes the root
+/// itself look like an undeclared crossing the day the other half is classified
+/// too. The framework must be able to name both modes in one file. That is what
+/// it is for.
+///
+/// Deliberately unconstrained, for the same reason `_sharedTransport` is: a mode
+/// strategy reaching into one side is plausible rather than wrong — phase 5's
+/// `RemoteSessionStrategy.end()` may well need `remoteAccessProvider` to clear
+/// the session — so there is no invariant here to guard yet. The list is
+/// inventory: it says these six files were looked at and placed.
+///
+/// Only the remote-named half is listed, because only that half is what the glob
+/// forces. `local_mode_profile.dart` and the `local_*` strategies are not RA
+/// files at all — they also serve `cloud` and `demo` — and listing them here
+/// would file them as RA code and move `_globBlindSpot`.
+const _modeFramework = <String>{
+  'lib/core/mode/remote_mode_profile.dart',
+  'lib/core/mode/impl/remote_transport_strategy.dart',
+  'lib/core/mode/impl/remote_credential_strategy.dart',
+  'lib/core/mode/impl/remote_session_strategy.dart',
+  'lib/core/mode/impl/remote_proximity_strategy.dart',
+  'lib/page/_shared/mode/remote_surface.dart',
+};
+
 /// The files that legitimately reach into **both** sides.
 ///
 /// One entry, and it is not the one #1494 predicted. The ticket said "with
@@ -128,7 +166,8 @@ void main() {
   const classified = <String>{
     ..._deviceSide,
     ..._agentSide,
-    ..._sharedTransport
+    ..._sharedTransport,
+    ..._modeFramework,
   };
 
   /// Every `package:privacy_gui/…` file [path] mentions, as a `lib/`-relative
@@ -182,9 +221,11 @@ void main() {
         globFound.difference(classified),
         isEmpty,
         reason: 'New Remote Assistance files that no side owns. Add each to '
-            '_deviceSide, _agentSide or _sharedTransport — the choice is the '
-            'design decision, and leaving it unmade means the scans below do not '
-            'cover the file.',
+            '_deviceSide, _agentSide, _sharedTransport or _modeFramework — the '
+            'choice is the design decision, and leaving it unmade means the scans '
+            'below do not cover the file. Only the first two carry a constraint, '
+            'so putting a file in one of them is the claim that it must never '
+            'reach across; the other two are inventory.',
       );
 
       expect(

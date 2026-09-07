@@ -322,6 +322,35 @@ jobs:
           node --check build/web/flutter_bootstrap.js
           ! grep -nE '\{\{[A-Za-z_][A-Za-z0-9_]*\}\}' build/web/flutter_bootstrap.js
 
+      # Acceptance 9 of #1493: the Remote Assistance flavour still compiles.
+      #
+      # A step on this job, not a fifth job, and that is deliberate: the four
+      # required check names are the `name:` values of the four jobs (see the note
+      # below), so a fifth job would be advisory until someone updated the
+      # ruleset — silently. A step inside an already-required job is required the
+      # moment it merges.
+      #
+      # What it catches that nothing else can. `force=remote` is a *compile-time*
+      # partition: `String.fromEnvironment('force')` is const, so tree-shaking and
+      # const evaluation differ between the two flavours. Everything else in this
+      # pipeline — analyze, the unit suite, the build above — only ever sees
+      # `force=none`. #1474 moves the mode decision into strategies selected by a
+      # const-derived enum, which is exactly the kind of code where the remote
+      # flavour can stop compiling (or stop linking a class the local one keeps)
+      # while every green check above stays green. The RA build is also shipped, so
+      # "it built locally" is not a substitute.
+      #
+      # Separate output directory so this cannot clobber `build/web/` and the
+      # verify step above cannot come to depend on step order — a reorder would
+      # otherwise make that grep read the wrong artifact and still pass.
+      #
+      # `--no-pub` for the same reason as above: the setup action already ran it.
+      - name: 🏗️ Smoke Build (Web, force=remote)
+        run: |
+          flutter build web --release --no-pub \
+            --dart-define=force=remote \
+            --output "${{ github.workspace }}/build/web-remote"
+
   # ========================================================================
   # Required status checks are a repository setting, and there are none today
   # ------------------------------------------------------------------------
