@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'details_disclosure.dart';
 
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/constants/build_config.dart';
@@ -627,7 +628,7 @@ class _StatusCard extends StatelessWidget {
           children: [
             _statusRow(context),
             const Divider(height: 20),
-            _ChecklistProgress(state: state),
+            DetailsDisclosure(label: 'View test progress', child: _ChecklistProgress(state: state)),
           ],
         ),
       );
@@ -648,8 +649,6 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _statusRow(context),
-            const Divider(height: 20),
             Row(children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 22),
               const SizedBox(width: 10),
@@ -695,15 +694,13 @@ class _StatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _statusRow(context),
-          const Divider(height: 20),
           // Headline
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _priorityIcon(primary.priority),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                primary.headline,
+                primary.summary ?? primary.headline,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600, fontSize: 16),
               ),
@@ -712,8 +709,13 @@ class _StatusCard extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: Text(primary.explanation,
-                style: TextStyle(color: scheme.onSurfaceVariant)),
+            child: primary.hasAutoFix
+                ? DetailsDisclosure(label: 'Why this matters',
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      if (primary.summary != null) Text(primary.headline),
+                      Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+                    ]))
+                : Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
 
           // Primary action button — or ISP escalation after restart (D-26)
@@ -760,54 +762,14 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
 
-          // Secondary findings (always show up to 2)
-          if (visible.length > 1) ...[
-            const Divider(height: 24),
-            const Text('Also found:',
-                style: TextStyle(
-                    fontWeight: FontWeight.w500, fontSize: 13)),
-            const SizedBox(height: 8),
-            ...visible.skip(1).map((f) => _FindingRow(
-                  finding: f,
-                  onAction: onAction,
-                )),
-          ],
-
-          // Hidden findings expandable
-          if (hidden.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            InkWell(
-              onTap: onToggleFindings,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(children: [
-                  Icon(
-                    findingsExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    findingsExpanded
-                        ? 'Show less'
-                        : '${hidden.length} more ${hidden.length == 1 ? 'finding' : 'findings'}',
-                    style: TextStyle(
-                        color: scheme.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500),
-                  ),
-                ]),
-              ),
+          if (visible.length > 1 || hidden.isNotEmpty)
+            DetailsDisclosure(
+              label: '${visible.length - 1 + hidden.length} other findings',
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ...[...visible.skip(1), ...hidden].map((f) => _FindingRow(
+                    finding: f, onAction: onAction)),
+              ]),
             ),
-            if (findingsExpanded)
-              ...hidden.map((f) => _FindingRow(
-                    finding: f,
-                    onAction: onAction,
-                  )),
-          ],
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
@@ -1037,6 +999,9 @@ class _DeviceIssuesCard extends StatelessWidget {
             'Devices with weak WiFi',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
+          Text('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may need a stronger signal.'),
+          DetailsDisclosure(label: 'View affected devices', child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 12),
           ...issueDevices.take(5).map((d) => _DeviceIssueRow(score: d)),
           if (issueDevices.length > 5)
@@ -1052,6 +1017,7 @@ class _DeviceIssuesCard extends StatelessWidget {
           Text(advice,
               style: TextStyle(
                   fontSize: 13, color: scheme.onSurfaceVariant)),
+          ])),
           // Direct action into the fix flow instead of only telling the user
           // to go to My Devices (on-device feedback).
           if (onNavigateToFlow != null || onTroubleshoot != null) ...[
@@ -1181,11 +1147,14 @@ class _MeshCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ]),
+          if (nodes.any((n) => n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical))
+            const Text('A WiFi node has a weak connection.'),
+          DetailsDisclosure(label: 'View WiFi node details', child: Column(children: [
           const SizedBox(height: 12),
           ...nodes.map((node) => _MeshNodeRow(
                 node: node,
                 clientCount: state.clientCountForNode(node.deviceId),
-              )),
+              )),          ])),
         ],
       ),
     );
@@ -1379,7 +1348,7 @@ class _MeshNodeRow extends StatelessWidget {
 
 class _CheckResultsExpand extends StatelessWidget {
   final InstantVerifyPivotState state;
-  // expanded and onToggle kept for API compat but toggle is removed — always visible
+  // Legacy host arguments; disclosure state belongs to the mounted details.
   final bool expanded;
   final VoidCallback onToggle;
 
@@ -1391,20 +1360,9 @@ class _CheckResultsExpand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        Text(
-          'Test details',
-          style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 6),
-        _ChecklistSummary(state: state),
-      ],
+    return DetailsDisclosure(
+      label: 'View test details',
+      child: _ChecklistSummary(state: state),
     );
   }
 }

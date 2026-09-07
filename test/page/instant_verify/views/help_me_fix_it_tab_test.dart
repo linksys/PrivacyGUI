@@ -157,9 +157,11 @@ void main() {
     testWidgets('shows diagnostic progress card on entry', (tester) async {
       await openFlow1(tester);
       expect(find.text('Running diagnostics…'), findsOneWidget);
+      await tester.tap(find.text('View test details'));
+      await tester.pump();
       expect(find.text('This device reached your router'), findsOneWidget);
       expect(find.text('Your router reached the internet'), findsOneWidget);
-      expect(find.text('Websites are loading'), findsOneWidget);
+      expect(find.textContaining('Websites are loading'), findsOneWidget);
     });
 
     testWidgets('never shows restart as first action', (tester) async {
@@ -310,7 +312,9 @@ void main() {
       expect(find.text('Device keeps dropping WiFi'), findsOneWidget);
       // Checklist items now in _ClickChecklistItem widgets — use broad search
       expect(find.textContaining('Move the device closer'), findsOneWidget);
-      // 'forgetting' text is below the fold but in the widget tree
+      await tester.ensureVisible(find.text('Try the next step'));
+      await tester.tap(find.text('Try the next step'));
+      await tester.pumpAndSettle();
       expect(find.textContaining('reconnect fresh'), findsAtLeast(1));
     });
 
@@ -363,6 +367,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
+      for (var i = 0; i < 3; i++) {
+        await tester.ensureVisible(find.text('Try the next step'));
+        await tester.tap(find.text('Try the next step'));
+        await tester.pumpAndSettle();
+      }
       expect(find.textContaining('2.4 GHz'), findsOneWidget);
     });
   });
@@ -787,7 +796,10 @@ void main() {
       await tester.pumpWidget(_buildTab(state));
       await tester.pumpAndSettle();
       await _navigateToSsidNotVisible(tester);
-      // Radio status card shows bands
+      await tester.ensureVisible(find.text('WiFi radio details'));
+      await tester.tap(find.text('WiFi radio details'));
+      await tester.pumpAndSettle();
+      // Radio status details retain all bands
       expect(find.text('2.4 GHz'), findsWidgets);
       expect(find.text('5 GHz'), findsWidgets);
       expect(find.text('Active'), findsWidgets);

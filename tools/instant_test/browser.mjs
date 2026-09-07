@@ -81,16 +81,52 @@ try {
       assert(details.y>last.y+last.height,'Detail links must follow the action section and diagnostics');
     },mobile);
   }
+  for (const mobile of [false,true]) {
+    await check(mobile?'optional-details-mobile':'optional-details-desktop',async p=>{
+      assert.equal(await p.getByText('Test details',{exact:true}).count(),0);
+      await clickInScrollView(p,'View test details');
+      await button(p,'Hide test details').waitFor();
+      await clickInScrollView(p,'Hide test details');
+      await clickInScrollView(p,'One device is slow');
+      await button(p,'Office-Printer WiFi').click();
+      await visible(p,'Weak WiFi signal');
+      assert.equal(await button(p,'Office-Printer WiFi').count(),0,'Device list should collapse after selection');
+      assert.equal(await p.getByText('Band',{exact:true}).count(),0);
+      if (mobile) {
+        await clickInScrollView(p,'Connection details');
+      } else {
+        await button(p,'Connection details').focus();
+        await p.keyboard.press('Enter');
+      }
+      await visible(p,'Band');
+      await clickInScrollView(p,'Hide connection details');
+      await p.getByText('Band',{exact:true}).waitFor({state:'detached'});
+      assert.equal(await p.getByText('Band',{exact:true}).count(),0);
+      await clickInScrollView(p,'Change device');
+      await button(p,'Office-Printer WiFi').waitFor();
+      await clickInScrollView(p,'Hide change device');
+      await clickInScrollView(p,'Change problem');
+      await clickInScrollView(p,'Keeps disconnecting');
+      await clickInScrollView(p,'Hide change problem');
+      await clickInScrollView(p,'Try the next step');
+      await visible(p,'Forget this WiFi network on the device, then reconnect fresh. Have your WiFi password ready.');
+      await clickInScrollView(p,'Previous step');
+      await visible(p,'Move the device closer to your router or a child node');
+    },mobile);
+  }
   await check('weak-device-finding', async p=>{
     await clickInScrollView(p,'Troubleshoot these devices');
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
     await visible(p,'Help for Office-Printer');
+    assert.equal(await p.getByText('Link rate',{exact:true}).count(),0);
+    await visible(p,'Try this first');
+    await button(p,'Connection details').click();
     await visible(p,'Link rate');
     assert.equal(await button(p,'Yes — I can see it').count(),0);
     assert.match(p.url(),/instant=31/);
   });
   await check('mesh-health',async p=>{
-    await visible(p,'Weak backhaul');
+    await visible(p,'A WiFi node has a weak connection.');
     await clickInScrollView(p,'View network');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
@@ -116,11 +152,11 @@ try {
     await button(p,'A few times a day').click();
     await button(p,'Specific devices').click();
     await button(p,'Choose the affected device').click();
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
     await visible(p,'Device keeps dropping WiFi');
     await p.goBack();await button(p,'Choose the affected device').waitFor();
-    await p.goForward();await button(p,'Office-Printer 2.4 GHz').waitFor();
-    await p.reload();await button(p,'Office-Printer 2.4 GHz').waitFor();
+    await p.goForward();await button(p,'Office-Printer WiFi').waitFor();
+    await p.reload();await button(p,'Office-Printer WiFi').waitFor();
     assert.equal(await button(p,'Device stopped dropping').count(),0, 'Refresh must not restore device data');
     await button(p,'Back to connection check').click();
     await button(p,'Start connection test').waitFor();
@@ -136,8 +172,8 @@ try {
       }
       throw Error(`Not reachable with Tab: ${label}`);
     }
-    await activate("Device won't connect");await button(p,'Office-Printer 2.4 GHz').waitFor();
-    await activate('Office-Printer 2.4 GHz');await button(p,'Yes — I can see it').waitFor();
+    await activate("Device won't connect");await button(p,'Office-Printer WiFi').waitFor();
+    await activate('Office-Printer WiFi');await button(p,'Yes — I can see it').waitFor();
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
   await check('device-details-handoff',async p=>{
@@ -162,7 +198,8 @@ try {
     await visible(p,'Restart your router?');
     await p.keyboard.press('Escape');
     await button(p,"Device won't connect").click();
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
+    await button(p,'Change problem').click();
     await button(p,'Keeps disconnecting').click();
     await button(p,'Force reconnect a device').click();
     await visible(p,'Force reconnect?');

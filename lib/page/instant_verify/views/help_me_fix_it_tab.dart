@@ -1,3 +1,4 @@
+import 'details_disclosure.dart';
 import 'dart:async';
 import 'user_step_heading.dart';
 
@@ -765,6 +766,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
                 .titleSmall
                 ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
+        DetailsDisclosure(label: 'View test details', child: Column(children: [
         _checkRow(context, 'This device reached your router',
             _phase == _Flow1Phase.running && !_gatewayOk
                 ? null
@@ -777,6 +779,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             _phase == _Flow1Phase.running && _internetOk
                 ? null
                 : (_internetOk ? _dnsOk : null)),
+        ])),
       ],
     ));
   }
@@ -819,12 +822,11 @@ class _Flow1State extends ConsumerState<_Flow1> {
           children: [
             UserStepHeading('Check your connection to the router'),
             const SizedBox(height: 8),
-            _checklistItem(context,
-                'Make sure you\'re connected to your Linksys WiFi network (not a neighbor\'s)'),
-            _checklistItem(context,
-                'If you\'re using a wired connection, check that the Ethernet cable is firmly plugged in at both ends'),
-            _checklistItem(context,
-                'Move closer to your router and try again'),
+            GuidedSteps(steps: [
+              'Make sure you\'re connected to your Linksys WiFi network (not a neighbor\'s)',
+              'If you\'re using a wired connection, check that the Ethernet cable is firmly plugged in at both ends',
+              'Move closer to your router and try again',
+            ]),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -849,12 +851,11 @@ class _Flow1State extends ConsumerState<_Flow1> {
           children: [
             UserStepHeading('Check the connection to your modem'),
             const SizedBox(height: 8),
-            _checklistItem(context,
-                'Find the box from your internet company (Comcast, Spectrum, AT&T, etc.) — it\'s separate from your Linksys router'),
-            _checklistItem(context,
-                'Check that the cable between that box and your Linksys router is firmly plugged in at both ends'),
-            _checklistItem(context,
-                'Look for lights on that box — if all lights are off or blinking red, the issue is with your internet service'),
+            GuidedSteps(steps: [
+              'Find the box from your internet company (Comcast, Spectrum, AT&T, etc.) — it\'s separate from your Linksys router',
+              'Check that the cable between that box and your Linksys router is firmly plugged in at both ends',
+              'Look for lights on that box — if all lights are off or blinking red, the issue is with your internet service',
+            ]),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -1226,6 +1227,12 @@ class _Flow2State extends ConsumerState<_Flow2> {
                           fontWeight: FontWeight.w500,
                         )),
                 const SizedBox(height: 6),
+
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          DetailsDisclosure(label: 'View speed test details', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 // Show all three metrics — PRD D-35 requires upload visibility
                 SelectableText(
                   '${mbps.toStringAsFixed(0)} Mbps down · '
@@ -1234,12 +1241,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
+                ),          SelectableText(
             'This measures your speed from this device through your browser to the internet. '
             'Browser-based tests are typically slower than your router\'s built-in speed test — '
             'that\'s normal. Results also vary by time of day and how many devices are active.',
@@ -1247,6 +1249,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
+          ])),
         ],
       )),
 
@@ -1472,9 +1475,11 @@ class _Flow2State extends ConsumerState<_Flow2> {
               'Gaming and video calls are sensitive to latency and jitter, not just download speed. '
               'High latency causes lag even with fast internet.'),
           const SizedBox(height: 12),
-          _checklistItem(context, 'Connect the device with an Ethernet cable if possible — wired is always better for gaming'),
-          _checklistItem(context, 'If on WiFi, move the device closer to your router or a child node'),
-          _checklistItem(context, 'Close bandwidth-heavy apps on other devices (streaming, downloads)'),
+          GuidedSteps(steps: [
+              'Connect the device with an Ethernet cable if possible — wired is always better for gaming',
+              'If on WiFi, move the device closer to your router or a child node',
+              'Close bandwidth-heavy apps on other devices (streaming, downloads)',
+            ]),
           if (state.speedTest != null && state.speedTest!.jitterMs > 20) ...[
             const SizedBox(height: 8),
             _infoBox(context,
@@ -1723,8 +1728,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       UserStepHeading('1. Choose a device'),
       const SizedBox(height: 8),
-      const Text('Select a device below to see help for its connection.'),
-      const SizedBox(height: 16),
+
       if (state.clients.length > _devicesPerPage) ...[
         TextField(
           decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
@@ -1749,7 +1753,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             leading: Icon(_selectedDevice?.macAddress == device.macAddress
                 ? Icons.radio_button_checked : Icons.radio_button_off, size: 20),
             title: Text(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text(device.isWireless ? device.band : 'Ethernet'),
+            subtitle: Text(device.isWireless ? 'WiFi' : 'Ethernet'),
             onTap: loading ? null : () => setState(() {
               _selectedDevice = device;
               _connectState = device.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
@@ -1780,15 +1784,27 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _step = 1;
       }), child: const Text('My device uses an Ethernet cable')),
     ]));
+    final deviceChoice = _selectedDevice != null && selectedPresent
+        ? _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.titleSmall),
+            DetailsDisclosure(key: ValueKey(_selectedDevice!.macAddress), label: 'Change device', child: picker),
+          ]))
+        : picker;
     final help = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_selectedDevice != null && !selectedPresent)
         _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
       if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          UserStepHeading('2. What is happening?'),
+          Text(switch (_connectIssue) {
+            _ConnectIssue.cantConnect => "Won't connect",
+            _ConnectIssue.slowOnDevice => 'Slow connection',
+            _ConnectIssue.keepsDropping => 'Keeps disconnecting',
+            _ConnectIssue.other => 'Something else',
+            null => 'Device connection',
+          }, style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
-          Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 16),
+
+          DetailsDisclosure(label: 'Change problem', child:
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final item in const [
               (_ConnectIssue.cantConnect, "Won't connect"),
@@ -1797,7 +1813,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               (_ConnectIssue.other, 'Something else'),
             ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
                 onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
-          ]),
+          ])),
         ])),
       if (_connectState == _ConnectState.cantConnect) ...[
         _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
@@ -1813,14 +1829,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           UserStepHeading('Start with the device that needs help'),
           const SizedBox(height: 12),
-          const Text('Choose a device from the list. Its connection details and the next troubleshooting step will appear here.'),
+          const Text('Choose a device to get started.'),
         ])),
     ]);
     return LayoutBuilder(builder: (context, constraints) => constraints.maxWidth >= 840
         ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 320, child: picker), const SizedBox(width: 24), Expanded(child: help),
+            SizedBox(width: 280, child: deviceChoice), const SizedBox(width: 24), Expanded(child: help),
           ])
-        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [picker, help]));
+        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [deviceChoice, help]));
   }
 
   List<Widget> _step0(BuildContext context) => [
@@ -1886,17 +1902,19 @@ class _Flow3State extends ConsumerState<_Flow3> {
             UserStepHeading('Wired device troubleshooting'),
             const SizedBox(height: 8),
             SelectableText(
-              'Check each item as you try it:',
+              'Try a step, then check whether the connection improves.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 12),
-            _checklistItem(context, 'Check the Ethernet cable is firmly plugged in at both ends'),
-            _checklistItem(context, 'Try a different Ethernet port on the router'),
-            _checklistItem(context, 'Try a different cable if you have one'),
-            _checklistItem(context, 'Check if the port light on the router is on when plugged in'),
-            _checklistItem(context, 'Restart the device and try again'),
+            GuidedSteps(steps: [
+              'Check the Ethernet cable is firmly plugged in at both ends',
+              'Try a different Ethernet port on the router',
+              'Try a different cable if you have one',
+              'Check if the port light on the router is on when plugged in',
+              'Restart the device and try again',
+            ]),
           ],
         )),
         _stepCard(context, Column(
@@ -2145,7 +2163,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             Icon(Icons.devices, size: 18, color: colors.primary),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(device.displayNameWithOui,
+              child: Text(widget.singlePage ? 'Connection check' : device.displayNameWithOui,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
             if (!widget.singlePage) TextButton(
@@ -2155,6 +2173,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
             ),
           ]),
           const SizedBox(height: 12),
+          Text(signal == null ? 'Signal information is unavailable.'
+              : '${_signalLabel(signal, includeReading: false)} WiFi signal'),
+          DetailsDisclosure(key: ValueKey(device.macAddress), label: 'Connection details', child: Column(children: [
           _deviceMetaRow(context, colors, label: 'Band', value: band),
           if (signal != null)
             _deviceMetaRow(context, colors,
@@ -2166,6 +2187,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             _deviceMetaRow(context, colors,
                 label: 'Connected to',
                 value: node.isController ? 'Main router' : node.name),
+          ])),
         ],
       )),
 
@@ -2175,10 +2197,11 @@ class _Flow3State extends ConsumerState<_Flow3> {
           Row(children: [
             const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
             const SizedBox(width: 8),
-            const Text('WiFi connection looks good from the router\'s side',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const Expanded(child: Text('No issue found in the available checks',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
           ]),
           const SizedBox(height: 12),
+          DetailsDisclosure(label: 'What we checked', child: Column(children: [
           // Speed test result
           if (state.speedTest != null) ...[
             _allClearDataRow(context, colors,
@@ -2217,6 +2240,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     'competing for bandwidth with this device.',
             ),
           ],
+          ])),
           const SizedBox(height: 12),
           Text(
             'If the device still feels slow, try closing background apps and '
@@ -2224,38 +2248,23 @@ class _Flow3State extends ConsumerState<_Flow3> {
             style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant, height: 1.4),
           ),
         ]))
-      else
-        for (final f in findings)
-          _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(f.icon, size: 18, color: f.color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(f.title,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13, color: f.color)),
-              ),
-            ]),
-            const SizedBox(height: 6),
-            Text(f.detail,
-                style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant, height: 1.4)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: f.color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.lightbulb_outline, size: 16, color: f.color),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(f.fix,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: f.color)),
-                ),
-              ]),
-            ),
-          ])),
+      else ...[
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const UserStepHeading('Try this first'),
+          const SizedBox(height: 12),
+          Text(findings.first.fix, style: Theme.of(context).textTheme.bodyLarge),
+          DetailsDisclosure(label: 'Why this might help', child: Text(findings.first.detail)),
+          if (findings.length > 1)
+            DetailsDisclosure(label: 'More things to try', child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final f in findings.skip(1)) ...[
+                Text(f.fix, style: Theme.of(context).textTheme.titleSmall),
+                Text(f.detail),
+                const SizedBox(height: 12),
+              ]],
+            )),
+        ])),
+      ],
 
       _linksysSupportTile(context),
     ];
@@ -2308,7 +2317,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
   }
 
   /// Customer-friendly signal description with the dBm in parentheses.
-  String _signalLabel(int dBm) {
+  String _signalLabel(int dBm, {bool includeReading = true}) {
     final quality = dBm >= -60
         ? 'Strong'
         : dBm >= -70
@@ -2316,7 +2325,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             : dBm >= -75
                 ? 'Weak'
                 : 'Very weak';
-    return '$quality ($dBm dBm)';
+    return includeReading ? '$quality ($dBm dBm)' : quality;
   }
 
   /// Format a link rate (Mbps) cleanly — promotes to Gbps at >= 1000.
@@ -2350,20 +2359,16 @@ class _Flow3State extends ConsumerState<_Flow3> {
         children: [
           UserStepHeading('Device keeps dropping WiFi'),
           const SizedBox(height: 8),
-          Text('Check each item as you try it:',
+          Text('Try a step, then check whether the connection improves.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 10),
-          // Tappable checkboxes — customer marks each step done
-          const _ClickChecklistItem(
-              'Move the device closer to your router or a child node'),
-          _ClickChecklistItem(isUnifiedSsid
-              ? 'Your router handles band switching automatically — moving closer helps your device pick the faster band'
-              : 'Check if the device is on 2.4 GHz — try switching to 5 GHz (look for your 5 GHz network name in WiFi settings)'),
-          const _ClickChecklistItem(
-              'Forget this WiFi network on the device, then reconnect fresh'),
-          const _ClickChecklistItem(
-              'Check if other devices also drop — if yes, try restarting your router'),
+          GuidedSteps(steps: [
+            'Move the device closer to your router or a child node',
+            if (!isUnifiedSsid) 'Try your other WiFi network if your router has separate network names.',
+            'Forget this WiFi network on the device, then reconnect fresh. Have your WiFi password ready.',
+            'Check if other devices also drop — if yes, try restarting your router',
+          ]),
           if (weakDevices.isNotEmpty) ...[
             const SizedBox(height: 8),
             _infoBox(context,
@@ -2717,6 +2722,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
 
+        DetailsDisclosure(label: 'WiFi radio details', child: Column(children: [
         // Bands summary
         if (hasRadioData) ...[
           Container(
@@ -2746,6 +2752,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
           ),
           const SizedBox(height: 12),
         ],
+
+        ])),
 
         // Findings
         if (findings.isEmpty) ...[
@@ -2942,10 +2950,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
-          const _ClickChecklistItem('Restart the affected device (phone, laptop, etc.)'),
-          const _ClickChecklistItem('Forget this WiFi network on the device and reconnect'),
-          const _ClickChecklistItem('Check if the problem happens on other devices too'),
-          const _ClickChecklistItem('Try opening a website in a private/incognito window'),
+          const GuidedSteps(steps: [
+            'Restart the affected device (phone, laptop, etc.)',
+            'Forget this WiFi network on the device and reconnect. Have your WiFi password ready.',
+            'Check if the problem happens on other devices too',
+            'Try opening a website in a private/incognito window',
+          ]),
         ],
       )),
       _stepCard(context, Column(
@@ -2983,14 +2993,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const SizedBox(height: 6),
           _wifiCredRow(context, 'Password', password),
           const SizedBox(height: 12),
-          _checklistItem(context,
-              'Make sure you\'re selecting the exact network name shown above'),
-          _checklistItem(
-              context, 'Check that caps lock is off when entering the password'),
-          _checklistItem(context,
-              'Try forgetting the network on your device and reconnecting'),
-          _checklistItem(context,
-              'If your router has separate 2.4 GHz and 5 GHz networks, try the 2.4 GHz one — some devices only support it'),
+          GuidedSteps(steps: [
+              'Make sure you\'re selecting the exact network name shown above',
+              'Check that caps lock is off when entering the password',
+              'Try forgetting the network on your device and reconnecting',
+              'If your router has separate 2.4 GHz and 5 GHz networks, try the 2.4 GHz one — some devices only support it',
+            ]),
         ],
       )),
       if (wpa3Only)
@@ -3075,10 +3083,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         children: [
           UserStepHeading('Connect your smart home device'),
           const SizedBox(height: 12),
-          _checklistItem(context,
-              'Make sure your phone is on the same WiFi network you want the device on — not a guest network'),
-          _checklistItem(context,
-              'Use the 2.4 GHz network if your router has separate names for 2.4 and 5 GHz'),
+          GuidedSteps(steps: [
+              'Make sure your phone is on the same WiFi network you want the device on — not a guest network',
+              'Use the 2.4 GHz network if your router has separate names for 2.4 and 5 GHz',
+            ]),
           const SizedBox(height: 8),
           _wifiCredRow(context, 'Network name', ssid),
           const SizedBox(height: 6),
@@ -3255,6 +3263,7 @@ class _Flow4State extends ConsumerState<_Flow4> {
               style: Theme.of(context).textTheme.bodyMedium),
         ],
       )),
+      DetailsDisclosure(label: 'More coverage tips', child: Column(children: [
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3290,6 +3299,7 @@ class _Flow4State extends ConsumerState<_Flow4> {
           ),
         ],
       )),
+      ])),
       SizedBox(
         width: double.infinity,
         child: FilledButton(onPressed: widget.onDone, child: const Text('Done')),
@@ -4162,16 +4172,13 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                 'company\'s gateway so your Linksys can handle everything. '
                 'The steps depend on your internet provider\'s equipment.'),
             const SizedBox(height: 12),
-            _checklistItem(context,
-                'Log into your internet company\'s gateway — usually at 192.168.100.1 or printed on the device'),
-            _checklistItem(context,
-                'Look for settings labelled "Bridge Mode", "IP Passthrough", or "DMZ". The name varies by provider.'),
-            _checklistItem(context,
-                'Enter your Linksys router\'s MAC address (shown in My Network tab) when prompted'),
-            _checklistItem(context,
-                'Save and wait 2 minutes — both devices will restart'),
-            _checklistItem(context,
-                'Run the Instant-Test again to confirm you now have a public IP address'),
+            GuidedSteps(steps: [
+              'Log into your internet company\'s gateway — usually at 192.168.100.1 or printed on the device',
+              'Look for settings labelled "Bridge Mode", "IP Passthrough", or "DMZ". The name varies by provider.',
+              'Enter your Linksys router\'s MAC address (shown in My Network tab) when prompted',
+              'Save and wait 2 minutes — both devices will restart',
+              'Run the Instant-Test again to confirm you now have a public IP address',
+            ]),
             const SizedBox(height: 12),
             SelectableText(
               'Not sure how? Search "[your internet provider] enable bridge mode" '
@@ -4211,14 +4218,12 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                 'and port forwarding on the Linksys won\'t work — those stay on the ISP gateway.',
                 icon: Icons.warning_amber, color: Colors.orange),
             const SizedBox(height: 12),
-            _checklistItem(context,
-                'Open the Linksys app and go to Router Settings'),
-            _checklistItem(context,
-                'Look for "Operation Mode" or "Network Mode" and select "Access Point"'),
-            _checklistItem(context,
-                'Connect the Linksys to your internet company\'s gateway with an Ethernet cable'),
-            _checklistItem(context,
-                'Your devices will connect to the Linksys WiFi and get internet through the gateway'),
+            GuidedSteps(steps: [
+              'Open the Linksys app and go to Router Settings',
+              'Look for "Operation Mode" or "Network Mode" and select "Access Point"',
+              'Connect the Linksys to your internet company\'s gateway with an Ethernet cable',
+              'Your devices will connect to the Linksys WiFi and get internet through the gateway',
+            ]),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,

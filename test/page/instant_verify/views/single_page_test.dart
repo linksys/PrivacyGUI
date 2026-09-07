@@ -107,11 +107,144 @@ void main() {
   }
 
   testWidgets(
+      'home keeps the result and action visible while preserving measured details',
+      (tester) async {
+    await tester.pumpWidget(testableWidget(overrides: [
+      instantVerifyPivotProvider
+          .overrideWith(MockInstantVerifyPivotNotifier.new),
+      browserDiagnosticServiceProvider
+          .overrideWithValue(MockBrowserDiagnosticService()),
+    ], child: const InstantTestPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('Your router is very busy'), findsOneWidget);
+    expect(find.textContaining('88% CPU'), findsNothing);
+    expect(find.text('Restart Router'), findsOneWidget);
+    await tapText(tester, 'Why this matters');
+    expect(find.textContaining('88% CPU'), findsOneWidget);
+    await tapText(tester, 'Hide why this matters');
+    expect(find.textContaining('88% CPU'), findsNothing);
+    await tapText(tester, '3 other findings');
+    expect(find.text('Restart Router'), findsWidgets);
+  });
+
+  testWidgets('test details are optional and can be closed again',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, "Internet isn't working");
+    expect(find.text('Diagnostics complete'), findsOneWidget);
+    expect(find.text('This device reached your router'), findsNothing);
+    await tapText(tester, 'View test details');
+    expect(find.text('This device reached your router'), findsOneWidget);
+    await tapText(tester, 'Hide test details');
+    expect(find.text('This device reached your router'), findsNothing);
+    expect(find.text('Diagnostics complete'), findsOneWidget);
+  });
+
+  testWidgets(
+      'device advice stays visible while telemetry and picker are collapsed',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'One device is slow');
+    await tapText(tester, 'Office printer');
+    expect(find.text('Very weak WiFi signal'), findsOneWidget);
+    expect(find.text('Try this first'), findsOneWidget);
+    expect(find.text('Band'), findsNothing);
+    expect(find.text('Link rate'), findsNothing);
+    expect(find.byKey(const ValueKey('device-choice-AA:BB:CC:DD:EE:01')),
+        findsNothing);
+    await tapText(tester, 'Connection details');
+    expect(find.text('Band'), findsOneWidget);
+    expect(find.text('Link rate'), findsOneWidget);
+    await tapText(tester, 'Hide connection details');
+    expect(find.text('Band'), findsNothing);
+    await tapText(tester, 'Change device');
+    expect(find.byKey(const ValueKey('device-choice-AA:BB:CC:DD:EE:01')),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'compact signal summary matches details and keeps missing data unknown',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final signal in [-75, null]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await mount(tester,
+          notifier: FixtureNotifier(clients: [
+            DiagnosticClient(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              hostname: 'Laptop',
+              band: '5 GHz',
+              isWireless: true,
+              signalDecibels: signal,
+            )
+          ]));
+      await tapText(tester, 'One device is slow');
+      await tapText(tester, 'Laptop');
+      expect(
+          find.text(signal == null
+              ? 'Signal information is unavailable.'
+              : 'Weak WiFi signal'),
+          findsOneWidget);
+      await tapText(tester, 'Connection details');
+      if (signal != null) expect(find.text('Weak (-75 dBm)'), findsOneWidget);
+      expect(find.text('Good WiFi signal'), findsNothing);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets(
+      'manual steps reveal one instruction at a time and support going back',
+      (tester) async {
+    final notifier = FixtureNotifier();
+    await mount(tester, notifier: notifier);
+    final initialFetches = notifier.fetchCount;
+    await tapText(tester, "Device won't connect");
+    await tapText(tester, 'My device uses an Ethernet cable');
+    expect(
+        find.text('Check the Ethernet cable is firmly plugged in at both ends'),
+        findsOneWidget);
+    expect(
+        find.text('Try a different Ethernet port on the router'), findsNothing);
+    await tapText(tester, 'Try the next step');
+    expect(find.text('Try a different Ethernet port on the router'),
+        findsOneWidget);
+    expect(
+        find.text('Check the Ethernet cable is firmly plugged in at both ends'),
+        findsNothing);
+    await tapText(tester, 'Previous step');
+    expect(
+        find.text('Check the Ethernet cable is firmly plugged in at both ends'),
+        findsOneWidget);
+    expect(notifier.fetchCount, initialFetches);
+    await tapText(tester, 'Restart Router');
+    expect(find.text('Restart your router?'), findsOneWidget);
+    expect(find.textContaining('disconnect'), findsWidgets);
+    await tapText(tester, 'Cancel');
+  });
+
+  testWidgets('speed capability stays visible while measurements are optional',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, 'Whole internet is slow');
+    await tapText(tester, 'Check my speed');
+    expect(find.textContaining('Mbps down'), findsNothing);
+    expect(find.text('Just one specific device'), findsOneWidget);
+    await tapText(tester, 'View speed test details');
+    expect(find.textContaining('Mbps down'), findsOneWidget);
+    await tapText(tester, 'Hide speed test details');
+    expect(find.textContaining('Mbps down'), findsNothing);
+  });
+
+  testWidgets(
       'weak WiFi finding opens connection analysis, not cannot-connect advice',
       (tester) async {
     await mount(tester);
     await tapText(tester, 'Troubleshoot these devices');
     await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(
@@ -167,6 +300,7 @@ void main() {
     await tester.tap(find.text("Internet isn't working"));
     await tester.pumpAndSettle();
     expect(find.text('Connection problem found'), findsOneWidget);
+    await tapText(tester, 'View test details');
     expect(find.text('Your router reached the internet — Not run'),
         findsOneWidget);
     expect(find.text('Websites are loading — Not run'), findsOneWidget);
@@ -301,6 +435,7 @@ void main() {
     await tapText(tester, "Device won't connect");
     await tapText(tester, 'Office printer');
     expect(find.text('Yes — I can see it'), findsOneWidget);
+    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(
@@ -317,6 +452,7 @@ void main() {
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
     await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(
@@ -344,16 +480,25 @@ void main() {
     await mount(tester);
     await tapText(tester, 'Whole internet is slow');
     await tapText(tester, 'Check my speed');
+    if (find.text('View speed test details').evaluate().isNotEmpty) {
+      await tapText(tester, 'View speed test details');
+    }
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
     expect(find.text('No — something still feels slow'), findsNothing);
     await tapText(tester, 'Just one specific device');
     await tester.tap(find.byTooltip('Back to speed check'));
     await tester.pumpAndSettle();
+    if (find.text('View speed test details').evaluate().isNotEmpty) {
+      await tapText(tester, 'View speed test details');
+    }
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
     await tapText(tester, 'Everything in my home is slow');
     expect(find.byTooltip('Back to previous step'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to previous step'));
     await tester.pumpAndSettle();
+    if (find.text('View speed test details').evaluate().isNotEmpty) {
+      await tapText(tester, 'View speed test details');
+    }
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
   });
 
@@ -366,6 +511,9 @@ void main() {
     expect(find.textContaining('no speed conclusion'), findsOneWidget);
     service.speedFail = false;
     await tapText(tester, 'Check my speed');
+    if (find.text('View speed test details').evaluate().isNotEmpty) {
+      await tapText(tester, 'View speed test details');
+    }
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
   });
 
@@ -394,7 +542,7 @@ void main() {
     await tapText(tester, 'Office printer');
     await tapText(tester, 'Troubleshoot this device');
     expect(find.text('Select a device'), findsNothing);
-    expect(find.text('Office printer'), findsOneWidget);
+    expect(find.text('Help for Office printer'), findsOneWidget);
     expect(find.byTooltip('Back to device details'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to device details'));
     await tester.pumpAndSettle();
@@ -483,6 +631,7 @@ void main() {
     expect(find.text('Test device 8'), findsNothing);
     await tapText(tester, 'Test device 11');
     expect(find.text('Help for Test device 11'), findsOneWidget);
+    await tapText(tester, 'Change device');
     await tester.enterText(find.byType(TextField), 'missing');
     await tester.pumpAndSettle();
     expect(find.text('No devices match your search.'), findsOneWidget);

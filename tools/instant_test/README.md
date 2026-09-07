@@ -2,6 +2,14 @@
 
 This harness tests the authenticated launch UI through its **simulated prototype**, without adding CI or deploying to a router. Hardware/session acceptance is still required for launch.
 
+## Simplified presentation branch
+
+The previous UI is preserved on `feat/instant-test-single-page-workflows` at `157cea5b45517ca29ab819255031765f02827174` (PR #1485). The presentation changes are isolated on `feat/instant-test-progressive-disclosure`, based on that commit. Its PR should target the preserved feature branch so the simplification can be reviewed or discarded independently.
+
+The default view keeps results, the recommended next step, and action consequences visible. Test checklists, connection measurements, radio inventories, extra findings, and supporting explanations open on demand. The initial device list remains visible with eight-device paging/search; after selection it is available through Change device. Manual advice shows one instruction at a time with next/previous controls; those controls do not execute router actions. Existing router confirmations, navigation/history, and login boundaries remain in effect.
+
+Acceptance covers collapsed and expanded states, changing a device or problem, sequential advice, absent telemetry, and agreement between compact and detailed signal labels. Dark desktop and light mobile browser scenarios exercise the same workflows. The snapshot comparison uses the same mock data on both branches; it is presentation evidence, not hardware acceptance.
+
 ## Flutter regression tests and preview build
 
 Use the repository's Flutter version (3.27.2 on this prototype branch), with dependencies already resolved:
