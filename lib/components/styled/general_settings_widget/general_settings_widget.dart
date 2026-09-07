@@ -4,6 +4,7 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 import 'package:privacy_gui/components/styled/general_settings_widget/language_tile.dart';
@@ -133,7 +134,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                         label: loc(context).logout,
                         onTap: () {
                           logger.i('[Auth]: The user manually logs out');
-                          ref.read(authProvider.notifier).logout();
+                          ref
+                              .read(authProvider.notifier)
+                              .logout(cause: EndCause.userRequested);
                         },
                       ),
                     ),

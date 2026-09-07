@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Default reboot baseline observed on dev routers (1.0.16): full SSE
@@ -148,13 +151,40 @@ class _FirmwareRecoveryDialogState
         ),
       ),
       actions: [
-        AppButton.text(
-          label: loc(context).returnToLoginPage,
-          identifier: 'firmware-recovery-return-login',
-          onTap: () {
-            notifier.exitToLogout();
-          },
-        ),
+        // Acceptances 1 and 2 of #1323 — same shape as `recovery_dialog_helper.dart`:
+        // the bail-out is relabelled and rewired per mode, because "Return to
+        // login page" only means something where a login page is where an ending
+        // session lands. In RA the credential was a one-shot Guardian token.
+        //
+        // This dialog would survive a bare gate — the Retry button below is
+        // ungated, so the action list never empties, which is what saved it from
+        // the defect its sibling had. The `else` is here anyway: an RA operator
+        // watching a firmware upgrade that has stopped responding needs a way to
+        // release the Guardian session, and "wait or retry forever" is not one.
+        //
+        // Both labels are spelled at this call site rather than shared with the
+        // other dialog, on purpose. `identifier:` values are harvested by reading
+        // Dart source *text*, so an identifier composed inside a helper never
+        // reaches the e2e suite's identifier list — silently, in both directions.
+        if (ref.read(appModeProfileProvider).session.destination ==
+            SessionOutcome.loginPage)
+          AppButton.text(
+            label: loc(context).returnToLoginPage,
+            identifier: 'firmware-recovery-return-login',
+            onTap: () {
+              notifier.exitToLogout();
+            },
+          )
+        else
+          AppButton.text(
+            label: loc(context).endSession,
+            identifier: 'firmware-recovery-end-session',
+            onTap: () {
+              ref
+                  .read(authProvider.notifier)
+                  .logout(cause: EndCause.userRequested);
+            },
+          ),
         AppButton.primary(
           label:
               _retrying ? loc(context).checkingEllipsis : loc(context).retryNow,

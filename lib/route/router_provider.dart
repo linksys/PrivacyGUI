@@ -10,6 +10,7 @@ import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart'
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
+import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
@@ -190,8 +191,33 @@ final routerProvider = Provider<GoRouter>((ref) {
                 '?session=${raState.sessionInfo!.id}'
                 '&token=${raState.sessionToken}';
           }
-          logger.i('[Route]: Remote mode no session, redirecting to RA page');
-          return RoutePath.remoteAssistanceConfirm;
+          // No session. Two very different situations reach this line, and #1323
+          // (phase 5) is what makes the difference visible: since cause 3 clears
+          // `remoteAccessProvider` on *every* exit, this is now the landing point
+          // for all eight automatic RA endings — idle timeout, a 401 on the
+          // bridge, an SSE give-up, a serial mismatch, a factory reset, a relogin
+          // that failed — not just for a cold load.
+          //
+          // Told apart by `remoteAssistanceProvider.isActive`, which means "a
+          // Guardian session was activated in this page lifetime". Nothing ever
+          // sets it back to false (`deactivate()` was removed by acceptance 10, and
+          // `activate()` is what sets it), so it survives the session teardown and
+          // is exactly the "there *was* a session" signal this needs. A browser
+          // reload rebuilds the provider, which is correct: a reloaded tab really
+          // has no session to have lost.
+          //
+          // Without this, an RA session that ended by itself landed on
+          // `_buildMissingParamsView()` — a red developer error page reading
+          // "Missing Parameters" — because the bare path has no `session`/`token`
+          // for `_hasRequiredParams`. That is what `SessionOutcome
+          // .supportSessionEnded` is supposed to name, and the two page-layer
+          // sites that hard-code `?ended=true` were the only ones getting it.
+          final endedHere = ref.read(remoteAssistanceProvider).isActive;
+          logger.i('[Route]: Remote mode no session, redirecting to RA page '
+              '(endedHere: $endedHere)');
+          return endedHere
+              ? '${RoutePath.remoteAssistanceConfirm}?ended=true'
+              : RoutePath.remoteAssistanceConfirm;
         }
         final isLoggedIn = ref.watch(
             authProvider.select((value) => value.value?.isLoggedIn ?? false));

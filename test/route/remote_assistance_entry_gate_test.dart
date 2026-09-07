@@ -167,16 +167,27 @@ void main() {
 
       expect(
         agentRouteRedirects.length,
-        4,
-        reason: 'router_provider.dart names the RA confirm route in 4 places, '
-            'all of them already gated on the build or on `isActive`: the two '
-            '/usp* refresh redirects inside `if (GlobalConfig.remote.isActive)`, '
-            'entry 2 (the `?session=` translation, gated by this file), and the '
-            '`force=remote` build-mode redirect in `autoConfigurationLogic`, '
-            'which is itself an `if (BuildConfig.isRemote())` and so cannot fire '
-            'in a local build. Found ${agentRouteRedirects.length} at lines '
-            '$agentRouteRedirects — a fifth needs its own gate and its own case '
-            'here.',
+        5,
+        reason: 'router_provider.dart names the RA confirm route in 5 places, '
+            'all of them already gated on the build or on `isActive`: three '
+            'inside the /usp* `if (GlobalConfig.remote.isActive)` block — the '
+            'session-refresh redirect, and the two arms of the no-session '
+            'ternary — plus entry 2 (the `?session=` translation, gated by this '
+            'file) and the `force=remote` build-mode redirect in '
+            '`autoConfigurationLogic`, which is itself an '
+            '`if (BuildConfig.isRemote())` and so cannot fire in a local build. '
+            'Found ${agentRouteRedirects.length} at lines $agentRouteRedirects '
+            '— a sixth needs its own gate and its own case here.\n\n'
+            'The count moved 4 -> 5 in #1323 phase 5, and the reason is worth '
+            'knowing before you move it again: the no-session return used to be '
+            'one bare path and is now a ternary on '
+            '`remoteAssistanceProvider.isActive`, appending `?ended=true` when a '
+            'Guardian session was activated in this page lifetime. Both arms are '
+            'inside the same block as before, so nothing about the gating story '
+            'changed — only the line count. Cause: cause 3 now clears '
+            '`remoteAccessProvider` on every exit, which routed all eight '
+            'automatic RA endings through this line, where the bare path renders '
+            "the confirm view's `_buildMissingParamsView()`.",
       );
     });
   });

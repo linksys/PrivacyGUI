@@ -5,11 +5,13 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
@@ -193,11 +195,36 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   /// Performs logout, clearing credentials and resetting state.
-  Future logout() async {
-    logger.d('[Auth]: logout: starting');
+  ///
+  /// **The one funnel every session ending goes through**, which since #1323
+  /// (phase 5) includes the mode's own teardown: eleven call sites reach this
+  /// method and all of them now get `SessionStrategy.end` for free. Before that,
+  /// Remote Assistance teardown — releasing the Guardian session and clearing
+  /// `remoteAccessProvider` — lived in `remote_session_chip.dart`'s Disconnect
+  /// handler alone, so the other ten paths (idle timeout, 401 on the bridge, SSE
+  /// give-up, serial mismatch, factory reset, a failed relogin, …) left
+  /// `sessionInfo` and `sessionToken` populated. `router_provider.dart`'s `/usp*`
+  /// guard reads exactly those two and redirects to the confirm page with them,
+  /// so an RA logout bounced the user back into the session they had just left
+  /// (#1323 acceptance 3).
+  ///
+  /// [cause] defaults to [EndCause.sessionLost] because that is the majority — 8
+  /// of the 11 sites are automatic — and because the failure modes are asymmetric:
+  /// a missed `endSessionForCA` leaves a Guardian session to expire on its own
+  /// timer, whereas an *attempted* one on a rejected token is a guaranteed failure
+  /// on the commonest path. The three button handlers pass
+  /// [EndCause.userRequested] explicitly.
+  Future logout({EndCause cause = EndCause.sessionLost}) async {
+    logger.d('[Auth]: logout: starting (cause: ${cause.name})');
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
+      // The mode's own teardown goes FIRST: a Guardian call needs the token the
+      // rest of this method is about to invalidate. Contractually non-throwing —
+      // see SessionStrategy.end — because a throw inside this guard would leave
+      // authProvider in an error state with the credential still present.
+      await ref.read(appModeProfileProvider).session.end(ref, cause);
+
       // Disconnect SSE and unregister subscriptions BEFORE USP logout —
       // subscription cleanup uses authenticated requests, so the token
       // must still be valid.

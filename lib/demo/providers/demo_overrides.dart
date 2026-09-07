@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.d
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_service.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -134,9 +135,13 @@ class _DemoAuthNotifier extends AuthNotifier {
     state = AsyncValue.data(AuthState(loginType: LoginType.local));
   }
 
+  /// [cause] is accepted and ignored: demo mode has no session to release and no
+  /// Guardian to tell. It is on the signature because the real `logout()` takes it
+  /// — demo aliases the local profile, whose `SessionStrategy.end` is also a no-op,
+  /// so ignoring it here matches rather than diverges.
   @override
-  Future<void> logout() async {
-    debugPrint('Demo: Logout called');
+  Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
+    debugPrint('Demo: Logout called (cause: ${cause.name})');
     state = AsyncValue.data(AuthState(loginType: LoginType.none));
   }
 }

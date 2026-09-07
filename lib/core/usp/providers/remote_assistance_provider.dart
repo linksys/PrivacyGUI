@@ -174,29 +174,35 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     );
   }
 
-  /// Deactivates Remote Assistance mode.
-  ///
-  /// Disposes and unregisters the Guardian-proxied UspClient.
-  /// The app should navigate to login or restart for normal operation.
-  Future<void> deactivate() async {
-    logger.i('[RA] Deactivating Remote Assistance');
-
-    // Dispose the RA client if registered
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      if (getIt.isRegistered<UspClient>()) {
-        final client = getIt<UspClient>();
-        getIt.unregister<UspClient>();
-        client.dispose();
-        logger.d('[RA] UspClient unregistered and disposed');
-      }
-
-      // Drop the cached instance in the same critical section, so watchers
-      // rebuild against an empty GetIt instead of holding a disposed client.
-      ref.invalidate(uspClientProvider);
-    });
-
-    state = const RemoteAssistanceState();
-  }
+  // NO `deactivate()`. Removed by #1323 (phase 5), acceptance 10, and the
+  // deletion is the fix rather than a tidy-up.
+  //
+  // It did `getIt.unregister<UspClient>()` then `client.dispose()`, which is
+  // precisely the sequence #1322 had just been fixed for: `dispose()` reaches
+  // `free()` on the wasm-bindgen object and zeroes its `__wbg_ptr`, while 41 call
+  // sites hold the façade by value inside non-autoDispose provider bodies. Every
+  // USP call through them then fails with `null pointer passed to rust` until the
+  // browser is refreshed. `activate()` above was rewritten to *rebind* for exactly
+  // that reason; leaving a public method that still frees it kept the loaded gun
+  // on the table.
+  //
+  // It had **zero production callers** — measured across `lib/` — and its only
+  // three references were tests that exercised it because `activate()` throws off
+  // the web platform, so it was the one method reachable in the VM. Nothing
+  // replaces it:
+  //
+  //   - *ending* a session is `RemoteSessionStrategy.end`, which clears
+  //     `remoteAccessProvider` and lets `logout()` clear app auth. Neither touches
+  //     the façade, and neither needs to: a dead Guardian token in a live client
+  //     is harmless because nothing is authorised to use it;
+  //   - *starting the next* session is `activate()`, which rebinds the same
+  //     instance. So there is no state that a deactivate would have to reach
+  //     first — the idempotence #1322 introduced is what made this method
+  //     redundant, not just dangerous.
+  //
+  // The guard is `test/core/usp/providers/remote_assistance_provider_test.dart`'s
+  // "no production path frees the registered UspClient façade", which scans `lib/`
+  // rather than trusting this comment.
 }
 
 /// Provider for Remote Assistance state.

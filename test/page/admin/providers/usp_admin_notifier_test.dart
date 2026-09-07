@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
@@ -24,12 +25,22 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
     implements AuthNotifier {
   int logoutCallCount = 0;
 
+  /// The [EndCause] of the most recent `logout()`, or `null` if none.
+  ///
+  /// Recorded rather than ignored because #1323 made the cause part of the
+  /// contract: this notifier's own production caller is the relogin-failed arm of
+  /// `updateAdminPassword`, which is an automatic exit and must not claim the user
+  /// asked to leave — remotely that would fire `endSessionForCA` with a token the
+  /// router has just invalidated.
+  EndCause? lastLogoutCause;
+
   @override
   Future<AuthState> build() async => AuthState(loginType: LoginType.local);
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
     logoutCallCount++;
+    lastLogoutCause = cause;
   }
 }
 
@@ -249,6 +260,12 @@ void main() {
 
       // Verify logout was triggered due to relogin failure
       expect(mockAuthNotifier.logoutCallCount, 1);
+      // #1323: and that it did NOT claim the user asked to leave. The default is
+      // what carries this, so the assertion is here to stop someone "fixing" the
+      // site by passing userRequested — a password change *is* a user action, so
+      // the wrong value reads as the obvious one. Remotely it would put a
+      // `endSessionForCA` call on a token the router just invalidated.
+      expect(mockAuthNotifier.lastLogoutCause, EndCause.sessionLost);
 
       container.dispose();
     });
