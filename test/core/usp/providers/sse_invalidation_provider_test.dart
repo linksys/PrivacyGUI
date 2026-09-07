@@ -401,5 +401,88 @@ void main() {
       ]);
       container.dispose();
     });
+
+    // -------------------------------------------------------------------------
+    // Characterization: consecutive events carrying the SAME domain.
+    //
+    // The test above emits three DIFFERENT domains, so consecutive values are
+    // never equal and it stays green under any `updateShouldNotify` policy —
+    // it cannot detect collapsing. The two tests below can.
+    //
+    // `InvalidationDomain` is a bare enum, so two same-domain events are `==`.
+    // Today they both reach listeners because riverpod 2.6.1 notifies
+    // unconditionally for data -> data on async providers
+    // (`riverpod-2.6.1/lib/src/async_notifier/base.dart:177`
+    //  handleUpdateShouldNotify: `return true`). Any move to an `==`-based
+    // predicate silently drops the second one, and every one of the 13
+    // `ref.listen(sseInvalidationProvider, ...)` call sites stops refetching
+    // on the repeat.
+    //
+    // These assert the CURRENT contract, not a desired one. They are the
+    // detector for that change — see #1501.
+    // -------------------------------------------------------------------------
+    test('same domain twice → two separate notifications', () async {
+      final container = createContainer();
+      final domains = <InvalidationDomain>[];
+      container.listen(sseInvalidationProvider, (_, next) {
+        if (next.hasValue) domains.add(next.value!);
+      });
+
+      // Two independent SSE arrivals for the same subtree — e.g. the user
+      // renames a guest SSID, then changes its security mode. Awaiting between
+      // them models real arrival timing rather than one batched drain.
+      capturedHandler(notification(
+        type: 'ValueChange',
+        paramPath: 'Device.WiFi.SSID.1.SSID',
+      ));
+      await Future.delayed(Duration.zero);
+      capturedHandler(notification(
+        type: 'ValueChange',
+        paramPath: 'Device.WiFi.SSID.1.SSID',
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(
+        domains,
+        [InvalidationDomain.wifiSsids, InvalidationDomain.wifiSsids],
+        reason: 'the second same-domain event must still reach listeners; '
+            'collapsing it means the second change is never refetched',
+      );
+      container.dispose();
+    });
+
+    test('creation then deletion of the same object → two notifications',
+        () async {
+      final container = createContainer();
+      final domains = <InvalidationDomain>[];
+      container.listen(sseInvalidationProvider, (_, next) {
+        if (next.hasValue) domains.add(next.value!);
+      });
+
+      // A host joins then leaves. Both map to `connectedDevices`, so the pair
+      // is indistinguishable by value — if the second collapses, the device
+      // list keeps showing a host that has already gone.
+      capturedHandler(notification(
+        type: 'ObjectCreation',
+        objPath: 'Device.Hosts.Host.7.',
+      ));
+      await Future.delayed(Duration.zero);
+      capturedHandler(notification(
+        type: 'ObjectDeletion',
+        objPath: 'Device.Hosts.Host.7.',
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(
+        domains,
+        [
+          InvalidationDomain.connectedDevices,
+          InvalidationDomain.connectedDevices,
+        ],
+        reason: 'ObjectCreation and ObjectDeletion collapse to the same domain '
+            'value, so the deletion is only observable as a second event',
+      );
+      container.dispose();
+    });
   });
 }
