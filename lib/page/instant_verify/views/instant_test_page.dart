@@ -94,10 +94,12 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
 
   @override
   Widget build(BuildContext context) => SelectionArea(
-      child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1120),
+      child: LayoutBuilder(
+          builder: (context, constraints) => Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: constraints.maxWidth >= 1200
+                      ? constraints.maxWidth * 0.025
+                      : 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

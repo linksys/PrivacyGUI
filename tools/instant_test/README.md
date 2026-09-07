@@ -10,6 +10,8 @@ The default view keeps results, the recommended next step, and action consequenc
 
 Acceptance covers collapsed and expanded states, changing a device or problem, sequential advice, absent telemetry, and agreement between compact and detailed signal labels. Dark desktop and light mobile browser scenarios exercise the same workflows. The snapshot comparison uses the same mock data on both branches; it is presentation evidence, not hardware acceptance.
 
+The simplified page also groups connection-outcome explanations inside their action cards, uses compact headings and content-sized action buttons, and measures the available layout width instead of imposing a 1,120-pixel cap. Wide windows use 2.5% side gutters; narrower views use the normal page padding. Acceptance includes resizing from a 2,048-pixel window to mobile and following the compact healthy-connection action into device help.
+
 ## Flutter regression tests and preview build
 
 Use the repository's Flutter version (3.27.2 on this prototype branch), with dependencies already resolved:

@@ -11,18 +11,20 @@ class UserStepHeading extends StatelessWidget {
     final colors = theme.colorScheme;
     return Semantics(
       header: true,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: colors.primaryContainer,
-          border: Border(left: BorderSide(color: colors.primary, width: 3)),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer,
+            border: Border(left: BorderSide(color: colors.primary, width: 3)),
+          ),
+          child: Text(text,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: colors.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              )),
         ),
-        child: Text(text,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: colors.onPrimaryContainer,
-              fontWeight: FontWeight.w600,
-            )),
       ),
     );
   }

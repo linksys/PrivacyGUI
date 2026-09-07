@@ -68,6 +68,24 @@ async function check(name, run, mobile = false) {
 }
 try {
   for (const mobile of [false,true]) {
+    await check(mobile?'compact-followup-mobile':'compact-followup-wide',async p=>{
+      if (!mobile) await p.setViewportSize({width:2048,height:1100});
+      const start=await button(p,"Internet isn't working").boundingBox();
+      const end=await button(p,'Keeps cutting out').boundingBox();
+      if (!mobile) assert(end.x+end.width-start.x>1800,'Wide layout still wastes the available width');
+      await button(p,"Internet isn't working").click();
+      await visible(p,'Still seeing an issue?');
+      assert.equal(await p.getByText(/Everything looks fine right now/).count(),0);
+      await p.getByText(/The connection looks healthy/).waitFor();
+      const action=await button(p,'Yes — troubleshoot a specific device').boundingBox();
+      assert(action.width<420,'Follow-up action should fit its label');
+      assert(action.x>=0 && action.x+action.width<=p.viewportSize().width);
+      await p.screenshot({path:`${output}/followup-${mobile?'mobile':'wide'}.png`});
+      await clickInScrollView(p,'Yes — troubleshoot a specific device');
+      await button(p,'Office-Printer WiFi').waitFor();
+    },mobile);
+  }
+  for (const mobile of [false,true]) {
     await check(mobile?'home-actions-mobile':'home-actions-desktop',async p=>{
       const labels=["Internet isn't working",'Whole internet is slow','Keeps cutting out','One device is slow',"Device won't connect","Doesn't reach a room"];
       for(const label of labels) {

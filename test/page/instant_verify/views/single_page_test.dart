@@ -127,6 +127,46 @@ void main() {
     expect(find.text('Restart Router'), findsWidgets);
   });
 
+  testWidgets('wide layouts use available space and follow resizing', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(2048, 1100);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester);
+    final first = find.widgetWithText(OutlinedButton, "Internet isn't working");
+    final last = find.widgetWithText(OutlinedButton, 'Keeps cutting out');
+    expect(tester.getBottomRight(last).dx - tester.getTopLeft(first).dx, greaterThan(1800));
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(first).dx, greaterThanOrEqualTo(0));
+    expect(tester.getBottomRight(first).dx, lessThanOrEqualTo(390));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('healthy follow-up groups context with compact controls at every width', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(2048, 1100);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester);
+    await tapText(tester, "Internet isn't working");
+    expect(find.textContaining('Everything looks fine right now'), findsNothing);
+    expect(find.textContaining('The connection looks healthy'), findsOneWidget);
+    for (final width in [2048.0, 390.0]) {
+      tester.view.physicalSize = Size(width, 1100);
+      await tester.pumpAndSettle();
+      final action = find.ancestor(
+          of: find.text('Yes — troubleshoot a specific device'),
+          matching: find.byWidgetPredicate((widget) => widget is OutlinedButton)).first;
+      final labelWidth = tester.getSize(find.text('Yes — troubleshoot a specific device')).width;
+      expect(tester.getSize(action).width, lessThanOrEqualTo(labelWidth + 100));
+      expect(tester.getBottomRight(action).dx, lessThanOrEqualTo(width));
+      expect(tester.takeException(), isNull);
+    }
+    await tapText(tester, 'Yes — troubleshoot a specific device');
+    expect(find.text('1. Choose a device'), findsOneWidget);
+  });
+
   testWidgets('test details are optional and can be closed again',
       (tester) async {
     await mount(tester);
