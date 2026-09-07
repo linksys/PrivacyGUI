@@ -137,8 +137,31 @@ void main() {
     }
   });
 
-  test('nothing outside the two roots reads the mode', () {
-    final readers = Directory('lib')
+  test(
+      'the page root takes its mode from the profile, not from appModeProvider',
+      () {
+    final src = code('lib/page/_shared/mode/surface_strategy_provider.dart');
+
+    expect(src, contains('ref.watch(appModeProfileProvider).mode'),
+        reason: 'the page root must derive its mode from the profile. Reading '
+            '`appModeProvider` directly here is the equivalent-looking edit that '
+            'silently breaks acceptance 3 of #1493: one '
+            '`appModeProfileProvider.overrideWithValue(const '
+            'RemoteModeProfile())` is supposed to put the WHOLE stack in remote, '
+            'and a root on the raw provider opts cause 5 out of it — transport, '
+            'credentials, session and proximity move, the surfaces stay local. '
+            'Every transport assertion still passes, so only a test that reads '
+            'surfaceStrategyProvider under a profile-only override can see it '
+            '(app_mode_profile_test.dart has one). Going through the profile '
+            'keeps both levers live, because the profile is derived from '
+            'appModeProvider.');
+    expect(src, isNot(contains('ref.watch(appModeProvider)')),
+        reason: 'and it must not read the raw provider as well — two sources '
+            'for one answer is how the two roots come to disagree.');
+  });
+
+  test('appModeProvider is named in exactly three places', () {
+    final mentions = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
@@ -146,23 +169,35 @@ void main() {
             .readAsStringSync()
             .split('\n')
             .where((l) => !l.trimLeft().startsWith('//'))
-            .any((l) => l.contains('ref.watch(appModeProvider)')))
+            .any((l) => l.contains('appModeProvider')))
         .map((f) => f.path)
         .toList()
       ..sort();
 
+    // Deliberately every *mention*, not just `ref.watch(...)`. The narrower
+    // scan this replaced let `ref.read`, `container.read`, a `.select` and a
+    // bare `AppMode.resolve()` through — so the census enforced a spelling
+    // rather than the rule, which is that one file decides the mode.
     expect(
-      readers,
-      _roots.keys.toList()..sort(),
-      reason: 'only the two composition roots may read appModeProvider; found '
-          '$readers. A feature that reads the mode directly is writing the '
-          '14th `if` — the shape #1474 exists to remove — and it will be correct '
-          'today and wrong the day a mode is added. The intended answer is a '
-          'member on the strategy for the *cause* the feature actually depends '
-          'on: how bytes travel, who holds the credential, what session end '
-          'means, whether the operator is next to the router, or which surfaces '
-          'the mode has. `overrideWithValue` in demo_overrides.dart is not a '
-          'read and is deliberately not counted.',
+      mentions,
+      [
+        // The provider's own declaration.
+        'lib/core/mode/app_mode.dart',
+        // The one composition root that consumes it. The page root reaches the
+        // mode through appModeProfileProvider — see the test above.
+        'lib/core/mode/app_mode_profile.dart',
+        // An override, not a read: the demo build pins AppMode.demo.
+        'lib/demo/providers/demo_overrides.dart',
+      ],
+      reason: 'found $mentions. A feature that reads the mode directly is '
+          'writing the 14th `if` — the shape #1474 exists to remove — and it '
+          'will be correct today and wrong the day a mode is added. The intended '
+          'answer is a member on the strategy for the *cause* the feature '
+          'actually depends on: how bytes travel, who holds the credential, what '
+          'session end means, whether the operator is next to the router, or '
+          'which surfaces the mode has. If a fourth entry here is another '
+          'legitimate override, add it with a comment saying so; if it is a '
+          'read, it belongs on a strategy instead.',
     );
   });
 }

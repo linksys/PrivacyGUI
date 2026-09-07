@@ -168,6 +168,19 @@ void main() {
         isA<RemoteSseStrategy>(),
       );
 
+      // Cause 5 — the page root moves on the SAME override, which is the half of
+      // acceptance 3 this test originally missed. It reads
+      // `appModeProfileProvider.mode` rather than `appModeProvider`, so "the
+      // whole stack" includes the surfaces; with the root on the raw mode
+      // provider every assertion above still passed while this one returned
+      // LocalSurface, and nothing else in the suite could see it.
+      expect(container.read(surfaceStrategyProvider), isA<RemoteSurface>(),
+          reason: 'acceptance 3 says ONE override puts the whole stack in '
+              'remote, and cause 5 is part of the stack. If this fails, '
+              'surface_strategy_provider.dart has gone back to reading '
+              'appModeProvider — see composition_root_test.dart, which pins the '
+              'direction.');
+
       // Acceptance 3, stated as an assertion: none of the above touched the
       // build flag. This is #1474's falsification criterion 2 — `test/di_test.dart`
       // is the one place in the repo allowed to assign this static, and every
@@ -189,8 +202,11 @@ void main() {
               'that wants one strategy swapped and the rest real.');
       expect(container.read(surfaceStrategyProvider), isA<RemoteSurface>(),
           reason:
-              'the page root switches on the same appModeProvider, which is '
-              'what keeps two roots from drifting');
+              'the coarse lever reaches the page root too, transitively: the '
+              'page root reads appModeProfileProvider.mode and the profile is '
+              'derived from appModeProvider. Both levers therefore move both '
+              'roots — which is the property the previous reading of this test '
+              'was mistaken for.');
     });
 
     test('the transport is null until the Guardian session arrives', () {

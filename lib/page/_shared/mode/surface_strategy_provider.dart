@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/mode/app_mode.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/mode/local_surface.dart';
 import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
@@ -11,9 +12,20 @@ import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
 /// `AppModeProfile`: [SurfaceStrategy]'s implementations talk to page state, so
 /// they must live under `lib/page/`, and CLAUDE.md forbids `lib/core/` →
 /// `lib/page/`. A `surface` getter on the core profile would be exactly that
-/// dependency. Splitting the root is the smaller price — both roots switch on the
-/// same [AppMode], read via the same `appModeProvider`, so a test that overrides
-/// the mode moves both.
+/// dependency. Splitting the root is the smaller price.
+///
+/// **The mode comes from the profile, not from `appModeProvider`.** Reading the
+/// raw provider here looks equivalent and is not: acceptance 3 of #1493 is that
+/// *one* `appModeProfileProvider.overrideWithValue(const RemoteModeProfile())`
+/// puts the whole stack in remote, and a root that reads `appModeProvider`
+/// silently opts cause 5 out of that override — the four core causes move, the
+/// surfaces stay local, and the test that only asserts transport still passes.
+/// Going through the profile keeps **both** levers working, because the profile
+/// is itself derived from `appModeProvider`: overriding the coarse mode moves
+/// both roots, and overriding the profile now moves both too. This is the
+/// direction #1474's design specifies (`ref.watch(appModeProfileProvider).mode`);
+/// `composition_root_test.dart` pins it, since nothing observable distinguishes
+/// the two readings until someone writes exactly that one-line test.
 ///
 /// Same rule as the core root: no `default:`, no `_` arm. A new [AppMode] must be
 /// a compile error in **both** places, and
@@ -21,7 +33,7 @@ import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
 /// hatch — the switch guards against a new mode, not against someone silencing
 /// it.
 final surfaceStrategyProvider = Provider<SurfaceStrategy>((ref) {
-  final mode = ref.watch(appModeProvider);
+  final mode = ref.watch(appModeProfileProvider).mode;
   return switch (mode) {
     AppMode.local => const LocalSurface(),
     AppMode.remote => const RemoteSurface(),

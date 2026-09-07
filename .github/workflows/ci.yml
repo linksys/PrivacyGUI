@@ -324,11 +324,12 @@ jobs:
 
       # Acceptance 9 of #1493: the Remote Assistance flavour still compiles.
       #
-      # A step on this job, not a fifth job, and that is deliberate: the four
-      # required check names are the `name:` values of the four jobs (see the note
-      # below), so a fifth job would be advisory until someone updated the
-      # ruleset — silently. A step inside an already-required job is required the
-      # moment it merges.
+      # A step on this job, not a fifth job, and that is deliberate: ruleset
+      # 22061561 pins required checks by `name:` (see the note below the last
+      # job), so a NEW job would be advisory until someone edited that ruleset —
+      # silently, because an advisory job looks identical to a required one until
+      # a red PR merges anyway. A step inside an already-required job is required
+      # the moment it merges. `🏗️ Smoke Build (Web)` is on that list.
       #
       # What it catches that nothing else can. `force=remote` is a *compile-time*
       # partition: `String.fromEnvironment('force')` is const, so tree-shaking and
@@ -352,14 +353,30 @@ jobs:
             --output "${{ github.workspace }}/build/web-remote"
 
   # ========================================================================
-  # Required status checks are a repository setting, and there are none today
+  # Required status checks are a repository setting — and since 2026-09-07
+  # they exist. The advice below is now HISTORY plus a live pointer.
   # ------------------------------------------------------------------------
+  # UPDATE 2026-09-07: a *second* ruleset was added — 22061561 `required checks
+  # (2.x)` — pinning five contexts (`🎨 Lint & Analyze`, `🧪 Unit Tests`,
+  # `🛡️ Layout Gate`, `🏗️ Smoke Build (Web)`, `dart-wasm-boundary`) over
+  # `refs/heads/usp` + `refs/heads/dev-2.*`, with nine `dev-2.0.0`..`dev-2.6.1`
+  # excludes. So a red pipeline DOES stop a merge on the 2.x line now, and the
+  # `force=remote` step above is required the moment it merges *because it is a
+  # step inside an already-required job* rather than a fifth job.
+  #
+  # The 2026-08-27 reading below is still true of the ruleset it names — 4093935
+  # `version branch` has no `required_status_checks` rule of its own — which is
+  # why "check every ruleset, not the first one that matches" is the lesson to
+  # keep. Verify with:
+  #   gh api repos/linksys/PrivacyGUI/rulesets
+  #   gh api repos/linksys/PrivacyGUI/rulesets/22061561
+  #
   # Checked 2026-08-27: `version branch` (4093935) carries `deletion`,
   # `non_fast_forward` and `pull_request` (1 approval) over `~DEFAULT_BRANCH`,
   # `refs/heads/dev-*` and `refs/heads/v*.*.*`, and no `required_status_checks`
   # rule at all. Nothing pins a check by name, which is why this split could
   # rename `🛡️ Quality & Logic (PR)` out of existence without breaking a merge —
-  # and also why a red pipeline does not actually stop one.
+  # and also why a red pipeline did not actually stop one.
   #
   # The four names to require are the `name:` values above: `🎨 Lint & Analyze`,
   # `🧪 Unit Tests`, `🛡️ Layout Gate`, `🏗️ Smoke Build (Web)`. Add them from the

@@ -43,6 +43,7 @@ lib/framework/mode/          # contracts ONLY — no if, no impl
   session_strategy.dart
   proximity_strategy.dart
   surface_strategy.dart
+  bridge_config.dart         # a contract's return type, not an implementation
 
 lib/core/mode/
   app_mode.dart              # enum AppMode + resolve() + appModeProvider
@@ -50,7 +51,6 @@ lib/core/mode/
   local_mode_profile.dart    # + .aliasedAs() for cloud and demo
   remote_mode_profile.dart
   impl/
-    bridge_config.dart
     {local,remote}_transport_strategy.dart
     {local,remote}_credential_strategy.dart
     {local,remote}_session_strategy.dart
@@ -63,7 +63,11 @@ lib/page/_shared/mode/
 
 **Rule 3 in one sentence: the contract lives in `lib/framework/mode/`, the implementation lives at the layer it talks to.** Transport, credentials, session and proximity talk to `lib/core/` things, so they live in `lib/core/mode/impl/`. `SurfaceStrategy`'s implementations talk to page state, so they live under `lib/page/`.
 
-That last one has a consequence: **`AppModeProfile` has no `surface` member.** CLAUDE.md forbids `lib/core/` → `lib/page/`, and a `surface` getter on a core profile would be exactly that dependency. So cause 5 gets its own composition root — a second exhaustive `switch` over the same `AppMode`, read through the same `appModeProvider`, so a test that overrides the mode still moves both. Two roots is the intended shape; constitution Article XVII Rule 2 names both, and `test/core/mode/composition_root_test.dart` guards both so a third cannot appear unnoticed.
+Rule 3 has a second half that is easy to drop: **the framework imports neither implementation directory.** `BridgeConfig` is why this needs saying. It is a value type, not a strategy, and it was first filed under `impl/` next to the two classes that build it — which made `transport_strategy.dart` import `lib/core/mode/impl/`, i.e. made the contract depend on the directory the rule exists to keep it independent of. It is a *return type of the contract*, so it belongs with the contract. The test for the next one like it: if the framework has to import it to state a signature, it cannot live in `impl/`.
+
+The `SurfaceStrategy` placement has a consequence: **`AppModeProfile` has no `surface` member.** CLAUDE.md forbids `lib/core/` → `lib/page/`, and a `surface` getter on a core profile would be exactly that dependency. So cause 5 gets its own composition root — a second exhaustive `switch` over the same `AppMode`. Two roots is the intended shape; constitution Article XVII Rule 2 names both, and `test/core/mode/composition_root_test.dart` guards both so a third cannot appear unnoticed.
+
+**The page root reads `appModeProfileProvider.mode`, not `appModeProvider`,** and the difference is not cosmetic. Reading the raw provider in both roots is the obvious symmetry and it quietly costs you acceptance 3: one `appModeProfileProvider.overrideWithValue(const RemoteModeProfile())` is supposed to put the *whole* stack in remote, and a page root on `appModeProvider` opts cause 5 out — the four core causes move, the surfaces stay local, and every transport assertion still passes. Phase 3 shipped it the wrong way round first; nothing caught it until a test read `surfaceStrategyProvider` under a profile-only override. Going through the profile keeps both levers live, since the profile is itself derived from `appModeProvider`.
 
 **A note on the design doc.** #1474's §5 file tree puts the `SessionStrategy` implementations under `lib/page/_shared/mode/`, annotated "(they navigate — cause 3)". That contradicts its own §4.2, which gives the signature `Future<SessionOutcome> end(Ref, EndCause)` and says explicitly that it does *not* navigate. Phase 3 resolved it in favour of §4.2: the implementations live in `lib/core/mode/impl/` with the other core causes, and returning an outcome rather than navigating is precisely what makes that placement legal. Phase 5 (#1495) fills the member in; if it decides the strategy must navigate after all, the class moves to `lib/page/` **and** cause 3 needs its own root like cause 5.
 
@@ -74,6 +78,8 @@ That last one has a consequence: **`AppModeProfile` has no `surface` member.** C
 **Step 1 — name the cause, not the mode.** Ask *why* the two modes differ. "Remote can't do a factory reset" is a mode fact; "the operator is not in the building, so an operation that destroys the credential ends the session with no way back" is a cause, and it is cause 4. If you cannot state the why, you are about to write a capability flag.
 
 **Step 2 — add a member to that cause's contract in `lib/framework/mode/`.** One member, with a doc comment saying what differs and why. Do not add a new contract unless the cause is genuinely new — `test/core/mode/mode_contract_roster_test.dart` counts the roster at six for that reason.
+
+**The six are the five causes plus `SseOperationStrategy`**, the one mode contract that shipped before this epic. That matters when you edit the roster: substituting `AppModeProfile` for the sixth slot leaves the census reading 12 — the profile also has two implementations — while quietly un-guarding the pre-existing contract. Phase 3 shipped it that way and a third `implements SseOperationStrategy` went undetected by the whole suite. The profile is checked separately, and deliberately without an exact count, because #1474 §9.1 expects a real `CloudModeProfile` eventually.
 
 **Step 3 — implement it in both `impl/` classes.** The compiler makes this unskippable; that is the point.
 
@@ -90,7 +96,7 @@ if (ref.watch(appModeProvider) == AppMode.remote) { ... }
 if (GlobalConfig.remote.isActive) { ... }
 ```
 
-`test/core/mode/composition_root_test.dart` enforces the middle line: only the two composition roots may read `appModeProvider`.
+`test/core/mode/composition_root_test.dart` enforces the middle line: `appModeProvider` may be *named* in exactly three files — its own declaration, `app_mode_profile.dart`, and the demo build's `overrideWithValue`. The scan counts every mention rather than just `ref.watch(...)`, on purpose: the narrower spelling let `ref.read`, `container.read`, a `.select` and a bare `AppMode.resolve()` straight through, so it enforced a spelling instead of the rule.
 
 **Step 5 — test it by overriding a provider.** Two levers:
 
@@ -176,8 +182,8 @@ What to do instead, if a production caller ever appears: the existing `usp_mutat
 These are constitution **Article XVII**; repeated here with their failure modes because a rule whose violation is invisible is a convention, not a rule. Rules 3, 4, 5 and 6 are #1474 §3.1's own four; rules 1 and 2 were added by phase 3, because writing the composition roots is what made the exhaustiveness guarantee something a `default:` could quietly remove.
 
 1. **Exhaustive switch, no `default:`.** *Fails as:* a developer adds an `AppMode`, gets two compile errors, and silences them with a catch-all. Compiles, works for the three old modes, silently gives the new one the wrong profile. The compiler pointed at the right place and offered the wrong fix. *Guarded by* `composition_root_test.dart`, because a switch **with** a catch-all is valid Dart and no runtime observation can tell the two apart.
-2. **Two composition roots, and only they read the mode.** *Fails as:* a new feature reads `appModeProvider` and writes its own `if` — the pre-#1474 shape returning one site at a time, correct today and wrong the day a mode is added. *Guarded by* the census in the same file.
-3. **Contract in `lib/framework/mode/`, implementation at the layer it talks to.** *Fails as:* a `surface` member on the core profile, i.e. a `lib/core/` → `lib/page/` import that nothing rejects at build time.
+2. **Two composition roots, and only they read the mode — the page root through the profile.** *Fails as:* two ways. A new feature reads `appModeProvider` and writes its own `if` — the pre-#1474 shape returning one site at a time, correct today and wrong the day a mode is added. And the page root reading `appModeProvider` instead of `appModeProfileProvider.mode`, which looks equivalent and quietly excludes cause 5 from the profile override the acceptance criterion is written around. *Guarded by* the census in the same file, plus a scan for the page root's own `ref.watch`.
+3. **Contract in `lib/framework/mode/`, implementation at the layer it talks to — and the framework imports neither implementation directory.** *Fails as:* two ways. A `surface` member on the core profile, i.e. a `lib/core/` → `lib/page/` import that nothing rejects at build time. And the reverse crossing, which arrives through a *value type* rather than a strategy and so does not look like a layering violation while you are making it: `BridgeConfig` was first filed under `core/mode/impl/` because the two transport strategies build it, and `transport_strategy.dart` then imported the implementation directory to name its own return type. *Guarded by* the `lib/framework/mode/` import scan in `mode_contract_roster_test.dart`; nothing else can see it, since it compiles, passes every behavioural test, and `dart analyze` has no opinion on import direction.
 4. **One definition per contract, and none of them `sealed`.** *Fails as:* two ways. A duplicated contract compiles and then splits the app in two, because `AppModeProfile` composes by type and the copy nothing wires up is simply never selected — the same silent failure Article IV Rule 4 records for `PreservableContract`. And `sealed` is what the IDE *suggests* for a closed two-implementation hierarchy; it breaks `test/core/usp/mocks.dart`-style fakes from another library, and the failure surfaces in the mock file, so the natural fix looks like "delete that stale mock". *Guarded by* `mode_contract_roster_test.dart`.
 5. **One contract per cause; a multi-cause divergence is a *consumer*, never a new contract.** *Fails as:* the messiest modules are the ones drawing on several causes at once, and the reflex is a `Local`/`Remote` pair for each. Recovery draws on causes 1, 2 and 4; the operation guard on cause 4 — so `RecoveryProbeService` and `OperationGuard` take strategies as **parameters** and keep one implementation each. A pair duplicates everything the two modes do identically, and the copies drift on all of it except the one line that differed, while both keep passing their own tests. *Guarded by* the `_notPaired` half of `mode_contract_roster_test.dart`. This is the rule phases 4 and 6 are judged against.
 6. **Shape follows use, not subject matter.** Called polymorphically → `abstract class`; switched on → `enum` when no case carries data, `sealed class` when a case does. `AppMode` is an enum; the contracts are abstract classes — which rule 4 independently requires. Stated so the two are known to *agree* rather than to coincide: if a mode value ever needs to carry data, `AppMode` becomes a `sealed class` and the roots stay exhaustive, while the contracts must **not** follow it.
@@ -193,8 +199,8 @@ Three disciplines that are not rules because they need judgement:
 | File | Guards |
 | --- | --- |
 | `test/core/mode/app_mode_profile_test.dart` | One override moves the whole stack; the build flag stays untouched; cloud/demo share instances but keep their label |
-| `test/core/mode/composition_root_test.dart` | Rules 1 and 2 — no `default:`/`_ =>`, every `AppMode` named, nothing else reads the mode |
-| `test/core/mode/mode_contract_roster_test.dart` | Rule 4 — six contracts, one definition each, none `sealed`, exactly two implementations each, and no Local/Remote pair for *services* |
+| `test/core/mode/composition_root_test.dart` | Rules 1 and 2 — no `default:`/`_ =>`, every `AppMode` named, `appModeProvider` mentioned in exactly three files, and the page root taking its mode from the *profile* |
+| `test/core/mode/mode_contract_roster_test.dart` | Rules 3 and 4 — six contracts, one definition each, none `sealed`, exactly two implementations each, no Local/Remote pair for *services*, and no framework file importing either implementation directory |
 | `test/core/usp/services/bridge_endpoints_test.dart` | The endpoint tables are disjoint, session-scoped and absolute |
 | CI step `🏗️ Smoke Build (Web, force=remote)` | The RA flavour still compiles — a compile-time partition nothing else in the pipeline sees |
 

@@ -53,18 +53,39 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The six contracts, each mapped to the file that must hold its one definition.
 ///
-/// Five causes plus the profile that composes four of them. `SurfaceStrategy` is
-/// the odd one: its implementations live under `lib/page/` (they talk to page
-/// state, and `lib/core/` may not depend on `lib/page/`), which is why it is not a
-/// member of `AppModeProfile` and has its own composition root.
+/// **This is #1474's own population, and getting it wrong is easy in a way that
+/// still reads as 12.** The six are the five new causes plus
+/// `SseOperationStrategy` — the one mode contract that already shipped before the
+/// epic ("for all six (the five above plus `SseOperationStrategy`)"). It is *not*
+/// five causes plus `AppModeProfile`: substituting the profile keeps the census
+/// at 12, because the profile also has two implementations, while leaving the
+/// pre-existing contract unguarded. Verified by adding a third `implements
+/// SseOperationStrategy` under `lib/` with the profile in this map: the whole
+/// suite stayed green.
+///
+/// `SurfaceStrategy` is the odd one among the causes: its implementations live
+/// under `lib/page/` (they talk to page state, and `lib/core/` may not depend on
+/// `lib/page/`), which is why it is not a member of `AppModeProfile` and has its
+/// own composition root.
 const _contracts = <String, String>{
   'TransportStrategy': 'lib/framework/mode/transport_strategy.dart',
   'CredentialStrategy': 'lib/framework/mode/credential_strategy.dart',
   'SessionStrategy': 'lib/framework/mode/session_strategy.dart',
   'ProximityStrategy': 'lib/framework/mode/proximity_strategy.dart',
   'SurfaceStrategy': 'lib/framework/mode/surface_strategy.dart',
-  'AppModeProfile': 'lib/core/mode/app_mode_profile.dart',
+  'SseOperationStrategy': 'lib/core/usp/services/sse_operation_strategy.dart',
 };
+
+/// The profile that composes causes 1-4. Checked for the same two shape rules as
+/// a contract, but deliberately **not** for an implementation count.
+///
+/// It has two today (`LocalModeProfile`, `RemoteModeProfile`, with cloud and demo
+/// aliasing local through a labelled constructor), and #1474 §9.1 anticipates a
+/// third: *"`CloudModeProfile` becomes a real impl only when something actually
+/// differs"*. Pinning 2 here would turn red for doing exactly what the design
+/// prescribes — the failure mode of a census that counts the wrong thing.
+const _profile = 'AppModeProfile';
+const _profilePath = 'lib/core/mode/app_mode_profile.dart';
 
 /// Types that answer a mode question but must NOT be split per mode: they take a
 /// strategy instead. Mapped to the phase that introduces or edits them.
@@ -174,6 +195,44 @@ void main() {
     }
   });
 
+  group('the profile obeys the shape rules but not the count', () {
+    test('one definition, not sealed', () {
+      expect(
+        filesMatching(RegExp(r'^\s*abstract\s+class\s+' + _profile + r'\b',
+            multiLine: true)),
+        [_profilePath],
+        reason: '$_profile must be declared exactly once, in $_profilePath. '
+            'Two definitions and the app composes strategies against a type '
+            'nothing wires up — Article IV Rule 4 again.',
+      );
+      expect(
+        filesMatching(RegExp(r'^\s*sealed\s+class\s+' + _profile + r'\b',
+            multiLine: true)),
+        isEmpty,
+        reason:
+            'same objection as the contracts: sealing forbids out-of-library '
+            'subtypes, so test fakes stop compiling.',
+      );
+    });
+
+    test('at least two implementations, and no upper bound', () {
+      // Concatenated, not interpolated: `r'...$_profile...'` is a raw string, so
+      // the name would be matched literally and every count would be zero.
+      final impls =
+          RegExp(r'\bimplements\s+' + _profile + r'\b(?!\w)', multiLine: true);
+
+      expect(
+        countMatches(impls),
+        greaterThanOrEqualTo(2),
+        reason: 'a mode with no profile cannot be composed. Found in '
+            '${filesMatching(impls)}. Deliberately not `equals(2)`: #1474 §9.1 '
+            'says CloudModeProfile becomes a real implementation once something '
+            'actually differs, so an exact count would make the design\'s own '
+            'next step a test failure.',
+      );
+    });
+  });
+
   test('the roster totals 12 implementations, not 20', () {
     final total = _contracts.keys.fold<int>(
       0,
@@ -187,12 +246,70 @@ void main() {
       total,
       12,
       reason:
-          'six contracts x two modes. The number is here as a census: it is '
-          'the concrete form of #1474\'s claim that the mode logic is a fixed set '
+          'six contracts x two modes — #1474\'s published total, and note it '
+          'counts SseOperationStrategy\'s pair and NOT the profile\'s: "20 '
+          'members, 6 contracts, 12 implementation classes ... plus the 2 that '
+          'SseOperationStrategy already has". The number is here as a census: it '
+          'is the concrete form of the claim that the mode logic is a fixed set '
           'of classes rather than a growing set of `if`s, and the per-contract '
           'tests above cannot see a *seventh contract* arriving with its own '
-          'pair.',
+          'pair. If a real CloudModeProfile lands, this total does not move — '
+          'profiles are not in it.',
     );
+  });
+
+  group('the framework does not import either implementation directory', () {
+    // Constitution Article XVII Rule 17.1.3, second half. The rule is not about
+    // tidiness: a contract that imports `impl/` is a contract coupled to the
+    // classes it exists to be independent of, and it arrives through a *value
+    // type* rather than through a strategy, which is why it does not look like a
+    // layering violation while you are making it. `BridgeConfig` was filed under
+    // `lib/core/mode/impl/` in the first cut of phase 3 for exactly that reason —
+    // it is built by the two transport strategies, so it looked like theirs —
+    // and `transport_strategy.dart` imported the implementation directory to name
+    // its own return type. It now lives in `lib/framework/mode/`.
+    //
+    // Not caught by anything else: it compiles, it passes every behavioural
+    // test, and `dart analyze` has no opinion on import direction. The repo has
+    // no import-boundary linter.
+    const forbidden = <String, String>{
+      'core/mode/impl/': 'the four core causes',
+      'page/_shared/mode/': 'cause 5',
+    };
+
+    final frameworkFiles = sources.keys
+        .where((p) => p.startsWith('lib/framework/mode/'))
+        .toList()
+      ..sort();
+
+    test('there are framework files to check', () {
+      // Guards the scan itself: a moved or renamed directory would otherwise
+      // make every expectation below pass over an empty list.
+      expect(frameworkFiles, isNotEmpty,
+          reason:
+              'no files under lib/framework/mode/ — the contracts moved, so '
+              'this scan is looking at nothing and silently passing. Re-point '
+              'it, and move Article XVII Rule 17.1.3 with them.');
+    });
+
+    for (final entry in forbidden.entries) {
+      test('no contract imports ${entry.key}', () {
+        final offenders = frameworkFiles
+            .where((p) => sources[p]!.contains(entry.key))
+            .toList();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason: 'files under lib/framework/mode/ must not import '
+              '${entry.key} (${entry.value}\' implementations). Found in '
+              '$offenders. If a contract needs a type to state its signature, '
+              'that type is not an implementation detail and belongs in '
+              'lib/framework/mode/ beside the contract — which is where '
+              'BridgeConfig ended up.',
+        );
+      });
+    }
   });
 
   group('mode-aware services are not split per mode (acceptance 3c)', () {

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/mode/impl/bridge_config.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/sse_local_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/framework/mode/bridge_config.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/transport_strategy.dart';
 
