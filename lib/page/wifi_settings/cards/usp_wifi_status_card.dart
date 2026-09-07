@@ -31,6 +31,12 @@ class UspWifiStatusCard extends ConsumerWidget {
       titleBadge: AppBadge(
           label: loc(context)
               .nRadios(enabledRadios.toString(), radios.length.toString())),
+      // How many radios are on, over how many there are — the same fact the
+      // badge states, in the bare form the tile has room for (`nRadios` spells
+      // it out in words, which at two columns would be the only thing that
+      // fits). Neither number alone is a reading of the card: three of three is
+      // healthy, two of three is a band switched off.
+      popupValue: '$enabledRadios/${radios.length}',
       detailRoute: RouteNamed.uspWifiSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,23 +86,37 @@ class UspWifiStatusCard extends ConsumerWidget {
             display: '${radio.maxBitRate} Mbps',
           ),
           AppGap.md(),
-          Row(
-            children: [
-              SizedBox(
-                width: context.colWidth(2),
-                child: AppText.labelLarge(loc(context).channel),
-              ),
-              Expanded(
-                child: AppText.bodyMedium(
-                    wifiDisplayValue(context, radio.channelDisplay)),
-              ),
-              AppIconButton(
-                icon: AppIcon.font(Icons.edit, size: 18),
-                onTap: isLoading
-                    ? null
-                    : () => _showWifiChannelDialog(context, ref, radio),
-              ),
-            ],
+          // Size the label column from the width THIS ROW is given (via a
+          // LayoutBuilder), not from screen width. `context.colWidth(2)`
+          // answered a page-scale question (122.25px of the 260.5px this card
+          // shrinks to at 601px), over-claiming the row and silently clipping
+          // the value against the card surface with no overflow raised (#1251;
+          // density design §2.2/§2.8). This is the same fix #1231 applied to
+          // UspInfoRow; the row keeps its trailing edit button, so it reuses
+          // that rule's constants rather than the UspInfoRow widget itself.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final labelWidth = (constraints.maxWidth * kUspLabelShare)
+                  .clamp(0.0, kUspLabelMaxWidth);
+              return Row(
+                children: [
+                  SizedBox(
+                    width: labelWidth,
+                    child: AppText.labelLarge(loc(context).channel),
+                  ),
+                  Expanded(
+                    child: AppText.bodyMedium(
+                        wifiDisplayValue(context, radio.channelDisplay)),
+                  ),
+                  AppIconButton(
+                    icon: AppIcon.font(Icons.edit, size: 18),
+                    onTap: isLoading
+                        ? null
+                        : () => _showWifiChannelDialog(context, ref, radio),
+                  ),
+                ],
+              );
+            },
           ),
           UspInfoRow(
               label: loc(context).bandwidth,
@@ -166,26 +186,41 @@ class UspWifiStatusCard extends ConsumerWidget {
   Widget _buildApRow(BuildContext context, WifiAccessPointUIModel ap) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          UspStatusDot(isActive: ap.enable),
-          AppGap.sm(),
-          Expanded(child: AppText.bodyMedium(ap.ssidName)),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              wifiDisplayValue(context, ap.securityMode),
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(
-            width: context.colWidth(1),
-            child: AppText.bodySmall(
-              wifiDisplayValue(context, ap.encryptionMode),
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      // The two trailing value columns were sized with `context.colWidth(2)` /
+      // `colWidth(1)` — screen-derived, so inside this 260.5px card at 601px
+      // they claimed 122.25 + 53.13 = 175px (67% of the card) and starved the
+      // SSID Expanded to ~61px. Size them from the width THIS ROW is given
+      // instead (#1251), keeping the SSID the dominant column. Fractions hold
+      // the old ~2:1 security:encryption split; the ceilings keep a wide row
+      // from opening an absurd gutter, matching the row-derived rule from #1231.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final securityWidth =
+              (constraints.maxWidth * 0.28).clamp(0.0, kUspLabelMaxWidth);
+          final encryptionWidth =
+              (constraints.maxWidth * 0.14).clamp(0.0, kUspLabelMaxWidth / 2);
+          return Row(
+            children: [
+              UspStatusDot(isActive: ap.enable),
+              AppGap.sm(),
+              Expanded(child: AppText.bodyMedium(ap.ssidName)),
+              SizedBox(
+                width: securityWidth,
+                child: AppText.bodySmall(
+                  wifiDisplayValue(context, ap.securityMode),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(
+                width: encryptionWidth,
+                child: AppText.bodySmall(
+                  wifiDisplayValue(context, ap.encryptionMode),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

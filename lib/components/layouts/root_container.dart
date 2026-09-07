@@ -11,6 +11,18 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
+/// How long an unattended session stays logged in.
+///
+/// Matches 1.x, which uses the same 15 minutes at
+/// `lib/page/components/layouts/root_container.dart` on `dev-1.3.1` (#1454).
+/// The two trees ship the same product, so an operator should not get a shorter
+/// leash for being on the newer one.
+///
+/// Named rather than inlined because it is a security-relevant policy value:
+/// `test/components/layouts/root_container_test.dart` pins it, so shortening or
+/// lengthening it has to be deliberate.
+const Duration kIdleLogoutWindow = Duration(minutes: 15);
+
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
   final LinksysRoute? route;
@@ -38,7 +50,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
-        idleTime: const Duration(minutes: 5),
+        idleTime: kIdleLogoutWindow,
         onIdle: () {
           // not for debug
           if (!kReleaseMode) {

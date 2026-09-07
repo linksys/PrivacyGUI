@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide MenuController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
+import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
@@ -12,9 +12,9 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/app_utils.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified TopBar for the app.
@@ -62,10 +62,23 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                   loc(context).appTitle,
                   color: colorScheme.onSurface,
                 ),
-                MenuHolder(
-                  type: MenuDisplay.top,
-                  controllerProvider:
-                      widget.controllerProvider ?? uspMenuController,
+                // The one child of this row that can yield (#1328). All three
+                // used to be inflexible, so the row simply overflowed once the
+                // nav chips appeared at 601px. The nav is the right one to bound:
+                // the title is "Linksys Now" in all 26 locales and the trailing
+                // icons are fixed-size, so the nav is both the widest and the
+                // only child with a narrower form to fall back on.
+                //
+                // `Flexible` alone would not be enough — `AppChipGroup` wraps by
+                // default, and a wrap inside this fixed 64px surface is a
+                // vertical overflow. `TopNavigationMenu` passes `wrap: false` for
+                // exactly this reason; the two changes only work together.
+                Flexible(
+                  child: MenuHolder(
+                    type: MenuDisplay.top,
+                    controllerProvider:
+                        widget.controllerProvider ?? uspMenuController,
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -79,7 +92,21 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                         child: AppIconButton(
                           icon: AppIcon.font(Icons.apps,
                               color: colorScheme.onSurface),
-                          onTap: () => context.goNamed(RouteNamed.uspApps),
+                          identifier: 'topbar-apps',
+                          // Pushing, not going: this button lives in the global
+                          // top bar, so it is pressed from whichever page the
+                          // user is on. `go` replaced the location and dropped
+                          // that page, leaving Apps' back arrow to fall through
+                          // to its `backFallback: uspMenu` — so back from Apps
+                          // landed on the Menu no matter where you came from
+                          // (#1434, the shape of #1421).
+                          //
+                          // And guarded, because the Apps page hosts this same
+                          // top bar: a plain push onto the page already on top
+                          // changes nothing on screen while costing one more
+                          // back per tap.
+                          onTap: () =>
+                              context.pushNamedIfNotCurrent(RouteNamed.uspApps),
                         ),
                       ),
                     const Padding(
@@ -97,13 +124,13 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
   }
 
   ThemeData _buildCurrentDarkTheme() {
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
     final themeConfig =
         ref.watch(themeConfigProvider.select((v) => v.valueOrNull));
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 
-    return buildDemoThemeData(
+    return buildStudioThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,

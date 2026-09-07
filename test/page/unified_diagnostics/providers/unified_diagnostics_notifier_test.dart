@@ -168,8 +168,9 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet, SpeedTest
-        expect(state.results.length, 7);
+        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet.
+        // Speed test disabled: blocked by FW support (#857).
+        expect(state.results.length, 6);
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });
@@ -801,6 +802,480 @@ void main() {
         // Scope was acquired once during the run and released exactly once.
         verify(() => mockScope.release()).called(1);
         container.dispose();
+      });
+
+      // Regression for #1148: pressing "Cancel Diagnostics" mid-flow must
+      // short-circuit the remaining sequential steps at the next step
+      // boundary, not run every check to completion first. We hang the
+      // gateway ping, fire cancel() while it's in-flight, then release the
+      // ping — the subsequent steps (DNS ping, DNS lookup, internet ping,
+      // speed test) must NOT be invoked.
+      test('cancel mid-flow skips subsequent diagnostic steps (#1148)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) async => const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                ));
+        // Hang the gateway ping so we can interleave a cancel() before the
+        // remaining steps run.
+        final gatewayCompleter = Completer<PingResult>();
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) => gatewayCompleter.future);
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        final runFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+
+        // Cancel while the gateway ping is still in-flight, then let it
+        // resolve. The next step boundary must observe _cancelled and bail.
+        final cancelFuture = notifier.cancel();
+        gatewayCompleter.complete(_createPingResult('192.168.1.1'));
+        await runFuture;
+        await cancelFuture;
+
+        // Steps after the cancelled gateway ping must never have executed.
+        verifyNever(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            ));
+        verifyNever(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            ));
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.idle);
+        container.dispose();
+      });
+
+      // Regression for the cancel→restart clobber race (PR #1175 review):
+      // a runner suspended on a long await must NOT overwrite a *newer* run's
+      // state when it revives. Run A hangs on the gateway ping; we cancel, then
+      // start Run B which completes fully; only then do we release Run A's ping.
+      // With the old shared `_cancelled` bool (reset to false by Run B), the
+      // revived Run A saw _cancelled==false and clobbered B's state. The
+      // per-run generation guard must make A's post-await writes no-ops.
+      test('revived run after cancel+restart does not clobber new run (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // Fingerprint the two runs so a clobber is detectable: Run A's WAN
+        // check reports Down (error), Run B's reports Up (ok). If revived Run A
+        // clobbers state, the final WAN result would be an error and the
+        // results list would collapse to Run A's short accumulation.
+        var wanCalls = 0;
+        when(() => mockService.checkWanStatus()).thenAnswer((_) async {
+          wanCalls++;
+          return wanCalls == 1
+              ? const WanStatusUIModel(
+                  status: 'Down',
+                  ipAddress: '',
+                  subnetMask: '',
+                  addressingType: 'DHCP',
+                )
+              : const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                );
+        });
+        // First gateway ping (Run A) hangs; every later call (Run B) resolves
+        // immediately so B can run to completion while A is suspended.
+        final runAGateway = Completer<PingResult>();
+        var gatewayCalls = 0;
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) {
+          gatewayCalls++;
+          return gatewayCalls == 1
+              ? runAGateway.future
+              : Future.value(_createPingResult('192.168.1.1'));
+        });
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        // Run A — suspends at the hung gateway ping.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A, then immediately start Run B and let it finish.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+
+        // Snapshot Run B's completed state before reviving A.
+        final afterB = container.read(unifiedDiagnosticsProvider);
+        expect(afterB.step, DiagnosticStep.showingResults);
+        expect(afterB.results.length, 6);
+        final wanB = afterB.results
+            .firstWhere((r) => r.step == DiagnosticStep.checkingWanStatus);
+        expect(wanB.isError, isFalse); // Run B saw WAN Up.
+
+        // Revive Run A — its post-await writes must be rejected by the
+        // generation guard and leave Run B's state untouched.
+        runAGateway.complete(_createPingResult('192.168.1.1'));
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.showingResults);
+        // Run A must NOT have clobbered: length and WAN verdict stay Run B's.
+        expect(finalState.results.length, 6);
+        final finalWan = finalState.results
+            .firstWhere((r) => r.step == DiagnosticStep.checkingWanStatus);
+        expect(finalWan.isError, isFalse,
+            reason: 'revived Run A (WAN Down) must not clobber Run B (WAN Up)');
+        container.dispose();
+      });
+
+      // Regression for the residual clobber race on the Intermittent flow
+      // (PR #1175 review). Unlike the Internet flow above, this runner suspends
+      // on the *scope acquisition* await (`_ensureScope()`), and the bare
+      // `state = copyWith(step: pingInternet)` write that follows it was the one
+      // flow missing an `_isCurrent(gen)` recheck. We hang Run A on
+      // acquireScope, cancel (resetting to idle), let Run B finish, then revive
+      // Run A: without the guard it re-stamps step=pingInternet over Run B's
+      // showingResults, stranding the view on a spinner. The guard makes the
+      // stale write a no-op.
+      test(
+          'revived intermittent run after cancel+restart does not clobber step (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // First scope acquisition (Run A) hangs; later calls (Run B, after
+        // cancel nulls the cached scope) resolve immediately.
+        final runAScope = Completer<DiagnosticScope>();
+        var acquireCalls = 0;
+        when(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).thenAnswer((_) {
+          acquireCalls++;
+          return acquireCalls == 1 ? runAScope.future : Future.value(mockScope);
+        });
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 86400,
+                  pingSuccessRate: 1.0,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: false,
+                  recentReboot: false,
+                ));
+
+        // Run A — suspends inside _ensureScope on the hung acquireScope.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A (resets state to idle), then start Run B and let it
+        // complete while A is still suspended on scope acquisition.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+
+        final afterB = container.read(unifiedDiagnosticsProvider);
+        expect(afterB.step, DiagnosticStep.showingResults);
+
+        // Revive Run A: its post-await `step=pingInternet` write must be
+        // rejected by the generation guard, leaving Run B's terminal state.
+        runAScope.complete(mockScope);
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.showingResults,
+            reason:
+                'revived Run A must not re-stamp step=pingInternet over Run B');
+        container.dispose();
+      });
+
+      // Regression for the preQualifying-back state-clobber (PR #1175 review).
+      // Back is a live affordance during preQualifying: the spinner view wires
+      // onBackTap -> goBack(), which returns handledInternally==true so the
+      // AutoDispose notifier survives with the same generation. Before the fix,
+      // goBack()'s preQualifying case reset state to idle WITHOUT bumping
+      // _generation (unlike cancel() and the running case), so a
+      // startWithPreQualifier runner suspended on checkWanStatus would revive,
+      // still pass _isCurrent(gen), and either _publish stale selectFlow state
+      // over the idle start screen or fire an unsolicited selectFlow on
+      // WAN-down. Here Run A's WAN check hangs and reports Down; we press Back,
+      // then release the WAN check. The generation bump in goBack must make the
+      // revived runner's post-await writes no-ops, leaving the idle screen and
+      // NOT auto-launching the internet flow.
+      test('back during preQualifying does not clobber idle screen (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // Hang the WAN check so we can interleave a goBack() while the
+        // pre-qualifier runner is suspended on it.
+        final wanCompleter = Completer<WanStatusUIModel>();
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) => wanCompleter.future);
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        // Start the pre-qualifier; it suspends on the hung WAN check.
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+
+        // User presses Back — handled internally, state resets to idle.
+        final handled = notifier.goBack();
+        expect(handled, isTrue);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+
+        // Revive the suspended WAN check with a WAN-down result. Without the
+        // generation bump this would _publish selectFlow(wanDownNoIp) over the
+        // idle screen AND auto-launch selectFlow(DiagnosticFlow.internet).
+        wanCompleter.complete(const WanStatusUIModel(
+          status: 'Down',
+          ipAddress: '',
+          subnetMask: '',
+          addressingType: 'DHCP',
+        ));
+        await preQualFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.idle,
+            reason:
+                'revived pre-qualifier must not clobber the idle start screen');
+        expect(finalState.flow, isNull,
+            reason: 'no unsolicited flow may be launched after Back');
+        // The auto-select internet flow (which would ping the gateway) must
+        // never have fired.
+        verifyNever(() =>
+            mockService.pingGateway(repeatCount: any(named: 'repeatCount')));
+        container.dispose();
+      });
+
+      // Regression for the preQualifying-back scope-release gap (PR #1175
+      // review, W-6). startWithPreQualifier acquires the scope via
+      // _ensureScope() right before its pingInternet step; if the user presses
+      // Back while that ping is in flight, goBack()'s preQualifying case must
+      // run the full teardown invariant like cancel() and the running case:
+      // null the live _scope (so a re-entry acquires a fresh one instead of
+      // reusing a scope with an in-flight op) and drain + release it via
+      // _teardownFuture (so teardownDone reflects real completion). Before the
+      // fix this branch only bumped the generation, leaking the scope. Here we
+      // pass WAN, hang on pingInternet, press Back, then release the ping and
+      // assert the captured scope was released and teardownDone resolves.
+      test('back during preQualifying releases the acquired scope (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // WAN passes so the runner proceeds to acquire the scope and then
+        // suspends on the hung pingInternet.
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        final pingCompleter = Completer<PingResult>();
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) => pingCompleter.future);
+
+        // Start the pre-qualifier; it acquires the scope, then suspends on the
+        // hung internet ping.
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+
+        // User presses Back while the scope is live with an in-flight ping.
+        final handled = notifier.goBack();
+        expect(handled, isTrue);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+
+        // Release the in-flight ping so the teardown drain can complete.
+        pingCompleter.complete(_createPingResult('1.1.1.1'));
+        await preQualFuture;
+        await notifier.teardownDone;
+        await Future.delayed(Duration.zero);
+
+        // The scope captured by goBack() must have been released, and the
+        // teardown future must resolve (not report a misleading "already done").
+        verify(() => mockScope.release()).called(1);
+        container.dispose();
+      });
+
+      // Regression for H-1 (PR #1175 review). startWithPreQualifier acquires the
+      // scope before its pingInternet step but — unlike runFullDiagnostic and
+      // selectFlow — used to assign no _runFuture. cancel()'s teardown drains
+      // `_runFuture` before calling scope.release(), so a null _runFuture made
+      // it release the scope WHILE the ping was still in flight (the
+      // unsubscribe-DELETE vs next-subscribe-POST overlap the PR exists to
+      // prevent). With the fix, startWithPreQualifier registers its future, so
+      // cancel() drains the in-flight ping before releasing the scope. We assert
+      // the scope is NOT released until the hung ping completes.
+      test(
+          'cancel during preQualifier ping drains it before scope release '
+          '(#1175 H-1)', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // WAN up so the runner acquires the scope, then suspends on the hung
+        // internet ping.
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        final pingCompleter = Completer<PingResult>();
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) => pingCompleter.future);
+
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+
+        // Cancel while the ping is in flight. State resets immediately, but the
+        // scope must NOT be released yet — the teardown has to drain the
+        // in-flight ping first (which requires _runFuture to be registered).
+        final cancelFuture = notifier.cancel();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+        verifyNever(() => mockScope.release());
+
+        // Complete the ping — only now may the scope be released.
+        pingCompleter.complete(_createPingResult('1.1.1.1'));
+        await preQualFuture;
+        await cancelFuture;
+        await notifier.teardownDone;
+        await Future.delayed(Duration.zero);
+        verify(() => mockScope.release()).called(1);
+        container.dispose();
+      });
+
+      // Regression for H-3 (PR #1175 review). _ensureScope() was the only
+      // post-await mutation without a generation guard: after `await
+      // acquireScope()` it unconditionally wrote `_scope = scope`. A stale
+      // runner revived inside acquireScope would therefore overwrite the live
+      // run's _scope with its own, orphaning the live scope (nothing releases
+      // it → the shared SSE ref-count never returns to 0). This is the acquire
+      // -side mirror of the release-side sink fixed in 37d28891. Here Run A
+      // hangs inside acquireScope (returning a DISTINCT scopeA); we cancel, let
+      // Run B acquire scopeB and finish, then revive Run A. The guard must make
+      // Run A release scopeA and leave scopeB as the live _scope.
+      test(
+          'revived run releases its own scope instead of orphaning the live '
+          "run's (#1175 H-3)", () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        final scopeA = _MockScope();
+        when(() => scopeA.isReleased).thenReturn(false);
+        when(() => scopeA.release()).thenAnswer((_) async {});
+
+        // Run A's scope acquisition hangs and yields a distinct scopeA; Run B
+        // (after cancel nulls the cached scope) gets the default mockScope.
+        final runAScope = Completer<DiagnosticScope>();
+        var acquireCalls = 0;
+        when(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).thenAnswer((_) {
+          acquireCalls++;
+          return acquireCalls == 1 ? runAScope.future : Future.value(mockScope);
+        });
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 86400,
+                  pingSuccessRate: 1.0,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: false,
+                  recentReboot: false,
+                ));
+
+        // Run A — suspends inside _ensureScope on the hung acquireScope.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A, then start Run B (acquires scopeB) and let it finish.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.showingResults);
+
+        // Revive Run A: _ensureScope resumes and sees the run is stale, so it
+        // must release scopeA (the scope it just acquired) and NOT overwrite
+        // the live _scope. Without the fix, `_scope = scopeA` orphans scopeB.
+        runAScope.complete(scopeA);
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        // Stale Run A released its own scope immediately.
+        verify(() => scopeA.release()).called(1);
+
+        // The live run's scope (scopeB == mockScope) must still be the one held
+        // by the notifier — proven by it being released on dispose. Without the
+        // fix it was orphaned by scopeA and would never be released.
+        container.dispose();
+        await Future.delayed(Duration.zero);
+        verify(() => mockScope.release()).called(1);
       });
     });
 

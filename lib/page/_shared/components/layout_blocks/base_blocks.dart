@@ -17,12 +17,18 @@ class LayoutBlock extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final bool showBorder;
 
+  /// Stable, screen-reader-silent test hook (→ `flt-semantics-identifier`).
+  /// Only emits a Semantics node when set, so decorative LayoutBlocks are
+  /// unaffected. Marked `button` when the block is tappable. See PrivacyGUI#1172.
+  final String? identifier;
+
   const LayoutBlock({
     super.key,
     required this.child,
     this.onTap,
     this.padding,
     this.showBorder = false,
+    this.identifier,
   });
 
   @override
@@ -44,12 +50,20 @@ class LayoutBlock extends StatelessWidget {
       child: child,
     );
 
-    if (onTap == null) return content;
+    final tappable = onTap == null
+        ? content
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
+            child: content,
+          );
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
-      child: content,
+    if (identifier == null) return tappable;
+
+    return Semantics(
+      identifier: identifier,
+      button: onTap != null,
+      child: tappable,
     );
   }
 }

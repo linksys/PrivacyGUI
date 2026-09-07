@@ -1,0 +1,183 @@
+{
+  "provenance": {
+    "what": "A real goldens/overflow_warnings.json, captured verbatim. The left-hand side of #1339's offline comparison.",
+    "capturedBy": "fvm flutter test test/golden_test --dart-define=screens=1080 --dart-define=locales=de,pl,ru,fi",
+    "capturedAt": "2026-08-25",
+    "commit": "4d976a44b23b0b8fa27e43fdec038badd4796a02",
+    "flutter": "3.44.0 (framework 559ffa3f75)",
+    "writtenBy": "test/golden_test/golden_framework/overflow_diagnostics.dart's buildOverflowRecord, i.e. the pre-#1339 parser",
+    "frozen": "records[] and logs[] must NEVER be regenerated. They are the recorded output of the parser #1339 deleted, so regenerating them with the shared parser would make the comparison compare the new parser against itself and pass unconditionally.",
+    "width": "screen1080 \u2014 golden CI's third coordinate, added 2026-08-24. The two committed coordinates (phone480, desktop1280) produce no overflow at all, which is why this had to be captured at a width no baseline exists for.",
+    "notMultiSide": "All 16 records carry exactly one 'pixels on the <side>' clause, so the first-side -> worst-side difference cannot arise anywhere in this corpus. That is the finding, not a gap: the difference is pinned separately, against a real two-sided SDK string, in overflow_record_test.dart."
+  },
+  "records": [
+    {
+      "golden": "admin-data-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-data-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "admin-dialog_timezone-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-dialog_timezone-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "admin-dialog_password-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-dialog_password-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "admin-dialog_reboot-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-dialog_reboot-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "admin-dialog_password_invalid-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-dialog_password_invalid-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "admin-dialog_factory_reset-screen1080-de",
+      "message": "A RenderFlex overflowed by 18 pixels on the right.",
+      "pixels": "18",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 0
+    },
+    {
+      "golden": "admin-dialog_factory_reset-screen1080-pl",
+      "message": "A RenderFlex overflowed by 72 pixels on the right.",
+      "pixels": "72",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/firmware_update/views/firmware_update_card.dart",
+      "line": "77",
+      "logIndex": 1
+    },
+    {
+      "golden": "dashboard-edit_mode-screen1080-de",
+      "message": "A RenderFlex overflowed by 44 pixels on the right.",
+      "pixels": "44",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/dashboard/views/usp_sliver_dashboard_view.dart",
+      "line": "414",
+      "logIndex": 2
+    },
+    {
+      "golden": "dashboard-edit_mode-screen1080-pl",
+      "message": "A RenderFlex overflowed by 36 pixels on the right.",
+      "pixels": "36",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/dashboard/views/usp_sliver_dashboard_view.dart",
+      "line": "414",
+      "logIndex": 3
+    },
+    {
+      "golden": "dashboard-edit_mode-screen1080-ru",
+      "message": "A RenderFlex overflowed by 70 pixels on the right.",
+      "pixels": "70",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/dashboard/views/usp_sliver_dashboard_view.dart",
+      "line": "414",
+      "logIndex": 4
+    },
+    {
+      "golden": "dashboard-edit_mode-screen1080-fi",
+      "message": "A RenderFlex overflowed by 9.6 pixels on the right.",
+      "pixels": "9.6",
+      "side": "right",
+      "widget": "Row",
+      "file": "lib/page/dashboard/views/usp_sliver_dashboard_view.dart",
+      "line": "414",
+      "logIndex": 5
+    }
+  ],
+  "logs": [
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 18 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/firmware_update/views/firmware_update_card.dart:77:12\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex relayoutBoundary=up18 OVERFLOWING:\n     needs compositing\n     creator: Row \u2190 _CardSkeleton \u2190 Column \u2190 Expanded \u2190 Row \u2190 Padding\n       \u2190 DecoratedBox \u2190 Container \u2190 LayoutBlock \u2190 Column \u2190\n       DefaultTextStyle \u2190 Builder \u2190 \u22ef\n     parentData: offset=Offset(0.0, 16.0); flex=null; fit=null (can\n       use size)\n     constraints: BoxConstraints(0.0<=w<=283.0, 0.0<=h<=Infinity)\n     size: Size(283.0, 20.0)\n     direction: horizontal\n     mainAxisAlignment: start\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n",
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 72 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/firmware_update/views/firmware_update_card.dart:77:12\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex relayoutBoundary=up18 OVERFLOWING:\n     needs compositing\n     creator: Row \u2190 _CardSkeleton \u2190 Column \u2190 Expanded \u2190 Row \u2190 Padding\n       \u2190 DecoratedBox \u2190 Container \u2190 LayoutBlock \u2190 Column \u2190\n       DefaultTextStyle \u2190 Builder \u2190 \u22ef\n     parentData: offset=Offset(0.0, 16.0); flex=null; fit=null (can\n       use size)\n     constraints: BoxConstraints(0.0<=w<=305.7, 0.0<=h<=Infinity)\n     size: Size(305.7, 20.0)\n     direction: horizontal\n     mainAxisAlignment: start\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n",
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 44 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/dashboard/views/usp_sliver_dashboard_view.dart:414:16\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex OVERFLOWING:\n     creator: Row \u2190 Padding \u2190 DecoratedBox \u2190 ConstrainedBox \u2190 Padding\n       \u2190 Container \u2190 Align \u2190 Builder \u2190 KeyedSubtree-[GlobalKey]\n       \u2190 IgnorePointer \u2190 Positioned \u2190 AnimatedPositioned \u2190 \u22ef\n     parentData: offset=Offset(0.0, 0.0) (can use size)\n     constraints: BoxConstraints(w=180.0, h=56.0)\n     size: Size(180.0, 56.0)\n     direction: horizontal\n     mainAxisAlignment: center\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n",
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 36 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/dashboard/views/usp_sliver_dashboard_view.dart:414:16\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex OVERFLOWING:\n     creator: Row \u2190 Padding \u2190 DecoratedBox \u2190 ConstrainedBox \u2190 Padding\n       \u2190 Container \u2190 Align \u2190 Builder \u2190 KeyedSubtree-[GlobalKey]\n       \u2190 IgnorePointer \u2190 Positioned \u2190 AnimatedPositioned \u2190 \u22ef\n     parentData: offset=Offset(0.0, 0.0) (can use size)\n     constraints: BoxConstraints(w=180.0, h=56.0)\n     size: Size(180.0, 56.0)\n     direction: horizontal\n     mainAxisAlignment: center\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n",
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 70 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/dashboard/views/usp_sliver_dashboard_view.dart:414:16\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex OVERFLOWING:\n     creator: Row \u2190 Padding \u2190 DecoratedBox \u2190 ConstrainedBox \u2190 Padding\n       \u2190 Container \u2190 Align \u2190 Builder \u2190 KeyedSubtree-[GlobalKey]\n       \u2190 IgnorePointer \u2190 Positioned \u2190 AnimatedPositioned \u2190 \u22ef\n     parentData: offset=Offset(0.0, 0.0) (can use size)\n     constraints: BoxConstraints(w=180.0, h=56.0)\n     size: Size(180.0, 56.0)\n     direction: horizontal\n     mainAxisAlignment: center\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n",
+    "Exception caught by rendering library\n   The following assertion was thrown during layout:\n   A RenderFlex overflowed by 9.6 pixels on the right.\n\n   The relevant error-causing widget was:\n     Row\n     Row:lib/page/dashboard/views/usp_sliver_dashboard_view.dart:414:16\n\n   The overflowing RenderFlex has an orientation of Axis.horizontal.\n   The edge of the RenderFlex that is overflowing has been marked in\n   the rendering with a yellow and black striped pattern. This is\n   usually caused by the contents being too big for the RenderFlex.\n   Consider applying a flex factor (e.g. using an Expanded widget)\n   to force the children of the RenderFlex to fit within the\n   available space instead of being sized to their natural size.\n   This is considered an error condition because it indicates that\n   there is content that cannot be seen. If the content is\n   legitimately bigger than the available space, consider clipping\n   it with a ClipRect widget before putting it in the flex, or using\n   a scrollable container rather than a Flex, like a ListView.\n   The specific RenderFlex in question is: RenderFlex OVERFLOWING:\n     creator: Row \u2190 Padding \u2190 DecoratedBox \u2190 ConstrainedBox \u2190 Padding\n       \u2190 Container \u2190 Align \u2190 Builder \u2190 KeyedSubtree-[GlobalKey]\n       \u2190 IgnorePointer \u2190 Positioned \u2190 AnimatedPositioned \u2190 \u22ef\n     parentData: offset=Offset(0.0, 0.0) (can use size)\n     constraints: BoxConstraints(w=180.0, h=56.0)\n     size: Size(180.0, 56.0)\n     direction: horizontal\n     mainAxisAlignment: center\n     mainAxisSize: max\n     crossAxisAlignment: center\n     textDirection: ltr\n     verticalDirection: down\n     spacing: 0.0\n   \u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\u25e2\u25e4\n"
+  ]
+}

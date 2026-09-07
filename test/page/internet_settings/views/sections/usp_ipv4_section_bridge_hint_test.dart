@@ -66,10 +66,14 @@ void main() {
 
     // Assert the hint is rendered bold. A textContaining check alone would not
     // catch a regression back to the non-bold AppText.bodyMedium factory.
+    //
+    // `data` is null exactly when the AppText was built via AppText.rich, which
+    // this hint is not; the `?? false` keeps the predicate total rather than
+    // asserting that with a `!`.
     expect(
       find.byWidgetPredicate((w) =>
           w is AppText &&
-          w.data.contains('https://Community00080.local') &&
+          (w.data?.contains('https://Community00080.local') ?? false) &&
           w.fontWeight == FontWeight.bold),
       findsOneWidget,
     );

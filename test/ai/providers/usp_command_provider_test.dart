@@ -1,8 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/providers/usp_command_provider.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
+import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
+import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
@@ -37,6 +45,27 @@ void main() {
           ),
           wanDataProvider.overrideWith(
             () => _FixedWanNotifier(_testWanData),
+          ),
+          // These three are stubbed for two reasons beyond supplying data.
+          //
+          // Their real notifiers open a `Timer.periodic` that fetches over USP,
+          // guarded only by `appConnectionStateProvider` not being
+          // `authenticated` — which happens to hold in tests but is nothing this
+          // file states or controls. Stubbing keeps a unit test from depending
+          // on that, and from starting timers if it ever stops holding.
+          //
+          // They also carry the tools most likely to reach the model with an
+          // un-encodable value: histories and distributions rather than flat
+          // scalars. Left unstubbed they return "no data" and the encodability
+          // test below passes over them without ever seeing a populated result.
+          uspDeviceAnalyticsProvider.overrideWith(
+            () => _FixedDeviceAnalyticsNotifier(_testDeviceAnalyticsState),
+          ),
+          uspSystemMonitorProvider.overrideWith(
+            () => _FixedSystemMonitorNotifier(_testSystemMonitorState),
+          ),
+          uspTrafficAnalysisProvider.overrideWith(
+            () => _FixedTrafficAnalysisNotifier(_testTrafficAnalysisState),
           ),
         ],
       );
@@ -179,6 +208,71 @@ void main() {
           () => provider.execute('unknownCommand', {}),
           throwsA(isA<UnauthorizedCommandException>()),
         );
+      });
+    });
+
+    // Every result here is handed to `jsonEncode` on its way to the model. An
+    // un-encodable value does not merely spoil one answer: the throw happens
+    // after the result is already in the conversation history, so each later
+    // request re-encodes the same entry and fails too, leaving the session
+    // permanently unable to reply. These tests exist to keep that class of
+    // value out of tool results.
+    group('tool results are JSON-encodable', () {
+      test('getDeviceAnalytics keys signal levels by label, not by int',
+          () async {
+        final provider = container.read(_testUspCommandProvider);
+
+        final result = await provider.execute('getDeviceAnalytics', {});
+
+        expect(result.success, isTrue);
+        // The assertion that matters: an int-keyed map throws here.
+        expect(() => jsonEncode(result.data), returnsNormally);
+        expect(result.data['signalLevelDistribution'], {
+          'excellent': 4,
+          'good': 2,
+          'fair': 1,
+        });
+      });
+
+      test('unrecognised signal levels are kept rather than dropped', () async {
+        final analyticsContainer = ProviderContainer(
+          overrides: [
+            uspDeviceAnalyticsProvider.overrideWith(
+              () => _FixedDeviceAnalyticsNotifier(
+                const DeviceAnalyticsState(
+                  current: DeviceDistribution(
+                    signalLevelDistribution: {7: 3},
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(analyticsContainer.dispose);
+        final provider = analyticsContainer.read(_testUspCommandProvider);
+
+        final result = await provider.execute('getDeviceAnalytics', {});
+
+        expect(() => jsonEncode(result.data), returnsNormally);
+        expect(result.data['signalLevelDistribution'], {'level7': 3});
+      });
+
+      // Covers every command at once. Commands whose providers are not stubbed
+      // return a failure result, which is still encoded and sent, so they are
+      // worth asserting on even though they carry no data.
+      test('every command produces an encodable result', () async {
+        final provider = container.read(_testUspCommandProvider);
+        final commands = await provider.listCommands();
+
+        for (final cmd in commands) {
+          final result = await provider.execute(cmd.name, {});
+          expect(
+            () => jsonEncode(result.data),
+            returnsNormally,
+            reason: '${cmd.name} returned a result that cannot be encoded',
+          );
+          _expectStringKeysThroughout(result.data, cmd.name);
+        }
       });
     });
 
@@ -326,8 +420,60 @@ void main() {
 }
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/// Fails if any map nested anywhere under [value] is keyed by something other
+/// than a `String`.
+///
+/// `jsonEncode` already rejects those keys, so this adds nothing for a result
+/// that is fully populated. It earns its place on the sparse ones: a tool whose
+/// provider holds no data returns an empty map, which encodes cleanly and would
+/// let a non-string key pass unnoticed until the day that tool has data.
+void _expectStringKeysThroughout(Object? value, String commandName) {
+  if (value is Map) {
+    for (final entry in value.entries) {
+      expect(
+        entry.key,
+        isA<String>(),
+        reason: '$commandName has a non-String map key: ${entry.key}',
+      );
+      _expectStringKeysThroughout(entry.value, commandName);
+    }
+  } else if (value is Iterable) {
+    for (final element in value) {
+      _expectStringKeysThroughout(element, commandName);
+    }
+  }
+}
+
+// =============================================================================
 // Fixed Notifiers (set state immediately in build)
 // =============================================================================
+
+class _FixedDeviceAnalyticsNotifier extends UspDeviceAnalyticsNotifier {
+  final DeviceAnalyticsState _data;
+  _FixedDeviceAnalyticsNotifier(this._data);
+
+  @override
+  DeviceAnalyticsState build() => _data;
+}
+
+class _FixedSystemMonitorNotifier extends UspSystemMonitorNotifier {
+  final SystemMonitorState _data;
+  _FixedSystemMonitorNotifier(this._data);
+
+  @override
+  SystemMonitorState build() => _data;
+}
+
+class _FixedTrafficAnalysisNotifier extends UspTrafficAnalysisNotifier {
+  final TrafficAnalysisState _data;
+  _FixedTrafficAnalysisNotifier(this._data);
+
+  @override
+  TrafficAnalysisState build() => _data;
+}
 
 class _FixedSystemInfoNotifier extends SystemInfoDataNotifier {
   final SystemInfoData _data;
@@ -496,6 +642,80 @@ final _testWifiData = WifiData(
           isGuest: false,
         ),
       ],
+    ),
+  ],
+);
+
+/// Levels 3/2/1 populated and 0 absent, matching the notifier, which only
+/// records levels it actually saw.
+const _testDeviceAnalyticsState = DeviceAnalyticsState(
+  current: DeviceDistribution(
+    wifiCount: 7,
+    wiredCount: 2,
+    onlineCount: 9,
+    offlineCount: 1,
+    bandDistribution: {'2.4GHz': 3, '5GHz': 4, 'Wired': 2},
+    signalLevelDistribution: {3: 4, 2: 2, 1: 1},
+    bandSignalQuality: {'2.4GHz': 0.62, '5GHz': 0.88},
+  ),
+);
+
+/// Two snapshots so the history arrays the tool builds are non-empty; the tools
+/// treat an empty history as "no data yet" and return a failure instead.
+final _testSystemMonitorState = SystemMonitorState(
+  refreshInterval: const Duration(seconds: 30),
+  history: [
+    SystemSnapshot(
+      timestamp: DateTime.utc(2026, 1, 1, 0, 0),
+      cpuPercent: 21,
+      memoryPercent: 47,
+      totalMemoryKb: 524288,
+      freeMemoryKb: 277872,
+      uptimeSeconds: 86400,
+    ),
+    SystemSnapshot(
+      timestamp: DateTime.utc(2026, 1, 1, 0, 0, 30),
+      cpuPercent: 25,
+      memoryPercent: 49,
+      totalMemoryKb: 524288,
+      freeMemoryKb: 267386,
+      uptimeSeconds: 86430,
+    ),
+  ],
+);
+
+final _testTrafficAnalysisState = TrafficAnalysisState(
+  refreshInterval: const Duration(seconds: 10),
+  history: [
+    MultiInterfaceSnapshot(
+      timestamp: DateTime.utc(2026, 1, 1, 0, 0),
+      interfaces: const {
+        TrafficInterface.wan: InterfaceTrafficSnapshot(
+          uploadBytesPerSec: 12000,
+          downloadBytesPerSec: 98000,
+          uploadPacketsPerSec: 41,
+          downloadPacketsPerSec: 133,
+          totalBytesSent: 4200000,
+          totalBytesReceived: 51000000,
+          totalPacketsSent: 18400,
+          totalPacketsReceived: 62100,
+        ),
+      },
+    ),
+    MultiInterfaceSnapshot(
+      timestamp: DateTime.utc(2026, 1, 1, 0, 0, 10),
+      interfaces: const {
+        TrafficInterface.wan: InterfaceTrafficSnapshot(
+          uploadBytesPerSec: 15500,
+          downloadBytesPerSec: 143000,
+          uploadPacketsPerSec: 52,
+          downloadPacketsPerSec: 190,
+          totalBytesSent: 4355000,
+          totalBytesReceived: 52430000,
+          totalPacketsSent: 18920,
+          totalPacketsReceived: 64000,
+        ),
+      },
     ),
   ],
 );

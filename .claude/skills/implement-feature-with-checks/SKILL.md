@@ -110,7 +110,7 @@ Requirements unclear?
   - Testing requirements (Article I & VIII)
   - Service layer guidelines (Article VI)
   - Error handling strategy (Article XIII)
-  - UI Kit usage (Article XIV)
+  - UI Kit usage (Article XV)
 
 **Step 1.2: Analyze Task Scope**
 - Determine affected layers (View/Provider/Service/Model)
@@ -185,7 +185,7 @@ Following constitution naming conventions (Article III):
 - ✅ Providers only catch ServiceError types
 - ❌ No JNAPError handling in Providers
 
-**UI Implementation (Article XIV)**:
+**UI Implementation (Article XV)**:
 - ✅ All UI components from ui_kit_library
 - ✅ Use unified import: `import 'package:ui_kit_library/ui_kit.dart';`
 - ❌ No custom implementations of existing ui_kit components

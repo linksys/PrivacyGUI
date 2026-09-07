@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class BottomBar extends ConsumerStatefulWidget {
@@ -50,7 +50,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkEULA,
-                                locale: ref.read(appSettingsProvider).locale);
+                                locale: ref.read(activeLocaleProvider));
                           },
                         ),
                         Padding(
@@ -63,7 +63,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkTerms,
-                                locale: ref.read(appSettingsProvider).locale);
+                                locale: ref.read(activeLocaleProvider));
                           },
                         ),
                         Padding(
@@ -76,7 +76,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkPrivacy,
-                                locale: ref.read(appSettingsProvider).locale);
+                                locale: ref.read(activeLocaleProvider));
                           },
                         ),
                         Padding(
@@ -90,7 +90,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkThirdParty,
-                                locale: ref.read(appSettingsProvider).locale);
+                                locale: ref.read(activeLocaleProvider));
                           },
                         ),
                       ],

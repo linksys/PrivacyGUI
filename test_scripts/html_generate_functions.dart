@@ -184,13 +184,70 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .test-icon.fail { color: var(--color-fail); }
     .test-name { flex: 1; }
     .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+    .view-golden {
+      font-size: 0.75rem; color: var(--color-accent); cursor: pointer;
+      margin-right: 0.75rem; text-decoration: none; white-space: nowrap;
+    }
+    .view-golden:hover { text-decoration: underline; }
     .overflow-badge {
       font-size: 0.65rem; padding: 0.125rem 0.375rem;
       border-radius: 3px; background: #fef3c7; color: #92400e;
       font-weight: 600; margin-left: 0.5rem;
     }
+    .overflow-sites {
+      padding: 0.375rem 1rem 0.5rem 2.25rem;
+      background: var(--color-surface);
+      border-top: 1px dashed var(--color-border);
+    }
+    .overflow-site {
+      font-size: 0.7rem; color: #92400e; font-family: ui-monospace, monospace;
+      word-break: break-all; cursor: help;
+    }
+    .raw-log-btn {
+      font-size: 0.6rem; padding: 0 0.3rem; margin-left: 0.4rem;
+      border: 1px solid currentColor; border-radius: 3px; background: none;
+      color: inherit; cursor: pointer; font-family: inherit; opacity: 0.75;
+      vertical-align: 1px;
+    }
+    .raw-log-btn:hover { opacity: 1; }
+    /* Raw log viewer: an overlay rather than an inline expander so the row
+       keeps its height — a dump runs ~37 lines and would bury the table. */
+    .log-modal {
+      display: none; position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    .log-modal.open { display: flex; }
+    .log-modal .lm-panel {
+      background: var(--color-bg); border: 1px solid var(--color-border);
+      border-radius: 0.5rem; width: min(900px, 100%); max-height: 85vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .log-modal .lm-head {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-border);
+    }
+    .log-modal .lm-title {
+      font-size: 0.8rem; font-weight: 600; flex: 1;
+      font-family: ui-monospace, monospace; word-break: break-all;
+    }
+    .log-modal .lm-copy {
+      font-size: 0.7rem; padding: 0.25rem 0.6rem; cursor: pointer;
+      border: 1px solid var(--color-border); border-radius: 0.25rem;
+      background: var(--color-surface); color: inherit; white-space: nowrap;
+    }
+    .log-modal .lm-close {
+      font-size: 1.5rem; line-height: 1; cursor: pointer; opacity: 0.6;
+    }
+    .log-modal .lm-close:hover { opacity: 1; }
+    .log-modal pre {
+      margin: 0; padding: 1rem; overflow: auto; flex: 1;
+      font-size: 0.7rem; line-height: 1.5; white-space: pre-wrap;
+      word-break: break-word; font-family: ui-monospace, monospace;
+    }
     @media (prefers-color-scheme: dark) {
       .overflow-badge { background: #78350f; color: #fde68a; }
+      .overflow-site { color: #fbbf24; }
     }
     .failure-details {
       padding: 1rem;
@@ -269,37 +326,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .lightbox .lb-nav:hover { opacity: 1; }
     .lightbox .lb-prev { left: 1.5rem; }
     .lightbox .lb-next { right: 1.5rem; }
-    /* Overlay slider */
-    .overlay-container {
-      position: relative; display: inline-block; margin: 0 auto;
-      max-width: 100%; overflow: hidden; border-radius: 0.25rem;
-      border: 1px solid var(--color-border);
-    }
-    .overlay-container img {
-      display: block; max-width: 100%; height: auto;
-    }
-    .overlay-actual {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      overflow: hidden;
-    }
-    .overlay-actual img {
-      position: absolute; top: 0; left: 0; width: var(--full-width); height: auto;
-    }
-    .overlay-slider {
-      position: absolute; top: 0; bottom: 0; width: 3px;
-      background: var(--color-accent); cursor: ew-resize; z-index: 2;
-    }
-    .overlay-slider::after {
-      content: ''; position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--color-accent); border: 2px solid #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    .overlay-labels {
-      display: flex; justify-content: space-between; padding: 0.25rem 0.5rem;
-      font-size: 0.65rem; color: var(--color-text-muted); text-transform: uppercase;
-    }
     /* Locale grouping in failures */
     .locale-group-header {
       padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
@@ -311,6 +337,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 <body>
   <h1>Golden Test Verification Report</h1>
   <p class="subtitle">Version $version &mdash; Generated $timestamp</p>
+
+  <!-- Hidden unless `overflowReportUnreadable` is set, i.e. the file existed and
+       did not parse. A run that overflowed nothing writes no file at all and is
+       not this case. -->
+  <div id="overflowUnreadable" style="display:none;margin:0 0 12px;padding:10px 14px;border-left:4px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:4px"></div>
 
   <div class="panels">
     <div class="panel">
@@ -366,6 +397,17 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     <div class="lb-zoom-hint">Scroll to zoom &middot; Click image to reset</div>
   </div>
 
+  <div class="log-modal" id="logModal">
+    <div class="lm-panel">
+      <div class="lm-head">
+        <span class="lm-title" id="lm-title"></span>
+        <button class="lm-copy" id="lm-copy" onclick="copyRawLog()">Copy</button>
+        <span class="lm-close" onclick="closeRawLog()">&times;</span>
+      </div>
+      <pre id="lm-body"></pre>
+    </div>
+  </div>
+
   <script>
     const DATA = ${jsonEncode(result)};
     let currentGroupBy = 'feature';
@@ -406,7 +448,21 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
-      document.getElementById('overflowCount').textContent = DATA.overflowCount || 0;
+      // A '?' rather than a 0 when the overflow report could not be read. Zero is
+      // a measurement and this is the absence of one, and the two used to render
+      // identically — a run full of overflows read as all-clean off this tile.
+      const overflowUnknown = !!DATA.overflowReportUnreadable;
+      const overflowTile = document.getElementById('overflowCount');
+      overflowTile.textContent = overflowUnknown ? '?' : (DATA.overflowCount || 0);
+      overflowTile.title = overflowUnknown
+        ? DATA.overflowReportUnreadable
+        : '';
+      const banner = document.getElementById('overflowUnreadable');
+      banner.style.display = overflowUnknown ? 'block' : 'none';
+      if (overflowUnknown) {
+        banner.textContent =
+          'Overflow detail unavailable: ' + DATA.overflowReportUnreadable;
+      }
       drawDonut(c.success, c.fail);
     }
 
@@ -437,7 +493,12 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round((pass / total) * 100) + '%', cx, cy);
+      // Only a run with nothing failing may print 100. Rounding reached it from
+      // below — 13571 of 13572 passing rounds to 100% — so the ring showed one
+      // red hairline beside a number that said there was nothing to look at, and
+      // it took 68 failures out of that many to move the digits at all.
+      const pct = pass === total ? 100 : Math.min(99, Math.floor((pass / total) * 100));
+      ctx.fillText(pct + '%', cx, cy);
     }
 
     function renderCoverage() {
@@ -584,7 +645,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       });
 
       document.getElementById('resultsContainer').innerHTML = html;
-      initOverlaySliders();
     }
 
     function renderTestRow(t) {
@@ -598,8 +658,31 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       let html = '<div class="test-row' + rowClass + '" data-overflow="' + (t.hasOverflow ? 'true' : 'false') + '">';
       html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
       html += '<span class="test-name">' + escapeHtml(name) + overflowTag + '</span>';
+      if (isPass && t.goldenPath) {
+        const goldenCaption = name + ' (' + (t.deviceType || '') + ' / ' + (t.locale || '') + ')';
+        html += '<a class="view-golden" data-golden-src="' + escapeHtml(t.goldenPath) + '" data-golden-caption="' + escapeHtml(goldenCaption) + '" onclick="openGolden(this)">View golden</a>';
+      }
       html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
       html += '</div>';
+
+      // Outside the !isPass block: an overflow does not fail the test, so the
+      // detail has to render on passing rows too — that is where it was
+      // previously invisible beyond the badge (#1197).
+      // A site with neither a label nor a log has nothing to show beyond the
+      // badge above, so it is skipped rather than rendered as a blank line.
+      const sites = (t.overflowSites || []).filter(s => s.label || s.logIndex != null);
+      if (sites.length > 0) {
+        html += '<div class="overflow-sites">';
+        for (const site of sites) {
+          const where = (site.file || '') + (site.line ? ':' + site.line : '');
+          // Falls back to the amount-less message when nothing parsed: the row
+          // still needs something to hang the raw log button on, and that case
+          // is exactly when the log matters most.
+          const text = site.label || 'location unresolved';
+          html += '<div class="overflow-site" title="' + escapeAttr(where + '\\n' + (site.message || '')) + '">' + escapeHtml(text) + renderRawLogButton(site) + '</div>';
+        }
+        html += '</div>';
+      }
 
       if (!isPass) {
         html += '<div class="failure-details">';
@@ -610,17 +693,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
           html += renderImage('Actual', t.failureImages.actual);
           html += renderImage('Diff', t.failureImages.diff);
           html += '</div>';
-          // Overlay slider (expected vs actual)
-          if (t.failureImages.expected && t.failureImages.actual) {
-            html += '<div style="margin-top:0.75rem;">';
-            html += '<div class="overlay-labels"><span>Expected</span><span>Actual</span></div>';
-            html += '<div class="overlay-container" data-overlay>';
-            html += '<img src="' + t.failureImages.expected + '" class="overlay-base" alt="Expected">';
-            html += '<div class="overlay-actual" style="width:50%"><img src="' + t.failureImages.actual + '" alt="Actual"></div>';
-            html += '<div class="overlay-slider" style="left:50%"></div>';
-            html += '</div>';
-            html += '</div>';
-          }
         }
         if (t.messages && t.messages.length > 0) {
           html += '<div class="error-message">' + escapeHtml(t.messages.join('\\n')) + '</div>';
@@ -632,7 +704,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
     function renderImage(label, src) {
       if (!src) return '<figure><figcaption>' + label + '</figcaption><div style="padding:2rem;color:var(--color-text-muted)">N/A</div></figure>';
-      return '<figure><figcaption>' + label + '</figcaption><img src="' + src + '" alt="' + label + '" loading="lazy" onclick="openLightbox(this)"></figure>';
+      return '<figure><figcaption>' + label + '</figcaption><img src="' + escapeHtml(src) + '" alt="' + label + '" loading="lazy" onclick="openLightbox(this)"></figure>';
     }
 
     function toggleFeature(header) {
@@ -646,14 +718,103 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       return div.innerHTML;
     }
 
-    // Lightbox
+    // escapeHtml goes through textContent, which leaves quotes intact — fine in
+    // element content, but it would break out of an attribute. Flutter's raw
+    // overflow message is arbitrary text, so tooltips use this instead.
+    function escapeAttr(text) {
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Raw log viewer.
+    //
+    // The dumps live in one table and the button carries only an index, because
+    // a single culprit appears in every golden that renders it and a dump runs
+    // 2-4KB. Inlining it per row would multiply the report for no added detail.
+    // The title travels in a data attribute rather than as an inline call
+    // argument: it is generated text that would otherwise need quoting for both
+    // HTML and JavaScript at once.
+    function renderRawLogButton(site) {
+      if (site.logIndex == null) return '';
+      return '<button class="raw-log-btn" data-log-index="' + site.logIndex + '" data-log-title="' + escapeAttr(site.label || 'Overflow raw log') + '" onclick="openRawLog(this)">raw log</button>';
+    }
+
+    function openRawLog(btn) {
+      const log = (DATA.overflowLogs || [])[Number(btn.dataset.logIndex)];
+      if (log == null) return;
+      document.getElementById('lm-title').textContent = btn.dataset.logTitle || 'Overflow raw log';
+      document.getElementById('lm-body').textContent = log;
+      document.getElementById('lm-copy').textContent = 'Copy';
+      document.getElementById('logModal').classList.add('open');
+    }
+
+    function closeRawLog() {
+      document.getElementById('logModal').classList.remove('open');
+    }
+
+    function copyRawLog() {
+      const btn = document.getElementById('lm-copy');
+      const text = document.getElementById('lm-body').textContent;
+      // Reports are opened over file:// as often as over http://, and the async
+      // clipboard API is unavailable on an insecure origin, so fall back to a
+      // throwaway textarea rather than silently doing nothing.
+      const done = () => { btn.textContent = 'Copied'; };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, () => legacyCopy(text, done));
+      } else {
+        legacyCopy(text, done);
+      }
+    }
+
+    function legacyCopy(text, done) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* nothing to do */ }
+      document.body.removeChild(area);
+    }
+
+    document.getElementById('logModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('logModal')) closeRawLog();
+    });
+
+    // Lightbox — holds a list of { src, caption } items
     let lbImages = [];
     let lbIndex = 0;
 
+    // Open the comparison images (expected/actual/diff) with cross-image nav
     function openLightbox(img) {
-      lbImages = [...document.querySelectorAll('.image-comparison img[onclick]')];
-      lbIndex = lbImages.indexOf(img);
+      const nodes = [...document.querySelectorAll('.image-comparison img[onclick]')];
+      lbImages = nodes.map(function(node) {
+        const figure = node.closest('figure');
+        const label = figure ? figure.querySelector('figcaption')?.textContent || '' : '';
+        const details = figure ? figure.closest('.failure-details') : null;
+        const row = details ? details.previousElementSibling : null;
+        const testName = row ? row.querySelector('.test-name')?.textContent || '' : '';
+        return { src: node.src, caption: testName + ' (' + label + ')' };
+      });
+      lbIndex = nodes.indexOf(img);
       if (lbIndex === -1) lbIndex = 0;
+      openLightboxAt(lbImages, lbIndex);
+    }
+
+    // Open a single golden image (no cross-image nav)
+    function openGolden(link) {
+      const src = link.getAttribute('data-golden-src');
+      const caption = link.getAttribute('data-golden-caption') || '';
+      openLightboxAt([{ src: src, caption: caption }], 0);
+    }
+
+    function openLightboxAt(images, index) {
+      lbImages = images;
+      lbIndex = index;
+      const single = lbImages.length <= 1;
+      document.querySelector('.lb-prev').style.display = single ? 'none' : '';
+      document.querySelector('.lb-next').style.display = single ? 'none' : '';
       showLightboxImage();
       document.getElementById('lightbox').classList.add('open');
     }
@@ -663,23 +824,25 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
 
     function navLightbox(dir) {
+      if (lbImages.length <= 1) return;
       lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
       showLightboxImage();
     }
 
     var showLightboxImage = function() {
-      const img = lbImages[lbIndex];
-      document.getElementById('lb-img').src = img.src;
-      const figure = img.closest('figure');
-      const label = figure ? figure.querySelector('figcaption')?.textContent || '' : '';
-      const details = figure ? figure.closest('.failure-details') : null;
-      const row = details ? details.previousElementSibling : null;
-      const testName = row ? row.querySelector('.test-name')?.textContent || '' : '';
-      const pos = (lbIndex + 1) + '/' + lbImages.length;
-      document.getElementById('lb-caption').textContent = pos + ' — ' + testName + ' (' + label + ')';
+      const item = lbImages[lbIndex];
+      if (!item) return;
+      document.getElementById('lb-img').src = item.src;
+      const pos = lbImages.length > 1 ? (lbIndex + 1) + '/' + lbImages.length + ' — ' : '';
+      document.getElementById('lb-caption').textContent = pos + item.caption;
     };
 
     document.addEventListener('keydown', (e) => {
+      // The log modal sits above the lightbox, so it claims Escape first.
+      if (document.getElementById('logModal').classList.contains('open')) {
+        if (e.key === 'Escape') closeRawLog();
+        return;
+      }
       const lb = document.getElementById('lightbox');
       if (!lb.classList.contains('open')) return;
       if (e.key === 'Escape') closeLightbox();
@@ -690,40 +853,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     document.getElementById('lightbox').addEventListener('click', (e) => {
       if (e.target === document.getElementById('lightbox')) closeLightbox();
     });
-
-    // Overlay slider interaction
-    function initOverlaySliders() {
-      document.querySelectorAll('[data-overlay]').forEach(container => {
-        const slider = container.querySelector('.overlay-slider');
-        const actualLayer = container.querySelector('.overlay-actual');
-        if (!slider || !actualLayer) return;
-
-        let dragging = false;
-        const onMove = (e) => {
-          if (!dragging) return;
-          const rect = container.getBoundingClientRect();
-          let x = (e.clientX || e.touches[0].clientX) - rect.left;
-          x = Math.max(0, Math.min(x, rect.width));
-          const pct = (x / rect.width) * 100;
-          slider.style.left = pct + '%';
-          actualLayer.style.width = pct + '%';
-        };
-        slider.addEventListener('mousedown', () => { dragging = true; });
-        slider.addEventListener('touchstart', () => { dragging = true; });
-        document.addEventListener('mouseup', () => { dragging = false; });
-        document.addEventListener('touchend', () => { dragging = false; });
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('touchmove', onMove);
-
-        // Set actual image width to container full width
-        const baseImg = container.querySelector('.overlay-base');
-        baseImg.addEventListener('load', () => {
-          const actualImg = actualLayer.querySelector('img');
-          actualImg.style.width = baseImg.offsetWidth + 'px';
-          container.style.setProperty('--full-width', baseImg.offsetWidth + 'px');
-        });
-      });
-    }
 
     function toggleAll(name, checked) {
       document.querySelectorAll('input[name="' + name + '"]').forEach(cb => {

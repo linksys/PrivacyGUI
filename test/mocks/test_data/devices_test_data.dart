@@ -78,8 +78,15 @@ class DevicesTestData {
   // BackhaulInfo Factories
   // ===========================================================================
 
+  /// A real Wi-Fi backhaul.
+  ///
+  /// [signalStrength] is nullable on purpose: firmware ships an RCPI of `0` for
+  /// a backhaul whose `BackhaulStats` are not populated yet, which
+  /// [rcpiToRssi] maps to null. `hasInfo` is still true — the backhaul exists,
+  /// only the reading is missing — so `null` here is the fixture for that state,
+  /// distinct from [emptyBackhaul] (no backhaul at all).
   static BackhaulInfo createWifiBackhaul({
-    int signalStrength = -55,
+    int? signalStrength = -55,
     String parentNodeId = masterMac,
   }) =>
       BackhaulInfo(
@@ -281,6 +288,12 @@ class DevicesTestData {
       );
 
   /// Creates a slave (extender) node with WiFi backhaul.
+  ///
+  /// [livenessKnown] defaults to `true`, i.e. this node was matched against a
+  /// working DataElements set, so `dataElementsId == null` reads as offline.
+  /// Pass `false` for the DataElements-unavailable state (empty subtree,
+  /// unsupported firmware, failed fetch), where the absent match says nothing
+  /// and the node must stay online.
   static SlaveNode createWifiSlave({
     String deviceId = slaveMac1,
     String? dataElementsId,
@@ -290,6 +303,7 @@ class DevicesTestData {
     String? ipAddress = '192.168.1.2',
     List<ClientDevice> connectedClients = const [],
     BackhaulInfo? backhaul,
+    bool livenessKnown = true,
   }) =>
       SlaveNode(
         deviceId: deviceId,
@@ -301,6 +315,7 @@ class DevicesTestData {
         ipAddress: ipAddress,
         connectedClients: connectedClients,
         backhaul: backhaul ?? createWifiBackhaul(),
+        livenessKnown: livenessKnown,
       );
 
   /// Creates a slave (extender) node with Ethernet backhaul.

@@ -51,12 +51,23 @@ class MeshNetworkBuilder {
         _buildNodeDisplayNameMap(connectedDevices, meshTopology);
 
     // 3. Build all ClientDevice models
+    //
+    // "Mesh" means the topology actually has an extender, not merely that
+    // DataElements answered. A standalone router that supports DataElements
+    // still reports a single (master) node, so `nodes.isNotEmpty` would be true
+    // even though there is no other node a client could belong to — and then
+    // every unresolved client would be called an orphan on a one-node network.
+    // Use the topology's own `hasMesh` (any SlaveNode present), which matches
+    // MeshNetwork.hasMesh.
+    final topologyHasMesh = meshTopology.nodes.hasMesh;
+
     final allBuiltClients = clientHostDevices
         .map((d) => _buildClientDevice(
               device: d,
               wifiClientMap: wifiClientMap,
               connectionDetailMap: connectionDetailMap,
               meshTopology: meshTopology,
+              topologyHasMesh: topologyHasMesh,
               gatewayName: gatewayName,
               nodeDisplayNameMap: nodeDisplayNameMap,
             ))
@@ -80,10 +91,21 @@ class MeshNetworkBuilder {
         masterMeshInfo?.deviceId ??
         'GATEWAY';
 
-    // Clients for master: those with null parentNodeId or matching master ID
+    // Clients for master: those with a matching master ID, plus those with no
+    // parent ID that are not orphans.
+    //
+    // A null parentNodeId means different things by client and network shape,
+    // and _buildClientDevice has already made that call — it is the only place
+    // where the client's own interface and liveness are in scope. A client it
+    // flagged isUnattributed is an *orphan*: it belongs to the network but to no
+    // known node, and asserting it onto the master would be a wrong attribution,
+    // not a missing one (issue #1439). It goes to the unassigned bucket below.
+    // Every other null-parent client legitimately hangs off the gateway — a
+    // wired device, an offline device, or any client on a network with no
+    // extender — and stays on the master, as before.
     final masterClients = <ClientDevice>[];
     final nullParentClients = clientsByNodeId[null] ?? [];
-    masterClients.addAll(nullParentClients);
+    masterClients.addAll(nullParentClients.where((c) => !c.isUnattributed));
     if (clientsByNodeId.containsKey(masterNodeId)) {
       masterClients.addAll(clientsByNodeId[masterNodeId]!);
     }
@@ -109,21 +131,8 @@ class MeshNetworkBuilder {
     final patchedMasterClients = masterClients
         .map((c) => c.copyWith(parentNodeName: masterDisplayName))
         .toList();
-    final patchedMaster = MasterNode(
-      deviceId: master.deviceId,
-      dataElementsId: master.dataElementsId,
-      friendlyName: master.friendlyName,
-      hostName: master.hostName,
-      model: master.model,
-      manufacturer: master.manufacturer,
-      serialNumber: master.serialNumber,
-      softwareVersion: master.softwareVersion,
-      ipAddress: master.ipAddress,
-      ipv6Addresses: master.ipv6Addresses,
-      instancePath: master.instancePath,
-      connectedClients: patchedMasterClients,
-      hostsDeviceId: master.hostsDeviceId,
-    );
+    final patchedMaster =
+        master.copyWith(connectedClients: patchedMasterClients);
 
     // 7. Build SlaveNodes
     final slaves = meshDevices.where((d) => d.deviceRole == 'slave').map((d) {
@@ -145,6 +154,23 @@ class MeshNetworkBuilder {
         slaveDevice: d,
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
+        // An empty topology carries no liveness information for any node, so an
+        // unmatched row must not be read as "offline" (#1430 review).
+        //
+        // Deliberately `isNotEmpty` and NOT the `topologyHasMesh` predicate
+        // built at the top of this method, even though both read
+        // `meshTopology.nodes` and the narrower one looks like the safer
+        // choice. `hasMesh` is "at least one *slave* agent answered", and the
+        // whole point of #1430 is the single-extender house whose extender is
+        // powered off: DataElements then enumerates only the router's own agent
+        // (`MeshTopologyBuilder` adds the master unconditionally) while the
+        // extender's `Device.Hosts.Host` row persists for another ~20-50s.
+        // `hasMesh` would be false there, this node would be handed
+        // `livenessKnown: false`, and a powered-off extender would render
+        // online — i.e. narrowing the predicate reverts the ticket for the
+        // commonest topology. The two predicates answer different questions on
+        // the same object; do not unify them.
+        livenessKnown: meshTopology.isNotEmpty,
       );
 
       // Patch slave's connected clients with parentNodeName
@@ -152,34 +178,38 @@ class MeshNetworkBuilder {
       final patchedSlaveClients = slaveClients
           .map((c) => c.copyWith(parentNodeName: slaveDisplayName))
           .toList();
-      return SlaveNode(
-        deviceId: slave.deviceId,
-        dataElementsId: slave.dataElementsId,
-        friendlyName: slave.friendlyName,
-        hostName: slave.hostName,
-        model: slave.model,
-        manufacturer: slave.manufacturer,
-        serialNumber: slave.serialNumber,
-        softwareVersion: slave.softwareVersion,
-        ipAddress: slave.ipAddress,
-        ipv6Addresses: slave.ipv6Addresses,
-        instancePath: slave.instancePath,
-        connectedClients: patchedSlaveClients,
-        backhaul: slave.backhaul,
-      );
+      return slave.copyWith(connectedClients: patchedSlaveClients);
     }).toList();
 
-    // 8. Find unassigned clients (parentNodeId doesn't match any known node)
+    // 8. Collect the unassigned (orphan) clients — those whose parent cannot be
+    // resolved to a known node. Two shapes, both flagged isUnattributed so the
+    // UI can mark them explicitly instead of drawing them as master clients
+    // (issue #1439).
     final assignedNodeIds = <String>{
       masterNodeId,
       if (masterMeshInfo != null) masterMeshInfo.deviceId,
       ...slaves.map((s) => s.deviceId),
       ...slaves.map((s) => s.dataElementsId).whereType<String>(),
     };
-    final unassigned = clientsByNodeId.entries
-        .where((e) => e.key != null && !assignedNodeIds.contains(e.key))
-        .expand((e) => e.value)
-        .toList();
+    final unassigned = <ClientDevice>[];
+    for (final e in clientsByNodeId.entries) {
+      if (e.key == null) {
+        // Shape A — no parent ID at all. _buildClientDevice already decided
+        // which of these are orphans, because only it can see whether the
+        // client is an online Wi-Fi device (a missing station row is then real
+        // evidence) or a wired/offline one (never in the station map, so a null
+        // parent ID is no evidence at all). The rest stayed on the master above.
+        unassigned.addAll(e.value.where((c) => c.isUnattributed));
+      } else if (!assignedNodeIds.contains(e.key)) {
+        // Shape B — a parent ID matching no node built from Hosts. Only
+        // resolvable here, once the slaves are known, so the flag is stamped at
+        // this point. Setting it also clears parentNodeName, which the resolver
+        // had already filled in from the unmatched node's model (or the gateway
+        // name): keeping that would leave the device claiming a parent while
+        // being declared unattributed.
+        unassigned.addAll(e.value.map((c) => c.copyWith(isUnattributed: true)));
+      }
+    }
 
     return MeshNetwork(
       master: patchedMaster,
@@ -240,6 +270,7 @@ class MeshNetworkBuilder {
     required Map<String, WifiClientUIModel> wifiClientMap,
     required Map<String, ClientConnectionDetail> connectionDetailMap,
     required MeshTopologyInfo meshTopology,
+    required bool topologyHasMesh,
     required String gatewayName,
     required Map<String, String> nodeDisplayNameMap,
   }) {
@@ -254,7 +285,17 @@ class MeshNetworkBuilder {
     final wifiClient = wifiClientMap[mac];
     final detail = connectionDetailMap[mac];
 
-    // Resolve parent node
+    // Resolve parent node.
+    //
+    // A client with no entry in clientToNodeMap is an orphan only if its absence
+    // is evidence of anything. The map has a single write site, inside the
+    // DataElements Wi-Fi station loop, so it holds *associated Wi-Fi stations
+    // and nothing else*: a wired client and an offline client are missing from
+    // it by construction, whatever node they are really on. Requiring an online
+    // Wi-Fi client is what keeps this the orphan population issue #1439
+    // describes, rather than "every wired device in the house" — the reason the
+    // decision lives here and not in build(), which cannot see either property.
+    bool isUnattributed = false;
     String? parentNodeId;
     String? parentNodeName;
     if (meshTopology.isEmpty) {
@@ -262,7 +303,9 @@ class MeshNetworkBuilder {
       if (device.isActive) parentNodeName = gatewayName;
     } else {
       parentNodeId = meshTopology.clientToNodeMap[mac];
-      if (parentNodeId != null) {
+      if (parentNodeId == null) {
+        isUnattributed = topologyHasMesh && isWifi && device.isActive;
+      } else {
         // Try display name map first (friendlyName or hostName from Hosts)
         parentNodeName = nodeDisplayNameMap[parentNodeId];
         if (parentNodeName == null) {
@@ -280,7 +323,15 @@ class MeshNetworkBuilder {
     // Build WiFi info if applicable
     WifiConnectionInfo? wifi;
     if (isWifi) {
-      final signalStrength = device.signalStrength ??
+      // `Hosts.Host.{i}.SignalStrength` uses `0` to mean "no reading" (the key
+      // is present with value 0 rather than being omitted), so the generated
+      // parser yields `0`, not `null`. A non-null `0` would short-circuit the
+      // `??` chain and hide the `WifiClient` / DataElements readings that may
+      // carry a real value for this MAC. Treat a Hosts `0` as absent so the
+      // chain can fall through. See linksys/PrivacyGUI#1438.
+      final hostsSignal =
+          (device.signalStrength == 0) ? null : device.signalStrength;
+      final signalStrength = hostsSignal ??
           wifiClient?.signalStrength ??
           meshTopology.clientSignalMap[mac];
       // Fallback to DataElements band/SSID for slave node clients.
@@ -313,6 +364,7 @@ class MeshNetworkBuilder {
       wifi: wifi,
       parentNodeId: parentNodeId,
       parentNodeName: parentNodeName,
+      isUnattributed: isUnattributed,
       manufacturer: device.manufacturer,
       modelName: device.modelName,
       operatingSystem: device.operatingSystem,
@@ -438,6 +490,7 @@ class MeshNetworkBuilder {
     required ConnectedDevice slaveDevice,
     required SlaveNode? slaveMeshInfo,
     required List<ClientDevice> connectedClients,
+    required bool livenessKnown,
   }) {
     final deviceId = slaveDevice.macAddress.trim().toUpperCase();
 
@@ -463,6 +516,7 @@ class MeshNetworkBuilder {
       instancePath: slaveMeshInfo?.instancePath,
       connectedClients: connectedClients,
       backhaul: backhaul,
+      livenessKnown: livenessKnown,
     );
   }
 

@@ -9,20 +9,13 @@ else
   DART="dart"
 fi
 
-EMBED_FLAG=""
-
-while getopts l:s:f:v:-: flag
+while getopts l:s:f:v: flag
 do
     case "${flag}" in
         l) locales=${OPTARG};;
         s) screens=${OPTARG};;
         f) file=${OPTARG};;
         v) version=${OPTARG};;
-        -)
-            case "${OPTARG}" in
-                embed) EMBED_FLAG="--embed";;
-            esac
-            ;;
     esac
 done
 
@@ -43,7 +36,18 @@ echo "*********************Golden Test Verification********************"
 echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
-echo "Embed images: ${EMBED_FLAG:-no}"
+
+# The golden runner appends to this file, so a previous run's records would be
+# attributed to this one — reporting overflows at line numbers that have since
+# moved, or on goldens this run never touched. Cleared before, not after, so the
+# file is still readable for debugging once the run ends. Placed ahead of the
+# branch below because both paths generate a report.
+rm -f goldens/overflow_warnings.json
+# Same reasoning for the diff record (#1475), and more so: it is append-only, so
+# every locale in the loop below adds to it on purpose — a run's floor is measured
+# over every cell it swept — and that only holds if the previous run's cells are
+# gone first.
+rm -f goldens/golden_diff_percent.jsonl
 
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
@@ -57,7 +61,7 @@ if [ -z "$file" ]; then
     rm -f $REPORT_DIR/tests.json
   done
 
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 else
@@ -68,10 +72,17 @@ else
     --dart-define=visualEffects=0 || FAILED=1
   $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || FAILED=1
   rm -f $REPORT_DIR/tests.json
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 fi
+
+# How far every golden moved from its baseline, including the cells that passed
+# (#1475). Printed for both branches above, and deliberately not allowed to
+# change the exit code: the thresholds are what decide pass or fail, and a
+# diagnostic that can fail a run is a second, undocumented gate.
+echo ""
+$DART run test_scripts/golden_diff_summary.dart || true
 
 echo "Golden Test Verification Finished!******************************************"
 exit $FAILED

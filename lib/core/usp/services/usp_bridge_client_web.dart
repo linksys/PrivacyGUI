@@ -38,6 +38,7 @@ external set _jsSseAbort(JSAny? value);
 class UspBridgeClient {
   final UspClient _usp;
   final BridgeEndpoints _endpoints;
+  final String? _overrideBaseUrl;
   final String? _overrideToken;
   final String? _clientTypeId;
   final AuthBehavior _authBehavior;
@@ -48,10 +49,12 @@ class UspBridgeClient {
   UspBridgeClient(
     this._usp, {
     BridgeEndpoints? endpoints,
+    String? baseUrl,
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,
   })  : _endpoints = endpoints ?? BridgeEndpoints.local,
+        _overrideBaseUrl = baseUrl,
         _overrideToken = authToken,
         _clientTypeId = clientTypeId,
         _authBehavior = authBehavior;
@@ -60,7 +63,12 @@ class UspBridgeClient {
   /// synchronously from a `beforeunload` handler.
   web.AbortController? _sseAbortController;
 
-  String get _baseUrl => _usp.baseUrl;
+  /// Host for REST/SSE calls.
+  ///
+  /// Remote mode passes the Guardian API origin explicitly — it must not be
+  /// derived from [UspClient.baseUrl], which may still point at the origin the
+  /// web app was served from.
+  String get _baseUrl => _overrideBaseUrl ?? _usp.baseUrl;
 
   String get _token {
     // Remote mode: use override token (temporaryAccessToken from Guardian)

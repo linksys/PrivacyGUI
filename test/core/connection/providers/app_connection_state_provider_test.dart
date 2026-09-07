@@ -31,6 +31,21 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
       );
 }
 
+/// Auth notifier whose state can be driven by tests to simulate a
+/// logout→login cycle so `ref.listen(authProvider)` fires the transitions.
+class ControllableAuthNotifier extends AsyncNotifier<AuthState>
+    with Mock
+    implements AuthNotifier {
+  @override
+  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+
+  void emitLoggedOut() =>
+      state = AsyncValue.data(AuthState(loginType: LoginType.none));
+
+  void emitLoggedIn() =>
+      state = AsyncValue.data(AuthState(loginType: LoginType.local));
+}
+
 void main() {
   late MockRecoveryProbeService mockProbe;
   late MockSseManager mockSseManager;
@@ -44,6 +59,7 @@ void main() {
 
   ProviderContainer createContainer({
     SseConnectionState sseState = SseConnectionState.connected,
+    AuthNotifier Function()? authNotifier,
   }) {
     return ProviderContainer(
       overrides: [
@@ -52,7 +68,7 @@ void main() {
         sseConnectionStateProvider.overrideWith(
           (ref) => Stream.value(sseState),
         ),
-        authProvider.overrideWith(() => mockAuthNotifier),
+        authProvider.overrideWith(authNotifier ?? () => mockAuthNotifier),
       ],
     );
   }
@@ -652,6 +668,78 @@ void main() {
       expect(
           notifier.recoveryContext?.trigger, RecoveryTrigger.operationalReboot);
       expect(notifier.recoveryContext?.healthOnly, true);
+    });
+
+    // -------------------------------------------------------------------------
+    // Logout → re-login within the same session (no page reload)
+    // -------------------------------------------------------------------------
+    group('logout → re-login (same session)', () {
+      test('re-login after logout restores authenticated', () async {
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        // Force build so the authProvider listener is wired.
+        container.read(appConnectionStateProvider);
+        await Future.delayed(Duration.zero);
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.authenticated,
+        );
+
+        // Logout → loggedOut.
+        auth.emitLoggedOut();
+        await Future.delayed(Duration.zero);
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+        );
+
+        // Re-login without a page reload → must return to authenticated so
+        // dashboard polling (traffic, system monitor) can restart. Regression
+        // for the Network Health / Traffic Monitor "no data after re-login"
+        // bug.
+        auth.emitLoggedIn();
+        await Future.delayed(Duration.zero);
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.authenticated,
+        );
+      });
+
+      test('re-login does NOT override an active waitingForRecovery', () async {
+        when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+        when(() => mockProbe.probe())
+            .thenAnswer((_) async => ProbeResult.unreachable);
+
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        container.read(appConnectionStateProvider);
+        await Future.delayed(Duration.zero);
+
+        // Enter recovery (still logged in).
+        container.read(appConnectionStateProvider.notifier).enterWaiting(
+              context: RecoveryContext(
+                trigger: RecoveryTrigger.operationalWifiChange,
+                cooldown: Duration(minutes: 5),
+              ),
+            );
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.waitingForRecovery,
+        );
+
+        // A logged-in auth event must not clobber the recovery state — only a
+        // `loggedOut` state is allowed to flip back to authenticated.
+        auth.emitLoggedIn();
+        await Future.delayed(Duration.zero);
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.waitingForRecovery,
+        );
+      });
     });
   });
 }

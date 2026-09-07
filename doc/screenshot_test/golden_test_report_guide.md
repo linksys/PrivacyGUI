@@ -27,6 +27,17 @@ dart run test_scripts/generate_gallery_report.dart [version]
 
 Output: `test/golden_test/golden_gallery_report.html`
 
+### When one locale fails
+
+Locales are generated one per iteration and a failing one no longer aborts the
+rest (#1477): the run continues, the report is still built, the script exits
+non-zero, and the last lines name the locales that failed. Those locales' PNGs are
+incomplete, so `goldens/` is a **partial** refresh until they are re-run — the
+warning is the only thing that says so, since a partial `goldens/` looks exactly
+like a complete one.
+
+`-f` is unchanged: one file, one exit code.
+
 ### Features
 
 #### View Modes

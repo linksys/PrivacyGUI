@@ -147,6 +147,13 @@ class SettingsPage extends ConsumerWidget {
               child: const Text('Go Home'),
               onPressed: () => context.go('/'),
             ),
+            // Stands in for the controls that push instead of replacing: the
+            // global top bar and the dashboard's offline banner (#1434).
+            ElevatedButton(
+              key: const Key('push_home_button'),
+              child: const Text('Push Home'),
+              onPressed: () => context.push('/'),
+            ),
           ],
         ),
       ),
@@ -279,6 +286,70 @@ void main() {
       // Verify state was reverted using the container reference
       final notifier = container.read(testFeatureProvider.notifier);
       expect(notifier.isDirty(), isFalse);
+    }, tags: 'dirty-guard-framework');
+
+    testWidgets(
+        'pushing away from a dirty route does not prompt, and the working copy '
+        'survives underneath', (tester) async {
+      // The guard runs on EXIT, and a pushed-over route does not exit: it stays
+      // in the match list, mounted and offstage. So the prompt is deferred, not
+      // dropped, and nothing is lost — which is why the #1434 verb fixes (top
+      // bar, offline banner: `go` -> `push`) are accepted rather than reverted.
+      // See the class comment on LinksysRoute.
+      var alertShown = 0;
+      final container = ProviderContainer();
+      final router = GoRouter(
+        initialLocation: '/settings',
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const HomePage()),
+          LinksysRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsPage(),
+            preservableProvider: preservableTestProvider,
+            enableDirtyCheck: true,
+            showAlertForTest: (context) async {
+              alertShown++;
+              return true; // would discard, if it were ever asked
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: createTestApp(router),
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('make_dirty_button')));
+      await tester.pump();
+      expect(find.text('Is Dirty: true'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('push_home_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Page'), findsOneWidget,
+          reason: 'the push must not be blocked');
+      expect(alertShown, 0,
+          reason:
+              'onExit only runs for a route that leaves the match list, and '
+              'a pushed-over route does not');
+      expect(container.read(testFeatureProvider.notifier).isDirty(), isTrue,
+          reason: 'nothing was reverted, so the edits are still there');
+
+      // And the deferral really is a deferral: the guard runs the moment the
+      // page does leave, this time from the pushed page.
+      router.go('/');
+      await tester.pumpAndSettle();
+      expect(alertShown, 1,
+          reason:
+              'replacing the location removes the dirty route, so the guard '
+              'fires then');
+      expect(container.read(testFeatureProvider.notifier).isDirty(), isFalse,
+          reason:
+              'the alert answered "discard", so the working copy is reverted '
+              'at the point the page actually leaves');
     }, tags: 'dirty-guard-framework');
   });
 }

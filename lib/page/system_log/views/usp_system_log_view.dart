@@ -97,21 +97,54 @@ class _LogFileCard extends StatelessWidget {
             ],
           ),
           AppGap.md(),
-          Row(
-            children: [
-              AppText.bodySmall(
-                'Max Size: ${logFile.formattedSize}',
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              AppGap.lg(),
-              _PersistentBadge(persistent: logFile.persistent),
-              const Spacer(),
-              AppButton.text(
-                label: loc(context).export,
-                icon: AppIcon.font(Icons.upload, size: 16),
-                onTap: null, // Upload() requires destination URL
-              ),
-            ],
+          // A `Wrap` around two groups, not a `Row` of four children with a
+          // `Spacer` between them — the same fix and the same idiom as
+          // `instant_privacy_view.dart:172` and `usp_apps_view.dart:90`, and this
+          // was the worst instance of the three: the metadata, the badge and the
+          // export button overflowed a 320px phone in **all 26 locales**, by +20.0px
+          // (`fi`) to +85.0px (`ja`), on both log cards (#1380). A `Spacer` takes the
+          // free space when there is some and contributes nothing when there is not,
+          // so the row simply ran off the edge.
+          //
+          // Grouped rather than flattened into three `Wrap` children on purpose. The
+          // size and the badge belong together at the left and the action belongs at
+          // the right; three children under `spaceBetween` would park the badge in
+          // the middle of every wide row, which is a visual change this fix has no
+          // reason to make. Two children reproduce the `Spacer` exactly — child 0
+          // left, child 1 right — so every width from 480px up is pixel-identical to
+          // what shipped, and only 320px reflows, where the button drops onto its own
+          // run.
+          //
+          // `MainAxisSize.min` on the inner `Row` is load-bearing: a `Wrap` offers its
+          // children unbounded main-axis space, and a `max` row would try to fill it.
+          // Both directions are guarded in
+          // test/page/_shared/page_surface_overflow_test.dart.
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.bodySmall(
+                      'Max Size: ${logFile.formattedSize}',
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    AppGap.lg(),
+                    _PersistentBadge(persistent: logFile.persistent),
+                  ],
+                ),
+                AppButton.text(
+                  label: loc(context).export,
+                  icon: AppIcon.font(Icons.upload, size: 16),
+                  onTap: null, // Upload() requires destination URL
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -124,6 +157,18 @@ class _LogFileCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _PersistentBadge extends StatelessWidget {
+  /// Fill alpha for the tinted pill behind the label.
+  ///
+  /// Its own number rather than `AppStateTokens.disabledContainerAlpha`, even
+  /// though both are 0.12. This badge is never disabled, and the kit does not
+  /// treat 0.12 as a shared token either: measured at ui_kit v3.1.0, that token
+  /// has **one** consumer inside the kit against **22** raw `alpha: 0.12`
+  /// literals across 12 files. Borrowing the disabled spelling would tie a badge
+  /// fill to a state token free to move for reasons that have nothing to do with
+  /// this pill. The real answer is a per-language badge tint on the theme, which
+  /// is a design decision and not a rename (#1456).
+  static const double _fillAlpha = 0.12;
+
   final bool persistent;
 
   const _PersistentBadge({required this.persistent});
@@ -141,7 +186,7 @@ class _PersistentBadge extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: _fillAlpha),
         borderRadius: BorderRadius.circular(4),
       ),
       child: AppText.labelSmall(label, color: color),

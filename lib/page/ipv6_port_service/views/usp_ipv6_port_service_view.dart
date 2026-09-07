@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
@@ -27,13 +26,17 @@ class UspIpv6PortServiceView extends ConsumerWidget {
     final status = state.status;
 
     return UiKitPageView.withSliver(
+      identifier: 'ipv6-port-service',
       scrollable: true,
       title: loc(context).ipv6PortService,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.goNamed(RouteNamed.uspFirewall),
+      // IPv6 is entered with pushNamed, so back must pop to whoever pushed it.
+      // `backFallback` is only a no-parent safety net: on a deep link the nested
+      // URL rebuilds Advanced Settings, canPop() is true, and it never fires.
+      backFallback: RouteNamed.uspFirewall,
       onRefresh: () => ref
           .read(uspIpv6PortServiceProvider.notifier)
           .fetch(forceRemote: true),
@@ -102,6 +105,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
             AppText.titleMedium(loc(context).rules),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
+              identifier: 'ipv6-rule-add',
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
@@ -138,6 +142,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           children: [
             AppSwitch(
               value: rule.enabled,
+              identifier: 'ipv6-rule-enable-${rule.identifierKey}',
               scale: 0.8,
               onChanged: isSaving
                   ? null
@@ -168,12 +173,14 @@ class UspIpv6PortServiceView extends ConsumerWidget {
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
+              identifier: 'ipv6-rule-edit-${rule.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, index, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              identifier: 'ipv6-rule-delete-${rule.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => ref

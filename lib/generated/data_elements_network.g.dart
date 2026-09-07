@@ -55,7 +55,7 @@ class MeshNode {
   final String backhaulMacAddress;
   final String backhaulMediaType;
   final int backhaulPhyRate;
-  final String multiApLastContactTime;
+  final DateTime? multiApLastContactTime;
   final String multiApAssocIEEE1905DeviceRef;
   final String multiApEasyMeshAgentOperationMode;
   final String backhaulBackhaulDeviceId;
@@ -67,7 +67,7 @@ class MeshNode {
   final int backhaulStatsPacketsReceived;
   final int backhaulStatsErrorsSent;
   final int backhaulStatsErrorsReceived;
-  final String backhaulStatsTimeStamp;
+  final DateTime? backhaulStatsTimeStamp;
   final int backhaulStatsLastDataUplinkRate;
   final int backhaulStatsSignalStrength;
   final List<MeshRadio> radios;
@@ -83,7 +83,7 @@ class MeshNode {
     required this.backhaulMacAddress,
     required this.backhaulMediaType,
     required this.backhaulPhyRate,
-    required this.multiApLastContactTime,
+    this.multiApLastContactTime,
     required this.multiApAssocIEEE1905DeviceRef,
     required this.multiApEasyMeshAgentOperationMode,
     required this.backhaulBackhaulDeviceId,
@@ -95,7 +95,7 @@ class MeshNode {
     required this.backhaulStatsPacketsReceived,
     required this.backhaulStatsErrorsSent,
     required this.backhaulStatsErrorsReceived,
-    required this.backhaulStatsTimeStamp,
+    this.backhaulStatsTimeStamp,
     required this.backhaulStatsLastDataUplinkRate,
     required this.backhaulStatsSignalStrength,
     required this.radios,
@@ -287,9 +287,6 @@ class DataElementsNetwork {
       if (!response.containsKey('${p}BackhaulPHYRate')) {
         missing.add('${p}BackhaulPHYRate');
       }
-      if (!response.containsKey('${p}MultiAPDevice.LastContactTime')) {
-        missing.add('${p}MultiAPDevice.LastContactTime');
-      }
       if (!response.containsKey('${p}MultiAPDevice.AssocIEEE1905DeviceRef')) {
         missing.add('${p}MultiAPDevice.AssocIEEE1905DeviceRef');
       }
@@ -331,9 +328,6 @@ class DataElementsNetwork {
           .containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived')) {
         missing.add('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived');
       }
-      if (!response.containsKey('${p}MultiAPDevice.Backhaul.Stats.TimeStamp')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.TimeStamp');
-      }
       if (!response
           .containsKey('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate')) {
         missing.add('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate');
@@ -359,8 +353,8 @@ class DataElementsNetwork {
         backhaulPhyRate:
             int.tryParse(response['${p}BackhaulPHYRate']?.toString() ?? '') ??
                 0,
-        multiApLastContactTime:
-            (response['${p}MultiAPDevice.LastContactTime'] ?? '') as String,
+        multiApLastContactTime: DateTime.tryParse(
+            response['${p}MultiAPDevice.LastContactTime']?.toString() ?? ''),
         multiApAssocIEEE1905DeviceRef:
             (response['${p}MultiAPDevice.AssocIEEE1905DeviceRef'] ?? '')
                 as String,
@@ -402,9 +396,10 @@ class DataElementsNetwork {
                         ?.toString() ??
                     '') ??
             0,
-        backhaulStatsTimeStamp:
-            (response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp'] ?? '')
-                as String,
+        backhaulStatsTimeStamp: DateTime.tryParse(
+            response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp']
+                    ?.toString() ??
+                ''),
         backhaulStatsLastDataUplinkRate: int.tryParse(
                 response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate']
                         ?.toString() ??

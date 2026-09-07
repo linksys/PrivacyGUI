@@ -164,6 +164,7 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             child: AppTextField(
               controller: _macController,
               focusNode: _macFocusNode,
+              identifier: 'dhcp-reservation-mac',
               hintText: loc(context).macAddressHint,
               errorText: _localizeError(_errors['mac']),
             ),
@@ -184,6 +185,7 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             child: AppTextField(
               controller: _ipController,
               focusNode: _ipFocusNode,
+              identifier: 'dhcp-reservation-ip',
               hintText: loc(context).ipAddressHint,
               errorText: _localizeError(_errors['ip']),
             ),
@@ -194,6 +196,7 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             children: [
               AppText.bodyMedium(loc(context).enabled),
               AppSwitch(
+                identifier: 'dhcp-reservation-enabled',
                 value: _enabled,
                 onChanged: (value) => setState(() => _enabled = value),
               ),
@@ -203,10 +206,12 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       ),
       actions: [
         AppButton.text(
+          identifier: 'dhcp-reservation-cancel',
           label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.text(
+          identifier: 'dhcp-reservation-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,
         ),

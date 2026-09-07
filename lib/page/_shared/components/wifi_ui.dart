@@ -18,7 +18,10 @@ export 'package:privacy_gui/core/utils/wifi.dart'
         SignalTier,
         getSignalTier,
         computeSNR,
-        normalizeSNR;
+        normalizeSNR,
+        RadioClientSample,
+        RadioClientStats,
+        aggregateRadioClientStats;
 
 /// UI utilities for WiFi signal display.
 class WiFiUtils {

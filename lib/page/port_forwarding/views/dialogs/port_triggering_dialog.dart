@@ -99,6 +99,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           children: [
             AppTextField(
               controller: _descController,
+              identifier: 'pf-trigger-description',
               hintText: loc(context).description,
             ),
             AppGap.xl(),
@@ -109,6 +110,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortStartController,
+                    identifier: 'pf-trigger-trigger-port-start',
                     hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
@@ -117,6 +119,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortEndController,
+                    identifier: 'pf-trigger-trigger-port-end',
                     hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
@@ -124,10 +127,16 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               ],
             ),
             AppGap.md(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Stack the protocol label above the segmented control so a long
+            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
+            // the control and clip its last segment in a narrow AppDialog
+            // (#1261). A Wrap can't be used here because SegmentedButton has no
+            // dry-layout support and Wrap measures its children.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyMedium(loc(context).protocol),
+                AppGap.sm(),
                 SegmentedButton<String>(
                   segments: [
                     const ButtonSegment(value: 'TCP', label: Text('TCP')),
@@ -149,6 +158,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortStartController,
+                    identifier: 'pf-trigger-forward-port-start',
                     hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
@@ -157,6 +167,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortEndController,
+                    identifier: 'pf-trigger-forward-port-end',
                     hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
@@ -164,10 +175,16 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               ],
             ),
             AppGap.md(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Stack the protocol label above the segmented control so a long
+            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
+            // the control and clip its last segment in a narrow AppDialog
+            // (#1261). A Wrap can't be used here because SegmentedButton has no
+            // dry-layout support and Wrap measures its children.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyMedium(loc(context).protocol),
+                AppGap.sm(),
                 SegmentedButton<String>(
                   segments: [
                     const ButtonSegment(value: 'TCP', label: Text('TCP')),
@@ -187,6 +204,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               children: [
                 AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
+                  identifier: 'pf-trigger-enabled',
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
                 ),
@@ -196,13 +214,15 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'port-triggering-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.primary(
+          identifier: 'port-triggering-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _submit,
         ),
       ],
     );

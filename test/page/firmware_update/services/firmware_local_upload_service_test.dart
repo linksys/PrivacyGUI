@@ -8,8 +8,12 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockFirmwareUploadStrategy extends Mock
+    implements FirmwareUploadStrategy {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -154,6 +158,35 @@ void main() {
         ),
         throwsA(isA<NetworkError>()),
       );
+    });
+
+    test('falls back to HTTP when WebSocket preparation fails', () async {
+      final wsStrategy = MockFirmwareUploadStrategy();
+      when(() => wsStrategy.name).thenReturn('WebSocket');
+      when(() => wsStrategy.isAvailable()).thenAnswer((_) async => true);
+      when(() => wsStrategy.prepare())
+          .thenThrow(const NetworkError(detail: 'handshake failed'));
+      when(() => wsStrategy.finalize()).thenAnswer((_) async {});
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{});
+
+      service = FirmwareLocalUploadService(
+        mockUsp,
+        lock,
+        chunker: const FirmwareChunker(chunkBytes: 4),
+        wsStrategyFactory: () async => wsStrategy,
+      );
+
+      await service.uploadFile(
+        bytes: bytesOf(4),
+        md5: 'abc',
+        commandKey: '123',
+      );
+
+      expect(service.lastUsedMethod, UploadMethod.http);
+      verify(() => wsStrategy.prepare()).called(1);
+      verify(() => wsStrategy.finalize()).called(1);
+      verify(() => mockUsp.operate(any(), args: any(named: 'args'))).called(1);
     });
 
     test('totalFragmentsFor mirrors chunker math', () {

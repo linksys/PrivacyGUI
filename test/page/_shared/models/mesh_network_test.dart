@@ -253,6 +253,20 @@ void main() {
 
         expect(parent, isNull);
       });
+
+      // Issue #1439: the null-parentNodeId shortcut above must not answer for
+      // an unattributed client. Its parent could not be resolved, so returning
+      // the master would be the same false attribution the builder now avoids.
+      test('returns null for an unattributed client, not the master', () {
+        final client = DevicesTestData.createWifiClient(
+          parentNodeId: null,
+        ).copyWith(isUnattributed: true);
+        final network = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [client],
+        );
+
+        expect(network.findParentNode(client), isNull);
+      });
     });
 
     group('clientsForNode', () {

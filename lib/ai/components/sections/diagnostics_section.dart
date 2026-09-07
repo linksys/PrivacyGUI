@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../ai_info_row.dart';
 
@@ -29,7 +30,7 @@ class DiagnosticsSection extends StatelessWidget {
     final hasDns = dnsResult != null;
 
     if (!hasPing && !hasTraceroute && !hasDns) {
-      return AppText.body('No diagnostic results available');
+      return AppText.body(loc(context).noDiagnosticResultsAvailable);
     }
 
     return Column(
@@ -37,7 +38,7 @@ class DiagnosticsSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (hasPing) ...[
-          _buildPingSection(pingResult!),
+          _buildPingSection(context, pingResult!),
           if (hasTraceroute || hasDns) ...[
             AppGap.md(),
             const Divider(),
@@ -45,20 +46,20 @@ class DiagnosticsSection extends StatelessWidget {
           ],
         ],
         if (hasDns) ...[
-          _buildDnsSection(dnsResult!),
+          _buildDnsSection(context, dnsResult!),
           if (hasTraceroute) ...[
             AppGap.md(),
             const Divider(),
             AppGap.md(),
           ],
         ],
-        if (hasTraceroute) _buildTracerouteSection(tracerouteResult!),
+        if (hasTraceroute) _buildTracerouteSection(context, tracerouteResult!),
       ],
     );
   }
 
-  Widget _buildPingSection(Map<String, dynamic> ping) {
-    final host = ping['host'] as String? ?? 'Unknown';
+  Widget _buildPingSection(BuildContext context, Map<String, dynamic> ping) {
+    final host = ping['host'] as String? ?? loc(context).unknown;
     final sent = ping['sent'] as int? ?? 0;
     final received = ping['received'] as int? ?? 0;
     final avgTime = ping['avgTime'] as int? ?? 0;
@@ -81,25 +82,28 @@ class DiagnosticsSection extends StatelessWidget {
               size: 20,
             ),
             AppGap.sm(),
-            AppText.titleSmall('Ping: $host'),
+            AppText.titleSmall(loc(context).pingHost(host)),
           ],
         ),
         AppGap.sm(),
         AiInfoRow(
-          label: 'Success Rate',
+          label: loc(context).successRate,
           value: '$successRate% ($received/$sent)',
         ),
         if (received > 0) ...[
-          AiInfoRow(label: 'Avg Response', value: '${avgTime}ms'),
+          AiInfoRow(label: loc(context).avgResponse, value: '${avgTime}ms'),
           if (minTime != null && maxTime != null)
-            AiInfoRow(label: 'Min/Max', value: '${minTime}ms / ${maxTime}ms'),
+            AiInfoRow(
+              label: loc(context).minMax,
+              value: '${minTime}ms / ${maxTime}ms',
+            ),
         ],
       ],
     );
   }
 
-  Widget _buildDnsSection(Map<String, dynamic> dns) {
-    final host = dns['host'] as String? ?? 'Unknown';
+  Widget _buildDnsSection(BuildContext context, Map<String, dynamic> dns) {
+    final host = dns['host'] as String? ?? loc(context).unknown;
     final ips = (dns['ips'] as List?)?.cast<String>() ?? [];
     final server = dns['server'] as String?;
     final responseTime = dns['responseTime'] as int?;
@@ -117,23 +121,27 @@ class DiagnosticsSection extends StatelessWidget {
               size: 20,
             ),
             AppGap.sm(),
-            AppText.titleSmall('DNS Lookup: $host'),
+            AppText.titleSmall(loc(context).dnsLookupHost(host)),
           ],
         ),
         AppGap.sm(),
         if (isSuccess) ...[
-          AiInfoRow(label: 'Resolved IPs', value: ips.join(', ')),
-          if (server != null) AiInfoRow(label: 'DNS Server', value: server),
+          AiInfoRow(label: loc(context).resolvedIps, value: ips.join(', ')),
+          if (server != null)
+            AiInfoRow(label: loc(context).dnsServer, value: server),
           if (responseTime != null)
-            AiInfoRow(label: 'Response Time', value: '${responseTime}ms'),
+            AiInfoRow(
+                label: loc(context).responseTime, value: '${responseTime}ms'),
         ] else
-          AiInfoRow(label: 'Status', value: 'Failed to resolve'),
+          AiInfoRow(
+              label: loc(context).status, value: loc(context).failedToResolve),
       ],
     );
   }
 
-  Widget _buildTracerouteSection(Map<String, dynamic> traceroute) {
-    final host = traceroute['host'] as String? ?? 'Unknown';
+  Widget _buildTracerouteSection(
+      BuildContext context, Map<String, dynamic> traceroute) {
+    final host = traceroute['host'] as String? ?? loc(context).unknown;
     final hops =
         (traceroute['hops'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final isSuccess = hops.isNotEmpty;
@@ -150,21 +158,23 @@ class DiagnosticsSection extends StatelessWidget {
               size: 20,
             ),
             AppGap.sm(),
-            AppText.titleSmall('Traceroute: $host'),
+            AppText.titleSmall(loc(context).tracerouteTo(host)),
           ],
         ),
         AppGap.sm(),
         if (isSuccess) ...[
-          AiInfoRow(label: 'Total Hops', value: '${hops.length}'),
+          AiInfoRow(label: loc(context).totalHops, value: '${hops.length}'),
           AppGap.sm(),
           ...hops.take(10).map((hop) => _buildHopRow(hop)),
           if (hops.length > 10)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: AppText.bodySmall('... and ${hops.length - 10} more hops'),
+              child:
+                  AppText.bodySmall(loc(context).nMoreHops(hops.length - 10)),
             ),
         ] else
-          AiInfoRow(label: 'Status', value: 'Traceroute failed'),
+          AiInfoRow(
+              label: loc(context).status, value: loc(context).tracerouteFailed),
       ],
     );
   }

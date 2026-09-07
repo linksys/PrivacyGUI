@@ -70,6 +70,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               ),
               AppSwitch(
                 key: const Key('dstToggle'),
+                identifier: 'admin-timezone-dst',
                 value: dstEnabled,
                 onChanged: dstToggleEnabled
                     ? (value) {
@@ -147,6 +148,7 @@ class _TimezoneListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      identifier: 'admin-timezone-item-${timezone.timeZoneID}',
       label: '${timezone.friendlyName}, ${timezone.offsetDisplayText}',
       selected: isSelected,
       button: true,

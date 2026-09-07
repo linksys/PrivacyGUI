@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../nav_tap_guard.dart';
 import 'base_blocks.dart';
 import 'block_constants.dart';
 
@@ -19,6 +20,10 @@ class SwitchBlock extends StatelessWidget {
   final IconData? icon;
   final String? semanticLabel;
 
+  /// Stable, screen-reader-silent test hook (→ `flt-semantics-identifier`).
+  /// Prefer this over positional selectors in E2E; see PrivacyGUI#1172.
+  final String? identifier;
+
   const SwitchBlock({
     super.key,
     required this.label,
@@ -27,6 +32,7 @@ class SwitchBlock extends StatelessWidget {
     this.onChanged,
     this.icon,
     this.semanticLabel,
+    this.identifier,
   });
 
   @override
@@ -36,6 +42,7 @@ class SwitchBlock extends StatelessWidget {
     return LayoutBlock(
       padding: BlockConstants.paddingMd,
       child: Semantics(
+        identifier: identifier,
         label: semanticLabel,
         child: Row(
           children: [
@@ -86,6 +93,9 @@ class SettingBlock extends StatelessWidget {
   final VoidCallback? onTap;
   final String? semanticLabel;
 
+  /// Stable, screen-reader-silent test hook (→ `flt-semantics-identifier`).
+  final String? identifier;
+
   const SettingBlock({
     super.key,
     required this.title,
@@ -93,6 +103,7 @@ class SettingBlock extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.semanticLabel,
+    this.identifier,
   });
 
   @override
@@ -103,6 +114,7 @@ class SettingBlock extends StatelessWidget {
         onTap: onTap,
         padding: BlockConstants.paddingListItem,
         child: Semantics(
+          identifier: identifier,
           label: semanticLabel,
           child: Row(
             children: [
@@ -143,52 +155,65 @@ class NavLinkBlock extends StatelessWidget {
   final IconData? icon;
   final VoidCallback onTap;
 
+  /// Stable, screen-reader-silent test hook (→ `flt-semantics-identifier`).
+  final String? identifier;
+
   const NavLinkBlock({
     super.key,
     required this.title,
     this.description,
     this.icon,
     required this.onTap,
+    this.identifier,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return LayoutBlock(
+    // Swallow the second tap of a double-tap so this link pushes its page once
+    // per gesture, not twice (#1445).
+    return NavTapGuard(
       onTap: onTap,
-      padding: BlockConstants.paddingMd,
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            AppIcon.font(
-              icon!,
-              size: BlockConstants.iconLg,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            AppGap.md(),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.titleSmall(title),
-                if (description != null) ...[
-                  AppGap.xs(),
-                  AppText.bodySmall(
-                    description!,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ],
+      builder: (context, guardedTap) => Semantics(
+        identifier: identifier,
+        button: true,
+        child: LayoutBlock(
+          onTap: guardedTap,
+          padding: BlockConstants.paddingMd,
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                AppIcon.font(
+                  icon!,
+                  size: BlockConstants.iconLg,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppGap.md(),
               ],
-            ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(title),
+                    if (description != null) ...[
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        description!,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              AppIcon.font(
+                Icons.chevron_right,
+                size: BlockConstants.iconMd,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-          AppIcon.font(
-            Icons.chevron_right,
-            size: BlockConstants.iconMd,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
+        ),
       ),
     );
   }

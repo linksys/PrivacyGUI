@@ -33,7 +33,7 @@ class ConnectedDevice {
   final String ipAddress;
   final String hostName;
   final bool isActive;
-  final String? activeLastChange;
+  final DateTime? activeLastChange;
   final String interface_;
   final String? layer3Interface;
   final String? interfaceType;
@@ -232,9 +232,8 @@ class ConnectedDevices {
         isActive: response['${p}Active'] == true ||
             response['${p}Active'] == 'true' ||
             response['${p}Active'] == '1',
-        activeLastChange: response.containsKey('${p}ActiveLastChange')
-            ? response['${p}ActiveLastChange'] as String
-            : null,
+        activeLastChange: DateTime.tryParse(
+            response['${p}ActiveLastChange']?.toString() ?? ''),
         interface_: (response['${p}Layer1Interface'] ?? '') as String,
         layer3Interface: response.containsKey('${p}Layer3Interface')
             ? response['${p}Layer3Interface'] as String

@@ -189,9 +189,9 @@ class UspIpv6PortServiceService {
   // System rule filtering
   // ---------------------------------------------------------------------------
 
-  /// System/firmware rules have CreationDate set to the zero epoch value.
-  /// User-created rules always have a real timestamp.
-  static const _systemRuleCreationDate = '0001-01-01T00:00:00Z';
+  /// System/firmware rules have CreationDate set to the zero epoch value
+  /// (`0001-01-01T00:00:00Z`). User-created rules always have a real timestamp.
+  static final _systemRuleCreationDate = DateTime.parse('0001-01-01T00:00:00Z');
 
   /// Filter to IPv6 user rules (IPVersion == 6, Target == Accept,
   /// not a system rule by CreationDate) and transform to UI models.

@@ -373,10 +373,18 @@ test/golden_test/golden_framework/
   mocks/
     mock_firewall.dart      // FixedFirewallNotifier + firewallOverrides()
     mock_wifi_settings.dart // FixedWifiSettingsNotifier + wifiOverrides()
-    mock_common.dart        // commonOverrides() — shared across all views
   golden_test_config.dart
   golden_runner.dart
+
+test/mocks/provider_overrides/
+    mock_common.dart        // commonOverrides() — shared across all views,
+                            //   and with the non-golden widget tests (#1361)
 ```
+
+A mock only golden uses stays under `golden_framework/mocks/`. One a test outside
+`test/golden_test/` also imports moves to `test/mocks/provider_overrides/`, so no test
+has to reach into the golden suite for a provider override — see #1361 and
+`doc/testing/overflow_gate_architecture.md` §9.4.
 
 ### Per-Feature Mock Example
 
@@ -385,7 +393,9 @@ See the complete Firewall example above for `mock_firewall.dart` implementation.
 ### Common Overrides
 
 ```dart
-// test/golden_test/golden_framework/mocks/mock_common.dart
+// test/mocks/provider_overrides/mock_common.dart
+// (moved out of golden_framework/mocks/ by #1361 — non-golden widget tests
+//  import it too, so it lives in the neutral location)
 
 List<Override> commonOverrides() => [
   authProvider.overrideWith(() => FixedAuthNotifier()),
@@ -599,6 +609,7 @@ AlchemistConfig(
 ```
 
 - **`diffThreshold: 0.025`** — Allows up to 2.5% pixel difference. Required for tests involving non-deterministic animations (e.g., `JiggleShake` uses `Random()` without a seed for delay/direction). Without this tolerance, edit-mode tests would produce flaky failures.
+  - **It is a fraction of the whole canvas, so its sensitivity falls as the canvas grows.** The canvas is the device width by `GoldenTestConfig.height ?? 800`, and suites pin their own height — at width 480 alone the baselines hold heights from 140 to 4200, so the allowance at one width varies 30×. On `usp_topology_view`'s `height: 1000`, 2.5% is 12,000px at `phone480` and 32,000px at `desktop1280`, while a defect confined to a badge, a chip or a status dot is laid out at a fixed size. #1472's dropped liveness moved 4.209% of `phone480` — 20,203px, so it failed — but 1.376% of `screen1080` and 0.858% of `desktop1280` (14,861px and 10,982px, both passed): the footprint halved as the allowance nearly tripled. Small-area semantic regressions above `phone480` are therefore invisible to this suite by construction — assert them in a widget test instead (`topology_scene_reachability_test.dart` is the worked example), and see [golden_diff_noise_floor.md](golden_diff_noise_floor.md) for the per-width measurement #1475 needs before the numbers can be changed.
 - **`renderShadows: false`** — Shadows are platform-dependent; disabling them prevents cross-machine diffs.
 
 ### Font Loading
@@ -720,14 +731,25 @@ done
 test/golden_test/
   flutter_test_config.dart        # Alchemist config + font loading (auto-loaded by test runner)
   golden_framework/
-    golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType
+    golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType,
+                                  #   GoldenDevice (names here; the two Sizes come
+                                  #   from test/util/test_viewports.dart, which a
+                                  #   non-golden card test reads too — #1361)
     golden_runner.dart            # runViewGoldenTests(), _buildGoldenWidget()
-    devices.dart                  # GoldenDevice definitions
     mocks/
-      mock_common.dart            # commonOverrides()
       mock_firewall.dart          # FixedFirewallNotifier + firewallOverrides()
       mock_dashboard.dart         # Dashboard-specific mocks + stub widget factory
-      ...                         # one file per feature
+      ...                         # one file per feature, golden-only
+
+test/mocks/                       # neutral: imported by golden AND by widget tests
+  provider_overrides/
+    mock_common.dart              # commonOverrides()
+    mock_dashboard_cards.dart     # Fixed*DataNotifier for the dashboard cards
+    ...                           # the seven #1361 moved out of golden_framework/
+  test_data/
+    scenes/
+      cards_test_data.dart        # the dashboard cards' shared fixture
+      ...                         # the five #1361 moved out of page/*/fixtures/
 ```
 
 ### Per-Feature Tests

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
+import 'package:privacy_gui/demo/pages/scenario_picker.dart';
 
 /// Demo version of the Linksys application.
 ///
@@ -47,23 +47,30 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     final appSettings = ref.watch(appSettingsProvider);
-    final systemLocaleStr = Intl.getCurrentLocale();
-    final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
+    // Same provider the real app reads, so the demo cannot drift into being a
+    // second source of truth for the locale. See activeLocaleProvider.
+    final activeLocale = ref.watch(activeLocaleProvider);
 
     // Watch configuration and UI state
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
 
     // Use demo seedColor if set, otherwise fall back to appSettings
     final effectiveSeedColor = demoConfig.seedColor ?? appSettings.themeColor;
 
     // Build dynamic theme (Same as before)
+    // Demo app showcases Theme Studio, so it falls back to the legacy glass +
+    // all-effects defaults when the studio config still inherits (null).
+    final demoStyle = demoConfig.style ?? 'glass';
+    final demoVisualEffects =
+        demoConfig.visualEffects ?? AppThemeConfig.effectAll;
+
     final themeData = _buildThemeData(
       brightness: appSettings.themeMode == ThemeMode.dark
           ? Brightness.dark
           : Brightness.light,
-      style: demoConfig.style,
+      style: demoStyle,
       globalOverlay: demoConfig.globalOverlay,
-      visualEffects: demoConfig.visualEffects,
+      visualEffects: demoVisualEffects,
       userThemeColor: effectiveSeedColor,
       primary: demoConfig.primary,
       secondary: demoConfig.secondary,
@@ -75,9 +82,9 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     // ... Dark Theme Build ...
     final darkTheme = _buildThemeData(
       brightness: Brightness.dark,
-      style: demoConfig.style,
+      style: demoStyle,
       globalOverlay: demoConfig.globalOverlay,
-      visualEffects: demoConfig.visualEffects,
+      visualEffects: demoVisualEffects,
       userThemeColor: effectiveSeedColor,
       primary: demoConfig.primary,
       secondary: demoConfig.secondary,
@@ -99,9 +106,9 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
       theme: themeData,
       darkTheme: darkTheme,
       themeMode: appSettings.themeMode,
-      locale: appSettings.locale ?? systemLocale,
+      locale: activeLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+      supportedLocales: ref.watch(supportedLocalesProvider),
       builder: (context, child) => Material(
         child: DesignSystem.init(
           context,
@@ -115,11 +122,22 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
                 child: child,
               ),
 
-              // Demo mode banner
+              // Demo mode banner + scenario picker (top-right, unobtrusive).
+              // The picker is the only intentional demo-vs-production UI
+              // difference: a small icon that opens a centered dialog to switch
+              // UI-state scenarios (same override files E2E uses).
               const Positioned(
                 top: 0,
                 right: 0,
-                child: _DemoModeBanner(),
+                child: SafeArea(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ScenarioPicker(),
+                      _DemoModeBanner(),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

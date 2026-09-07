@@ -58,7 +58,7 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Semantics(
-                label: 'preset-${preset.name}',
+                identifier: 'preset-${preset.name}',
                 button: true,
                 selected: isSelected,
                 child: _PresetCard(
@@ -74,12 +74,12 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
       ),
       actions: [
         AppButton(
-          semanticLabel: 'preset-cancel',
+          identifier: 'preset-cancel',
           label: loc(context).cancel,
           onTap: () => Navigator.pop(context),
         ),
         AppButton.primary(
-          semanticLabel: 'preset-apply',
+          identifier: 'preset-apply',
           label: loc(context).apply,
           onTap: _selected != null
               ? () => Navigator.pop(context, _selected)

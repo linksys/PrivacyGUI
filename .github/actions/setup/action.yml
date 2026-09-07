@@ -1,0 +1,100 @@
+name: Setup Flutter workspace
+description: >
+  Everything the four PR jobs need before they can run anything: the Flutter
+  SDK, an SSH agent for the private ui_kit dependency, the env template, pub
+  packages and the generated l10n. Measured at 33-49s, and it is paid once per
+  job.
+
+# This exists because the PR pipeline is four jobs, not one (see ci.yml). Four
+# copies of these six steps is four things that can drift apart, and the one that
+# drifts is the one nobody notices: a job that skips `gen-l10n` fails with
+# hundreds of missing-getter errors that look nothing like "a step is missing".
+# GitHub Actions has no YAML anchors, so a composite action is the only way to
+# say it once.
+#
+# `actions/checkout` is deliberately NOT in here. A composite action's steps run
+# from the repository's checkout, so this file cannot exist to be read until
+# checkout has already happened — every caller starts with it.
+#
+# The SSH key arrives as an input rather than being read from `secrets` here,
+# because a composite action cannot see `secrets` at all — every caller must
+# pass it. That is why the input is marked required: a job that forgets it fails
+# at `flutter pub get` on a private git dependency, not here.
+
+inputs:
+  ssh-private-key:
+    description: Deploy key with read access to linksys/privacyGUI-UI-kit
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # A VERSION, not a channel, and the same one .fvmrc pins. This said
+    # `channel: 'stable'` until #1316, which meant CI chose its own SDK: the
+    # runner moved to 3.47.0 the day it shipped (2026-08-12) with no commit
+    # here, while .fvmrc still said 3.44.0 — and since no step in this file
+    # invokes fvm, that pin was inert in CI either way. Local and CI therefore
+    # could not agree by construction, which is how a 3.44.0 CanvasKit came to
+    # be served under a 3.47.0 engine (see doc/web/vendored-canvaskit.md).
+    #
+    # The PATCH digit is load-bearing, and finding out why is what set this
+    # number. `channel: stable` had already carried CI past 3.47.0 to 3.47.1 and
+    # then 3.47.2 — run 33239883637 on 2026-08-29 resolved
+    # `stable-3.47.2-x64` — so pinning the .0 would have DOWNGRADED CI by two
+    # hotfixes and thrown away the only green evidence we have. Worse, each
+    # hotfix carries its own engine (3.47.0 5f776256 / 3.47.1 5d531788 /
+    # 3.47.2 a804b261) and `canvaskit.wasm` genuinely differs between them
+    # (2898c079, 7284349 B -> fbed517a, 7284602 B), so a major-minor pin leaves
+    # the same CanvasKit-vs-engine mismatch this issue was filed about, one digit
+    # further down. Pin all three digits.
+    #
+    # Two things this buys beyond hygiene. Golden baselines are SDK-sensitive —
+    # the first 3.47.0 run in linksys/PrivacyGUI-golden-ci produced 312 failures
+    # against a baseline rendered on 3.44.9, with no baseline change involved —
+    # and under `channel:` "the SDK moved" and "the baseline moved" are not
+    # distinguishable after the fact, which is most of what made #1210 expensive.
+    # (3.47.0 -> 3.47.2 moves no pixels at all: golden-ci run 33214834347 on
+    # 2026-08-28 verified a 3.47.0-rendered baseline under 3.47.2 with 0
+    # failures. Hotfixes are cheap to adopt; that is an argument for tracking
+    # them promptly, not for leaving the digit off.)
+    #
+    # The cost of pinning is that fixes no longer arrive on their own, so this
+    # needs a periodic bump PR rather than being left alone. Moving it means
+    # moving .fvmrc, re-vendoring web/assets/canvaskit.* and updating the
+    # constants in test/web/canvaskit_variant_test.dart — which asserts this
+    # exact line, so a pin that drifts from .fvmrc is a red test and not a
+    # discovery six weeks later.
+    #
+    # `channel:` must not come back alongside it: the action accepts either, and
+    # having both puts this back to floating.
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.47.2'
+        cache: true
+
+    # Deploy Key approach for the private ui_kit dependency.
+    - name: 🔑 Setup SSH for Private Deps
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
+
+    # pubspec.yaml names the dependency over HTTPS; the agent above only speaks
+    # SSH, so git has to be told to rewrite the one into the other.
+    - name: 🔄 Configure Git to use SSH
+      shell: bash
+      run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+    - name: 📋 Setup Environment File
+      shell: bash
+      run: cp assets/agents/env.template assets/agents/.env
+
+    - name: Install Dependencies
+      shell: bash
+      run: flutter pub get
+
+    # Generated l10n is gitignored, so it must exist before analyze, before any
+    # test compiles, and before the web build.
+    - name: 🌐 Generate L10n
+      shell: bash
+      run: flutter gen-l10n

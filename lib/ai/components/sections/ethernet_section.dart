@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Ethernet ports status section.
@@ -15,21 +16,21 @@ class EthernetSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (ports.isEmpty) {
-      return AppText.body('No ethernet ports found');
+      return AppText.body(loc(context).noEthernetPortsFound);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final port in ports) _buildPortRow(port),
+        for (final port in ports) _buildPortRow(context, port),
       ],
     );
   }
 
-  Widget _buildPortRow(Map<String, dynamic> port) {
-    final label = port['label'] as String? ?? 'Port';
-    final status = port['status'] as String? ?? 'Unknown';
+  Widget _buildPortRow(BuildContext context, Map<String, dynamic> port) {
+    final label = port['label'] as String? ?? loc(context).port;
+    final status = port['status'] as String? ?? loc(context).unknown;
     final speed = port['speed'] as String?;
     final isConnected =
         status.toLowerCase() == 'connected' || status.toLowerCase() == 'up';

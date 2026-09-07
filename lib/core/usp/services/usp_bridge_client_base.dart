@@ -25,6 +25,7 @@ class UspBridgeClient {
   UspBridgeClient(
     UspClient usp, {
     BridgeEndpoints? endpoints,
+    String? baseUrl,
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,

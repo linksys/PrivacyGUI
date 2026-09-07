@@ -35,6 +35,10 @@ class UspPortForwardingCard extends ConsumerWidget {
         onTap:
             isLoading ? null : () => _showAddPortForwardingDialog(context, ref),
       ),
+      // Both kinds of rule in one number, which is what this card's title says
+      // it is ("Port rules") and what its footer already counts. Splitting them
+      // needs two labels and the tile has room for neither.
+      popupValue: '${rules.length + triggers.length}',
       detailRoute: RouteNamed.uspPortForwardingDetail,
       itemCount: rules.length + triggers.length,
       detailLabel: loc(context).viewAll,
@@ -87,7 +91,11 @@ class UspPortForwardingCard extends ConsumerWidget {
                     .immediateToggleForwarding(rule.instancePath!, value),
               ),
       title: rule.displayName,
-      subtitle: rule.portSummary,
+      subtitleContent: MapsToRow(
+        source: rule.portRangeDisplay,
+        target: rule.internalTargetDisplay,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       trailing: ProtocolBadge(protocol: rule.protocol),
     );
   }
@@ -108,7 +116,11 @@ class UspPortForwardingCard extends ConsumerWidget {
                     .immediateToggleTriggering(trigger.instancePath!, value),
               ),
       title: trigger.displayName,
-      subtitle: '${trigger.triggerPortDisplay} → ${trigger.forwardPortDisplay}',
+      subtitleContent: MapsToRow(
+        source: trigger.triggerPortDisplay,
+        target: trigger.forwardPortDisplay,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       trailing: ProtocolBadge(protocol: trigger.triggerProtocol),
     );
   }

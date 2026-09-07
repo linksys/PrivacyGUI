@@ -54,6 +54,18 @@ class BuildConfig {
   static const bool enableTestConsole =
       bool.fromEnvironment('test_console', defaultValue: false);
 
+  /// E2E test build flag (umbrella). Set `--dart-define=E2E_MOCK=true` when
+  /// building the web app for the Playwright E2E suite, where the USP bridge
+  /// is mocked at the browser JS boundary. Gates behaviors that cannot
+  /// establish or that add non-deterministic setup overhead under the mock:
+  /// - SSE init is skipped and the connection is treated as online, so the
+  ///   "connecting/reconnecting/suspended" banner never renders (P0-1).
+  /// - The first-run preset (onboarding) dialog auto-popup is suppressed (P0-2).
+  /// Defaults false → production behavior is unchanged.
+  /// See e2e/docs/FLUTTER-SIDE-REQUESTS.md.
+  static const bool e2eMock =
+      bool.fromEnvironment('E2E_MOCK', defaultValue: false);
+
   /// Skip PnP auto-trigger.
   /// Set `--dart-define=skip_pnp=true` to skip during development.
   static const bool skipPnp =

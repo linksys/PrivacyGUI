@@ -184,6 +184,94 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspWanDataService — gateway parsing', () {
+    /// Stubs a WAN interface resolved to [wanInstance] (via Alias='wan') plus a
+    /// default route whose Interface is [routeInterface]. Used to prove the
+    /// gateway lookup follows the resolved instance and matches it exactly.
+    void stubResolvedWan({
+      required int wanInstance,
+      required String routeInterface,
+      String gateway = '198.51.100.1',
+    }) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+
+        // Routing query first: StaticRouting.fetch requests an
+        // `IPv4Forwarding.*.Alias` path too, so it must be matched before the
+        // WAN-interface Alias resolution below.
+        if (paths.any((p) => p.contains('Routing'))) {
+          return {
+            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
+                '0.0.0.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
+                gateway,
+            'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
+                routeInterface,
+            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
+          };
+        }
+
+        // WAN-interface Alias resolution → WAN is on `wanInstance`. Issued by
+        // resolveWanInterfacePath and the generated _resolveInstance helpers.
+        if (paths
+            .any((p) => p.contains('IP.Interface') && p.contains('Alias'))) {
+          return {
+            'Device.IP.Interface.1.Alias': 'lan',
+            'Device.IP.Interface.$wanInstance.Alias': 'wan',
+          };
+        }
+
+        // WanStatus.fetch resolves its own instance via Alias, so answer its
+        // per-instance Status paths for `wanInstance`.
+        if (paths.any((p) => p.contains('.Status'))) {
+          return {
+            'Device.IP.Interface.$wanInstance.Status': 'Up',
+            'Device.IP.Interface.$wanInstance.IPv4Address.1.IPAddress':
+                '1.2.3.4',
+            'Device.IP.Interface.$wanInstance.IPv4Address.1.SubnetMask':
+                '255.255.255.0',
+            'Device.IP.Interface.$wanInstance.IPv4Address.1.AddressingType':
+                'DHCP',
+            'Device.IP.Interface.$wanInstance.MaxMTUSize': '1500',
+            'Device.IP.Interface.$wanInstance.IPv6Enable': false,
+          };
+        }
+
+        // IPv6 address query (WanIpv6Addresses.fetch) — empty is valid.
+        return {};
+      });
+    }
+
+    test('gateway follows a WAN resolved to a non-2 instance', () async {
+      // WAN on Interface.4; the route's Interface matches it → gateway found.
+      stubResolvedWan(
+        wanInstance: 4,
+        routeInterface: 'Device.IP.Interface.4',
+        gateway: '198.51.100.1',
+      );
+
+      final result = await svc.fetch();
+
+      expect(result.gateway, '198.51.100.1');
+    });
+
+    test('WAN Interface.2 does not match a route on Interface.20 (substring)',
+        () async {
+      // Regression: `contains('Interface.2')` would wrongly match Interface.20.
+      // Exact-prefix matching must reject it, leaving the gateway empty.
+      stubResolvedWan(
+        wanInstance: 2,
+        routeInterface: 'Device.IP.Interface.20',
+      );
+
+      final result = await svc.fetch();
+
+      expect(result.gateway, isEmpty);
+    });
+
     test('returns empty gateway if no default route found', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((invocation) async {

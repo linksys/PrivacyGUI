@@ -4,13 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/cloud_host_resolver.dart';
 import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
-final guardianApiClientProvider = Provider((ref) => GuardianApiClient());
+final guardianApiClientProvider = Provider((ref) => GuardianApiClient(
+      hostResolver: CloudHostResolver(originGetter: getCloudOrigin),
+    ));
 
 /// API client for Guardian Remote Assistance services.
 ///
@@ -23,12 +27,25 @@ final guardianApiClientProvider = Provider((ref) => GuardianApiClient());
 /// 2. **CA (support agent)**: Authorization header with session token
 class GuardianApiClient {
   final LinksysHttpClient _http;
+  final CloudHostResolver _hostResolver;
 
-  GuardianApiClient({LinksysHttpClient? httpClient})
-      : _http = httpClient ?? LinksysHttpClient();
+  GuardianApiClient({
+    LinksysHttpClient? httpClient,
+    CloudHostResolver? hostResolver,
+  })  : _http = httpClient ?? LinksysHttpClient(),
+        _hostResolver = hostResolver ?? CloudHostResolver();
 
-  String _buildUrl(String endpoint, {Map<String, String>? args}) {
-    String url = 'https://${cloudEnvironmentConfig[kCloudBase]}$endpoint';
+  /// Builds an absolute URL for a Guardian [endpoint].
+  ///
+  /// [forCA] selects the host base: CA-side requests always target the cloud
+  /// host directly; client-side requests may be routed through the router's
+  /// reverse proxy on local builds. See [CloudHostResolver].
+  String _buildUrl(
+    String endpoint, {
+    Map<String, String>? args,
+    required bool forCA,
+  }) {
+    String url = '${_hostResolver.resolve(forCA: forCA)}$endpoint';
     args?.forEach((key, value) => url = url.replaceFirst(key, value));
     return url;
   }
@@ -65,7 +82,9 @@ class GuardianApiClient {
     }
 
     logger.d('[Guardian] Fetching new device token');
-    final url = Uri.parse(_buildUrl(kDeviceToken)).replace(queryParameters: {
+    // Client-side (device owner) request → may proxy through the router.
+    final url = Uri.parse(_buildUrl(kDeviceToken, forCA: false))
+        .replace(queryParameters: {
       'serialNumber': serialNumber,
       'macAddress': macAddress,
       'uuid': deviceUUID.toUpperCase(),
@@ -213,7 +232,11 @@ class GuardianApiClient {
     String? serialNumber,
     String? sessionToken,
   }) async {
-    final url = Uri.parse(_buildUrl(endpoint, args: args));
+    // CA-side requests authenticate with a session token and must always hit
+    // the cloud host directly; deriving forCA here keeps it in lock-step with
+    // the auth-header branch below (no drift possible).
+    final forCA = sessionToken != null;
+    final url = Uri.parse(_buildUrl(endpoint, args: args, forCA: forCA));
     final headers = Map<String, String>.from(_defaultHeaders);
 
     if (sessionToken != null) {

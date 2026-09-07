@@ -15,7 +15,7 @@ class Ipv6PortServiceRule {
   final int destPortRangeMax;
   final int protocol;
   final String target;
-  final String creationDate;
+  final DateTime creationDate;
 
   const Ipv6PortServiceRule({
     required this.instancePath,
@@ -160,7 +160,9 @@ class Ipv6PortService {
                 0,
         protocol: int.tryParse(response['${p}Protocol']?.toString() ?? '') ?? 0,
         target: (response['${p}Target'] ?? '') as String,
-        creationDate: (response['${p}CreationDate'] ?? '') as String,
+        creationDate:
+            DateTime.tryParse(response['${p}CreationDate']?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       ));
     }
     return Ipv6PortService(items: items);

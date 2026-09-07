@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
+    show ruleIdentifierKey;
 
 /// Presentation Layer Model for a single forwarded-port rule
 /// within a port trigger entry (child of `Device.NAT.PortTrigger.{i}.Rule.{i}`).
@@ -85,6 +87,11 @@ class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   String get displayName =>
       description.isNotEmpty ? description : 'Unnamed trigger';
 
+  /// Stable, kebab-case key for E2E `identifier` hooks (e.g. `pf-edit-<key>`).
+  /// See [ruleIdentifierKey] — description slug, then instance number, then
+  /// "unnamed"; always non-empty and collision-free across rows.
+  String get identifierKey => ruleIdentifierKey(description, instancePath);
+
   /// Trigger port display: "21" or "21-25".
   String get triggerPortDisplay =>
       triggerPortEndRange == 0 || triggerPortEndRange == triggerPort
@@ -99,9 +106,20 @@ class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   String get forwardProtocolDisplay =>
       forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '—';
 
-  /// Summary: "Trigger: 21 TCP → Forward: 1024-1030 TCP".
-  String get summary => 'Trigger: $triggerPortDisplay $triggerProtocol '
-      '→ Forward: $forwardPortDisplay $forwardProtocolDisplay';
+  /// Trigger half of the summary: "Trigger: 21 TCP".
+  String get triggerSummaryPart =>
+      'Trigger: $triggerPortDisplay $triggerProtocol';
+
+  /// Forward half of the summary: "Forward: 1024-1030 TCP".
+  String get forwardSummaryPart =>
+      'Forward: $forwardPortDisplay $forwardProtocolDisplay';
+
+  /// Summary: "Trigger: 21 TCP -> Forward: 1024-1030 TCP".
+  ///
+  /// Diagnostics and other non-UI callers only. UI draws the arrow as an icon
+  /// via `MapsToRow(source: triggerSummaryPart, target: forwardSummaryPart)`,
+  /// because U+2192 has no glyph in the app's declared font set.
+  String get summary => '$triggerSummaryPart -> $forwardSummaryPart';
 
   @override
   String get diagnosticName => 'PortTriggeringRuleUIModel';

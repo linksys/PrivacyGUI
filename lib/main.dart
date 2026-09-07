@@ -53,7 +53,8 @@ void main() async {
   await Storage.init();
 
   // Load environment variables for FAQ Agent (AWS Bedrock)
-  // Create assets/.env with AWS credentials (copy from gen_ui_client)
+  // Create assets/agents/.env with AWS credentials. The gen_ui_client sample it
+  // used to be copied from was deleted in ui_kit 3.0.0 (#1456).
   try {
     await dotenv.load(fileName: 'assets/agents/.env');
     debugPrint('FAQ Agent: .env loaded successfully');

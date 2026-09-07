@@ -119,6 +119,8 @@ Future<T?> showSubmitAppDialog<T>(
   bool Function()? checkPositiveEnabled,
   bool scrollable = false,
   bool useRootNavigator = true,
+  String? positiveIdentifier = 'dialog-submit',
+  String? negativeIdentifier = 'dialog-cancel',
   required Future<T> Function() event,
   void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
@@ -176,6 +178,7 @@ Future<T?> showSubmitAppDialog<T>(
               : [
                   AppButton.text(
                     label: effectiveNegativeLabel,
+                    identifier: negativeIdentifier,
                     key: const Key('alertNegativeButton'),
                     onTap: () {
                       context.pop();
@@ -183,6 +186,7 @@ Future<T?> showSubmitAppDialog<T>(
                   ),
                   AppButton.text(
                     label: effectivePositiveLabel,
+                    identifier: positiveIdentifier,
                     key: const Key('alertPositiveButton'),
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
@@ -329,7 +333,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     actions: [
       AppButton.text(
         label: loc(context).goBack,
-        semanticLabel: 'unsaved-go-back',
+        identifier: 'unsaved-go-back',
         key: const Key('unsavedAlert_goBackButton'),
         onTap: () {
           context.pop();
@@ -337,7 +341,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
       ),
       AppButton.dangerText(
         label: loc(context).discardChanges,
-        semanticLabel: 'unsaved-discard',
+        identifier: 'unsaved-discard',
         key: const Key('unsavedAlert_discardButton'),
         onTap: () {
           context.pop(true);

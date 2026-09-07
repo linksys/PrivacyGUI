@@ -18,8 +18,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Stub factory that renders representative fake-data cards for golden tests.
 class _StubWidgetFactory extends UspWidgetFactory {
+  // [cardWidth] is accepted and ignored: these stubs have one form each, so
+  // there is no band for a width to select. The parameter is here because the
+  // real factory's is (#1401), not because this override has a use for it.
   @override
-  Widget? buildWidget(String id) {
+  Widget? buildWidget(String id, {required double? cardWidth}) {
     return AppCard(child: _buildContent(id));
   }
 
@@ -131,8 +134,14 @@ List<LayoutItem> _defaultTestLayout() => [
 
 class _FixedControllerNotifier extends UspSliverDashboardControllerNotifier {
   // Inherits super() which calls _initializeLayout() — that loads the layout
-  // from SharedPreferences (seeded in initDashboardSharedPreferences) and
-  // calls _preSeedBreakpoints() to populate 4/8-column caches.
+  // from SharedPreferences (seeded in initDashboardSharedPreferences) and seeds
+  // the 4/8-column caches from it. The seeded value is a legacy bare list, which
+  // is exactly the migration path UspLayoutEnvelope has to keep working (#1293).
+  //
+  // The `ref` is forwarded rather than stubbed because the parent publishes the
+  // picked card forms through it (#1299); golden tests pick nothing, so what
+  // reaches `cardFormsProvider` is the empty set.
+  _FixedControllerNotifier(super.ref);
 }
 
 /// Initialize SharedPreferences with dashboard defaults to prevent async calls.
@@ -153,7 +162,7 @@ List<Override> dashboardOverrides() {
     dashboardOrchestratorProvider
         .overrideWith(() => _FixedOrchestratorNotifier()),
     uspSliverDashboardControllerProvider.overrideWith(
-      (ref) => _FixedControllerNotifier(),
+      (ref) => _FixedControllerNotifier(ref),
     ),
     uspWidgetFactoryProvider.overrideWithValue(_StubWidgetFactory()),
     uspSystemMonitorProvider.overrideWith(() => _FixedSystemMonitorNotifier()),

@@ -87,27 +87,88 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
+        // Legend + totals.
+        //
+        // DEGRADATION SHAPE (#1252, the twin of #1226's dashboard card) — this
+        // row is a near-duplicate of the Traffic Analysis Monitor legend, so it
+        // takes the identical treatment (design \u00a72.10, \u00a72.10a):
+        //
+        //  1. A `Wrap`, not a `Row` + `Spacer`. At every width where the content
+        //     fits it renders exactly as before: one run, `spaceBetween` puts the
+        //     legend left and the totals right, which is what the `Spacer` did.
+        //     When it does not fit, the totals drop to a second line instead of
+        //     overflowing. The chart above is `Expanded`, so it yields the height
+        //     (\u00a72.10a point 3: this is the unstated precondition #1226 relied on;
+        //     unlike Network Health's fixed-height gauge, this chart yields).
+        //  2. The legend yields before anything else — its labels are `Flexible`
+        //     with a one-line ellipsis. A legend keys a chart that is already
+        //     colour-coded, so a clipped label still communicates; each dot+label
+        //     pair stays glued together so a label never separates from the
+        //     colour it explains.
+        //  3. The byte totals never shrink: no `Flexible`, no ellipsis, so they
+        //     keep their intrinsic width and wrap as a unit. They are the card's
+        //     content, not chrome — an ellipsis lands mid-number and a half-shown
+        //     statistic misinforms in a way a missing one does not.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).upload),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).download),
-            const Spacer(),
-            if (wan != null) ...[
-              AppText.labelSmall(
-                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
-                color: colorScheme.onSurfaceVariant,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatsLegendDot(color: colorScheme.primary),
+                AppGap.xs(),
+                Flexible(
+                  child: AppText.labelSmall(
+                    loc(context).upload,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AppGap.lg(),
+                StatsLegendDot(color: colorScheme.secondary),
+                AppGap.xs(),
+                Flexible(
+                  child: AppText.labelSmall(
+                    loc(context).download,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            if (wan != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icons, not U+2191/U+2193 characters — matches the dashboard's
+                  // Traffic Analysis card, which draws the same two directions
+                  // with Icons.arrow_upward/downward.
+                  AppIcon.font(
+                    Icons.arrow_upward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesSent),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.md(),
+                  AppIcon.font(
+                    Icons.arrow_downward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesReceived),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
-              AppGap.md(),
-              AppText.labelSmall(
-                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
           ],
         ),
       ],

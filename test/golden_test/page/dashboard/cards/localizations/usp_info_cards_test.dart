@@ -7,8 +7,8 @@ import 'package:privacy_gui/page/local_network/cards/usp_ethernet_ports_card.dar
 
 import '../../../../golden_framework/golden_runner.dart';
 import '../../../../golden_framework/golden_test_config.dart';
-import '../../../../golden_framework/mocks/mock_dashboard_cards.dart';
-import '../fixtures/cards_test_data.dart';
+import '../../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../../../mocks/test_data/scenes/cards_scene_data.dart';
 
 void main() {
   // ─────────────────────────────────────────────────────────────────────────

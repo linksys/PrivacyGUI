@@ -706,6 +706,29 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   // Build
   // ════════════════════════════════════════════════════════════════════════════
 
+  /// Content width below which the controls and the log stack instead of sitting
+  /// side by side.
+  ///
+  /// The two panes are `Expanded(flex: 1)` either side of a 1px divider, so each one
+  /// gets half of whatever the page is given and every child inside is laid out
+  /// against that half — the console had no narrow layout at all. The narrowest child
+  /// is the subscription section's `Notification Type` dropdown, which sizes itself to
+  /// the widest of its five items (`4 - OperationComplete`) because
+  /// `DropdownButtonFormField` stacks all of them to measure: it needs 236px of pane
+  /// content, so a 268px pane, so a **537px** page. Measured before the fix (#1380,
+  /// 52 of 234 cells): **+109px at 320 and +29px at 480, in all 26 locales** — the
+  /// same number in every one of them, because those five item labels are hard-coded
+  /// English. It is the epic's one site no translation could have caused, and the
+  /// reason this page's sweep is worth its cost.
+  ///
+  /// 600 rather than 537: the margin is deliberate, not shaping slack. At 537px each
+  /// pane grants its eleven sections 268px, which fits the dropdown and nothing
+  /// comfortably; and 600 is ui_kit's mobile breakpoint, below which a side-by-side
+  /// debug console is the wrong shape whatever it measures. Two panes are still
+  /// verified clean from 601px up — the sweep's 601 column was green before this fix
+  /// and stays green after it, since nothing about the wide layout changed.
+  static const _stackPanesBelow = 600.0;
+
   @override
   Widget build(BuildContext context) {
     return UiKitPageView(
@@ -715,112 +738,124 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
       scrollable: false,
       padding: EdgeInsets.zero,
       child: (childContext, constraints) {
+        // The page passes `padding: EdgeInsets.zero`, so this is the screen width.
+        final stacked = constraints.maxWidth < _stackPanesBelow;
+
         return Column(
           children: [
             _buildHeader(childContext),
             Expanded(
-              child: Row(
-                children: [
-                  // Left: Controls
-                  Expanded(
-                    flex: 1,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildConnectionSection(),
-                          const Divider(height: 32),
-                          _buildGetSection(),
-                          const Divider(height: 32),
-                          _buildSetSection(),
-                          const Divider(height: 32),
-                          _buildAddSection(),
-                          const Divider(height: 32),
-                          _buildDeleteSection(),
-                          const Divider(height: 32),
-                          _buildOperateSection(),
-                          const Divider(height: 32),
-                          _buildHealthSection(),
-                          const Divider(height: 32),
-                          _buildErrorProbeSection(),
-                          const Divider(height: 32),
-                          _buildSseSection(),
-                          const Divider(height: 32),
-                          _buildSubscriptionSection(),
-                          const Divider(height: 32),
-                          _buildTurboSection(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const VerticalDivider(width: 1),
-                  // Right: Log panel
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              // Same two panes and the same 1:1 split in both directions — the fix is
+              // the axis and nothing else. Both panes scroll on their own, so halving
+              // the height costs scroll extent rather than content.
+              child: stacked
+                  ? Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Row(
-                            children: [
-                              AppText.titleSmall('Log'),
-                              const Spacer(),
-                              AppIconButton(
-                                icon: AppIcon.font(Icons.copy, size: 18),
-                                onTap: () {
-                                  Clipboard.setData(
-                                      ClipboardData(text: _logs.join('\n')));
-                                },
-                              ),
-                              AppIconButton(
-                                icon: AppIcon.font(Icons.delete_outline,
-                                    size: 18),
-                                onTap: () => setState(() => _logs.clear()),
-                              ),
-                            ],
-                          ),
-                        ),
+                        Expanded(child: _buildControlPane()),
                         const Divider(height: 1),
-                        Expanded(
-                          child: SelectionArea(
-                            child: ListView.builder(
-                              controller: _logScrollController,
-                              padding: const EdgeInsets.all(8),
-                              itemCount: _logs.length,
-                              itemBuilder: (context, index) {
-                                final log = _logs[index];
-                                final isError = log.contains('ERROR');
-                                final isSse = log.contains('SSE');
-                                final colorScheme =
-                                    Theme.of(context).colorScheme;
-                                return Text(
-                                  log,
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    color: isError
-                                        ? colorScheme.error
-                                        : isSse
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurface,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
+                        Expanded(child: _buildLogPane()),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(child: _buildControlPane()),
+                        const VerticalDivider(width: 1),
+                        Expanded(child: _buildLogPane()),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         );
       },
+    );
+  }
+
+  /// The controls: every USP operation the console can issue, one section each.
+  Widget _buildControlPane() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildConnectionSection(),
+          const Divider(height: 32),
+          _buildGetSection(),
+          const Divider(height: 32),
+          _buildSetSection(),
+          const Divider(height: 32),
+          _buildAddSection(),
+          const Divider(height: 32),
+          _buildDeleteSection(),
+          const Divider(height: 32),
+          _buildOperateSection(),
+          const Divider(height: 32),
+          _buildHealthSection(),
+          const Divider(height: 32),
+          _buildErrorProbeSection(),
+          const Divider(height: 32),
+          _buildSseSection(),
+          const Divider(height: 32),
+          _buildSubscriptionSection(),
+          const Divider(height: 32),
+          _buildTurboSection(),
+        ],
+      ),
+    );
+  }
+
+  /// The log: what every control above wrote, newest last.
+  Widget _buildLogPane() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              AppText.titleSmall('Log'),
+              const Spacer(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.copy, size: 18),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: _logs.join('\n')));
+                },
+              ),
+              AppIconButton(
+                icon: AppIcon.font(Icons.delete_outline, size: 18),
+                onTap: () => setState(() => _logs.clear()),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: SelectionArea(
+            child: ListView.builder(
+              controller: _logScrollController,
+              padding: const EdgeInsets.all(8),
+              itemCount: _logs.length,
+              itemBuilder: (context, index) {
+                final log = _logs[index];
+                final isError = log.contains('ERROR');
+                final isSse = log.contains('SSE');
+                final colorScheme = Theme.of(context).colorScheme;
+                return Text(
+                  log,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: isError
+                        ? colorScheme.error
+                        : isSse
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 

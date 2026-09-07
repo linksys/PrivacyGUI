@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -72,8 +73,9 @@ class StatsPortMappingSection extends ConsumerWidget {
                     _ProtocolBadge(protocol: rule.protocol),
                     AppGap.sm(),
                     Expanded(
-                      child: AppText.bodySmall(
-                        rule.portSummary,
+                      child: MapsToRow(
+                        source: rule.portRangeDisplay,
+                        target: rule.internalTargetDisplay,
                       ),
                     ),
                   ],

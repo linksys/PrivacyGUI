@@ -63,12 +63,26 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
 
     ref.listen(authProvider, (_, next) {
       if (next.isLoading) return;
-      if (!(next.value?.isLoggedIn ?? false)) {
+      final isLoggedIn = next.value?.isLoggedIn ?? false;
+      if (!isLoggedIn) {
         _probeTimer?.cancel();
         _probeTimer = null;
         _cooldownTimer?.cancel();
         _cooldownTimer = null;
         state = AppConnectionState.loggedOut;
+      } else if (state == AppConnectionState.loggedOut) {
+        // Re-login within the same session (no page reload). The app uses a
+        // single app-lifetime ProviderContainer, so build() — which seeds the
+        // initial `authenticated` — does not re-run on re-login, and this
+        // provider is never invalidated. Without restoring `authenticated`
+        // here the state stays stuck at `loggedOut`, and every dashboard
+        // polling notifier (traffic analysis, system monitor) that gates its
+        // timer on `== authenticated` silently stops — the Network Health and
+        // Traffic Monitor surfaces show no data until a full page reload.
+        //
+        // Only transition out of `loggedOut`; never override
+        // `waitingForRecovery`, which owns its own exit path via _runProbe().
+        state = AppConnectionState.authenticated;
       }
     });
 

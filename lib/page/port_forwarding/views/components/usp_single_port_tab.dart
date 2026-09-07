@@ -30,10 +30,21 @@ class UspSinglePortTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(
-                '${loc(context).singlePortForwarding} (${rules.length})'),
+            // `Expanded`, not a bare `AppText`: the title sized itself to its
+            // natural width and pushed the add button off the right edge in 9 of
+            // the page sweep's 208 cells — all at the 320px product floor, worst
+            // `pl` +70px, and `pt_PT` `ru` `pt` `fr` `da` `fi` `nb` `de` behind it
+            // (#1370's finding, fixed for #1377). The gate's page sweep measures
+            // this tab only; `usp_port_range_tab` and `usp_port_triggering_tab`
+            // carry the same header shape behind a `TabController` the sweep does
+            // not tap, and were given the same constraint by inspection.
+            Expanded(
+              child: AppText.titleMedium(
+                  '${loc(context).singlePortForwarding} (${rules.length})'),
+            ),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
+              identifier: 'pf-add-single-port',
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
@@ -59,6 +70,7 @@ class UspSinglePortTab extends ConsumerWidget {
         child: Row(
           children: [
             AppSwitch(
+              identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
               onChanged: isSaving
@@ -73,8 +85,9 @@ class UspSinglePortTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(rule.displayName),
-                  AppText.bodySmall(
-                    rule.portSummary,
+                  MapsToRow(
+                    source: rule.portRangeDisplay,
+                    target: rule.internalTargetDisplay,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -87,11 +100,13 @@ class UspSinglePortTab extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
+              identifier: 'pf-edit-${rule.identifierKey}',
               onTap:
                   isSaving ? null : () => _showEditDialog(context, ref, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              identifier: 'pf-delete-${rule.identifierKey}',
               onTap: isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],
@@ -167,6 +182,7 @@ class UspSinglePortTab extends ConsumerWidget {
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
+          identifier: 'pf-delete-confirm',
           label: loc(context).delete,
           onTap: () => context.pop(true),
         ),

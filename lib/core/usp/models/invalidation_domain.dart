@@ -40,6 +40,8 @@ enum InvalidationDomain {
   /// Device.Ethernet.Interface. — Ethernet port status changes
   ethernetInterfaces,
 
-  /// Device.IP.Interface.2. — WAN status changes (Up/Down, IP address)
+  /// Device.IP.Interface.{wan}. — WAN status changes (Up/Down, IP address).
+  /// The WAN instance is resolved by Alias, not hardcoded — see
+  /// [wanInterfacePathProvider].
   wanStatus,
 }

@@ -5,6 +5,7 @@
 
 export 'block_constants.dart';
 export 'base_blocks.dart';
+export 'hero_blocks.dart';
 export 'metric_blocks.dart';
 export 'setting_blocks.dart';
 export 'list_blocks.dart';

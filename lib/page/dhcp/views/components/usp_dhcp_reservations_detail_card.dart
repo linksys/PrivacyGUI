@@ -31,13 +31,26 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleSmall(loc(context).dhcpReservations),
+              // Flexible, not a bare AppText (#1349). The title sized itself to
+              // its natural width against a rigid count-plus-button group, so
+              // neither child could yield: `ar` overflowed this row by 113px at a
+              // 320px screen and by 141px at 601px, where the page's two-column
+              // band hands the card a narrower box than the one-column band does.
+              // Flexible rather than Expanded so a short title still paints at its
+              // own width and `spaceBetween` keeps distributing the slack — the
+              // layout is unchanged wherever it already fitted, and wraps instead
+              // of overflowing where it did not.
+              Flexible(
+                child: AppText.titleSmall(loc(context).dhcpReservations),
+              ),
               Row(
                 children: [
                   AppText.labelLarge('${reservations.length}'),
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
+                    semanticLabel: loc(context).addDhcpReservation,
+                    identifier: 'dhcp-reservation-add',
                     onTap: isSaving ? null : () => _showAddDialog(context, ref),
                   ),
                 ],
@@ -62,6 +75,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     WidgetRef ref,
     DhcpReservationUIModel reservation,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: LayoutBlock(
@@ -71,6 +85,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             AppSwitch(
               value: reservation.enable,
               scale: 0.8,
+              identifier:
+                  'dhcp-reservation-enable-${reservation.identifierKey}',
               onChanged: isSaving
                   ? null
                   : (value) => ref
@@ -78,22 +94,46 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                       .toggleReservation(reservation, value),
             ),
             AppGap.md(),
-            Expanded(child: AppText.bodyMedium(reservation.mac)),
-            SizedBox(
-              width: context.colWidth(2),
-              child: AppText.bodySmall(
-                reservation.ip,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // MAC over IP rather than side by side: the row's flexible space is
+            // narrower than a full MAC plus an IP, so a side-by-side layout
+            // ellipsised the MAC — the row's only device identifier. The IP no
+            // longer uses `context.colWidth()`, which measures against the page
+            // grid: its 216dp on a 4-column mobile grid left the MAC column too
+            // narrow for one line, wrapping it one octet per line (#1140).
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(
+                    reservation.mac,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (reservation.ip.isNotEmpty)
+                    AppText.bodySmall(
+                      reservation.ip,
+                      color: colorScheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
               ),
             ),
+            AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit_outlined, size: 18),
+              semanticLabel: loc(context).editDhcpReservation,
+              identifier: 'dhcp-reservation-edit-${reservation.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, reservation),
             ),
+            AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              semanticLabel: loc(context).delete,
+              identifier:
+                  'dhcp-reservation-delete-${reservation.identifierKey}',
               onTap: isSaving
                   ? null
                   : () => _confirmDelete(context, ref, reservation),
@@ -190,10 +230,12 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       actions: [
         AppButton.text(
           label: loc(context).cancel,
+          identifier: 'dhcp-reservation-delete-cancel',
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
           label: loc(context).delete,
+          identifier: 'dhcp-reservation-delete-confirm',
           onTap: () => context.pop(true),
         ),
       ],

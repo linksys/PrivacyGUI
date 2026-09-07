@@ -540,7 +540,11 @@ void main() {
               original: _model(ipAddress: '192.168.1.1'),
               pending: _model(ipAddress: '192.168.2.1'),
             )
-            .then((_) => done = true, onError: (Object e) => error = e);
+            // then<void>: see the same call in
+            // usp_internet_settings_service_test.dart. Bare then infers R=bool
+            // from `done = true` and the Object-returning onError then fails at
+            // runtime instead of failing this test's assertion.
+            .then<void>((_) => done = true, onError: (Object e) => error = e);
 
         async.elapse(const Duration(seconds: 5));
 

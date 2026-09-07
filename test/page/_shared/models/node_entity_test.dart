@@ -89,8 +89,10 @@ void main() {
         expect(node.id, DevicesTestData.masterMac);
       });
 
-      test('isOnline always returns true', () {
-        final node = DevicesTestData.createMaster();
+      test('isOnline is always true (master stays online unconditionally)', () {
+        // The master is the data source itself; per #1430 AC1 its liveness is
+        // not gated on a DataElements agent match.
+        final node = DevicesTestData.createMaster(); // dataElementsId null
         expect(node.isOnline, isTrue);
       });
     });
@@ -149,6 +151,26 @@ void main() {
         // hostsDeviceId participates in Equatable props.
         expect(withUuid, equals(sameUuid));
         expect(withUuid, isNot(equals(otherUuid)));
+      });
+
+      test('cannot clear a nullable field (merges with `?? this`)', () {
+        // Pins the documented limitation: because every parameter is applied
+        // as `param ?? this.param`, passing null keeps the old value, so
+        // `copyWith(dataElementsId: null)` is indistinguishable from
+        // `copyWith()`. To clear a field, construct a new node directly.
+        final original =
+            DevicesTestData.createMaster(dataElementsId: 'DE-master');
+
+        expect(
+            original.copyWith(dataElementsId: null).dataElementsId, 'DE-master',
+            reason: 'passing null keeps the old value');
+        expect(original.copyWith().dataElementsId, 'DE-master');
+        // The only way to clear it is a fresh construction.
+        expect(
+          MasterNode(deviceId: original.deviceId, model: original.model)
+              .dataElementsId,
+          isNull,
+        );
       });
     });
   });
@@ -225,6 +247,27 @@ void main() {
         final copied = original.copyWith(backhaul: newBackhaul);
 
         expect(copied.isEthernetBackhaul, isTrue);
+      });
+
+      test('cannot clear a nullable field (merges with `?? this`)', () {
+        // Pins the documented limitation, same as MasterNode: `param ?? this`
+        // means passing null keeps the old value. To clear a field, construct
+        // a new node directly.
+        final original =
+            DevicesTestData.createWifiSlave(dataElementsId: 'DE-slave');
+
+        expect(
+            original.copyWith(dataElementsId: null).dataElementsId, 'DE-slave',
+            reason: 'passing null keeps the old value');
+        expect(original.copyWith().dataElementsId, 'DE-slave');
+        expect(
+          SlaveNode(
+            deviceId: original.deviceId,
+            model: original.model,
+            backhaul: original.backhaul,
+          ).dataElementsId,
+          isNull,
+        );
       });
     });
   });

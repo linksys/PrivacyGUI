@@ -64,7 +64,8 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provi
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
-import 'package:privacy_gui/page/unified_diagnostics/views/speed_test_view.dart';
+// Speed Test disabled: blocked by FW support (#857)
+// import 'package:privacy_gui/page/unified_diagnostics/views/speed_test_view.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 

@@ -42,6 +42,26 @@ class WidgetSpec {
   /// List of requirements for this widget to be available.
   final List<WidgetRequirement> requirements;
 
+  /// The narrowest width, in pixels, at which this card renders its full form.
+  ///
+  /// Below it the card degrades — compact down to 200px, popup below that. See
+  /// `CardDensity` and `doc/dashboard/dashboard_density_design.md` §2.1.
+  ///
+  /// Absent by default, and absent is a claim: *this card needs no degraded
+  /// form*. It is the correct value for a card that fits at its narrowest grid
+  /// realization — which #1240's measurement found to be all 18 registered cards,
+  /// and #1288's found to be a different question: `device_info`, `lan_info` and
+  /// `time_settings` fit and cannot be read, and are the first three specs to
+  /// declare a threshold. Each carries the measurement that produced its number.
+  ///
+  /// Pixels, never a column count: the same column count is a different width on
+  /// every screen size (§1.5), so a threshold expressed in columns does not name
+  /// the quantity it is trying to constrain. It lives here rather than on
+  /// `WidgetGridConstraints` because that type belongs to ui_kit_library, and
+  /// this is an app-level readability decision, not a grid constraint
+  /// (constitution Article XV).
+  final double? normalAbove;
+
   const WidgetSpec({
     required this.id,
     required this.displayName,
@@ -50,6 +70,7 @@ class WidgetSpec {
     this.defaultConstraints,
     this.canHide = true,
     this.requirements = const [],
+    this.normalAbove,
   });
 
   /// Whether this widget supports DisplayMode switching.
@@ -76,11 +97,17 @@ class WidgetSpec {
       other.id == id &&
       other.displayName == displayName &&
       other.canHide == canHide &&
+      other.normalAbove == normalAbove &&
       _listEquals(other.requirements, requirements);
 
   @override
-  int get hashCode =>
-      Object.hash(id, displayName, canHide, Object.hashAll(requirements));
+  int get hashCode => Object.hash(
+        id,
+        displayName,
+        canHide,
+        normalAbove,
+        Object.hashAll(requirements),
+      );
 
   bool _listEquals<T>(List<T>? a, List<T>? b) {
     if (a == null) return b == null;

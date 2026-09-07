@@ -39,6 +39,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return UiKitPageView.withSliver(
+      identifier: 'device-detail',
       scrollable: true,
       title: loc(context).deviceDetail,
       topbar: const PreferredSize(
@@ -676,6 +677,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             AppGap.md(),
             AppButton.primaryOutline(
               label: loc(context).releaseReservation,
+              identifier: 'device-reservation-release',
               isLoading: isLoading,
               onTap: isLoading
                   ? null
@@ -706,6 +708,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             AppGap.md(),
             AppButton.primary(
               label: loc(context).reserveIpAddress,
+              identifier: 'device-reservation-reserve',
               isLoading: isLoading,
               onTap: isLoading || !hasValidIpv4
                   ? null

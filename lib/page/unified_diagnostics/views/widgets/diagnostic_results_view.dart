@@ -68,12 +68,21 @@ class DiagnosticResultsView extends ConsumerWidget {
   }
 
   Future<void> _returnToDashboard(BuildContext context, WidgetRef ref) async {
-    // Await cancel so the shared diagnostic scope is released before the
-    // notifier auto-disposes — without this, a quick re-entry races the
-    // unsubscribe DELETE against the next acquire's subscribe POST.
-    await ref.read(unifiedDiagnosticsProvider.notifier).cancel();
-    if (!context.mounted) return;
-    context.goNamed(RouteNamed.uspDashboard);
+    // Release the shared diagnostic scope before the notifier auto-disposes.
+    // cancel() resets state synchronously and tears the scope down off the
+    // critical path (unawaited), so awaiting cancel() alone is not enough —
+    // we must also await teardownDone. Without this, a quick re-entry races
+    // the unsubscribe DELETE against the next acquire's subscribe POST.
+    //
+    // cancel() resets state to UnifiedDiagnosticsState(), which rebuilds and
+    // unmounts THIS widget. Since the awaits cross frame boundaries,
+    // context.mounted is false afterward and a context-based navigation would
+    // be silently dropped — so capture the router up front.
+    final router = GoRouter.of(context);
+    final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
+    await notifier.cancel();
+    await notifier.teardownDone;
+    router.goNamed(RouteNamed.uspDashboard);
   }
 }
 
@@ -202,16 +211,22 @@ class _ActionBar extends StatelessWidget {
       children: [
         Expanded(
           child: AppButton.secondary(
-              label: loc(context).runAgain, onTap: onRestart),
+              label: loc(context).runAgain,
+              identifier: 'diagnostic-run-again',
+              onTap: onRestart),
         ),
         AppGap.lg(),
         Expanded(
-          child: AppButton(label: loc(context).done, onTap: onDone),
+          child: AppButton(
+              label: loc(context).done,
+              identifier: 'diagnostic-done',
+              onTap: onDone),
         ),
       ],
     );
     final exportLink = AppButton.text(
       label: loc(context).exportDiagnosticsReport,
+      identifier: 'diagnostic-export',
       onTap: () => const DiagnosticReportService().share(state),
     );
     final stack = Column(
@@ -267,6 +282,7 @@ class _SummaryCard extends StatelessWidget {
               );
 
     return AppCard(
+      identifier: 'diagnostic-results',
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Row(

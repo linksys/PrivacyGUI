@@ -192,6 +192,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               ),
             ),
             AppSwitch(
+              identifier: 'dmz-enabled',
               value: pending.isEnabled,
               onChanged: disabled
                   ? null
@@ -226,6 +227,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: AppIpv4TextField(
               controller: _destIpController,
+              identifier: 'dmz-dest-ip',
               onChanged: (value) {
                 notifier.updateSetting((m) => m.copyWith(destIp: value));
               },
@@ -262,10 +264,12 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               itemHeight: 56,
               items: [
                 AppRadioListItem(
+                  identifier: 'dmz-source-any',
                   title: loc(context).anyAllSources,
                   value: DmzSourceType.any,
                 ),
                 AppRadioListItem(
+                  identifier: 'dmz-source-cidr',
                   title: loc(context).cidrRange,
                   expandedWidget: pending.sourceType == DmzSourceType.cidr
                       ? Container(
@@ -273,6 +277,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
                           child: AppTextFormField(
                             controller: _cidrController,
                             focusNode: _cidrFocus,
+                            identifier: 'dmz-source-cidr-ip',
                             hintText: 'e.g. 192.168.1.0/24',
                             onChanged: (value) {
                               notifier.updateSetting(

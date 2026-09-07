@@ -11,6 +11,7 @@ class AppMenuCard extends StatelessWidget {
     this.onTap,
     this.badges = const [],
     this.semanticLabel,
+    this.identifier,
   });
 
   final IconData? iconData;
@@ -19,6 +20,11 @@ class AppMenuCard extends StatelessWidget {
   final VoidCallback? onTap;
   final List<MenuBadge> badges;
   final String? semanticLabel;
+
+  /// Stable E2E test hook, mapped to the `flt-semantics-identifier` DOM attr
+  /// (silent to screen readers). Prefer this over [semanticLabel] for test
+  /// slugs so the accessible name stays the localized [title].
+  final String? identifier;
 
   @override
   Widget build(BuildContext context) {
@@ -82,9 +88,10 @@ class AppMenuCard extends StatelessWidget {
         ],
       ),
     );
-    if (semanticLabel != null) {
+    if (semanticLabel != null || identifier != null) {
       return Semantics(
         label: semanticLabel,
+        identifier: identifier,
         button: true,
         child: card,
       );

@@ -74,9 +74,12 @@ class Transforms {
   }
 
   static Uint8List hexDecode(String hex) {
-    final result = Uint8List(hex.length ~/ 2);
-    for (var i = 0; i < hex.length; i += 2) {
-      result[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
+    final clean = hex.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+    final even =
+        clean.length.isEven ? clean : clean.substring(0, clean.length - 1);
+    final result = Uint8List(even.length ~/ 2);
+    for (var i = 0; i < even.length; i += 2) {
+      result[i ~/ 2] = int.parse(even.substring(i, i + 2), radix: 16);
     }
     return result;
   }

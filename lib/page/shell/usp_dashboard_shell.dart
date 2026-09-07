@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
@@ -41,6 +41,27 @@ final uspMenuController = Provider((ref) => MenuController(
       navigatorKey: uspShellNavigatorKey,
       pathResolver: (type) => type.resolveUspPath(),
     ));
+
+/// Navigates to the target of a health-dialog action button.
+///
+/// `pushNamed`, not `push`: every dimension supplies a `RouteNamed.*` value, and
+/// `push` takes a *location*. go_router normalizes a location without a leading
+/// slash by prepending one, so `'uspFirewall'` becomes the root-level
+/// `/uspFirewall` — which matches nothing for the four targets registered as
+/// nested children (Firewall and DMZ under `/uspAdvancedSettings`, Internet
+/// Settings likewise, Unified Diagnostics under `/uspMenu`). The five top-level
+/// targets appeared to work only because a top-level route's name and its path
+/// happen to be the same string. The named API resolves through the route tree
+/// and builds the nested location, which is what the call site always meant
+/// (#1435).
+///
+/// A top-level function rather than a closure inside `build` so the verb is
+/// reachable from a test; the guard lives in
+/// `test/page/dashboard/mascot/health/health_dialog_navigation_test.dart`.
+void pushHealthActionTarget(BuildContext context, String routeName) {
+  if (!context.mounted) return;
+  context.pushNamed(routeName);
+}
 
 /// USP Dashboard shell — wraps USP child routes with a shared Scaffold.
 ///
@@ -109,12 +130,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     ref.watch(sseBootstrapProvider);
 
     // Build dark theme reactively from current design style
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
     final themeConfig = ref.watch(themeConfigProvider).valueOrNull;
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 
-    final darkTheme = buildDemoThemeData(
+    final darkTheme = buildStudioThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,
@@ -129,9 +150,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     final dialogProvider = ref.watch(mascotHealthDialogProvider(
       HealthDialogProviderArgs(
         widgetRef: ref,
-        onNavigate: (routeName) {
-          if (context.mounted) context.push(routeName);
-        },
+        onNavigate: (routeName) => pushHealthActionTarget(context, routeName),
         onOpenAiAssistant: () => openAiAssistantWithTransition(context),
         getFaqCategoryTitle: (category) => category.displayString(context),
         getFaqItemTitle: (item) => item.displayString(context),
@@ -189,21 +208,47 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
               child: ThemeStudioPanel(),
             ),
           ),
+        // The mascot is a sibling layer, not a wrapper, and it is deliberately
+        // last.
+        //
+        // Wrapping the shell in it crashed the app every time the Show Mascot
+        // switch was flipped. `widget.child` above is the `ShellRoute`'s
+        // Navigator, held by the `uspShellNavigatorKey` global key, so
+        // inserting or removing anything above it does not rebuild that
+        // subtree — the framework deactivates and reactivates it at its new
+        // depth. Reactivation re-attaches the Navigator's overlay children,
+        // and that `markNeedsLayout` lands inside a `LayoutBuilder`'s
+        // `performLayout`, which the framework asserts against: "A
+        // _RenderLayoutBuilder was mutated in _RenderLayoutBuilder.performLayout".
+        //
+        // As a sibling appended at the end, toggling it leaves every earlier
+        // child's index untouched, so the Navigator never moves. Staying a
+        // sibling is what keeps this fixed: reintroducing a wrapper around
+        // page content — mascot or otherwise — brings the crash back.
+        //
+        // `GlobalConfig.remote.mascotEnabled` excludes remote assistance and
+        // E2E mock builds (kept in sync with the General Settings toggle).
+        if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled)
+          Positioned.fill(
+            child: MascotOverlay(
+              controller: mascotController,
+              dialogProvider: dialogProvider,
+              spec: const MascotSpec(
+                renderer: LinksysMascotRenderer(),
+              ),
+              // Nothing to wrap now that the page is a sibling; the overlay
+              // still lays its own children out against the full shell.
+              //
+              // An empty box would not hit-test anyway, but `StackFit.expand`
+              // inside the overlay stretches whatever is here across the whole
+              // shell — so the pass-through is structural rather than a
+              // property of `SizedBox`, and survives someone putting a real
+              // widget here later.
+              child: const IgnorePointer(child: SizedBox.shrink()),
+            ),
+          ),
       ],
     );
-
-    // Wrap with MascotOverlay only if mascot is enabled, dashboard is ready,
-    // and NOT in remote mode (mascot hidden in remote assistance)
-    if (showMascot && isDashboardReady && !isRemoteMode) {
-      content = MascotOverlay(
-        controller: mascotController,
-        dialogProvider: dialogProvider,
-        spec: const MascotSpec(
-          renderer: LinksysMascotRenderer(),
-        ),
-        child: content,
-      );
-    }
 
     // Wrap with RemoteAssistanceSessionGuard for client-side session recovery
     // (shows blocking dialog if ACTIVE session exists after page refresh)

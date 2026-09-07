@@ -67,26 +67,32 @@ class UspAdvancedSettingsView extends StatelessWidget {
   List<AppSectionItemData> _buildItems(BuildContext context) {
     return [
       AppSectionItemData(
+        identifier: 'advanced-settings-internet',
         title: loc(context).internetSettings,
         onTap: () => context.pushNamed(RouteNamed.uspInternetSettings),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-local-network',
         title: loc(context).localNetwork,
         onTap: () => context.pushNamed(RouteNamed.uspLocalNetwork),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-firewall',
         title: loc(context).firewall,
         onTap: () => context.pushNamed(RouteNamed.uspFirewall),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-dmz',
         title: loc(context).dmz,
         onTap: () => context.pushNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-port-forwarding',
         title: loc(context).portForwarding,
         onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-static-routing',
         title: loc(context).staticRouting,
         onTap: () => context.pushNamed(RouteNamed.uspStaticRouting),
       ),
@@ -95,15 +101,21 @@ class UspAdvancedSettingsView extends StatelessWidget {
 
   Widget _buildCard(AppSectionItemData item) {
     return LayoutBlock(
+      identifier: item.identifier,
       onTap: item.onTap,
       padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.md,
         horizontal: AppSpacing.lg,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          AppText.bodyLarge(item.title),
+          // Expanded, not `spaceBetween` with an intrinsic text: the title is a
+          // localized string and the chevron is a fixed 20px, so at the 288px
+          // content box the row was over by 15px in fr_CA (#1380). Expanding the
+          // text right-aligns the chevron for free — the row is always full width —
+          // and turns the overflow into a wrap, which is guarded for readability in
+          // test/page/_shared/page_surface_overflow_test.dart.
+          Expanded(child: AppText.bodyLarge(item.title)),
           AppIcon.font(AppFontIcons.chevronRight, size: 20),
         ],
       ),

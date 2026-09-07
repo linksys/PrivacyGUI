@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
+    show ruleIdentifierKey;
 
 /// UI model for a single IPv6 port service rule.
 ///
@@ -67,6 +69,14 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
     if (endPort == -1 || endPort == startPort) return '$startPort';
     return '$startPort-$endPort';
   }
+
+  /// Stable, kebab-case key for E2E `identifier` hooks (e.g.
+  /// `ipv6-rule-edit-<key>`). Derived from the description ("Web Server" →
+  /// "web-server"); falls back to the saved instance number, then "unnamed",
+  /// so it is always non-empty. Distinct across rows only when a discriminating
+  /// tier (description slug or instance number) fires — never a positional
+  /// index, which would re-import the `.nth()` reorder trap.
+  String get identifierKey => ruleIdentifierKey(description, instancePath);
 
   @override
   List<Object?> get props => [

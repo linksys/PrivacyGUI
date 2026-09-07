@@ -127,17 +127,17 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                     _ChipGroupRow(
                       label: loc(context).node,
                       chips: options.nodes
-                          .map((n) => ChipItem(label: n.model))
+                          .map((n) => ChipItem(label: n.label))
                           .toList(),
                       selectedIndices: _nodeIdsToIndices(
                         filter.nodeIds,
-                        options.nodes.map((n) => n.deviceId).toList(),
+                        options.nodes.map((n) => n.id).toList(),
                       ),
                       onSelectionChanged: (indices) => ref
                           .read(deviceFilterConfigProvider.notifier)
                           .setNodeIds(_indicesToNodeIds(
                             indices,
-                            options.nodes.map((n) => n.deviceId).toList(),
+                            options.nodes.map((n) => n.id).toList(),
                           )),
                     ),
                   ],
@@ -488,6 +488,16 @@ class _ChipGroupRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final group = AppChipGroup(
+      chips: chips,
+      selectedIndices: selectedIndices,
+      selectionMode: ChipSelectionMode.multiple,
+      onSelectionChanged: onSelectionChanged,
+      wrap: true,
+      spacing: AppSpacing.xs,
+      size: ChipSize.compact,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -515,18 +525,7 @@ class _ChipGroupRow extends StatelessWidget {
         AppGap.xs(),
         IgnorePointer(
           ignoring: disabled,
-          child: Opacity(
-            opacity: disabled ? 0.5 : 1.0,
-            child: AppChipGroup(
-              chips: chips,
-              selectedIndices: selectedIndices,
-              selectionMode: ChipSelectionMode.multiple,
-              onSelectionChanged: onSelectionChanged,
-              wrap: true,
-              spacing: AppSpacing.xs,
-              size: ChipSize.compact,
-            ),
-          ),
+          child: disabled ? AppLowEmphasis(child: group) : group,
         ),
       ],
     );
@@ -624,23 +623,19 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
               ? loc(context).node
               : filter.nodeIds.length == 1
                   ? (options.nodes
-                          .where((n) => n.deviceId == filter.nodeIds.first)
+                          .where((n) => n.id == filter.nodeIds.first)
                           .firstOrNull
-                          ?.model ??
+                          ?.label ??
                       filter.nodeIds.first)
                   : '${loc(context).node} (${filter.nodeIds.length})',
           isActive: filter.nodeIds.isNotEmpty,
           onTap: () => _showMultiSelectPicker<String>(
             context: context,
             title: loc(context).node,
-            items: options.nodes.map((n) => n.deviceId).toList(),
+            items: options.nodes.map((n) => n.id).toList(),
             selected: filter.nodeIds,
             labelOf: (id) =>
-                options.nodes
-                    .where((n) => n.deviceId == id)
-                    .firstOrNull
-                    ?.model ??
-                id,
+                options.nodes.where((n) => n.id == id).firstOrNull?.label ?? id,
             onChanged: notifier.setNodeIds,
           ),
         ),
@@ -820,6 +815,6 @@ class _FilterChip extends StatelessWidget {
       selected: isActive,
       onSelected: disabled ? null : (_) => onTap(),
     );
-    return disabled ? Opacity(opacity: 0.5, child: chip) : chip;
+    return disabled ? AppLowEmphasis(child: chip) : chip;
   }
 }

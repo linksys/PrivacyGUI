@@ -17,7 +17,7 @@ import 'package:privacy_gui/theme/theme_source.dart';
 ///
 /// Usage:
 /// ```dart
-/// if (GlobalConfig.remote.showMascot) { ... }
+/// if (GlobalConfig.remote.mascotEnabled) { ... }
 /// if (GlobalConfig.feature.enableThemeStudio) { ... }
 /// if (GlobalConfig.device.supportIPv6) { ... }
 /// if (GlobalConfig.theme.source != null) { ... }
@@ -127,11 +127,14 @@ class RemoteConfig {
 
   // === UI restrictions ===
 
-  /// Whether to show Mascot
-  bool get showMascot => !isActive;
-
-  /// Whether to show Mascot toggle in settings
-  bool get showMascotSetting => !isActive;
+  /// Whether the mascot is enabled at all — gates BOTH the dashboard overlay
+  /// and its General Settings toggle, so the two never diverge (a visible
+  /// toggle for a hidden mascot would be a dead control).
+  ///
+  /// Disabled in remote assistance mode and in E2E mock builds (deterministic
+  /// rendering). The user's own on/off preference is a separate axis
+  /// (`appSettings.showMascot`) applied on top of this.
+  bool get mascotEnabled => !isActive && !BuildConfig.e2eMock;
 
   /// Whether to allow Dashboard editing
   bool get allowDashboardEdit => !isActive;

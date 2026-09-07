@@ -354,6 +354,75 @@ void main() {
       });
     });
 
+    // The four cells of the issue #1439 table: an online device with no
+    // resolvable parent (isUnattributed) vs. an online device with a real
+    // parent, crossed with no-node-filter vs. node-filter-active. Unattributed
+    // devices are never silently dropped (AC4 — decision: always shown).
+    group('Unattributed devices (issue #1439)', () {
+      final onlineUnattributed = ClientDevice(
+        mac: 'BB:BB:BB:BB:BB:01',
+        ip: '192.168.1.201',
+        hostName: 'OrphanPhone',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        wifi: const WifiConnectionInfo(band: '5GHz', ssidName: 'Home'),
+        // No resolvable parent node.
+        isUnattributed: true,
+      );
+      final onlineRealParent = wifiOnlineExcellent; // parentNodeId: NODE-01
+
+      test(
+          'no node filter: both an unattributed and a real-parent device '
+          'are shown', () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac));
+        expect(filtered.map((d) => d.mac), contains(onlineRealParent.mac));
+        container.dispose();
+      });
+
+      test(
+          'node filter active: the unattributed device is NOT dropped, '
+          'the real-parent device follows node membership', () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+        // Select NODE-02 — onlineRealParent is on NODE-01, so it drops out;
+        // the unattributed device must remain regardless of the selection.
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeIds({'NODE-02'});
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac),
+            reason: 'unattributed device must not be hidden by a node filter');
+        expect(filtered.any((d) => d.mac == onlineRealParent.mac), isFalse,
+            reason: 'real-parent device on NODE-01 is excluded by NODE-02');
+        container.dispose();
+      });
+
+      test('node filter active including the real parent: both shown',
+          () async {
+        final container = await createReadyContainer(
+          data: createDevicesData([onlineUnattributed, onlineRealParent]),
+        );
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeIds({'NODE-01'});
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.map((d) => d.mac), contains(onlineUnattributed.mac));
+        expect(filtered.map((d) => d.mac), contains(onlineRealParent.mac));
+        container.dispose();
+      });
+    });
+
     group('SSID / Band (multi-select OR)', () {
       test('single SSID filter shows matching WiFi devices', () async {
         final container = await createReadyContainer();
@@ -678,6 +747,70 @@ void main() {
       expect(options.bands, containsAll(['2.4GHz', '5GHz']));
       // wifiOnlineNullRssi + wifiOfflineHome both have null RSSI.
       expect(options.hasUnknownSignalDevices, isTrue);
+      container.dispose();
+    });
+
+    test(
+        'node option uses the display name, not the model — id stays the '
+        'DataElements node id (#1157)', () async {
+      // meshTopology.nodes (DataElements) carry only model names and no
+      // user-assigned name. The fully-built mesh nodes (data.nodes) carry the
+      // Hosts friendlyName, matched back via dataElementsId. The Node filter
+      // must show the friendlyName while keeping the DataElements id as the
+      // selection key.
+      final data = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
+            deviceId: 'AA:BB:CC:DD:EE:01', // built node id = MAC
+            dataElementsId: 'NODE-01', // maps back to meshTopology node
+            friendlyName: 'Living Room',
+            model: 'MR7500',
+            connectedClients: const [],
+          ),
+          slaves: [
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:02',
+              dataElementsId: 'NODE-02',
+              friendlyName: 'Bedroom',
+              model: 'MX5500',
+              connectedClients: const [],
+              backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            ),
+          ],
+        ),
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MasterNode(deviceId: 'NODE-01', model: 'MR7500'),
+            SlaveNode(
+              deviceId: 'NODE-02',
+              model: 'MX5500',
+              backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            ),
+          ],
+          clientToNodeMap: const {},
+        ),
+      );
+      final container = await createReadyContainer(data: data);
+
+      final nodes = container.read(deviceFilterOptionsProvider).nodes;
+
+      // Selection key stays the DataElements node id (matches parentNodeId).
+      expect(nodes.map((n) => n.id), ['NODE-01', 'NODE-02']);
+      // Label is the friendlyName, never the model.
+      expect(nodes.map((n) => n.label), ['Living Room', 'Bedroom']);
+      container.dispose();
+    });
+
+    test('node option falls back to model when no display name exists',
+        () async {
+      // Default test data: neither the built nodes nor meshTopology.nodes have
+      // a friendlyName/hostName, so the label falls back to the model.
+      final container = await createReadyContainer();
+
+      final nodes = container.read(deviceFilterOptionsProvider).nodes;
+
+      expect(nodes.map((n) => n.id), ['NODE-01', 'NODE-02']);
+      expect(nodes.map((n) => n.label), ['MR7500', 'MX5500']);
       container.dispose();
     });
 

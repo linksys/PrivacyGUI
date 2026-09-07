@@ -29,10 +29,17 @@ class UspPortTriggeringTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(
-                '${loc(context).portTriggering} (${rules.length})'),
+            // Same unconstrained header the page sweep caught on
+            // `usp_single_port_tab.dart:30` — see the comment there. This tab sits
+            // behind a `TabController` the sweep does not tap, so the constraint is
+            // here by inspection rather than by a red cell.
+            Expanded(
+              child: AppText.titleMedium(
+                  '${loc(context).portTriggering} (${rules.length})'),
+            ),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
+              identifier: 'pf-add-port-triggering',
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
@@ -58,6 +65,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
         child: Row(
           children: [
             AppSwitch(
+              identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
               onChanged: isSaving
@@ -72,8 +80,9 @@ class UspPortTriggeringTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(rule.displayName),
-                  AppText.bodySmall(
-                    rule.summary,
+                  MapsToRow(
+                    source: rule.triggerSummaryPart,
+                    target: rule.forwardSummaryPart,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -82,11 +91,13 @@ class UspPortTriggeringTab extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
+              identifier: 'pf-edit-${rule.identifierKey}',
               onTap:
                   isSaving ? null : () => _showEditDialog(context, ref, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              identifier: 'pf-delete-${rule.identifierKey}',
               onTap: isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],

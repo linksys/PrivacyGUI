@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
-import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 
 enum DeviceStatusFilter { all, online, offline }
@@ -111,8 +110,26 @@ class DeviceFilterConfig extends Equatable {
       ];
 }
 
+/// Lightweight option for the Node filter dimension.
+///
+/// [id] is the DataElements node ID used to match `ClientDevice.parentNodeId`
+/// during filtering; [label] is the user-facing node name (friendlyName /
+/// hostName, falling back to model). Keeping this as a dedicated view model —
+/// rather than passing a full [NodeEntity] — mirrors the other filter
+/// dimensions (ssids/bands) and lets the provider resolve the display name
+/// once, so the view never has to know how a node name is derived.
+class NodeFilterOption extends Equatable {
+  final String id;
+  final String label;
+
+  const NodeFilterOption({required this.id, required this.label});
+
+  @override
+  List<Object?> get props => [id, label];
+}
+
 class DeviceFilterOptions extends Equatable {
-  final List<NodeEntity> nodes;
+  final List<NodeFilterOption> nodes;
   final List<String> ssids;
   final List<String> bands;
   final List<DeviceCategory> deviceCategories;

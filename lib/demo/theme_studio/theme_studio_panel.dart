@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
@@ -26,7 +26,7 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -105,7 +105,7 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
             icon: AppIcon.font(Icons.refresh_outlined, size: 20),
             tooltip: 'Reset to Defaults',
             onTap: () {
-              ref.read(demoThemeConfigProvider.notifier).reset();
+              ref.read(themeStudioConfigProvider.notifier).reset();
             },
           ),
           AppIconButton.icon(
@@ -120,7 +120,7 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
     );
   }
 
-  Widget _buildTabContent(BuildContext context, DemoThemeConfig config) {
+  Widget _buildTabContent(BuildContext context, ThemeStudioConfig config) {
     switch (_selectedTabIndex) {
       case 0:
         return const DesignTab();
@@ -138,7 +138,7 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
   }
 
   void _showExportDialog(BuildContext context) {
-    final config = ref.read(demoThemeConfigProvider);
+    final config = ref.read(themeStudioConfigProvider);
     final jsonString =
         const JsonEncoder.withIndent('  ').convert(config.toJson());
     final dialogContext = routerKey.currentContext ?? context;
@@ -225,7 +225,7 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
                       try {
                         final json = jsonDecode(controller.text);
                         ref
-                            .read(demoThemeConfigProvider.notifier)
+                            .read(themeStudioConfigProvider.notifier)
                             .importConfig(json);
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(dialogContext).showSnackBar(

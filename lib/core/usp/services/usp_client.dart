@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
@@ -71,7 +73,7 @@ class Subscription<T> {
 
 /// Platform-agnostic Service for interacting with the router via USP.
 class UspClient {
-  late final UspClientWeb _client;
+  late final UspTransport _client;
   final String _baseUrl;
 
   UspClient(String baseUrl) : _baseUrl = baseUrl {
@@ -90,6 +92,17 @@ class UspClient {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
     _client = UspClientWeb.fromJsClient(jsClient);
+  }
+
+  /// Creates a UspClient backed by an arbitrary [UspTransport] instead of the
+  /// production WASM client. The transport seam lets an alternate data source
+  /// (demo mode's in-Dart model, an E2E harness) drive the exact same
+  /// [UspClient] behaviour without touching the production boot path. Not used
+  /// by production code — `UspClient(baseUrl)` / [fromBuilder] still build
+  /// `UspClientWeb`.
+  UspClient.withTransport(UspTransport transport, {String baseUrl = ''})
+      : _baseUrl = baseUrl {
+    _client = transport;
   }
 
   static final _random = Random();
@@ -284,28 +297,39 @@ class UspClient {
           '${_prettyMap(rawMap)}');
 
       if (rawMap.isEmpty) {
-        logger.w('$_tag$label GET response EMPTY for paths: $paths');
-      }
-
-      final Map<String, dynamic> result = {};
-
-      for (final entry in rawMap.entries) {
-        result[entry.key] = _coerceValue(entry.key, entry.value);
-      }
-
-      // Ensure all requested non-wildcard paths exist in the result to prevent
-      // Null Cast errors in codegen. Wildcard search paths (containing '*') are
-      // expanded by the router into concrete instance paths, so the original
-      // wildcard path won't appear in the response — skip those.
-      for (final path in paths) {
-        if (path.contains('*')) continue;
-        if (!result.containsKey(path)) {
-          logger.w('$_tag$label GET missing path in response: "$path"');
+        if (isTableQueryOnlyRequest(paths)) {
+          // A table query — a wildcard GET (e.g. Device.Firewall.DMZ.*) or an
+          // object/table path (e.g. Device.IP.Interface.1.IPv6Address.) — is
+          // expanded by the router across the discovered instances of a
+          // multi-instance table. When that table has zero instances the
+          // response is legitimately empty — the generated model iterates the
+          // (empty) instance set and returns an empty list, so this is a normal
+          // "no rows" outcome, not a fault. Log it at debug so it does not
+          // drown real warnings.
+          logger.d('$_tag$label GET empty (table query, no instances): '
+              '$paths');
+        } else {
+          // At least one concrete path was requested — an empty response there
+          // is genuinely unexpected and worth a warning.
+          logger.w('$_tag$label GET response EMPTY for paths: $paths');
         }
-        result.putIfAbsent(path, () => null);
+        // Every requested path is absent, but the single warning above already
+        // says so. Skip the per-path missing warnings (they would just repeat
+        // the same paths — e.g. 9 lines for lan_network_info's concrete GET).
+        return normalizeGetResponse(paths, rawMap);
       }
 
-      return result;
+      // Non-empty (possibly partial) response: collect any absent concrete
+      // leaves and emit ONE aggregated warning rather than one per path, so a
+      // genuine partial-response warning is not diluted into a wall of lines.
+      final missing = <String>[];
+      final normalized =
+          normalizeGetResponse(paths, rawMap, onMissingPath: missing.add);
+      if (missing.isNotEmpty) {
+        logger.w('$_tag$label GET missing ${missing.length} path(s) in '
+            'response: $missing');
+      }
+      return normalized;
     } catch (e) {
       sw.stop();
       final label = _idLabel(id);
@@ -314,13 +338,75 @@ class UspClient {
     }
   }
 
+  /// Normalizes a raw USP GET response into the map consumed by codegen models.
+  ///
+  /// Two responsibilities, kept as pure logic so it is unit-testable without a
+  /// live WASM client:
+  /// 1. Coerce every returned value via [_coerceValue].
+  /// 2. Warn (via [onMissingPath]) for each requested non-wildcard path absent
+  ///    from the response — but deliberately do NOT back-fill it. Back-filling
+  ///    absent paths with null used to silently suppress the codegen
+  ///    required-leaf check (code 9998 → ServiceErrorView), because it flipped
+  ///    `containsKey` to true without preventing any Null Cast (the real guard
+  ///    is the `?? ''` on each codegen assignment). Leaving the key absent lets
+  ///    the required-leaf contract fire as designed (#1184).
+  ///
+  /// Wildcard search paths (containing '*') and object/table paths (ending in
+  /// '.', e.g. Device.IP.Interface.1.IPv6Address.) are expanded by the router
+  /// into concrete instance paths, so the original requested key never appears
+  /// in the response. Both are skipped by the missing-path warning — only a
+  /// requested *concrete leaf* that is absent is genuinely missing.
+  @visibleForTesting
+  static Map<String, dynamic> normalizeGetResponse(
+    List<String> paths,
+    Map<String, String?> rawMap, {
+    void Function(String path)? onMissingPath,
+  }) {
+    final Map<String, dynamic> result = {};
+    for (final entry in rawMap.entries) {
+      result[entry.key] = _coerceValue(entry.key, entry.value);
+    }
+    for (final path in paths) {
+      if (_isTableExpandedPath(path)) continue;
+      if (!result.containsKey(path)) {
+        onMissingPath?.call(path);
+      }
+    }
+    return result;
+  }
+
+  /// Whether a requested path is one the router expands into concrete instance
+  /// paths, so the requested key itself never appears verbatim in the response.
+  ///
+  /// Two shapes qualify, and they must be treated identically everywhere:
+  /// - a wildcard search path (contains '*', e.g. Device.Firewall.DMZ.*)
+  /// - an object/table path (ends in '.', e.g. Device.IP.Interface.1.IPv6Address.)
+  ///
+  /// Both target a multi-instance set; an absent requested key is expected, not
+  /// missing, and an empty response means the set has zero rows — not a fault.
+  static bool _isTableExpandedPath(String path) =>
+      path.contains('*') || path.endsWith('.');
+
+  /// Whether every requested path is a table query the router expands
+  /// (see [_isTableExpandedPath]).
+  ///
+  /// When such a query hits a table with zero instances the response is
+  /// legitimately empty (the generated model returns an empty list), so an
+  /// empty response to a table-query-only request is a normal "no rows"
+  /// outcome rather than a fault. Callers use this to decide whether an empty
+  /// GET response deserves a warning. An empty [paths] list is not a table
+  /// query.
+  @visibleForTesting
+  static bool isTableQueryOnlyRequest(List<String> paths) =>
+      paths.isNotEmpty && paths.every(_isTableExpandedPath);
+
   /// Coerce a raw string value from USP into the appropriate Dart type.
   /// - "true" / "false" →bool (any path)
   /// - "1" / "0" →bool (for known boolean suffixes: Enable, Active)
   /// - null →null (key absent from response)
   /// - Empty string →'' (preserve String type for generated code)
   /// - Everything else stays as String (generated code handles int parsing)
-  dynamic _coerceValue(String path, String? raw) {
+  static dynamic _coerceValue(String path, String? raw) {
     if (raw == null) return null;
     if (raw.isEmpty) return '';
 
@@ -694,20 +780,19 @@ class UspClient {
           {'path': objectPath, 'params': <String, dynamic>{}}
         ]));
 
-    // Step 3: Resolve instance path from structured result
+    // Step 3: Resolve instance path from structured result.
+    // add() returns the WASM v0.11.0 unified shape
+    // {success, result: {data: {instances: [<path>, ...]}}}. Parse it via the
+    // canonical UspResultParser rather than reading keys by hand (the old
+    // addResult['results'] / createdInstances path was the pre-unified shape and
+    // is always null now → every subscription fell through to the GET-diff).
     String instancePath;
 
-    // Try to extract created path from structured response
     String? createdPath;
-    final results = addResult['results'] as List? ?? [];
-    if (results.isNotEmpty) {
-      final firstResult = results.first as Map<String, dynamic>? ?? {};
-      final createdInstances = firstResult['createdInstances'] as List? ?? [];
-      if (createdInstances.isNotEmpty) {
-        final firstInstance =
-            createdInstances.first as Map<String, dynamic>? ?? {};
-        createdPath = firstInstance['affectedPath'] as String?;
-      }
+    final parsedAdd = UspResultParser.parseAddResult(addResult);
+    if (parsedAdd is UspSuccess<List<String>>) {
+      final created = parsedAdd.allCreatedInstances;
+      if (created.isNotEmpty) createdPath = created.first.affectedPath;
     }
 
     if (createdPath != null && createdPath.startsWith('Device.')) {

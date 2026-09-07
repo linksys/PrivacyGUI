@@ -69,15 +69,34 @@ const officialWebConutryMapping = {
   'zh': 'cn',
 };
 
-void gotoOfficialWebUrl(String url, {Locale? locale}) {
-  late final String websiteUrl;
-  if (url.startsWith(officialWebHost) && locale != null) {
-    final path = url.substring(officialWebHost.length);
-    websiteUrl =
-        '$officialWebHost/${locale.countryCode?.toLowerCase() ?? officialWebConutryMapping[locale.languageCode]?.toLowerCase()}$path';
-  } else {
-    websiteUrl = url;
+/// The URL [gotoOfficialWebUrl] would open for [url] under [locale].
+///
+/// Split out from [gotoOfficialWebUrl] so this hop can be tested: `openUrl` is
+/// chosen at compile time by conditional export, so it cannot be injected and
+/// the side-effecting version cannot be asserted on.
+///
+/// Only `store.linksys.com` links get a country segment. Every other host —
+/// `www.linksys.com` for the legal pages, `support.linksys.com` for FAQ
+/// articles — is returned untouched, which is why the locale a caller passes
+/// reaches the network for two links only ([linkSupport] and
+/// [linksysCertExplanation]).
+///
+/// A [locale] of null leaves the URL bare. Nothing in the app passes null any
+/// more — every caller reads `activeLocaleProvider`, which cannot return it —
+/// but the parameter stays nullable because the un-prefixed URL is still a
+/// valid destination and callers outside the locale-aware paths use it.
+String officialWebUrlFor(String url, {Locale? locale}) {
+  if (!url.startsWith(officialWebHost) || locale == null) {
+    return url;
   }
+  final path = url.substring(officialWebHost.length);
+  final country = locale.countryCode?.toLowerCase() ??
+      officialWebConutryMapping[locale.languageCode]?.toLowerCase();
+  return '$officialWebHost/$country$path';
+}
+
+void gotoOfficialWebUrl(String url, {Locale? locale}) {
+  final websiteUrl = officialWebUrlFor(url, locale: locale);
   logger.i('[App]: open web url: $websiteUrl');
   openUrl(websiteUrl);
 }

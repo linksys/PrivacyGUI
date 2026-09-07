@@ -17,34 +17,51 @@ class RoutePath {
   static const dashboardAiAssistant = '/dashboardAiAssistant';
 
   /// USP dashboard (standalone, no JNAP polling dependency)
+  ///
+  /// These are the `path:` argument of the USP route tree and nothing else, so
+  /// the leading slash carries meaning: **absolute for a shell child, relative
+  /// for a nested child**. go_router does not enforce it — `concatenatePaths`
+  /// splits on `/` and drops empty segments, so an absolute path on a nested
+  /// route is silently flattened into its parent's location and the declaration
+  /// reads root-level while being anything but (#1434).
+  ///
+  /// That is not a cosmetic distinction. A root-level string for a nested route
+  /// looks like a valid location, and one caller passed it to `context.push`,
+  /// where it matched nothing and the button silently did nothing (#1435).
+  ///
+  /// Every location this produces is pinned in
+  /// `test/route/usp_navigation_invariants_test.dart`, which walks the real tree
+  /// and fails if a path's slash disagrees with its nesting.
   static const uspDashboard = '/uspDashboard';
   static const uspMenu = '/uspMenu';
   static const uspSupport = '/uspSupport';
   static const uspDeviceList = '/uspDeviceList';
-  static const uspDeviceDetail = 'uspDeviceDetail';
   static const uspTopology = '/uspTopology';
-  static const uspNodeDetail = 'uspNodeDetail';
   static const uspInstantSafety = '/uspInstantSafety';
   static const uspInstantPrivacy = '/uspInstantPrivacy';
   static const uspAdmin = '/uspAdmin';
   static const uspDhcpDetail = '/uspDhcpDetail';
-  static const uspPortForwardingDetail = '/uspPortForwardingDetail';
   static const uspSystemLog = '/uspSystemLog';
-  static const uspFirewall = '/uspFirewall';
-  static const uspDmz = '/uspDmz';
-  static const uspLocalNetwork = '/uspLocalNetwork';
-  static const uspStaticRouting = '/uspStaticRouting';
   static const uspAdvancedSettings = '/uspAdvancedSettings';
-  static const uspIpv6PortService = '/uspIpv6PortService';
   static const uspStatistics = '/uspStatistics';
   static const uspTestConsole = '/uspTestConsole';
-  static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = '/uspWifiSettings';
   static const uspApps = '/uspApps';
-  static const uspUnifiedDiagnostics = '/uspUnifiedDiagnostics';
   static const uspSpeedTest = '/uspSpeedTest';
   static const uspFirmwareUpdate = '/uspFirmwareUpdate';
   static const uspAiAssistant = '/uspAiAssistant';
+
+  /// Nested USP children — relative, so the parent supplies the prefix.
+  static const uspDeviceDetail = 'uspDeviceDetail';
+  static const uspNodeDetail = 'uspNodeDetail';
+  static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
+  static const uspInternetSettings = 'uspInternetSettings';
+  static const uspLocalNetwork = 'uspLocalNetwork';
+  static const uspFirewall = 'uspFirewall';
+  static const uspDmz = 'uspDmz';
+  static const uspPortForwardingDetail = 'uspPortForwardingDetail';
+  static const uspStaticRouting = 'uspStaticRouting';
+  static const uspIpv6PortService = 'uspIpv6PortService';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';

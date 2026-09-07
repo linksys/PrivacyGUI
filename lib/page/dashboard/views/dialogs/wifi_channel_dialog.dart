@@ -115,6 +115,10 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
             value: _selected,
             label: loc(context).channel,
             itemAsString: _labelFor,
+            identifier: 'wifi-channel',
+            itemIdentifier: (value) => value == _autoValue
+                ? 'wifi-channel-auto'
+                : 'wifi-channel-$value',
             // 2.26.1: onChanged==null disables the control (tap gesture gated). AC3.
             onChanged: dropdownEnabled
                 ? (value) {
@@ -133,13 +137,15 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'wifi-channel-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _onApply,
-          child: Text(loc(context).apply),
+        AppButton.primary(
+          identifier: 'wifi-channel-apply',
+          label: loc(context).apply,
+          onTap: _onApply,
         ),
       ],
     );

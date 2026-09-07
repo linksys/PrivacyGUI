@@ -4,16 +4,23 @@ import 'dart:io';
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'golden_diff_record.dart';
+import 'golden_interactions.dart';
 import 'golden_test_config.dart';
-import 'mocks/mock_common.dart';
+import '../../mocks/provider_overrides/mock_common.dart';
+import 'overflow_record.dart';
+
+// Re-export so every test file that imports golden_runner.dart gets the shared
+// interaction helpers (switchToTab, settleWithTimeout) without a separate line.
+export 'golden_interactions.dart';
 
 /// Reads --dart-define=locales and overrides the config's locale list.
 /// Returns config locales if no dart-define is provided.
@@ -22,7 +29,13 @@ List<Locale> _resolveLocales(GoldenTestConfig config) {
   if (envLocales.isEmpty) return config.locales;
   return envLocales.split(',').map((s) {
     final parts = s.trim().split('_');
-    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+    // Normalize the country code to uppercase so it forms a standard locale
+    // (e.g. 'es_ar' -> Locale('es', 'AR')). Flutter's localizations assert on
+    // non-standard forms like 'es_ar', and this matches the generated
+    // supportedLocales (Locale('es', 'AR'), Locale('zh', 'TW'), ...).
+    return parts.length > 1
+        ? Locale(parts[0], parts[1].toUpperCase())
+        : Locale(parts[0]);
   }).toList();
 }
 
@@ -57,7 +70,12 @@ void runViewGoldenTests(GoldenTestConfig config) {
   final devices = _resolveDevices(config);
 
   group('${config.viewName} golden tests', () {
-    tearDownAll(() => _writeOverflowReport());
+    tearDownAll(() {
+      _writeOverflowReport();
+      // Alongside the overflow report and for the same reason: a number the run
+      // already computed, kept where a measurement can read it (#1475).
+      writeGoldenDiffReport();
+    });
 
     for (final stateEntry in config.states.entries) {
       for (final device in devices) {
@@ -74,7 +92,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
             );
 
             goldenTest(
-              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
               fileName: name,
               constraints: BoxConstraints.expand(
                 width: effectiveSize.width,
@@ -82,11 +100,20 @@ void runViewGoldenTests(GoldenTestConfig config) {
               ),
               pumpBeforeTest: (tester) async {
                 await _precacheIfNeeded(tester, config);
-                await _settleWithTimeout(tester);
+                await settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
                 _currentGoldenName = name;
+                // Here and not in a setUp: alchemist installs its own
+                // comparator inside `goldenTestRunner.run` and restores the
+                // original in that method's `finally`, so this is the one point
+                // where the comparator for this cell can be wrapped (#1475).
+                installGoldenDiffRecorder(
+                  golden: name,
+                  width: effectiveSize.width.toInt(),
+                  height: effectiveSize.height.toInt(),
+                );
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
@@ -132,7 +159,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               );
 
               goldenTest(
-                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
                 fileName: name,
                 constraints: BoxConstraints.expand(
                   width: effectiveSize.width,
@@ -140,13 +167,18 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 ),
                 pumpBeforeTest: (tester) async {
                   await _precacheIfNeeded(tester, config);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                   await interactionEntry.value.steps(tester);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
                   _currentGoldenName = name;
+                  installGoldenDiffRecorder(
+                    golden: name,
+                    width: effectiveSize.width.toInt(),
+                    height: effectiveSize.height.toInt(),
+                  );
                   await tester.binding.setSurfaceSize(effectiveSize);
                   tester.view.physicalSize = effectiveSize;
                   tester.view.devicePixelRatio = 1.0;
@@ -178,23 +210,6 @@ void runViewGoldenTests(GoldenTestConfig config) {
   });
 }
 
-/// Pumps until no pending frames or timeout — whichever comes first.
-/// Unlike raw pumpAndSettle, this won't fail on infinite animations
-/// (e.g., spinners frozen by TickerMode or looping AnimationControllers).
-Future<void> _settleWithTimeout(WidgetTester tester) async {
-  try {
-    await tester.pumpAndSettle(
-      const Duration(milliseconds: 50),
-      EnginePhase.sendSemanticsUpdate,
-      const Duration(milliseconds: 500),
-    );
-  } on FlutterError {
-    // pumpAndSettle timed out — widget tree has infinite animations.
-    // The TickerMode freeze makes this safe; pump one last frame and move on.
-    await tester.pump();
-  }
-}
-
 /// Precaches images in a real async zone so asset resolution completes.
 Future<void> _precacheIfNeeded(
     WidgetTester tester, GoldenTestConfig config) async {
@@ -205,6 +220,19 @@ Future<void> _precacheIfNeeded(
       await precacheImage(image, element);
     }
   });
+}
+
+/// Builds the locale tag used in golden file names and test descriptions.
+///
+/// Regional variants keep their country code so they don't collide with the
+/// base language (e.g. 'es' vs 'es_AR', 'zh' vs 'zh_TW'). The country code is
+/// joined with '_' — never '-' — because the report parser splits file names
+/// on '-'. This matches Flutter's `Locale.toString()` and the ARB naming.
+String _localeTag(Locale locale) {
+  final country = locale.countryCode;
+  return country == null || country.isEmpty
+      ? locale.languageCode
+      : '${locale.languageCode}_$country';
 }
 
 /// Generates the golden file name.
@@ -218,7 +246,7 @@ String _goldenFileName(
   Locale locale,
   Brightness theme,
 ) {
-  final base = '$viewName-$stateKey-${device.name}-${locale.languageCode}';
+  final base = '$viewName-$stateKey-${device.name}-${_localeTag(locale)}';
   if (theme == Brightness.dark) {
     return '$base-dark';
   }
@@ -304,18 +332,41 @@ Widget _buildGoldenWidget(
     child: _PackageInfoStub(
       child: ProviderScope(
         overrides: overrides,
-        child: Portal(
-          child: MaterialApp.router(
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: themeConfig.createLightTheme(),
-            darkTheme: themeConfig.createDarkTheme(),
-            themeMode: brightness == Brightness.dark
-                ? ThemeMode.dark
-                : ThemeMode.light,
-            routerConfig: router,
+        child: MaterialApp.router(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          // Same call `lib/app.dart` makes, not a copy of its body (#1285).
+          // A no-op for the default `en` locale set — `withFallbackFont`
+          // returns the theme itself where the primary font covers the
+          // script — so no existing baseline moves. It matters when a run
+          // opts into a non-Latin locale via `--dart-define=locales`: raw
+          // `Text` reads the family off `ThemeData.textTheme`, and without
+          // this it would shape CJK from a system font while `AppText` next
+          // to it used the bundled subset (ui_kit's own per-locale
+          // injection, installed by `loadAppFonts`).
+          theme: FallbackFontResolver.withFallbackFont(
+            themeConfig.createLightTheme(),
+            locale,
           ),
+          darkTheme: FallbackFontResolver.withFallbackFont(
+            themeConfig.createDarkTheme(),
+            locale,
+          ),
+          themeMode:
+              brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+          // Force "reduce motion" for every golden so non-deterministic /
+          // looping animations (e.g. dashboard JiggleShake) render at a
+          // fixed, static frame. Applied inside the app via builder so the
+          // views under test actually observe disableAnimations: true
+          // (a MediaQuery wrapped outside MaterialApp would be overridden).
+          // This does NOT touch the global diffThreshold; it only removes the
+          // animation source of flakiness.
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          routerConfig: router,
         ),
       ),
     ),
@@ -325,7 +376,12 @@ Widget _buildGoldenWidget(
 /// Tracks which golden file is currently being rendered.
 String _currentGoldenName = '';
 
-/// Collected overflow warnings: golden filename → error message.
+/// Collected overflow records, one per reported error.
+///
+/// Shape is defined by [buildOverflowRecord]: the golden name, the raw message,
+/// and the parsed side/pixels/widget/file/line. Flutter reports overflow per
+/// RenderObject, so sibling rows built from a list produce duplicate records;
+/// the report generators collapse them.
 final List<Map<String, String>> _overflowWarnings = [];
 
 /// Suppresses RenderFlex overflow errors during golden tests but records them.
@@ -339,10 +395,15 @@ void _suppressOverflowErrors() {
   FlutterError.onError = (details) {
     final isOverflow = details.exceptionAsString().contains('overflowed');
     if (isOverflow) {
-      _overflowWarnings.add({
-        'golden': _currentGoldenName,
-        'message': details.exceptionAsString(),
-      });
+      // Record the direction, amount and source location alongside the raw
+      // message so the reports can say where and by how much, not just that it
+      // happened (#1197). The test process runs from the app root, which is why
+      // the relative paths in _writeOverflowReport resolve.
+      _overflowWarnings.add(buildOverflowRecord(
+        goldenName: _currentGoldenName,
+        details: details,
+        runDirectory: Directory.current.path,
+      ));
       return;
     }
     originalHandler?.call(details);
@@ -350,17 +411,72 @@ void _suppressOverflowErrors() {
 }
 
 /// Writes collected overflow warnings to JSON for report consumption.
+///
+/// Shape is `{records: [...], logs: [...]}` with each record referring to its
+/// diagnostics dump by `logIndex`. The dumps are 2-4KB each and one culprit is
+/// reported in every golden that renders it, so storing them inline made 76% of
+/// the file duplicated text — around 8MB on a full run.
+///
+/// Appends, because each test suite writes at its own tearDownAll. A file left
+/// by a run predating the log table is read back in its flat-list form so the
+/// records already collected are not dropped.
+///
+/// The read-modify-write is not atomic and not locked, and `flutter test` runs
+/// suites concurrently — so in principle two suites can both read the same
+/// snapshot and the second write can drop the first's records, taking its
+/// `logIndex` values with it. Measured rather than assumed: four full runs of the
+/// 32 golden suites (three concurrent, one `--concurrency=1`) all produced the
+/// same 40 records over 21 goldens with every `logIndex` in range, and no golden
+/// present in the serial run was missing from a concurrent one. The window is
+/// narrow because only 7 suites write at all and the write is one small
+/// `writeAsStringSync`. Left as-is deliberately: this is a diagnostic aside, and
+/// a lost record costs a line in a report rather than a wrong test result. If it
+/// ever does show up, the fix is per-suite shard files merged by the loader, or a
+/// lock plus temp-and-rename.
 void _writeOverflowReport() {
   if (_overflowWarnings.isEmpty) return;
   final dir = Directory('goldens');
   if (!dir.existsSync()) dir.createSync(recursive: true);
   final file = File('goldens/overflow_warnings.json');
-  final existing = file.existsSync()
-      ? List<Map<String, dynamic>>.from(
-          jsonDecode(file.readAsStringSync()) as List)
-      : <Map<String, dynamic>>[];
-  existing.addAll(_overflowWarnings);
-  file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(existing));
+
+  final records = <Map<String, dynamic>>[];
+  final logs = <String>[];
+  final logIndexes = <String, int>{};
+
+  if (file.existsSync()) {
+    try {
+      final decoded = jsonDecode(file.readAsStringSync());
+      if (decoded is Map) {
+        records.addAll(List<Map<String, dynamic>>.from(
+            decoded['records'] as List? ?? const []));
+        logs.addAll(List<String>.from(decoded['logs'] as List? ?? const []));
+        // Keep the first index for a repeated log so existing records' indexes
+        // stay valid.
+        for (var i = 0; i < logs.length; i++) {
+          logIndexes[logs[i]] ??= i;
+        }
+      } else {
+        records.addAll(List<Map<String, dynamic>>.from(decoded as List));
+      }
+    } catch (_) {
+      // A corrupt file must not take the run down; start the report over.
+    }
+  }
+
+  for (final warning in _overflowWarnings) {
+    final record = Map<String, dynamic>.from(warning);
+    final log = record.remove('log');
+    if (log is String && log.isNotEmpty) {
+      record['logIndex'] = logIndexes.putIfAbsent(log, () {
+        logs.add(log);
+        return logs.length - 1;
+      });
+    }
+    records.add(record);
+  }
+
+  file.writeAsStringSync(
+      JsonEncoder.withIndent('  ').convert({'records': records, 'logs': logs}));
   _overflowWarnings.clear();
 }
 

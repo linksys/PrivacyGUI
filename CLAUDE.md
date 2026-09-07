@@ -89,6 +89,7 @@ lib/page/               # Feature-specific pages and screens
 ### Testing Structure
 - **Unit Tests**: `test/` directory with comprehensive coverage
 - **Test Data Builders**: `test/mocks/test_data/[feature]_test_data.dart` — centralized USP codegen model factories (constitution Article I §1.6.2)
+- **Composed Scenes**: `test/mocks/test_data/scenes/[feature]_scene_data.dart` — top-level finals holding whole composed states, ready to hand to a provider override; what goldens, density tests and layout-gate cells pump a real page with. Distinct from the builders above, and named `_scene_data` rather than `_test_data` so the two cannot be confused by autocomplete: importing the wrong one yields a fixture that does not match its provider overrides, which renders `AppLoader` instead of the page.
 - **Golden Tests**: Screenshot testing with localization support
 - **Test Categories**: Tagged system (golden, loc, ui, functional)
 
@@ -105,7 +106,7 @@ lib/page/               # Feature-specific pages and screens
 - `ui_kit_library`: Shared UI components from external Git repository
 
 ### UI Component Policy
-**UI Kit First**: all UI components MUST be searched for in `ui_kit_library` first. If a needed component is missing, stop and ask the user via AskUserQuestion — do not implement it yourself. See constitution Article XIV.
+**UI Kit First**: all UI components MUST be searched for in `ui_kit_library` first. If a needed component is missing, stop and ask the user via AskUserQuestion — do not implement it yourself. See constitution Article XV.
 
 ### Testing Framework
 - `mocktail`: Mocking for unit tests (primary, per constitution Article I §1.6.1)
@@ -179,5 +180,19 @@ lib/page/               # Feature-specific pages and screens
 - Run screenshot tests to validate UI layout
 - Test across different locales using test scripts
 
-## Vendored USP Artifacts
-The `tools/usp-codegen` binary and `web/usp_client.{js,wasm}` are built from `linksys/usp_framework` and checked in. See `doc/usp/vendored-artifacts.md` for the version manifest and update procedure before bumping any of them.
+## Vendored Artifacts
+Two manifests, two update procedures. Read the relevant one **before** bumping anything it covers.
+
+- **USP** — `tools/usp-codegen`, `web/usp_client.{js,d.ts}` and `web/usp_client_bg.wasm`, built from `linksys/usp_framework`. See `doc/usp/vendored-artifacts.md`.
+- **CanvasKit** — `web/assets/canvaskit.{js,wasm}`, hand-copied from the pinned Flutter SDK and the only CanvasKit that ever executes (`flutter_bootstrap.js` pins `canvasKitBaseUrl: "./assets/"`). See `doc/web/vendored-canvaskit.md`. The two files are version-locked to each other: copy both or neither.
+
+## Flutter SDK Pin
+**3.47.2**, and `test/web/canvaskit_variant_test.dart` asserts every copy of that number agrees. Three of them decide behaviour — `.fvmrc` (local), `flutter-version:` in `.github/actions/setup/action.yml` (CI), and the test's own constants — and two are prose that goes stale silently, so the test greps them too: **this paragraph** and the header comment in `build_web.sh`. The literal `3.47.2` above is therefore load-bearing; editing it without editing the test is a red suite, which is the intended way to find out.
+
+A sixth check is conditional rather than declared: when `bin/cache/flutter.version.json` is readable, the test also compares the **running** SDK's version and `engineRevision` against the pin. That one is diagnosing your shell, not the repo — a failure there means you invoked an unpinned `flutter`, so re-run under `fvm` rather than re-vendoring anything.
+
+Moving the pin means re-vendoring CanvasKit and touching all of the above — see the update procedure in `doc/web/vendored-canvaskit.md`.
+
+All three digits, including the hotfix. Every 3.47 hotfix ships a different engine and a different `canvaskit.wasm`, so a `3.47` pin drifts across CanvasKit versions while looking pinned; the guard test rejects a version that is not `major.minor.patch`.
+
+Use `fvm flutter` / `fvm dart` explicitly for anything whose result you intend to trust. A bare `flutter` runs whatever SDK is on `PATH`, which is not necessarily the pinned one — and if a shell alias is what makes bare `flutter` work interactively, that alias does not survive into `xargs` or any non-interactive shell, so the command silently runs a different SDK and reports a confidently wrong verdict. `run_tests.sh` and `build_web.sh` already resolve this themselves.

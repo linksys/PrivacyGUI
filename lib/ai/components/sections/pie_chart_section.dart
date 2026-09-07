@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Pie chart section for displaying proportional data.
@@ -31,12 +32,12 @@ class PieChartSection extends StatelessWidget {
     if (sections.isEmpty) {
       return SizedBox(
         height: height,
-        child: Center(child: AppText.body('No data available')),
+        child: Center(child: AppText.body(loc(context).noDataAvailable)),
       );
     }
 
     final chartSections = sections.map((s) {
-      final label = s['label'] as String? ?? 'Section';
+      final label = s['label'] as String? ?? loc(context).section;
       final value = (s['value'] as num?)?.toDouble() ?? 0;
       final color = s['color'] as Color?;
       return AppPieSection(

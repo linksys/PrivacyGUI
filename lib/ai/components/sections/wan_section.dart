@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import '../ai_info_row.dart';
 
 /// WAN connection status section.
@@ -24,12 +25,13 @@ class WanSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AiInfoRow(label: 'WAN Status', value: wanStatus),
+        AiInfoRow(label: loc(context).wanStatus, value: wanStatus),
         if (connectedDevices != null)
-          AiInfoRow(label: 'Connected Devices', value: '$connectedDevices'),
-        if (wanIp != null) AiInfoRow(label: 'WAN IP', value: wanIp!),
+          AiInfoRow(
+              label: loc(context).connectedDevices, value: '$connectedDevices'),
+        if (wanIp != null) AiInfoRow(label: loc(context).wanIp, value: wanIp!),
         if (connectionType != null)
-          AiInfoRow(label: 'Connection Type', value: connectionType!),
+          AiInfoRow(label: loc(context).connectionType, value: connectionType!),
       ],
     );
   }

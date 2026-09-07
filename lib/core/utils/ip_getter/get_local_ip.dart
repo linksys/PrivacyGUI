@@ -20,3 +20,8 @@ String getLocalIp(ProviderReader read) =>
 
 String getFullLocation(ProviderReader read) =>
     throw UnsupportedError('[Platform ERROR] Get Full Location');
+
+/// Browser origin (scheme + host [+ port]), e.g. `https://192.168.1.1`.
+/// Empty on non-web, where there is no browser origin and CORS does not apply.
+/// Unlike [getLocalIp] (host only), this preserves the scheme for same-origin.
+String getCloudOrigin() => '';

@@ -24,11 +24,11 @@ final uspDashboardRoute = ShellRoute(
         // switch), reverting to the pre-edit snapshot.
         //
         // Intentional silent-discard policy: unlike the enableDirtyCheck routes
-        // below, the dashboard does NOT prompt with showUnsavedAlert. Layout
-        // edits are persisted on every drag/resize, so "cancel" means restoring
-        // the snapshot captured on edit-mode entry — there is no unsaved buffer
-        // to warn about, and a confirmation dialog on every tab switch would be
-        // noise. See #1037.
+        // below, the dashboard does NOT prompt with showUnsavedAlert. Every
+        // layout edit is stored as it is made — the grid reports its own drops
+        // and resizes (#1393) — so "cancel" means restoring the snapshot captured
+        // on edit-mode entry rather than dropping a buffer of pending work, and a
+        // confirmation dialog on every tab switch would be noise. See #1037.
         final container = ProviderScope.containerOf(context);
         final editState = container.read(dashboardEditModeProvider);
         if (editState.isEditing) {
@@ -156,42 +156,42 @@ final uspDashboardRoute = ShellRoute(
         ),
         LinksysRoute(
           name: RouteNamed.uspLocalNetwork,
-          path: RouteNamed.uspLocalNetwork,
+          path: RoutePath.uspLocalNetwork,
           builder: (context, state) => const UspLocalNetworkView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspLocalNetworkProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspFirewall,
-          path: RouteNamed.uspFirewall,
+          path: RoutePath.uspFirewall,
           builder: (context, state) => const UspFirewallView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspFirewallProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspDmz,
-          path: RouteNamed.uspDmz,
+          path: RoutePath.uspDmz,
           builder: (context, state) => const UspDmzView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspDmzProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,
-          path: RouteNamed.uspPortForwardingDetail,
+          path: RoutePath.uspPortForwardingDetail,
           builder: (context, state) => const UspPortForwardingDetailView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspPortForwardingPageProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspStaticRouting,
-          path: RouteNamed.uspStaticRouting,
+          path: RoutePath.uspStaticRouting,
           builder: (context, state) => const UspStaticRoutingView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspStaticRoutingProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspIpv6PortService,
-          path: RouteNamed.uspIpv6PortService,
+          path: RoutePath.uspIpv6PortService,
           builder: (context, state) => const UspIpv6PortServiceView(),
           enableDirtyCheck: true,
           preservableProvider: preservableUspIpv6PortServiceProvider,
@@ -216,11 +216,12 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),
     ),
-    LinksysRoute(
-      name: RouteNamed.uspSpeedTest,
-      path: RoutePath.uspSpeedTest,
-      builder: (context, state) => const SpeedTestView(),
-    ),
+    // Speed Test route disabled: blocked by FW support (#857)
+    // LinksysRoute(
+    //   name: RouteNamed.uspSpeedTest,
+    //   path: RoutePath.uspSpeedTest,
+    //   builder: (context, state) => const SpeedTestView(),
+    // ),
     LinksysRoute(
       name: RouteNamed.uspAiAssistant,
       path: RoutePath.uspAiAssistant,

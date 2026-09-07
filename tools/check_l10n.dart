@@ -45,7 +45,6 @@ const String dartSourceDir = 'lib';
 // A key that is genuinely unreferenced must be DELETED from the ARB files,
 // not added here. Each entry notes the file that contains the real usage.
 const Set<String> allowedUnusedKeys = {
-  'avgValue', // usp_network_health_card.dart
   'copyRight', // bottom_bar.dart
   'addedWidgetNamed', // usp_layout_settings_panel.dart
   'nOnlineOfTotal', // usp_network_topology_card.dart

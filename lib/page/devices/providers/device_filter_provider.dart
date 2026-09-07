@@ -184,7 +184,7 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
     var next = state;
 
     if (next.nodeIds.isNotEmpty) {
-      final validNodeIds = options.nodes.map((n) => n.deviceId).toSet();
+      final validNodeIds = options.nodes.map((n) => n.id).toSet();
       final filtered = next.nodeIds.intersection(validNodeIds);
       if (filtered.length != next.nodeIds.length) {
         next = next.copyWith(nodeIds: () => filtered);
@@ -227,8 +227,26 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return const DeviceFilterOptions();
   final devices = data.clientDevices;
+
+  // Node filter options. The selection key must stay the DataElements node ID
+  // (matches ClientDevice.parentNodeId), so we key off meshTopology.nodes.
+  // The user-facing label, however, lives on the fully-built mesh nodes
+  // (data.nodes), which carry the Hosts friendlyName/hostName that
+  // meshTopology.nodes lack — matched back via dataElementsId. Without this
+  // the label would fall back to the model name (issue #1157).
+  final labelByDataElementsId = {
+    for (final n in data.nodes)
+      if (n.dataElementsId != null) n.dataElementsId!: n.displayName,
+  };
+  final nodeOptions = data.meshTopology.nodes
+      .map((n) => NodeFilterOption(
+            id: n.deviceId,
+            label: labelByDataElementsId[n.deviceId] ?? n.displayName,
+          ))
+      .toList();
+
   return DeviceFilterOptions(
-    nodes: data.meshTopology.nodes,
+    nodes: nodeOptions,
     ssids: devices
         .map((d) => d.ssidName)
         .whereType<String>()
@@ -307,7 +325,14 @@ bool _matches(ClientDevice device, DeviceFilterConfig filter) {
   }
 
   // Node (multi-select OR). Offline devices pass through.
-  if (filter.nodeIds.isNotEmpty && device.isActive) {
+  //
+  // Unattributed devices (no resolvable parent node — issue #1439) are always
+  // shown regardless of the node selection: they belong to the network but to
+  // no specific node, so a node filter can neither include nor exclude them
+  // meaningfully. Dropping them would hide a real, online device the moment
+  // any node is selected. They are surfaced with an explicit marker in the
+  // list instead of being silently filtered out.
+  if (filter.nodeIds.isNotEmpty && device.isActive && !device.isUnattributed) {
     if (device.parentNodeId == null ||
         !filter.nodeIds.contains(device.parentNodeId)) {
       return false;

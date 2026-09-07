@@ -80,6 +80,10 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
     return AppNavigationItem(
       icon: Icon(item.icon),
       label: item.type.resloveLabel(context),
+      // Layout-neutral test hook: mirrors TopNavigationMenu's chips so E2E
+      // targeting is breakpoint-agnostic (top chips desktop / bottom bar
+      // mobile). See PrivacyGUI#1172.
+      identifier: 'nav-${item.type.name}',
     );
   }
 }

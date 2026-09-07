@@ -646,9 +646,7 @@ class UnifiedDiagnosticsService {
       }
 
       // Last contact time and stale detection
-      final lastContactTime = node.multiApLastContactTime.isNotEmpty
-          ? node.multiApLastContactTime
-          : null;
+      final lastContactTime = node.multiApLastContactTime?.toIso8601String();
       final isStale = _isNodeStale(lastContactTime);
 
       final severity = _gradeMeshBackhaul(

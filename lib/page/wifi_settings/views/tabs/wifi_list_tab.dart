@@ -108,6 +108,7 @@ class UspWifiListTab extends ConsumerWidget {
                   ),
                   AppSwitch(
                     value: quickSetupEnabled,
+                    identifier: 'wifi-quick-setup',
                     onChanged: (v) => ref
                         .read(uspWifiSettingsProvider.notifier)
                         .setQuickSetupEnabled(v),

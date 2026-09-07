@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-06-30
+**Last Amended:** 2026-07-28
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -1434,5 +1434,102 @@ Code Review MUST check:
 - ✅ All UI components prioritize using ui_kit_library
 - ✅ No duplicate implementation of ui_kit provided components
 - ✅ If there are custom components, confirm they have user approval
+
+---
+
+## Article XVI: E2E Test Hooks (Semantics Identifiers)
+
+**Rationale**: The app is a Flutter CanvasKit web build tested end-to-end with Playwright. CanvasKit renders to a single canvas, so tests can only reach a widget through the Semantics tree it projects to the DOM. When a control has no stable, unique anchor, tests fall back to selectors that silently break for reasons unrelated to identity — positional (`.nth()`, row index) when order or layout changes, and accessible-name matching when display copy changes. This Article makes the stable anchor a first-class, reviewable property of every widget on an E2E interaction path.
+
+**Section 16.1: `identifier` is the Preferred E2E Anchor — Not `semanticLabel`**
+
+For a control that an E2E test must target, the stable hook SHOULD be the `identifier` parameter, NOT `semanticLabel`.
+
+| Property | DOM projection | Screen reader | Couples to | Correct use |
+|:---|:---|:---|:---|:---|
+| `identifier` | `flt-semantics-identifier` attribute | **Silent** — not announced | Nothing (pure automation hook) | **E2E selectors** |
+| `semanticLabel` | accessible name (`aria-label`) | **Announced aloud** | Localized display copy | Genuine accessibility only |
+
+```dart
+// ✅ Correct: identifier is a silent, copy-independent automation hook
+AppIconButton(
+  icon: AppIcon.font(Icons.add),
+  identifier: 'pf-add-single-port',
+  onTap: _add,
+)
+
+// ❌ Wrong: the host widget forwards `identifier`, yet a test slug is placed
+// in semanticLabel — read aloud by screen readers and coupled to display copy.
+AppIconButton(
+  icon: AppIcon.font(Icons.add),
+  semanticLabel: 'pf-add-single-port', // pollutes a11y; breaks on copy change
+  onTap: _add,
+)
+```
+
+**Rule 16.1.1 — When the host widget forwards `identifier`**: The test hook MUST be `identifier`. A test slug MUST NOT be placed in `semanticLabel`, and a widget MUST NOT carry both an `identifier` and a redundant test-slug `semanticLabel` — remove the `semanticLabel`. On such a widget, `semanticLabel` is reserved for genuine, localized, human-readable accessibility text only.
+
+**Rule 16.1.2 — When the host widget exposes only `semanticLabel`** (no `identifier` passthrough — e.g. `AppMenuCard` / `AppSectionItemData`): a kebab-case `semanticLabel` test slug is a **tolerated interim hook**, because it is the only anchor available. It is nonetheless **tech debt**: the slug is announced aloud by assistive technology. Per Article XV Rule 2, the standing resolution is to add `identifier` passthrough to that widget in `ui_kit_library` (stop and ask), then migrate the hook to `identifier`. New E2E-critical widgets SHOULD forward `identifier` from the outset so this fallback is never reached.
+
+> The E2E selector map (`identifiers.generated.ts`) reflects both mechanisms — `IDS` (identifier → `byId`) and `LABELS` (semanticLabel → `getByRole name`). `LABELS` exists to serve Rule 16.1.2 fallbacks; it is not licence to prefer `semanticLabel` where `identifier` is available.
+
+**Section 16.2: When an `identifier` Is Required**
+
+The test is **interaction path, not anchor quality**. An `identifier` MUST be added to any control that sits on an E2E interaction path — one a spec taps, types into, or reads state from:
+
+* ✅ **Required** — any control a spec acts on: buttons (labelled or icon-only), toggles/switches, form inputs, tabs, CRUD row actions, and the entry points into a flow.
+* ✅ **Required** — any control a test currently reaches only via `.nth()` / positional index.
+* ❌ **Not required** — presentational content no spec interacts with: static text, headings, decorative icons, layout containers, and rows a test only reads through their visible text.
+
+A labelled `AppButton` on an interaction path is ✅ **Required**. Its accessible name is a stable *anchor* but not a stable *contract*: the name is ARB copy, so a rename silently converts a passing spec into a count-0 timeout — the same failure mode positional selectors have, differently triggered. An `identifier` is the one anchor that is neither positional nor localized.
+
+**Cost asymmetry — why identifier-first:** the cost of a redundant identifier is one line, no runtime cost, and no a11y cost (unlike a `semanticLabel` slug, an `identifier` is never announced — Rule 16.1.2). The cost of a missing one is a cross-repo round trip: E2E discovers the gap, files an app issue, waits on an app PR and review, then regenerates the selector map. The E2E repo cannot unblock itself. When in doubt, add it.
+
+**Principle**: The `identifier` decouples test identity from everything that legitimately changes without changing identity — position, layout, and copy. Article V (Simplicity) still governs the ❌ case: do not blanket every widget, because a selector map full of never-used entries is noise. Scope by interaction path, not by anchor quality.
+
+**Backwards compatibility (per Article II §2.2)**: this section replaces an earlier rule that treated a labelled `AppButton` as ❌ *not required*, subject to a locale caveat. That caveat is now absorbed by the interaction-path test and removed. The change is **forward-applying**: existing labelled controls without an identifier are not retroactively violations, and no sweep is mandated. Add the hook when a spec next needs the control, or when the surrounding code is touched. A cross-locale matrix is no longer a trigger to re-audit past decisions — under this section the answer no longer depends on the locales the suite runs.
+
+**Section 16.3: Naming Convention**
+
+Identifier values MUST be `kebab-case` and follow `{page-or-feature}-{control}[-{instance-key}]`:
+
+```dart
+'pf-add-single-port'   // {feature: pf}-{control: add-single-port}
+'wifi-quick-setup'     // {feature: wifi}-{control: quick-setup}
+'pf-edit-web-server'   // {feature}-{control}-{instance-key}
+```
+
+**Per-instance controls** (list rows, dynamic CRUD items) MUST embed a **stable key derived from the item's data**, NOT a row index. The key is a slug of a stable identifying field, with a deterministic fallback chain when that field is empty:
+
+```dart
+// Stable key: description slug → trailing instance number → 'unnamed'
+// e.g. "Web Server" → 'web-server'; empty desc on Device.NAT.PortMapping.2 → '2'
+identifier: 'pf-edit-${rule.identifierKey}'
+identifier: 'pf-delete-${rule.identifierKey}'
+```
+
+The derivation helper (e.g. `ruleIdentifierKey`) MUST be a pure, unit-tested function (Article I). A row-index-based identifier (`pf-edit-0`) is a violation — it is a positional selector wearing an identifier's clothes.
+
+**Raw `Semantics` is also a legal hook host.** The hook need not sit on a ui_kit widget: wrapping any subtree in `Semantics(identifier: '…')` is a valid anchor and is preferred over `Semantics(label: '…')` for a test-only slug (a bare `label` is announced aloud, same as `semanticLabel`). One generator constraint governs this: the E2E generator (`scripts/gen-identifiers.mts`) matches on the **attribute name**, not the host widget — it scans for the literal attributes `identifier:` and `semanticLabel:`. Consequently `Semantics(label: '…')` is **invisible to the generator** (the attribute is `label`, not `semanticLabel`) and produces no selector entry. Use `Semantics(identifier: '…')` so the hook is both silent and discoverable.
+
+**Section 16.4: Layer Responsibility & SSOT**
+
+* **ui_kit_library** owns `identifier` passthrough on shared widgets (`AppIconButton`, `AppSwitch`, `AppTextField`, …). If a widget a test must target does not forward `identifier`, **stop and ask** per Article XV Rule 2 to add passthrough; a `semanticLabel` slug is only the tolerated interim per Rule 16.1.2 until it lands.
+* **PrivacyGUI (`lib/`)** owns the identifier *values* on feature controls, including values placed on raw `Semantics(identifier:)` nodes where no ui_kit passthrough exists.
+* **E2E repo** owns the generated selector map (`identifiers.generated.ts`), produced by scanning app Dart source. App source is the single source of truth; the E2E map is derived. Renaming an identifier in `lib/` is a contract change — regenerate the map.
+
+**A `semanticLabel` → `identifier` migration is a contract change even when the slug value is unchanged.** Moving a hook between the two attributes changes the *mechanism*, not the string: the slug relocates from `LABELS` (located via `getByRole(role, { name })`) to `IDS` (located via `byIdentifier()`). Every spec that reached the control by its old mechanism MUST be migrated to the new locator in the same change — "the slug didn't change" is not evidence that E2E is unaffected. Regenerate the map and grep the specs for the old mechanism. (The generator errors if a single slug is declared as *both* `identifier` and `semanticLabel`, but that guard does not catch an attribute swap where the old and new coexist across a mid-migration diff — the spec-side migration is a manual obligation.)
+
+**Section 16.5: Code Review Checklist**
+
+Code Review MUST check:
+- ✅ Every control on an E2E interaction path — labelled buttons included — has a stable hook: `identifier` where the host widget forwards it (Rule 16.1.1, §16.2)
+- ✅ Where a widget forwards `identifier`, no test slug appears in `semanticLabel`, and no widget carries both an `identifier` and a redundant test-slug `semanticLabel`
+- ✅ A `semanticLabel` test slug appears only where the host widget exposes no `identifier` passthrough (Rule 16.1.2), and such cases are flagged as tech debt to migrate
+- ✅ Identifier values are `kebab-case`, follow `{page}-{control}[-{instance-key}]`, and per-instance keys derive from data (not row index)
+- ✅ Per-instance key derivation is a pure, unit-tested function
+- ✅ No identifier added to presentational content no spec interacts with (§16.2 ❌) — but a labelled control on an interaction path is ✅ Required, not redundant
+- ✅ Raw `Semantics` test hooks use `identifier:`, not `label:` (a bare `label` is announced aloud AND invisible to the generator)
+- ✅ Any `semanticLabel`→`identifier` migration — even with an unchanged slug — regenerated the map AND migrated every spec from `getByRole({name})` to `byIdentifier()` (16.4)
 
 ---

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import '../widgets/section_header.dart';
 import '../widgets/color_circle.dart';
 import '../widgets/color_picker_dialog.dart';
@@ -11,7 +11,7 @@ class PaletteTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,7 +27,7 @@ class PaletteTab extends ConsumerWidget {
           label: 'Primary',
           color: config.primary,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setPrimary(c),
+              ref.read(themeStudioConfigProvider.notifier).setPrimary(c),
         ),
         const SizedBox(height: 12),
         _buildColorOverrideRow(
@@ -35,7 +35,7 @@ class PaletteTab extends ConsumerWidget {
           label: 'Secondary',
           color: config.secondary,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setSecondary(c),
+              ref.read(themeStudioConfigProvider.notifier).setSecondary(c),
         ),
         const SizedBox(height: 12),
         _buildColorOverrideRow(
@@ -43,7 +43,7 @@ class PaletteTab extends ConsumerWidget {
           label: 'Tertiary',
           color: config.tertiary,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setTertiary(c),
+              ref.read(themeStudioConfigProvider.notifier).setTertiary(c),
         ),
         const SizedBox(height: 12),
         _buildColorOverrideRow(
@@ -51,7 +51,7 @@ class PaletteTab extends ConsumerWidget {
           label: 'Surface',
           color: config.surface,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setSurface(c),
+              ref.read(themeStudioConfigProvider.notifier).setSurface(c),
         ),
         const SizedBox(height: 12),
         _buildColorOverrideRow(
@@ -59,7 +59,7 @@ class PaletteTab extends ConsumerWidget {
           label: 'Outline',
           color: config.outline,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setOutline(c),
+              ref.read(themeStudioConfigProvider.notifier).setOutline(c),
         ),
         const SizedBox(height: 12),
         _buildColorOverrideRow(
@@ -67,14 +67,14 @@ class PaletteTab extends ConsumerWidget {
           label: 'Error',
           color: config.error,
           onChanged: (c) =>
-              ref.read(demoThemeConfigProvider.notifier).setError(c),
+              ref.read(themeStudioConfigProvider.notifier).setError(c),
         ),
       ],
     );
   }
 
   Widget _buildSeedColorSelector(
-      BuildContext context, WidgetRef ref, DemoThemeConfig config) {
+      BuildContext context, WidgetRef ref, ThemeStudioConfig config) {
     final presetColors = [
       const Color(0xFF0870EA), // Blue (default)
       const Color(0xFF8E08EA), // Purple
@@ -98,14 +98,15 @@ class PaletteTab extends ConsumerWidget {
           isSelected: config.seedColor == null,
           label: 'Default',
           onTap: () =>
-              ref.read(demoThemeConfigProvider.notifier).setSeedColor(null),
+              ref.read(themeStudioConfigProvider.notifier).setSeedColor(null),
         ),
         ...presetColors.map((color) {
           return ColorCircle(
             color: color,
             isSelected: config.seedColor == color,
-            onTap: () =>
-                ref.read(demoThemeConfigProvider.notifier).setSeedColor(color),
+            onTap: () => ref
+                .read(themeStudioConfigProvider.notifier)
+                .setSeedColor(color),
           );
         }),
         ColorCircle(
@@ -117,7 +118,7 @@ class PaletteTab extends ConsumerWidget {
             context: context,
             currentColor: config.seedColor ?? Colors.blue,
             onPick: (c) {
-              ref.read(demoThemeConfigProvider.notifier).setSeedColor(c);
+              ref.read(themeStudioConfigProvider.notifier).setSeedColor(c);
             },
           ),
           isCustomIcon: true,

@@ -20,10 +20,12 @@ Future<bool?> showConfirmActionDialog(
     content: AppText.bodyMedium(message),
     actions: [
       AppButton.text(
+        identifier: 'admin-confirm-action-cancel',
         label: loc(context).cancel,
         onTap: () => context.pop(),
       ),
       AppButton.text(
+        identifier: 'admin-confirm-action-confirm',
         label: confirmLabel,
         onTap: () => context.pop(true),
       ),

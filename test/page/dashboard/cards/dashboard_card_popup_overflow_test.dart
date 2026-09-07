@@ -1,0 +1,539 @@
+@Tags(['layout-gate', 'overflow'])
+library;
+
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+import '../../../layout_gate/families/popup_card_family.dart';
+import '../../../layout_gate/sweep.dart';
+import '../../../util/app_test_fonts.dart';
+import '../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../util/overflow_baseline.dart';
+import '../../../util/overflow_probe.dart';
+
+/// Popup-form sweep for every registered card (#1239).
+///
+/// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
+/// every card selects its own form from the width the grid gives it — which for
+/// 11 of the 18 cards is still always normal, because they declare no
+/// `normalAbove` (#1240 AC 1). The other **seven** declare one (#1288-#1291,
+/// #1321), and they are the cards a width can put into this form.
+///
+/// The sweep below is wider than those seven: it covers the **nine** cards the grid
+/// can render under [kPopupBelow] at all, whether or not they declare a threshold
+/// — see [canReachPopupBand]. Three of the nine (`network_status`,
+/// `system_status`, `firewall_overview`) reach the band by width but stay normal
+/// there, so for them this measures a form only a #1299 pick can produce. Kept in
+/// rather than filtered on `normalAbove`, because a card that declares one later
+/// must not be arriving at its first measurement at the same time.
+///
+/// ## Why the form is pinned rather than provoked by a width
+///
+/// Popup is opt-in: it is reached only through a declared `normalAbove`, and
+/// when this file was written no spec declared one, so no width produced it for
+/// any card. Pinning it through `cardDensityOverrideProvider` (the hook #1232
+/// built) is what made the sweep possible at all — and it stayed the right shape
+/// once #1288's three thresholds arrived, for the same reason the gate pins tabs
+/// instead of tapping them: the test states which form it is measuring instead of
+/// depending on whatever threshold the spec currently declares. The complement —
+/// that a declared threshold makes production *select* this form — is
+/// `usp_hero_row_density_test.dart`, which pins nothing.
+///
+/// ## What the widths mean here
+///
+/// Each card is pumped at its narrowest production realization — the same width
+/// the gate uses, which is under 200px for the narrow spans. That is where a
+/// real popup form would be shown, and (overflow being monotonic in width) it is
+/// the worst case for the form.
+///
+/// ## No allowlist
+///
+/// `known_overflows.json` baselines the normal form's inherited debt. The popup
+/// form is new code and starts clean, so a failure here is a regression in this
+/// ticket's work, not history — there is nothing to grandfather.
+///
+/// ## Tabs are not swept
+///
+/// The popup form renders one value over the card's name; it has no tab bar, so a tab
+/// index selects nothing. The dialog it opens does show the card's tabs, and
+/// that is swept at tab 0 — the tabs' own overflow across every tab is the
+/// #1183 gate's job, at grid widths narrower than the dialog's.
+///
+/// ## Which cards are swept — and the half that has no popup form at all
+///
+/// Only the cards the grid can actually put below [kPopupBelow], which turns out
+/// to be exactly the ones whose spec permits a 3-column span. The grid's
+/// narrowest realizations are 191.4px for a 3-column floor, 260.5px for a
+/// 4-column floor, and 288px for anything wider (a full-width card clamped to the
+/// 4-column mobile grid). Only the first is under 200px.
+///
+/// So nine of the eighteen registered widgets can never select popup at any
+/// width, whatever they declare — [densityForWidth] compares the *rendered*
+/// width against the threshold, and their own `minColumns` floors them above it.
+/// Sweeping a popup form for them would be measuring a state production cannot
+/// produce.
+///
+/// That is worth stating plainly because it decides what the middle band is for:
+/// **compact is the only degraded form those nine cards can reach.** #1232's
+/// measurement found the compact band had no consumers and this ticket's popup
+/// form does not change that — but it is not dead by construction, it is the
+/// only degradation available to half the dashboard.
+///
+/// `what this file sweeps` pins the inventory and the rule behind it, so a spec
+/// changing `minColumns` surfaces here rather than silently adding or dropping
+/// coverage.
+///
+/// ## What this file is, since #1345
+///
+/// Three [runOverflowSweep] declarations and the hand-written tests that keep them
+/// honest. The 312 cells the three sweeps measure are enumerated by
+/// `test/layout_gate/families/popup_card_family.dart`; the tolerance filter, the
+/// fresh-subtree key, the surface reset and the failure prose are the shared
+/// runner's, which is what #1345 is for. The one thing that did not move is the
+/// picked sweep's failure sentence — it names the two heights in play, which the
+/// coordinate label cannot, so that family keeps a `judgeCard` of its own.
+///
+/// The 42 tests that remain are the ones that are *not* a sweep: 4 for the
+/// inventory the width path is filtered by and 1 for the inventory a pick is
+/// (which together decide all three sweep sizes), 1 that the fixed presentation
+/// width clears every threshold a card declares, 17 that a picked tile degrades to
+/// a *value* rather than to the card's own name, 17 that the presentation is sized
+/// to the height the dashboard would have laid the card out at, and the summary
+/// strip's 2 — the one widget exempted twice over. The last three groups are
+/// measured coordinates in #1337's dataset, for the same reason #1343's guards are:
+/// they pump real trees, and a port that dropped one would diff clean while taking
+/// the coverage with it.
+///
+/// **354 tests before, 80 after**, and the whole difference is the grouping the
+/// runner fixes: 312 per-locale tests become 35 coordinate tests, each looping its
+/// locales inside one body, plus the three cell-count pins those coordinates can no
+/// longer be counted by eye. 42 + 9 + 9 + 17 + 3 = 80.
+///
+/// No cell **id** changes: all three sweeps already carried `locale` last, so
+/// `./tool/overflow_baseline.sh check popup` is byte-identical across the port.
+
+void main() {
+  setUpAll(() async {
+    await loadAppFonts();
+  });
+
+  group('what this file sweeps', () {
+    // The widgets the grid keeps above kPopupBelow, and which therefore have no
+    // popup form to measure. Every one has a minColumns of 4 or more; see the
+    // file header for the widths.
+    const noPopupForm = [
+      'stats_panel',
+      'topology',
+      'wifi_status',
+      'wifi_networks',
+      'dhcp_reservations',
+      'port_forwarding',
+      'wifi_performance',
+      'traffic_analysis',
+      'device_analytics',
+    ];
+
+    test('is every card the grid can make narrow enough to degrade', () {
+      final skipped = UspWidgetSpecs.all
+          .where((s) => !canReachPopupBand(s))
+          .map((s) => s.id)
+          .toList();
+
+      expect(
+        skipped,
+        noPopupForm,
+        reason: 'the sweeps below skip cards whose narrowest realization is '
+            'already above the popup threshold, so this list is the inventory '
+            'of cards with no popup form. An id appearing here has silently '
+            'lost popup coverage; an id disappearing has silently gained a '
+            'popup form nothing had reviewed. Either way, the spec change that '
+            'moved it is the thing to look at',
+      );
+    });
+
+    // Every count this file's header quotes, asserted from the specs. The header
+    // had drifted to "15 of the 18 declare no normalAbove … only three of them"
+    // while six declared one and nine were being swept — a doc-only claim about
+    // an inventory that three tickets kept changing, so it went stale silently
+    // and was read as current.
+    test('the header\'s counts are the specs\' counts', () {
+      expect(UspWidgetSpecs.all, hasLength(18));
+      expect(
+        UspWidgetSpecs.all.where((s) => s.normalAbove != null).length,
+        7,
+        reason: 'the cards a width can put into a degraded form at all',
+      );
+      expect(
+        UspWidgetSpecs.all.where(canReachPopupBand).length,
+        9,
+        reason: 'what the popup sweep below covers',
+      );
+      expect(
+        UspWidgetSpecs.all.where(canBePickedIntoPopup).length -
+            UspWidgetSpecs.all.where(canReachPopupBand).length,
+        8,
+        reason:
+            'the cards with a popup form no width sweep can reach, which is '
+            'what the pick sweep exists for',
+      );
+    });
+
+    test('the cards swept for a form no width selects are named in the header',
+        () {
+      final pinnedOnly = UspWidgetSpecs.all
+          .where((s) => canReachPopupBand(s) && s.normalAbove == null)
+          .map((s) => s.id)
+          .toList();
+
+      expect(
+          pinnedOnly, ['network_status', 'system_status', 'firewall_overview'],
+          reason: 'these reach the band by width but stay normal there, so the '
+              'sweep measures a form only a #1299 pick produces. A card leaving '
+              'this list has just started selecting popup by width — which is a '
+              'product change, not a test detail');
+    });
+
+    test('and it is minColumns that decides, nothing else', () {
+      // Ties the width filter to the one spec field a reader would change to
+      // move a card in or out of the sweep. Without this, "not swept" looks
+      // like a property of the card rather than of one number in its spec.
+      for (final id in noPopupForm) {
+        final c =
+            UspWidgetSpecs.getById(id)!.getConstraints(DisplayMode.normal);
+        expect(
+          c.minColumns,
+          greaterThanOrEqualTo(4),
+          reason: '$id is skipped because the grid floors it above the popup '
+              'threshold, which is a consequence of minColumns >= 4. A '
+              '3-column floor realizes at 191.4px and does reach the band',
+        );
+      }
+    });
+  });
+
+  // ─── The popup form itself ────────────────────────────────────────────────
+  //
+  // The nine cards of the inventory above, each at its own narrowest realization,
+  // in all 26 locales — this is the popup form's only measurement, so the string
+  // table is one of the things it covers. The count is pinned because the grouping
+  // hides a narrowing: 9 coordinates report the same green whether each ran 26
+  // locales or 1, and `--dart-define=MIN_SCREEN` can drop a card out of the
+  // inventory outright (see [popupBandEnumerationGaps], which is how the pin
+  // reports that instead of being edited down to a subset).
+  runOverflowSweep(
+    family: const PopupFormFamily(),
+    expectedCellCount: 234,
+  );
+
+  /// The one thing the fixed presentation width has to be measured against.
+  ///
+  /// `showCardNormalForm` gives every card the same [kCardPresentationWidth]
+  /// rather than the width its spec declares (250–386 across the seven that
+  /// declare one). That is only sound while the fixed width clears all of them: a card
+  /// declaring more than the presentation offers would be handed back the very
+  /// width it said it could not be read at.
+  ///
+  /// It lives here rather than beside the presentation because `_shared` cannot
+  /// see the specs — the constant is a `_shared` decision and the thresholds are
+  /// the dashboard's, and this is the file that imports both.
+  group('the presentation width', () {
+    test('clears every threshold a card declares', () {
+      final declared = {
+        for (final spec in UspWidgetSpecs.all)
+          if (spec.normalAbove != null) spec.id: spec.normalAbove!,
+      };
+
+      expect(
+        declared,
+        isNotEmpty,
+        reason:
+            'with no card declaring a threshold this test asserts nothing — '
+            'the floor it pins would be vacuous',
+      );
+      for (final entry in declared.entries) {
+        expect(
+          entry.value,
+          lessThanOrEqualTo(kCardPresentationWidth),
+          reason:
+              '${entry.key} declares it needs ${entry.value}px to be whole, '
+              'and the presentation offers ${kCardPresentationWidth}px. Either '
+              'raise the presentation width or re-measure the threshold — as it '
+              'stands, tapping the popup form hands this card back a width it '
+              'has already said it cannot be read at',
+        );
+      }
+    });
+  });
+
+  // ─── The dialog the tile opens ────────────────────────────────────────────
+  //
+  // The same nine cards' *normal* form, pumped a second time and then tapped open
+  // inside the collection window — see [PopupDialogFamily.onCardSettled] for why
+  // the tap has to be there rather than before the sweep. Three locales rather
+  // than 26: the coordinate is already covered in all of them above, and what this
+  // adds is the dialog's chrome at the fixed presentation width, not the string
+  // table.
+  runOverflowSweep(
+    family: const PopupDialogFamily(),
+    expectedCellCount: 27,
+  );
+
+  // ─── The same presentation, opened from a *picked* popup tile (#1299) ─────
+  //
+  // The sweep above models the width path: the card degrades because the grid made
+  // it narrow, and its cell keeps whatever height the layout gave it. A pick is the
+  // other path, and it pins the box — see [PickedPopupDialogFamily] for the
+  // argument and for the failure sentence that names both heights.
+  //
+  // The group was written failing — 51 of 51, by +11px to +91px, all `bottom` —
+  // which is what the sweep above cannot see: it feeds the *declared* height, so
+  // it measures the one geometry that was never broken.
+  //
+  // ## Mutation table
+  //
+  // | # | mutated | mutation | killed by |
+  // |---|---|---|---|
+  // | 1 | `card_popup_form` | `_open` sizes the presentation to the cell alone | 51 of 51 cells, 17 of 17 tests |
+  // | 2 | `usp_widget_factory` | the factory supplies no `normalHeight` | 51 of 51 cells, 17 of 17 tests |
+  // | 3 | `card_grid_geometry` | `dashboardRowsToHeight` drops the inter-row gap | **survived** — 480px is still room enough for every card's chrome, so the arithmetic is pinned against the real grid in `card_form_toolbar_test.dart` instead |
+  //
+  // The cell counts are what the table was written against; since #1345 the three
+  // locales of a card report as one test, so a row that killed 51 tests kills 17.
+  // The measurement is unchanged — every one of the 51 cells is still pumped.
+  group('the pick inventory', () {
+    test('is offered for every card but the one with no popup form', () {
+      final pickable = UspWidgetSpecs.all
+          .where(canBePickedIntoPopup)
+          .map((s) => s.id)
+          .toSet();
+      final excluded = UspWidgetSpecs.all
+          .map((s) => s.id)
+          .where((id) => !pickable.contains(id))
+          .toList();
+
+      expect(
+        excluded,
+        UspWidgetSpecs.cardsWithoutPopupForm.toList(),
+        reason: 'the pick inventory is decided by cardsWithoutPopupForm alone, '
+            'not by minColumns — so unlike the width sweep above, a spec '
+            'widening its floor does not remove a card from this sweep. An id '
+            'appearing here has lost its popup form',
+      );
+      expect(
+        pickable.length,
+        greaterThan(UspWidgetSpecs.all.where(canReachPopupBand).length),
+        reason: 'if picking ever became as narrow an inventory as the width '
+            'path, these two groups would be measuring the same thing and one '
+            'of them should go',
+      );
+    });
+  });
+
+  runOverflowSweep(
+    family: const PickedPopupDialogFamily(),
+    expectedCellCount: 51,
+  );
+
+  /// What the tile actually says, which no overflow probe can see.
+  ///
+  /// The sweeps above measure that the tile fits. A tile showing the card's
+  /// *name* fits just as well as one showing its value — better, since the fixed
+  /// strings are shorter — so the form could be entirely useless and every case
+  /// above would stay green. Reported from the built app: the picked tiles read
+  /// "Network St…", "System Stat…", "Community…", because eleven of the seventeen
+  /// pickable cards declared no `popupValue` and fell back to their title.
+  ///
+  /// The fallback stays (a form with nothing in it is worse than one showing the
+  /// card's name), so this is the test that says the fallback is not the design.
+  ///
+  /// Hand-written rather than a family, like #1343's guards: it pumps one
+  /// coordinate per card and asserts something other than overflow about it, so a
+  /// sweep's grouping and locale loop would buy it nothing. It stays in the dataset
+  /// because it is a real pump — see the `cell:` argument.
+  ///
+  /// ## Mutation table
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | any card | its `popupValue` argument removed | that card's case, by the title it falls back to |
+  /// | 2 | any card | `popupValue: title` (a value that is the name) | that card's case — the second assertion, which is why non-null is not the whole claim |
+  group('the value a picked popup shows', () {
+    for (final spec in UspWidgetSpecs.all.where(canBePickedIntoPopup)) {
+      testWidgets('${spec.id} degrades to a value, not to its own name',
+          (tester) async {
+        final wc = pickedTileCase();
+        await probeCardOverflow(
+          tester,
+          cardId: spec.id,
+          widthCase: wc,
+          cardHeightRows: UspWidgetSpecs.popupHeightRows,
+          screenHeightRows: kPopupSweepScreenRows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+          density: CardDensity.popup,
+          // A real pump of a real tile, so a measured coordinate — and the guard
+          // that says the sweeps above are measuring a value rather than a card
+          // name that happens to fit. Dropping it must not diff clean.
+          cell: OverflowCell('popup.picked_value', {
+            'card': spec.id,
+            'px': wc.widthKey,
+          }),
+        );
+
+        final form = tester.widget<CardPopupForm>(find.byType(CardPopupForm));
+        expect(
+          form.value,
+          isNotNull,
+          reason: '${spec.id} declares no popupValue, so its tile shows its '
+              'title — and at two columns the title is ellipsized to a few '
+              'characters. Which number is worth seeing at a glance is the '
+              "card's own judgement (see DashboardCardTemplate.popupValue), so "
+              'it has to be declared where the card is built',
+        );
+        expect(
+          form.value,
+          isNot(form.title),
+          reason: '${spec.id} degrades to its own name, which the tile would '
+              'have shown anyway — the form is then a label, not a value',
+        );
+      });
+    }
+  });
+
+  /// The height the presentation is given, and where that number comes from.
+  ///
+  /// `minHeightRows` is the floor the grid enforces — the smallest box the card
+  /// can be dragged to — and the presentation was sized to it. That is the wrong
+  /// end of the range: the card the user is being shown is the one the dashboard
+  /// would have laid out, and what the dashboard lays out is
+  /// `getPreferredHeightCells()` (`layout_item_factory.dart:49`). For the six
+  /// cards whose strategy is `strict(N)` with `N` above their floor the two
+  /// differ by one to two grid rows — topology declares a floor of 3 and prefers
+  /// 5, so it was presented at 392px in a box it fills at 664px, which is what
+  /// "topology 也是太小" was.
+  ///
+  /// The overflow sweeps cannot see this either: a box that is too *small* for a
+  /// card whose content scrolls or shrink-wraps overflows nothing. It just shows
+  /// a third of the card.
+  ///
+  /// ## Mutation table
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `usp_widget_factory` | `_normalHeightOf` reads `minHeightRows` again | the six cards whose preferred rows exceed their floor |
+  /// | 2 | `usp_widget_factory` | `_normalHeightOf` reads `maxHeightRows` | every card, in the other direction |
+  /// | 3 | `card_popup_form` | the viewport cap applied to every card, not only the ones over it | every card, once the cap binds below the declaration — the cap itself is pinned in `card_popup_form_test.dart`, on a screen small enough for it to bind |
+  group('the height a picked popup presents at', () {
+    for (final spec in UspWidgetSpecs.all.where(canBePickedIntoPopup)) {
+      final constraints = spec.getConstraints(DisplayMode.normal);
+      // No spec uses `AspectRatioHeightStrategy`, the only strategy whose
+      // preferred height depends on the span, so the column count is not part of
+      // this question and the argument is left off deliberately.
+      final preferred = dashboardCardHeight(
+        constraints.getPreferredHeightCells(),
+      );
+
+      testWidgets('${spec.id} gets the ${preferred}px its spec prefers',
+          (tester) async {
+        final wc = pickedTileCase();
+        await probeCardOverflow(
+          tester,
+          cardId: spec.id,
+          widthCase: wc,
+          cardHeightRows: UspWidgetSpecs.popupHeightRows,
+          screenHeightRows: kPopupSweepScreenRows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+          density: CardDensity.popup,
+          cell: OverflowCell('popup.picked_height', {
+            'card': spec.id,
+            'px': wc.widthKey,
+          }),
+          after: (t) async {
+            await t.tap(find.byType(CardPopupForm));
+            await settleIgnoringAnimations(t);
+          },
+        );
+
+        expect(
+          tester
+              .getSize(find.descendant(
+                of: find.byType(AppDialog),
+                matching: find.byType(DashboardCardTemplate),
+              ))
+              .height,
+          preferred,
+          reason: '${spec.id} declares a floor of '
+              '${constraints.minHeightRows} rows and prefers '
+              '${constraints.getPreferredHeightCells()}. The presentation is the '
+              'only way to read a picked card, so the height it gets has to be '
+              'the one the dashboard would have laid the card out at, not the '
+              'smallest box the grid would ever allow',
+        );
+      });
+    }
+  });
+
+  group('the summary strip', () {
+    // `stats_panel` is skipped twice over, and it is the only widget of which
+    // that is true. The other eight are ordinary template cards that would gain
+    // a popup form the moment their `minColumns` allowed a 3-column span; this
+    // one would not, because there is no card there to degrade. Pinning the
+    // second reason separately keeps the skip list from being read as "these
+    // cards may bypass the template".
+    final spec = UspWidgetSpecs.getById('stats_panel')!;
+
+    test('is floored above the popup threshold by its own spec', () {
+      // `minColumns: 6` of 12, and always placed full width. Its narrowest
+      // realization is therefore the whole grid at the 320px screen floor —
+      // 288px. No width the grid produces selects a popup form for it, so a
+      // popup form is not missing functionality; it is unreachable code.
+      final wc = narrowestCaseFor(spec)!;
+      expect(
+        wc.cardWidth,
+        greaterThanOrEqualTo(kPopupBelow),
+        reason: 'if the grid can now make the summary strip narrower than the '
+            'popup threshold, this exemption is void and it needs a degraded '
+            'form like every other widget',
+      );
+    });
+
+    testWidgets('is not a card, so it has no form to degrade', (tester) async {
+      // Structural half: it is a row of five stat tiles, with no title, no icon
+      // and no single value the popup form is built from — and no
+      // `DashboardCardTemplate`, which is where that form lives. Pumped through
+      // the production path with no density pinned, exactly as the #1183 gate
+      // pumps it.
+      final wc = narrowestCaseFor(spec)!;
+      await probeCardOverflow(
+        tester,
+        cardId: spec.id,
+        widthCase: wc,
+        cardHeightRows: spec.getConstraints(DisplayMode.normal).minHeightRows,
+        tabIndex: 0,
+        locale: const Locale('en'),
+        // The one card exempted from the popup sweeps, pumped to prove the
+        // exemption still holds. In the dataset for that reason: if a port drops
+        // this, the exemption stops being checked and nothing says so.
+        cell: OverflowCell('popup.exempt', {
+          'card': spec.id,
+          'px': wc.widthKey,
+        }),
+      );
+
+      expect(
+        find.byType(DashboardCardTemplate),
+        findsNothing,
+        reason: 'the summary strip is exempt because it is not built from the '
+            'card template. If it becomes a template card, drop it from the '
+            'skip list above and let the sweep cover it',
+      );
+    });
+  });
+}

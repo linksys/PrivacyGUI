@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:privacy_gui/di.dart';
 
-import 'demo/data/demo_cache_data.dart';
 import 'demo/demo_app.dart';
 import 'demo/providers/demo_overrides.dart';
 import 'demo/usp/demo_usp_data_loader.dart';
@@ -32,8 +31,7 @@ void main() async {
     debugPrint('No .env file found, using defaults');
   }
 
-  // Load demo cache data (JNAP + USP)
-  await DemoCacheDataLoader.instance.load();
+  // Load demo USP (TR-181) mock data
   await DemoUspDataLoader.instance.load();
 
   // Setup dependencies
