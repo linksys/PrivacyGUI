@@ -2,20 +2,432 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
-## [2.7.0] - 2026-07-22
+## [2.7.0] - 2026-09-07
 
-- 825f2875 - feat(port-forwarding): add semanticLabels to add/edit dialog fields
-- e0131a05 - feat(dashboard): add semanticLabels to dashboard toolbar icon buttons
-- 5c976845 - fix(ipv6-port-service): validate on focus-loss, not per keystroke (dialog focus drop)
-- 210f7443 - fix(port-forwarding): validate on focus-loss, not per keystroke (dialog focus drop)
-- 8140c55a - refactor(demo): fetch fixture data at runtime + scenario picker; drop demo-only FAB
-- b3c6f764 - chore(deps): bump ui_kit to v2.29.0 for input semanticLabel
-- ba6d6d46 - refactor(demo): route demo mode through real UspClient via transport
-- db80edbc - refactor(usp): extract UspTransport seam behind UspClient
-- d6a46249 - feat(e2e): add E2E_MOCK build flag guarding SSE + onboarding
-- e39298f0 - chore: remove dead JNAP transitional code
-- 58d06aac - docs(usp): add E2E boot-contract spec
-- d44512d2 - refactor(demo): replace deprecated overrideWithProvider
+- 533b8a7a - test(golden): the node_detail fold was cutting 245px, and #1465 only made it visible (#1482)
+- 56713725 - fix(deps): the release that un-skips #1471 is v3.2.0, not the v3.1.1 we waited for
+- db817d77 - test(theme): the transition no golden can photograph (#1471)
+- 6162527e - fix(golden): one failing locale no longer costs the other 25 (#1477)
+- 88797768 - docs(golden): the unit question, and the run that would kill option A (#1475)
+- 13b42de6 - test(golden): keep the diffPercent alchemist computes and drops (#1475)
+- 8a9a1111 - test(node_detail): an offline slave has no clients, because one match decides both (#1476)
+- 3218d1d2 - test(topology): the scene that lied had no guard, and the golden that should be one cannot see it (#1472)
+- ed06911b - docs(topology): #1466 is the builder-side shape, not a fixture guard (#1472)
+- 1629976e - docs(topology): the omitted field is not a different tree, it is an unreachable one (#1472)
+- da07557e - test(topology): the mesh scene's green dot used to be a constant, so it never said healthy (#1472)
+- 097a4ca8 - test(route): register topology's variable-route push as an entry point (#1468)
+- 89e6ac25 - fix(node_detail): one badge carried role and liveness, so isOnline showed nowhere (#1465)
+- 3de45f56 - fix(topology): let offline clients open device detail (#1468)
+- d0cd3135 - fix(topology): one builder answered the same backhaul two ways in one pass (#1430)
+- bc6907ea - docs(topology): two predicates on meshTopology.nodes now sit in one file, and only one is liveness (#1430)
+- 04279255 - fix(#1454): stop asking the DOM whether this is a PWA on every keystroke
+- e010bb31 - fix(#1454): align the 2.x idle window with 1.x at 15 minutes
+- 93a33add - fix(#1454): count keyboard and scroll input as user activity in idle checker
+- 5393fc66 - refactor: collapse mesh node hand-reconstruction to copyWith; pin copyWith null-merge; carry dataElementsId on topology nodes (#1466)
+- eef10da9 - test(ui-kit): the review's five confirmed findings, four of them about the guard itself
+- 02a53e62 - fix(topology): the backhaul card had no arm for a backhaul with no medium (#1430)
+- bdde5461 - fix(topology): DataElements absent is not "offline", and a real backhaul with no reading is not 0.0 (#1430)
+- 14120f9a - fix(devices): the station map holds Wi-Fi only, so wired clients are not orphans (#1439)
+- d704276e - fix(instant_privacy): write the nodes' backhaul MACs too (REQ-10a)
+- 2af8328a - fix(devices): treat standalone DataElements router as non-mesh for orphan attribution (#1439)
+- 044ff96d - fix(dashboard): the hostless branch had no test, and the topology precedent was stale (#1450)
+- 7fcd2971 - fix(system_log): the kit does not share 0.12, so the badge keeps its own (#1456)
+- e162d46f - fix(instant_privacy): keep mesh nodes ON the written allow-list (REQ-10a)
+- 4b5578f1 - chore(deps): the 3.47 floor is already met on dev-2.7.0, so ui_kit moves to v3.1.0 (#1456)
+- 37af30d8 - test(nav): drop two counts that assert what two exact maps already do
+- 854917dc - test(nav): the two back-navigation mirrors spell the path family too
+- 283b3df2 - fix(nav): the top bar is on the page it opens, so its push is guarded
+- 8090176a - test(nav): the guard's window ends where the pushed route's barrier begins
+- 27a723fe - fix(topology): derive mesh node liveness from DataElements match, not Hosts Active (#1430)
+- 20777984 - feat(firmware): add Group B E2E identifiers to FirmwareUpdateView (#1447)
+- 2a4e0312 - fix(nav): guard shared entry components against double-tap double-push (#1445)
+- 6f065b20 - fix(devices): stop attributing unresolvable-parent devices to the master (#1439)
+- bbdd7caa - fix(dashboard): the E2E generator reads source text, so the hook has to be a literal (#1450)
+- e995a130 - feat(dashboard): the popup tile is a button too, so it gets its own hook (#1450)
+- 0f064e1a - docs(test): the presented hook is reachable, and #1453 is what happens next
+- ce7c4cb1 - fix(instant_privacy): exclude mesh nodes from blockable allow-list by deviceRole (#1440)
+- d700b9b8 - feat(dashboard): each card's detail entry is addressable on its own (#1450)
+- 0679912b - feat(firmware): add E2E identifiers to FirmwareUpdateCard (#1447)
+- 79921511 - fix(topology): read mesh node liveness from Hosts, stop fabricating backhaul (#1430)
+- 70610720 - fix(devices): treat a zero Hosts SignalStrength as no-reading, not "Excellent" (#1438)
+- 4de27ac1 - fix(golden-report): the Test Summary counted tests that never ran (#1404, #1405) (#1424)
+- f612ca92 - fix(test): the hub exemption was letting #1420's own fix be reverted
+- bb624b92 - test(route): the entry verb is now checked, so two more wrong ones showed up
+- de8b19ae - docs(route): the back arrow's cold-URL behaviour was decided, so navigateBack says so (#1436)
+- a2fc3070 - fix(dashboard): the health dialog pushed a location where a route name was meant (#1435)
+- ff935514 - docs(ci): the trigger list now has a ruleset to be a superset of (#1316)
+- d509f7e7 - fix(test): the step slice ran to end-of-file, so an unrelated key could accuse the pin (#1316)
+- af469653 - docs(ci): the precache looks like dead code on CI, and the cache key is why it is not (#1316)
+- ec442b04 - docs: three comments stated a measurement as if it could not expire (#1316)
+- bbd42261 - fix(ci): the guard that fixed CI made the documented pre-push command red (#1316)
+- cd857a32 - fix(test): the drift guard blamed the vendored copy when the runner was the wrong SDK (#1316)
+- bf0548d8 - test(local_network): assert the two cold-URL landings instead of describing them
+- 3c6d92ad - docs(test): the harness says what it does not cover, because a reload has no stack
+- b19b97ca - fix(#1421): correct a test comment that claimed the sibling fix was in the tree
+- df430c14 - fix(#1420): correct a comment that claimed a fallback it never reaches
+- 6c9a70c7 - test(route): address round-1 review on the #1420 navigation test
+- 40d60386 - fix(local_network): push to DHCP Settings so the reported back chain returns to Dashboard (#1421)
+- bf47c6cc - fix(firewall): back from Firewall/IPv6 returns to Dashboard (#1420)
+- c40f5404 - fix(route): promote uspLocalNetwork to a shell sibling so Dashboard back returns Home (#1421)
+- f5d4fffe - docs(web): step 8 said "zero gstatic requests", which is false by design, and there was no step 9 (#1316)
+- ec198840 - fix(test): two await-less .then calls would have thrown ArgumentError, and CI was told not to care (#1316)
+- 4ac9b7b6 - chore(web): the pin needed its third digit, because every hotfix ships its own CanvasKit (#1316)
+- 918de317 - docs(web): correct two claims about the service worker in the #1316 comments
+- 88deffec - docs(web): 3.47 gave canvasKitVariant a second wrong destination (#1316)
+- 6576b871 - docs: fix two things the #1316 CLAUDE.md hunk got wrong
+- 3fa85440 - docs(web): the re-vendor procedure copied from a directory that does not exist yet (#1316)
+- f359261f - fix(web): flutter_bootstrap.js was a snapshot pretending to be a template (#1316)
+- 443656ba - chore(build): a flag that stopped existing in 3.44 was still live, gated on a variable this repo never sets (#1316)
+- 6e3589a8 - chore(web): the SDK that renders CI and the CanvasKit we ship are now the same one (#1316)
+- 79915038 - refactor(dashboard): the grid already measured the card, so the card stops measuring itself (#1401)
+- c8ed1874 - refactor(dashboard): a pick and the geometry it justifies now travel in one payload (#1400)
+- 210dccb1 - feat(dashboard): a removal asks first, which is what lets the Delete key come back (#1398)
+- 07fdde9f - fix(dashboard): cancel owes the user the grids they never opened, so snapshot all three (#1396)
+- cc998272 - refactor(dashboard): the width lock needed a watcher on 0.9.1 and does not on 2.6.0, so the watcher goes and no policy replaces it (#1399)
+- fbda6d07 - feat(dashboard): let displaced cards slide, and find the flake that only a late-mounting tile has (#1397)
+- be5dc5a6 - style(gate): drop the trailing blank line the settle extraction left behind (#1395)
+- 1c65e5ce - test(dashboard): run the gesture tests on the regime we ship, which is the throttled one (#1395)
+- aca9fafe - test(dashboard): AC2's three edit-mode gestures, and the platform flag that made one of them look broken (#1395)
+- 787bfbac - fix(dashboard): the third surface the tile cache strands is the package cards, and the obvious ScrollController fix crashes edit mode (#1395)
+- a8512f9b - fix(dashboard): the edit-mode wrapper survived 2.3.1's tile cache by luck, three times over (#1395)
+- c031c363 - fix(dashboard): 2.x lays the outgoing grid out at the incoming width, and asserts on the constraints it leaves behind (#1395)
+- 8bbbda00 - feat(dashboard): bump sliver_dashboard to 2.6.0, and switch off the four surfaces it switches on (#1395)
+- e702dc9f - fix(dashboard): three of the writes were already made by the mutation that caused them (#1393)
+- a55da632 - fix(dashboard): the grid stores its own drops, so no reorder needs "Done" (#1393)
+- b0e0f9dd - docs(gate): the wave-4 edit stat is +566, and the tree is the arbiter
+- bef52562 - fix(test): the merge was clean and the tree did not compile — #1391's ipv6 test imports a path #1380 moved
+- 303f4af5 - fix(dashboard): persist keyboard card reorder on commit (#1393)
+- f75de864 - docs(gate): the sync warning was at the end nobody edits, and :2511 was the site the AC named
+- f14524b2 - fix(ci): the module header still called the split decided, and sh is not bash
+- 451ecd0a - docs(gate): four suites was a 10-core answer; the runner has two lanes
+- 4e08cd83 - ci: required checks wait for the base branch, not just for the ruleset
+- 5c1dba83 - ci: the gate job cannot pass on a line that has no gate
+- 798eef0f - ci: the release PR was the one PR that ran no CI at all
+- 8b0912ee - fix(a11y): add MAC-derived E2E arrival anchor to device-list rows
+- af61dcd1 - fix(a11y): make support/statistics/apps arrival anchors two-segment kebab
+- 26e37126 - ci: the split was 37% faster, which is not what this file predicted
+- 8b4e5390 - ci: one job told you one problem per push; four jobs tell you which
+- adc30e36 - style(gate): the blank line `c7f60a4b` left behind, found by CI's first run in 12 commits
+- 27415f46 - feat(a11y): hook start + result surface of uspUnifiedDiagnostics (E2E hooks)
+- 30c3299e - feat(a11y): add anchor + app/store/retry hooks to uspApps (E2E hooks)
+- 834c7864 - feat(a11y): add anchor + navigation hooks to uspNodeDetail (E2E hooks)
+- 3ddfc53a - feat(a11y): add anchor + reservation action to uspDeviceDetail (E2E hooks)
+- 744c7e47 - feat(a11y): hook uspFirmwareUpdate check/pick/install + recovery (E2E hooks)
+- 07fbd68d - feat(a11y): hook the door to uspIpv6PortService's rule dialog (E2E hooks)
+- d6360407 - feat(a11y): add anchor + named tab hooks to uspStatistics (E2E hooks)
+- 67975d3f - feat(a11y): add arrival anchor to uspSupport (E2E hook)
+- 1ddd30c4 - fix(a11y): use withIdentifier for UiKitPageView page hook (empty-string safe)
+- a4caf569 - test(gate): the last twenty-one pages enter — 22 of 45 becomes 43 swept
+- f5d35f00 - fix(pages): thirteen views could not fit their own content at 320px
+- b764039e - feat(a11y): add optional page-level test identifier to UiKitPageView (#1391)
+- b44b73c8 - docs(gate): dart_test.yaml still says 439, and the tag now selects 499
+- f8708d73 - test(gate): the six entry surfaces enter the gate — 16 of 45 becomes 22
+- 18e3c7d5 - test(gate): the ceiling is a number to read, not a build to fail
+- c7f60a4b - test(gate): wave 2's ninth page enters the sweep on ui_kit v2.40.2
+- 81e57210 - docs(gate): the quoted dart_test.yaml block in section 4 says 48 too
+- 38dfdb7b - docs(gate): the page cells stay in one file, and the split gets a measured trigger
+- b3ebbcdb - test(gate): a declared page with no sweep call is green today, and now it is not
+- 7e66eb42 - fix(a11y): normalise connection-type test-hook slugs to lowercase kebab (#1389 review)
+- 2303d251 - test(gate): the width list closes at nine — 1080 joins and nothing is cut
+- 1702987d - feat(a11y): add E2E test-hook identifiers to dropdowns and dialog actions (#1387, #1388)
+- c4418629 - docs(gate): the gate is 1,636, the suite 5,630 and the coverage 6,736, all measured
+- 12344c04 - test(gate): wave 2 — eight of the nine reachable instant_setup pages enter the sweep
+- 3afbef8e - fix(instant-setup): four late final controllers disposed on a path that never created them
+- 41147276 - feat(dialogs): add identifier hooks to showSubmitAppDialog actions (#1384)
+- aedf6b4f - docs(gate): the gate is 1,543, the suite 5,530 and the coverage 5,072, all measured
+- 627b00d4 - test(gate): wave 1 — the five pages with a fixture already written enter the sweep
+- 5985e2d5 - fix(port-forwarding): a tab header title with no flex constraint pushes the button off
+- 08b15539 - docs(gate): the gate is 1,482 and the suite 5,469, both measured
+- fd7a6e27 - fix(a11y): revive ruleIdentifierKey instance-number fallback for dot-terminated paths (#1376)
+- 92a24fb5 - test(gate): the pages inventory says 16 need a fixture, not 37
+- 12ba76e8 - fix(a11y): derive DHCP reservation identifiers via a pure kebab-case helper (#1376)
+- 9f107db6 - test(gate): a page view with no roster row is a page that escapes
+- 87ab7c54 - test(a11y): add missing identifier hooks to 5 AppIconButton call sites
+- 2ddacb86 - fix(dashboard): address review on the KPI stats panel resolution fix (#1367)
+- 51a8bc71 - fix(gate): the three advisory paths could report clean while blind
+- 4935a790 - refactor(shell): make the mascot layer's pass-through structural
+- a875d6cd - fix(shell): stop the Show Mascot toggle from re-parenting the shell Navigator
+- a41243fa - refactor(report): the overflow rows were a function of the write order
+- b094e464 - fix(dashboard): per-card resolution + error branch for KPI stats panel (#1367)
+- 8053089e - refactor(gate): the golden report read one message with a second parser
+- 4d976a44 - docs(gate): the skill's name covered three of the five sweeps
+- adb012ed - docs(overflow): all three of the gate's documents were written for its maintainers
+- 420473d2 - fix(overflow): the pictures and the rows never said they were the same tree
+- 422d96b4 - fix(overflow): the report that is green whatever you did was the easier one to open
+- 7c5318ee - docs(overflow): shoot's two selectors and its one tree needed writing down
+- 5808952e - feat(overflow): the run that took the pictures can hand over its own dataset
+- 58a0b245 - feat(gate): the cells worth photographing are the ones the sweep failed
+- 83e90159 - feat(overflow): the cells worth photographing are the ones no verdict flags
+- b84ad234 - docs(overflow): §11.2's user-CPU arrows pointed at the smaller number
+- c2e97b21 - feat(overflow): the coverage a baseline froze could only be read as 4,032 rows
+- 32ba9835 - test(gate): the page-level cost question now has a number behind it
+- 69079cb0 - refactor(test): the fixtures the gate borrowed were still spreading
+- cf91cddc - test(gate): the hook that opened the surface was coverage, not an assertion
+- c3cb4bc0 - test(gate): the premise a family could empty is now a value the runner reads
+- 6db618e3 - docs(overflow): the two runner scripts were quoting a pre-merge tree
+- 5fee5d7c - docs(overflow): re-count the tag's own carriers, which the merge moved twice
+- ff118ba4 - docs(overflow): re-run F7's pairing, because the family grew a coordinate
+- 946779d9 - test(gate): the nineteenth mutation is the one no cell can see
+- 366bc49c - test(gate): three files arrived under a retired tag, and the count is what says so
+- 57490c2f - docs(overflow): the survivor has a number now, and it is #1364
+- 8fd86cc3 - fix(ai): keep answering when the router summary cannot be built
+- 86039358 - fix(ai): rebuild the router state summary per request
+- 1dd9520d - test(gate): the invariants are measured, and one of them is worth nothing (#1348)
+- 157d11d7 - docs(overflow): the join column was the scout's, so R4 leaves the epic
+- 6817f679 - docs(overflow): the takeException "hole" was not one (#1344, #1345)
+- 7478536b - test(gate): the last two card sweeps are declared too (#1344, #1345)
+- d6fa9e27 - test(gate): the card sweep is declared too, and its cell ids never moved (#1343)
+- 28f298c2 - fix(ai): key signal levels by label so a tool result stays encodable
+- 27b67979 - test(gate): a sweep is declared, not written, and the chrome family proves it (#1342)
+- 9a81efe0 - docs(overflow): record the review's seven fixes, and correct a font claim
+- d0321f30 - test(gate): an exemption says how much, not just where (#1356)
+- 1187baaa - test(gate): an exemption and the reason for it are one entry (#1356)
+- 613ca0f1 - test(gate): one spelling for a locale, and no prose in a cell id (#1356)
+- 785c6f67 - chore(tooling): make the stamp cover what moves a row, and stop offering a flag that cannot work (#1356)
+- 1974d15b - test(gate): keep machine-specific paths out of the join key, and read Windows locations at all (#1356)
+- 81ec41f2 - docs(golden): say why 330ms is also the menu's settle (#1356)
+- b9e784d7 - fix(dashboard): make the collapsed header's primary action a field, not a search (#1356)
+- 23cf8c90 - docs(overflow): reconcile the four docs against the tree #1351/#1340/#1341 left
+- 1a594f2e - test(overflow): key the ratchet on where the widget was created (#1341)
+- f27f49c4 - test(overflow): one place sets the surface, and it puts it back (#1340)
+- 2a15b353 - test(overflow): resolve the source location once, at collection time (#1351)
+- d60849e1 - fix(ui): keep icon-plus-label rows within bounds in long-translation locales (#1302) (#1329)
+- c9ee43ab - test(dashboard): let the #1301 absorption guard actually run in CI (review C1)
+- 9f060305 - test(static-routing): let the #1332 regression guard actually run in CI
+- 1c538628 - docs(overflow): split R2's golden half out to #1339, gate half to #1351
+- 5fe1cdc7 - docs(overflow): split the remaining parser call sites by what can verify them (#1335)
+- f29aa4df - fix(overflow): close the review findings on #1336 + #1338 (#1335)
+- a8ad98ae - docs(overflow): reconcile #1336 and #1338 where landing both made a claim false (#1336, #1338)
+- 54f930ec - test(overflow): one overflow parser, carrying file:line (#1338)
+- ee732623 - test(gate): name the gate tag layout-gate, mark the sweeps (#1336)
+- b4d131b9 - test(overflow): freeze the sweeps' measured coverage as a diffable dataset (#1337)
+- 0ffc1a6a - style(static-routing): dart format the new gateway test (CI format gate)
+- 74704f9b - test(static-routing): cover the gateway focus-loss path (#1332 review round 1)
+- cbd939c0 - fix(static-routing): validate on focus-loss so the dialog keeps keystrokes (#1332)
+- 4fb1ac5e - test(golden): reach Edit through the collapsed header at phone480 (#1314)
+- c4070eb9 - test(dashboard): gate page chrome overflow across width x locale (#1314, #1328)
+- ea1d81f4 - fix(dashboard): collapse the header at narrow widths and free the title (#1314)
+- c3cd0bac - fix(shell): stop the top bar overflowing between 601 and 767px (#1328)
+- ad30c2c0 - fix(dashboard): let each card footer keep its own tap target (#1301)
+- ef7c19f9 - fix(dashboard): stack the DHCP Active Leases row and declare its threshold (#1321)
+- a826f86b - style(test): dart format the four files this review left unformatted
+- 8de49b77 - docs(test): state the disposition of every discarded overflow sink (#1318)
+- 6b7c995f - test(dashboard): sweep the normal band the width generator cannot reach (#1318)
+- d131ee17 - test(dashboard): pin the popup sweep's inventory counts instead of narrating them (#1240)
+- 1a39ecab - refactor(dashboard): value equality on the layout envelope, one hero avatar, real logs (#1248)
+- 32008251 - docs(skill): reconcile the overflow-gate skill with the dimensions the gate now sweeps (#1183)
+- fa5a44ec - test(dashboard): assert the tab registry from the unregistered side too (#1183)
+- 6fa3395a - test(dashboard): fail the overflow gate on an exemption that outlived its overflow (#1183)
+- ca2c84dc - test(admin): move the two remaining a11y gates into the PR test command (#1183)
+- 946290e2 - fix(ai): localize the port forwarding rule's port column (#1253)
+- cca5678d - fix(review): act on the standards and spec review of #1248
+- 6d1aef0a - fix(remote-assistance): stop building a USP client on the app's own origin (#1309)
+- 64306778 - fix(remote-assistance): invalidate the client cache inside the swap
+- 9cf72b52 - fix(remote-assistance): send every RA call to the Guardian host
+- aadb14ef - chore: bump version to 2.6.1
+- a8ee935a - chore(test): retire flutter_portal, whose wrappers stopped doing anything (#1299)
+- 7a8cee6c - chore(deps): move ui_kit to v2.39.0 (#1299)
+- 061dc902 - fix(admin): name the edit buttons on the node that can be pressed (#1299)
+- aee91e8e - fix(dashboard): let the picked tile say which card it is (#1299)
+- 50a7ca38 - feat(dashboard): say what each picked card is worth seeing at a glance (#1299)
+- 98fc7a49 - fix(topology): let the presented graph be moved, at the theme's own spacing (#1299)
+- f5f5b302 - fix(_shared): the presented card was a snapshot, and the wrong size (#1299)
+- 8072c11a - fix(topology): let a narrow card present the node detail itself
+- 387290f4 - fix(dashboard): one width for the presentation, and no frame inside the frame (#1299)
+- a6ae2409 - fix(dashboard): open the popup to the card's height, not the tile's (#1299)
+- f4d3bedd - refactor(_shared): move the density models out of the dashboard (#1299)
+- c0d34d95 - refactor(dashboard): scale a span from twelfths in one place (#1299)
+- 90009b71 - refactor(dashboard): drop withForms and the identifier that never nulled (#1299)
+- 1f31ca32 - refactor(dashboard): give the grid geometry value equality (#1299)
+- 2ba6d5cf - docs(comments): correct what popupColumns' two columns clears (#1299)
+- 22311d08 - test(dashboard): drive a real resize at compact's floor (#1299)
+- fe2056ef - fix(dashboard): stamp v2 when every pick is normal (#1299)
+- 9ff6d5fd - fix(dashboard): the pill's frame was two switches, not one (#1299)
+- c9f75fe2 - feat(dashboard): pare the form pill down to three glyphs, no frame (#1299)
+- 5baf0fe0 - refactor(dashboard): float the form picker over the card it shapes (#1299)
+- ff9ea941 - fix(dashboard): give the picks value equality, and stamp only what the bytes need (#1299)
+- c88a8b4a - refactor(dashboard): move the form picker onto the edit-mode toolbar (#1299)
+- 65561491 - feat(dashboard): let the picked form decide which sizes are legal (#1299)
+- eda9f28c - fix(dashboard): hold the phone grid's width against the left resize handles (#1293)
+- 9df1a145 - test(dashboard): correct the golden mock's note about breakpoint seeding
+- f37d6de5 - fix(dashboard): keep each breakpoint's layout to itself, and leave edit mode on logout (#1293, #1294)
+- ed8a3c24 - test(dashboard): pin the gate's grid geometry to production (#1248 W-4)
+- bd386b28 - feat(ai): localize the A2UI component surface (#1253)
+- d9fce9c0 - refactor(dashboard): one legend entry, seven copies gone (#1245)
+- e7310140 - feat(dashboard): let three more tabs into the scroll net, refuse the fourth (#1296)
+- 8a996ad1 - refactor(statistics): ask #1267's two questions of the WiFi Channels twin (#1297)
+- 3b898301 - fix(l10n): drop the English gloss from nine translated strings (#1298)
+- f656fcc5 - feat(dashboard): sweep a second router shape, and drop what the Channels tab duplicated (#1267)
+- 4a024f84 - fix(wifi): share the per-radio SNR aggregation, guarded (#1271)
+- 72d625e8 - docs(comments): render the em dashes in the #1226/#1252 degradation notes
+- 7e94c3a0 - fix(statistics): localize the channel prefix and share the section probe (#1270)
+- dedb98f3 - feat(dashboard): give ethernet_ports a compact port list, since no width reads (#1290)
+- 534f9c0f - fix(dashboard): give network_health's gauge its height back (#1291)
+- 7760da30 - fix(build): stop the payload report claiming nothing was pruned
+- 476eb1fe - feat(dashboard): degrade the connected_devices row above its widest realization (#1289)
+- 88abbedb - build(web): prune the unserved CanvasKit output, and pre-compress behind a flag
+- 0ca64c3e - feat(dashboard): degrade the three hero cards below their readability floor (#1288)
+- 1a51ad7d - refactor(dashboard): fold three hand-rolled narrow tiles into layout_blocks (#1275)
+- bbb49f72 - fix(l10n): stop asking the engine for a double-prefixed CJK fallback (#1285)
+- f204cafd - fix(layout): stop MapsToRow capping its target at half the row (#1286)
+- b41c5c70 - docs(dashboard): close #1240 as a decision and a split, not card fixes
+- c486eb7d - docs(dashboard): credit #1239's ticket for the reachability widths, not the sweep
+- bc4b5822 - feat(dashboard): popup form below 200px, with the full card one tap away (#1239)
+- 7c410e17 - feat(port-forwarding): add stable Semantics identifiers to the 3 tabs (#1246)
+- 47aa436b - feat(dashboard): density mechanism — normalAbove, injection, three forms (#1232)
+- 578216f1 - docs(density): re-measure fit widths after Track A (#1240 AC1)
+- 46650822 - docs(l10n): say what the resolver does not do, and point at it from the setting
+- 95d935b7 - test: share the AppSettings fake the second copy of which I just wrote
+- 5b7bb9db - test(build): fail CI on the forgotten font map entry instead of shipping tofu
+- bfbc49e9 - test(l10n): cover the URL hop the locale change actually reaches the network on
+- 9f6b7cbc - fix(l10n): let a language change reach the popup that is already open
+- 40fc4cc5 - fix(devices): dispose the node-badge TextPainter (#1238)
+- 349096c4 - refactor(l10n): drop the effectiveLocale alias activeLocale replaced (#1244)
+- e6851f00 - docs(l10n): close the three review nits, one of them by refusing it (#1244)
+- 85c95ba7 - fix(l10n): fall back to English, not to whatever sorts first (#1244)
+- 74344530 - fix(l10n): give the locale one answer instead of eight (#1244)
+- 9798b5d9 - fix(build): gate the two keep lists gen-l10n cannot generate from
+- 8ae2c040 - fix(build): stop the flavour line counting a locale that is not there
+- e3969a2f - fix(build): stop restore from destroying an uncommitted fonts: block edit
+- 31f573b4 - test(dashboard): prove the #1230 measurements are the app's own fonts
+- 1b1f1872 - docs(framework): correct the mixin save() re-fetch contract (#1274 review)
+- d51252df - fix(firewall): take ui_kit v2.34.11 and delete the donut workaround (#1230)
+- 949dd560 - feat(web): drop the chromium CanvasKit variant (#1281)
+- d5721dcc - fix(instant_safety): invalidate L1 before the post-save re-fetch check
+- 76c81046 - fix(dashboard): close connected_devices' 27 overflow coordinates (#1238)
+- 190b0c54 - fix(instant_safety): make InstantSafetyStatus.isLoading default to false
+- 3c19de5e - fix(instant_safety): keep the post-save re-fetch failure a throw (#1274 review)
+- 508ad06b - fix(instant_safety): catch ServiceError in performFetch so the error view renders (#1274)
+- 37fd503b - test(firewall): put the measured slot numbers in the two guard reasons
+- b49172b4 - docs(firewall): name the two follow-up tickets #1230 left open
+- 71e1236c - fix(firewall): stack the rule metrics and guard the charts, clearing 21 coordinates (#1230)
+- 57a50077 - fix(statistics): make spaceBetween actually reach the section edge (#1258)
+- 683e0fc8 - test(dashboard): retire 46 dead ratchet exemptions, credit #1247
+- 59bf27d3 - fix(build): keep the payload measurement from failing on its own diagnostics
+- 4175912f - fix(l10n): read the shipped locales from one place, normalize a stale choice
+- 671af11c - fix(build): abort the strip on an intact tree, keep every kept language's fonts
+- 2088bd60 - test(dashboard): name the upstream blocker for connected_devices' 26 coordinates (#1238)
+- a4a09470 - fix(dashboard): floor the gauge bound, localize the IPv6 value, correct the footer count (#1234, #1236)
+- 7dad416e - test(dashboard): close the readability suite's silent-pass hole (#1234, #1235, #1236, #1237)
+- e1f8138a - test(topology): cover the node-detail Details button identifier
+- beb26c3b - docs(constitution): make Article XVI §16.2 identifier-first
+- 535272ab - docs(dashboard): correct the remaining-coordinate classification in §2.10d (#1230, #1238)
+- 42b0ffbe - fix(statistics): close the AC-1 gap the nested Row(min) left (#1258)
+- b0496457 - test(dashboard): cover the two hero-row readings, correct the measured comments (#1236, #1237)
+- 60ca0256 - test(dashboard): tighten the ratchet by 87 coordinates (#1234, #1235, #1236, #1237)
+- 2673a09d - fix(dashboard): scale the health gauge centre instead of overflowing it (#1235)
+- 14162d36 - fix(dashboard): bound the Monitor gauges by the box that holds them (#1234)
+- b57e8e5b - fix(port-forwarding/ipv6): left-align the protocol block, localize ipv6 "Both" (#1261)
+- 02413c24 - fix(dashboard): give the Monitor tab's legend row #1226's shape (#1234)
+- abb82185 - fix(dashboard): let the two hero inner rows give (#1236, #1237)
+- 9fda58d1 - fix(dashboard): flex the two hand-rolled "View details" footers (#1234, #1236)
+- e3d3f4bb - docs(dashboard): record the shape attribution for #1234-#1237 before implementing
+- d7d9d97d - docs(dashboard): file the tri-band donut overflow as #1267 (#1266)
+- 614f3a5f - fix(dashboard): localize the wifi_performance channel readout and harden the row it breaks (#1266)
+- d155ace9 - fix(ui): keep the arrow icon's colour tied to its text, cover ToggleRow (#1247)
+- c40a396e - fix(port-forwarding/ipv6): stack protocol control to stop clipping in narrow dialogs (#1261)
+- 8ab305da - harden(statistics): Wrap treatment for stats_wifi_channels rows (#1258)
+- 57056703 - refactor(ui): draw the "maps to" arrow as an icon, not U+2192 (#1247)
+- 0ceba682 - docs(dashboard): record what the eighth and ninth legend replications taught (#1229)
+- 670fc0ec - test(dashboard): pin the wifi_performance legend and per-band readability (#1229)
+- 12a4e681 - fix(dashboard): wrap the wifi_performance legend rows at both sites (#1229)
+- 385e090f - fix(dashboard): size wifi_status card rows from the row, not the screen (#1251)
+- 30c2b8f7 - fix(test/gate): close two silent-pass holes in the overflow probe (#1248)
+- 297d5491 - test(statistics/traffic-monitor): resolve the fixture lookup per test, explain the canShrink bound (#1252)
+- cb1aaf9e - test(dashboard): close the silent-pass hole in the ethernet_ports viewport probe (#1228)
+- 233009b7 - test(statistics/traffic-monitor): give the byte-totals assertion teeth (#1252)
+- b722f6fb - fix(dashboard): stack ethernet_ports summary tiles where they cannot fit (#1228)
+- b3af7326 - feat(topology): add stable Semantics identifier to node-detail Details button (#1254)
+- fd56fd11 - fix(statistics/traffic-monitor): wrap the Monitor legend row so totals never overflow (#1252)
+- c48de478 - docs(dashboard): record what #1227's seven shared sites taught (#1227)
+- 208315ed - fix(dashboard): make shared layout blocks overflow-safe (#1227)
+- 11953ebd - docs(test): state the two justifications the round-1 review found missing (#1225, #1226)
+- baf5a049 - refactor(ai): de-duplicate the speed markers, and stop minting a third formatter
+- ea2dd28b - test(dashboard): pin the label-fits claim at every grid width, not just 288px (#1231)
+- 1b925977 - test(dashboard): reset view state pumpRow mutates, not just the surface size (#1231)
+- b5f44b4d - fix(dashboard): calibrate the UspInfoRow label column to the row it lives in (#1231)
+- 4a2b3c8d - style(test): format app_test_fonts to dart format (#1183)
+- eb818243 - docs(dashboard): point §1.1 at the legend-extraction ticket it asked for (#1245)
+- 37132b20 - style(dashboard): use AppSpacing tokens in the two Network Health legend Wraps (#1233)
+- 9208b8ea - fix(dashboard): apply the legend degradation shape to six more rows (#1233)
+- 848f7aca - docs(build): move the size vocabulary out of the repo
+- 34c3bc92 - docs(build): move the English-only rationale out of the repo
+- 8f61a4a2 - fix(build): strip language packs on a CI workspace with a stamped version
+- 37bf973c - docs(build): document wiring the English-only flavour into a freestyle job
+- 304a790c - feat(build): add an English-only build flavour to cut the delivered payload
+- 31d71e0f - refactor(ui): draw up/down direction markers as icons, not Unicode characters
+- 9b0f6efd - fix(dashboard/_shared): size UspInfoRow label from real available width (#1231)
+- 2505c016 - fix(dashboard/traffic-analysis): wrap the Monitor legend row so totals never overflow (#1226)
+- ea9610b3 - test(dashboard): enumerate each span's narrowest width instead of sampling 19 screens (#1225)
+- 53e12a9d - docs(dashboard): correct three density-design claims from ticket-split measurement (#1183)
+- edfbf5ac - docs(dashboard): record density design and overflow measurements (#1183)
+- d13b9577 - feat(e2e): add stable identifiers to Advanced Settings entry cards (#1218) (#1222)
+- 9b848994 - test(dashboard): rebuild overflow baseline from measurement (#1183)
+- ad0716b1 - fix(test/dashboard): honor dump mode in report generator, fix stale hints (#1183)
+- a11707b6 - fix(ai): read idle immediately when the conversation is cleared
+- 937535fb - feat(ai): tell the user which round of a multi-round wait is in flight (#1220)
+- cc280e0e - refactor(internet-settings): assert phase-2 tunnel contract + add PPTP-absent-row test
+- c5f62a78 - refactor(internet-settings): diagnosable contract assertion + trim Item 4 note
+- 606a6302 - refactor(internet-settings): address PR #1219 review (Hank items 1,3,4,5,6)
+- 5c1ed781 - fix(usp): classify trailing-dot table GETs as no-warning + fail-fast tunnel mocks
+- c12c4d18 - test(ai): cover the format reminder and the renderer contract
+- 29beab6f - feat(ai): emit the A2UI protocol version in generated messages
+- 267b9dcf - fix(usp): send IPv6 settings SET with allow_partial=true (#1184)
+- 7661cb5b - fix(usp): stop false missing/empty warnings for table & wildcard GETs
+- 298de3ce - fix(internet-settings): fetch WAN tunnel conditionally by connection type
+- 1175273c - feat(e2e): add stable identifiers to Static Routing + DMZ controls (#1172 Group 3) (#1214)
+- d9148331 - fix(usp): stop back-filling absent concrete GET paths in _rawGet (#1184) (#1198)
+- 40c1180a - chore(deps): bump ui_kit_library / generative_ui to v2.34.3 (#1213)
+- 02b34f2e - feat(e2e): stable topology node identifiers for E2E location (#1208) (#1211)
+- 83758c5c - feat(golden-report): report where and why a golden overflowed (#1197) (#1209)
+- 1c048d26 - fix(ai): let a revocation escape a stalled queue
+- cdb3eb9b - fix(ai): serialise storage strictly, surface failed revocations
+- da1075bc - fix(ai): catch what config loading actually throws, undo writes a clear beat
+- 51c6fab2 - fix(ai): map storage and config failures to ServiceError (#1203)
+- b8894c40 - feat(e2e): add stable identifiers to dialog/CRUD controls (#1172) (#1205)
+- b11c6a91 - fix(dashboard): reflect WAN disconnect in Network Health card (#1143) (#1178)
+- d48c4401 - fix(usp): make firmware finalization failure-safe
+- aea1868b - fix(usp): address Qodo review — state clobber, double finalize, static drift
+- ec866b20 - ci: retrigger consumer gates on re-pinned head
+- 86ec0cce - refactor(ui): migrate port/service rule dialogs to AppDialog (#1166)
+- 520e9104 - feat(e2e): add stable identifiers to dialog/CRUD controls (#1172)
+- 264b8744 - fix(ai): address PR review — drop dead legacy-key path, make log tests real
+- 054510ed - chore(ai): keep user data out of release logs (#1194)
+- 7b6b9718 - feat(ai): persist AWS Bedrock credentials in secure storage (#1193)
+- 7fa90ad5 - build(usp): re-pin producer package to merged mainline 344a1757
+- 0b97fab3 - fix(dhcp): repair DHCP detail page layout at mobile width (#1140) (#1190)
+- 9f3473e4 - feat(cloud): route client-side RA requests through router /cloud proxy on local builds (#1179) (#1200)
+- 0ee3f19c - fix(ai): give each exchange its own result batch (#1191)
+- 839c9ff4 - fix(ai): make the generation guard a whole-exchange invariant (#1191)
+- ebe63e5a - chore(deps): bump UI kit to v2.31.0 and drop local overrides
+- 1e70f368 - fix(ai): batch tool results into one message per assistant turn (#1191)
+- a384421b - fix(navigation): revert top-nav highlight when navigation is cancelled (#1158) (#1177)
+- 80e3d17b - feat(usp): E2E testing initiative — transport seam, demo unification, E2E_MOCK, a11y labels (#1167)
+- c3e40e0b - docs(skill): add dashboard-overflow-gate operator skill (#1183)
+- f84fa9f5 - test(dashboard): extract allowlist to JSON fixture & add report generator (#1183)
+- 55f5295f - test(dashboard): data-driven RenderFlex-overflow gate for cards (#1183)
+- 24b17ad2 - fix(dashboard/network-health): address review — l10n cleanup, design token, precision (#1145)
+- a72a20f8 - test(dashboard): extend pumpCard() helper to accept state param (W-6b)
+- 98c1f506 - test(dashboard): assert only series-name prefix in network health legend (W-5)
+- 8480e3e1 - test(dashboard/network-health): use l10n method for avg legend assertion (#1145)
+- 55c3a38c - fix(dashboard/network-health): translate legend series l10n keys, cover non-zero discards, dedupe legend entry (#1145)
+- 6241458d - fix(dashboard/network-health): label Errors/Loss chart legend series (#1145)
+- c91958a1 - fix(diagnostics): honor Cancel mid-flow by guarding step boundaries (`#1148`) (#1175)
+- 557d59c5 - fix(devices): show node display name in Node filter, not model (#1157) (#1171)
+- 86d68685 - fix(diagnostics): disable Speed Test across app pending FW support (#857) (#1168)
+- c45ee12b - fix(pnp): address review on no-internet bypass (#1104)
+- 17bf3b5a - feat(pnp): add "Log into router" bypass on no-internet page (#1104)
+- d796b51f - fix(golden): keep regional locale variants as distinct golden files (#1161)
+- 45120472 - fix(golden): stabilize flaky golden tests (edit-mode jiggle, tab switching, report links) (#1155)
+- 5a981486 - build(usp): pin the green producer package
+- 3a7363d1 - fix(usp): fail closed across WebSocket boundary
+- c2e1a97d - Refresh the reviewed producer reference
+- 170377ad - Make the USP boundary gate fail closed
+- 39dd459d - ci: exclude deliberate boundary fixtures from Dart analysis
+- ed90fc4c - ci(usp): gate Dart and Wasm boundary drift
+- e956fa1c - fix(usp): restore the audited Wasm consumer surface
+- 48fb582a - docs: backfill CHANGELOG for 2.4.0-2.6.0
+- 2ce5d928 - chore: bump version to 2.7.0
 
 ## [2.6.0] - 2026-07-16
 
