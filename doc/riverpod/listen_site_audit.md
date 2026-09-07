@@ -101,9 +101,9 @@ population.
 
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
-| 6 | `page/_shared/providers/usp_device_analytics_notifier.dart:33` | `next.valueOrNull == null` only | **`redundant-today`** | yes | On an unchanged device list `_onDashboardUpdated` recomputes the same hourly aggregate (replaced, not appended, so no corruption) and ends at `:182` with `_persistState()` (`:263`). **Cost: one redundant storage write per no-change devices emission.** Safe under `==` — dropping the delivery is exactly the fix. |
+| 6 | `page/_shared/providers/usp_device_analytics_notifier.dart:33` | `next.valueOrNull == null` only | **`redundant-today`** | yes | On an unchanged device list within the same clock hour, `_onDashboardUpdated` rewrites the current hourly bucket with identical values and still persists at `:188`. **Cost: one redundant storage write, but only for two identical emissions inside the same hour.** Narrower than it looks, and **not fixable by a payload diff** — see the note below. |
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
-| 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `:57 ref.invalidateSelf()` on any devices emission, unchanged or not. **Cost: one redundant Ethernet USP fetch per no-change devices emission.** Ethernet data cannot have changed *because of* an identical device list, and a genuine change already arrives via the SSE listener at `:47`. |
+| 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here.** |
 
 ### `wifiDataProvider` — 3
 
@@ -127,7 +127,7 @@ consequence 2 applies to all three listeners: each runs twice per refetch.
 
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
-| 13 | `page/admin/providers/system_info_data_provider.dart:38` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `:40 ref.invalidateSelf()`. No doubling here: `firmware_update/providers/firmware_banks_data_provider.dart:51` sets a **bare** `const AsyncLoading()` (`hasValue` false), which the guard filters ⇒ one delivery per refresh. The redundancy is reachability-driven: `firmware_update/providers/firmware_update_notifier.dart:332-356` calls `banks.refresh()` up to 3× (3 s apart), breaking only at `:341 if (banksData.banks.isNotEmpty)`, so a still-empty result triggers **up to 3 systemInfo USP fetches, 2 of them on unchanged banks**. |
+| 13 | `page/admin/providers/system_info_data_provider.dart:38` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `:40 ref.invalidateSelf()`. No doubling here: `firmware_update/providers/firmware_banks_data_provider.dart:51` sets a **bare** `const AsyncLoading()` (`hasValue` false), which the guard filters ⇒ one delivery per refresh. The redundancy is reachability-driven: `firmware_update/providers/firmware_update_notifier.dart:332-356` calls `banks.refresh()` up to 3× (3 s apart), breaking only at `:341 if (banksData.banks.isNotEmpty)`, so a still-empty result triggers **up to 3 systemInfo USP fetches, 2 of them on unchanged banks**. **Not fixable by a payload diff** — see the note below. |
 
 ### `dashboardDomainReadyProvider` — 3
 
@@ -208,13 +208,48 @@ coalescing), 1 redundant round-trip each at 14 and 15, and one duplicate mesh re
 (which is also 3 duplicate downstream deliveries).
 
 **Cause B — no payload comparison (3 sites: 6, 8, 13).** The effect fires on an unchanged payload because
-nothing compares it. Fix is a diff, and `dhcp_data_provider.dart:58-69` is the existing in-repo template
-(build a comparable projection of prev and next, act only when they differ). Site 13 additionally wants the
-`firmware_update_notifier.dart:330-345` retry loop looked at, since that loop is what makes the repeat
-frequent.
+nothing compares it. The projection to compare is **not a design choice** — it is the exact value the
+consumer already reads:
 
-Both fixes are guards of a few lines, which is the branch AC-4 allows for fixing in this PR rather than
-filing.
+| Site | What the consumer actually consumes | Projection |
+| --- | --- | --- |
+| 8 `ethernet_data_provider:55` | `:67` `devicesData?.clientDevices` → `svc.fetch(deviceModels:)` at `:76` | `clientDevices` |
+| 6 `usp_device_analytics_notifier:33` | `:43` `_onDashboardUpdated(data.clientDevices)` | `clientDevices` |
+| 13 `system_info_data_provider:38` | `:53` `svc.fetch(firmwareBanks: banksData?.banks)` | `banks` |
+
+All three projection types have value equality (`ClientDevice extends NetworkEntity with EquatableMixin`
+with `props` at `client_device.dart:334`; `FirmwareImageUIModel extends Equatable`), and
+`dhcp_data_provider.dart:58-69` is the in-repo template.
+
+**But a diff is only sound where skipping the refetch loses nothing, and measurement says that holds for
+exactly one of the three.** Both of the following were prescribed in a draft of this document and are wrong:
+
+- **Site 6 — `_onDashboardUpdated` is not a pure function of its argument.** It reads `DateTime.now()` at
+  `:138` and *appends a new hourly bucket* when the hour has rolled over
+  (`:151 if (history.isNotEmpty && history.last.hour == currentHour)`). An identical device list at a later
+  time therefore produces a *different* result, and a `clientDevices` diff would leave gaps in the 24 h
+  history — the provider is not autoDispose, so the gap persists for the session. The genuine waste is
+  narrower than first measured: only two identical emissions **inside the same hour**, costing one
+  storage write. **Filed, not fixed** — a sound guard has to compare the hour bucket as well as the list,
+  which is a behaviour decision about the analytics history rather than a guard.
+- **Site 13 — `systemInfoDataProvider` has exactly one refresh trigger in the entire app, and it is this
+  listener.** Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
+  `invalidate`/`refresh`/`.notifier` call), and `firmwareBanksDataProvider` in turn has exactly one
+  refresher (`firmware_update_notifier.dart:338`). Meanwhile `_fetch()` gets SystemInfo **live from USP**
+  and merely passes `banks` through. So on a same-version reflash — banks identical, `softwareVersion`
+  and `uptime` changed — a `banks` diff would suppress the app's only systemInfo refresh for the rest of
+  the session. **Filed, not fixed**; decoupling systemInfo from banks is a design change, not a guard.
+
+## AC-4 outcome
+
+| | Sites | Action |
+| --- | --- | --- |
+| Cause A, `isLoading` guard | 9, 10, 11, 12, 14, 15 | **Fixed in this PR** — provably lossless: the dropped frame carries the *previous* value, so the body was acting on stale data. |
+| Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. |
+| Cause B, unsound diff | 6, 13 | **Filed** with the measured cost and the reason above. |
+
+7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
+undocumented.
 
 ## Method
 
@@ -228,6 +263,25 @@ filing.
   `test/page/dashboard/providers/dashboard_domain_ready_provider_test.dart` (#1503).
 - For every `redundant-today` candidate the **producer** was checked as well as the listener: whether it
   refetches via `invalidateSelf` (coalescing, refresh frame) or by direct assignment (no frame), and whether
-  an equal emission is reachable at all. Two draft verdicts were wrong before that step and are recorded
-  above rather than quietly corrected: the pnp reachability claim, and an "8 → 2 Ethernet fetches" figure
-  that coalescing reduces to 1.
+  an equal emission is reachable at all.
+- For every proposed *fix*, the consumer was checked for hidden inputs (a clock, accumulated state) and the
+  provider for alternative refresh triggers. This is what killed two prescriptions that had already been
+  written down (sites 6 and 13) and it is the step worth repeating: "the effect is a function of the
+  payload" is an assumption, not an observation.
+
+Four draft claims were wrong and are recorded above rather than quietly corrected: the pnp reachability
+argument, an "8 → 2 Ethernet fetches" figure that coalescing reduces to 1, and the two payload-diff
+prescriptions. A fifth is a ticket-body drift, not mine: the ticket lists
+`usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
+`test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
+
+## Verification
+
+- `./run_tests.sh` → **6513/6513 pass**
+- Affected set (21 files: direct tests for the 8 changed sources plus every `*_test.dart` importing them) →
+  **264/264 pass**
+- `fvm flutter analyze` → **480 issues, identical to the `d484a23a` baseline**; **0** attributable to any of
+  the 8 changed files. (Analyze reports 810 with 330 errors in a fresh worktree until `flutter pub get`
+  generates `l10n/gen/app_localizations.dart` — that is an environment artefact, not a finding.)
+- `fvm dart format --set-exit-if-changed` on all 8 changed files → clean
+- Flutter 3.47.2 per `.fvmrc`

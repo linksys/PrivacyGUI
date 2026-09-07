@@ -52,10 +52,17 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
     // Devices listener: device list changes affect which wired devices
     // show on LAN ports. Re-fetch to get fresh Ethernet data.
-    ref.listen(devicesDataProvider, (_, next) {
-      if (next.hasValue && state.hasValue) {
-        ref.invalidateSelf();
-      }
+    //
+    // Compare the exact input _fetch() consumes — `clientDevices`, the only
+    // thing passed to the service at :76 — rather than re-fetching on every
+    // DevicesData emission. DevicesData changes on any device field (RSSI, band,
+    // SSID), so the unguarded version cost one Ethernet USP fetch per unrelated
+    // device update. Skipping is lossless: causes that are not the device list
+    // arrive via the SSE listener above. Template: dhcp_data_provider.dart:58.
+    ref.listen(devicesDataProvider, (prev, next) {
+      if (!next.hasValue || !state.hasValue) return;
+      if (prev?.valueOrNull?.clientDevices == next.value!.clientDevices) return;
+      ref.invalidateSelf();
     });
 
     return _fetch();
