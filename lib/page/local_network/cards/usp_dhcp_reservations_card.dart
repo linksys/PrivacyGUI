@@ -35,7 +35,9 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       title: 'DHCP',
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.add, size: 20),
-        onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
+        onTap: isLoading
+            ? null
+            : () => _showAddDhcpDialog(context, ref, reservations),
       ),
       // Reservations, not reservations plus leases. The card is two sections and
       // the footer counts both, but the tile has one number and the reservations
@@ -178,13 +180,26 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
+  /// Opens the shared reservation dialog.
+  ///
+  /// [reservations] is what the card is currently rendering, and it is passed
+  /// through as `existingReservations` so the dialog can reject a duplicate
+  /// MAC/IP. That argument is **not** optional in practice even though the
+  /// parameter has a default: `existingReservations` falls back to `const []`,
+  /// against which every address is unique, so omitting it turns the dialog's
+  /// duplicate check into a silent no-op on this entry point (#1070).
+  Future<void> _showAddDhcpDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<DhcpReservationUIModel> reservations,
+  ) async {
     final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;
