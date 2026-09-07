@@ -1,15 +1,12 @@
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 
 /// Remote Assistance proximity: the agent is not in the building. Losing the
-/// credential (factory reset) or the path (local firmware upload) ends the
-/// session with no way back; a reboot or a cloud OTA upgrade does not, because
-/// the box comes back on its own.
-///
-/// `bool canRecoverFrom(DisruptionClass)` is still outstanding — see
-/// [ProximityStrategy] for the measured blocker (`DisruptionClass` is #1496's
-/// own analysis).
+/// credential (factory reset) ends the session with no way back, and a local
+/// firmware upload has no byte path of its own to spend; a reboot or a cloud OTA
+/// upgrade costs neither, because the box comes back on its own.
 class RemoteProximityStrategy implements ProximityStrategy {
   const RemoteProximityStrategy();
 
@@ -36,6 +33,42 @@ class RemoteProximityStrategy implements ProximityStrategy {
         RecoveryTrigger.operationalFactoryReset ||
         RecoveryTrigger.operationalFirmwareUpgrade =>
           _guardianRecovery,
+      };
+
+  /// Two of the three classes are unrecoverable from outside the building.
+  ///
+  /// **`credentialLoss` — factory reset.** The reset is "recoverable" in the
+  /// sense that the router comes back; it comes back with the password printed
+  /// on its label, and this mode's operator cannot read the label. Guardian is
+  /// proxying an admin login that has stopped existing, so no amount of probing
+  /// helps: [planFor] would happily return a 30-second loop that runs until the
+  /// session is billed out. Refusing the operation is the only correct answer,
+  /// and it is why `planFor`'s `operationalFactoryReset` arm is reachable in
+  /// theory only.
+  ///
+  /// **`transportLoss` — local firmware upload.** `false` because **manual
+  /// firmware update is a local-only feature**, decided at product level rather
+  /// than derived here. Stated that way deliberately: this arm's first draft
+  /// justified the same answer by claiming the upload is aimed at Guardian and
+  /// broken, and that claim is false — `window.location` feeds only the Method-2
+  /// WebSocket URL, and Method 1 pushes `chunkedPush` over the same Guardian-
+  /// proxied `UspClient` that reboot and OTA use, with an automatic fallback to
+  /// it. It would work; it is simply not on offer remotely, and cloud OTA is the
+  /// remote answer for the same need. See `DisruptionClass.transportLoss` for the
+  /// 1,121-round-trip arithmetic that says why nobody should re-litigate this,
+  /// and for the suspected defect the decision retires.
+  ///
+  /// **`transientRestart` — reboot, cloud OTA, install trigger, Wi-Fi change.**
+  /// Allowed, and this is the half that is easy to lose. The Guardian path
+  /// reaches the router over its WAN uplink and re-establishes itself when the
+  /// box finishes booting; the credential and the route both survive. These are
+  /// also the operations an agent most often calls, so a guard that refused
+  /// everything disruptive would be shipped and then worked around.
+  @override
+  bool canRecoverFrom(DisruptionClass disruption) => switch (disruption) {
+        DisruptionClass.credentialLoss => false,
+        DisruptionClass.transportLoss => false,
+        DisruptionClass.transientRestart => true,
       };
 
   /// 30 seconds, not the local 10.

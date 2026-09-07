@@ -1,13 +1,10 @@
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 
 /// Local / cloud proximity: the operator can power cycle, re-cable and read the
 /// sticker, so every disruption class is recoverable.
-///
-/// `bool canRecoverFrom(DisruptionClass)` is still outstanding — see
-/// [ProximityStrategy] for the measured blocker (`DisruptionClass` is #1496's
-/// own analysis).
 class LocalProximityStrategy implements ProximityStrategy {
   const LocalProximityStrategy();
 
@@ -28,6 +25,28 @@ class LocalProximityStrategy implements ProximityStrategy {
         RecoveryTrigger.operationalFactoryReset ||
         RecoveryTrigger.operationalFirmwareUpgrade =>
           _lanRecovery,
+      };
+
+  /// Everything is recoverable, because the operator is standing next to the box.
+  ///
+  /// The arms are written out for the same reason [planFor]'s are, and the
+  /// uniform answer is not laziness — it is the definition of proximity. A reset
+  /// puts the credential back to the one printed on the label and the operator
+  /// can read the label; a local upload is aimed at the LAN address the browser
+  /// is already talking to; a restart ends when the operator's browser
+  /// reconnects. There is no local disruption whose recovery needs someone else
+  /// to be in the building.
+  ///
+  /// Every arm returning `true` also means this mode never blocks an operation,
+  /// which is exactly what phase 6 must not change: the five seams that now call
+  /// `OperationGuard.enforce` are all reached by the local build too, and their
+  /// existing tests run under the default (local) profile.
+  @override
+  bool canRecoverFrom(DisruptionClass disruption) => switch (disruption) {
+        DisruptionClass.credentialLoss ||
+        DisruptionClass.transportLoss ||
+        DisruptionClass.transientRestart =>
+          true,
       };
 
   /// 10 seconds, unchanged from the `Timer.periodic` this replaced. The probe is

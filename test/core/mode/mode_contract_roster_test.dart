@@ -96,6 +96,12 @@ const _notPaired = <String, String>{
   // `TransportStrategy` and `CredentialStrategy` as constructor parameters and
   // there is still one of it. That is the shape this row was written to defend.
   'RecoveryProbeService': '#1323 (phases 4-5)',
+  // Phase 6 has now landed too, and this row spent phases 3-5 asserting nothing:
+  // `lessThanOrEqualTo(1)` below is satisfied by zero definitions, so until
+  // `lib/core/mode/operation_guard.dart` existed the only live half was the
+  // no-pair check. Both halves are real now — one `OperationGuard`, taking a
+  // `ProximityStrategy` as a constructor parameter. The bound stays `<= 1` rather
+  // than `== 1` on purpose, so the next row can be written before its class is.
   'OperationGuard': '#1496 (phase 6)',
 };
 

@@ -7,6 +7,8 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -107,6 +109,7 @@ void main() {
     FirmwareLocalUploadService? uploader,
     FirmwareOtaCheckService? otaChecker,
     AsyncValue<FirmwareBanksData>? banksData,
+    List<Override> extra = const [],
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -123,6 +126,12 @@ void main() {
           firmwareBanksDataProvider.overrideWith(
             () => _FakeBanksNotifier(banksData),
           ),
+        // Last, so a caller can replace any of the above — and, more to the
+        // point, so this helper reads the same way as the one in
+        // `usp_admin_notifier_test.dart`. Two sibling helpers with the same
+        // signature and opposite precedence is a trap that costs an afternoon
+        // exactly once.
+        ...extra,
       ],
     );
     // Keep the autoDispose notifier alive across `await` boundaries inside
@@ -721,6 +730,126 @@ void main() {
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.failed);
         expect(state.errorMessage, contains('Network error'));
+      });
+    });
+
+    // #1496 phase 6, acceptance 6. This class holds the pair that made phase 6
+    // necessary: `runUpload` and `triggerOtaInstall` both mean "update the
+    // firmware", they are 60 lines apart, and one of them cannot work in Remote
+    // Assistance at all.
+    //
+    // Not a policy choice for the upload — a measurement.
+    // `firmware_local_upload_service.dart` derives the router host from
+    // `window.location` and has zero mode reads in the whole file, so under RA it
+    // pushes the image at Guardian instead of at the router. It was broken before
+    // this phase, silently; the guard makes it say so.
+    //
+    // Note what could NOT be tested here, and why the guard is at the notifier.
+    // Both flows converge one line later: `firmware_update_view.dart` calls the
+    // same `notifier.enterRecoveryWaiting()` (hard-coding
+    // `RecoveryTrigger.operationalFirmwareUpgrade`) and then the same
+    // `showFirmwareUpdateRecoveryDialog(context, ref)` with identical arguments.
+    // #1496's own 🔴 section proposed carrying the DisruptionClass on
+    // `RecoveryContext`, which is downstream of that convergence: both operations
+    // would have passed the same value and the pair could not have differed.
+    group('the operation guard (#1496)', () {
+      /// Remote Assistance by provider override — falsification criterion 3.
+      ProviderContainer remoteContainer({FirmwareFilePickerService? picker}) =>
+          createContainer(
+            picker: picker,
+            extra: [
+              appModeProfileProvider
+                  .overrideWithValue(const RemoteModeProfile()),
+            ],
+          );
+
+      test('local upload is refused, and no bytes are pushed', () async {
+        final bytes = validImage();
+        final container = remoteContainer(
+          picker: _StubPickerService(
+            FirmwarePickedFile(
+                name: 'fw.img', size: bytes.length, bytes: bytes),
+          ),
+        );
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        // A real image is picked first, so `verifyNever` below means "the guard
+        // stopped it" and not "there was nothing to upload anyway".
+        expect(await notifier.pickAndValidateFile(), isTrue);
+
+        await expectLater(
+          notifier.runUpload(commandKey: 'cmd-1'),
+          throwsA(isA<UnauthorizedError>()),
+        );
+
+        verifyNever(() => mockUploader.uploadFile(
+              bytes: any(named: 'bytes'),
+              md5: any(named: 'md5'),
+              commandKey: any(named: 'commandKey'),
+              isCancelled: any(named: 'isCancelled'),
+              onProgress: any(named: 'onProgress'),
+            ));
+
+        // Refused *before* the phase moves. The roster test asserts this by
+        // regex — the guard must be `runUpload`'s first statement — and a regex
+        // is the wrong place for the only copy of a behavioural claim. The state
+        // is what the view renders: `uploading` here would put a progress bar
+        // and a cancel button on screen for an upload that never started, and
+        // `failed` would be honest but would swallow the snackbar
+        // `_onConfirmInstall` now shows on `UnauthorizedError`.
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.totalChunks, 0);
+      });
+
+      test('cloud OTA install is not refused', () async {
+        when(() => mockService.triggerOtaDownload(
+              targetInstance: any(named: 'targetInstance'),
+              firmwareUrl: any(named: 'firmwareUrl'),
+            )).thenAnswer((_) async {});
+        final container = remoteContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerOtaInstall(
+              targetInstance: 2,
+              firmwareUrl: 'http://example.com/fw.img',
+            );
+
+        verify(() => mockService.triggerOtaDownload(
+              targetInstance: 2,
+              firmwareUrl: 'http://example.com/fw.img',
+            )).called(1);
+        // The pair's other half, and the reason `DisruptionClass` is named for
+        // consequences: an OTA is *more* disruptive to look at than a local
+        // upload — the router downloads, flashes and reboots — and it is the one
+        // that works remotely, because nothing it destroys is on the agent's path.
+      });
+
+      test('the local install trigger is not refused either', () async {
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+        final container = remoteContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        verify(() => mockService.triggerLocalDownload(targetInstance: 2))
+            .called(1);
+        // Deliberate, and worth stating because it reads like a contradiction:
+        // the local *flow* is blocked, but this step is not what blocks it.
+        // Triggering an install of an image the router already holds only
+        // restarts the box. The local-only feature is *pushing the bytes*, so
+        // that is where the refusal belongs; putting a second one here would
+        // classify by flow instead of by consequence — the failure mode
+        // `DisruptionClass` exists to avoid. In RA this method is unreachable
+        // anyway: `_onConfirmInstall` returns as soon as `runUpload` throws.
       });
     });
   });

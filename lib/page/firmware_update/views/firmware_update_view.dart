@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -494,6 +496,19 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     try {
       await notifier.runUpload(commandKey: commandKey);
     } on FirmwareUploadCancelledException {
+      return;
+    } on UnauthorizedError catch (e) {
+      // #1496: the mode refused the operation, and unlike every other failure
+      // here that refusal leaves the notifier in `idle` — `OperationGuard.enforce`
+      // throws above `_setState`, on purpose, so no upload screen appears for an
+      // upload that will not happen. The generic arm below only logs, which for a
+      // refusal means the Update button does nothing at all: the failed-phase UI
+      // that renders `errorMessage` is never reached because the phase never
+      // moved. The admin view's factory-reset arm already surfaces this the same
+      // way; this is the firmware half of it.
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
       return;
     } catch (e, st) {
       logger.e('[FirmwareUpdate] runUpload error: $e',

@@ -26,6 +26,7 @@ import 'package:privacy_gui/core/mode/impl/remote_transport_strategy.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -108,6 +109,73 @@ void main() {
                 remote.planFor(t).needsRecovery)
             .toList(),
         [RecoveryTrigger.operationalWifiChange],
+      );
+    });
+  });
+
+  // #1496 phase 6. The second member of the same contract, and the **one place**
+  // the operation policy is written as literal expectations. `OperationGuard` is a
+  // delegation and its own test asserts only that; acceptance 6's substance —
+  // factory reset and local firmware upload are refused in Remote Assistance —
+  // is here, side by side with the mode that allows them, because the pair of
+  // tables is the specification and either one alone reads as arbitrary.
+  group('ProximityStrategy.canRecoverFrom', () {
+    test('locally nothing is unrecoverable', () {
+      const strategy = LocalProximityStrategy();
+
+      for (final disruption in DisruptionClass.values) {
+        expect(strategy.canRecoverFrom(disruption), isTrue,
+            reason: '${disruption.name} became unrecoverable locally. Nothing '
+                'in #1496 may take an operation away from the local build: the '
+                'operator can power cycle, re-cable and read the label on the '
+                'box, which is the whole content of "proximity".');
+      }
+    });
+
+    test('remotely a lost credential or a lost path is not recoverable', () {
+      const strategy = RemoteProximityStrategy();
+
+      // Factory reset. The reset restores the password printed on the sticker,
+      // and there is no sticker in the agent's building — so the Guardian
+      // session is left proxying a login that no longer exists.
+      expect(strategy.canRecoverFrom(DisruptionClass.credentialLoss), isFalse);
+
+      // Local firmware upload. `firmware_local_upload_service.dart` derives the
+      // host from `window.location`, which under RA is Guardian rather than the
+      // router. This one is not a policy choice, it is a bug being named.
+      expect(strategy.canRecoverFrom(DisruptionClass.transportLoss), isFalse);
+    });
+
+    test('remotely a restart is, because the box comes back on its own', () {
+      // The half that is easy to lose. An agent's two most common needs are a
+      // reboot and a cloud OTA upgrade, and both look as destructive as a
+      // factory reset from the UI. Classifying by consequence is what keeps them
+      // available; a guard that refused everything disruptive would be worse
+      // than no guard, because it would be shipped and then worked around.
+      expect(
+          const RemoteProximityStrategy()
+              .canRecoverFrom(DisruptionClass.transientRestart),
+          isTrue);
+    });
+
+    test('the two modes disagree on exactly two classes', () {
+      const local = LocalProximityStrategy();
+      const remote = RemoteProximityStrategy();
+
+      final differing = DisruptionClass.values
+          .where((d) => local.canRecoverFrom(d) != remote.canRecoverFrom(d))
+          .map((d) => d.name)
+          .toList();
+
+      expect(
+        differing,
+        ['credentialLoss', 'transportLoss'],
+        reason: 'found $differing. A third divergence means an operation '
+            'changed mode behaviour without this file saying so, and a shorter '
+            'list means one of the two blocks silently reopened. This is also '
+            'the assertion that keeps `transientRestart` from being split: a '
+            'fourth class that both modes answer identically is a value with no '
+            'measured difference, which Article XVII refuses.',
       );
     });
   });

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
@@ -89,7 +91,7 @@ void main() {
         .thenAnswer((_) async {});
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({List<Override> extra = const []}) {
     final container = ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
@@ -98,6 +100,7 @@ void main() {
         timeDataProvider.overrideWith(() => testTimeNotifier),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
         authProvider.overrideWith(() => mockAuthNotifier),
+        ...extra,
       ],
     );
     return container;
@@ -299,6 +302,66 @@ void main() {
         () => container.read(uspAdminProvider.notifier).factoryReset(),
         throwsA(isA<SessionTokenExpiredError>()),
       );
+      container.dispose();
+    });
+  });
+
+  // #1496 phase 6, acceptance 6. The half of the acceptance that is about
+  // operations rather than about classes: `reboot` and `factoryReset` are the
+  // pair the whole phase turns on, they sit four lines apart in the same class,
+  // and in Remote Assistance exactly one of them may run.
+  //
+  // Asserted through the *notifier* and not through the view, because the view is
+  // where phase 7 (#1497) will hide the affordance and this is the floor
+  // underneath that: a refusal that holds even if the button is reachable — via a
+  // deep link, a stale build, or a `SurfaceStrategy` arm somebody forgot. The
+  // service mock is stubbed to succeed in both tests, so a green here can only
+  // come from the operation never being attempted.
+  group('the operation guard (#1496)', () {
+    setUp(() {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.reboot()).thenAnswer((_) async {});
+      when(() => mockAdminService.factoryReset()).thenAnswer((_) async {});
+    });
+
+    /// Remote Assistance, selected by overriding the composition root.
+    ///
+    /// Falsification criterion 3 of #1474: no new remote test may assign
+    /// `BuildConfig.forceCommandType`. One override, no static to restore, and no
+    /// `tearDown` to forget.
+    ProviderContainer remoteContainer() => createContainer(extra: [
+          appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
+        ]);
+
+    test('factory reset is refused, and the command is never sent', () async {
+      final container = remoteContainer();
+      await container.read(uspAdminProvider.future);
+
+      await expectLater(
+        container.read(uspAdminProvider.notifier).factoryReset(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+
+      verifyNever(() => mockAdminService.factoryReset());
+      // The second expectation is the one that matters. A guard that threw
+      // *after* the USP command would pass the first: the router would already be
+      // resetting, the agent would see an error, and the box would come back with
+      // the sticker password and nobody in the building. So the refusal has to be
+      // upstream of the mutation lock, which is where the enforce call sits.
+      container.dispose();
+    });
+
+    test('reboot is not refused', () async {
+      final container = remoteContainer();
+      await container.read(uspAdminProvider.future);
+
+      await container.read(uspAdminProvider.notifier).reboot();
+
+      verify(() => mockAdminService.reboot()).called(1);
+      // An agent's most common request. If this ever goes red, the guard has
+      // stopped classifying by consequence and started classifying by how
+      // destructive an operation looks — see `DisruptionClass`.
       container.dispose();
     });
   });

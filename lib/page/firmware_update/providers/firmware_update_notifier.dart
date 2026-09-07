@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/operation_guard.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
@@ -211,7 +213,25 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// returns once all chunks are accepted. Does NOT trigger the flash —
   /// caller drives [triggerInstall] next so the confirm dialog can sit
   /// between the two stages.
+  ///
+  /// `transportLoss` — **manual firmware update is a local-only feature**, and
+  /// the class doc is worth reading before touching this: the upload is not
+  /// broken under Remote Assistance, it is simply not offered there. Cloud OTA is
+  /// the remote answer for the same need, and [triggerOtaInstall] below is
+  /// allowed in every mode.
+  ///
+  /// Refused before the state moves, so the view never shows an upload screen for
+  /// an upload that will not happen — and refused by throwing, because
+  /// `_onConfirmInstall` would otherwise fall straight through to
+  /// [triggerInstall] and then to a recovery dialog waiting for a reboot nobody
+  /// asked for.
+  ///
+  /// This is the seam #1496's own analysis could not have used: one line later,
+  /// the OTA path and this one converge on the same `enterRecoveryWaiting()` and
+  /// the same recovery dialog, so nothing downstream can tell them apart.
   Future<void> runUpload({required String commandKey}) async {
+    ref.read(operationGuardProvider).enforce(DisruptionClass.transportLoss,
+        operation: 'local firmware upload');
     final bytes = _pickedBytes;
     final md5 = state.selectedFileMd5;
     if (bytes == null || md5 == null) {
@@ -254,7 +274,17 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
+  /// Tells the router to install an image it already holds.
+  ///
+  /// `transientRestart`, and this is not a loophole in the block above: pushing
+  /// the bytes is what needs the router's own host, installing them only restarts
+  /// the box. Classifying this by the flow it belongs to rather than by what it
+  /// costs is exactly the mistake `DisruptionClass` exists to prevent — and in
+  /// Remote Assistance it is unreachable regardless, because
+  /// `_onConfirmInstall` returns as soon as [runUpload] throws.
   Future<void> triggerInstall({required int targetInstance}) async {
+    ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
+        operation: 'local firmware install');
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
@@ -268,10 +298,21 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
+  /// Tells the router to fetch and install an image from the cloud.
+  ///
+  /// `transientRestart`, allowed everywhere — and it is the half of the firmware
+  /// pair that is easy to get wrong. An OTA is the *more* alarming of the two to
+  /// watch: the router downloads, flashes and reboots. It is also the one that
+  /// works remotely, because the router does the fetching over its own uplink and
+  /// nothing on the agent's path is destroyed. Together with [runUpload] above,
+  /// the two lines are the whole argument for naming consequences instead of
+  /// operations.
   Future<void> triggerOtaInstall({
     required int targetInstance,
     required String firmwareUrl,
   }) async {
+    ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
+        operation: 'cloud OTA firmware install');
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
