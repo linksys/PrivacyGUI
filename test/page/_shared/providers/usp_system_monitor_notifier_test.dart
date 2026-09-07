@@ -7,9 +7,13 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspSystemMonitorService extends Mock
+    implements UspSystemMonitorService {}
 
 class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   @override
@@ -259,6 +263,61 @@ void main() {
       // Timer should not have started (no fetch calls).
       verifyNever(() => mockUsp.get(any()));
       container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The dashboardDomainReadyProvider listener restarts the polling timer once
+  // per settle, not once per notification.
+  //
+  // `is AsyncData` alone is not an edge trigger: re-running a FutureProvider
+  // that already holds a value emits AsyncData(isLoading: true, value: prev)
+  // via copyWithPrevious before the fresh value, and that frame satisfies
+  // `is AsyncData` too — so the unguarded listener called setRefreshInterval
+  // twice, each time cancelling the timer and firing an extra off-cadence
+  // fetch. See doc/riverpod/listen_site_audit.md (#1502 AC-4).
+  // -------------------------------------------------------------------------
+  group('UspSystemMonitorNotifier — domain-ready re-notification', () {
+    test('a domain-ready refetch triggers exactly one extra fetch', () async {
+      final mockSvc = MockUspSystemMonitorService();
+      when(() => mockSvc.fetchSnapshot())
+          .thenAnswer((_) async => SystemSnapshot(
+                timestamp: DateTime(2026, 1, 1),
+                cpuPercent: 10,
+                memoryPercent: 20,
+                totalMemoryKb: 1000,
+                freeMemoryKb: 800,
+                uptimeSeconds: 60,
+              ));
+
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider
+              .overrideWith(() => _AlwaysAuthenticatedNotifier()),
+          uspSystemMonitorServiceProvider.overrideWithValue(mockSvc),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // A permanent subscription keeps the notifier — and therefore its
+      // ref.listen on dashboardDomainReadyProvider — alive, so the invalidate
+      // below rebuilds eagerly instead of being deferred to the next read.
+      container.listen(uspSystemMonitorProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Consume the boot fetch so the next verify counts only what follows.
+      verify(() => mockSvc.fetchSnapshot()).called(1);
+
+      container.invalidate(dashboardDomainReadyProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one fetch. Without the isLoading guard this is 2.
+      verify(() => mockSvc.fetchSnapshot()).called(1);
     });
   });
 }

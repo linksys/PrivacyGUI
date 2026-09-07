@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
 
+import '../../../mocks/test_data/devices_test_data.dart';
+
 class MockUspEthernetDataService extends Mock
     implements UspEthernetDataService {}
 
@@ -119,6 +121,76 @@ void main() {
       expect(a, isNot(equals(c)));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // The devicesDataProvider listener re-fetches only when the input it actually
+  // consumes changed.
+  //
+  // `_fetch()` passes exactly `clientDevices` to the service, but DevicesData
+  // emits on any device field (RSSI, band, SSID), and devicesDataProvider
+  // assigns state directly rather than invalidating — so before #1502 every
+  // unrelated device update cost one Ethernet USP fetch. Causes that are not the
+  // device list arrive via the sseInvalidationProvider listener instead.
+  // ---------------------------------------------------------------------------
+  group('EthernetDataNotifier — devices listener', () {
+    /// Builds a container whose devices provider can emit further states.
+    (ProviderContainer, _PushableDevicesDataNotifier) pushableContainer(
+      DevicesData initial,
+    ) {
+      final notifier = _PushableDevicesDataNotifier(initial);
+      final container = ProviderContainer(
+        overrides: [
+          uspEthernetDataServiceProvider.overrideWithValue(mockEthernetSvc),
+          devicesDataProvider.overrideWith(() => notifier),
+        ],
+      );
+      return (container, notifier);
+    }
+
+    test('does not re-fetch when clientDevices is unchanged', () async {
+      final client = DevicesTestData.createWiredClient();
+      final (container, notifier) = pushableContainer(_devicesWith([client]));
+      addTearDown(container.dispose);
+
+      // A permanent subscription is required: invalidateSelf() on a provider
+      // with no listeners only marks it dirty, and the rebuild is deferred to
+      // the next read — so without this, the unguarded version would look
+      // identical to the guarded one here.
+      container.listen(ethernetDataProvider, (_, __) {});
+      await container.read(ethernetDataProvider.future);
+      verify(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          )).called(1);
+
+      // A fresh DevicesData carrying an equal client list. ClientDevice has
+      // value equality (NetworkEntity with EquatableMixin), so this is the
+      // "device changed in a way Ethernet does not read" case.
+      notifier.emit(_devicesWith([DevicesTestData.createWiredClient()]));
+      await Future.delayed(Duration.zero);
+
+      verifyNever(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          ));
+    });
+
+    test('re-fetches when clientDevices changes', () async {
+      final (container, notifier) = pushableContainer(_devicesWith([]));
+      addTearDown(container.dispose);
+
+      container.listen(ethernetDataProvider, (_, __) {});
+      await container.read(ethernetDataProvider.future);
+      verify(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          )).called(1);
+
+      notifier.emit(_devicesWith([DevicesTestData.createWiredClient()]));
+      await Future.delayed(Duration.zero);
+
+      verify(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          )).called(1);
+    });
+  });
 }
 
 /// Test override for DevicesDataNotifier.
@@ -129,6 +201,30 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Test override that can emit further states, mirroring how the real notifier
+/// assigns state directly (devices_data_provider.dart:296) rather than
+/// invalidating — so there is no intervening loading frame.
+class _PushableDevicesDataNotifier extends DevicesDataNotifier {
+  final DevicesData _initial;
+
+  _PushableDevicesDataNotifier(this._initial);
+
+  @override
+  Future<DevicesData> build() async => _initial;
+
+  void emit(DevicesData data) => state = AsyncData(data);
+}
+
+/// Creates DevicesData whose `clientDevices` is exactly [clients].
+DevicesData _devicesWith(List<ClientDevice> clients) {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+      unassignedClients: clients,
+    ),
+  );
 }
 
 /// Creates an empty DevicesData for testing.

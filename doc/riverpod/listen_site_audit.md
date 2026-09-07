@@ -251,6 +251,46 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
 7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
 undocumented.
 
+## Test coverage for the 7 fixes
+
+The 264-test affected set passed **identically before and after** the fixes, so it could not see the
+behaviour change at all. Each fix therefore got a test, and each test was run against the pre-fix source to
+confirm it is red there — a test that is green both ways is not coverage.
+
+| Site | Test | Instrument | Pre-fix | Post-fix |
+| --- | --- | --- | --- | --- |
+| 8 ethernet | `ethernet_data_provider_test.dart` | `verifyNever(svc.fetch)` after an equal-valued emission | fetch runs | no fetch |
+| 9 wifi advanced | `usp_wifi_advanced_notifier_test.dart` | `svc.fetchIeee80211h()` count | 2 | 1 |
+| 10 wifi settings | `usp_wifi_settings_notifier_test.dart` | `svc.buildWifiNetworks()` count | 2 | 1 |
+| 11 firewall | `usp_firewall_notifier_test.dart` | `performFetch(forceRemote:)` count, counting subclass | 2 | 1 |
+| 12 devices | `devices_data_provider_test.dart` | `svc.rebuildWithWifiData()` count | 2 | 1 |
+| 14 system monitor | `usp_system_monitor_notifier_test.dart` | `svc.fetchSnapshot()` count | 2 | 1 |
+| 15 traffic analysis | `usp_traffic_analysis_notifier_test.dart` | `svc.fetchBaselines()` count | 2 | 1 |
+
+Four things this exercise established that the audit alone had not:
+
+1. **The committed site-8 fix was inert.** It read
+   `prev?.valueOrNull?.clientDevices == next.value!.clientDevices`. `clientDevices` is a plain `List` built
+   fresh by `MeshNetwork.allClients`, so `==` is *reference* equality and never true — the guard always fell
+   through. `DevicesData` itself is `Equatable` and compares deeply, which is what made the mistake easy to
+   miss: the enclosing type has value semantics, the getter's return type does not. Now
+   `ListEquality<ClientDevice>().equals(...)`, matching `dhcp_data_provider:58`'s `MapEquality`. Only the test
+   caught this; the audit, the review checklist, `analyze` and 264 existing tests all passed it.
+2. **`invalidateSelf()` is lazy without listeners.** A provider with no active subscription is only marked
+   dirty; the rebuild waits for the next read. The first version of the site-8 test used `container.read(...
+   .future)` alone and so passed against the *unguarded* source too. Every one of these tests needs a
+   standing `container.listen(...)` to make invalidation eager. This is a trap for anyone writing a
+   "should not re-fetch" test in this repo.
+3. **Sites 9–11 already fetch twice at boot**, independently of this bug: the data provider's first
+   `loading → data` settle is itself a listener firing, so `build()`'s own `fetch()` is followed by an
+   `onSseInvalidation()` → `fetch(forceRemote: true)`. The `isLoading` guard does not address that (the first
+   settle has no previous value to carry, so it is not a refresh frame) and it is out of scope here, but it
+   is the reason these tests measure a *delta* rather than an absolute count.
+4. **One existing test had already noticed the doubling and worked around it.**
+   `usp_wifi_advanced_notifier_test.dart:70-73` reads
+   `verify(...).called(greaterThanOrEqualTo(1))` under the comment "may be called again if SSE listener
+   triggers". The loose matcher turned a defect into an accepted range.
+
 ## Method
 
 - Enumeration: `rg -n 'ref\.listen(Manual)?\('` under `lib/`, grouped by watched provider, then every body
@@ -269,9 +309,13 @@ undocumented.
   written down (sites 6 and 13) and it is the step worth repeating: "the effect is a function of the
   payload" is an assumption, not an observation.
 
-Four draft claims were wrong and are recorded above rather than quietly corrected: the pnp reachability
-argument, an "8 → 2 Ethernet fetches" figure that coalescing reduces to 1, and the two payload-diff
-prescriptions. A fifth is a ticket-body drift, not mine: the ticket lists
+- Every fix was then given a test that was **run against the pre-fix source** and confirmed red there. This
+  is what caught the inert site-8 guard, which every other check had passed.
+
+Five draft claims were wrong and are recorded above rather than quietly corrected: the pnp reachability
+argument, an "8 → 2 Ethernet fetches" figure that coalescing reduces to 1, the two payload-diff
+prescriptions, and the first shipped version of the site-8 diff (`==` on a `List`). A sixth is a ticket-body
+drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
 

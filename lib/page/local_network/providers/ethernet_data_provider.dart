@@ -1,7 +1,9 @@
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
@@ -54,14 +56,23 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     // show on LAN ports. Re-fetch to get fresh Ethernet data.
     //
     // Compare the exact input _fetch() consumes — `clientDevices`, the only
-    // thing passed to the service at :76 — rather than re-fetching on every
-    // DevicesData emission. DevicesData changes on any device field (RSSI, band,
-    // SSID), so the unguarded version cost one Ethernet USP fetch per unrelated
-    // device update. Skipping is lossless: causes that are not the device list
-    // arrive via the SSE listener above. Template: dhcp_data_provider.dart:58.
+    // thing passed to the service at :78 — rather than re-fetching on every
+    // DevicesData emission. In riverpod 2.6.1 an AsyncNotifier re-notifies on
+    // every data→data transition even when the payload is identical, so the
+    // unguarded version spent one Ethernet USP fetch per redundant emission.
+    // Skipping is lossless: causes that are not the device list arrive via the
+    // SSE listener above.
+    //
+    // `ListEquality`, not `==`: `clientDevices` is a plain List built fresh by
+    // `MeshNetwork.allClients`, so `==` is reference equality and would make
+    // this guard inert. Template: dhcp_data_provider.dart:58 (MapEquality).
     ref.listen(devicesDataProvider, (prev, next) {
       if (!next.hasValue || !state.hasValue) return;
-      if (prev?.valueOrNull?.clientDevices == next.value!.clientDevices) return;
+      const eq = ListEquality<ClientDevice>();
+      if (eq.equals(
+          prev?.valueOrNull?.clientDevices, next.value!.clientDevices)) {
+        return;
+      }
       ref.invalidateSelf();
     });
 

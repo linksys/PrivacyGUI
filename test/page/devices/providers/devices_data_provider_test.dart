@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -343,6 +344,76 @@ void main() {
           )).captured;
       expect(captured.first, 'M60TB');
       container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The wifiDataProvider listener rebuilds the mesh once per upstream settle,
+  // not once per notification.
+  //
+  // Re-running an AsyncNotifier that already holds a value emits
+  // AsyncData(isLoading: true, value: prev) via copyWithPrevious before the
+  // fresh value. Without the isLoading guard the listener rebuilt the mesh from
+  // that stale WifiData and assigned an extra state — an emission this
+  // provider's own downstream listeners then saw as well. See
+  // doc/riverpod/listen_site_audit.md (#1502 AC-4).
+  // -------------------------------------------------------------------------
+  group('DevicesDataNotifier — wifi data re-notification', () {
+    test('a wifi refetch rebuilds the mesh exactly once', () async {
+      // The listener early-returns on DevicesCodegenContext.empty, so the fetch
+      // result must carry a non-empty context.
+      sampleFetchResult = DevicesDataFetchResult(
+        codegenContext: DevicesCodegenContext(ConnectedDevices(items: [
+          ConnectedDevice(
+            instancePath: 'Device.Hosts.Host.1.',
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            ipAddress: '192.168.1.101',
+            hostName: 'MyLaptop',
+            isActive: true,
+            interface_: 'Device.WiFi.SSID.1.',
+            ipv4Addresses: const [],
+            ipv6Addresses: const [],
+          ),
+        ])),
+        hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+        meshNetwork: sampleMeshNetwork,
+      );
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      // A permanent subscription keeps the notifier — and therefore its
+      // ref.listen on wifiDataProvider — alive, so the invalidate below
+      // rebuilds eagerly instead of being deferred to the next read.
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+
+      // Boot goes through fetch(), not the wifi listener: at the listener's
+      // first firing the notifier has no state yet, so it early-returns. That
+      // makes the count below attributable entirely to the refetch.
+      verifyNever(() => mockDevicesSvc.rebuildWithWifiData(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+
+      container.invalidate(wifiDataProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one mesh rebuild. Without the isLoading guard this is 2.
+      verify(() => mockDevicesSvc.rebuildWithWifiData(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).called(1);
     });
   });
 }

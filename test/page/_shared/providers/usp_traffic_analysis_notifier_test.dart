@@ -7,9 +7,13 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspTrafficAnalysisService extends Mock
+    implements UspTrafficAnalysisService {}
 
 class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   @override
@@ -286,6 +290,61 @@ void main() {
       // Timer should not have started (no fetch calls).
       verifyNever(() => mockUsp.get(any()));
       container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The dashboardDomainReadyProvider listener restarts polling once per settle,
+  // not once per notification.
+  //
+  // `is AsyncData` alone is not an edge trigger: re-running a FutureProvider
+  // that already holds a value emits AsyncData(isLoading: true, value: prev)
+  // via copyWithPrevious before the fresh value, and that frame satisfies
+  // `is AsyncData` too. The extra setRefreshInterval() call both restarts the
+  // timer and lands a sample whose rate is computed over the inter-frame gap
+  // rather than the configured cadence. See doc/riverpod/listen_site_audit.md.
+  // -------------------------------------------------------------------------
+  group('UspTrafficAnalysisNotifier — domain-ready re-notification', () {
+    test('a domain-ready refetch triggers exactly one extra fetch', () async {
+      final mockSvc = MockUspTrafficAnalysisService();
+      when(() => mockSvc.fetchBaselines()).thenAnswer((_) async => {
+            for (final iface in TrafficInterface.values)
+              iface: const InterfaceBaseline(
+                bytesSent: 1000,
+                bytesReceived: 2000,
+                packetsSent: 100,
+                packetsReceived: 200,
+              ),
+          });
+
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider
+              .overrideWith(() => _AlwaysAuthenticatedNotifier()),
+          uspTrafficAnalysisServiceProvider.overrideWithValue(mockSvc),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // A permanent subscription keeps the notifier — and therefore its
+      // ref.listen on dashboardDomainReadyProvider — alive, so the invalidate
+      // below rebuilds eagerly instead of being deferred to the next read.
+      container.listen(uspTrafficAnalysisProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Consume the boot fetch so the next verify counts only what follows.
+      verify(() => mockSvc.fetchBaselines()).called(1);
+
+      container.invalidate(dashboardDomainReadyProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one fetch. Without the isLoading guard this is 2.
+      verify(() => mockSvc.fetchBaselines()).called(1);
     });
   });
 }
