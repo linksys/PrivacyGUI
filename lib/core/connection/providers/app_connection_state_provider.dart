@@ -3,21 +3,27 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
-import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+/// The recovery probe, wired to this mode's answers.
+///
+/// Since #1323 this resolves nothing itself. The old body read the bridge, the
+/// auth coordinator and the fingerprint store and handed all three to the
+/// service — which is what forced the `bridge!`: the provider is not autoDispose,
+/// so it was built once while a session existed and re-read after one ended,
+/// where `uspBridgeClientProvider` is legitimately null. The strategies resolve
+/// what they need, when they need it, through the forwarded [Ref].
 final recoveryProbeServiceProvider = Provider<RecoveryProbeService>((ref) {
-  final bridge = ref.watch(uspBridgeClientProvider);
-  final auth = ref.watch(uspAuthCoordinatorProvider);
-  final fingerprint = ref.watch(routerFingerprintServiceProvider);
+  final profile = ref.watch(appModeProfileProvider);
   return RecoveryProbeService(
-    bridge: bridge!,
-    authCoordinator: auth,
-    fingerprintService: fingerprint,
+    ref: ref,
+    transport: profile.transport,
+    credential: profile.credential,
   );
 });
 
@@ -35,6 +41,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   Timer? _cooldownTimer;
   bool _sseSuspended = false;
   RecoveryContext? _recoveryContext;
+  RecoveryPlan? _recoveryPlan;
   ProbeResult? _lastProbeResult;
   int _consecutiveFailures = 0;
 
@@ -95,14 +102,37 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     return AppConnectionState.authenticated;
   }
 
-  void enterWaiting({required RecoveryContext context}) {
-    if (state == AppConnectionState.waitingForRecovery) return;
+  /// Stop, disconnect SSE and start probing — unless this mode has nothing to
+  /// recover from.
+  ///
+  /// Returns whether the app is now (or already was) waiting. `false` means the
+  /// disruption does not interrupt *this* mode's path to the router, so there is
+  /// no waiting state, no probe loop, and callers must not show a waiting
+  /// surface: `showRecoveryDialog` would otherwise open a spinner that nothing
+  /// ever pops, because the state it waits for a transition *into* is the state
+  /// the app is already in.
+  ///
+  /// The one case that measures this way today is Remote Assistance plus
+  /// `operationalWifiChange` — see `RemoteProximityStrategy.planFor`. Locally
+  /// every trigger returns true, which is why this is a widened return type
+  /// rather than a behaviour change.
+  bool enterWaiting({required RecoveryContext context}) {
+    if (state == AppConnectionState.waitingForRecovery) return true;
+
+    final plan =
+        ref.read(appModeProfileProvider).proximity.planFor(context.trigger);
+    if (!plan.needsRecovery) {
+      logger.i('[Connection] ${context.trigger} does not interrupt this '
+          'mode\'s path to the router — not entering recovery');
+      return false;
+    }
 
     logger.i('[Connection] Entering waitingForRecovery '
         '(trigger: ${context.trigger}, cooldown: ${context.cooldown}, '
-        'healthOnly: ${context.healthOnly})');
+        'healthOnly: ${context.healthOnly}, plan: $plan)');
 
     _recoveryContext = context;
+    _recoveryPlan = plan;
     _consecutiveFailures = 0;
     _lastProbeResult = null;
     state = AppConnectionState.waitingForRecovery;
@@ -116,6 +146,8 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     } else {
       _cooldownTimer = Timer(context.cooldown, _startProbeLoop);
     }
+
+    return true;
   }
 
   void _onSseReconnectFailed(int attempt) {
@@ -141,6 +173,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _cooldownTimer?.cancel();
     _cooldownTimer = null;
     _recoveryContext = null;
+    _recoveryPlan = null;
     _consecutiveFailures = 0;
     _lastProbeResult = null;
     state = AppConnectionState.loggedOut;
@@ -161,8 +194,13 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   void _startProbeLoop() {
     _probeTimer?.cancel();
     _runProbe();
-    _probeTimer =
-        Timer.periodic(const Duration(seconds: 10), (_) => _runProbe());
+    // Cadence comes from the plan, not from a constant here: locally it is the
+    // same 10 seconds this line used to hard-code; remotely the probe crosses a
+    // cloud proxy and polls at the same 30 seconds the Guardian session poll
+    // already uses. See `RemoteProximityStrategy`.
+    final interval =
+        _recoveryPlan?.probeInterval ?? const Duration(seconds: 10);
+    _probeTimer = Timer.periodic(interval, (_) => _runProbe());
   }
 
   Future<void> _runProbe() async {
@@ -187,6 +225,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _probeTimer = null;
         final trigger = _recoveryContext?.trigger;
         _recoveryContext = null;
+        _recoveryPlan = null;
         if (trigger == RecoveryTrigger.operationalFactoryReset) {
           logger.i('[Connection] Recovered (factoryReset) — logging out');
           state = AppConnectionState.loggedOut;
@@ -199,6 +238,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         break;
       case ProbeResult.serialMismatch:
         _recoveryContext = null;
+        _recoveryPlan = null;
         _probeTimer?.cancel();
         _probeTimer = null;
         state = AppConnectionState.loggedOut;

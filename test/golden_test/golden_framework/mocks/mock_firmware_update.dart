@@ -130,8 +130,12 @@ class FixedAppConnectionStateNotifier extends AppConnectionStateNotifier {
   @override
   ProbeResult? get lastProbeResult => _lastProbeResult;
 
+  /// Always "yes, waiting", because this fake pins the state to
+  /// `waitingForRecovery` and the golden's whole subject is the waiting dialog.
+  /// Returning false would be this fake claiming the mode has nothing to recover
+  /// from, and `showRecoveryDialog` would then never open the dialog under test.
   @override
-  void enterWaiting({required RecoveryContext context}) {}
+  bool enterWaiting({required RecoveryContext context}) => true;
 
   @override
   void exitToLogout() {}

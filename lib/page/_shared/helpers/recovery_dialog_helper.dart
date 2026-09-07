@@ -29,13 +29,27 @@ Future<void> showRecoveryDialog(
           'healthOnly=$healthOnly, skipEnterWaiting=$skipEnterWaiting');
 
   if (!skipEnterWaiting) {
-    ref.read(appConnectionStateProvider.notifier).enterWaiting(
+    final waiting = ref.read(appConnectionStateProvider.notifier).enterWaiting(
           context: RecoveryContext(
             trigger: trigger,
             cooldown: cooldown,
             healthOnly: healthOnly,
           ),
         );
+
+    // This mode has nothing to recover from — the mutation did not interrupt its
+    // path to the router. Showing the dialog anyway would hang it: the listener
+    // below pops on a *transition* into `authenticated`, and the app never left
+    // it. See `RemoteProximityStrategy.planFor` for the case that measures this
+    // way (Remote Assistance + a Wi-Fi change, where the Guardian path runs over
+    // the WAN uplink and the restarting radios are not on it).
+    if (!waiting) {
+      logger.d('[Recovery] No recovery needed for $trigger — skipping dialog');
+      if (successMessage != null) {
+        showSuccessSnackBar(context, successMessage);
+      }
+      return;
+    }
   }
 
   final navigator = Navigator.of(context, rootNavigator: true);

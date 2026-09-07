@@ -37,4 +37,23 @@ abstract class TransportStrategy {
   /// stream; the on-router bridge is idempotent. This is the one mode contract
   /// that predates #1474; it is not rewritten, only re-homed.
   SseOperationStrategy sseStrategy(UspBridgeClient bridge);
+
+  /// Whether the router answers over *this* path right now.
+  ///
+  /// The reachability half of the recovery probe, and a mode cause because the
+  /// question is not the same question in both modes. Locally it is "is the
+  /// on-router bridge up and is its agent ready" — `GET /health`, an endpoint
+  /// that exists. Remotely `BridgeEndpoints.remote()`'s `health` path is a
+  /// fabrication (Guardian serves no such endpoint, which is what the
+  /// `if (!GlobalConfig.remote.isActive)` in `sseBootstrapProvider` has been
+  /// compensating for), so the remote answer is a cheap USP read over the same
+  /// `POST /actions/usp` every other call uses.
+  ///
+  /// **Never throws.** A probe that threw would have to be wrapped by every
+  /// caller, and the two implementations disagree about what a throw even means
+  /// — a 504 from the bridge and a rejected fetch through Guardian arrive as
+  /// different exception types. Returning `false` puts that judgement where the
+  /// path is known. `RecoveryProbeService` relies on this: it has no try/catch
+  /// around this call.
+  Future<bool> isRouterReachable(Ref ref);
 }

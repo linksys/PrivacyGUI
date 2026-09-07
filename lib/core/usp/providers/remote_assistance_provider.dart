@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -154,6 +155,15 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       // null → client transition and to re-attach the throttler.
       ref.invalidate(uspClientProvider);
     });
+
+    // The credential was just replaced, so whatever the auth machinery cached
+    // about the *previous* one has to go. Acceptance 9 of #1323: this is a
+    // second activation's problem, and a second activation is reachable without
+    // any mode switch (see the doc comment above). Asked of the mode rather than
+    // done here, because the answer differs — a local re-login keeps its refresh
+    // window, a new Guardian token invalidates it. See
+    // `CredentialStrategy.onCredentialRebound`.
+    ref.read(appModeProfileProvider).credential.onCredentialRebound(ref);
 
     // Set login type to remote so auth checks pass
     ref.read(authProvider.notifier).setLoginType(LoginType.remote);

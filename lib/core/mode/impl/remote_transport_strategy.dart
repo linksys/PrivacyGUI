@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/bridge_config.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/transport_strategy.dart';
@@ -46,4 +48,38 @@ class RemoteTransportStrategy implements TransportStrategy {
   @override
   SseOperationStrategy sseStrategy(UspBridgeClient bridge) =>
       RemoteSseStrategy(bridge);
+
+  /// A cheap USP `Get` over the same `POST /actions/usp` as every other call —
+  /// **not** `bridge.health()`.
+  ///
+  /// `BridgeEndpoints.remote()` has a `health` path and Guardian does not serve
+  /// it, so the pre-#1323 probe's step 1 could only ever fail remotely, which is
+  /// half of why an RA recovery never recovered. The other half was step 2, and
+  /// that one is `RemoteCredentialStrategy.reestablishAfterOutage`.
+  ///
+  /// `Device.DeviceInfo.SerialNumber` is the path because it is the cheapest
+  /// parameter on the object model that is always present and never permission
+  /// gated: reaching it proves the whole chain — browser → Guardian → agent →
+  /// OBUSPA → the box — is carrying traffic. The value is deliberately not
+  /// compared to anything; see [RemoteCredentialStrategy] for why identity needs
+  /// no check here.
+  @override
+  Future<bool> isRouterReachable(Ref ref) async {
+    final usp = ref.read(uspClientProvider);
+    if (usp == null) return false;
+
+    try {
+      final result = await usp.get([_kReachabilityPath]);
+      final reachable = result[_kReachabilityPath] != null;
+      if (!reachable) {
+        logger.d('[Recovery] Guardian answered without $_kReachabilityPath');
+      }
+      return reachable;
+    } catch (e) {
+      logger.d('[Recovery] Guardian-proxied read failed: $e');
+      return false;
+    }
+  }
 }
+
+const _kReachabilityPath = 'Device.DeviceInfo.SerialNumber';

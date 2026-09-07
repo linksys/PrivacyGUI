@@ -14,7 +14,7 @@
 /// later touches 6.
 ///
 /// The member it will hold is `Future<SessionOutcome> end(Ref, EndCause)`,
-/// filled by **#1495 (phase 5)**. It cannot move today for a measured reason:
+/// filled by **#1323 (phases 4-5)**. It cannot move today for a measured reason:
 /// the two mode-specific endings currently differ *by navigation target*, and
 /// the design doc's §4.2 signature deliberately returns an outcome instead of
 /// navigating — so the caller side has to be rewritten in the same change as the

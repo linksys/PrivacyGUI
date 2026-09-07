@@ -4,7 +4,7 @@ import 'package:privacy_gui/framework/mode/session_strategy.dart';
 /// temporary token is spent and there is no login screen to return to, so the
 /// destination is a terminal "session ended" surface.
 ///
-/// Empty until **#1495 (phase 5)** — see [SessionStrategy] for why the contract
+/// Empty until **#1323 (phases 4-5)** — see [SessionStrategy] for why the contract
 /// ships without members and why the pair exists anyway.
 class RemoteSessionStrategy implements SessionStrategy {
   const RemoteSessionStrategy();

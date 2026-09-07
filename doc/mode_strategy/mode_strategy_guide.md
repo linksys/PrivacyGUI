@@ -69,7 +69,7 @@ The `SurfaceStrategy` placement has a consequence: **`AppModeProfile` has no `su
 
 **The page root reads `appModeProfileProvider.mode`, not `appModeProvider`,** and the difference is not cosmetic. Reading the raw provider in both roots is the obvious symmetry and it quietly costs you acceptance 3: one `appModeProfileProvider.overrideWithValue(const RemoteModeProfile())` is supposed to put the *whole* stack in remote, and a page root on `appModeProvider` opts cause 5 out — the four core causes move, the surfaces stay local, and every transport assertion still passes. Phase 3 shipped it the wrong way round first; nothing caught it until a test read `surfaceStrategyProvider` under a profile-only override. Going through the profile keeps both levers live, since the profile is itself derived from `appModeProvider`.
 
-**A note on the design doc.** #1474's §5 file tree puts the `SessionStrategy` implementations under `lib/page/_shared/mode/`, annotated "(they navigate — cause 3)". That contradicts its own §4.2, which gives the signature `Future<SessionOutcome> end(Ref, EndCause)` and says explicitly that it does *not* navigate. Phase 3 resolved it in favour of §4.2: the implementations live in `lib/core/mode/impl/` with the other core causes, and returning an outcome rather than navigating is precisely what makes that placement legal. Phase 5 (#1495) fills the member in; if it decides the strategy must navigate after all, the class moves to `lib/page/` **and** cause 3 needs its own root like cause 5.
+**A note on the design doc.** #1474's §5 file tree puts the `SessionStrategy` implementations under `lib/page/_shared/mode/`, annotated "(they navigate — cause 3)". That contradicts its own §4.2, which gives the signature `Future<SessionOutcome> end(Ref, EndCause)` and says explicitly that it does *not* navigate. Phase 3 resolved it in favour of §4.2: the implementations live in `lib/core/mode/impl/` with the other core causes, and returning an outcome rather than navigating is precisely what makes that placement legal. Phase 5 (#1323) fills the member in; if it decides the strategy must navigate after all, the class moves to `lib/page/` **and** cause 3 needs its own root like cause 5.
 
 #### **3. How to use it: adding mode-dependent behaviour**
 
@@ -114,18 +114,26 @@ Do **not** assign `BuildConfig.forceCommandType`. `test/di_test.dart` is the one
 
 #### **4. The member ledger — what is filled in, and by whom**
 
-Phase 3 ships **3 of the design's 20 members**. Two contracts are partially filled, which is easier to misread than an empty one: `TransportStrategy` and `CredentialStrategy` have members, so they look done. They are not.
+Phase 3 shipped **3 of the design's 20 members**; phase 4 adds **4 more**. Partially filled contracts are easier to misread than empty ones: `TransportStrategy`, `CredentialStrategy` and now `ProximityStrategy` have members, so they look done. They are not.
 
-| Contract | Shipped in phase 3 | Outstanding | Owner |
+| Contract | Filled in | Outstanding | Owner |
 | --- | --- | --- | --- |
-| `TransportStrategy` | `bridgeConfig`, `sseStrategy` | `probeEndpoint` | #1494 (phase 4) |
-| | | upload URL — `firmware_local_upload_service.dart` builds its WebSocket URL from `window.location`, which is phase 6's `transportLoss` case | #1496 (phase 6) |
-| `CredentialStrategy` | `authBehavior` | `canRefreshCredential`, `expiresAt` | #1494 (phase 4); recovery is cause 2's consumer |
-| `SessionStrategy` | — | `end()` / `start()` | #1495 (phase 5) / phase 9 |
-| `ProximityStrategy` | — | `canRecoverFrom()`, `disruptionOf()` | #1496 (phase 6) |
+| `TransportStrategy` | `bridgeConfig`, `sseStrategy` (p3); `isRouterReachable` (p4) | upload URL — `firmware_local_upload_service.dart` builds its WebSocket URL from `window.location`, which is phase 6's `transportLoss` case | #1496 (phase 6) |
+| `CredentialStrategy` | `authBehavior` (p3); `reestablishAfterOutage`, `onCredentialRebound` (p4) | — | — |
+| `SessionStrategy` | — | `end()` / `start()` | #1323 (phase 5) / phase 9 |
+| `ProximityStrategy` | `planFor` (p4) | `canRecoverFrom()`, `disruptionOf()` | #1496 (phase 6) |
 | `SurfaceStrategy` | — | 9 members | #1497 (phase 7) |
 
-**One outstanding member is a *removal*, so it is easy to miss.** #1474 §3 rules that `AuthBehavior` does not survive as a separate type: its single field `shouldRetryOnFailure` is the same fact as `CredentialStrategy.canRefreshCredential`, carried twice. Phase 3 nonetheless ships `authBehavior` — §3's own member list names it, and `AuthBehavior` is `UspBridgeClient`'s constructor parameter type, so collapsing it means changing that signature, which this phase excludes. The fold belongs in whichever change lands `canRefreshCredential`: at that point `CredentialStrategy` would answer the same question twice, and *that* is the signal to delete `authBehavior` and have the transport derive the bridge's argument from the bool.
+**Phase 4 landed three fewer members than the design prescribed, and each narrowing is a measurement.** The ledger above is the record; the reasoning, so the next phase does not "restore" them:
+
+- **`probeEndpoint` became `isRouterReachable`.** A URL is not what the two modes disagree about. Locally reachability is `bridge.health()` plus two fields of its JSON body (`agent_connected`, `agent_state == 'ready'`); remotely it is a USP `Get` on `Device.DeviceInfo.SerialNumber` through the Guardian proxy, because `BridgeEndpoints.remote()`'s `health` path is a fabrication Guardian does not serve. Those are different *requests with different success criteria*, not one request against two URLs, and a `probeEndpoint` getter would have forced the caller to know which shape it got back. The member is therefore a question, and the answer is a `bool` that **never throws** — `RecoveryProbeService` has no try/catch around it, on purpose, because a throw out of `Timer.periodic`'s callback is an unhandled async error that leaves the loop spinning with no result recorded.
+- **`restore()` and `verifyIdentity()` became one `reestablishAfterOutage()`.** No mode does one without the other: locally both, remotely neither. Two members would hand remote two no-ops and invite a future caller to do half the sequence — and the ordering matters (a serial read over a session that has not been restored reads the *old* connection, which after a factory reset is the one whose credentials no longer exist). One member cannot be half-called.
+- **`canRefreshCredential` and `expiresAt` did not land, and `AuthBehavior` was not folded.** No acceptance in #1323 needs either. `authBehavior` already carries the same fact, which is exactly why #1474 §3 wants the fold — but the fold's trigger is *`CredentialStrategy` answering the same question twice*, and after phase 4 it still answers it once. Adding `canRefreshCredential` in order to then delete `authBehavior` is two edits to reach the state we are already in. The trigger stands: whichever change needs a second consumer of "can this credential be refreshed" lands the bool and deletes `AuthBehavior`, changing `UspBridgeClient`'s constructor signature in the same commit.
+- **`RecoveryOutcome` was not introduced.** The design doc gives the probe a new return taxonomy; `ProbeResult`'s existing three values already carry it, and a fourth parallel taxonomy alongside `AppConnectionState` and phase 5's `EndCause` costs more than it explains. Keeping `ProbeResult` and `probe({bool healthOnly})` byte-identical is also what let `app_connection_state_provider_test.dart` — 745 lines mocking at the service seam — pass **unedited**, which is falsification criterion 2 of the design doc §10.5. Had any assertion there needed changing, the seam would have been wrong.
+
+One new value type came with `planFor`: **`RecoveryPlan`** (`needsRecovery` + `probeInterval`), in `lib/framework/mode/` and not in `impl/`, for the reason Rule 3's second half records about `BridgeConfig` — it is a contract's return type, so the framework has to name it.
+
+`RecoveryPlan.needsRecovery: false` is what a missing concept looks like when it is not a capability flag. Remote Assistance plus `operationalWifiChange` is the one cell that measures that way: the Guardian path runs browser → cloud → WAN uplink → agent, and the radios a Wi-Fi change restarts are not on it, so there is nothing to wait for. Note the shape — the strategy declines to use the recovery *surface*, rather than a `showsRecoveryDialog` bool being threaded to the widget. `enterWaiting` therefore returns `bool`, and `showRecoveryDialog` skips the dialog on `false`; opening it anyway would hang, since it pops on a transition *into* `authenticated` and the app never left it.
 
 #### **5. Why three contracts ship empty**
 
@@ -133,8 +141,8 @@ Phase 3 ships **3 of the design's 20 members**. Two contracts are partially fill
 
 | Contract | Filled by | Why it cannot move in phase 3 |
 | --- | --- | --- |
-| `SessionStrategy` | #1495 (phase 5) | The two endings differ by navigation target today, and the agreed signature returns an outcome instead — so the caller side must be rewritten in the same change. |
-| `ProximityStrategy` | #1496 (phase 6) | The member is `bool canRecoverFrom(DisruptionClass)`, and `DisruptionClass` does not exist: enumerating it *is* phase 6's analysis. Declaring the member against a placeholder would freeze that analysis before it happens. |
+| `SessionStrategy` | #1323 (phase 5) | The two endings differ by navigation target today, and the agreed signature returns an outcome instead — so the caller side must be rewritten in the same change. |
+| `ProximityStrategy` | ~~#1496 (phase 6)~~ — **`planFor` landed in phase 4**; `canRecoverFrom` still outstanding, #1496 | The blocker below applied to `canRecoverFrom` specifically, and still does: the member is `bool canRecoverFrom(DisruptionClass)`, and `DisruptionClass` does not exist — enumerating it *is* phase 6's analysis, so declaring the member against a placeholder would freeze that analysis before it happens. `planFor` was never blocked by it: `RecoveryTrigger` already existed, with five values and a real consumer. |
 | `SurfaceStrategy` | #1497 (phase 7) | The first member is `forcedPreset()`, and `lib/page/dashboard/providers/usp_layout_controller.dart` constructs its notifier **without a `Ref`**, so the read cannot reach a provider until that constructor changes — a behavioural edit, which phase 3 excludes. |
 
 The alternative was to declare each contract in the phase that fills it. That is worse arithmetic: adding a member to an existing contract later touches 3 files, whereas creating the contract plus two implementations plus both profile wirings plus the roster test touches 6. More importantly, the exhaustive `switch` in each composition root can only be written once against a **complete** set of causes — and that switch is the guard the entire epic rests on.
@@ -213,8 +221,11 @@ The three source scans all strip `//` lines before matching, and that is load-be
 | Phase | Issue | What it adds |
 | --- | --- | --- |
 | 3 | #1493 | This framework; transport + credential filled in |
-| 4 | #1494 | Recovery — `RecoveryProbeService` takes a strategy, it does **not** become a pair |
-| 5 | #1495 | `SessionStrategy.end()` |
+| 4 | #1323 | Recovery — `RecoveryProbeService` takes strategies, it does **not** become a pair |
+| 5 | #1323 | `SessionStrategy.end()` |
 | 6 | #1496 | `ProximityStrategy.canRecoverFrom()` + `DisruptionClass` + `OperationGuard` |
 | 7 | #1497 | `SurfaceStrategy` members — the 7 remaining bare UI reads |
+| 8 | #1494 | Config deletion + naming the two RA sides apart |
 | 9 | — | Session entry / `SessionStrategy.start()` |
+
+**Phases 4 and 5 are one issue, and it is #1323.** Worth stating because the phase numbers and the issue numbers run in step everywhere else, which makes `#1494` look like phase 4's ticket — it is phase 8's, and `#1495` is an unrelated PNP band bug with no connection to this epic at all. Earlier drafts of this guide and of `mode_contract_roster_test.dart` cited both wrongly; a doc comment that sends you to the wrong ticket costs more than a missing one, because it reads as researched.

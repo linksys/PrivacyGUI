@@ -90,7 +90,12 @@ const _profilePath = 'lib/core/mode/app_mode_profile.dart';
 /// Types that answer a mode question but must NOT be split per mode: they take a
 /// strategy instead. Mapped to the phase that introduces or edits them.
 const _notPaired = <String, String>{
-  'RecoveryProbeService': '#1494 (phase 4)',
+  // Phases 4 and 5 are one ticket, and it is #1323 — not #1494, which is phase 8
+  // (the DeviceConfig deletion and the RA rename), and not #1495, which is an
+  // unrelated PNP band bug. Phase 4 has now landed: the service takes
+  // `TransportStrategy` and `CredentialStrategy` as constructor parameters and
+  // there is still one of it. That is the shape this row was written to defend.
+  'RecoveryProbeService': '#1323 (phases 4-5)',
   'OperationGuard': '#1496 (phase 6)',
 };
 
