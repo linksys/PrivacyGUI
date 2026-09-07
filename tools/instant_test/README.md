@@ -38,7 +38,7 @@ npm test --prefix tools/instant_test -- 'http://127.0.0.1:8105/#/instant-prototy
 
 The runner accepts only localhost prototype URLs, checks the single-page preview heading, and verifies that retired layout options are absent before interacting. It uses fresh Chromium contexts, dark desktop and light mobile viewports, and records screenshots plus `tools/instant_test/artifacts/results.json`. Any failed assertion, uncaught page error, or unexpected failed request gives a nonzero exit code. The three previously reproduced font/version asset 404 paths are recorded separately as known baseline failures; the report is not a claim of a clean console.
 
-The browser pass also covers mobile device-details handoff, Cancel/Escape for restart and reconnect confirmations, browser Back during confirmation, and leaving an active monitor. Action headings use compact theme-colored strips, while diagnostic status remains visually separate.
+The browser pass checks the six action tiles at desktop and mobile widths, removal of the old top detail links, and the relocated detail links below the summary. A widget regression verifies that the chooser scrolls with the diagnostic content. It also covers mobile device-details handoff, Cancel/Escape for restart and reconnect confirmations, browser Back during confirmation, and leaving an active monitor. Action headings use compact theme-colored strips, while diagnostic status remains visually separate.
 
 ## Navigation contract
 

@@ -14,6 +14,23 @@ const results = [];
 const expected404s = ['/assets/roboto/', '/assets/notosanssymbols/', '/assets/assets/resources/versions.json'];
 const button = (page, name) => page.getByRole('button', {name, exact:true});
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
+// Flutter scrolls its canvas viewport; reveal the contextual links with real
+// scrolling rather than only moving their accessibility elements in the DOM.
+async function clickInScrollView(page, label) {
+  const link = button(page,label);
+  await link.waitFor();
+  for (let n=0;n<12;n++) {
+    const box = await link.boundingBox();
+    const size = page.viewportSize();
+    if (box && box.y >= 0 && box.y + box.height < size.height) {
+      await link.click();return;
+    }
+    await page.mouse.move(size.width/2,size.height*0.7);
+    await page.mouse.wheel(0,box && box.y < 0 ? -420 : 420);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  }
+  throw Error(`Could not reach ${label} in the scrollable page`);
+}
 async function check(name, run, mobile = false) {
   const context = await browser.newContext({viewport:mobile ? {width:390,height:844} : {width:1440,height:1000}, colorScheme:mobile?'light':'dark'});
   const page = await context.newPage();
@@ -31,10 +48,12 @@ async function check(name, run, mobile = false) {
   try {
     await page.goto(url);
     await visible(page, 'Instant-Test preview');
-    await button(page, 'Device details').waitFor();
+    await visible(page, 'What needs help?');
     for (const oldLayout of ['Single page', 'Home card', 'A · 2-tab + glance', 'B · Verify top-tab', 'Current · 4-tab']) {
       assert.equal(await page.getByText(oldLayout,{exact:true}).count(),0,'Retired preview layout is still visible');
     }
+    assert.equal(await button(page,'Device details').count(),0);
+    assert.equal(await button(page,'Network details').count(),0);
     await run(page);
     await page.screenshot({path:`${output}/${name}.png`,fullPage:false});
     assert.deepEqual(errors, [], 'Uncaught browser errors');
@@ -48,8 +67,22 @@ async function check(name, run, mobile = false) {
   } finally {await context.close();}
 }
 try {
+  for (const mobile of [false,true]) {
+    await check(mobile?'home-actions-mobile':'home-actions-desktop',async p=>{
+      const labels=["Internet isn't working",'Whole internet is slow','Keeps cutting out','One device is slow',"Device won't connect","Doesn't reach a room"];
+      for(const label of labels) {
+        const tile=button(p,label);
+        assert.equal(await tile.count(),1);
+        const box=await tile.boundingBox();
+        assert(box.x>=0 && box.x+box.width<=p.viewportSize().width,'Action tile exceeds the viewport');
+      }
+      const last=await button(p,"Doesn't reach a room").boundingBox();
+      const details=await button(p,'View devices').boundingBox();
+      assert(details.y>last.y+last.height,'Detail links must follow the action section and diagnostics');
+    },mobile);
+  }
   await check('weak-device-finding', async p=>{
-    await button(p,'Troubleshoot these devices').click();
+    await clickInScrollView(p,'Troubleshoot these devices');
     await button(p,'Office-Printer 2.4 GHz').click();
     await visible(p,'Help for Office-Printer');
     await visible(p,'Link rate');
@@ -58,7 +91,7 @@ try {
   });
   await check('mesh-health',async p=>{
     await visible(p,'Weak backhaul');
-    await button(p,'Network details').click();
+    await clickInScrollView(p,'View network');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
@@ -68,7 +101,7 @@ try {
     assert.equal(await p.getByText('Running diagnostics…',{exact:true}).count(),0);
   });
   await check('browser-history',async p=>{
-    await button(p,'Device details').click();
+    await clickInScrollView(p,'View devices');
     await button(p,'Back to Instant-Test').waitFor();
     assert.match(p.url(),/instant=devices/);
     await p.goBack();await button(p,'Whole internet is slow').waitFor();
@@ -108,7 +141,7 @@ try {
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
   await check('device-details-handoff',async p=>{
-    await button(p,'Device details').click();
+    await clickInScrollView(p,'View devices');
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
     await button(p,'Troubleshoot this device').click();

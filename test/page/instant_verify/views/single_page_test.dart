@@ -253,6 +253,27 @@ void main() {
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
+  testWidgets('home actions scroll with diagnostics and details follow results',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester);
+    expect(find.text('What needs help?'), findsOneWidget);
+    expect(find.text('Device details'), findsNothing);
+    expect(find.text('Network details'), findsNothing);
+    expect(
+        tester.getTopLeft(find.text('View devices')).dy,
+        greaterThan(
+            tester.getBottomLeft(find.text("Doesn't reach a room")).dy));
+    await tester.ensureVisible(find.text('View devices'));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.text('What needs help?')).dy, lessThan(0));
+    await tapText(tester, 'View devices');
+    expect(find.text('Device details'), findsOneWidget);
+  });
+
   testWidgets('six direct symptoms and full-page help hide home controls',
       (tester) async {
     await mount(tester);
@@ -369,7 +390,7 @@ void main() {
       'device details pass the selected device into help and restore origin',
       (tester) async {
     await mount(tester);
-    await tapText(tester, 'Device details');
+    await tapText(tester, 'View devices');
     await tapText(tester, 'Office printer');
     await tapText(tester, 'Troubleshoot this device');
     expect(find.text('Select a device'), findsNothing);
@@ -402,7 +423,7 @@ void main() {
   testWidgets('network details and bridge finding remain reachable',
       (tester) async {
     await mount(tester);
-    await tapText(tester, 'Network details');
+    await tapText(tester, 'View network');
     expect(find.text('Internet Connection'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to Instant-Test'));
     await tester.pumpAndSettle();

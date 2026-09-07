@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'instant_test_location.dart';
+import 'symptom_chooser.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
@@ -25,15 +26,6 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
   String? _routePath;
   int? _details;
   final _pendingDevice = ValueNotifier<DiagnosticClient?>(null);
-
-  static const symptoms = <(int, IconData, String)>[
-    (1, Icons.wifi_off, "Internet isn't working"),
-    (2, Icons.speed, 'Whole internet is slow'),
-    (31, Icons.devices, 'One device is slow'),
-    (3, Icons.device_unknown, "Device won't connect"),
-    (4, Icons.meeting_room_outlined, "Doesn't reach a room"),
-    (5, Icons.sync_problem, 'Keeps cutting out'),
-  ];
 
   @override
   void initState() {
@@ -109,31 +101,6 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!_showFlow && _details == null)
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final (id, icon, label) in symptoms)
-                            OutlinedButton.icon(
-                              onPressed: () => _launch(id),
-                              icon: Icon(icon, size: 20),
-                              label: Text(label),
-                            ),
-                        ],
-                      ),
-                    ),
-                  if (!_showFlow && _details == null)
-                    Wrap(spacing: 8, children: [
-                      TextButton(
-                          onPressed: () => _navigate(details: 1),
-                          child: const Text('Device details')),
-                      TextButton(
-                          onPressed: () => _navigate(details: 2),
-                          child: const Text('Network details')),
-                    ]),
                   Expanded(
                     child: Stack(
                       fit: StackFit.expand,
@@ -145,6 +112,9 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                             child: SelectionArea(
                                 child: OverviewTab(
                               showProblemCards: false,
+                              leading: SymptomChooser(
+                                  onSelect: (flow) => _launch(flow)),
+                              onViewNetwork: () => _navigate(details: 2),
                               onViewClients: () => _navigate(details: 1),
                               onNavigateToFlow: (index) => _launch(index + 1),
                               onTroubleshootWeakDevices: () => _launch(31),

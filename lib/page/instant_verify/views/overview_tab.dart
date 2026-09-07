@@ -13,14 +13,18 @@ import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
+  final Widget? leading;
+  final VoidCallback? onViewNetwork;
   final VoidCallback? onViewClients;
   final VoidCallback? onTroubleshootWeakDevices;
   final void Function(int flowIndex)? onNavigateToFlow;
   /// When false, the in-body "Something else?" symptom cards are hidden — the
-  /// single-page host renders them as a top nav strip instead.
+  /// single-page host supplies its own workflow chooser instead.
   final bool showProblemCards;
   const OverviewTab({
     super.key,
+    this.leading,
+    this.onViewNetwork,
     this.onViewClients,
     this.onTroubleshootWeakDevices,
     this.onNavigateToFlow,
@@ -84,6 +88,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.leading != null) widget.leading!,
           // Router light guide link (PRD v0.7 S-1)
           _LightGuideLink(
             showInlineCallout: state.phase != PivotLoadPhase.idle &&
@@ -105,6 +110,18 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
+          if (widget.onViewClients != null || widget.onViewNetwork != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(spacing: 12, runSpacing: 4, children: [
+                if (widget.onViewClients != null)
+                  TextButton(onPressed: widget.onViewClients,
+                      child: const Text('View devices')),
+                if (widget.onViewNetwork != null)
+                  TextButton(onPressed: widget.onViewNetwork,
+                      child: const Text('View network')),
+              ]),
+            ),
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
