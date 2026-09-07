@@ -15,9 +15,17 @@ import 'bridge_request_throttler_provider.dart';
 /// such builds get no boot-time client, because the app's own origin is not the
 /// USP host (see `canUseAppOriginUspClient` in `di.dart`).
 ///
-/// Caches for the container's lifetime: a `ref.read` consumer keeps the instance
-/// it first saw. `activate()` invalidates this provider after the swap so
-/// `ref.watch` consumers follow.
+/// Caches for the container's lifetime, and since #1322 that is safe rather than
+/// merely tolerated: the registered instance is **stable**. Re-activating Remote
+/// Assistance re-points that instance at the new connection
+/// (`UspClient.rebindTransport`) instead of replacing it, so a `ref.read`
+/// consumer holding the value it first saw is holding the live connection — not,
+/// as before, a façade whose WASM client had been freed underneath it.
+///
+/// `activate()` still invalidates this provider, for the null → client
+/// transition on first activation and to re-attach the throttler. On a
+/// re-activation the rebuilt value is identical to the cached one, so `Provider`
+/// notifies nobody; nothing depends on it doing so.
 ///
 /// Binds the [BridgeRequestThrottler] so all `usp.get()` calls are
 /// automatically throttled to prevent overwhelming the router.

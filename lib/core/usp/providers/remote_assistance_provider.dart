@@ -83,11 +83,19 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
   @override
   RemoteAssistanceState build() => const RemoteAssistanceState();
 
-  /// Activates Remote Assistance mode by creating and registering
-  /// a Guardian-proxied UspClient.
+  /// Activates Remote Assistance mode by pointing the app's [UspClient] at a
+  /// Guardian-proxied connection.
   ///
-  /// The client is pre-authenticated via [config.temporaryAccessToken],
+  /// The connection is pre-authenticated via [config.temporaryAccessToken],
   /// so no password-based login is needed.
+  ///
+  /// **Idempotent by construction, and #1322 is why it has to be.** The first
+  /// call registers the singleton; every later one re-points that same instance
+  /// (`UspClient.rebindTransport`) rather than replacing it. A second
+  /// `activate()` is reachable without any mode switch — an idle timeout or a
+  /// `forceLogout` logs the user out while the Guardian session is still alive,
+  /// the `/usp*` redirect rebuilds the confirm URL from `remoteAccessProvider`
+  /// state, and one tap on Connect gets here again.
   Future<void> activate(RemoteAssistanceConfig config) async {
     if (!kIsWeb) {
       throw UnsupportedError('Remote Assistance is only supported on Web');
@@ -108,22 +116,30 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     final jsClient = builder.build();
-    final raClient =
-        UspClient.fromBuilder(jsClient, baseUrl: config.guardianOrigin);
 
-    // Swap UspClient atomically with mutation lock to prevent races
+    // Swap the connection atomically with the mutation lock to prevent races
     await ref.read(uspMutationLockProvider).withLock(() async {
       if (getIt.isRegistered<UspClient>()) {
-        logger.d('[RA] Unregistering existing UspClient');
-        final oldClient = getIt<UspClient>();
-        getIt.unregister<UspClient>();
-        oldClient.dispose();
+        // #1322: re-point the registered façade, do NOT free it. `dispose()`
+        // reaches `free()` on the wasm-bindgen object and zeroes its
+        // `__wbg_ptr`, and 41 call sites resolve this singleton with
+        // `ref.read(uspClientProvider)` inside a non-autoDispose provider body —
+        // bound into a service constructor once, never re-read. Replacing the
+        // instance left all 41 pointed at freed memory, and every USP call
+        // through them failed with `null pointer passed to rust` until the
+        // browser was refreshed. Only the 11 `ref.watch` consumers followed the
+        // swap.
+        logger.d('[RA] Rebinding UspClient to the new Guardian session');
+        getIt<UspClient>()
+            .rebindFromBuilder(jsClient, baseUrl: config.guardianOrigin);
+      } else {
+        getIt.registerSingleton<UspClient>(
+            UspClient.fromBuilder(jsClient, baseUrl: config.guardianOrigin));
+        logger.i('[RA] Guardian-proxied UspClient registered');
       }
-      getIt.registerSingleton<UspClient>(raClient);
-      logger.i('[RA] UspClient replaced with Guardian-proxied client');
 
-      // Invalidated in the same critical section as the swap, so "client
-      // identity changed" and "cache dropped" can never drift apart.
+      // Invalidated in the same critical section as the swap, so "connection
+      // changed" and "cache dropped" can never drift apart.
       //
       // uspClientProvider caches whatever GetIt held when it was FIRST read,
       // and authProvider.init() reads it during app boot — long before RA
@@ -131,11 +147,11 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       // ([canUseAppOriginUspClient] keeps the boot slot empty), and this drops
       // that cached null so watchers pick the session client up.
       //
-      // Only ref.watch consumers rebuild; a ref.read consumer keeps whatever it
-      // captured. That is no longer a correctness risk: in a Remote build the
-      // only client that can ever exist is this one, so the worst a too-early
-      // read can capture is null — which fails loudly instead of silently
-      // talking to the wrong host.
+      // On a re-activation the rebuilt value is the *same* instance, so
+      // `Provider` will not notify watchers — nothing here depends on it doing
+      // so. SSE reconnect is driven by the new `config` object below, which
+      // `uspBridgeClientProvider` watches; this invalidate exists for the
+      // null → client transition and to re-attach the throttler.
       ref.invalidate(uspClientProvider);
     });
 
