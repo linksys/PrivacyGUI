@@ -134,7 +134,40 @@ final routerProvider = Provider<GoRouter>((ref) {
         // PnP routes — no auth required, pass through.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/remoteAssistance')) {
-        // Remote Assistance routes — no normal auth required, pass through.
+        // Remote Assistance routes — no normal auth required, pass through,
+        // but ONLY in a Remote build. #1474 phase 1 / #1357 item 1: this
+        // pass-through and the `?session=` one in `autoConfigurationLogic` were
+        // the two ways the agent UI could be reached in a local build, where
+        // `GlobalConfig.remote.isActive` is false and every RA gate downstream
+        // therefore reads the wrong answer.
+        //
+        // Gated on the BUILD axis (`BuildConfig.isRemote()`), not the runtime
+        // one (`authState.isRemoteAssistance`) — the point is that these two
+        // must never disagree, and the build flag is the one that decides which
+        // bridge `sse_providers.dart` constructs.
+        //
+        // Refuses to `/uspDashboard`, not to `/` — deliberately. `/` re-enters
+        // `autoConfigurationLogic`, which runs `authCheck` → `_prepare`: a full
+        // re-bootstrap including `fetchDeviceInfoAndInitializeServices()` and the
+        // PnP status check, so a logged-in user who mistyped a URL could be
+        // dropped into the setup wizard. `/uspDashboard` falls through to the
+        // `/usp` branch below, which is the cheap authenticated path and already
+        // bounces a logged-out user to login.
+        //
+        // Warn rather than inform: in a local build this location is not
+        // something a user navigates to, so reaching it means either a stale
+        // bookmark or — the case worth finding in a log — an RA deployment built
+        // without `force=remote`. `ForceCommand.reslove` maps any unrecognised
+        // `force` value to `none` silently, so a typo turns RA off with no other
+        // symptom.
+        //
+        // Interim shape. #1474 phase 7 removes the `if` by leaving
+        // `remoteAssistanceRoute` out of a local build's route table entirely,
+        // so `/remoteAssistance` 404s rather than redirecting.
+        if (!BuildConfig.isRemote()) {
+          logger.w('[Route]: RA route in a non-Remote build, refusing');
+          return RoutePath.uspDashboard;
+        }
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.
@@ -194,12 +227,34 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
-    // Check for Remote Assistance mode via URL parameter
+    // Check for Remote Assistance mode via URL parameter.
+    //
+    // Build-gated as of #1474 phase 1 / #1357 item 1. Ungated, this was the
+    // second RA entry point and the more dangerous one, because it produced a
+    // *hybrid* configuration rather than a refusal: `activate(config)` registers
+    // a Guardian-proxied `UspClient`, while `BuildConfig.isRemote()` stays false,
+    // so `sse_providers.dart` takes its local branch and builds a bridge with
+    // `BridgeEndpoints.local` paths and `AuthBehavior.local` against the
+    // Guardian origin — on-router paths, no bearer token, wrong host.
+    //
+    // A local build now ignores the parameter and continues to the normal login
+    // flow. It is not sanitised out of the URL: nothing downstream reads it once
+    // this branch declines, and rewriting the location here would fight the
+    // `?session=` the login redirect already passes through.
     final raSession = state.uri.queryParameters['session'];
     if (raSession != null && raSession.isNotEmpty) {
-      final raToken = state.uri.queryParameters['token'] ?? '';
-      logger.i('[Route]: Detected Remote Assistance session: $raSession');
-      return '${RoutePath.remoteAssistanceConfirm}?session=$raSession&token=$raToken';
+      if (!BuildConfig.isRemote()) {
+        // Warn, for the same reason as entry 1: the likeliest cause of a
+        // `?session=` arriving in a non-Remote build is an RA deployment whose
+        // `force` dart-define is unset or misspelled, which `ForceCommand.reslove`
+        // downgrades to `ForceCommand.none` without complaint. This log line is
+        // then the only evidence that every supporter's link is dead.
+        logger.w('[Route]: RA session param in a non-Remote build, ignoring');
+      } else {
+        final raToken = state.uri.queryParameters['token'] ?? '';
+        logger.i('[Route]: Detected Remote Assistance session: $raSession');
+        return '${RoutePath.remoteAssistanceConfirm}?session=$raSession&token=$raToken';
+      }
     }
 
     // Check for Remote build mode (force=remote)
