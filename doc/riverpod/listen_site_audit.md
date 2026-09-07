@@ -230,15 +230,16 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
   time therefore produces a *different* result, and a `clientDevices` diff would leave gaps in the 24 h
   history — the provider is not autoDispose, so the gap persists for the session. The genuine waste is
   narrower than first measured: only two identical emissions **inside the same hour**, costing one
-  storage write. **Filed, not fixed** — a sound guard has to compare the hour bucket as well as the list,
-  which is a behaviour decision about the analytics history rather than a guard.
+  storage write. **Filed as #1504, not fixed** — a sound guard has to compare the hour bucket as well as the
+  list, which is a behaviour decision about the analytics history rather than a guard.
 - **Site 13 — `systemInfoDataProvider` has exactly one refresh trigger in the entire app, and it is this
   listener.** Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
   `invalidate`/`refresh`/`.notifier` call), and `firmwareBanksDataProvider` in turn has exactly one
   refresher (`firmware_update_notifier.dart:338`). Meanwhile `_fetch()` gets SystemInfo **live from USP**
   and merely passes `banks` through. So on a same-version reflash — banks identical, `softwareVersion`
   and `uptime` changed — a `banks` diff would suppress the app's only systemInfo refresh for the rest of
-  the session. **Filed, not fixed**; decoupling systemInfo from banks is a design change, not a guard.
+  the session. **Filed as #1505, not fixed**; decoupling systemInfo from banks is a design change, not a
+  guard.
 
 ## AC-4 outcome
 
@@ -246,7 +247,7 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
 | --- | --- | --- |
 | Cause A, `isLoading` guard | 9, 10, 11, 12, 14, 15 | **Fixed in this PR** — provably lossless: the dropped frame carries the *previous* value, so the body was acting on stale data. |
 | Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. |
-| Cause B, unsound diff | 6, 13 | **Filed** with the measured cost and the reason above. |
+| Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. |
 
 7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
 undocumented.
@@ -321,11 +322,12 @@ drift, not mine: the ticket lists
 
 ## Verification
 
-- `./run_tests.sh` → **6513/6513 pass**
+- `./run_tests.sh` → **6521/6521 pass** (6513 baseline + the 8 new tests)
 - Affected set (21 files: direct tests for the 8 changed sources plus every `*_test.dart` importing them) →
-  **264/264 pass**
+  **272/272 pass** (264 before the new tests)
+- Each new test also run against the pre-fix source: **7/7 red there**, listed in "Test coverage" above
 - `fvm flutter analyze` → **480 issues, identical to the `d484a23a` baseline**; **0** attributable to any of
-  the 8 changed files. (Analyze reports 810 with 330 errors in a fresh worktree until `flutter pub get`
+  the changed files. (Analyze reports 810 with 330 errors in a fresh worktree until `flutter pub get`
   generates `l10n/gen/app_localizations.dart` — that is an environment artefact, not a finding.)
-- `fvm dart format --set-exit-if-changed` on all 8 changed files → clean
+- `fvm dart format --set-exit-if-changed` on all changed files → clean
 - Flutter 3.47.2 per `.fvmrc`
