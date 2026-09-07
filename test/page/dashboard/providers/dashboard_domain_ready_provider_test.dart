@@ -170,7 +170,15 @@ void main() {
   //
   //   * `next is AsyncData` is TRUE for that middle frame, so the two polling
   //     notifiers above fire on the refresh frame as well as the completion —
-  //     twice per invalidate, once of them while the fetch is still in flight.
+  //     twice per invalidate, the first while the domain fetch is still in
+  //     flight. That is a live defect, not a migration risk: each firing runs
+  //     `setRefreshInterval`, which calls `_fetchAndAppend()` unconditionally,
+  //     and `isFetching` is written but never read as a re-entrancy guard — so
+  //     it costs one redundant USP round-trip per notifier per invalidate. It is
+  //     not a timer leak (`setRefreshInterval` cancels first). Verdicted
+  //     `redundant-today` and owned by #1502; deliberately NOT fixed here,
+  //     because these tests characterize the provider, not its listeners.
+  //     The RA guard is immune — it latches on `_checkDone`.
   //   * The only thing distinguishing the middle frame from its neighbours is
   //     the `isLoading` flag. That flag, not a runtimeType change, is what
   //     would keep an `==`-based predicate from collapsing the sequence.
