@@ -5,6 +5,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shows a dialog for selecting a dashboard preset.
 ///
+/// Offers [UspDashboardPreset.selectable], which excludes
+/// [UspDashboardPreset.remote] — that one is forced by Remote Assistance, never
+/// chosen (#1492).
+///
+/// [currentPreset] only drives the initial highlight, and is not filtered: pass
+/// a preset that is not selectable and the dialog simply opens with nothing
+/// highlighted, still able to return that preset from Apply.
+///
 /// Returns the chosen [UspDashboardPreset], or null if cancelled.
 Future<UspDashboardPreset?> showPresetSelectionDialog(
   BuildContext context, {
@@ -53,7 +61,7 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
             'You can customise it further with drag-and-drop editing.',
           ),
           const SizedBox(height: 16),
-          ...UspDashboardPreset.values.map((preset) {
+          ...UspDashboardPreset.selectable.map((preset) {
             final isSelected = _selected == preset;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),

@@ -48,6 +48,59 @@ void main() {
     });
   });
 
+  // #1492: `remote` is Remote Assistance's forced layout, not a style anyone
+  // picks, so it must never reach the picker. These assert the list itself; the
+  // dialog that consumes it is covered by
+  // test/page/dashboard/views/dialogs/preset_selection_dialog_test.dart.
+  group('selectable', () {
+    test('excludes remote', () {
+      expect(
+        UspDashboardPreset.selectable,
+        isNot(contains(UspDashboardPreset.remote)),
+      );
+    });
+
+    test('is every other preset, in declaration order', () {
+      expect(
+        UspDashboardPreset.selectable,
+        equals(const [
+          UspDashboardPreset.essential,
+          UspDashboardPreset.standard,
+          UspDashboardPreset.professional,
+          UspDashboardPreset.monitoring,
+        ]),
+      );
+    });
+
+    // `selectable` is a *view* of `isUserSelectable`, never a second list to keep
+    // in sync — that is what makes the exhaustive `switch` load-bearing. A new
+    // preset cannot slip into the picker, because the switch will not compile
+    // until somebody decides; and it cannot slip out of it either, because a
+    // `true` here has to show up in `selectable`.
+    test('is exactly the presets whose isUserSelectable is true', () {
+      expect(
+        UspDashboardPreset.selectable,
+        UspDashboardPreset.values.where((p) => p.isUserSelectable).toList(),
+      );
+    });
+
+    test('remote is the only preset users may not pick', () {
+      expect(UspDashboardPreset.remote.isUserSelectable, isFalse);
+      expect(
+        UspDashboardPreset.values.where((p) => !p.isUserSelectable),
+        [UspDashboardPreset.remote],
+      );
+    });
+
+    // The excluded preset stays fully functional — RA forces it, and phase 8 of
+    // #1474 must not read this exclusion as permission to delete the value.
+    test('remote is excluded from the picker, not removed from the enum', () {
+      expect(UspDashboardPreset.values, contains(UspDashboardPreset.remote));
+      expect(UspDashboardPreset.remote.displayName, 'Remote Support');
+      expect(UspDashboardPreset.remote.createLayout().length, 8);
+    });
+  });
+
   group('cardIds', () {
     test('essential has 6 cards', () {
       expect(UspDashboardPreset.essential.cardIds.length, 6);

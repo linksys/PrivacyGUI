@@ -14,10 +14,45 @@ enum UspDashboardPreset {
   standard,
   professional,
   monitoring,
-  remote,
+  remote;
+
+  /// The presets a user may choose from, in every mode (#1492).
+  ///
+  /// Computed once from [UspDashboardPresetX.isUserSelectable], which is an
+  /// exhaustive `switch` — so adding a value to this enum is a compile error
+  /// until somebody decides whether users may pick it. That direction matters:
+  /// the bug this fixes is a *mode-forced* preset leaking into the picker, and a
+  /// `values.where(!= remote)` deny-list would have offered the next such preset
+  /// automatically. Fail closed.
+  ///
+  /// #1474 phase 7 moves ownership of the list to `SurfaceStrategy`; this and
+  /// `isUserSelectable` are the two seams it has to move.
+  static final List<UspDashboardPreset> selectable =
+      values.where((preset) => preset.isUserSelectable).toList(growable: false);
 }
 
 extension UspDashboardPresetX on UspDashboardPreset {
+  /// Whether a user may pick this preset from the style picker (#1492).
+  ///
+  /// Exhaustive, so a new preset does not become user-selectable by default —
+  /// see [UspDashboardPreset.selectable] for why that direction is the point.
+  ///
+  /// [UspDashboardPreset.remote] is the only `false` today. It is not a style
+  /// anyone chooses; it is the layout Remote Assistance *forces*
+  /// (`GlobalConfig.remote.forcedPreset` returns it when the build is remote, and
+  /// `showPresetDialog` suppresses the picker in that same build). Offering it
+  /// locally was the defect: its [description] promises "View-only mode", but
+  /// read-only comes from the RA gates on the build flag rather than from the
+  /// preset, so a local user who picked it got an 8-card layout that was fully
+  /// editable.
+  bool get isUserSelectable => switch (this) {
+        UspDashboardPreset.essential => true,
+        UspDashboardPreset.standard => true,
+        UspDashboardPreset.professional => true,
+        UspDashboardPreset.monitoring => true,
+        UspDashboardPreset.remote => false,
+      };
+
   String get displayName => switch (this) {
         UspDashboardPreset.essential => 'Essential',
         UspDashboardPreset.standard => 'Standard',
