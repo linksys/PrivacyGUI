@@ -8,10 +8,13 @@ import 'package:privacy_gui/core/usp/services/sse_event_router.dart';
 
 export 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 
-/// Emits [InvalidationDomain] values when SSE notifications arrive.
+/// Emits [InvalidationEvent]s when SSE notifications arrive.
 ///
 /// Providers can `ref.listen` to this and selectively re-fetch or
-/// `ref.invalidateSelf()` when their domain is signaled.
+/// `ref.invalidateSelf()` when their domain is signaled — reading
+/// `next.valueOrNull?.domain` and ignoring the `seq` tag, whose only job is to
+/// keep two consecutive events for the same domain unequal. See
+/// [InvalidationEvent] for why that matters.
 ///
 /// Uses a wildcard handler on [SseEventRouter] to capture ALL notifications
 /// and map them to domains based on the TR-181 `param_path` / `obj_path`
@@ -21,11 +24,14 @@ export 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 /// uses its own internal IDs (e.g., "cpe-15") rather than the client-assigned
 /// IDs (e.g., "wifi-ssid-valuechange"). This is the same issue documented in
 /// [SseOperationAwaiter] for OperationComplete events.
-final sseInvalidationProvider = StreamProvider<InvalidationDomain>((ref) {
+final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
   final manager = ref.watch(sseManagerProvider);
   if (manager == null) return const Stream.empty();
 
-  final controller = StreamController<InvalidationDomain>.broadcast();
+  final controller = StreamController<InvalidationEvent>.broadcast();
+  // Monotonic per provider instance; scoped to this build so it resets with the
+  // controller rather than surviving as global state.
+  var seq = 0;
 
   final removeHandler = manager.addWildcardHandler((notification) {
     // Resolved WAN interface path (e.g. 'Device.IP.Interface.2.'), read
@@ -35,7 +41,7 @@ final sseInvalidationProvider = StreamProvider<InvalidationDomain>((ref) {
         kWanInterfaceFallbackPath;
     final domain = _mapToDomain(notification, wanPath);
     if (domain != null && !controller.isClosed) {
-      controller.add(domain);
+      controller.add((domain: domain, seq: seq++));
     }
   });
 

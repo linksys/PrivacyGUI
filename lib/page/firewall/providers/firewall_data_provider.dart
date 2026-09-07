@@ -109,7 +109,7 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   @override
   Future<FirewallData> build() async {
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.firewallRules ||
           domain == InvalidationDomain.dmz) {
         _debouncedInvalidate();

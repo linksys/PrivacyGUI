@@ -251,7 +251,7 @@ void main() {
     });
 
     test('SSE invalidation triggers re-fetch when clean', () async {
-      final sseController = StreamController<InvalidationDomain>();
+      final sseController = StreamController<InvalidationEvent>();
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
 
@@ -270,7 +270,7 @@ void main() {
       clearInteractions(mockService);
 
       // Push a DMZ invalidation event.
-      sseController.add(InvalidationDomain.dmz);
+      sseController.add((domain: InvalidationDomain.dmz, seq: 0));
       await Future.delayed(Duration.zero);
 
       // Should have re-fetched exactly once after SSE.

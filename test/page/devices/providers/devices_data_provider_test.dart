@@ -236,7 +236,7 @@ void main() {
 
     test('SSE connectedDevices domain triggers debounced re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -254,7 +254,8 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockDevicesSvc);
 
-        sseController.add(InvalidationDomain.connectedDevices);
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 0));
         async.flushMicrotasks();
 
         // Timer pending — no re-fetch yet
@@ -282,7 +283,7 @@ void main() {
 
     test('SSE unrelated domain does not trigger re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -300,7 +301,7 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockDevicesSvc);
 
-        sseController.add(InvalidationDomain.dmz);
+        sseController.add((domain: InvalidationDomain.dmz, seq: 0));
         async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();

@@ -43,7 +43,7 @@ class UspStaticRoutingNotifier
     // SSE invalidation: re-fetch when static routes change externally.
     // Uses the framework's onSseInvalidation() — skips if dirty.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull == InvalidationDomain.staticRouting) {
+      if (next.valueOrNull?.domain == InvalidationDomain.staticRouting) {
         onSseInvalidation();
       }
     });

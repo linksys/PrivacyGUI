@@ -237,7 +237,7 @@ void main() {
 
     test('SSE dhcpReservations domain triggers debounced re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -255,7 +255,8 @@ void main() {
         clearInteractions(mockUsp);
 
         // Emit SSE for dhcpReservations
-        sseController.add(InvalidationDomain.dhcpReservations);
+        sseController
+            .add((domain: InvalidationDomain.dhcpReservations, seq: 0));
         async.flushMicrotasks();
 
         // Timer pending — no re-fetch yet
@@ -274,7 +275,7 @@ void main() {
 
     test('SSE dhcpClients domain also triggers re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -292,7 +293,7 @@ void main() {
         clearInteractions(mockUsp);
 
         // Emit SSE for dhcpClients (second OR-gate branch)
-        sseController.add(InvalidationDomain.dhcpClients);
+        sseController.add((domain: InvalidationDomain.dhcpClients, seq: 0));
         async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 500));
         async.flushMicrotasks();
@@ -306,7 +307,7 @@ void main() {
 
     test('SSE unrelated domain does not trigger re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -323,7 +324,7 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockUsp);
 
-        sseController.add(InvalidationDomain.wifiSsids);
+        sseController.add((domain: InvalidationDomain.wifiSsids, seq: 0));
         async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
