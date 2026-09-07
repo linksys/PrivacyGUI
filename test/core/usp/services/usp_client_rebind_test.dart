@@ -594,7 +594,8 @@ void main() {
       await owner;
     });
 
-    test('the gate owner resuming after the swap does not fail on it', () async {
+    test('the gate owner resuming after the swap does not fail on it',
+        () async {
       // The other order: the rebind settles the gate, then Stage 1 finishes and
       // tries to publish its own result. A bare `complete()` there throws
       // `Future already completed` from inside the success path, which the catch
@@ -634,9 +635,12 @@ void main() {
       client.rebindTransport(second, baseUrl: 'https://two');
 
       expect(await client.get([_path]), {_path: 'session-2'});
-      expect(second.getCalls, [
-        [_path]
-      ], reason: 'the new session must actually be asked');
+      expect(
+          second.getCalls,
+          [
+            [_path]
+          ],
+          reason: 'the new session must actually be asked');
     });
 
     test('a new-session caller is not deduped onto a freed-transport request',
@@ -654,7 +658,8 @@ void main() {
       // The throttler drains asynchronously; let it dispatch.
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
-      expect(first.getCalls, isNotEmpty, reason: 'must be in flight, not queued');
+      expect(first.getCalls, isNotEmpty,
+          reason: 'must be in flight, not queued');
 
       final second = _RecordingTransport('session-2');
       client.rebindTransport(second, baseUrl: 'https://two');
@@ -738,8 +743,7 @@ void main() {
       final client = UspClient.withTransport(first, baseUrl: 'https://one');
 
       final second = _RecordingTransport('session-2');
-      expect(
-          () => client.rebindTransport(second, baseUrl: 'https://two'),
+      expect(() => client.rebindTransport(second, baseUrl: 'https://two'),
           returnsNormally);
 
       expect(first.disposeCount, 1);
