@@ -396,7 +396,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Your placement is good'), findsOneWidget);
+      expect(find.textContaining('Central placement can help'), findsOneWidget);
     });
 
     testWidgets('shows Linksys support tile', (tester) async {
@@ -450,8 +450,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Run a 2-minute connection test'), findsOneWidget);
       // Connection test has an explanation
-      expect(find.textContaining('every ~25 seconds'), findsOneWidget);
-      expect(find.textContaining('2 minutes'), findsOneWidget);
+      expect(find.textContaining('every 24 seconds'), findsOneWidget);
+      expect(find.textContaining('two minutes'), findsOneWidget);
     });
   });
 

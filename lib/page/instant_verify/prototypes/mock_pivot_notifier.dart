@@ -1,6 +1,7 @@
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
+import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 
 /// PROTOTYPE-ONLY notifier. Drives the Instant-Test UI entirely off the
 /// engine's built-in mock scenarios so the front-end prototypes render with
@@ -73,6 +74,46 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier {
 
   @override
   Future<void> restartRouter() async {
-    // no-op in prototype mode
+    state = state.copyWith(hasRestartedThisSession: true);
   }
+
+  @override
+  Future<void> triggerFirmwareUpdate() async {}
+  @override
+  Future<void> disableMacFilter() async {}
+  @override
+  Future<void> setGuestNetworkEnabled(bool enabled) async {}
+  @override
+  Future<void> deauthClient(String macAddress) async {}
+  @override
+  Future<bool> changeRadioChannel(String radioID, int channel) async => false;
+  @override
+  Future<ChannelOptimizeResult> optimizeChannels() async =>
+      const ChannelOptimizeResult(status: ChannelOptimizeStatus.alreadyOptimal);
+}
+
+/// Every browser diagnostic in the preview uses fixed data, including calls
+/// made directly by a workflow rather than through the pivot notifier.
+class MockBrowserDiagnosticService extends BrowserDiagnosticService {
+  @override
+  Future<GatewayPingResult> pingGateway() async =>
+      const GatewayPingResult(reachable: true, latencyMs: 2);
+  @override
+  Future<GatewayPingResult> pingPublicIp() async =>
+      const GatewayPingResult(reachable: true, latencyMs: 18);
+  @override
+  Future<DnsCheckResult> checkDns() async =>
+      const DnsCheckResult(resolved: true, latencyMs: 12);
+  @override
+  Future<DnsCheckResult> checkPublicDns() async =>
+      const DnsCheckResult(resolved: true, latencyMs: 12);
+  @override
+  Future<SpeedTestResult> runInternetSpeedTest(
+          {void Function(String)? onStep}) async =>
+      const SpeedTestResult(
+          downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2);
+  @override
+  Future<RouterSpeedResult> runRouterSpeedTest(
+          {void Function(String)? onStep}) async =>
+      const RouterSpeedResult(latencyMs: 2, throughputMbps: 240);
 }

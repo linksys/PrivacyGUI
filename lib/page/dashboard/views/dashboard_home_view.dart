@@ -19,7 +19,7 @@ import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart'
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
-import 'package:privacy_gui/page/instant_verify/prototypes/instant_test_card.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_card.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';

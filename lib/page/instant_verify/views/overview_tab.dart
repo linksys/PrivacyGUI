@@ -13,14 +13,20 @@ import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
+  final Widget? leading;
+  final VoidCallback? onViewNetwork;
   final VoidCallback? onViewClients;
+  final VoidCallback? onTroubleshootWeakDevices;
   final void Function(int flowIndex)? onNavigateToFlow;
   /// When false, the in-body "Something else?" symptom cards are hidden — the
-  /// single-page host renders them as a top nav strip instead.
+  /// single-page host supplies its own workflow chooser instead.
   final bool showProblemCards;
   const OverviewTab({
     super.key,
+    this.leading,
+    this.onViewNetwork,
     this.onViewClients,
+    this.onTroubleshootWeakDevices,
     this.onNavigateToFlow,
     this.showProblemCards = true,
   });
@@ -82,6 +88,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.leading != null) widget.leading!,
           // Router light guide link (PRD v0.7 S-1)
           _LightGuideLink(
             showInlineCallout: state.phase != PivotLoadPhase.idle &&
@@ -103,6 +110,18 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
+          if (widget.onViewClients != null || widget.onViewNetwork != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Wrap(spacing: 12, runSpacing: 4, children: [
+                if (widget.onViewClients != null)
+                  TextButton(onPressed: widget.onViewClients,
+                      child: const Text('View devices')),
+                if (widget.onViewNetwork != null)
+                  TextButton(onPressed: widget.onViewNetwork,
+                      child: const Text('View network')),
+              ]),
+            ),
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
@@ -131,7 +150,8 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           if (state.issueDevices.isNotEmpty) ...[
             const SizedBox(height: 16),
             _DeviceIssuesCard(
-                state: state, onNavigateToFlow: widget.onNavigateToFlow),
+                state: state, onNavigateToFlow: widget.onNavigateToFlow,
+                onTroubleshoot: widget.onTroubleshootWeakDevices),
           ],
           if (state.isMeshNetwork) ...[
             const SizedBox(height: 16),
@@ -993,7 +1013,8 @@ class _FindingRow extends StatelessWidget {
 class _DeviceIssuesCard extends StatelessWidget {
   final InstantVerifyPivotState state;
   final void Function(int flowIndex)? onNavigateToFlow;
-  const _DeviceIssuesCard({required this.state, this.onNavigateToFlow});
+  final VoidCallback? onTroubleshoot;
+  const _DeviceIssuesCard({required this.state, this.onNavigateToFlow, this.onTroubleshoot});
 
   @override
   Widget build(BuildContext context) {
@@ -1033,12 +1054,12 @@ class _DeviceIssuesCard extends StatelessWidget {
                   fontSize: 13, color: scheme.onSurfaceVariant)),
           // Direct action into the fix flow instead of only telling the user
           // to go to My Devices (on-device feedback).
-          if (onNavigateToFlow != null) ...[
+          if (onNavigateToFlow != null || onTroubleshoot != null) ...[
             const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () =>
+                onPressed: onTroubleshoot ?? () =>
                     onNavigateToFlow!.call(2), // → Device connectivity flow
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 icon: const Icon(Icons.build_outlined, size: 18),
@@ -1615,14 +1636,18 @@ class _SummaryRowWidget extends StatelessWidget {
                         fontSize: 12, fontWeight: FontWeight.w500)),
               ),
               if (row.detail.isNotEmpty)
-                Text(
-                  row.detail,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: row.state == _CheckDisplayState.fail
-                          ? Colors.red.shade700
-                          : scheme.onSurfaceVariant),
-                  overflow: TextOverflow.ellipsis,
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    row.detail,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: row.state == _CheckDisplayState.fail
+                            ? Colors.red.shade700
+                            : scheme.onSurfaceVariant),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               const SizedBox(width: 4),
               Icon(

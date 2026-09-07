@@ -293,7 +293,8 @@ class _SatelliteNodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWeak = node.hasWeakBackhaul;
+    final health = node.backhaulHealth;
+    final isWeak = health == BackhaulHealth.weak || health == BackhaulHealth.critical;
     final isWired = node.hasWiredBackhaul;
     // A node with backhaul telemetry is provably reachable; otherwise trust the
     // online flag derived from GetDevices3 `connections`.
@@ -308,14 +309,17 @@ class _SatelliteNodeCard extends StatelessWidget {
     } else if (isWired) {
       backhaulLabel = 'Connected by Ethernet$speedSuffix';
     } else if (isWeak) {
-      backhaulLabel = 'Connected wirelessly — Weak$speedSuffix';
+      backhaulLabel = 'Connected wirelessly — ${health == BackhaulHealth.critical ? 'Critical' : 'Weak'}$speedSuffix';
       backhaulColor = Colors.orange;
-    } else if (node.hasBackhaulData) {
+    } else if (health == BackhaulHealth.moderate) {
+      backhaulLabel = 'Connected wirelessly — Moderate$speedSuffix';
+      backhaulColor = Colors.orange;
+    } else if (health == BackhaulHealth.strong) {
       backhaulLabel = 'Connected wirelessly — Good$speedSuffix';
       backhaulColor = Colors.green;
     } else {
       // Online but no backhaul health data — don't assert "Good".
-      backhaulLabel = 'Connected wirelessly';
+      backhaulLabel = 'Connected wirelessly — Health unknown';
     }
 
     return AppCard(

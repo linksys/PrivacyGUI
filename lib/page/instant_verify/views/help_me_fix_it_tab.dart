@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'user_step_heading.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,154 +35,224 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
   /// menu. The host owns the menu; this widget only renders the active flow.
   final VoidCallback? onExitToHome;
 
+  final bool singlePage;
+  final VoidCallback? onCheckAgain;
+  final String exitLabel;
+  final List<int>? flowPath;
+  final ValueChanged<List<int>>? onFlowPathChanged;
+
   const HelpMeFixItTab({
     super.key,
     this.pendingFlowNotifier,
     this.pendingFlowDeviceNotifier,
     this.onNavigateToMyDevices,
     this.onExitToHome,
+    this.singlePage = false,
+    this.onCheckAgain,
+    this.exitLabel = 'Back to Instant-Test',
+    this.flowPath,
+    this.onFlowPathChanged,
   });
 
   @override
   ConsumerState<HelpMeFixItTab> createState() => _HelpMeFixItTabState();
 }
 
+class _FlowVisit {
+  _FlowVisit(this.flow, {this.device});
+  final int flow;
+  final DiagnosticClient? device;
+  final key = UniqueKey();
+  final back = ValueNotifier<VoidCallback?>(null);
+  final indicator = ValueNotifier<String?>(null);
+  void dispose() {
+    back.dispose();
+    indicator.dispose();
+  }
+}
+
 class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
-  int? _activeFlow;
-  /// Flows set this to their step-back function when they have history.
-  /// Shell back arrow calls this if non-null; otherwise exits flow.
-  final _flowStepBackNotifier = ValueNotifier<VoidCallback?>(null);
-  /// Flows update this as steps advance: "Step N of M" or null when not applicable.
-  final _stepIndicatorNotifier = ValueNotifier<String?>(null);
+  final List<_FlowVisit> _visits = [];
 
   @override
   void initState() {
     super.initState();
     widget.pendingFlowNotifier?.addListener(_onPendingFlow);
-    // Tab 3 may be built AFTER the notifier was set (TabBarView lazy build).
-    // Check on first frame so we catch a pending value set before this initState ran.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onPendingFlow());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.flowPath != null) { _syncFlowPath(); } else { _onPendingFlow(); }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant HelpMeFixItTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.flowPath != null) _syncFlowPath();
+  }
+
+  void _syncFlowPath() {
+    final path = widget.flowPath!;
+    var shared = 0;
+    while (shared < path.length && shared < _visits.length &&
+        path[shared] == _visits[shared].flow) { shared++; }
+    if (shared == path.length && shared == _visits.length) return;
+    _retire(_visits.sublist(shared));
+    final device = widget.pendingFlowDeviceNotifier?.value;
+    widget.pendingFlowDeviceNotifier?.value = null;
+    setState(() {
+      _visits.removeRange(shared, _visits.length);
+      for (var i = shared; i < path.length; i++) {
+        _visits.add(_FlowVisit(path[i], device: i == path.length - 1 ? device : null));
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && path.isNotEmpty) _recordFlow(path.last);
+    });
+  }
+
+  void _publishPath() => widget.onFlowPathChanged?.call(
+      _visits.map((visit) => visit.flow).toList());
+
+  void _retire(List<_FlowVisit> visits) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final visit in visits) { visit.dispose(); }
+    });
   }
 
   @override
   void dispose() {
     widget.pendingFlowNotifier?.removeListener(_onPendingFlow);
-    _flowStepBackNotifier.dispose();
-    _stepIndicatorNotifier.dispose();
+    for (final visit in _visits) { visit.dispose(); }
     super.dispose();
   }
 
   void _onPendingFlow() {
     final flow = widget.pendingFlowNotifier?.value;
     if (flow == null || !mounted) return;
-    widget.pendingFlowNotifier!.value = null; // consume
-    if (flow == -1) {
-      // -1 = reset to landing (tab re-selected while in a flow)
-      setState(() => _activeFlow = null);
-    } else {
-      setState(() => _activeFlow = flow);
-    }
+    widget.pendingFlowNotifier!.value = null;
+    final device = widget.pendingFlowDeviceNotifier?.value;
+    widget.pendingFlowDeviceNotifier?.value = null;
+    _retire(List.of(_visits));
+    setState(() {
+      _visits.clear();
+      if (flow != -1) _visits.add(_FlowVisit(flow, device: device));
+    });
+    if (flow != -1) _recordFlow(flow);
+  }
+
+  void _recordFlow(int flow) {
+    const names = {1: 'internet_not_working', 2: 'internet_slow',
+      3: 'device_connectivity', 30: 'device_connectivity', 31: 'device_slow', 32: 'device_drops',
+      4: 'wifi_coverage', 5: 'connection_drops', 6: 'bridge_mode'};
+    ref.read(instantVerifyPivotProvider.notifier)
+        .recordFlowEntered(names[flow] ?? 'flow_$flow');
   }
 
   void _launchFlow(int flow) {
-    const flowNames = {1: 'internet_not_working', 2: 'internet_slow', 3: 'device_connectivity', 4: 'wifi_coverage', 5: 'connection_drops', 6: 'bridge_mode'};
-    ref.read(instantVerifyPivotProvider.notifier).recordFlowEntered(flowNames[flow] ?? 'flow_$flow');
-    setState(() => _activeFlow = flow);
+    _recordFlow(flow);
+    setState(() => _visits.add(_FlowVisit(flow)));
+    _publishPath();
   }
+
   void _exitFlow() {
-    _flowStepBackNotifier.value = null;
-    _stepIndicatorNotifier.value = null;
-    setState(() => _activeFlow = null);
-    // Single-page mode: hand control back to the host (the Instant-Test page).
+    _retire(List.of(_visits));
+    setState(_visits.clear);
     widget.onExitToHome?.call();
   }
 
   void _handleShellBack() {
-    final stepBack = _flowStepBackNotifier.value;
-    if (stepBack != null) {
-      stepBack();
+    final back = _visits.last.back.value;
+    if (back != null) {
+      back();
+    } else if (_visits.length > 1) {
+      final removed = _visits.last;
+      setState(() => _visits.removeLast());
+      _retire([removed]);
+      _publishPath();
     } else {
       _exitFlow();
     }
   }
 
+  Widget _flow(_FlowVisit visit) {
+    final back = visit.back;
+    final indicator = visit.indicator;
+    return switch (visit.flow) {
+      1 => _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow, stepBackNotifier: back),
+      2 => _Flow2(onDone: _exitFlow, onNavigateToFlow: _launchFlow, singlePage: widget.singlePage,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      3 || 30 || 31 || 32 => _Flow3(onDone: _exitFlow,
+          onNavigateToMyDevices: widget.onNavigateToMyDevices,
+          initialConnected: visit.flow == 30 || visit.flow == 31,
+          initialSlowDevice: visit.flow == 31,
+          initialIssue: visit.flow == 32 ? _ConnectIssue.keepsDropping
+              : visit.flow == 3 ? _ConnectIssue.cantConnect : null,
+          initialDevice: visit.device, singlePage: widget.singlePage,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      4 => _Flow4(onDone: _exitFlow, stepBackNotifier: back, singlePage: widget.singlePage),
+      5 => _Flow5(onDone: _exitFlow, onNavigateToFlow: _launchFlow,
+          stepBackNotifier: back, stepIndicatorNotifier: indicator, singlePage: widget.singlePage),
+      6 => _Flow6BridgeMode(onDone: _exitFlow, stepBackNotifier: back, stepIndicatorNotifier: indicator),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_activeFlow == null) {
-      // Single-page host owns the menu — render nothing while idle.
+    if (_visits.isEmpty) {
       if (widget.onExitToHome != null) return const SizedBox.shrink();
       return _FlowMenu(onSelect: _launchFlow);
     }
-
-    Widget flowWidget;
-    switch (_activeFlow!) {
-      case 1:
-        flowWidget = _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow, stepBackNotifier: _flowStepBackNotifier);
-      case 2:
-        flowWidget = _Flow2(
-          onDone: _exitFlow,
-          onNavigateToFlow: _launchFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 3:
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 30: // Flow 3 launched from My Devices — device verified connected
-        final device = widget.pendingFlowDeviceNotifier?.value;
-        widget.pendingFlowDeviceNotifier?.value = null; // consume
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          initialConnected: true,
-          initialDevice: device,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 31: // Flow 3 launched from Flow 2 "Just one specific device" — skip to slow-device path
-        flowWidget = _Flow3(
-          onDone: _exitFlow,
-          onNavigateToMyDevices: widget.onNavigateToMyDevices,
-          initialConnected: true,
-          initialSlowDevice: true,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 4:
-        flowWidget = _Flow4(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
-      case 5:
-        flowWidget = _Flow5(
-          onDone: _exitFlow,
-          onNavigateToFlow: _launchFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      case 6:
-        flowWidget = _Flow6BridgeMode(
-          onDone: _exitFlow,
-          stepBackNotifier: _flowStepBackNotifier,
-          stepIndicatorNotifier: _stepIndicatorNotifier,
-        );
-      default:
-        flowWidget = const SizedBox.shrink();
-    }
-
+    final active = _visits.last;
     return _FlowShell(
-      title: _flowTitle(_activeFlow!),
+      title: _flowTitle(active.flow),
       onBack: _handleShellBack,
-      stepIndicatorNotifier: _stepIndicatorNotifier,
-      child: flowWidget,
+      backLabel: widget.singlePage
+          ? (_visits.length > 1 ? _returnLabel(_visits[_visits.length - 2].flow) : widget.exitLabel)
+          : 'Back to flows',
+      stepIndicatorNotifier: active.indicator,
+      stepBackNotifier: active.back,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // Preserve each origin's selected device and result while visiting
+        // another flow. Removed visits are disposed, including their timers.
+        for (final visit in _visits)
+          Offstage(
+            key: visit.key,
+            offstage: visit != active,
+            child: ExcludeFocus(excluding: visit != active,
+                child: TickerMode(enabled: visit == active, child: SelectionArea(child: _flow(visit)))),
+          ),
+        if (widget.singlePage) ...[
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 12),
+          if (widget.onCheckAgain != null)
+            const Text('After trying a fix, check again to see the latest results.'),
+          const SizedBox(height: 12),
+          Wrap(spacing: 12, runSpacing: 8, children: [
+            if (widget.onCheckAgain != null)
+              FilledButton.icon(onPressed: widget.onCheckAgain,
+                  icon: const Icon(Icons.refresh), label: const Text('Check again')),
+            TextButton(onPressed: _exitFlow, child: Text(widget.exitLabel)),
+          ]),
+        ],
+      ]),
     );
   }
+
+  static String _returnLabel(int flow) => switch (flow) {
+    1 => 'Back to internet check',
+    2 => 'Back to speed check',
+    5 => 'Back to connection check',
+    _ => 'Back to previous help',
+  };
 
   static String _flowTitle(int flow) => switch (flow) {
         1 => 'My internet isn\'t working',
         2 => 'My internet is slow',
-        3 => 'Device connectivity issues',
+        3 || 30 => 'Device connectivity issues',
+        31 => 'One device is slow',
+        32 => 'Device keeps disconnecting',
         4 => 'WiFi doesn\'t reach a room',
         5 => 'My connection keeps cutting out',
         6 => 'Two routers / Combo gateway',
@@ -318,15 +389,19 @@ class _FlowMenuState extends State<_FlowMenu> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _FlowShell extends StatelessWidget {
+  final ValueNotifier<VoidCallback?> stepBackNotifier;
+  final String backLabel;
   final String title;
   final VoidCallback onBack;
   final Widget child;
   final ValueNotifier<String?>? stepIndicatorNotifier;
   const _FlowShell(
-      {required this.title,
+      {required this.stepBackNotifier,
+      required this.title,
       required this.onBack,
       required this.child,
-      this.stepIndicatorNotifier});
+      this.stepIndicatorNotifier,
+      this.backLabel = 'Back to flows'});
 
   @override
   Widget build(BuildContext context) {
@@ -335,10 +410,14 @@ class _FlowShell extends StatelessWidget {
         Material(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: ListTile(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: onBack,
-              tooltip: 'Back to flows',
+            leading: ValueListenableBuilder<VoidCallback?>(
+              valueListenable: stepBackNotifier,
+              builder: (_, stepBack, __) => IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: onBack,
+                tooltip: stepBack != null && backLabel != 'Back to flows'
+                    ? 'Back to previous step' : backLabel,
+              ),
             ),
             title: Text(title,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -378,10 +457,10 @@ class _FlowShell extends StatelessWidget {
 // so border color, surface, and radius exactly match the rest of the app.
 Widget _stepCard(BuildContext context, Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: AppCard(
-        padding: const EdgeInsets.all(16),
+      child: SizedBox(width: double.infinity, child: AppCard(
+        padding: const EdgeInsets.all(20),
         child: child,
-      ),
+      )),
     );
 
 Widget _infoBox(BuildContext context, String text,
@@ -679,7 +758,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Running diagnostics…',
+        Text(_phase == _Flow1Phase.running ? 'Running diagnostics…'
+            : _phase == _Flow1Phase.allOk ? 'Diagnostics complete' : 'Connection problem found',
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
@@ -704,10 +784,10 @@ class _Flow1State extends ConsumerState<_Flow1> {
   Widget _checkRow(BuildContext context, String label, bool? result) {
     Widget indicator;
     if (result == null) {
-      indicator = const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2));
+      indicator = _phase == _Flow1Phase.running
+          ? const SizedBox(width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.remove, size: 18);
     } else if (result) {
       indicator =
           const Icon(Icons.check_circle, color: Colors.green, size: 18);
@@ -719,7 +799,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
       child: Row(children: [
         indicator,
         const SizedBox(width: 10),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        Expanded(child: Text(result == null && _phase != _Flow1Phase.running
+            ? '$label — Not run' : label, style: Theme.of(context).textTheme.bodyMedium)),
       ]),
     );
   }
@@ -736,11 +817,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Check your connection to the router',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Check your connection to the router'),
             const SizedBox(height: 8),
             _checklistItem(context,
                 'Make sure you\'re connected to your Linksys WiFi network (not a neighbor\'s)'),
@@ -770,11 +847,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Check the connection to your modem',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Check the connection to your modem'),
             const SizedBox(height: 8),
             _checklistItem(context,
                 'Find the box from your internet company (Comcast, Spectrum, AT&T, etc.) — it\'s separate from your Linksys router'),
@@ -796,11 +869,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('If cables are fine, contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('If cables are fine, contact your internet provider'),
             const SizedBox(height: 8),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
@@ -826,11 +895,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Try restarting your router',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Try restarting your router'),
             const SizedBox(height: 8),
             Text(
               'Restarting clears DNS cache issues and usually resolves this.',
@@ -856,11 +921,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
           _stepCard(context, Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('If restarting didn\'t fix it:',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              UserStepHeading('If restarting didn\'t fix it:'),
               const SizedBox(height: 8),
               _ispScript(context,
                   'My router is connected and has an IP address, but websites won\'t load and domain names can\'t be resolved. I restarted my router but the problem persists.'),
@@ -888,11 +949,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Still seeing an issue?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Still seeing an issue?'),
             const SizedBox(height: 8),
             Text(
               'The connection looks healthy from the router\'s side. '
@@ -945,11 +1002,12 @@ class _Flow1State extends ConsumerState<_Flow1> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _Flow2 extends ConsumerStatefulWidget {
+  final bool singlePage;
   final VoidCallback onDone;
   final ValueChanged<int> onNavigateToFlow;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
   final ValueNotifier<String?>? stepIndicatorNotifier;
-  const _Flow2({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
+  const _Flow2({this.singlePage = false, required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow2> createState() => _Flow2State();
@@ -960,12 +1018,13 @@ class _Flow2State extends ConsumerState<_Flow2> {
   int _step = 0;
   bool _isRunning = false;
   SpeedTestResult? _speedResult;
+  String? _speedError;
   bool _isRestarting = false;
   SpeedTestResult? _postRestartResult;
   // Smart QoS (CAKE bufferbloat shaping) — proto: local toggle, not wired to the
   // live smartqos JNAP action yet. The gaming/latency path is its home (bufferbloat
   // = latency-under-load). Backend: linksys/JNAP#11.
-  bool _smartQosEnabled = false;
+
 
   // Item 2: within-flow back navigation
   final List<int> _stepHistory = [];
@@ -1010,18 +1069,20 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _step = 0;
       _isRunning = true;
       _speedResult = null;
+      _speedError = null;
       _postRestartResult = null;
     });
     final svc = ref.read(browserDiagnosticServiceProvider);
     try {
       final result = await svc.runInternetSpeedTest();
-      setState(() => _speedResult = result);
+      if (!mounted) return;
+      setState(() { _speedResult = result; _isRunning = false; _step = 1; });
     } catch (_) {
-      setState(() => _speedResult = null);
-    } finally {
+      if (!mounted) return;
       setState(() {
+        _speedError = 'The speed check could not finish. Try again; no speed conclusion is available.';
         _isRunning = false;
-        _step = 1;
+        _step = 0;
       });
     }
   }
@@ -1036,6 +1097,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
     final svc = ref.read(browserDiagnosticServiceProvider);
     try {
       final result = await svc.runInternetSpeedTest();
+      if (!mounted) return;
       setState(() {
         _postRestartResult = result;
         _isRunning = false;
@@ -1048,6 +1110,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
         }
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _isRunning = false;
         _step = 4;
@@ -1064,9 +1127,10 @@ class _Flow2State extends ConsumerState<_Flow2> {
         key: ValueKey(_step),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_speedError != null) _infoBox(context, _speedError!),
           if (_step == 0) ..._step0(context, state),
           if (_step == 1 && _speedResult != null) ..._step1(context),
-          if (_step == 2) ..._step2(context),
+          if (_step == 2 || (widget.singlePage && _step == 1 && _speedResult != null)) ..._step2(context),
           if (_step == 3) ..._step3(context, state),
           if (_step == 4) ..._step4(context),
           if (_step == 5) ..._step5Gaming(context),
@@ -1090,11 +1154,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Run a speed test',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Run a speed test'),
           const SizedBox(height: 12),
           if (_isRunning) ...[
             const Row(children: [
@@ -1190,8 +1250,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
         ],
       )),
 
-      // Only show the "not enough?" question — don't ask about ISP plan
-      _stepCard(context, Column(
+      // The single page places scope choices beside the result.
+      if (!widget.singlePage) _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Does this feel fast enough for what you\'re trying to do?',
@@ -1224,6 +1284,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
           ),
         ],
       )),
+      if (widget.singlePage)
+        TextButton.icon(onPressed: _runSpeedTest, icon: const Icon(Icons.refresh),
+            label: const Text('Run test again')),
     ];
   }
 
@@ -1237,11 +1300,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Let\'s figure out what\'s slow',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Let\'s figure out what\'s slow'),
           const SizedBox(height: 12),
 
           // Show jitter warning if relevant (gaming/call lag)
@@ -1265,11 +1324,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const SizedBox(height: 10),
           ],
 
-          Text('Where is it slow?',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Where is it slow?'),
           const SizedBox(height: 8),
 
           SizedBox(
@@ -1380,11 +1435,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Contact your internet provider'),
             const SizedBox(height: 8),
             Text(
               'Since restarting didn\'t fix it, the issue is likely outside your router.',
@@ -1415,8 +1466,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Latency / lag troubleshooting',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Latency / lag troubleshooting'),
           const SizedBox(height: 8),
           _infoBox(context,
               'Gaming and video calls are sensitive to latency and jitter, not just download speed. '
@@ -1439,31 +1489,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 'One of your child nodes has a weak connection to your router. '
                 'Devices connected through that node will experience higher latency.',
                 icon: Icons.warning_amber, color: Colors.orange),
-          ],
-          // Smart QoS — the real fix for lag under load (bufferbloat).
-          const SizedBox(height: 16),
-          Text('Smart QoS',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          if (!_smartQosEnabled) ...[
-            _infoBox(context,
-                'Smart QoS keeps calls and gaming smooth by managing your upload queue — '
-                'it prevents the lag spikes that happen when something else is uploading. '
-                'One tap, no settings to fiddle with.'),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => setState(() => _smartQosEnabled = true),
-                icon: const Icon(Icons.speed),
-                label: const Text('Enable Smart QoS'),
-              ),
-            ),
-          ] else ...[
-            _infoBox(context,
-                'Smart QoS is on — your connection is now shaped to keep latency low '
-                'under load. Re-run the speed test to see the improvement.',
-                icon: Icons.check_circle, color: Colors.green),
           ],
           const SizedBox(height: 12),
           SizedBox(
@@ -1579,7 +1604,7 @@ class _SpeedTierTable extends StatelessWidget {
 
 enum _DeviceType { phone, laptop, smartHome, gaming, other }
 enum _ConnectState { canConnect, cantConnect, wired }
-enum _ConnectIssue { keepsDropping, slowOnDevice, other }
+enum _ConnectIssue { keepsDropping, slowOnDevice, other, cantConnect }
 
 class _Flow3 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
@@ -1591,12 +1616,14 @@ class _Flow3 extends ConsumerStatefulWidget {
   /// When true (from Flow 2 "Just one specific device"), skip straight to the
   /// slow-device path with device picker — don't ask "what's happening?"
   final bool initialSlowDevice;
+  final _ConnectIssue? initialIssue;
   /// The specific device that was selected in My Devices — pre-populates
   /// device-specific analysis in the slow device path.
   final DiagnosticClient? initialDevice;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
   final ValueNotifier<String?>? stepIndicatorNotifier;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier, this.stepIndicatorNotifier});
+  final bool singlePage;
+  const _Flow3({this.singlePage = false, required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialIssue, this.initialDevice, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1608,6 +1635,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
   _ConnectState? _connectState;
   _ConnectIssue? _connectIssue;
   _DeviceType? _deviceType;
+  String _deviceQuery = '';
+  int _devicePage = 0;
+  static const _devicesPerPage = 8;
   bool _isDisablingMacFilter = false;
   bool _macFilterDisabled = false;
   // null = not yet answered, true = can see SSID, false = can't see SSID (Item 12)
@@ -1631,12 +1661,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _step = 1;
       _connectState = _ConnectState.canConnect;
     }
+    if (widget.singlePage) _connectIssue = widget.initialIssue ?? _connectIssue ?? _ConnectIssue.other;
     _selectedDevice = widget.initialDevice;
   }
 
   void _pushStep(int newStep) {
     setState(() {
-      _stepHistory.add(_step);
+      if (!widget.singlePage) _stepHistory.add(_step);
       _step = newStep;
     });
     _syncStepBackNotifier();
@@ -1657,6 +1688,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
+    if (widget.singlePage) return _singlePage(context, state);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: Column(
@@ -1675,6 +1707,120 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       ),
     );
+  }
+
+  Widget _singlePage(BuildContext context, InstantVerifyPivotState state) {
+    final loading = state.phase == PivotLoadPhase.idle || state.phase == PivotLoadPhase.loading;
+    final selectedPresent = _selectedDevice != null &&
+        state.clients.any((c) => c.macAddress == _selectedDevice!.macAddress);
+    final matches = state.clients.where((device) =>
+        device.displayNameWithOui.toLowerCase().contains(_deviceQuery.toLowerCase()) ||
+        device.macAddress.toLowerCase().contains(_deviceQuery.toLowerCase())).toList();
+    final lastPage = matches.isEmpty ? 0 : (matches.length - 1) ~/ _devicesPerPage;
+    final page = _devicePage.clamp(0, lastPage);
+    final visible = matches.skip(page * _devicesPerPage).take(_devicesPerPage);
+    final theme = Theme.of(context);
+    final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      UserStepHeading('1. Choose a device'),
+      const SizedBox(height: 8),
+      const Text('Select a device below to see help for its connection.'),
+      const SizedBox(height: 16),
+      if (state.clients.length > _devicesPerPage) ...[
+        TextField(
+          decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+          onChanged: (value) => setState(() { _deviceQuery = value; _devicePage = 0; }),
+        ),
+        const SizedBox(height: 12),
+      ],
+      if (loading) const LinearProgressIndicator(),
+      if (!loading && state.clients.isEmpty)
+        const Text('No device list is available. This does not tell us whether your device is connected.'),
+      if (state.clients.isNotEmpty && matches.isEmpty)
+        const Text('No devices match your search.'),
+      for (final device in visible) ...[
+        Material(
+          color: _selectedDevice?.macAddress == device.macAddress
+              ? theme.colorScheme.secondaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: ListTile(
+            key: ValueKey('device-choice-${device.macAddress}'),
+            selected: _selectedDevice?.macAddress == device.macAddress,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            leading: Icon(_selectedDevice?.macAddress == device.macAddress
+                ? Icons.radio_button_checked : Icons.radio_button_off, size: 20),
+            title: Text(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
+            subtitle: Text(device.isWireless ? device.band : 'Ethernet'),
+            onTap: loading ? null : () => setState(() {
+              _selectedDevice = device;
+              _connectState = device.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
+              _canSeeSsid = null;
+              _step = 2;
+            }),
+          ),
+        ),
+        const SizedBox(height: 4),
+      ],
+      if (matches.length > _devicesPerPage)
+        Row(children: [
+          Expanded(child: Text('${page * _devicesPerPage + 1}–${page * _devicesPerPage + visible.length} of ${matches.length}')),
+          IconButton(tooltip: 'Previous devices', onPressed: page == 0 ? null : () => setState(() => _devicePage = page - 1), icon: const Icon(Icons.chevron_left)),
+          IconButton(tooltip: 'Next devices', onPressed: page == lastPage ? null : () => setState(() => _devicePage = page + 1), icon: const Icon(Icons.chevron_right)),
+        ]),
+      const Divider(height: 24),
+      Text('Device not listed?', style: theme.textTheme.titleSmall),
+      TextButton(onPressed: () => setState(() {
+        _selectedDevice = null;
+        _connectState = _ConnectState.cantConnect;
+        _canSeeSsid = null;
+        _step = 1;
+      }), child: const Text("I don't see my device")),
+      TextButton(onPressed: () => setState(() {
+        _selectedDevice = null;
+        _connectState = _ConnectState.wired;
+        _step = 1;
+      }), child: const Text('My device uses an Ethernet cable')),
+    ]));
+    final help = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (_selectedDevice != null && !selectedPresent)
+        _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
+      if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          UserStepHeading('2. What is happening?'),
+          const SizedBox(height: 8),
+          Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 16),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final item in const [
+              (_ConnectIssue.cantConnect, "Won't connect"),
+              (_ConnectIssue.slowOnDevice, 'Slow connection'),
+              (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
+              (_ConnectIssue.other, 'Something else'),
+            ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
+                onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
+          ]),
+        ])),
+      if (_connectState == _ConnectState.cantConnect) ...[
+        _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
+        ..._step1CantConnect(context),
+      ] else if (_connectState == _ConnectState.wired) ..._step1Wired(context)
+      else if (_selectedDevice != null && selectedPresent) ...[
+        if (_connectIssue == _ConnectIssue.cantConnect) ..._step1CantConnect(context)
+        else if (_connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state)
+        else if (_connectIssue == _ConnectIssue.other) ..._pathOther(context, state)
+        else ..._deviceAnalysisCards(context, state,
+            state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
+      ] else if (_selectedDevice == null)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          UserStepHeading('Start with the device that needs help'),
+          const SizedBox(height: 12),
+          const Text('Choose a device from the list. Its connection details and the next troubleshooting step will appear here.'),
+        ])),
+    ]);
+    return LayoutBuilder(builder: (context, constraints) => constraints.maxWidth >= 840
+        ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(width: 320, child: picker), const SizedBox(width: 24), Expanded(child: help),
+          ])
+        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [picker, help]));
   }
 
   List<Widget> _step0(BuildContext context) => [
@@ -1737,11 +1883,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Wired device troubleshooting',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Wired device troubleshooting'),
             const SizedBox(height: 8),
             SelectableText(
               'Check each item as you try it:',
@@ -1760,11 +1902,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Still not working?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Still not working?'),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -1862,8 +2000,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Which device is slow?',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        UserStepHeading('Which device is slow?'),
         const SizedBox(height: 4),
         Text('Select it to get specific advice based on its signal and connection.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
@@ -2011,7 +2148,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               child: Text(device.displayNameWithOui,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
-            TextButton(
+            if (!widget.singlePage) TextButton(
               onPressed: () => setState(() => _selectedDevice = null),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
               child: const Text('Switch Device'),
@@ -2211,11 +2348,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Device keeps dropping WiFi',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Device keeps dropping WiFi'),
           const SizedBox(height: 8),
           Text('Check each item as you try it:',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2246,11 +2379,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Things we can try from here',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Things we can try from here'),
           const SizedBox(height: 10),
 
           // Force reconnect — deauthenticates the device so it re-associates fresh
@@ -2731,6 +2860,26 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final ssid = state.wifiSsid;
     final ssidLabel = ssid != null ? '"$ssid"' : 'your network name';
 
+    if (widget.singlePage) {
+      return [
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          UserStepHeading('Check the WiFi network name'),
+          const SizedBox(height: 12),
+          Text('Can you see $ssidLabel in your device\'s WiFi list?',
+              style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 16),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            ChoiceChip(label: const Text('Yes — I can see it'), selected: _canSeeSsid == true,
+                onSelected: (_) => setState(() => _canSeeSsid = true)),
+            ChoiceChip(label: const Text('No — I don\'t see it'), selected: _canSeeSsid == false,
+                onSelected: (_) => setState(() => _canSeeSsid = false)),
+          ]),
+        ])),
+        if (_canSeeSsid == false) _ssidNotVisibleCard(context, ref, state)
+        else if (_canSeeSsid == true) ..._pathA(context, state),
+      ];
+    }
+
     if (_canSeeSsid == null) {
       return [
         _stepCard(context, Column(
@@ -2785,11 +2934,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('General troubleshooting',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('General troubleshooting'),
           const SizedBox(height: 8),
           Text(
             'Your device is connected but something doesn\'t seem right. '
@@ -2806,11 +2951,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('If those didn\'t help',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('If those didn\'t help'),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -2836,11 +2977,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Check your WiFi details',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Check your WiFi details'),
           const SizedBox(height: 12),
           _wifiCredRow(context, 'Network name', ssid),
           const SizedBox(height: 6),
@@ -2896,11 +3033,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Still not connecting?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Still not connecting?'),
           const SizedBox(height: 8),
           Text(
             'If the steps above haven\'t worked, restarting your router often '
@@ -2940,11 +3073,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Connect your smart home device',
-              style: Theme.of(context)
-                  .textTheme
-                  ?.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Connect your smart home device'),
           const SizedBox(height: 12),
           _checklistItem(context,
               'Make sure your phone is on the same WiFi network you want the device on — not a guest network'),
@@ -3011,16 +3140,17 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
 enum _RouterPlacement { center, corner, enclosed }
 
-class _Flow4 extends StatefulWidget {
+class _Flow4 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow4({required this.onDone, this.stepBackNotifier});
+  final bool singlePage;
+  const _Flow4({this.singlePage = false, required this.onDone, this.stepBackNotifier});
 
   @override
-  State<_Flow4> createState() => _Flow4State();
+  ConsumerState<_Flow4> createState() => _Flow4State();
 }
 
-class _Flow4State extends State<_Flow4> {
+class _Flow4State extends ConsumerState<_Flow4> {
   int _step = 0;
   _RouterPlacement? _placement;
 
@@ -3036,10 +3166,34 @@ class _Flow4State extends State<_Flow4> {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_step == 0) ..._step0(context),
-          if (_step == 1) ..._step1(context),
+          if (widget.singlePage) ..._singlePage(context)
+          else ...[
+            if (_step == 0) ..._step0(context),
+            if (_step == 1) ..._step1(context),
+          ],
         ],
       );
+
+  List<Widget> _singlePage(BuildContext context) {
+    final state = ref.watch(instantVerifyPivotProvider);
+    final weakNodes = state.meshNodes.where((n) => n.isOnline &&
+        (n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical)).toList();
+    return [
+      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        UserStepHeading('Improve coverage in that room'),
+        const SizedBox(height: 8),
+        if (weakNodes.isNotEmpty)
+          for (final node in weakNodes)
+            Text('${node.name} has a weak connection to the main router. Move it closer to the router, toward the room that needs coverage, or use Ethernet.'),
+        if (weakNodes.isEmpty)
+          const Text('Keep the router or a child node in the open, between the main router and the room with weak WiFi. A node needs a good connection back to the router.'),
+        if (state.phase != PivotLoadPhase.complete || state.meshNodes.isEmpty)
+          const Text('Mesh information is unavailable or incomplete; placement advice is general.'),
+      ])),
+      ..._step0(context),
+      ..._step1(context),
+    ];
+  }
 
   List<Widget> _step0(BuildContext context) {
     final options = [
@@ -3051,11 +3205,7 @@ class _Flow4State extends State<_Flow4> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Where is your router right now?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          UserStepHeading('Where is your router right now?'),
           const SizedBox(height: 12),
           for (final (val, label) in options)
             RadioListTile<_RouterPlacement>(
@@ -3067,7 +3217,7 @@ class _Flow4State extends State<_Flow4> {
               dense: true,
             ),
           const SizedBox(height: 12),
-          SizedBox(
+          if (!widget.singlePage) SizedBox(
             width: double.infinity,
             child: FilledButton(
               onPressed:
@@ -3086,8 +3236,9 @@ class _Flow4State extends State<_Flow4> {
         'Move your router out into the open. Enclosures block WiFi signals significantly — even a shelf in the open can double your range.',
       _RouterPlacement.corner =>
         'Move your router toward the center of your home — halfway between the router and the room with weak signal.',
-      _ =>
-        'Your placement is good. The issue may be building materials (concrete, brick, or metal studs between rooms).',
+      _RouterPlacement.center =>
+        'Central placement can help. Building materials (concrete, brick, or metal studs) can still weaken the signal.',
+      null => 'Choose your current placement above for a tailored tip. Keep the router elevated and in the open.',
     };
 
     return [
@@ -3178,7 +3329,8 @@ class _Flow5 extends ConsumerStatefulWidget {
   final ValueChanged<int> onNavigateToFlow;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
   final ValueNotifier<String?>? stepIndicatorNotifier;
-  const _Flow5({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
+  final bool singlePage;
+  const _Flow5({this.singlePage = false, required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow5> createState() => _Flow5State();
@@ -3186,6 +3338,9 @@ class _Flow5 extends ConsumerStatefulWidget {
 
 class _Flow5State extends ConsumerState<_Flow5> {
   int _step = 0;
+  int _monitorGeneration = 0;
+  bool _probeInFlight = false;
+  String? _monitorError;
   _DropFrequency? _frequency;
   _DropScope? _scope;
 
@@ -3202,7 +3357,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   void _pushStep(int newStep) {
     setState(() {
-      _stepHistory.add(_step);
+      if (!widget.singlePage) _stepHistory.add(_step);
       _step = newStep;
     });
     _syncStepBackNotifier();
@@ -3213,6 +3368,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
       // Stepping back out of the live monitor must stop it — otherwise the
       // periodic timer keeps firing and re-runs the 2-minute test (Q-18).
       _monitorTimer?.cancel();
+      _monitorGeneration++;
       setState(() {
         _isMonitoring = false;
         _step = _stepHistory.removeLast();
@@ -3229,14 +3385,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
   @override
   void dispose() {
     _monitorTimer?.cancel();
+      _monitorGeneration++;
     super.dispose();
   }
 
   Future<void> _startMonitor() async {
+    if (_isMonitoring) return;
+    final generation = ++_monitorGeneration;
     setState(() {
       _isMonitoring = true;
       _dropsDetected = 0;
       _checksCompleted = 0;
+      _monitorError = null;
     });
     final svc = ref.read(browserDiagnosticServiceProvider);
     _monitorTimer = Timer.periodic(const Duration(seconds: 24), (timer) async {
@@ -3244,8 +3404,23 @@ class _Flow5State extends ConsumerState<_Flow5> {
         timer.cancel();
         return;
       }
-      final ping = await svc.pingGateway();
-      if (!mounted) return;
+      if (_probeInFlight || generation != _monitorGeneration) return;
+      _probeInFlight = true;
+      final GatewayPingResult ping;
+      try { ping = await svc.pingGateway(); }
+      catch (_) {
+        timer.cancel();
+        if (mounted && generation == _monitorGeneration) {
+          setState(() {
+            _isMonitoring = false;
+            _checksCompleted = 0;
+            _monitorError = 'The connection check could not finish. Try again; no conclusion is available.';
+          });
+        }
+        return;
+      }
+      finally { _probeInFlight = false; }
+      if (!mounted || generation != _monitorGeneration) return;
       bool shouldAdvance = false;
       setState(() {
         _checksCompleted++;
@@ -3292,7 +3467,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedSwitcher(
+  Widget build(BuildContext context) => widget.singlePage
+      ? _singlePage(context)
+      : AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         child: Column(
           key: ValueKey(_step),
@@ -3306,6 +3483,49 @@ class _Flow5State extends ConsumerState<_Flow5> {
           ],
         ),
       );
+
+  void _resetResult() {
+    _step = 0;
+    _checksCompleted = 0;
+    _dropsDetected = 0;
+    _monitorError = null;
+  }
+
+  Widget _singlePage(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        UserStepHeading('Check for connection drops'),
+        const SizedBox(height: 8),
+        const Text('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
+        const SizedBox(height: 12),
+        Text('How often does it drop?', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
+            ChoiceChip(label: Text(item.$2), selected: _frequency == item.$1,
+              onSelected: _isMonitoring ? null : (_) => setState(() { _frequency = item.$1; _resetResult(); })),
+        ]),
+        const SizedBox(height: 20),
+        Text('Which devices are affected?', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
+            ChoiceChip(label: Text(item.$2), selected: _scope == item.$1,
+              onSelected: _isMonitoring ? null : (_) => setState(() { _scope = item.$1; _resetResult(); })),
+        ]),
+      ])),
+      if (_scope == _DropScope.specificDevices)
+        OutlinedButton.icon(onPressed: () => widget.onNavigateToFlow(32),
+          icon: const Icon(Icons.devices), label: const Text('Choose the affected device'))
+      else if (_step == 3) ..._step3Result(context)
+      else if (_step == 4) ..._step4PostRestart(context)
+      else ...[
+        if (_monitorError != null) Text(_monitorError!),
+        ..._step2Monitor(context),
+      ],
+    ],
+  );
 
   List<Widget> _step0(BuildContext context) => [
         _stepCard(context, Column(
@@ -3407,22 +3627,23 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Run a 2-minute connection test',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Run a 2-minute connection test'),
             const SizedBox(height: 8),
             _infoBox(
               context,
-              'We\'ll check every ~25 seconds whether your router can reach the internet. This runs for about 2 minutes. Keep this page open.',
+              'We check the connection from this device to your router every 24 seconds for two minutes. This does not test your internet provider. Keep this page open.',
             ),
             const SizedBox(height: 12),
+            if (widget.singlePage && (_frequency == null || _scope == null)) ...[
+              const Text('Select frequency and affected devices above to start the check.'),
+              const SizedBox(height: 12),
+            ],
             if (!_isMonitoring && _checksCompleted == 0) ...[
               SizedBox(
-                width: double.infinity,
+                width: widget.singlePage ? null : double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _startMonitor,
+                  onPressed: widget.singlePage && (_frequency == null || _scope == null)
+                      ? null : _startMonitor,
                   icon: const Icon(Icons.monitor_heart),
                   label: const Text('Start connection test'),
                 ),
@@ -3881,11 +4102,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                   'with port forwarding, gaming, and VoIP calls. '
                   'Your internet works, but some features are limited.'),
             const SizedBox(height: 12),
-            Text('What would you like to do?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('What would you like to do?'),
             const SizedBox(height: 8),
             if (!isCgnat) ...[
               ListTile(
@@ -3938,11 +4155,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enabling bridge mode',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Enabling bridge mode'),
             const SizedBox(height: 8),
             _infoBox(context,
                 'Bridge mode turns off the routing features on your internet '
@@ -3986,11 +4199,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Switch Linksys to access point mode',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Switch Linksys to access point mode'),
             const SizedBox(height: 8),
             _infoBox(context,
                 'In access point mode, your Linksys handles WiFi but your internet '
@@ -4028,11 +4237,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Contact your internet provider',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            UserStepHeading('Contact your internet provider'),
             const SizedBox(height: 8),
             Text(
               isCgnat
