@@ -237,6 +237,8 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
             TextButton(onPressed: _exitFlow, child: Text(widget.exitLabel)),
           ]),
         ],
+        const SizedBox(height: 24),
+        _linksysSupportTile(context),
       ]),
     );
   }
@@ -581,33 +583,28 @@ Widget _ispScript(BuildContext context, String script) => Container(
       ),
     );
 
-/// Always show at the bottom of a dead-end screen — never leave customers stranded.
-Widget _linksysSupportTile(BuildContext context) => Card(
-      margin: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Icon(Icons.headset_mic,
-                  size: 20, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('Still need help?',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
-            ]),
-            const SizedBox(height: 6),
-            SelectableText(
-              'Contact Linksys Support:\nwww.linksys.com/support  •  1-800-326-7114',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ],
-        ),
+/// Shared workflow footer, following the page's navigation and check actions.
+Widget _linksysSupportTile(BuildContext context) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.headset_mic,
+                size: 20, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Text('Still need help?',
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+          ]),
+          const SizedBox(height: 6),
+          SelectableText(
+            'Contact Linksys Support:\nwww.linksys.com/support  •  1-800-326-7114',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
       ),
     );
 
@@ -832,7 +829,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             ),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _internetFailPath(BuildContext context) => [
@@ -877,7 +874,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             ),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _dnsFailPath(BuildContext context) => [
@@ -929,7 +926,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             ],
           )),
         ],
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _allOkPath(BuildContext context) => [
@@ -964,7 +961,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             ),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 }
 
@@ -1430,7 +1427,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const _SatisfactionPrompt(),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 
   // Item 7: Gaming/latency path
@@ -1486,7 +1483,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
           const _SatisfactionPrompt(),
         ],
       )),
-      _linksysSupportTile(context),
+
     ];
   }
 }
@@ -1908,7 +1905,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             ),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _step1Connected(BuildContext context) => [
@@ -2237,7 +2234,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ])),
       ],
 
-      _linksysSupportTile(context),
     ];
   }
 
@@ -2418,7 +2414,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       )),
       const _SatisfactionPrompt(),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -2944,7 +2940,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           ),
         ],
       )),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -3039,7 +3035,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       )),
       const _SatisfactionPrompt(),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -3078,7 +3074,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           child: const Text('Device is connected now'),
         ),
       ),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -3276,7 +3272,7 @@ class _Flow4State extends ConsumerState<_Flow4> {
               child: FilledButton(onPressed: widget.onDone, child: const Text('Done')),
       ),
       const _SatisfactionPrompt(),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -3756,7 +3752,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
           ),
         ],
       )),
-      _linksysSupportTile(context),
+
     ];
   }
 
@@ -3835,7 +3831,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
           const _SatisfactionPrompt(),
         ],
       )),
-      _linksysSupportTile(context),
+
     ];
   }
 }
@@ -4170,7 +4166,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
           ],
         )),
         const _SatisfactionPrompt(),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _stepApMode(BuildContext context) => [
@@ -4206,7 +4202,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
           ],
         )),
         const _SatisfactionPrompt(),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _stepCallIsp(BuildContext context, bool isCgnat) => [
@@ -4236,7 +4232,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             ),
           ],
         )),
-        _linksysSupportTile(context),
+
       ];
 
   List<Widget> _stepLeaveAsIs(BuildContext context) => [

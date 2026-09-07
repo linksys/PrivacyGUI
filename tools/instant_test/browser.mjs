@@ -80,6 +80,11 @@ try {
       const action=await button(p,'Yes — troubleshoot a specific device').boundingBox();
       assert(action.width<420,'Follow-up action should fit its label');
       assert(action.x>=0 && action.x+action.width<=p.viewportSize().width);
+      const support=p.getByText('Still need help?',{exact:true});
+      assert.equal(await support.count(),1,'Support should appear once in the shared footer');
+      const supportBox=await support.boundingBox();
+      const returnBox=await button(p,'Back to Instant-Test').last().boundingBox();
+      assert(supportBox.y>returnBox.y+returnBox.height,'Support must follow the page actions');
       await p.screenshot({path:`${output}/followup-${mobile?'mobile':'wide'}.png`});
       await clickInScrollView(p,'Yes — troubleshoot a specific device');
       await button(p,'Office-Printer WiFi').waitFor();
