@@ -65,6 +65,8 @@ class ProbeService extends MockBrowserDiagnosticService {
   bool fail = false;
   bool speedFail = false;
   bool gatewayUnavailable = false;
+  bool internetUnavailable = false;
+  bool dnsUnavailable = false;
   Completer<SpeedTestResult>? pendingSpeed;
   @override
   Future<SpeedTestResult> runInternetSpeedTest(
@@ -82,6 +84,14 @@ class ProbeService extends MockBrowserDiagnosticService {
     if (fail) throw StateError('test probe unavailable');
     return pending == null ? super.pingGateway() : pending!.future;
   }
+
+  @override
+  Future<GatewayPingResult> pingPublicIp() async => internetUnavailable
+      ? const GatewayPingResult(reachable: false) : await super.pingPublicIp();
+
+  @override
+  Future<DnsCheckResult> checkDns() async => dnsUnavailable
+      ? const DnsCheckResult(resolved: false) : await super.checkDns();
 }
 
 Future<void> tapText(WidgetTester tester, String text) async {
@@ -172,13 +182,13 @@ void main() {
       (tester) async {
     await mount(tester);
     await tapText(tester, "Internet isn't working");
-    expect(find.text('Diagnostics complete'), findsOneWidget);
+    expect(find.text('Your router can reach the internet'), findsOneWidget);
     expect(find.text('This device reached your router'), findsNothing);
     await tapText(tester, 'View test details');
     expect(find.text('This device reached your router'), findsOneWidget);
     await tapText(tester, 'Hide test details');
     expect(find.text('This device reached your router'), findsNothing);
-    expect(find.text('Diagnostics complete'), findsOneWidget);
+    expect(find.text('Your router can reach the internet'), findsOneWidget);
   });
 
   testWidgets(
@@ -331,7 +341,7 @@ void main() {
       (tester) async {
     await mount(tester);
     await tapText(tester, "Internet isn't working");
-    expect(find.text('Diagnostics complete'), findsOneWidget);
+    expect(find.text('Your router can reach the internet'), findsOneWidget);
     expect(find.text('Running diagnostics…'), findsNothing);
   });
 
@@ -340,13 +350,29 @@ void main() {
     await mount(tester, service: ProbeService()..gatewayUnavailable = true);
     await tester.tap(find.text("Internet isn't working"));
     await tester.pumpAndSettle();
-    expect(find.text('Connection problem found'), findsOneWidget);
+    expect(find.text("Your device can't reach the router"), findsOneWidget);
     await tapText(tester, 'View test details');
     expect(find.text('Your router reached the internet — Not run'),
         findsOneWidget);
     expect(find.text('Websites are loading — Not run'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
+
+  for (final dnsFailure in [false, true]) {
+    testWidgets('collapsed result identifies ${dnsFailure ? "website" : "internet"} failure',
+        (tester) async {
+      await mount(tester, service: ProbeService()
+        ..internetUnavailable = !dnsFailure
+        ..dnsUnavailable = dnsFailure);
+      await tapText(tester, "Internet isn't working");
+      expect(find.text(dnsFailure
+          ? "Your router is online, but websites aren't loading"
+          : "Your router can't reach the internet"), findsOneWidget);
+      expect(find.text('This device reached your router'), findsNothing);
+      expect(find.text('Your router can reach the internet'), findsNothing);
+      expect(find.text('Running diagnostics…'), findsNothing);
+    });
+  }
 
   test('navigation URL accepts only known views and flows', () {
     expect(InstantTestLocation.parse('devices/5/32').value, 'devices/5/32');

@@ -747,15 +747,31 @@ class _Flow1State extends ConsumerState<_Flow1> {
   }
 
   Widget _diagnosticProgressCard(BuildContext context) {
+    final outcome = switch (_phase) {
+      _Flow1Phase.running => 'Running diagnostics…',
+      _Flow1Phase.allOk => 'Your router can reach the internet',
+      _Flow1Phase.gatewayFail => "Your device can't reach the router",
+      _Flow1Phase.internetFail => "Your router can't reach the internet",
+      _Flow1Phase.dnsFail => "Your router is online, but websites aren't loading",
+    };
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_phase == _Flow1Phase.running ? 'Running diagnostics…'
-            : _phase == _Flow1Phase.allOk ? 'Diagnostics complete' : 'Connection problem found',
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (_phase != _Flow1Phase.running) ...[
+            Icon(_phase == _Flow1Phase.allOk
+                ? LinksysIcons.checkCircle : LinksysIcons.infoCircle,
+                color: _phase == _Flow1Phase.allOk
+                    ? Colors.green : Theme.of(context).colorScheme.error,
+                size: 20),
+            const SizedBox(width: 8),
+          ],
+          Expanded(child: Text(outcome,
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600)),
+                ?.copyWith(fontWeight: FontWeight.w600))),
+        ]),
         const SizedBox(height: 12),
         DetailsDisclosure(label: 'View test details', child: Column(children: [
         _checkRow(context, 'This device reached your router',

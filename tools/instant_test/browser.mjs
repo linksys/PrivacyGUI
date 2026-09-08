@@ -156,7 +156,8 @@ try {
   });
   await check('diagnostic-completion',async p=>{
     await button(p,"Internet isn't working").click();
-    await visible(p,'Diagnostics complete');
+    await visible(p,'Your router can reach the internet');
+    assert.equal(await p.getByText('This device reached your router',{exact:true}).count(),0,'Outcome must be visible while individual checks remain collapsed');
     assert.equal(await p.getByText('Running diagnostics…',{exact:true}).count(),0);
   });
   await check('browser-history',async p=>{
