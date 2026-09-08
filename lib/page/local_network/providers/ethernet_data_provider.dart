@@ -103,7 +103,8 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     ref.listen(devicesDataProvider, (_, next) {
       final devices = next.valueOrNull?.clientDevices;
       if (devices == null) return;
-      if (const ListEquality<ClientDevice>().equals(_consumedDevices, devices)) {
+      if (const ListEquality<ClientDevice>()
+          .equals(_consumedDevices, devices)) {
         return;
       }
       ref.invalidateSelf();
