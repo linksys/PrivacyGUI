@@ -467,7 +467,7 @@ Widget _infoBox(BuildContext context, String text,
         const SizedBox(width: 8),
         Expanded(
             child:
-                SelectableText(text, style: Theme.of(context).textTheme.bodyMedium)),
+                Text(text, style: Theme.of(context).textTheme.bodyMedium)),
       ],
     ),
   );
@@ -600,7 +600,7 @@ Widget _linksysSupportTile(BuildContext context) => Padding(
 /// Centralised restart confirmation. Shows a dialog, then calls restartRouter().
 // Restart confirmation now lives in the shared restart_helper.dart (used by
 // all Instant-Test surfaces). Alias kept for the many in-file call sites.
-Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) =>
+Future<bool> _confirmAndRestart(BuildContext context, WidgetRef ref) =>
     confirmAndRestart(context, ref);
 
 Widget _restartOrEscalate(BuildContext context, WidgetRef ref, InstantVerifyPivotState state) {
@@ -653,7 +653,7 @@ class _LoadingButton extends StatelessWidget {
 // Branching based on which layer first fails.
 // ═══════════════════════════════════════════════════════════════════════════
 
-enum _Flow1Phase { running, gatewayFail, internetFail, dnsFail, allOk }
+enum _Flow1Phase { running, gatewayFail, internetFail, dnsFail, allOk, unavailable }
 
 class _Flow1 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
@@ -680,40 +680,43 @@ class _Flow1State extends ConsumerState<_Flow1> {
   }
 
   Future<void> _runDiagnostics() async {
-    setState(() => _phase = _Flow1Phase.running);
+    setState(() {
+      _phase = _Flow1Phase.running;
+      _gatewayOk = false;
+      _internetOk = false;
+      _dnsOk = false;
+    });
     final svc = ref.read(browserDiagnosticServiceProvider);
-
-    // Layer 1: Gateway
-    final gateway = await svc.pingGateway();
-    if (!mounted) return;
-    setState(() => _gatewayOk = gateway.reachable);
-
-    if (!gateway.reachable) {
-      setState(() => _phase = _Flow1Phase.gatewayFail);
-      return;
+    try {
+      final gateway = await svc.pingGateway();
+      if (!mounted) return;
+      setState(() => _gatewayOk = gateway.reachable);
+      if (!gateway.reachable) {
+        setState(() => _phase = _Flow1Phase.gatewayFail);
+        return;
+      }
+      final publicIp = await svc.pingPublicIp();
+      if (!mounted) return;
+      setState(() => _internetOk = publicIp.reachable);
+      if (!publicIp.reachable) {
+        setState(() => _phase = _Flow1Phase.internetFail);
+        return;
+      }
+      final dns = await svc.checkDns();
+      if (!mounted) return;
+      setState(() {
+        _dnsOk = dns.resolved;
+        _phase = dns.resolved ? _Flow1Phase.allOk : _Flow1Phase.dnsFail;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _phase = _Flow1Phase.unavailable);
     }
-
-    // Layer 2: Public IP (no DNS)
-    final publicIp = await svc.pingPublicIp();
-    if (!mounted) return;
-    setState(() => _internetOk = publicIp.reachable);
-
-    if (!publicIp.reachable) {
-      setState(() => _phase = _Flow1Phase.internetFail);
-      return;
-    }
-
-    // Layer 3: DNS
-    final dns = await svc.checkDns();
-    if (!mounted) return;
-    setState(() => _dnsOk = dns.resolved);
-    setState(() => _phase = dns.resolved ? _Flow1Phase.allOk : _Flow1Phase.dnsFail);
   }
 
   Future<void> _restart() async {
     if (!mounted) return;
-    await _confirmAndRestart(context, ref);
-    if (!mounted) return;
+    final restarted = await _confirmAndRestart(context, ref);
+    if (!mounted || !restarted) return;
     setState(() {
       _restarted = true;
       _isRestarting = false;
@@ -732,6 +735,15 @@ class _Flow1State extends ConsumerState<_Flow1> {
       if (_phase == _Flow1Phase.internetFail) ..._internetFailPath(context),
       if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context),
       if (_phase == _Flow1Phase.allOk) ..._allOkPath(context),
+      if (_phase == _Flow1Phase.unavailable)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const UserStepHeading('Try the connection check again'),
+          const SizedBox(height: 8),
+          const Text("We couldn't complete the check, so no connection result is available yet."),
+          const SizedBox(height: 12),
+          AppOutlinedButton('Try connection check again', onTap: _runDiagnostics,
+              icon: LinksysIcons.refresh),
+        ])),
     ]);
     return InstantTestColumns(
         sidebar: _diagnosticProgressCard(context), content: advice);
@@ -740,6 +752,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
   Widget _diagnosticProgressCard(BuildContext context) {
     final outcome = switch (_phase) {
       _Flow1Phase.running => 'Running diagnostics…',
+      _Flow1Phase.unavailable => 'Connection check could not finish',
       _Flow1Phase.allOk => 'Your router can reach the internet',
       _Flow1Phase.gatewayFail => "Your device can't reach the router",
       _Flow1Phase.internetFail => "Your router can't reach the internet",
@@ -766,15 +779,15 @@ class _Flow1State extends ConsumerState<_Flow1> {
         const SizedBox(height: 12),
         DetailsDisclosure(label: 'View test details', child: Column(children: [
         _checkRow(context, 'This device reached your router',
-            _phase == _Flow1Phase.running && !_gatewayOk
+            (_phase == _Flow1Phase.running || _phase == _Flow1Phase.unavailable) && !_gatewayOk
                 ? null
                 : _gatewayOk),
         _checkRow(context, 'Your router reached the internet',
-            _phase == _Flow1Phase.running && _gatewayOk && !_internetOk
+            (_phase == _Flow1Phase.running || _phase == _Flow1Phase.unavailable) && _gatewayOk && !_internetOk
                 ? null
                 : (_gatewayOk ? _internetOk : null)),
         _checkRow(context, 'Websites are loading',
-            _phase == _Flow1Phase.running && _internetOk
+            (_phase == _Flow1Phase.running || _phase == _Flow1Phase.unavailable) && _internetOk
                 ? null
                 : (_internetOk ? _dnsOk : null)),
         ])),
@@ -864,7 +877,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const SizedBox(height: 8),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
-            const _SessionSummaryCard(),
+            const _SessionSummaryCard(websiteStatus: 'Not checked in this test'),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
@@ -910,7 +923,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
               const SizedBox(height: 8),
               _ispScript(context,
                   'My router is connected and has an IP address, but websites won\'t load and domain names can\'t be resolved. I restarted my router but the problem persists.'),
-              const _SessionSummaryCard(),
+              const _SessionSummaryCard(websiteStatus: 'Not loading'),
               const SizedBox(height: 12),
               Align(
               alignment: Alignment.centerLeft,
@@ -1048,8 +1061,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
 
   Future<void> _restartAndRetest() async {
     if (!mounted) return;
-    await _confirmAndRestart(context, ref);
-    if (!mounted) return;
+    final restarted = await _confirmAndRestart(context, ref);
+    if (!mounted || !restarted) return;
     setState(() => _isRestarting = false);
     // Re-run speed test after restart
     setState(() => _isRunning = true);
@@ -1072,7 +1085,10 @@ class _Flow2State extends ConsumerState<_Flow2> {
       if (!mounted) return;
       setState(() {
         _isRunning = false;
-        _step = 4;
+        _speedResult = null;
+        _postRestartResult = null;
+        _speedError = 'The speed check after restart could not finish. Try again; no speed conclusion is available.';
+        _step = 0;
       });
     }
   }
@@ -1391,7 +1407,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const SizedBox(height: 12),
             _ispScript(context,
                 'My internet is slower than what I\'m paying for — only ${_postRestartResult?.downloadMbps.toStringAsFixed(0) ?? _mbps?.toStringAsFixed(0) ?? '?'} Mbps. I restarted my router but the problem persists.'),
-            const _SessionSummaryCard(),
+            _SessionSummaryCard(speedStatus: (_postRestartResult ?? _speedResult) == null
+                ? 'Not completed in this test'
+                : '${(_postRestartResult ?? _speedResult)!.downloadMbps.toStringAsFixed(0)} Mbps down'),
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
@@ -3328,8 +3346,8 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   Future<void> _restartAndCheck() async {
     if (!mounted) return;
-    await _confirmAndRestart(context, ref);
-    if (!mounted) return;
+    final restarted = await _confirmAndRestart(context, ref);
+    if (!mounted || !restarted) return;
     // Run post-restart drop check
     setState(() {
       _isMonitoring = true;
@@ -3738,7 +3756,10 @@ class _Flow5State extends ConsumerState<_Flow5> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _SessionSummaryCard extends ConsumerWidget {
-  const _SessionSummaryCard();
+  const _SessionSummaryCard({this.websiteStatus, this.speedStatus});
+  // Flow-local checks can be newer than the overview's provider snapshot.
+  final String? websiteStatus;
+  final String? speedStatus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -3756,11 +3777,13 @@ class _SessionSummaryCard extends ConsumerWidget {
     if (state.wanIpAddress != null && state.wanIpAddress!.isNotEmpty)
       rows.add(_summaryRow(context, 'WAN IP', state.wanIpAddress!));
 
-    if (state.dnsCheck != null)
-      rows.add(_summaryRow(context, 'Websites', state.dnsCheck!.resolved ? 'Loading' : 'Not loading'));
+    if (websiteStatus != null || state.dnsCheck != null)
+      rows.add(_summaryRow(context, 'Websites', websiteStatus ??
+          (state.dnsCheck!.resolved ? 'Loading' : 'Not loading')));
 
-    if (state.speedTest != null)
-      rows.add(_summaryRow(context, 'Speed', '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down'));
+    if (speedStatus != null || state.speedTest != null)
+      rows.add(_summaryRow(context, 'Speed', speedStatus ??
+          '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down'));
 
     if (state.routerFirmware != null)
       rows.add(_summaryRow(context, 'Firmware', state.routerFirmware!));
@@ -3800,7 +3823,7 @@ class _SessionSummaryCard extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         Expanded(
-          child: SelectableText(value,
+          child: Text(value,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500)),
         ),

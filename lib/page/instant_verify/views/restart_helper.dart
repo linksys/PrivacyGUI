@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 /// dialog (PRD D-23), then calls the single source of truth
 /// `provider.restartRouter()`. Pass [onRestarted] for any surface-specific
 /// follow-up (e.g. the overview tab's restart countdown).
-Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
+Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
     {VoidCallback? onRestarted}) async {
   final state = ref.read(instantVerifyPivotProvider);
   // The address to return to is the one the browser reached the router at —
@@ -25,7 +25,7 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
         behavior: SnackBarBehavior.floating,
       ));
     }
-    return;
+    return false;
   }
   final confirmed = await showDialog<bool>(
     context: context,
@@ -70,5 +70,7 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
     );
     await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
     onRestarted?.call();
+    return true;
   }
+  return false;
 }

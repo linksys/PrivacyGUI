@@ -23,7 +23,8 @@ Use the repository's Flutter version (3.27.2 on this prototype branch), with dep
 
 Set `FLUTTER_BIN` to an explicit Flutter executable if needed. `--build` uses the local JNAP deployment build flags and writes to `build/instant_test`. It does not deploy. The local build includes internal scenario controls and must not be treated as a customer release artifact.
 
-The suites cover six symptom entries, finding routing, mesh health, missing/stale device data, device paging/search, mouse selection, qualifiers, retained lateral returns, speed failure/retry, monitor cancellation and stale results, preview action isolation, route restoration, and dismissal of pending confirmations when leaving a workflow. The original legacy workflow regressions run too. Layout regressions cover resizing from 320 to 2,048 pixels, retaining open details, and embedding the workflow in a narrower container on a wide screen. The separate legacy overview suite is not included in this command: it has 21 stale expanded-detail/copy assertions, reproduced unchanged at the pre-visual-pass revision `1a463947`. The complete views run passed the other 162 tests. Those overview expectations still need reconciliation with the simplified presentation.
+The suites cover six symptom entries, finding routing, mesh health, missing/stale device data, device paging/search, mouse selection, qualifiers, retained lateral returns, speed failure/retry, monitor cancellation and stale results, preview action isolation, route restoration, and dismissal of pending confirmations when leaving a workflow. The original legacy workflow regressions run too. Layout regressions cover resizing from 320 to 2,048 pixels, retaining open details, and embedding the workflow in a narrower container on a wide screen. The standard command now runs the complete views directory, including the reconciled overview, device, network, single-page, and legacy workflow suites. Overview coverage checks visible outcomes, optional explanations/checklists, nested detail expansion, secondary findings, device/mesh inventories, and untested or failed connection evidence. No overview tests are excluded.
+
 
 ## Browser acceptance
 
@@ -57,6 +58,10 @@ The browser pass checks the six action tiles at desktop and mobile widths, remov
 The `instant` route query contains only known view/flow identifiers. Browser Back/Forward follows workflow and detail-page visits. Returning from lateral help preserves the origin's in-memory choices while that origin remains mounted. In-app Back can additionally reverse an advice step within a workflow.
 
 Refresh reopens the addressed page/workflow and fetches current data. It does not restore a selected device, old results, qualifier answers, or a running monitor/router action. Forward recreates a disposed workflow with the same safeguards. Authentication and redirects remain owned by the router's existing route guard; query parameters cannot grant access.
+
+## Feature walkthrough
+
+See [WALKTHROUGH.md](WALKTHROUGH.md) for the executed path inventory and release limits. `walkthroughs.mjs` extends the browser runner with failure, recovery, and terminal paths. Its fixed `probe` query values are read only by `PrototypeRoot`; the authenticated router route uses the real diagnostic service. Each fixture change loads a fresh document, avoiding stale state from hash-only navigation. Connection-monitor checks advance the browser clock through the real timer callbacks; they do not change the production monitoring interval.
 
 ## Remaining release checks
 

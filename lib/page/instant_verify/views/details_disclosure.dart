@@ -1,6 +1,7 @@
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// Optional information stays out of the reading and focus order until opened.
 class DetailsDisclosure extends StatefulWidget {
@@ -47,6 +48,12 @@ class GuidedSteps extends StatefulWidget {
 
 class _GuidedStepsState extends State<GuidedSteps> {
   int _index = 0;
+
+  @override
+  void didUpdateWidget(covariant GuidedSteps oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.steps, widget.steps)) _index = 0;
+  }
 
   @override
   Widget build(BuildContext context) {

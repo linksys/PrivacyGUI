@@ -32,12 +32,14 @@ const printer = DiagnosticClient(
     txRateMbps: 20);
 
 class FixtureNotifier extends InstantVerifyPivotNotifier {
-  FixtureNotifier({this.clients = const [printer], this.meshNodes});
+  FixtureNotifier({this.clients = const [printer], this.meshNodes, this.dnsCheck});
+  final DnsCheckResult? dnsCheck;
   final List<MeshNodeInfo>? meshNodes;
   final List<DiagnosticClient> clients;
   @override
   InstantVerifyPivotState build() => InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
+        dnsCheck: dnsCheck,
         clients: clients,
         deviceScores: clients.map(DeviceScore.compute).toList(),
         meshNodes: meshNodes ??
@@ -57,6 +59,11 @@ class FixtureNotifier extends InstantVerifyPivotNotifier {
   }
 
   void loseClientList() => state = state.copyWith(clients: []);
+
+  @override
+  Future<void> restartRouter() async {
+    state = state.copyWith(hasRestartedThisSession: true);
+  }
 }
 
 class ProbeService extends MockBrowserDiagnosticService {
@@ -64,6 +71,8 @@ class ProbeService extends MockBrowserDiagnosticService {
   Completer<GatewayPingResult>? pending;
   bool fail = false;
   bool speedFail = false;
+  bool speedFailAfterFirst = false;
+  int speedCalls = 0;
   bool gatewayUnavailable = false;
   bool internetUnavailable = false;
   bool dnsUnavailable = false;
@@ -71,7 +80,8 @@ class ProbeService extends MockBrowserDiagnosticService {
   @override
   Future<SpeedTestResult> runInternetSpeedTest(
       {void Function(String)? onStep}) async {
-    if (speedFail) throw StateError('speed unavailable');
+    speedCalls++;
+    if (speedFail || (speedFailAfterFirst && speedCalls > 1)) throw StateError('speed unavailable');
     return pendingSpeed == null
         ? super.runInternetSpeedTest()
         : pendingSpeed!.future;
@@ -409,6 +419,80 @@ void main() {
       expect(find.text('Running diagnostics…'), findsNothing);
     });
   }
+
+  testWidgets('diagnostic exception offers a retry without a false outcome', (tester) async {
+    final service = ProbeService()..fail = true;
+    await mount(tester, service: service);
+    await tapText(tester, "Internet isn't working");
+    expect(tester.takeException(), isNull);
+    expect(find.text('Connection check could not finish'), findsOneWidget);
+    expect(find.text('Your router can reach the internet'), findsNothing);
+    service.fail = false;
+    await tapText(tester, 'Try connection check again');
+    expect(find.text('Your router can reach the internet'), findsOneWidget);
+  });
+
+  testWidgets('cancelled DNS restart does not claim a restart or rerun probes', (tester) async {
+    final service = ProbeService()..dnsUnavailable = true;
+    await mount(tester, service: service);
+    await tapText(tester, "Internet isn't working");
+    final calls = service.calls;
+    await tapText(tester, 'Restart Router');
+    await tapText(tester, 'Cancel');
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(service.calls, calls);
+    expect(find.text("If restarting didn't fix it:"), findsNothing);
+  });
+
+  testWidgets('cancelled slow-connection restart does not rerun speed tests', (tester) async {
+    final service = ProbeService();
+    await mount(tester, service: service);
+    await tapText(tester, 'Whole internet is slow');
+    await tapText(tester, 'Check my speed');
+    await tapText(tester, 'Everything in my home is slow');
+    await tapText(tester, 'Restart + Run Speed Test Again');
+    await tapText(tester, 'Cancel');
+    expect(service.speedCalls, 1);
+    expect(find.text('Restart + Run Speed Test Again'), findsOneWidget);
+  });
+
+  testWidgets('changing the problem starts its new instructions at step one', (tester) async {
+    await mount(tester);
+    await tapText(tester, 'One device is slow');
+    await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
+    await tapText(tester, 'Something else');
+    await tapText(tester, 'Try the next step');
+    await tapText(tester, 'Try the next step');
+    expect(find.text('Step 3 of 4'), findsOneWidget);
+    await tapText(tester, 'Keeps disconnecting');
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+  });
+
+  testWidgets('escalation does not present old website results as current', (tester) async {
+    await mount(tester,
+        notifier: FixtureNotifier(dnsCheck: const DnsCheckResult(resolved: true)),
+        service: ProbeService()..internetUnavailable = true);
+    await tapText(tester, "Internet isn't working");
+    expect(find.text('Not checked in this test'), findsOneWidget);
+    expect(find.text('Loading'), findsNothing);
+  });
+
+  testWidgets('failed post-restart speed test offers retry instead of an ISP conclusion', (tester) async {
+    await mount(tester, service: ProbeService()..speedFailAfterFirst = true);
+    await tapText(tester, 'Whole internet is slow');
+    await tapText(tester, 'Check my speed');
+    await tapText(tester, 'Everything in my home is slow');
+    await tapText(tester, 'Restart + Run Speed Test Again');
+    await tester.tap(find.text('Restart'));
+    await tester.pump();
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('no speed conclusion is available'), findsOneWidget);
+    expect(find.text('Contact your internet provider'), findsNothing);
+    expect(find.text('Check my speed'), findsOneWidget);
+  });
 
   test('navigation URL accepts only known views and flows', () {
     expect(InstantTestLocation.parse('devices/5/32').value, 'devices/5/32');

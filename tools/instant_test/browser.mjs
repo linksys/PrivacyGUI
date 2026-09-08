@@ -1,3 +1,4 @@
+import {walkthroughs} from './walkthroughs.mjs';
 import assert from 'node:assert/strict';
 import {mkdir, writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -18,7 +19,7 @@ const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFo
 // Flutter scrolls its canvas viewport; reveal the contextual links with real
 // scrolling rather than only moving their accessibility elements in the DOM.
 async function clickInScrollView(page, label) {
-  const link = button(page,label);
+  const link = typeof label === 'string' ? button(page,label) : label;
   await link.waitFor();
   for (let n=0;n<12;n++) {
     const box = await link.boundingBox();
@@ -290,6 +291,7 @@ try {
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
     await button(p,'My device uses an Ethernet cable').click();await visible(p,'Wired device troubleshooting');
   });
+  await walkthroughs({check,button,visible,clickInScrollView,url});
 } finally {
   await writeFile(`${output}/results.json`, JSON.stringify({url,results},null,2));
   await browser.close();

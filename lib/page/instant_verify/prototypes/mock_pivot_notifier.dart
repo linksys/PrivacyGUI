@@ -94,24 +94,48 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier {
 
 /// Every browser diagnostic in the preview uses fixed data, including calls
 /// made directly by a workflow rather than through the pivot notifier.
+enum PreviewProbeScenario {
+  healthy, gatewayDown, internetDown, dnsFailure, probeError,
+  speedError, slowSpeed, laggySpeed, monitorDrops, speedAfterRestartError,
+}
+
 class MockBrowserDiagnosticService extends BrowserDiagnosticService {
+  MockBrowserDiagnosticService({this.scenario = PreviewProbeScenario.healthy});
+  final PreviewProbeScenario scenario;
+  int _speedRuns = 0;
   @override
-  Future<GatewayPingResult> pingGateway() async =>
-      const GatewayPingResult(reachable: true, latencyMs: 2);
+  Future<GatewayPingResult> pingGateway() async {
+    if (scenario == PreviewProbeScenario.probeError) {
+      throw StateError('Simulated unavailable connection probe');
+    }
+    return GatewayPingResult(
+        reachable: scenario != PreviewProbeScenario.gatewayDown &&
+            scenario != PreviewProbeScenario.monitorDrops,
+        latencyMs: 2);
+  }
   @override
   Future<GatewayPingResult> pingPublicIp() async =>
-      const GatewayPingResult(reachable: true, latencyMs: 18);
+      GatewayPingResult(reachable: scenario != PreviewProbeScenario.internetDown, latencyMs: 18);
   @override
   Future<DnsCheckResult> checkDns() async =>
-      const DnsCheckResult(resolved: true, latencyMs: 12);
+      DnsCheckResult(resolved: scenario != PreviewProbeScenario.dnsFailure, latencyMs: 12);
   @override
   Future<DnsCheckResult> checkPublicDns() async =>
       const DnsCheckResult(resolved: true, latencyMs: 12);
   @override
   Future<SpeedTestResult> runInternetSpeedTest(
-          {void Function(String)? onStep}) async =>
-      const SpeedTestResult(
-          downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2);
+          {void Function(String)? onStep}) async {
+    _speedRuns++;
+    if (scenario == PreviewProbeScenario.speedError ||
+        (scenario == PreviewProbeScenario.speedAfterRestartError && _speedRuns > 1)) {
+      throw StateError('Simulated unavailable speed check');
+    }
+    return SpeedTestResult(
+        downloadMbps: scenario == PreviewProbeScenario.slowSpeed ? 3 : 120,
+        uploadMbps: 45,
+        latencyMs: scenario == PreviewProbeScenario.laggySpeed ? 148 : 18,
+        jitterMs: scenario == PreviewProbeScenario.laggySpeed ? 40 : 2);
+  }
   @override
   Future<RouterSpeedResult> runRouterSpeedTest(
           {void Function(String)? onStep}) async =>
