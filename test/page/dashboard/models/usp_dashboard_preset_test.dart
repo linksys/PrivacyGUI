@@ -194,9 +194,9 @@ void main() {
       for (final preset in UspDashboardPreset.values) {
         final layout = preset.createLayout();
         final statsPanel = layout.firstWhere((i) => i.id == 'stats_panel');
-        expect(statsPanel.w, 12, reason: '${preset.name}');
-        expect(statsPanel.x, 0, reason: '${preset.name}');
-        expect(statsPanel.y, 0, reason: '${preset.name}');
+        expect(statsPanel.w, 12, reason: preset.name);
+        expect(statsPanel.x, 0, reason: preset.name);
+        expect(statsPanel.y, 0, reason: preset.name);
       }
     });
 
