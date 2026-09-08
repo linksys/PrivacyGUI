@@ -832,7 +832,12 @@ class UspSliverDashboardControllerNotifier
   /// The picks go with it and no line here says so (#1400): they were on the items
   /// the default layout replaces, so "reset the geometry" and "clear the picks"
   /// are the same act rather than two that have to agree.
+  ///
+  /// A no-op on a fixed surface — see [saveLayout], same reason: "the default
+  /// layout" is not a thing a viewer whose layout was chosen for them can be
+  /// returned to.
   Future<void> resetLayout() async {
+    if (_layoutIsFixed) return;
     final live = state.slotCount.value;
     _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
@@ -1121,7 +1126,13 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Uses the preset's hand-crafted layout (optimised card positions and sizes)
   /// rather than generic 2-column packing.
+  ///
+  /// A no-op on a fixed surface. This is the one of the three guards that would
+  /// have been *silently* wrong without the others: it reaches `saveLayout()`,
+  /// which refuses, so the pref stays clean — and the grid in front of the viewer
+  /// would still have been replaced by whatever preset was passed.
   Future<void> applyPreset(UspDashboardPreset preset) async {
+    if (_layoutIsFixed) return;
     final layout = preset.createLayout();
     final live = state.slotCount.value;
     _swapController(_createController(layout));

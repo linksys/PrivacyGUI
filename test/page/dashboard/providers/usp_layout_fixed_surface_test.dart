@@ -201,6 +201,83 @@ void main() {
       );
     });
 
+    // The next two close the residual review flagged and Austin then asked for:
+    // `resetLayout()` and `applyPreset()` swap the controller *before* they reach
+    // `saveLayout()`, so the write guard leaves the pref clean while the grid in
+    // front of the viewer is replaced anyway. Both are reachable only from edit
+    // mode today — which is exactly the "promise resting on a different member"
+    // shape, and the same reason the mutation test above exists.
+    test('remote refuses a reset to the default layout', () async {
+      final c = await bootGrid(remote);
+      addTearDown(c.dispose);
+
+      await c.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
+      await pumpAsync();
+
+      expect(
+        cardIdsOf(c),
+        UspDashboardPreset.remote.cardIds.toList()..sort(),
+        reason:
+            'a support session was handed the 18-card default grid. "Back to '
+            'the default" is not a place a viewer whose layout was chosen for '
+            'them can be returned to — the fixed layout is the only one this '
+            'surface has.',
+      );
+    });
+
+    test('local resets to the default — the control', () async {
+      await plantStoredLayout();
+
+      final c = await bootGrid(local);
+      addTearDown(c.dispose);
+      expect(
+          cardIdsOf(c), UspDashboardPreset.essential.cardIds.toList()..sort());
+
+      await c.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
+      await pumpAsync();
+
+      expect(
+        cardIdsOf(c),
+        isNot(UspDashboardPreset.essential.cardIds.toList()..sort()),
+        reason:
+            'resetLayout() no longer changes the grid in either mode, so the '
+            'remote assertion above passes for the wrong reason.',
+      );
+    });
+
+    test('remote refuses a preset applied over its layout', () async {
+      final c = await bootGrid(remote);
+      addTearDown(c.dispose);
+
+      await c
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .applyPreset(UspDashboardPreset.essential);
+      await pumpAsync();
+
+      expect(
+        cardIdsOf(c),
+        UspDashboardPreset.remote.cardIds.toList()..sort(),
+        reason: 'a preset replaced the fixed layout. This is the guard that '
+            'would have been silently wrong on its own: applyPreset() ends in '
+            'saveLayout(), which refuses — so the pref stays clean and only the '
+            'screen is wrong.',
+      );
+
+      final control = await bootGrid(local);
+      addTearDown(control.dispose);
+      await control
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .applyPreset(UspDashboardPreset.essential);
+      await pumpAsync();
+      expect(
+        cardIdsOf(control),
+        UspDashboardPreset.essential.cardIds.toList()..sort(),
+        reason:
+            'applyPreset() is a no-op in both modes, so the assertion above '
+            'is vacuous.',
+      );
+    });
+
     test('local stores its default on a first boot — the control', () async {
       final c = await bootGrid(local);
       addTearDown(c.dispose);
@@ -303,6 +380,90 @@ void main() {
         stored,
         reason: 'the planted preferences did not load at all, so the remote '
             'case above is vacuous.',
+      );
+    });
+
+    // The write half of this group, found while closing the grid's: the read was
+    // guarded in `build()` and none of the six mutators was, so the same "nothing
+    // is read and nothing is written" claim was true of the grid and only half
+    // true here. `setVisibility` stands for all five that go through
+    // `_saveToPrefs`; `resetToDefaults` writes directly and is guarded at its own
+    // head.
+    test('remote writes none of them either', () async {
+      final c = container(remote);
+      addTearDown(c.dispose);
+      await c.read(uspLayoutPreferencesProvider.notifier).initialized;
+
+      await c
+          .read(uspLayoutPreferencesProvider.notifier)
+          .setVisibility('device_info', false);
+      await pumpAsync();
+
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspLayoutPreferences),
+        isNull,
+        reason: 'a support session left its hidden cards in the agent\'s '
+            'browser, where the next session — a different customer\'s router — '
+            'would read them. In-memory state changing is fine and deliberate; '
+            'outliving the session is not.',
+      );
+
+      final control = container(local);
+      addTearDown(control.dispose);
+      await control.read(uspLayoutPreferencesProvider.notifier).initialized;
+      await control
+          .read(uspLayoutPreferencesProvider.notifier)
+          .setVisibility('device_info', false);
+      await pumpAsync();
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspLayoutPreferences),
+        isNotNull,
+        reason: 'setVisibility() does not persist in either mode, so the '
+            'assertion above is vacuous.',
+      );
+    });
+
+    test('remote does not delete them either', () async {
+      // The sixth mutator, and the only one that reaches storage without going
+      // through `_saveToPrefs`. Planted first on purpose: with an empty store a
+      // removal is indistinguishable from a no-op, which is the same vacuity
+      // mutant 3 of the fold-in found in `'remote leaves selectedPreset null'`.
+      SharedPreferences.setMockInitialValues({
+        pUspLayoutPreferences: stored.toJsonString(),
+      });
+
+      final c = container(remote);
+      addTearDown(c.dispose);
+      await c.read(uspLayoutPreferencesProvider.notifier).initialized;
+
+      await c.read(uspLayoutPreferencesProvider.notifier).resetToDefaults();
+      await pumpAsync();
+
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspLayoutPreferences),
+        stored.toJsonString(),
+        reason: 'a support session deleted preferences it had refused to read. '
+            '"Not the viewer\'s" cuts both ways: a fixed surface has no standing '
+            'to reset a store it is not looking at, and whoever left that '
+            'payload there is the one who gets to clear it.',
+      );
+
+      final control = container(local);
+      addTearDown(control.dispose);
+      await control.read(uspLayoutPreferencesProvider.notifier).initialized;
+      await control
+          .read(uspLayoutPreferencesProvider.notifier)
+          .resetToDefaults();
+      await pumpAsync();
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspLayoutPreferences),
+        isNull,
+        reason: 'resetToDefaults() clears nothing in either mode, so the '
+            'assertion above is vacuous.',
       );
     });
   });

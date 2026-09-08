@@ -25,6 +25,17 @@ final uspLayoutPreferencesProvider =
 class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   final Completer<void> _initCompleter = Completer<void>();
 
+  /// Whether this surface's layout was chosen for the viewer, set in [build].
+  ///
+  /// Named to match `UspLayoutController._layoutIsFixed`, because the two are one
+  /// decision and grepping the pair is how the next reader finds that out. Same
+  /// asymmetry, too: the read side is the `if` in [build], and this is the write
+  /// side, which needs a *funnel* rather than a flag at the entry points —
+  /// [toggleCustomLayout], [setVisibility], [restoreSnapshot], [selectPreset] and
+  /// [markPresetDialogSeen] all reach storage through [_saveToPrefs], and
+  /// [resetToDefaults] reaches it directly.
+  bool _layoutIsFixed = false;
+
   /// Completes when the initial load from SharedPreferences is done.
   /// Await this before capturing snapshots to avoid race conditions
   /// where the default state (preset = null) is captured before the
@@ -50,7 +61,9 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// documenting a situation its own dependency edge prevented.
   @override
   UspLayoutPreferences build() {
-    if (ref.watch(surfaceStrategyProvider).fixedDashboardLayout() != null) {
+    _layoutIsFixed =
+        ref.watch(surfaceStrategyProvider).fixedDashboardLayout() != null;
+    if (_layoutIsFixed) {
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }
@@ -122,13 +135,24 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// Sets [useCustomLayout] to false, clears widget configs,
   /// and resets the grid layout.
   Future<void> resetToDefaults() async {
+    if (_layoutIsFixed) return;
     state = const UspLayoutPreferences();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(pUspLayoutPreferences);
     await ref.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
   }
 
+  /// The write funnel, and the only place the fixed-surface guard is needed for
+  /// the five mutators above — see [_layoutIsFixed].
+  ///
+  /// Storage in both directions, not in-memory state: a mutator called on a fixed
+  /// surface still updates [state], because what the guard is for is the *next*
+  /// session in this browser, not this one. Under Remote Assistance every entry
+  /// point to all six is behind an edit mode `layoutEditor()` closes, so the
+  /// in-memory half has no way to be observed; the stored half would outlive the
+  /// session and be read by the next one.
   Future<void> _saveToPrefs() async {
+    if (_layoutIsFixed) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(pUspLayoutPreferences, state.toJsonString());
   }

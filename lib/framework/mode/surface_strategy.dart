@@ -165,14 +165,30 @@ abstract class SurfaceStrategy {
   ///
   /// What the two halves are actually worth, since "nothing is written" is the
   /// kind of promise that is easy to write and easy to leave unenforced. The read
-  /// half is an early `return` on both consumers. The write half is one guard in
-  /// `UspLayoutController.saveLayout()`, which every writer funnels through —
-  /// placed there rather than on the auto-persist hook, which five direct callers
-  /// of `saveLayout` bypass. Not enforced, and unreachable rather than guarded:
-  /// `resetLayout()` and `applyPreset()` still build their controller from the
-  /// default layout, so a *future* non-edit-mode entry point to either would swap
-  /// a fixed surface off its layout in memory. Both are reachable only from the
-  /// edit-mode settings panel today, i.e. behind [layoutEditor].
+  /// half is an early `return` on both consumers. The write half is **four**
+  /// guards, and the count is the interesting part: each one is a funnel that a
+  /// set of callers reaches storage or the screen through, never a flag at an
+  /// entry point.
+  ///
+  /// * `UspLayoutController.saveLayout()` — every layout write, including the five
+  ///   mutators that call it directly and so bypass the auto-persist hook an
+  ///   earlier revision guarded instead.
+  /// * `UspLayoutController.resetLayout()` and `.applyPreset()` — these swap the
+  ///   controller *before* reaching `saveLayout()`, so guarding the write funnel
+  ///   left the pref clean and the grid in front of the viewer replaced anyway.
+  ///   `applyPreset` is the one that would have been silently wrong.
+  /// * `UspLayoutPreferencesNotifier._saveToPrefs()` — the five preference
+  ///   mutators; and `resetToDefaults()`, which removes the key directly.
+  ///
+  /// In-memory preference state is deliberately *not* guarded, and that asymmetry
+  /// is the rule to copy: a fixed surface must not leave anything behind for the
+  /// next session in that browser, which is about storage. The grid is guarded in
+  /// memory too because the grid is what the viewer is looking at.
+  ///
+  /// All of it is reachable only from the edit-mode settings panel today, i.e.
+  /// behind [layoutEditor] — which is precisely why it is guarded rather than
+  /// noted: a promise resting on a *different* member is one an unrelated edit
+  /// can break, and every guard here has a test with a mutant behind it.
   ///
   /// Remote's consequence is deliberate: a support session's `selectedPreset` is
   /// `null` rather than `UspDashboardPreset.remote`, because nobody picked it and
