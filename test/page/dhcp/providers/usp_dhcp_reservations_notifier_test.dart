@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
@@ -39,11 +42,12 @@ void main() {
     mockService = MockUspDhcpService();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
     final container = ProviderContainer(
       overrides: [
         uspDhcpServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        if (sse != null) sseInvalidationProvider.overrideWith((_) => sse),
       ],
     );
     container.listen(uspDhcpReservationsProvider, (_, __) {});
@@ -471,6 +475,93 @@ void main() {
           container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
 
       expect(options, isEmpty);
+      container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // SSE invalidation (#1501)
+  //
+  // `sseInvalidationProvider` emits `({InvalidationDomain domain, int seq})`.
+  // This notifier reads `.domain` and ignores `seq`, whose only job is to keep
+  // two consecutive events for the *same* domain unequal — without it,
+  // riverpod 3.x's `==`-based `updateShouldNotify` collapses the second one and
+  // the repeat below stops re-fetching. So the repeat is the assertion that
+  // pins the tag end-to-end at the consumer, not just at the producer.
+  //
+  // The negative test is the other half: a listener whose comparison is
+  // accidentally always-true re-fetches on every unrelated SSE arrival and
+  // would pass the positive test alone.
+  // -------------------------------------------------------------------------
+  group('UspDhcpReservationsNotifier SSE invalidation', () {
+    test('dhcpReservations domain re-fetches, and a repeat re-fetches again',
+        () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+
+      // Drop the build() fetch so the counting below starts from zero.
+      verify(() => mockService.fetchReservations()).called(1);
+      clearInteractions(mockService);
+
+      sse.add((domain: InvalidationDomain.dhcpReservations, seq: 0));
+      await Future.delayed(Duration.zero);
+      verify(() => mockService.fetchReservations()).called(1);
+
+      // Same domain again — e.g. two reservations added back to back from
+      // another client. `seq` is the only thing that differs.
+      sse.add((domain: InvalidationDomain.dhcpReservations, seq: 1));
+      await Future.delayed(Duration.zero);
+      verify(() => mockService.fetchReservations()).called(1);
+
+      await sse.close();
+      container.dispose();
+    });
+
+    test('dhcpClients domain does not re-fetch', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockService);
+
+      // dhcpClients is the sharpest wrong answer available: both domains are
+      // classified from Device.DHCPv4.Server.Pool. and differ only by the
+      // StaticAddress segment, so a lease renewal must not reload reservations.
+      sse.add((domain: InvalidationDomain.dhcpClients, seq: 0));
+      await Future.delayed(Duration.zero);
+
+      verifyNever(() => mockService.fetchReservations());
+
+      await sse.close();
+      container.dispose();
+    });
+
+    test('a matching domain does not re-fetch while dirty', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockService);
+
+      container.read(uspDhcpReservationsProvider.notifier).addReservation(r2);
+      sse.add((domain: InvalidationDomain.dhcpReservations, seq: 0));
+      await Future.delayed(Duration.zero);
+
+      // onSseInvalidation() skips while dirty so an external change cannot
+      // clobber unsaved edits.
+      verifyNever(() => mockService.fetchReservations());
+      expect(
+        container
+            .read(uspDhcpReservationsProvider)
+            .settings
+            .current
+            .reservations,
+        hasLength(2),
+      );
+
+      await sse.close();
       container.dispose();
     });
   });

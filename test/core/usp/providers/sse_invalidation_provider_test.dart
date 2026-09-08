@@ -76,7 +76,7 @@ void main() {
       final container = createContainer();
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(
@@ -93,7 +93,7 @@ void main() {
       final container = createContainer();
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(
@@ -110,7 +110,7 @@ void main() {
       final container = createContainer();
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(
@@ -127,7 +127,7 @@ void main() {
       final container = createContainer();
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(type: 'OperationComplete'));
@@ -149,7 +149,7 @@ void main() {
       container = createContainer();
       domains = [];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
     });
 
@@ -289,7 +289,7 @@ void main() {
 
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(type: 'ValueChange', paramPath: path));
@@ -343,7 +343,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       // Provider should build without error; no events emitted
-      expect(sub.read(), isA<AsyncValue<InvalidationDomain>>());
+      expect(sub.read(), isA<AsyncValue<InvalidationEvent>>());
       container.dispose();
     });
 
@@ -377,7 +377,7 @@ void main() {
       final container = createContainer();
       final domains = <InvalidationDomain>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) domains.add(next.value!.domain);
       });
 
       capturedHandler(notification(
@@ -403,29 +403,38 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // Characterization: consecutive events carrying the SAME domain.
+    // Consecutive events carrying the SAME domain.
     //
     // The test above emits three DIFFERENT domains, so consecutive values are
     // never equal and it stays green under any `updateShouldNotify` policy —
     // it cannot detect collapsing. The two tests below can.
     //
-    // `InvalidationDomain` is a bare enum, so two same-domain events are `==`.
-    // Today they both reach listeners because riverpod 2.6.1 notifies
+    // These began life (#1503) as *characterization* tests: the provider emitted
+    // a bare `InvalidationDomain`, so two same-domain events were `==`, and they
+    // both reached listeners only because riverpod 2.6.1 notifies
     // unconditionally for data -> data on async providers
     // (`riverpod-2.6.1/lib/src/async_notifier/base.dart:177`
     //  handleUpdateShouldNotify: `return true`). Any move to an `==`-based
-    // predicate silently drops the second one, and every one of the 13
-    // `ref.listen(sseInvalidationProvider, ...)` call sites stops refetching
-    // on the repeat.
+    // predicate would silently drop the second one, and all 13
+    // `ref.listen(sseInvalidationProvider, ...)` call sites would stop
+    // refetching on the repeat.
     //
-    // These assert the CURRENT contract, not a desired one. They are the
-    // detector for that change — see #1501.
+    // #1501 Task B removed that dependency: the provider now emits an
+    // `InvalidationEvent` carrying a monotonic `seq`, so consecutive events are
+    // never `==` regardless of policy. So each test below now asserts BOTH
+    // halves — the domain sequence (unchanged from #1503, which is the proof the
+    // refactor preserved behaviour) and the inequality that is the reason it no
+    // longer needs the old contract.
+    //
+    // Their role changed with that: detector -> guard. They pass under either
+    // policy now, which is the intended outcome; what they still catch is
+    // anyone removing the tag.
     // -------------------------------------------------------------------------
     test('same domain twice → two separate notifications', () async {
       final container = createContainer();
-      final domains = <InvalidationDomain>[];
+      final events = <InvalidationEvent>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) events.add(next.value!);
       });
 
       // Two independent SSE arrivals for the same subtree — e.g. the user
@@ -443,25 +452,33 @@ void main() {
       await Future.delayed(Duration.zero);
 
       expect(
-        domains,
+        events.map((e) => e.domain),
         [InvalidationDomain.wifiSsids, InvalidationDomain.wifiSsids],
         reason: 'the second same-domain event must still reach listeners; '
             'collapsing it means the second change is never refetched',
       );
+      expect(
+        events.first,
+        isNot(equals(events.last)),
+        reason: 'the seq tag must make the pair unequal, so delivery of the '
+            'second event does not depend on the notify policy (#1501 AC-B1)',
+      );
+      expect(events.map((e) => e.seq), [0, 1],
+          reason: 'seq is monotonic per provider instance');
       container.dispose();
     });
 
     test('creation then deletion of the same object → two notifications',
         () async {
       final container = createContainer();
-      final domains = <InvalidationDomain>[];
+      final events = <InvalidationEvent>[];
       container.listen(sseInvalidationProvider, (_, next) {
-        if (next.hasValue) domains.add(next.value!);
+        if (next.hasValue) events.add(next.value!);
       });
 
       // A host joins then leaves. Both map to `connectedDevices`, so the pair
-      // is indistinguishable by value — if the second collapses, the device
-      // list keeps showing a host that has already gone.
+      // was indistinguishable by value before the seq tag — if the second
+      // collapsed, the device list kept showing a host that had already gone.
       capturedHandler(notification(
         type: 'ObjectCreation',
         objPath: 'Device.Hosts.Host.7.',
@@ -474,13 +491,18 @@ void main() {
       await Future.delayed(Duration.zero);
 
       expect(
-        domains,
+        events.map((e) => e.domain),
         [
           InvalidationDomain.connectedDevices,
           InvalidationDomain.connectedDevices,
         ],
         reason: 'ObjectCreation and ObjectDeletion collapse to the same domain '
             'value, so the deletion is only observable as a second event',
+      );
+      expect(
+        events.first,
+        isNot(equals(events.last)),
+        reason: 'the seq tag must make the pair unequal (#1501 AC-B1)',
       );
       container.dispose();
     });

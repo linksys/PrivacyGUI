@@ -42,7 +42,7 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
     // SSE invalidation: re-fetch when DMZ config changes externally.
     // Uses the framework's onSseInvalidation() — skips if dirty.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull == InvalidationDomain.dmz) {
+      if (next.valueOrNull?.domain == InvalidationDomain.dmz) {
         onSseInvalidation();
       }
     });

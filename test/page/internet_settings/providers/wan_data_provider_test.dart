@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -82,11 +85,12 @@ void main() {
     });
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
     final container = ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        if (sse != null) sseInvalidationProvider.overrideWith((_) => sse),
       ],
     );
     container.listen(wanDataProvider, (_, __) {});
@@ -264,6 +268,89 @@ void main() {
         ),
       );
       expect(a, equals(b));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // SSE invalidation (#1501)
+  //
+  // `sseInvalidationProvider` emits `({InvalidationDomain domain, int seq})`.
+  // This notifier reads `.domain` and ignores `seq`, whose only job is to keep
+  // two consecutive events for the *same* domain unequal — without it,
+  // riverpod 3.x's `==`-based `updateShouldNotify` collapses the second one and
+  // the repeat below stops re-fetching. So the repeat is the assertion that
+  // pins the tag end-to-end at the consumer, not just at the producer.
+  // -------------------------------------------------------------------------
+  group('WanDataNotifier SSE invalidation', () {
+    /// Drains enough microtasks for an SSE event to travel
+    /// stream -> provider state -> `ref.listen` -> `invalidateSelf()` ->
+    /// rebuild -> `_fetch()`. Awaiting `provider.future` instead does NOT work:
+    /// it resolves against the future that is already complete, before the
+    /// event has propagated at all.
+    ///
+    /// Both tests below drain the same amount so the negative one cannot pass
+    /// merely by looking earlier than the positive one.
+    Future<void> settle() async {
+      for (var i = 0; i < 4; i++) {
+        await Future.delayed(Duration.zero);
+      }
+    }
+
+    /// Number of *fetch rounds* since the last verification, counted by the one
+    /// request per round that carries the WanStatus paths. Counting raw
+    /// `get` calls instead would couple the assertion to how many parallel
+    /// requests the service happens to issue.
+    ///
+    /// `verify` marks the calls it matched as verified, so consecutive calls
+    /// return the delta rather than a running total.
+    int fetchRounds() => verify(() => mockUsp.get(captureAny()))
+        .captured
+        .cast<List>()
+        .where(
+            (paths) => paths.join(',').contains('Device.IP.Interface.2.Status'))
+        .length;
+
+    test('wanStatus domain re-fetches, and a repeat re-fetches again',
+        () async {
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+
+      // Drop the build() fetch so the counting below starts from zero.
+      clearInteractions(mockUsp);
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 0));
+      await settle();
+      expect(fetchRounds(), 1);
+
+      // Same domain again — e.g. the link drops and comes back, or the lease
+      // renews with a new address. `seq` is the only thing that differs.
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await settle();
+      expect(fetchRounds(), 1,
+          reason: 'the second wanStatus event must re-fetch too; collapsing it '
+              'leaves the UI showing the pre-drop WAN address');
+
+      await sse.close();
+      container.dispose();
+    });
+
+    test('a neighbouring domain does not re-fetch', () async {
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockUsp);
+
+      // staticRouting is the plausible-but-wrong neighbour: _fetch() reads the
+      // routing table to resolve the gateway, so a route change looks relevant
+      // — but the listener is scoped to wanStatus and must ignore it.
+      sse.add((domain: InvalidationDomain.staticRouting, seq: 0));
+      await settle();
+
+      verifyNever(() => mockUsp.get(any()));
+
+      await sse.close();
+      container.dispose();
     });
   });
 }
