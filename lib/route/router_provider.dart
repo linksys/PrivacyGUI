@@ -24,6 +24,7 @@ import 'constants.dart';
 import 'navigation_extra.dart';
 
 // USP dashboard imports
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
@@ -97,14 +98,21 @@ enum LocalWhereToGo {
   ;
 }
 
-final appRoutes = [
+/// The routes every surface registers.
+///
+/// **Not the whole table.** `remoteAssistanceRoute` is not here: since #1497 the
+/// table is composed by `SurfaceStrategy.routes()`, and a local build genuinely
+/// has no route to the agent UI — which is the structural half of #1357, replacing
+/// a redirect that had to recognise `/remoteAssistance` and refuse it. Anything
+/// added to this list is registered in *both* modes; a mode-specific route goes in
+/// that mode's surface.
+final sharedAppRoutes = [
   localLoginRoute,
   autoParentFirstLoginRoute,
   homeRoute,
   uspDashboardRoute,
   pnpRoute,
   pnpNoInternetRoute,
-  remoteAssistanceRoute,
 ];
 
 /// Navigator key for the old dashboard shell (kept for component compatibility).
@@ -120,7 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: router,
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
-    routes: appRoutes,
+    routes: ref.watch(surfaceStrategyProvider).routes(),
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
         return router.autoConfigurationLogic(state);
@@ -135,40 +143,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         // PnP routes — no auth required, pass through.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/remoteAssistance')) {
-        // Remote Assistance routes — no normal auth required, pass through,
-        // but ONLY in a Remote build. #1474 phase 1 / #1357 item 1: this
-        // pass-through and the `?session=` one in `autoConfigurationLogic` were
-        // the two ways the agent UI could be reached in a local build, where
-        // `GlobalConfig.remote.isActive` is false and every RA gate downstream
-        // therefore reads the wrong answer.
+        // Remote Assistance routes — no normal auth required, pass through.
         //
-        // Gated on the BUILD axis (`BuildConfig.isRemote()`), not the runtime
-        // one (`authState.isRemoteAssistance`) — the point is that these two
-        // must never disagree, and the build flag is the one that decides which
-        // bridge `sse_providers.dart` constructs.
+        // Unconditional since #1474 phase 7, and that is the point of the phase:
+        // this branch is only reachable if `/remoteAssistance` matched a
+        // registered route, and only `RemoteSurface.routes()` registers one. In a
+        // local build the location does not exist, so go_router answers it with
+        // its own 404 instead of this redirect refusing it to `/uspDashboard`.
         //
-        // Refuses to `/uspDashboard`, not to `/` — deliberately. `/` re-enters
-        // `autoConfigurationLogic`, which runs `authCheck` → `_prepare`: a full
-        // re-bootstrap including `fetchDeviceInfoAndInitializeServices()` and the
-        // PnP status check, so a logged-in user who mistyped a URL could be
-        // dropped into the setup wizard. `/uspDashboard` falls through to the
-        // `/usp` branch below, which is the cheap authenticated path and already
-        // bounces a logged-out user to login.
+        // The gate that stood here checked the BUILD axis (`BuildConfig.isRemote()`),
+        // and #1357 item 1's concern survives the removal for the same reason:
+        // the route table is composed from `AppMode`, which is derived from that
+        // same build flag, so the surface that registers the route is the surface
+        // whose bridge `sse_providers.dart` constructs. There is no longer a pair
+        // of reads that could disagree.
         //
-        // Warn rather than inform: in a local build this location is not
-        // something a user navigates to, so reaching it means either a stale
-        // bookmark or — the case worth finding in a log — an RA deployment built
-        // without `force=remote`. `ForceCommand.reslove` maps any unrecognised
-        // `force` value to `none` silently, so a typo turns RA off with no other
-        // symptom.
-        //
-        // Interim shape. #1474 phase 7 removes the `if` by leaving
-        // `remoteAssistanceRoute` out of a local build's route table entirely,
-        // so `/remoteAssistance` 404s rather than redirecting.
-        if (!BuildConfig.isRemote()) {
-          logger.w('[Route]: RA route in a non-Remote build, refusing');
-          return RoutePath.uspDashboard;
-        }
+        // The `?session=` entry in `autoConfigurationLogic` still needs its own
+        // check — an unmatched location returned *from* a redirect renders
+        // go_router's error page, so no route table can decline it.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.

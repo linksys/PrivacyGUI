@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -59,8 +58,10 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
   Widget build(BuildContext context) {
     final state = ref.watch(remoteAccessProvider);
 
-    // Only show in remote mode with valid session
-    if (!GlobalConfig.remote.isActive || state.sessionInfo == null) {
+    // Only the surface that *is* a session mounts this chip (#1497), so what is
+    // left to check is whether that session has arrived yet — `sessionInfo` is
+    // null between the shell rendering and the RA state being restored.
+    if (state.sessionInfo == null) {
       return const SizedBox.shrink();
     }
 

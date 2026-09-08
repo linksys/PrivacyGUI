@@ -71,8 +71,24 @@ Future<T?> showAppSpinnerDialog<T>(
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
         int currentIndex = 0;
-        final stream = Stream.periodic(period ?? const Duration(seconds: 3))
-            .map((_) => messages[currentIndex++ % messages.length]);
+        // Nothing to rotate unless there are at least two messages, and with
+        // none at all the rotation is a bug: `messages[i % messages.length]` is
+        // `% 0`, which throws IntegerDivisionByZeroException inside the `map`
+        // every `period`. StreamBuilder folds that into an error snapshot, so it
+        // renders as "no message" rather than as a crash — an invisible timer
+        // throwing forever, which is also why no widget test can assert this fix:
+        // the tree looks identical either way. Found by reading, kept by reading.
+        //
+        // Reachable since #1497: `SurfaceStrategy.recoveryMessages()` returns an
+        // empty list for a Remote Assistance session (the local "reconnect to
+        // your router's network" hint is advice the agent's browser cannot act
+        // on), which turned this parameter's own default into a live case.
+        // `initialData` below already shows the first message, so the
+        // single-message callers lose nothing but a pointless 3-second timer.
+        final stream = messages.length > 1
+            ? Stream.periodic(period ?? const Duration(seconds: 3))
+                .map((_) => messages[currentIndex++ % messages.length])
+            : const Stream<String>.empty();
 
         return StreamBuilder<String>(
             stream: stream,

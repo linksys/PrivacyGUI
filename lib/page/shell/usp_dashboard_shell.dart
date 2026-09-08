@@ -16,10 +16,8 @@ import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
 import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
-import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banner.dart';
-import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +25,6 @@ import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
         HealthDialogProviderArgs,
         mascotControllerProvider,
-        mascotCoordinatorProvider,
         mascotHealthDialogProvider,
         openAiAssistantWithTransition;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
@@ -145,7 +142,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     final showMascot =
         ref.watch(appSettingsProvider.select((s) => s.showMascot));
     final isDashboardReady = ref.watch(dashboardDomainReadyProvider).hasValue;
-    final isRemoteMode = GlobalConfig.remote.isActive;
+    final surface = ref.watch(surfaceStrategyProvider);
     final mascotController = ref.watch(mascotControllerProvider);
     final dialogProvider = ref.watch(mascotHealthDialogProvider(
       HealthDialogProviderArgs(
@@ -157,21 +154,27 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
       ),
     ));
 
-    // Activate mascot coordinator (manages random speech timer internally)
-    // Skip in remote mode to avoid unnecessary processing
-    if (!isRemoteMode) {
-      ref.watch(mascotCoordinatorProvider);
+    // Activate this surface's ambient coordinators — locally that is the mascot's
+    // random-speech timer. Watched for the side effect, values discarded; the
+    // shell does the watching so Riverpod registers the dependency against this
+    // element, which is why the strategy hands back providers rather than taking
+    // a `ref`.
+    for (final coordinator in surface.ambientCoordinators()) {
+      ref.watch(coordinator);
     }
 
     final isThemePanelOpen = ref.watch(demoUIProvider).isThemePanelOpen;
 
-    Widget content = Stack(
+    final Widget content = Stack(
       children: [
         Column(
           children: [
             const SseConnectionBanner(),
-            // Remote Assistance Banner (for PENDING status after refresh, client-side only)
-            if (!isRemoteMode) const RemoteAssistanceBanner(),
+            // Remote Assistance Banner (for PENDING status after refresh,
+            // client-side only). `?? SizedBox.shrink()` rather than a null-check
+            // `if`: a surface without this banner renders the same nothing the
+            // gate used to, and the shell holds no condition either way.
+            surface.assistanceBanner() ?? const SizedBox.shrink(),
             Expanded(
               child: NotificationListener<UserScrollNotification>(
                 onNotification: (notification) {
@@ -192,8 +195,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
             ),
           ],
         ),
-        // Remote session chip (floating, top-right)
-        const RemoteSessionChip(),
+        // The indicator for the session this build is *inside* (floating,
+        // top-right). Local has none — before #1497 the chip was mounted
+        // unconditionally here and returned `SizedBox.shrink()` from its own
+        // `build`, so the shell said "always" and the widget said "only in
+        // remote"; now one of them decides.
+        surface.sessionIndicator() ?? const SizedBox.shrink(),
         // Theme Studio Panel (shell-level so it works on all pages)
         if (GlobalConfig.feature.enableThemeStudio)
           AnimatedPositioned(
@@ -250,14 +257,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
       ],
     );
 
-    // Wrap with RemoteAssistanceSessionGuard for client-side session recovery
-    // (shows blocking dialog if ACTIVE session exists after page refresh)
-    if (!isRemoteMode) {
-      content = RemoteAssistanceSessionGuard(child: content);
-    }
-
     return Scaffold(
-      body: content,
+      // Client-side session recovery: locally this wraps the content in
+      // `RemoteAssistanceSessionGuard`, which shows a blocking dialog when an
+      // ACTIVE session survived a page refresh. The remote surface returns the
+      // content unwrapped — it *is* the session, so there is nothing to guard.
+      body: surface.sessionGuard(child: content),
       bottomNavigationBar: Theme(
         data: darkTheme,
         child: MenuHolder(

@@ -94,9 +94,17 @@ class GlobalConfig {
 /// awaiting an implementation.
 ///
 /// `allowDashboardEdit` duplicated a live gate. `usp_sliver_dashboard_view.dart`
-/// passes `isRemoteMode` to `DashboardHeaderBar`, whose `if (!isRemoteMode)` drops
-/// the `dashboard-edit` action, and the Settings → "Change" entry exists only
-/// inside `if (isEditMode)`. Editing really is unreachable in RA.
+/// gated the `dashboard-edit` action in `DashboardHeaderBar` — a `isRemoteMode`
+/// bool then, `SurfaceStrategy.layoutEditor()` returning `null` since #1497 — and
+/// the Settings → "Change" entry exists only inside `if (isEditMode)`. Editing
+/// really is unreachable in RA.
+///
+/// `showPresetDialog` went the same way in phase 7, and for the reason this
+/// paragraph exists rather than by accident: its one consumer became
+/// `SurfaceStrategy.firstRunPresetFlow()`, which left the getter with none, and
+/// `global_config_dead_member_test.dart` failed until it was deleted. That test is
+/// the forcing function — a flag whose behaviour has moved to a strategy cannot be
+/// left behind as a second, quieter answer to the same question.
 ///
 /// `allowConfigChanges` was the wrong *shape*, not merely unread. It says "no
 /// writes in RA"; #1496 decided per operation, and reboot and cloud-OTA upgrade
@@ -136,9 +144,6 @@ class RemoteConfig {
   /// rendering). The user's own on/off preference is a separate axis
   /// (`appSettings.showMascot`) applied on top of this.
   bool get mascotEnabled => !isActive && !BuildConfig.e2eMock;
-
-  /// Whether to show preset selection dialog
-  bool get showPresetDialog => !isActive;
 
   // === Dashboard ===
 

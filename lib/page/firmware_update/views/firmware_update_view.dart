@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -86,6 +87,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final banks = asyncBanks.valueOrNull?.banks ?? const [];
     final isLoadingBanks = asyncBanks.isLoading && banks.isEmpty;
 
+    // Every card on this page exists in every mode. What the mode decides is
+    // whether the *manual entry point* is offered, and that decision lives one
+    // level down in `_buildActionCardBody` — see `firmwareManualEntry`. Deciding
+    // it here instead is what made #1497's first attempt drop the install phase
+    // machine along with the affordance that starts it.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -123,7 +129,15 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
       case FirmwareUpdatePhase.checkingOta:
-        return _buildIdleCard(context, state);
+        // The only mode-dependent arm, because it is the only one that is an
+        // *entry point* rather than the state of an install already running: it
+        // holds `firmware-pick-file` and `firmware-install-confirm` and nothing
+        // else. A surface without manual update renders nothing here — including
+        // during `checkingOta`, which loses no feedback because the spinner for
+        // that lives in `_OtaCheckCard`, the card that started it.
+        return ref.watch(surfaceStrategyProvider).firmwareManualEntry(
+              picker: () => _buildIdleCard(context, state),
+            );
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
         return _buildPickingOrValidatingCard(context, state);

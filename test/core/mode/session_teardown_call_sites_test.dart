@@ -20,12 +20,26 @@
 //     which is exactly how the copy loses the gate, or keeps the gate and loses
 //     the `else`, which is worse: that renders a modal with no way out of it.
 //
-// WHY A SOURCE SCAN AND NOT A WIDGET TEST. The gate is a `ref.read` in an
+// AMENDED BY #1497 (phase 7), which changed what the second rule can be. Phase 5
+// left each dialog holding its own `if/else` over cause 3; phase 7 replaced both
+// with `SurfaceStrategy.sessionExitAction()`, a member returning the widget. The
+// rule is therefore no longer "gate it, and provide the else" — it is "take the
+// widget, author none of it", and the else arm has stopped being something a test
+// has to require: a non-nullable `Widget` return makes the modal-with-no-way-out
+// case unwritable rather than merely tested-for.
+//
+// That is the direction this file's assertions should always move in. A census
+// asserting a *shape* is the weaker instrument; when a refactor can make the
+// defect inexpressible, the census's job shrinks to policing re-authoring, which
+// is what the group below now does. The phase-5 form is left in the comments
+// because the failure it caught is the reason cause 5 exists.
+//
+// WHY A SOURCE SCAN AND NOT A WIDGET TEST. The composition is a `ref.watch` in an
 // `actions:` list, so a widget test *could* pump each dialog under a remote
-// profile and assert the button's absence. Two things rule it out. It would have
-// to be tagged `ui`, which #1323 forbids for new tests; and — the reason that
-// matters — it would assert about the two dialogs that already have the gate,
-// which is not where the risk is. The risk is the third dialog, and no test that
+// profile and assert which button appears — and one does, in
+// surface_consumers_test.dart's `recovery dialog` group. What it cannot do is
+// assert about the dialog that does not exist yet, and that is where the risk is:
+// the third recovery dialog, written by copying one of these two. No test that
 // names its subject can be written before its subject exists. A census can.
 
 import 'dart:io';
@@ -35,49 +49,63 @@ import 'package:flutter_test/flutter_test.dart';
 /// The one file allowed to end a Remote Assistance session.
 const _sessionStrategy = 'lib/core/mode/impl/remote_session_strategy.dart';
 
-/// The recovery dialogs that may offer a bail-out to the login page, each gated
-/// on cause 3's answer for the running mode.
+/// The one file allowed to author a session-exit affordance.
+///
+/// #1497 replaced phase 5's per-dialog gate with `SurfaceStrategy
+/// .sessionExitAction()`, and the two buttons moved into named widgets here. The
+/// directory is not incidental: `lib/components/` rather than beside the dialogs
+/// is what puts `loc(context).returnToLoginPage` outside `lib/page/` entirely,
+/// which is acceptance 5c of #1497 stated as a grep. Authoring the labels inline
+/// in `LocalSurface`/`RemoteSurface` would have satisfied the contract and failed
+/// it, since Rule 17.1.3 puts those under `lib/page/_shared/mode/`.
+const _exitActions = 'lib/components/session/session_exit_actions.dart';
+
+/// The recovery dialogs that must take their exit action from cause 5.
 ///
 /// Pinned as a list rather than discovered, because adding one has to be a
-/// decision. The two assertions below only run against the paths named here, so
-/// this list is the mechanism by which a new recovery dialog gets asked whether
-/// its bail-out is reachable in Remote Assistance — a discovered set would answer
-/// that question by not asking it.
-const _loginBailoutDialogs = <String>[
+/// decision. The assertions below only run against the paths named here, so this
+/// list is the mechanism by which a new recovery dialog gets asked where its way
+/// out comes from — a discovered set would answer that question by not asking it.
+const _recoveryDialogs = <String>[
   'lib/page/_shared/helpers/recovery_dialog_helper.dart',
   'lib/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart',
 ];
 
-/// The gate, asserted as *adjacency* rather than as presence anywhere in the file.
+/// `sessionExitAction()` inside the dialog's own `actions:` list, asserted as
+/// *containment* rather than as presence anywhere in the file.
 ///
-/// The first version of this test asked whether the file contained the string
-/// `SessionOutcome.loginPage` at all, and that version was vacuous — measured, not
-/// suspected: moving the collection-`if` onto an unrelated `AppGap.sm()` while
-/// leaving the button unconditional kept the file green, because any surviving
-/// mention of the enum satisfied it. Which is the worse-than-useless case: a
-/// review would read the green suite as covering the thing it had just broken.
+/// The same lesson this file learned once already, in its phase-5 form. That
+/// version asked whether the file mentioned `SessionOutcome.loginPage` at all,
+/// and it was vacuous — measured, not suspected: moving the collection-`if` onto
+/// an unrelated `AppGap.sm()` while leaving the button unconditional kept the file
+/// green. A bare `contains('sessionExitAction(')` has the identical weakness one
+/// refactor later, since a call whose result is dropped, or one parked in an
+/// unrelated builder, reads the same to `contains`.
 ///
-/// So the pattern spans from the gate to the guarded label with nothing but
-/// whitespace between, which is what the collection-`if` form guarantees and what
-/// a mis-attached gate cannot fake.
-final _gatedLoginButton = RegExp(
-  r'SessionOutcome\.loginPage\)\s*'
-  r'AppButton\.\w+\(\s*label:\s*loc\(context\)\.returnToLoginPage',
-);
+/// `[^\[\]]*` is what does the work: it forbids a `]` between the list opening and
+/// the call, so the match cannot straddle the end of `actions:` into whatever
+/// comes after it. Both current call sites reach it through a receiver with
+/// parentheses (`ref.watch(surfaceStrategyProvider).`), which is why the gap is
+/// bracket-restricted rather than word-restricted.
+final _composedExitAction =
+    RegExp(r'actions:\s*\[[^\[\]]*sessionExitAction\(\)');
 
-/// The `else` arm, for the same reason and one more.
+/// The four spellings of a dialog deciding its own exit, banned per dialog.
 ///
-/// Both dialogs are their whole `actions:` list or nearly so, both are shown
-/// `barrierDismissible: false`, and the only `pop` fires on a transition *into*
-/// `authenticated`. A gate with no `else` is therefore not a missing button — it
-/// is a modal an RA operator cannot leave, on three triggers RA still recovers
-/// for. Asserted positively so that deleting the arm is red, and by adjacency to
-/// `else` so that an `endSession` button parked *outside* the gate — visible in
-/// both modes, next to "Return to login page" — is red too.
-final _elseEndSessionButton = RegExp(
-  r'\)\s*else\b\s*'
-  r'AppButton\.\w+\(\s*label:\s*loc\(context\)\.endSession',
-);
+/// This is what replaces phase 5's `else`-arm adjacency assertion, and the reason
+/// the replacement can be a ban rather than a requirement is a type: `
+/// sessionExitAction()` returns a **non-nullable** `Widget`, so "the gate with no
+/// `else`" — a modal with no affordance, `barrierDismissible: false`, popping only
+/// on a transition *into* `authenticated` — is no longer expressible. What is
+/// still expressible is a third dialog copying one of these two and re-authoring
+/// the button, which is what these forbid: the label either way, the behaviour
+/// (`exitToLogout`), and the cause-3 enum a hand-rolled gate would consult.
+const _handRolledExit = <String, String>{
+  'returnToLoginPage': 'the local label',
+  '.exitToLogout(': 'the local behaviour',
+  'loc(context).endSession': 'the remote label',
+  'SessionOutcome': 'a hand-rolled gate on cause 3',
+};
 
 void main() {
   /// Every `lib/` Dart file's source with `//` comments removed, l10n excluded.
@@ -128,9 +156,12 @@ void main() {
     // assertions would fail with a message about the dialogs rather than about
     // the stripper. Fail here instead, where the cause is named.
     expect(sources[_sessionStrategy], contains('class RemoteSessionStrategy'));
-    for (final path in _loginBailoutDialogs) {
-      expect(sources[path], contains('AppButton'),
-          reason: '$path stripped down to something with no widgets in it');
+    expect(sources[_exitActions], contains('AppButton'),
+        reason:
+            '$_exitActions stripped down to something with no widgets in it');
+    for (final path in _recoveryDialogs) {
+      expect(sources[path], contains('actions:'),
+          reason: '$path stripped down to something with no dialog in it');
     }
   });
 
@@ -174,15 +205,15 @@ void main() {
 
   group(
       'the login bail-out is offered only where it leads somewhere '
-      '(acceptance 1)', () {
-    test('exactly the two known recovery dialogs offer it', () {
+      '(acceptance 1, as #1497 left it)', () {
+    test('exactly one file authors the affordance', () {
       // Two discovery keys, because the affordance has two halves and a new
-      // dialog can be found by either. `returnToLoginPage` is the copy; the
+      // author can be found by either. `returnToLoginPage` is the copy; the
       // leading-dot `exitToLogout(` is the *behaviour* — the notifier call that
       // clears the credential and lets the route redirect take the app to the
-      // login page. A third dialog that relabels the button ("Cancel", "Leave")
-      // and still calls it is the same defect wearing different copy, and the
-      // label key alone would not see it. The declaration in
+      // login page. A dialog that relabels the button ("Cancel", "Leave") and
+      // still calls it is the same defect wearing different copy, and the label
+      // key alone would not see it. The declaration in
       // `app_connection_state_provider.dart` has no leading dot, so it is not a
       // caller.
       final offerers =
@@ -190,55 +221,60 @@ void main() {
 
       expect(
         offerers,
-        [..._loginBailoutDialogs]..sort(),
-        reason: 'expected the login bail-out affordance in exactly the two '
-            'recovery dialogs, found $offerers. A third one is fine, but it has '
-            'to be added to _loginBailoutDialogs here so the gate assertions '
-            'below cover it — which is the point: this list is how a new '
-            'recovery dialog gets asked whether its bail-out is reachable in '
-            'Remote Assistance.',
+        [_exitActions],
+        reason: 'expected the login bail-out to be authored in $_exitActions '
+            'alone, found $offerers. This was the two recovery dialogs before '
+            '#1497, and one file rather than two is the whole point: each dialog '
+            'that authors the button also has to know, for itself, that the '
+            'remote build wants a different one — and the second dialog got that '
+            'right only because the first one had already been fixed. If a new '
+            'exit affordance is needed, add it beside ReturnToLoginAction and '
+            'return it from SurfaceStrategy.sessionExitAction().',
       );
     });
 
-    for (final path in _loginBailoutDialogs) {
-      test('$path gates it on the mode', () {
+    for (final path in _recoveryDialogs) {
+      test('$path composes its exit action rather than choosing one', () {
         expect(
           sources[path],
           isNotNull,
-          reason: '$path is in _loginBailoutDialogs but does not exist. If the '
+          reason: '$path is in _recoveryDialogs but does not exist. If the '
               'dialog moved, move the entry.',
         );
         expect(
           sources[path]!,
-          matches(_gatedLoginButton),
-          reason: '$path offers "Return to login page" without a gate directly '
-              'in front of it asking cause 3 where an ending session lands in '
-              'this mode. Locally that is the login form; in RA the credential '
-              'was a one-shot Guardian token, so there is no password to type '
-              'and no way back in — and the button reads as the escape hatch '
-              'from a recovery wait, so a support engineer presses it and is '
-              'left on a dead login form with the Guardian session still '
-              'billing. The gate has to guard *this* button: '
-              'if (ref.read(appModeProfileProvider).session.destination == '
-              'SessionOutcome.loginPage) AppButton.text(label: '
-              'loc(context).returnToLoginPage, ...).',
+          matches(_composedExitAction),
+          reason: '$path does not have sessionExitAction() inside its own '
+              '`actions:` list. Cause 5 is what makes the way out of this modal '
+              'mode-correct: locally the exit is the login form, but in RA the '
+              'credential was a one-shot Guardian token, so there is no password '
+              'to type and no way back in — and the button reads as the escape '
+              'hatch from a recovery wait, so a support engineer presses it and '
+              'is left on a dead login form with the Guardian session still '
+              'billing. Write actions: [ref.watch(surfaceStrategyProvider)'
+              '.sessionExitAction(), ...]. A call whose result is dropped, or '
+              'one made in some other builder, is what the bracket-restricted '
+              'match here is meant to reject.',
         );
       });
 
-      test('$path offers End session instead, in RA', () {
-        expect(
-          sources[path]!,
-          matches(_elseEndSessionButton),
-          reason: '$path gates the login bail-out but has no else arm, so in '
-              'Remote Assistance it renders a modal with no way out: this is '
-              'the whole actions list or nearly so, barrierDismissible is '
-              'false, and the dialog only pops on a transition into '
-              'authenticated — which is the case that is not happening. Add '
-              'else AppButton.text(label: loc(context).endSession, onTap: () => '
-              'ref.read(authProvider.notifier).logout(cause: '
-              'EndCause.userRequested)). The string already exists in all 26 '
-              'locales and is what the session chip calls the same action.',
-        );
+      test('$path re-authors none of it', () {
+        for (final entry in _handRolledExit.entries) {
+          expect(
+            sources[path]!,
+            isNot(contains(entry.key)),
+            reason:
+                '$path names `${entry.key}` — ${entry.value} — so it has an '
+                'opinion about where an ending session lands. It should not need '
+                'one: sessionExitAction() returns a non-nullable Widget and '
+                'already differs by mode. The failure this replaces was a dialog '
+                'that kept a mode gate and lost its else arm, which renders a '
+                'modal with no way out at all: barrierDismissible is false and '
+                'the dialog only pops on a transition into authenticated, which '
+                'is the case that is not happening. Deleting the local branch '
+                'and taking the widget is what makes that unwritable.',
+          );
+        }
       });
     }
   });

@@ -86,6 +86,14 @@ class SseManager {
       };
     }
 
+    // On stream open: delegate to registry which uses strategy. Fires before any
+    // event has arrived, which is the only point at which the remote strategy can
+    // put its subscriptions back — see SseConnectionManager.onStreamOpened.
+    connection.onStreamOpened = () {
+      logger.d('[USP][SSE]: Stream opened');
+      _onSseStreamOpened();
+    };
+
     // On connect: delegate to registry which uses strategy
     connection.onConnected = () {
       logger.d('[USP][SSE]: Connected');
@@ -231,9 +239,24 @@ class SseManager {
         .toList();
   }
 
-  /// Called when SSE connects. Strategy decides behavior:
+  /// Called when the SSE stream opens, before any event has arrived. Strategy
+  /// decides behavior:
+  /// - Local: no-op (the bridge heartbeats, so `connected` will arrive by itself)
+  /// - Remote: re-register existing records, because on Guardian nothing will
+  ///   arrive until something is subscribed
+  Future<void> _onSseStreamOpened() async {
+    await registry.onSseStreamOpened();
+  }
+
+  /// Called when SSE connects — first real event received. Strategy decides
+  /// behavior:
   /// - Local: auto resubscribe existing records
-  /// - Remote: no-op (orchestrator controls)
+  /// - Remote: no-op, and *not* because "the orchestrator controls" it, which is
+  ///   what this comment used to say. It is a no-op because this edge is only
+  ///   reachable once a subscription is already delivering, so there is nothing
+  ///   left to restore; the remote reconnect work is in `_onSseStreamOpened`
+  ///   above. Reading the old wording as "remote does nothing on connect" is how
+  ///   a competing re-registration gets added back.
   Future<void> _onSseConnected() async {
     await registry.onSseConnected();
   }

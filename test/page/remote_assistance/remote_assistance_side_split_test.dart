@@ -55,10 +55,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The device side: code that only ever runs in a **local** build, on the router
 /// being helped.
+///
+/// `remote_assistance_card.dart` was added by phase 7 (#1497), extracted out of
+/// `usp_support_view.dart`'s `if (!GlobalConfig.remote.isActive)` and returned
+/// from `LocalSurface.assistanceEntryCard()`. Device side without ambiguity: it
+/// mints the PIN through `device_credentials_provider.dart` and opens
+/// `remote_assistance_dialog.dart`, both already on this side, and `RemoteSurface`
+/// answers the same member with `null`.
 const _deviceSide = <String>{
   'lib/page/remote_assistance/views/remote_assistance_dialog.dart',
   'lib/page/remote_assistance/views/remote_assistance_banner.dart',
   'lib/page/remote_assistance/views/remote_assistance_session_guard.dart',
+  'lib/page/support/views/components/remote_assistance_card.dart',
   'lib/core/cloud/providers/remote_assistance/remote_client_provider.dart',
   'lib/core/cloud/providers/remote_assistance/remote_client_state.dart',
   'lib/core/cloud/providers/remote_assistance/device_credentials_provider.dart',
@@ -134,19 +142,38 @@ const _modeFramework = <String>{
 
 /// The files that legitimately reach into **both** sides.
 ///
-/// One entry, and it is not the one #1494 predicted. The ticket said "with
-/// `router_provider.dart` exempt"; measured, the router imports only agent-side
-/// files (`remote_access_provider.dart`, `remote_assistance_confirm_view.dart`),
-/// so it needs no exemption. The shell is the real crossing: it composes the
-/// agent-side chip and the device-side banner and session guard into one app bar,
-/// because it is the one widget both builds render.
+/// **Empty since phase 7, and that is the design assertion paying out rather than
+/// the guard going quiet.** This set held one entry, and it was not the one #1494
+/// predicted: the ticket said "with `router_provider.dart` exempt", but measured,
+/// the router imports only agent-side files (`remote_access_provider.dart`,
+/// `remote_assistance_confirm_view.dart`), so it needed no exemption.
+/// `usp_dashboard_shell.dart` was the real crossing — it composed the agent-side
+/// session chip and the device-side banner and session guard into one app bar,
+/// because it was the one widget both builds render.
 ///
-/// A host is not a side. It may reference both because it is deciding *which*
-/// build it is in — which is #1474's whole subject, and what phase 7's
-/// `SurfaceStrategy` takes over, at which point this set should shrink to empty.
-const _bothSidesHosts = <String>{
-  'lib/page/shell/usp_dashboard_shell.dart',
-};
+/// The comment here said "a host is not a side: it may reference both because it
+/// is deciding *which* build it is in — which is #1474's whole subject, and what
+/// phase 7's `SurfaceStrategy` takes over, at which point this set should shrink
+/// to empty." #1497 did that, and the shell now names no RA file at all: cause 5
+/// answers `ambientCoordinators()` and `sessionGuard()`, and each answer is
+/// authored in the surface for the mode that has it. `local_surface.dart` holds
+/// the banner and the guard, `remote_surface.dart` holds the chip.
+///
+/// **Why that pair is not the same crossing under a new name.** It is two files,
+/// not one, and neither imports the other — which is the whole difference. The old
+/// shell held both sides' widgets in a single `build`, so the local build carried a
+/// reference to `remoteAccessProvider` that its transport never populates, reading
+/// a default state that looks like "no session" rather than failing. Two surfaces
+/// each importing one side cannot do that in either direction. Note also that this
+/// scan would *not* have caught the pair had it been one file: `remote_surface.dart`
+/// is in `_modeFramework` and therefore skipped. The reason it needs no catching
+/// is structural.
+///
+/// Keep the set — do not delete it. An empty expectation is the assertion, and it
+/// is a stronger one than the single-entry version was: any new file reaching for
+/// both sides now fails with nothing to hide behind. If a genuine host reappears,
+/// adding it here is a design decision that has to be argued in this comment.
+const _bothSidesHosts = <String>{};
 
 /// RA files whose *name* carries neither "remote" nor "guardian", and which
 /// `find -iname` therefore misses.
@@ -156,7 +183,14 @@ const _bothSidesHosts = <String>{
 /// `device_credentials_provider.dart` is a 32-line device-side provider that
 /// consumes `remoteClientProvider`, and `stub_html.dart` is the agent side's
 /// conditional-import shim. Pinned here so the next person to measure the
-/// subsystem starts from 17 files rather than re-deriving 15.
+/// subsystem starts from these two rather than re-deriving 15.
+///
+/// The subsystem proper — `_deviceSide` + `_agentSide` + `_sharedTransport`, so
+/// excluding the six mode-framework files that only *look* like RA — was 17 at
+/// #1494 and is **18** since phase 7 added `remote_assistance_card.dart`. The
+/// count is quoted in tickets, so it is worth keeping current here; the count in
+/// the paragraph above is deliberately not, because it is a record of what #1494
+/// published, not a measurement of today.
 const _globBlindSpot = <String>{
   'lib/core/cloud/providers/remote_assistance/device_credentials_provider.dart',
   'lib/providers/remote_access/stub_html.dart',

@@ -200,4 +200,179 @@ void main() {
           'read, it belongs on a strategy instead.',
     );
   });
+
+  // ===========================================================================
+  // #1497 acceptance 7 and 5c
+  // ===========================================================================
+  //
+  // The census above covers `appModeProvider`, the *new* spelling. These cover the
+  // two old ones, and they live here rather than in the phase-7 test directory
+  // because this file already owns the question "who may read the mode" and holds
+  // the pre-epic 11 + 4 measurement the acceptance numbers are counted against.
+  //
+  // Two spellings, not one. #1497 states acceptance 7 as `grep -rn
+  // "remote\.isActive" lib/page/ lib/components/` returning 0, and taken literally
+  // that is satisfiable by changing one character: `GlobalConfig.remote.isActive`
+  // and `BuildConfig.isRemote()` are the same read — the former is a one-line
+  // forward to the latter — and the pre-epic 15 sites were split 11/4 between them.
+  // A guard on one spelling would pass a page that switched to the other, which is
+  // the mistake the `appModeProvider` census above already records having made
+  // once.
+  group('#1497 acceptance 7: no surface asks which mode it is in', () {
+    /// Every `lib/` file under [roots] whose *code* mentions any of [needles].
+    ///
+    /// Comment lines are stripped, for the same reason `code()` strips them and
+    /// then one more. The epic's habit is to record the shape a member replaced —
+    /// `local_surface.dart` and `bridge_config.dart` both quote the `if
+    /// (GlobalConfig.remote.isActive)` they removed — and that is documentation
+    /// worth keeping, not a violation. A scan that counted prose would make the
+    /// comment the thing to delete.
+    List<String> readers(List<String> roots, List<String> needles) => [
+          for (final root in roots)
+            ...Directory(root)
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart'))
+                .where((f) => f
+                    .readAsStringSync()
+                    .split('\n')
+                    .where((l) => !l.trimLeft().startsWith('//'))
+                    .any((l) => needles.any(l.contains)))
+                .map((f) => f.path)
+        ]..sort();
+
+    const modeReads = ['remote.isActive', 'BuildConfig.isRemote()'];
+
+    test('lib/page/ and lib/components/ hold none of them', () {
+      expect(
+        readers(['lib/page', 'lib/components'], modeReads),
+        isEmpty,
+        reason: 'acceptance 7 of #1497: this was 7 at the phase-6 tip and must '
+            'stay 0. A surface that reads the mode is deciding a UI question '
+            'from a transport fact, and the two come apart — the SSE banner is '
+            'the measured case: it hid itself in RA because "SSE is not '
+            'supported via the proxy", which was false, so a support engineer '
+            'had a dashboard that silently stopped updating. Add a '
+            'SurfaceStrategy member returning the widget/callback/list instead; '
+            'a member that returns a bool is the same `if` with a longer name.',
+      );
+    });
+
+    // The forcing function for phase 9, and the reason this is a `==` and not a
+    // "no more than": when #1498 removes the `/usp*` redirect's read, this test
+    // fails as "expected 5 got 4" and the list has to be edited. That edit is the
+    // moment someone notices the census is now short enough to delete outright.
+    test('the remaining reads are the two phase 9 owns, and the declarations',
+        () {
+      expect(
+        readers(['lib'], modeReads),
+        [
+          // `GlobalConfig.remote.isActive`'s own declaration, which is a
+          // one-line forward to `BuildConfig.isRemote()`. It stays: the mode has
+          // to be resolved from *somewhere*, and `AppMode.resolve()` is built on
+          // it.
+          //
+          // `build_config.dart` is absent for a reason worth knowing rather than
+          // patching around. Its declaration reads `static bool isRemote()`,
+          // unqualified, so the qualified needle above does not match it. That is
+          // the right trade: an unqualified `isRemote()` needle would match every
+          // declaration and every unrelated method of that name, and the thing
+          // being counted is *call sites*, not definitions.
+          'lib/config/global_config.dart',
+          // Phase 9 (#1498). The `/usp*` redirect and the SSE bootstrap gate are
+          // the last two, and both are about routing/transport rather than a
+          // surface, which is why phase 7 left them.
+          'lib/core/usp/providers/sse_providers.dart',
+          'lib/di.dart',
+          'lib/route/router_provider.dart',
+        ],
+        reason:
+            'the set of files still reading the mode directly changed. If a '
+            'file was added, it is the 8th `if` and belongs on a strategy; if one '
+            'was removed, shorten this list and check whether phase 9 is done.',
+      );
+    });
+
+    // Pinned so the two tests above cannot be read as more than they say.
+    // `GlobalConfig.remote` has three members left and acceptance 7 only counted
+    // `isActive`; a green suite above says nothing about the other two, and both
+    // are still read from `lib/page/`.
+    test(
+        'the other two GlobalConfig.remote members, and why each is still read',
+        () {
+      expect(
+        readers(['lib/page', 'lib/components'], ['GlobalConfig.remote.']),
+        [
+          // `mascotEnabled`, twice — the overlay and its General Settings
+          // toggle, gated by the same flag on purpose so a visible toggle for a
+          // hidden mascot cannot happen. NOT a mode read to migrate: it is
+          // `!isActive && !BuildConfig.e2eMock`, two axes, and cause 5 answers
+          // only the first. `SurfaceStrategy.ambientCoordinators()` took the
+          // mascot's *timer* for that reason and left the overlay alone.
+          'lib/components/styled/general_settings_widget/general_settings_widget.dart',
+          // `forcedPreset`, twice, and these two ARE pure mode reads:
+          // `isActive ? UspDashboardPreset.remote : null`. Out of #1497's scope
+          // — acceptance 7 enumerates the seven `isActive` sites — and left with
+          // its blocker RE-MEASURED rather than inherited. The guide's §5 says
+          // the read "cannot reach a provider until that constructor changes";
+          // as of 2026-09-08 `UspLayoutController` holds a `final Ref _ref` and
+          // `UspLayoutPreferencesNotifier` is a `Notifier`, so both can reach
+          // one today. The blocker is gone; the ticket is what is missing.
+          //
+          // Worth closing soon rather than eventually: the preset axis is now
+          // half-migrated. `firstRunPresetFlow()` is on the strategy and
+          // `forcedPreset` is not, so "which preset does this mode get" is
+          // answered in two places — the shape §4 of the guide warns about.
+          'lib/page/dashboard/providers/usp_layout_controller.dart',
+          'lib/page/dashboard/providers/usp_layout_preferences_provider.dart',
+          'lib/page/shell/usp_dashboard_shell.dart',
+        ],
+        reason: 'a `GlobalConfig.remote` read appeared or disappeared under a '
+            'surface directory. Neither is wrong by itself — what is wrong is '
+            'this list not saying which it is. Update it with the reason, the '
+            'way the four entries above are annotated.',
+      );
+    });
+  });
+
+  group('#1497 acceptance 5c: no page decides where an ending session lands',
+      () {
+    test('returnToLoginPage is not named under lib/page/', () {
+      final pages = Directory('lib/page')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where((f) => f.readAsStringSync().contains('returnToLoginPage'))
+          .map((f) => f.path)
+          .toList()
+        ..sort();
+
+      expect(pages, isEmpty,
+          reason:
+              'found $pages. This was 2 — both recovery dialogs authored the '
+              'label inline, so each one also had to know that the remote build '
+              'wanted a different one. The label now lives in '
+              'ReturnToLoginAction and reaches the dialog through '
+              'SurfaceStrategy.sessionExitAction(); a page naming it again is a '
+              'page that has an opinion about the exit, which is the thing being '
+              'removed. Comments are NOT stripped here: unlike a mode read, '
+              'there is no reason for a page to discuss this string either.');
+    });
+
+    test('and it is still named where the exit action lives', () {
+      // Guards the cheap way to pass the test above. `grep == 0` is also what a
+      // deleted feature looks like, and "the operator can no longer leave the
+      // modal" would satisfy acceptance 5c while breaking the dialog —
+      // `showRecoveryDialog` sets `barrierDismissible: false`.
+      expect(
+        File('lib/components/session/session_exit_actions.dart')
+            .readAsStringSync(),
+        contains('loc(context).returnToLoginPage'),
+        reason: 'the local exit action no longer offers the login page. If it '
+            'moved again, re-point this test; if it was removed, the local '
+            'recovery dialog has no way out and surface_strategies_test.dart\'s '
+            '"neither exit action is null" should have caught it first.',
+      );
+    });
+  });
 }

@@ -90,6 +90,20 @@ class SseConnectionManager {
   /// Called for every SSE event (heartbeat, notification, connected, etc.).
   void Function(SseEvent event)? onEvent;
 
+  /// Called each time the stream is successfully **opened**, before any event has
+  /// arrived — so before [connectionState] has become
+  /// [SseConnectionState.connected], and on every reconnect as well as the first
+  /// connect.
+  ///
+  /// Distinct from [onConnected] on purpose. This class infers `connected` from
+  /// *traffic*, which means "the stream is open" and "the stream is delivering"
+  /// are two different facts, and whether the second follows from the first is a
+  /// property of the backend: the local bridge heartbeats every 30s regardless of
+  /// subscriptions, Guardian does not heartbeat at all. A listener that needs to
+  /// put something *on* the stream in order for traffic to exist has to run here,
+  /// because waiting for [onConnected] would be waiting for its own output.
+  VoidCallback? onStreamOpened;
+
   /// Called when connection transitions to [SseConnectionState.connected].
   /// Used by [SseManager] to trigger [SseSubscriptionRegistry.resubscribeAll].
   VoidCallback? onConnected;
@@ -145,6 +159,11 @@ class SseConnectionManager {
         onDone: _onDone,
       );
       _connectInProgress!.complete();
+
+      // After the completer, so a listener that awaits `connect()` transitively
+      // cannot deadlock on it, and after `listen` so anything it puts on the
+      // stream is actually received.
+      onStreamOpened?.call();
     } catch (e) {
       logger.w('[SSE]: Failed to open stream: $e');
       if (!_connectInProgress!.isCompleted) {

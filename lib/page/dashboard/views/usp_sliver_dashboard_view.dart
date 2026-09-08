@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
@@ -9,8 +10,6 @@ import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar
 import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
 import 'package:privacy_gui/page/dashboard/views/components/package_widget_tile.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
@@ -21,13 +20,9 @@ import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.d
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -121,31 +116,14 @@ class _UspSliverDashboardViewState
     // open the dialog explicitly. (P0-2)
     if (BuildConfig.e2eMock) return;
 
-    // Skip preset dialog in remote mode — uses fixed remote preset
-    if (!GlobalConfig.remote.showPresetDialog) return;
-
-    final sharedPrefs = await SharedPreferences.getInstance();
-    if (sharedPrefs.getBool(pUspPresetDialogSeen) == true) return;
+    // Whether this surface personalises the dashboard at all — and, if it does,
+    // the whole flow, prefs check included (#1497). The remote surface hands back
+    // nothing because its preset is fixed, so there is no dialog to skip here.
+    final flow = ref.read(surfaceStrategyProvider).firstRunPresetFlow();
+    if (flow == null) return;
 
     if (!mounted) return;
-
-    final result = await showPresetSelectionDialog(context);
-    if (!mounted) return;
-
-    // Persist the flag BEFORE calling selectPreset — even if applyPreset
-    // throws, the user won't be asked again on next navigation.
-    await sharedPrefs.setBool(pUspPresetDialogSeen, true);
-
-    if (result != null) {
-      await ref
-          .read(uspLayoutPreferencesProvider.notifier)
-          .selectPreset(result);
-    } else {
-      // User cancelled — apply standard preset as default and don't ask again.
-      await ref
-          .read(uspLayoutPreferencesProvider.notifier)
-          .selectPreset(UspDashboardPreset.standard);
-    }
+    await flow(context, ref);
   }
 
   /// Ensures polling providers have completed at least one fetch cycle.
@@ -243,7 +221,6 @@ class _UspSliverDashboardViewState
     // decide which set of them applies (#1314).
     return DashboardHeaderBar(
       isEditMode: ref.watch(dashboardEditModeProvider).isEditing,
-      isRemoteMode: GlobalConfig.remote.isActive,
       onOptimizeLayout: () {
         // No save: `optimizeLayout` is a controller mutation, so the grid stores
         // it through the auto-persist hook (#1393). Saving here too would walk
@@ -279,7 +256,10 @@ class _UspSliverDashboardViewState
       },
       onRefresh: () =>
           ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
-      onEdit: _enterEditMode,
+      // `null` where the layout is not the viewer's to arrange, which is how the
+      // header bar learns to leave the `dashboard-edit` action out — it stays
+      // provider-free and mode-free either way (#1497).
+      onEdit: ref.watch(surfaceStrategyProvider).layoutEditor(_enterEditMode),
     );
   }
 
