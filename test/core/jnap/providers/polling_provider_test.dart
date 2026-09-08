@@ -639,6 +639,28 @@ void main() {
       await stopAndSettle(tester);
     });
 
+    testWidgets('a locked admin account logs out', (tester) async {
+      // Unauthorized one step further along: the attempts have run out, so the
+      // credential will not be looked at again until the lockout expires.
+      // Polling on with it kept feeding the counter that has to run down, and
+      // left the operator watching a dashboard that had quietly stopped updating
+      // with nothing to say why. The login page this drops them on reports the
+      // lockout itself, through its own getAdminPasswordAuthStatus probe.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction(
+          (_) async => throw const JNAPError(result: errorAdminAccountLocked));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(auth.logoutCount, 1);
+
+      await advance(tester, const Duration(seconds: 3 * pollRetryDelayInSec));
+      expect(transactions, hasLength(1),
+          reason: 'and nothing may go on feeding the lockout');
+
+      await stopAndSettle(tester);
+    });
+
     testWidgets('any other JNAPError does not log out', (tester) async {
       // A JNAP-level complaint that is not about the credential is not evidence
       // about the credential.

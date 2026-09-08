@@ -259,7 +259,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       // password was still good. Leave the state in error and let the next
       // poll tick recover.
       if (_isAuthFailure(error)) {
-        logger.f('[Auth]: Force to log out because polling was unauthorized');
+        logger.f('[Auth]: Force to log out: the router refused the credential '
+            'with ${(error as JNAPError).result}');
         ref.read(authProvider.notifier).logout();
       }
 
@@ -406,11 +407,22 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// attempts. Tolerating a few before logging out would trade a session they can
   /// get back for an account they have to wait out.
   ///
+  /// [errorAdminAccountLocked] is the same verdict one step further along: the
+  /// attempts have already run out, so the credential is not merely wrong, it
+  /// will not be looked at again until the lockout expires. Polling on with it
+  /// keeps feeding the very counter that has to run down, and leaves the operator
+  /// in front of a dashboard that has quietly stopped updating with nothing to
+  /// say why. Logging out puts them on the login page, whose own
+  /// getAdminPasswordAuthStatus probe is what reports the lockout and counts it
+  /// down.
+  ///
   /// Cloud-side session invalidation is not checked here on purpose:
   /// [LinksysHttpClient.onError] already routes `INVALID_SESSION_TOKEN` through
   /// [AuthNotifier], which re-checks the session token before logging out.
   bool _isAuthFailure(Object? error) =>
-      error is JNAPError && error.result == errorJNAPUnauthorized;
+      error is JNAPError &&
+      (error.result == errorJNAPUnauthorized ||
+          error.result == errorAdminAccountLocked);
 
   Future _additionalPolling() async {
     if (serviceHelper.isSupportLedMode()) {
