@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -302,17 +302,18 @@ class UspSliverDashboardControllerNotifier
   /// specs load asynchronously after dashboard init. The grid renders them
   /// as "Unknown widget" until their template is available.
   ///
-  /// In Remote mode, always uses the remote preset layout (no persistence).
+  /// A surface whose layout is fixed skips the pref in both directions — see
+  /// `SurfaceStrategy.fixedDashboardLayout`, which is also what stops
+  /// `uspLayoutPreferencesProvider` loading widget preferences for it.
   Future<void> _initializeLayout() async {
-    // Remote mode: use fixed remote preset layout, skip persistence
-    final forcedPreset = GlobalConfig.remote.forcedPreset;
-    if (forcedPreset != null) {
+    final fixed = _ref.read(surfaceStrategyProvider).fixedDashboardLayout();
+    if (fixed != null) {
       // Read the live breakpoint at the swap, not before an await: the pref read
       // below means this method can land several frames after the page was first
       // laid out — on a phone, several frames after the view moved the outgoing
       // controller off desktop.
       final live = state.slotCount.value;
-      _swapController(_createController(forcedPreset.createLayout()));
+      _swapController(_createController(fixed));
       _seedBreakpoints(live: live);
       return;
     }

@@ -294,12 +294,10 @@ void main() {
     });
 
     // Pinned so the two tests above cannot be read as more than they say.
-    // `GlobalConfig.remote` has three members left and acceptance 7 only counted
-    // `isActive`; a green suite above says nothing about the other two, and both
-    // are still read from `lib/page/`.
-    test(
-        'the other two GlobalConfig.remote members, and why each is still read',
-        () {
+    // `GlobalConfig.remote` has two members left and acceptance 7 only counted
+    // `isActive`; a green suite above says nothing about the other one, and it is
+    // still read from `lib/page/`.
+    test('the other GlobalConfig.remote member, and why it is still read', () {
       expect(
         readers(['lib/page', 'lib/components'], ['GlobalConfig.remote.']),
         [
@@ -310,27 +308,35 @@ void main() {
           // only the first. `SurfaceStrategy.ambientCoordinators()` took the
           // mascot's *timer* for that reason and left the overlay alone.
           'lib/components/styled/general_settings_widget/general_settings_widget.dart',
-          // `forcedPreset`, twice, and these two ARE pure mode reads:
-          // `isActive ? UspDashboardPreset.remote : null`. Out of #1497's scope
-          // — acceptance 7 enumerates the seven `isActive` sites — and left with
-          // its blocker RE-MEASURED rather than inherited. The guide's §5 says
-          // the read "cannot reach a provider until that constructor changes";
-          // as of 2026-09-08 `UspLayoutController` holds a `final Ref _ref` and
-          // `UspLayoutPreferencesNotifier` is a `Notifier`, so both can reach
-          // one today. The blocker is gone; the ticket is what is missing.
-          //
-          // Worth closing soon rather than eventually: the preset axis is now
-          // half-migrated. `firstRunPresetFlow()` is on the strategy and
-          // `forcedPreset` is not, so "which preset does this mode get" is
-          // answered in two places — the shape §4 of the guide warns about.
-          'lib/page/dashboard/providers/usp_layout_controller.dart',
-          'lib/page/dashboard/providers/usp_layout_preferences_provider.dart',
           'lib/page/shell/usp_dashboard_shell.dart',
         ],
         reason: 'a `GlobalConfig.remote` read appeared or disappeared under a '
             'surface directory. Neither is wrong by itself — what is wrong is '
             'this list not saying which it is. Update it with the reason, the '
-            'way the four entries above are annotated.',
+            'way the two entries above are annotated.',
+      );
+    });
+
+    // `forcedPreset` used to be pinned here, at
+    // `usp_layout_controller.dart` and `usp_layout_preferences_provider.dart`,
+    // with a note that #1497 had scoped it out. It was folded back in on
+    // 2026-09-08 and is now `SurfaceStrategy.fixedDashboardLayout()`; the getter
+    // is gone, and with it this class's only `lib/config/` -> `lib/page/` import.
+    //
+    // Kept as a `isEmpty` rather than deleted, because the interesting part was
+    // never the count. Neither of those two sites was asking which *preset* the
+    // mode gets — both were asking whether the dashboard in front of the viewer
+    // is theirs to keep, and each answered it from the flag separately. A member
+    // per site would have passed acceptance 7 and left the same defect.
+    test('and no surface asks which dashboard preset the mode forces', () {
+      expect(
+        readers(['lib'], ['forcedPreset']),
+        isEmpty,
+        reason:
+            'a mode-forced dashboard preset came back. The question belongs '
+            'to `SurfaceStrategy.fixedDashboardLayout()`, which answers it for '
+            'the grid and for the layout preferences at once — a second answer '
+            'here is how those two come to disagree.',
       );
     });
   });

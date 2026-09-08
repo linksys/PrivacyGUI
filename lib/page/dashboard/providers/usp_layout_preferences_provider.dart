@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/usp_dashboard_preset.dart';
@@ -31,15 +31,23 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// persisted state is loaded.
   Future<void> get initialized => _initCompleter.future;
 
+  /// A surface whose layout is fixed has no preferences to load, so the defaults
+  /// stand and [initialized] completes without ever touching the store — see
+  /// `SurfaceStrategy.fixedDashboardLayout`, which answers the same question for
+  /// the grid itself.
+  ///
+  /// Not "the remote preset is selected": until #1497 this returned
+  /// `UspLayoutPreferences(selectedPreset: UspDashboardPreset.remote)`, which
+  /// recorded a pick nobody made. The one thing that reads [selectedPreset] is the
+  /// edit-mode-only settings panel, and a surface with a fixed layout has no edit
+  /// mode to open it from.
   @override
   UspLayoutPreferences build() {
-    // In remote mode, always use remote preset (ignore persisted preferences)
-    final forcedPreset = GlobalConfig.remote.forcedPreset;
-    if (forcedPreset != null) {
+    if (ref.read(surfaceStrategyProvider).fixedDashboardLayout() != null) {
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }
-      return UspLayoutPreferences(selectedPreset: forcedPreset);
+      return const UspLayoutPreferences();
     }
 
     _loadFromPrefs();

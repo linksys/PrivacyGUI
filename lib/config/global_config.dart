@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/theme/theme_source.dart';
 
 /// Global configuration entry point.
@@ -106,6 +105,15 @@ class GlobalConfig {
 /// the forcing function — a flag whose behaviour has moved to a strategy cannot be
 /// left behind as a second, quieter answer to the same question.
 ///
+/// `forcedPreset` followed it out, and it is the one that shows why "unread" is
+/// the wrong test on its own. It had **two** live consumers — the layout
+/// controller and the layout-preferences notifier — so no dead-member scan would
+/// ever have found it; what was wrong is that neither of them was asking about a
+/// preset. Both were asking "is this dashboard the viewer's to keep", and each
+/// answered it separately from the same flag. `SurfaceStrategy.fixedDashboardLayout()`
+/// is that question, once, and it is the reason this class no longer imports
+/// `lib/page/` at all — `forcedPreset`'s return type was the only edge.
+///
 /// `allowConfigChanges` was the wrong *shape*, not merely unread. It says "no
 /// writes in RA"; #1496 decided per operation, and reboot and cloud-OTA upgrade
 /// stay **allowed** — a blanket flag would have blocked the two remote support
@@ -144,12 +152,6 @@ class RemoteConfig {
   /// rendering). The user's own on/off preference is a separate axis
   /// (`appSettings.showMascot`) applied on top of this.
   bool get mascotEnabled => !isActive && !BuildConfig.e2eMock;
-
-  // === Dashboard ===
-
-  /// Forced dashboard preset in remote mode
-  UspDashboardPreset? get forcedPreset =>
-      isActive ? UspDashboardPreset.remote : null;
 }
 
 // =============================================================================

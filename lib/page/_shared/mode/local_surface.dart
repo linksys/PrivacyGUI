@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 
 /// Local / cloud / demo surfaces: the user owns this router, so the mascot, the
 /// dashboard preset picker and edit mode are all concepts this mode has.
@@ -59,6 +60,12 @@ class LocalSurface implements SurfaceStrategy {
 
   @override
   Widget? accountActions() => const AccountActionsSection();
+
+  /// Nothing fixed: the dashboard this user is looking at is the one they last
+  /// arranged, so the stored layout and the stored widget preferences are both
+  /// authoritative and both get written back.
+  @override
+  List<LayoutItem>? fixedDashboardLayout() => null;
 
   /// The layout is this user's to arrange, so the editor runs the callback the
   /// dashboard handed over.

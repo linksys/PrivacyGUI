@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
+// One name, because that is all [SurfaceStrategy.fixedDashboardLayout] needs and
+// because the package's barrel collides with riverpod's (`Ref`, `AsyncValue` and
+// three more, which `usp_layout_controller.dart` has to `hide`). A `show` cannot
+// grow such a collision by accident.
+import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 
 /// **Cause 5 — which surfaces the mode has a concept for.**
 ///
@@ -35,6 +40,10 @@ import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 ///   **`null` flow** ([firstRunPresetFlow]). The call site can render the
 ///   affordance only if it was handed something to run, so there is nothing to
 ///   forget to guard.
+/// * [fixedDashboardLayout] is the one whose `null` points the other way: the
+///   surface that answers it is the one with *less* to say, because a viewer whose
+///   layout is their own has no fixed answer to give. Same rule underneath — the
+///   call site renders what it is handed and consults nothing about the mode.
 /// * A surface both modes have but *label* differently is a widget both ways
 ///   ([sessionExitAction], [sessionGuard]) — the pair with no `null` arm, and the
 ///   reason "hidden in remote" is the wrong summary of this contract.
@@ -56,14 +65,15 @@ import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 /// so a third cannot appear unnoticed.
 ///
 /// The contract itself stays clean of `lib/page/` in both directions, which is
-/// what forces two of the signatures below to be looser than they look.
+/// what forces three of the signatures below to be looser than they look.
 /// [firstRunPresetFlow] returns a `(context, ref)` callback rather than a
-/// `Future<UspDashboardPreset?>`, and [firmwareManualEntry] takes a builder rather
-/// than naming the card type, because naming those types here would drag
-/// `lib/page/dashboard/` and `lib/page/firmware_update/` into
-/// `lib/framework/mode/` — the coupling `mode_contract_roster_test.dart`'s
-/// import scan exists to prevent, arriving through a return type exactly the way
-/// `BridgeConfig` once did.
+/// `Future<UspDashboardPreset?>`, [firmwareManualEntry] takes a builder rather
+/// than naming the card type, and [fixedDashboardLayout] returns the package's
+/// `LayoutItem`s rather than the preset that produces them, because naming those
+/// types here would drag `lib/page/dashboard/` and `lib/page/firmware_update/`
+/// into `lib/framework/mode/` — the coupling
+/// `mode_contract_roster_test.dart`'s import scan exists to prevent, arriving
+/// through a return type exactly the way `BridgeConfig` once did.
 ///
 /// See `doc/mode_strategy/mode_strategy_guide.md` §"Cause 5: the surfaces".
 abstract class SurfaceStrategy {
@@ -130,6 +140,32 @@ abstract class SurfaceStrategy {
   /// credential is a one-shot Guardian token, so "log out" has no counterpart
   /// "log in", and [sessionExitAction] is where that mode's exit lives instead.
   Widget? accountActions();
+
+  /// The layout this surface's dashboard is fixed to, or `null` where the
+  /// viewer's own stored layout is authoritative.
+  ///
+  /// Non-null is a stronger statement than "start here": it says the layout is
+  /// **nobody's preference**, so nothing about it is read from storage and nothing
+  /// is written back. Both halves matter and both used to be decided by the same
+  /// mode read, at two different providers — the grid
+  /// (`usp_layout_controller.dart`) and the widget/preset preferences
+  /// (`usp_layout_preferences_provider.dart`). One member rather than a "which
+  /// preset" and a "do we persist" pair, because they are one decision and a pair
+  /// is a pair that can be edited apart; see [sessionGuard] for the same failure
+  /// found the other way round.
+  ///
+  /// A `List<LayoutItem>` and not a `UspDashboardPreset`, for the reason the two
+  /// signatures below are also loose: the preset enum lives under `lib/page/`, and
+  /// `LayoutItem` is the `sliver_dashboard` package's, so only the latter can be
+  /// named here. Plain data rather than a builder — unlike [firmwareManualEntry],
+  /// there is nothing to defer: `createLayout()` allocates a list of value
+  /// objects and touches no provider.
+  ///
+  /// Remote's consequence is deliberate: a support session's `selectedPreset` is
+  /// `null` rather than `UspDashboardPreset.remote`, because nobody picked it and
+  /// the field's one reader is the edit-mode-only settings panel that
+  /// [layoutEditor] keeps that surface out of.
+  List<LayoutItem>? fixedDashboardLayout();
 
   /// This surface's dashboard layout editor, wired to [enterEditMode], or `null`
   /// where the layout is not the viewer's to arrange.

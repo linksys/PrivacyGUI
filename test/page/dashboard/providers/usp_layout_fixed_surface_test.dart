@@ -1,0 +1,225 @@
+// #1497 (phase 7 of epic #1474), folded in 2026-09-08: a dashboard layout that
+// is not the viewer's.
+//
+// THE DECISION GUARDED. That `SurfaceStrategy.fixedDashboardLayout()` decides
+// *both* halves of "this layout is nobody's preference" — which grid the
+// dashboard starts on, and that neither the layout nor the widget preferences are
+// read from or written to storage — and that it decides them for the two
+// providers together.
+//
+// One member, two consumers, on purpose. `usp_layout_controller.dart` owns the
+// grid and `usp_layout_preferences_provider.dart` owns the visibility/preset
+// preferences, and until this change each asked `GlobalConfig.remote.forcedPreset`
+// for itself: one decision spelled twice, which is the shape that comes apart the
+// day only one of them is edited. The tests are therefore paired — a stored value
+// planted once, read back under each profile — so a fix applied to one consumer
+// and not the other cannot be green.
+//
+// WHY THESE TWO SITES HAD NO COVERAGE AT ALL. Both reads resolved through a
+// build-time global (`GlobalConfig.remote.isActive` -> `BuildConfig.isRemote()`),
+// and falsification criterion 2 of #1474 forbids a test that assigns
+// `BuildConfig.forceCommandType`. There was no lever, so there was no test, for
+// either behaviour — which is the whole argument for cause 5 rather than a flag.
+// Every case below selects its mode with one
+// `appModeProfileProvider.overrideWithValue(...)` and nothing else.
+//
+// THE FIXTURE IS WRITTEN BY THE APP, not by hand. `plantStoredLayout` boots a
+// local container, applies a preset through the notifier and disposes it, leaving
+// a real complete envelope in the mock pref store. A hand-built payload would be
+// this test's own idea of the format, and the assertion "remote ignored what was
+// stored" is only worth as much as the proof that the stored thing was loadable —
+// which the local control case is.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/local_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
+import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  /// The two profiles, named so a failure message says which surface was wrong.
+  const local = LocalModeProfile();
+  const remote = RemoteModeProfile();
+
+  /// Wait for the notifier's async init/save chains to settle.
+  Future<void> pumpAsync() => Future.delayed(const Duration(milliseconds: 100));
+
+  ProviderContainer container(AppModeProfile profile) => ProviderContainer(
+        overrides: [appModeProfileProvider.overrideWithValue(profile)],
+      );
+
+  /// Boots the layout controller under [profile] against whatever the mock pref
+  /// store already holds.
+  Future<ProviderContainer> bootGrid(AppModeProfile profile) async {
+    final c = container(profile);
+    c.read(uspSliverDashboardControllerProvider);
+    await pumpAsync();
+    return c;
+  }
+
+  /// Leaves a complete, app-written envelope for the 6-card `essential` preset in
+  /// the pref store — distinguishable from both the 18-card default and the
+  /// 8-card remote layout, so a failure says which of the three arrived.
+  Future<void> plantStoredLayout() async {
+    final seed = await bootGrid(local);
+    await seed
+        .read(uspSliverDashboardControllerProvider.notifier)
+        .applyPreset(UspDashboardPreset.essential);
+    await pumpAsync();
+    seed.dispose();
+  }
+
+  List<String> cardIdsOf(ProviderContainer c) => c
+      .read(uspSliverDashboardControllerProvider)
+      .exportLayout()
+      .map((item) => item['id'] as String)
+      .toList()
+    ..sort();
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  // ---------------------------------------------------------------------------
+  // Which grid the surface starts on
+  // ---------------------------------------------------------------------------
+  group('the grid a surface starts on', () {
+    test('remote renders its fixed layout over a stored one', () async {
+      await plantStoredLayout();
+
+      final c = await bootGrid(remote);
+      addTearDown(c.dispose);
+
+      expect(
+        cardIdsOf(c),
+        UspDashboardPreset.remote.cardIds.toList()..sort(),
+        reason: 'a support session got the router owner\'s arranged dashboard. '
+            'The layout is not the agent\'s to inherit or to keep: '
+            'SurfaceStrategy.fixedDashboardLayout() is what this grid comes '
+            'from in that mode, and the pref is not consulted.',
+      );
+    });
+
+    test('local renders the stored one — the control', () async {
+      await plantStoredLayout();
+
+      final c = await bootGrid(local);
+      addTearDown(c.dispose);
+
+      expect(
+        cardIdsOf(c),
+        UspDashboardPreset.essential.cardIds.toList()..sort(),
+        reason: 'the planted envelope did not load, so the remote case above '
+            'proves nothing: "remote ignored the stored layout" needs the '
+            'stored layout to have been loadable in the first place.',
+      );
+    });
+
+    test('remote stores nothing on a first boot', () async {
+      final c = await bootGrid(remote);
+      addTearDown(c.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString(pUspSliverDashboardLayout),
+        isNull,
+        reason: 'a support session wrote a dashboard layout into the agent\'s '
+            'browser. Nothing in that session is the agent\'s preference, and '
+            'the fixed layout is rebuilt from the surface every boot — so there '
+            'is nothing a write could be for.',
+      );
+    });
+
+    test('local stores its default on a first boot — the control', () async {
+      final c = await bootGrid(local);
+      addTearDown(c.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString(pUspSliverDashboardLayout),
+        isNotNull,
+        reason: 'the first-boot write is gone, which would make the remote '
+            'assertion above vacuous — it would pass in a build that persists '
+            'nothing anywhere.',
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Which preferences the surface reads
+  // ---------------------------------------------------------------------------
+  group('the layout preferences a surface reads', () {
+    /// Stored preferences that differ from the defaults in all three fields, so
+    /// a partial read cannot pass.
+    final stored = UspLayoutPreferences(
+      useCustomLayout: false,
+      selectedPreset: UspDashboardPreset.standard,
+      hasSeenPresetDialog: true,
+    );
+
+    Future<UspLayoutPreferences> read(AppModeProfile profile) async {
+      final c = container(profile);
+      addTearDown(c.dispose);
+      c.read(uspSliverDashboardControllerProvider);
+      await c.read(uspLayoutPreferencesProvider.notifier).initialized;
+      await pumpAsync();
+      return c.read(uspLayoutPreferencesProvider);
+    }
+
+    test('remote reads none of them', () async {
+      SharedPreferences.setMockInitialValues({
+        pUspLayoutPreferences: stored.toJsonString(),
+      });
+
+      expect(
+        await read(remote),
+        const UspLayoutPreferences(),
+        reason: 'the agent\'s own hidden cards, custom-layout toggle and '
+            '"already asked" flag leaked into a support session. A surface with '
+            'a fixed layout has no preferences to load — which is the same '
+            'member as the grid above, and the reason it is one member and not '
+            'two.',
+      );
+    });
+
+    test('remote leaves selectedPreset null, not `remote`', () async {
+      // Planted, even though the claim is about the *seed* rather than the load:
+      // with an empty store this passed against a mutant that removed the skip
+      // entirely, because there was nothing to load and `null` is also the
+      // default. A stored `standard` makes `null` the answer to both questions.
+      SharedPreferences.setMockInitialValues({
+        pUspLayoutPreferences: stored.toJsonString(),
+      });
+
+      expect(
+        (await read(remote)).selectedPreset,
+        isNull,
+        reason: 'deliberate, and the one behaviour change here: the field used '
+            'to be seeded with UspDashboardPreset.remote by a mode read. '
+            'Nobody picked it, and its only reader — the edit-mode-only '
+            'settings panel — is a surface this mode cannot open. If a second '
+            'reader appears, this is the assertion that has to be revisited '
+            'rather than deleted.',
+      );
+    });
+
+    test('local reads all of them — the control', () async {
+      SharedPreferences.setMockInitialValues({
+        pUspLayoutPreferences: stored.toJsonString(),
+      });
+
+      expect(
+        await read(local),
+        stored,
+        reason: 'the planted preferences did not load at all, so the remote '
+            'case above is vacuous.',
+      );
+    });
+  });
+}

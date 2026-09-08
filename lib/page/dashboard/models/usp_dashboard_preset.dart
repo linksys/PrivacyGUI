@@ -25,8 +25,15 @@ enum UspDashboardPreset {
   /// `values.where(!= remote)` deny-list would have offered the next such preset
   /// automatically. Fail closed.
   ///
-  /// #1474 phase 7 moves ownership of the list to `SurfaceStrategy`; this and
-  /// `isUserSelectable` are the two seams it has to move.
+  /// **#1474 phase 7 measured this and left it alone**, which is the outcome the
+  /// design doc's `selectablePresets()` member did not expect. Both entry points
+  /// to the picker are unreachable under the remote profile — `firstRunPresetFlow()`
+  /// is `null` there, and the Settings → "Change" entry lives inside
+  /// `if (isEditMode)`, which `layoutEditor()` returning `null` makes unenterable —
+  /// so a per-surface list would have had no observable consumer in either mode,
+  /// and falsification criterion 4 deletes a member like that. A per-surface list
+  /// would also fail *open*: the exhaustive `switch` below is what makes a new
+  /// preset a compile error rather than an offer.
   static final List<UspDashboardPreset> selectable =
       values.where((preset) => preset.isUserSelectable).toList(growable: false);
 }
@@ -39,9 +46,10 @@ extension UspDashboardPresetX on UspDashboardPreset {
   ///
   /// [UspDashboardPreset.remote] is the only `false` today. It is not a style
   /// anyone chooses; it is the layout Remote Assistance *forces*
-  /// (`GlobalConfig.remote.forcedPreset` returns it when the build is remote, and
-  /// `showPresetDialog` suppresses the picker in that same build). Offering it
-  /// locally was the defect: its [description] promises "View-only mode", but
+  /// (`RemoteSurface.fixedDashboardLayout()` is where it is now applied, and the
+  /// same `null` from `firstRunPresetFlow()` is what suppresses the picker in that
+  /// build). Offering it locally was the defect: its [description] promises
+  /// "View-only mode", but
   /// read-only comes from the RA gates on the build flag rather than from the
   /// preset, so a local user who picked it got an 8-card layout that was fully
   /// editable.

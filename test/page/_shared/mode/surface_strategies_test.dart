@@ -1,4 +1,4 @@
-// #1497 (phase 7 of epic #1474): cause 5's thirteen members, both modes side by
+// #1497 (phase 7 of epic #1474): cause 5's fourteen members, both modes side by
 // side.
 //
 // One file for both, same reason as `test/core/mode/impl/session_strategies_test
@@ -18,7 +18,7 @@
 //
 // WHY NOT `expect(local.assistanceBanner(), isNotNull)` AND STOP. Because "hidden
 // in RA" is the wrong summary of this contract and a nullability-only assertion
-// would encode it. Three of the thirteen return a widget in *both* modes with
+// would encode it. Three of the fourteen return a widget in *both* modes with
 // different content (`sessionGuard`, `sessionExitAction`,
 // `connectionBannerLevel`), and those are the members that make the contract a
 // composition and not a capability table. They get the most detailed assertions
@@ -42,7 +42,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 
-/// The thirteen members, spelled as they appear in a call site.
+/// The fourteen members, spelled as they appear in a call site.
 ///
 /// A roster rather than a count: the count is in the guide doc and drifts, while
 /// this list is what the "every member has a caller" group iterates. Adding a
@@ -56,6 +56,7 @@ const _members = <String>[
   'connectionBannerLevel',
   'assistanceEntryCard',
   'accountActions',
+  'fixedDashboardLayout',
   'layoutEditor',
   'firstRunPresetFlow',
   'firmwareManualEntry',

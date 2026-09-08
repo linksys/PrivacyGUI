@@ -6,7 +6,9 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 
 /// Remote Assistance surfaces: a support session has nothing to personalise, so
 /// there is no mascot, the dashboard preset is fixed rather than picked, and edit
@@ -69,6 +71,18 @@ class RemoteSurface implements SurfaceStrategy {
   /// [sessionExitAction] is this mode's way out.
   @override
   Widget? accountActions() => null;
+
+  /// The eight cards a support session gets, every session, built from the
+  /// surface rather than restored from anywhere.
+  ///
+  /// Which is the point rather than a detail: the agent's browser holds whatever
+  /// dashboard *their own* router session last stored, and a support session must
+  /// neither inherit it nor overwrite it. Non-null is also what tells
+  /// `usp_layout_preferences_provider.dart` to load no widget preferences — one
+  /// answer, both providers.
+  @override
+  List<LayoutItem>? fixedDashboardLayout() =>
+      UspDashboardPreset.remote.createLayout();
 
   /// The layout belongs to the router's owner, not to the agent looking at it for
   /// twenty minutes. `null` is how the header bar learns not to render the
