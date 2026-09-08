@@ -62,6 +62,6 @@ enum InvalidationDomain {
 /// being different from the previous one. It is preferred over a wrapper class
 /// that deliberately omits `==` because that only works while nobody adds
 /// value equality to it, and value equality is this repo's house idiom
-/// (169 `Equatable` classes). A counter cannot be tampered into equality, and
+/// (170+ `Equatable` classes). A counter cannot be tampered into equality, and
 /// it is loggable and assertable besides.
 typedef InvalidationEvent = ({InvalidationDomain domain, int seq});

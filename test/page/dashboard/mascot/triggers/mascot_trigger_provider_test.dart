@@ -94,6 +94,8 @@ void main() {
     fired = [];
   });
 
+  tearDown(() => sse.close());
+
   /// Builds the container, resolves the L1 providers, then mounts the trigger
   /// notifier with [fired] wired to `onTrigger`.
   ///
@@ -111,6 +113,12 @@ void main() {
 
     // Resolve every async dependency before the notifier builds, so
     // `_initializeState` runs against loaded data rather than AsyncLoading.
+    //
+    // Any non-zero duration works; `flushMicrotasks()` does not, because it
+    // runs the notifier's own work without publishing the build result — the
+    // container still reads AsyncLoading. The value is deliberately small only
+    // to keep the elapsed clock readable in the debounce assertions below; the
+    // trigger notifier is not mounted yet, so no timer of its own is armed here.
     container.listen(dashboardDomainReadyProvider, (_, __) {});
     container.listen(wanDataProvider, (_, __) {});
     container.listen(devicesDataProvider, (_, __) {});
@@ -130,14 +138,15 @@ void main() {
   }
 
   group('MascotTriggerNotifier', () {
+    // TODO(#1509): invert this test when the seeding defect is fixed.
     // Documents a real defect, not desired behaviour: `_initializeState()`
     // assigns `state = MascotTriggerState(previousWanUp: ...)` *inside*
     // `build()`, and riverpod 2.6.1 immediately overwrites it with build()'s
     // return value — `setState(provider.runNotifierBuild(notifier))`,
     // riverpod-2.6.1/lib/src/notifier/base.dart:212. So every `previousXxx`
     // stays null however much data is loaded, and the first SSE event per
-    // domain can only seed, never fire. When that is fixed, this test must be
-    // inverted to expect the seeded values.
+    // domain can only seed, never fire. Filed as #1509; when that is fixed,
+    // this test must be inverted to expect the seeded values.
     test(
         'build does not seed previous values (state assigned in build is lost)',
         () {

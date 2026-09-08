@@ -24,12 +24,21 @@ class MascotTestData {
   }
 
   /// [count] online WiFi clients with distinct MACs and IPs.
-  static List<ClientDevice> createClients(int count) => List.generate(
-        count,
-        (i) => DevicesTestData.createWifiClient(
-          mac: '11:22:33:44:55:${(i + 1).toString().padLeft(2, '0')}',
-          ip: '192.168.1.${101 + i}',
-          hostName: 'Client-${i + 1}',
-        ),
-      );
+  ///
+  /// Capped at 99: the last MAC octet is a two-digit field, and `101 + i` runs
+  /// out of the /24 at 155. Both would produce a syntactically invalid address
+  /// rather than a test failure, so the ceiling is asserted instead of clamped
+  /// (clamping would silently hand out duplicates and break the "distinct"
+  /// promise the trigger's count comparison relies on).
+  static List<ClientDevice> createClients(int count) {
+    assert(count <= 99, 'createClients supports at most 99 clients');
+    return List.generate(
+      count,
+      (i) => DevicesTestData.createWifiClient(
+        mac: '11:22:33:44:55:${(i + 1).toString().padLeft(2, '0')}',
+        ip: '192.168.1.${101 + i}',
+        hostName: 'Client-${i + 1}',
+      ),
+    );
+  }
 }
