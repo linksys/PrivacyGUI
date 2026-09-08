@@ -107,6 +107,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   // Auto Master
   Future<AutoMasterStatus?> checkAutoMasterStatus();
   Stream<AutoMasterStatus?> pollAutoMasterStatus();
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning();
   void setAutoMasterStatusOnEntry(AutoMasterStatus? status);
 }
 
@@ -227,7 +228,7 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: password);
+    state = state.copyWith(attachedPassword: () => password);
   }
 
   @override
@@ -242,6 +243,11 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   Stream<AutoMasterStatus?> pollAutoMasterStatus() async* {
+    yield AutoMasterStatus.idle;
+  }
+
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() async* {
     yield AutoMasterStatus.idle;
   }
 
@@ -294,12 +300,27 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .then((value) {
       // Clear the password in pnp state once logging in successfully
       setAttachedPassword(null);
+      // The router has just vouched for this credential, so whatever rotation
+      // we had recorded is now behind us. Without this clear, the sticky
+      // `complete` status keeps reading as "your password is stale" for ever:
+      // the gate would throw again on the very next check, drop the session
+      // this login just created, and ask for the password again — the #1180
+      // login loop, where CheckAdminPassword returns 200 and the user is
+      // logged out anyway.
+      state = state.copyWith(autoMasterRotatedSinceLogin: false);
     }).catchError((error) => throw ExceptionInvalidAdminPassword(),
             test: (error) =>
                 error is JNAPError && error.result == errorJNAPUnauthorized);
   }
 
   /// check internet connection within 30 seconds
+  ///
+  /// Throws [ExceptionInvalidAdminPassword] if the router rejects the
+  /// credential, and [ExceptionNoInternetConnection] if it answers but the WAN
+  /// is down. Conflating the two is what sent #1180 to the troubleshooter: after
+  /// Auto Master rotated the admin password, this call went out with the stale
+  /// credential, got a 401, and reported "no internet" — so the user was told
+  /// their brand-new ISP settings had failed.
   @override
   Future checkInternetConnection([int retries = 1]) async {
     Future<bool> isInternetConnected() async {
@@ -307,20 +328,32 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       for (int i = 0; i < retries; i++) {
         logger.i(
             '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
-        isConnected = await ref
-            .read(routerRepositoryProvider)
-            .send(
-              JNAPAction.getInternetConnectionStatus,
-              fetchRemote: true,
-              auth: true,
-              retries: 0,
-              cacheLevel: CacheLevel.noCache,
-            )
-            .then((result) {
-          return result.output['connectionStatus'] == 'InternetConnected';
-        }).onError((error, stackTrece) {
-          return false;
-        });
+        try {
+          final result = await ref.read(routerRepositoryProvider).send(
+                JNAPAction.getInternetConnectionStatus,
+                fetchRemote: true,
+                auth: true,
+                retries: 0,
+                cacheLevel: CacheLevel.noCache,
+              );
+          isConnected =
+              result.output['connectionStatus'] == 'InternetConnected';
+        } on JNAPError catch (error) {
+          // A rejected credential says nothing about the WAN. Retrying cannot
+          // help either — the password will not become correct — and each round
+          // spends one of the router's 5 CGI auth attempts before it locks the
+          // account, so bail out immediately instead of looping.
+          if (error.result == errorJNAPUnauthorized) {
+            logger.e(
+                '[PnP]: Internet check was unauthorized - the credential is stale, not the WAN');
+            throw ExceptionInvalidAdminPassword();
+          }
+          isConnected = false;
+        } catch (_) {
+          // Anything else (timeout, unreachable, unparseable) is genuinely
+          // inconclusive about the WAN, so let the retry loop have another go.
+          isConnected = false;
+        }
         if (isConnected) {
           break;
         }
@@ -663,13 +696,18 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
   Future testConnectionReconnected() async {
     // Test connect to the propor router
+    //
+    // This is the sole arbiter of "router not found" once the Auto Master poll
+    // exhausts its budget, so it must not hinge on a single packet: retry a
+    // couple of times before condemning the connection. A router that is still
+    // finishing its restart answers on the second or third try.
     final result = await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getDeviceInfo,
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
-            retries: 0,
-            timeoutMs: 3000)
+            retries: 2,
+            timeoutMs: 5000)
         .onError((error, stackTrace) {
       // Can't get device info
       throw ExceptionNeedToReconnect();
@@ -720,7 +758,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: password);
+    state = state.copyWith(attachedPassword: () => password);
   }
 
   @override
@@ -728,12 +766,28 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     state = state.copyWith(forceLogin: force);
   }
 
+  /// Notes a freshly-read status and returns it unchanged.
+  ///
+  /// `running` is the only reading that *dates* the rotation — firmware reports
+  /// it just while make-Master is working, whereas `complete` latches on for
+  /// good. Every status read in this class funnels through here so no call site
+  /// has to remember to record it, and so the record cannot depend on which of
+  /// the three reads (single-shot or either poll) happened to catch the window.
+  AutoMasterStatus? _observeAutoMasterStatus(AutoMasterStatus? status) {
+    if (status == AutoMasterStatus.running &&
+        !state.autoMasterRotatedSinceLogin) {
+      logger.i('[PnP]: Auto Master is running - our credential is now stale');
+      state = state.copyWith(autoMasterRotatedSinceLogin: true);
+    }
+    return status;
+  }
+
   @override
   Future<AutoMasterStatus?> checkAutoMasterStatus() async {
     try {
       final result = await ref.read(routerRepositoryProvider).send(
             JNAPAction.getAutoMasterStatus,
-            auth: true,
+            auth: false,
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
             retries: 0,
@@ -741,15 +795,16 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           );
       final response = GetAutoMasterStatusResponse.fromMap(result.output);
       logger.d('[PnP]: Auto Master status: ${response.autoMasterStatus}');
-      return response.autoMasterStatus;
-    } on JNAPError catch (e) {
-      if (e.result == errorJNAPUnauthorized) {
-        logger.w('[PnP]: Auto Master status check unauthorized');
-        throw ExceptionAutoMasterUnauthorized();
-      }
-      logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
-      return null;
+      return _observeAutoMasterStatus(response.autoMasterStatus);
     } catch (e) {
+      // 401 is deliberately in here with the rest. The request carries no
+      // credential (auth: false), so an unauthorized result cannot mean
+      // make-Master rotated the admin password — it means this firmware still
+      // serves GetAutoMasterStatus as auth-required. That is indistinguishable
+      // from the action being unsupported, and both degrade the same way: no
+      // Auto Master detection, PnP runs twice. Returning null keeps that
+      // degradation; throwing would send the user to login on the very first
+      // check.
       logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
       return null;
     }
@@ -761,14 +816,22 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .scheduledCommand(
           action: JNAPAction.getAutoMasterStatus,
-          auth: true,
-          maxRetry: 60,
+          auth: false,
+          // The stream's own length IS the give-up rule, so its duration has to
+          // be predictable: make-Master takes the router's HTTP service away for
+          // the better part of a minute, and while it is gone the router may
+          // answer anything or nothing at all. Counting failures would be
+          // reading noise; instead every attempt is capped so the total is
+          // bounded — 24 x (3s request + 5s delay) = 192s, against ~65s of
+          // observed downtime and ~115s for Auto Master end to end.
+          maxRetry: 24,
+          requestTimeoutOverride: 3000,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
           condition: (result) {
             if (result is JNAPSuccess) {
-              final status = AutoMasterStatus.fromValue(
-                  result.output['autoMasterStatus'] as String?);
+              final status =
+                  AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
               return status == AutoMasterStatus.complete ||
                   status == AutoMasterStatus.idle ||
                   status == AutoMasterStatus.failed;
@@ -781,11 +844,68 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           },
         )
         .map((result) {
+      // Unauthorized is not special-cased here. The poll sends no credential
+      // (auth: false), so a 401 means the firmware still requires auth for this
+      // action rather than that make-Master rotated the password. It falls
+      // through to null below, same as an unsupported action: no detection, and
+      // PnP runs its second pass. Since no credential is sent, re-polling
+      // cannot burn the CGI auth-attempt budget, so no early terminator is
+      // needed to protect it.
       if (result is JNAPSuccess) {
-        final status = AutoMasterStatus.fromValue(
-            result.output['autoMasterStatus'] as String?);
+        final status =
+            AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
         logger.d('[PnP]: Auto Master polling status: $status');
-        return status;
+        return _observeAutoMasterStatus(status);
+      }
+      return null;
+    });
+  }
+
+  /// Poll Auto Master status waiting for it to *start* (Idle -> Running).
+  ///
+  /// Unlike [pollAutoMasterStatus] (which waits for Auto Master to *finish*),
+  /// this is used right after WAN comes up (the ISP-save WAN-up point) where
+  /// the status is very likely still `Idle` during the make-Master delay
+  /// window. It stops as soon as the status becomes `running` (the case we
+  /// want to catch), or `complete`/`failed` (in case make-Master finished so
+  /// fast we miss the running edge). It keeps polling on `idle`/error/`null`.
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() {
+    return ref
+        .read(routerRepositoryProvider)
+        .scheduledCommand(
+          action: JNAPAction.getAutoMasterStatus,
+          auth: false,
+          maxRetry: 18,
+          // Same reasoning as pollAutoMasterStatus: cap each attempt so the
+          // stream's duration is bounded and a slow answer costs one 8s round
+          // rather than stalling the wait.
+          requestTimeoutOverride: 3000,
+          retryDelayInMilliSec: 5000,
+          firstDelayInMilliSec: 1000,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status =
+                  AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
+              return status == AutoMasterStatus.running ||
+                  status == AutoMasterStatus.complete ||
+                  status == AutoMasterStatus.failed;
+            }
+            return false;
+          },
+          onCompleted: (exceedMaxRetry) {
+            logger.d(
+                '[PnP]: Auto Master wait-for-running done, exceeded max: $exceedMaxRetry');
+          },
+        )
+        .map((result) {
+      // See pollAutoMasterStatus: unauthorized falls through to null because
+      // this poll sends no credential.
+      if (result is JNAPSuccess) {
+        final status =
+            AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
+        logger.d('[PnP]: Auto Master wait-for-running status: $status');
+        return _observeAutoMasterStatus(status);
       }
       return null;
     });

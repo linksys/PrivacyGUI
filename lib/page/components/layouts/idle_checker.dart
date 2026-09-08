@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -24,19 +25,22 @@ class IdleChecker extends ConsumerStatefulWidget {
 
 class _IdleCheckerState extends ConsumerState<IdleChecker> {
   Timer? _timer;
-  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
+    // Key events never reach the pointer listeners in build(), so observe them
+    // at the binding level instead: that catches keystrokes no matter which
+    // widget currently holds focus.
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     _resetTimer();
   }
 
   @override
   void dispose() {
-    super.dispose();
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _timer?.cancel();
-    _debounce?.cancel();
+    super.dispose();
   }
 
   void _resetTimer() {
@@ -57,24 +61,36 @@ class _IdleCheckerState extends ConsumerState<IdleChecker> {
     _resetTimer();
   }
 
+  /// Observes key events only, never consumes them - hence the constant
+  /// `false`, which leaves the event free to travel on to whatever has focus.
+  bool _handleKeyEvent(KeyEvent event) {
+    handleUserInteraction();
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onHover: (event) {
-        if (_debounce?.isActive ?? false) _debounce?.cancel();
-        _debounce = Timer(const Duration(milliseconds: 500), () {
-          handleUserInteraction();
-        });
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          handleUserInteraction();
-        },
-        onPanDown: (details) {
-          handleUserInteraction();
-        },
-        child: widget.child,
+    // Wheel and trackpad scrolling arrive as pointer signals, which are neither
+    // hover nor down events, so the GestureDetector below never sees them.
+    return Listener(
+      // Translucent, not opaque: see pointer signals without absorbing hits.
+      behavior: HitTestBehavior.translucent,
+      onPointerSignal: (_) => handleUserInteraction(),
+      child: MouseRegion(
+        // Every hover event resets the countdown directly. The 500ms debounce
+        // this replaces could starve indefinitely: it rescheduled itself on
+        // each event, so a mouse that never paused never reset anything.
+        onHover: (_) => handleUserInteraction(),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            handleUserInteraction();
+          },
+          onPanDown: (details) {
+            handleUserInteraction();
+          },
+          child: widget.child,
+        ),
       ),
     );
   }
