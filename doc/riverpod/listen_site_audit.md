@@ -103,7 +103,7 @@ population.
 | --: | --- | --- | --- | :--: | --- |
 | 6 | `page/_shared/providers/usp_device_analytics_notifier.dart:33` | `next.valueOrNull == null` only | **`redundant-today`** | yes | On an unchanged device list within the same clock hour, `_onDashboardUpdated` rewrites the current hourly bucket with identical values and still persists at `:188`. **Cost: one redundant storage write, but only for two identical emissions inside the same hour.** Narrower than it looks, and **not fixable by a payload diff** — see the note below. |
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
-| 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here.** |
+| 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here**, comparing against the input the last `_fetch()` consumed rather than against `prev`; the `state.hasValue` half of this guard was also dropping settles that raced the fetch — see "The one caveat on the zero" above. |
 
 ### `wifiDataProvider` — 3
 
@@ -177,17 +177,45 @@ being unreachable — but "unreachable" was the wrong reason and is not load-bea
 | `edge-triggered` | 10 | 2, 3, 4, 5, 7, 16, 22, 23, 24, 25 |
 | `redundant-today` | 9 | 6, 8, 9, 10, 11, 12, 13, 14, 15 |
 | `idempotent` | 6 | 1, 17, 18, 19, 20, 21 |
-| **`depends-on-re-notify`** | **0** | — |
+| **`depends-on-re-notify`** | **0** | — (but see the caveat below: site 8 was 1, via a *recovery* path) |
 
 **`==`-safe: 25 / 25.** No in-scope site loses required behaviour under an `==`-based
 `updateShouldNotify`. Outside the 13 `sseInvalidationProvider` sites (#1501 Task B), the listener population
 does not block the riverpod 3 `updateShouldNotify` unification.
 
+### The one caveat on the zero, found by measurement after the first draft
+
+The count above is for each listener's **normal** path: no body needs to run again for an unchanged payload to
+produce its intended effect. That is the question the verdict axis asks, and it is the right question — but it
+is not the only way a listener can depend on re-notification. A listener can also depend on it to **recover
+from an event it dropped**, and site 8 did:
+
+`ethernet_data_provider`'s listener guarded on `!state.hasValue`, so a `devicesDataProvider` settle arriving
+while Ethernet's own `_fetch()` was still in flight was discarded — and the fetch it would have corrected had
+already read devicesData as `AsyncLoading` and passed `deviceModels: []`. On 2.6.1 that healed itself: the
+next redundant `devicesData` emission re-invalidated and the second fetch consumed the real list. Measured on
+the base source with the settle deliberately raced against the fetch:
+
+| source | after build | after one redundant same-payload repeat |
+| --- | --- | --- |
+| base `d484a23a` | `consumed=[0]` (stale) | `consumed=[0, 1]` — **rescued by the repeat** |
+| first fix (`prev` diff + `?? const []`) | `consumed=[0]` | `consumed=[0]` — rescue suppressed |
+| shipped fix (consumed-input diff) | `consumed=[0, 1]` | `consumed=[0, 1]` — corrected at once, then quiet |
+
+So the recovery path was real, it was invisible to a verdict axis that only asks about the normal path, and
+**riverpod 3 would have removed it** — the rescue rode on precisely the redundant `data → data` notification
+the `==` unification deletes. The first fix deleted it early and locally, which is how it surfaced at all.
+This is the one place where the audit's headline result needed a correction rather than a footnote, and it is
+why site 8 compares against the input the last `_fetch()` actually consumed rather than against the previous
+notification: a listener that never loses an event has no recovery path to depend on.
+
 Two consequences for the ticket's own acceptance criteria:
 
 - **AC-3 has no work.** It demands a characterization test per `depends-on-re-notify` site and there are
-  none. The ticket's cost estimate of 13 missing test files — 8 of them widget-test harnesses — is therefore
-  **not incurred**, exactly as its own "conditional on the verdicts" note anticipated.
+  none *as shipped*. The one recovery-path dependency found (site 8, above) is **removed** here rather than
+  characterized, which satisfies AC-3's intent more directly than a test pinning it would. The ticket's cost
+  estimate of 13 missing test files — 8 of them widget-test harnesses — is therefore **not incurred**,
+  exactly as its own "conditional on the verdicts" note anticipated.
 - **AC-4 has 9 sites**, all of which are live waste on 2.6.1 rather than migration risk.
 
 ## The 9 `redundant-today` sites share two root causes, not nine
@@ -246,7 +274,7 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
 | | Sites | Action |
 | --- | --- | --- |
 | Cause A, `isLoading` guard | 9, 10, 11, 12, 14, 15 | **Fixed in this PR** — provably lossless: the dropped frame carries the *previous* value, so the body was acting on stale data. |
-| Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. |
+| Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. The diff is against the *consumed* input, not `prev`, which also closes the dropped-settle half of the old guard. |
 | Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. |
 
 7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
@@ -262,6 +290,7 @@ confirm it is red there — a test that is green both ways is not coverage.
 | --- | --- | --- | --- | --- |
 | 8 ethernet | `ethernet_data_provider_test.dart` | `verifyNever(svc.fetch)` after an equal-valued emission | fetch runs | no fetch |
 | 8 ethernet (boot) | `ethernet_data_provider_test.dart` | `svc.fetch` count when the device list settles empty after this provider already holds data | 2 | 1 |
+| 8 ethernet (mid-fetch) | `ethernet_data_provider_test.dart` | consumed `deviceModels` lengths when the device list settles *during* this provider's own fetch | `[0]` | `[0, 1]` |
 | 9 devices | `devices_data_provider_test.dart` | `svc.rebuildWithWifiData()` count | 2 | 1 |
 | 10 wifi advanced | `usp_wifi_advanced_notifier_test.dart` | `svc.fetchIeee80211h()` count | 2 | 1 |
 | 11 wifi settings | `usp_wifi_settings_notifier_test.dart` | `svc.buildWifiNetworks()` count | 2 | 1 |
@@ -271,7 +300,7 @@ confirm it is red there — a test that is green both ways is not coverage.
 
 The site numbers in this table were transposed in the first version (rows read 9 wifi advanced / 10 wifi
 settings / 11 firewall / 12 devices, one off against the verdict table above); the test↔fix pairing was
-always right. Two of the ten new tests are deliberately **not** red pre-fix and are labelled as such below:
+always right. Two of the eleven new tests are deliberately **not** red pre-fix and are labelled as such below:
 `re-fetches when clientDevices changes` and `a boot settle that adds clients does re-fetch` assert re-fetches
 the unguarded version also performed. They are controls that keep the two guarded assertions from passing
 vacuously, not coverage.
@@ -299,18 +328,28 @@ Five things this exercise established that the audit alone had not:
    `usp_wifi_advanced_notifier_test.dart:70-73` reads
    `verify(...).called(greaterThanOrEqualTo(1))` under the comment "may be called again if SSE listener
    triggers". The loose matcher turned a defect into an accepted range.
-5. **A payload diff needs a stated meaning for "no previous value", and at site 8 the boot path hits it every
-   time.** `ListEquality.equals(null, [])` is `false` (collection `equality.dart`: `if (list1 == null ||
-   list2 == null) return false`), so `prev?.valueOrNull?.clientDevices` — null whenever the prior frame was a
-   bare `AsyncLoading` — makes the guard fall through. That is not a corner case here: the orchestrator reads
-   `devicesDataProvider` and `ethernetDataProvider` back to back
-   (`dashboard_orchestrator.dart:158-159`), so the two settle in a race and whenever Ethernet wins, its own
-   `_fetch()` already read devices as `AsyncLoading` and passed `deviceModels: []`. `?? const []` is
-   therefore not defensive padding but the statement that matches `_fetch()`'s own `?? []` at `:94`: "no
-   previous value" means "the last fetch consumed an empty list", which is exactly what happened. Without it
-   a home with no wired clients pays one extra Ethernet round-trip on every dashboard boot. Measured:
-   `fetches=2 deviceModelCounts=[0, 0]` before, `1` after — and the paired control (device list settles
-   *non-empty*) still shows `[0], [1]`, so the fix suppresses only the identical-input call.
+5. **Diff against the input the effect consumed, not against `prev`.** `prev` is the listener's *notification*
+   history, and the two are not the same thing whenever the effect can start before the input settles — which
+   at site 8 is the normal dashboard boot, because the orchestrator reads `devicesDataProvider` and
+   `ethernetDataProvider` back to back (`dashboard_orchestrator.dart:158-159`) and the two settle in a race.
+   Comparing against `prev` was wrong in **both** branches of that race, and each way needed a different
+   argument to see:
+   - *Ethernet wins.* Its `_fetch()` read devices as `AsyncLoading` and passed `deviceModels: []`. At the
+     settle `prev` carries no value, and `ListEquality.equals(null, [...])` is `false` (collection
+     `equality.dart`: `if (list1 == null || list2 == null) return false`), so an **empty** device list looked
+     like a change: one wasted Ethernet round-trip on every boot of a home with no wired clients. Measured
+     `fetches=2 deviceModelCounts=[0, 0]` → `1`.
+   - *Devices wins.* The settle lands while Ethernet's own `_fetch()` is still in flight, `!state.hasValue`
+     discards it, and the fetch it would have corrected already consumed `[]`. Measured
+     `consumed=[0]` — Ethernet serves port models built from an empty device list. On 2.6.1 this healed on
+     the next redundant emission; a `prev`-based diff, and later riverpod 3, delete that rescue. See "The one
+     caveat on the zero" above, which is the more important half of this finding.
+
+   One field holding the consumed input answers both, and removes the need to decide what "no previous value"
+   means: it *starts* as the empty list the first fetch really does consume, and it is written before the
+   await, so a settle arriving mid-fetch compares against the right thing. Measured after the fix:
+   `consumed=[0, 1]` for the mid-fetch race, `1` fetch for the empty settle, and the paired control (list
+   settles non-empty, no race) still `[0], [1]` — so nothing needed is suppressed.
 
 ## Method
 
@@ -342,11 +381,12 @@ drift, not mine: the ticket lists
 
 ## Verification
 
-- `./run_tests.sh` → **6523/6523 pass, exit 0** (6513 baseline + the 10 new tests)
+- `./run_tests.sh` → **6524/6524 pass, exit 0** (6513 baseline + the 11 new tests)
 - Affected set (23 files: direct tests for the 8 changed sources plus every `*_test.dart` importing them) →
-  **292/292 pass** (282 before the new tests)
-- Each new test also run against the pre-fix source: **8 of the 10 red there**; the other two are the labelled
-  controls, listed in "Test coverage" above
+  **293/293 pass** (282 before the new tests)
+- Each new test also run against the pre-fix source: **9 of the 11 red there**; the other two are the labelled
+  controls, listed in "Test coverage" above. The mid-fetch test was additionally run against the *first* fix
+  (`prev` diff + `?? const []`) and is red there too — that is the regression it exists to prevent
 - `fvm flutter analyze` → **480 issues, identical to the `d484a23a` baseline**; **0** attributable to any of
   the changed files. (Analyze reports 810 with 330 errors in a fresh worktree until `flutter pub get`
   generates `l10n/gen/app_localizations.dart` — that is an environment artefact, not a finding.)

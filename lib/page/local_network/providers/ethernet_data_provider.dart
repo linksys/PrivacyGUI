@@ -43,6 +43,16 @@ class EthernetData extends Equatable with DiagnosticLoggable {
 }
 
 class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
+  /// The `deviceModels` list the most recent [_fetch] passed to the service.
+  ///
+  /// This, not the listener's `prev` argument, is what the devices listener
+  /// compares against — see the comment at the listener. Whether riverpod
+  /// reuses this notifier across builds or creates a fresh one does not matter:
+  /// [_fetch] writes the field before its await, so the listener never compares
+  /// against a stale generation, and the initial `const []` is exactly what the
+  /// first fetch consumes when `devicesDataProvider` has not settled yet.
+  List<ClientDevice> _consumedDevices = const [];
+
   @override
   Future<EthernetData> build() async {
     // SSE listener: Ethernet interface status changes (link up/down)
@@ -70,19 +80,30 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     // which is `EquatableMixin` — so the comparison is deep end to end. If a
     // future model drops that, this guard silently reverts to always-unequal.
     //
-    // `?? const []` mirrors _fetch()'s own `?? []` at :85. The orchestrator
-    // triggers devices and ethernet back to back (dashboard_orchestrator.dart
-    // :158-159), so whenever this provider wins that race its first _fetch()
-    // read `devicesDataProvider.valueOrNull` as null and passed an empty list.
-    // "No previous value" therefore means "the last fetch consumed []", not
-    // "unknown": comparing against null instead would make the first settle
-    // unconditionally unequal and spend a second fetch on the identical input
-    // when the device list settles empty.
-    ref.listen(devicesDataProvider, (prev, next) {
-      if (!next.hasValue || !state.hasValue) return;
-      const eq = ListEquality<ClientDevice>();
-      if (eq.equals(prev?.valueOrNull?.clientDevices ?? const [],
-          next.value!.clientDevices)) {
+    // The comparison is against [_consumedDevices] — what the last _fetch()
+    // actually passed to the service — not against `prev`. Using `prev` was
+    // wrong in two ways, both reachable on a normal dashboard boot, because
+    // the orchestrator triggers devices and ethernet back to back
+    // (dashboard_orchestrator.dart:158-159) so the two settle in a race:
+    //
+    //  - Ethernet wins: its _fetch() read devicesData as AsyncLoading and
+    //    passed []. At the settle `prev` carries no value, and
+    //    `ListEquality.equals(null, [...])` is false, so an *empty* device list
+    //    looked like a change and cost a second fetch on identical input.
+    //  - Devices wins: the settle arrives while this provider's own _fetch() is
+    //    still in flight, so a `state.hasValue` guard drops it — and the fetch
+    //    it would have corrected already consumed []. Ethernet then serves port
+    //    models built from an empty device list until the list changes again or
+    //    an `ethernetInterfaces` SSE event lands.
+    //
+    // A field holding the consumed input answers both without a special case
+    // for "no previous value": it starts as the empty list the first fetch
+    // really does consume, and it is written before the await, so a settle
+    // arriving mid-fetch still compares against the right thing.
+    ref.listen(devicesDataProvider, (_, next) {
+      final devices = next.valueOrNull?.clientDevices;
+      if (devices == null) return;
+      if (const ListEquality<ClientDevice>().equals(_consumedDevices, devices)) {
         return;
       }
       ref.invalidateSelf();
@@ -94,7 +115,10 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   Future<EthernetData> _fetch() async {
     final svc = ref.read(uspEthernetDataServiceProvider);
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    final devices = devicesData?.clientDevices ?? [];
+    final devices = devicesData?.clientDevices ?? const <ClientDevice>[];
+    // Written before the await so a settle arriving mid-fetch compares against
+    // the input this fetch is actually consuming.
+    _consumedDevices = devices;
 
     final result = await svc.fetch(deviceModels: devices);
 
