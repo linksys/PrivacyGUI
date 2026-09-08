@@ -7,29 +7,65 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 /// Characterization tests for what the provider layer hands the UI when an
 /// `AsyncNotifierProvider` is in the error state.
 ///
-/// These pin CURRENT behaviour, not desired behaviour. They exist because seven
-/// call sites read `authProvider` through `AsyncValue.value`, and `value` is the
-/// one accessor whose contract differs between riverpod versions: on 2.6.1 it
-/// RETHROWS when there is no value
-/// (`riverpod-2.6.1/lib/src/common.dart:493`), where `valueOrNull` returns null.
-/// The sites are (measured at `d484a23a`):
+/// These pin CURRENT behaviour, not desired behaviour. They exist because a
+/// population of call sites reads `authProvider` through `AsyncValue.value`, and
+/// `value` is the one accessor whose contract differs between riverpod versions:
+/// only `AsyncError.value` throws, and only when `hasValue` is false
+/// (`riverpod-2.6.1/lib/src/common.dart:493`; `AsyncLoading.value` returns null,
+/// as does `valueOrNull` everywhere).
 ///
-///   lib/app.dart:254                                              read + `?? false`
-///   lib/page/remote_assistance/views/remote_assistance_session_guard.dart:65   read + `?? false`
-///   lib/page/dashboard/orchestrator/dashboard_orchestrator.dart:133            read + `?? false`
-///   lib/components/layouts/root_container.dart:60                             read + `?? false`
-///   lib/route/router_provider.dart:164                            inside `.select`
-///   lib/route/router_provider.dart:223                            inside `.select`  (go_router redirect)
-///   lib/components/styled/general_settings_widget/general_settings_widget.dart:30  inside `.select`
+/// Census re-measured at `4f4fe089`. **This corrects the "seven sites" figure**
+/// this file and #1501 previously carried: that came from a one-line grep for
+/// `authProvider` and `.value` on the same line, which is blind to every
+/// `ref.listen(authProvider, (prev, next) {…})` body and every `.select(` that
+/// wraps. Measured by shape instead of by name, `authProvider` is read through
+/// `.value` at **16 lines in 10 files outside the notifier, 15 of them
+/// unguarded**, plus 6 lines inside `AuthNotifier` itself:
 ///
-/// The `?? false` in every one of them reads as "default to logged out on
-/// failure". That is not what happens — see the tests below. Three of the seven
-/// are inside a selector, which is the worst place for a throw. See #1501.
+///   Unguarded, plain read + `?? false`:
+///     lib/app.dart:254
+///     lib/components/layouts/root_container.dart:60
+///     lib/page/remote_assistance/views/remote_assistance_session_guard.dart:65
+///     lib/page/dashboard/orchestrator/dashboard_orchestrator.dart:133
+///   Unguarded, inside `.select` — the worst place for a throw, because it
+///   surfaces at the reader (for :145/:164/:212/:223, inside go_router):
+///     lib/page/shell/usp_top_bar.dart:87
+///     lib/route/router_provider.dart:145, :164, :212, :223
+///     lib/components/styled/general_settings_widget/general_settings_widget.dart:30
+///   Inside a `ref.listen` body, guarded only by `if (next.isLoading) return;`
+///   — which does not cover an `AsyncError`, so still exposed:
+///     lib/page/dashboard/orchestrator/dashboard_orchestrator.dart:96, :97
+///     lib/route/router_provider.dart:182, :183
+///     lib/core/connection/providers/app_connection_state_provider.dart:66
+///   Actually safe, and the only one — guards on `hasValue && !hasError`:
+///     lib/page/login/views/login_local_view.dart:110
+///   Inside `AuthNotifier`, reading its own `state`:
+///     auth_provider.dart:78, :79   safe — an `AsyncError` pattern-match
+///                                  returns early at :74
+///     auth_provider.dart:65        contained — throws inside the enclosing
+///                                  `AsyncValue.guard`, so it degrades to
+///                                  "init failed" rather than crashing
+///     auth_provider.dart:93, :165, :175   exposed, and :93 is the most
+///                                  consequential site found: it is the first
+///                                  line of `localLogin()`, so after a failed
+///                                  `init()` the user's login attempt throws
+///                                  the STALE error instead of starting from
+///                                  `AuthState.empty()` as the `??` implies
+///
+/// So the exposure is 19 lines, and it is confined to `authProvider`: every
+/// other `.value` read on an `AsyncValue` in `lib/` is guarded
+/// (`dhcp_data_provider.dart:65` and `usp_apps_notifier.dart:84` both check
+/// `hasValue` first; `demo/providers/demo_overrides.dart:113` reads a
+/// `guard`ed closure that cannot throw).
+///
+/// The `?? false` / `?? AuthState.empty()` in almost every one of them reads as
+/// "default to logged out on failure". That is not what happens — see the tests
+/// below. See #1501.
 ///
 /// To be explicit about what these tests are: the behaviour below is a KNOWN
 /// DEFECT, not intended behaviour. It is pinned here rather than fixed because
 /// the fix is a `lib/` behaviour change — swapping `.value` for `.valueOrNull`
-/// at all seven sites makes the first-build-failure case actually take the
+/// at every site makes the first-build-failure case actually take the
 /// logged-out branch it already claims to take, which changes app routing — and
 /// #1501 is a characterization ticket. No `TODO(#nnnn)` is left here on purpose:
 /// #1501 closes with these tests, and a marker pointing at a closed ticket is
@@ -196,8 +232,8 @@ void main() {
       expect(state.hasValue, isTrue,
           reason: 'riverpod carries the previous value forward on a failed '
               'rebuild (copyWithPrevious)');
-      // Consequence: the seven read sites see the STALE logged-in state after a
-      // failed re-auth, not an error and not `false`.
+      // Consequence: every one of the 19 exposed read sites sees the STALE
+      // logged-in state after a failed re-auth, not an error and not `false`.
       expect(state.value?.isLoggedIn, isTrue);
       expect(state.error, isA<InvalidCredentialsError>());
     });
