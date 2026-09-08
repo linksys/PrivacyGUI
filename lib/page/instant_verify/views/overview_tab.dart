@@ -1,3 +1,4 @@
+import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'dart:async';
@@ -87,7 +88,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     final state = ref.watch(instantVerifyPivotProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: InstantTestLayout.scrollPadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

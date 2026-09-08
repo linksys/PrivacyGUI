@@ -5,6 +5,7 @@ import {chromium} from 'playwright';
 
 const url = process.argv[2] || 'http://127.0.0.1:8105/#/instant-prototype';
 const target = new URL(url);
+const scenario = process.argv[3];
 assert(['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname), 'This harness is for a local simulated preview.');
 assert.equal(target.hash, '#/instant-prototype', 'Use the clean prototype URL, without workflow parameters.');
 const output = fileURLToPath(new URL('./artifacts/', import.meta.url));
@@ -32,6 +33,7 @@ async function clickInScrollView(page, label) {
   throw Error(`Could not reach ${label} in the scrollable page`);
 }
 async function check(name, run, mobile = false) {
+  if (scenario && scenario !== name) return;
   const context = await browser.newContext({viewport:mobile ? {width:390,height:844} : {width:1440,height:1000}, colorScheme:mobile?'light':'dark'});
   const page = await context.newPage();
   const errors=[], failures=[], known=[];
@@ -154,6 +156,30 @@ try {
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
+  await check('responsive-layout-state',async p=>{
+    await button(p,"Internet isn't working").click();
+    await button(p,'View test details').click();
+    for (const width of [320,768,1024,1440,2048]) {
+      await p.setViewportSize({width,height:1100});
+      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await button(p,'Hide test details').waitFor();
+      assert.equal(await p.getByText('This device reached your router',{exact:true}).count(),1,'Resizing must preserve expanded details');
+      const result=await p.getByText('Your router can reach the internet',{exact:true}).boundingBox();
+      assert(result.x>=0 && result.x+result.width<=width,'Diagnostic result exceeds the available width');
+    }
+    await button(p,'Hide test details').click();
+    await clickInScrollView(p,'Yes — troubleshoot a specific device');
+    await button(p,'Office-Printer WiFi').click();
+    await button(p,'Change problem').click();
+    await button(p,'Slow connection').click();
+    await clickInScrollView(p,'Connection details');
+    for (const width of [390,1024,2048]) {
+      await p.setViewportSize({width,height:1100});
+      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await button(p,'Hide connection details').waitFor();
+      assert.equal(await p.getByText('Band',{exact:true}).count(),1,'Resizing must preserve device details');
+    }
+  });
   await check('diagnostic-completion',async p=>{
     await button(p,"Internet isn't working").click();
     await visible(p,'Your router can reach the internet');
@@ -268,4 +294,4 @@ try {
   await writeFile(`${output}/results.json`, JSON.stringify({url,results},null,2));
   await browser.close();
 }
-if(results.some(result=>!result.pass)) process.exitCode=1;
+if(results.length===0 || results.some(result=>!result.pass)) process.exitCode=1;

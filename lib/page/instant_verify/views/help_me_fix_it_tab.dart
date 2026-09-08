@@ -1,3 +1,4 @@
+import 'instant_test_layout.dart';
 import 'instant_test_page_header.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -430,7 +431,7 @@ class _FlowShell extends StatelessWidget {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: InstantTestLayout.scrollPadding(context),
             child: child,
           ),
         ),
@@ -732,18 +733,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
       if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context),
       if (_phase == _Flow1Phase.allOk) ..._allOkPath(context),
     ]);
-    return LayoutBuilder(builder: (context, constraints) {
-      final summary = _diagnosticProgressCard(context);
-      if (constraints.maxWidth >= 1100) {
-        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: constraints.maxWidth * 0.28, child: summary),
-          const SizedBox(width: Spacing.large2),
-          Expanded(child: advice),
-        ]);
-      }
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [summary, advice]);
-    });
+    return InstantTestColumns(
+        sidebar: _diagnosticProgressCard(context), content: advice);
   }
 
   Widget _diagnosticProgressCard(BuildContext context) {
@@ -1781,11 +1772,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const Text('Choose a device to get started.'),
         ])),
     ]);
-    return LayoutBuilder(builder: (context, constraints) => constraints.maxWidth >= 840
-        ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 280, child: deviceChoice), const SizedBox(width: 24), Expanded(child: help),
-          ])
-        : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [deviceChoice, help]));
+    return InstantTestColumns(sidebar: deviceChoice, content: help);
   }
 
   List<Widget> _step0(BuildContext context) => [

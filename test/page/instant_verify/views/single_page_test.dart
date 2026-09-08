@@ -154,6 +154,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('open diagnostic details survive page resizing', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(2048, 1100);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester);
+    await tapText(tester, "Internet isn't working");
+    await tapText(tester, 'View test details');
+    for (final width in [320.0, 600.0, 905.0, 1240.0, 2048.0]) {
+      tester.view.physicalSize = Size(width, 1100);
+      await tester.pumpAndSettle();
+      expect(find.text('This device reached your router'), findsOneWidget);
+      expect(find.text('Hide test details'), findsOneWidget);
+      final result = tester.getRect(find.text('Your router can reach the internet'));
+      expect(result.left, greaterThanOrEqualTo(0));
+      expect(result.right, lessThanOrEqualTo(width));
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('workflow uses its available container width on a wide screen', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 1100);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester, child: const Center(
+        child: SizedBox(width: 800, child: InstantTestPage())));
+    await tapText(tester, "Internet isn't working");
+    final result = tester.getRect(find.text('Your router can reach the internet'));
+    final guidance = tester.getRect(find.text('Still seeing an issue?'));
+    expect(guidance.top, greaterThan(result.bottom));
+    expect(result.left, greaterThanOrEqualTo(320));
+    expect(guidance.right, lessThanOrEqualTo(1120));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('healthy follow-up groups context with compact controls at every width', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(2048, 1100);

@@ -1,3 +1,4 @@
+import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +49,7 @@ class MyDevicesTab extends ConsumerWidget {
           ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
       child: SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: InstantTestLayout.scrollPadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

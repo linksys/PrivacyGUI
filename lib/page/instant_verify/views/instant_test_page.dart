@@ -1,3 +1,4 @@
+import 'instant_test_layout.dart';
 import 'instant_test_page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -95,80 +96,75 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
 
   @override
   Widget build(BuildContext context) => SelectionArea(
-      child: LayoutBuilder(
-          builder: (context, constraints) => Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: constraints.maxWidth >= 1200
-                      ? constraints.maxWidth * 0.025
-                      : 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Offstage(
-                          offstage: _showFlow || _details != null,
-                          child: ExcludeFocus(
-                            excluding: _showFlow || _details != null,
-                            child: SelectionArea(
-                                child: OverviewTab(
-                              showProblemCards: false,
-                              leading: SymptomChooser(
-                                  onSelect: (flow) => _launch(flow)),
-                              onViewNetwork: () => _navigate(details: 2),
-                              onViewClients: () => _navigate(details: 1),
-                              onNavigateToFlow: (index) => _launch(index + 1),
-                              onTroubleshootWeakDevices: () => _launch(31),
-                            )),
-                          ),
-                        ),
-                        if (_details != null)
-                          Offstage(
-                            offstage: _showFlow,
-                            child: ExcludeFocus(
-                                excluding: _showFlow,
-                                child: SelectionArea(
-                                    child: Column(children: [
-                                  InstantTestPageHeader(
-                                      title: _details == 1
-                                          ? 'Device details'
-                                          : 'Network details',
-                                      backLabel: 'Back to Instant-Test',
-                                      onBack: () => _navigate()),
-                                  Expanded(
-                                      child: _details == 1
-                                          ? MyDevicesTab(
-                                              onNavigateToFlow: (flow,
-                                                      {device}) =>
-                                                  _launch(flow, device: device))
-                                          : const MyNetworkTab()),
-                                ]))),
-                          ),
-                        if (_showFlow)
-                          Positioned.fill(
-                            child: HelpMeFixItTab(
-                              flowPath: _flowPath,
-                              onFlowPathChanged: (flows) =>
-                                  _navigate(details: _details, flows: flows),
-                              pendingFlowDeviceNotifier: _pendingDevice,
-                              exitLabel: _details == 1
-                                  ? 'Back to device details'
-                                  : 'Back to Instant-Test',
-                              singlePage: true,
-                              onCheckAgain: () {
-                                _navigate();
-                                ref
-                                    .read(instantVerifyPivotProvider.notifier)
-                                    .fetch();
-                              },
-                              onExitToHome: () => _navigate(details: _details),
-                            ),
-                          ),
-                      ],
+      child: InstantTestLayout(
+          contentWidth: InstantTestContentWidth.wide,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Offstage(
+                      offstage: _showFlow || _details != null,
+                      child: ExcludeFocus(
+                        excluding: _showFlow || _details != null,
+                        child: SelectionArea(
+                            child: OverviewTab(
+                          showProblemCards: false,
+                          leading:
+                              SymptomChooser(onSelect: (flow) => _launch(flow)),
+                          onViewNetwork: () => _navigate(details: 2),
+                          onViewClients: () => _navigate(details: 1),
+                          onNavigateToFlow: (index) => _launch(index + 1),
+                          onTroubleshootWeakDevices: () => _launch(31),
+                        )),
+                      ),
                     ),
-                  ),
-                ],
-              ))));
+                    if (_details != null)
+                      Offstage(
+                        offstage: _showFlow,
+                        child: ExcludeFocus(
+                            excluding: _showFlow,
+                            child: SelectionArea(
+                                child: Column(children: [
+                              InstantTestPageHeader(
+                                  title: _details == 1
+                                      ? 'Device details'
+                                      : 'Network details',
+                                  backLabel: 'Back to Instant-Test',
+                                  onBack: () => _navigate()),
+                              Expanded(
+                                  child: _details == 1
+                                      ? MyDevicesTab(
+                                          onNavigateToFlow: (flow, {device}) =>
+                                              _launch(flow, device: device))
+                                      : const MyNetworkTab()),
+                            ]))),
+                      ),
+                    if (_showFlow)
+                      Positioned.fill(
+                        child: HelpMeFixItTab(
+                          flowPath: _flowPath,
+                          onFlowPathChanged: (flows) =>
+                              _navigate(details: _details, flows: flows),
+                          pendingFlowDeviceNotifier: _pendingDevice,
+                          exitLabel: _details == 1
+                              ? 'Back to device details'
+                              : 'Back to Instant-Test',
+                          singlePage: true,
+                          onCheckAgain: () {
+                            _navigate();
+                            ref
+                                .read(instantVerifyPivotProvider.notifier)
+                                .fetch();
+                          },
+                          onExitToHome: () => _navigate(details: _details),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          )));
 }

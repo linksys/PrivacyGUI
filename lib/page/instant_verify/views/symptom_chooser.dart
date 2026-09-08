@@ -1,3 +1,4 @@
+import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -29,11 +30,7 @@ class SymptomChooser extends StatelessWidget {
             textAlign: TextAlign.center),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 840
-              ? 3
-              : constraints.maxWidth >= 340
-                  ? 2
-                  : 1;
+          final columns = InstantTestLayout.actionColumns(constraints.maxWidth);
           final width =
               (constraints.maxWidth - Spacing.medium * (columns - 1)) / columns;
           return Wrap(
