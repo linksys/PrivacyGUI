@@ -66,3 +66,7 @@ See [WALKTHROUGH.md](WALKTHROUGH.md) for the executed path inventory and release
 ## Remaining release checks
 
 Run mandatory login and expired-session behavior, real router data/error states, confirmation/cancellation of disruptive actions, restart/reconnect recovery, support/escalation, broader accessibility, and the selected JNAP release line's existing checks on the target device. Confirm customer builds exclude prototype/scenario controls. No pre-login or USP capability is part of this launch pass.
+
+## Authenticated router harness
+
+[DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md) documents the device deployment and `bun tools/instant_test/device.ts <registered-MAC>` walkthrough. It uses real JNAP reads and probes in an isolated authenticated browser, and blocks disruptive actions. Its results are separate from the simulated preview suite.

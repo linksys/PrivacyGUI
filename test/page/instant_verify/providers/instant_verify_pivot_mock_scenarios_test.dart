@@ -12,8 +12,10 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 
 // Minimal real notifier — build() has no deps, loadMockScenario() is pure.
 class _TestNotifier extends InstantVerifyPivotNotifier {
+  _TestNotifier({this.initial = const InstantVerifyPivotState()});
+  final InstantVerifyPivotState initial;
   @override
-  InstantVerifyPivotState build() => const InstantVerifyPivotState();
+  InstantVerifyPivotState build() => initial;
 }
 
 ProviderContainer _container() => ProviderContainer(
@@ -23,6 +25,26 @@ ProviderContainer _container() => ProviderContainer(
     );
 
 void main() {
+  test('unsupported optional checks are excluded from the pass count', () {
+    int count(InstantVerifyPivotState initial) {
+      final c = ProviderContainer(overrides: [
+        instantVerifyPivotProvider.overrideWith(() => _TestNotifier(initial: initial)),
+      ]);
+      addTearDown(c.dispose);
+      c.read(instantVerifyPivotProvider.notifier).setPlanSpeed(null);
+      return c.read(instantVerifyPivotProvider).verdict!.checksRun;
+    }
+    final unavailable = count(const InstantVerifyPivotState());
+    final available = count(const InstantVerifyPivotState(
+      wirelessSchedule: {'isEnabled': false},
+      parentalControls: {'isParentalControlEnabled': false},
+      networkSecurity: {'pmfMode': 'Optional'},
+      macFilter: {'macFilterMode': 'disabled'},
+    ));
+    expect(available - unavailable, 4,
+        reason: 'Unsupported firmware APIs are untested, not successful checks');
+  });
+
   group('loadMockScenario — state shape', () {
     test('all 5 scenarios reach phase=complete', () {
       for (var i = 0; i < 5; i++) {

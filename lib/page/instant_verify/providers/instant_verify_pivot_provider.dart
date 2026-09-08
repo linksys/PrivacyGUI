@@ -504,13 +504,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     final s = state;
 
     // ── New params for Checks 12-15 ──────────────────────────────────────
-    final isWifiScheduleBlocking = s.wirelessSchedule != null &&
-        (s.wirelessSchedule!['isEnabled'] as bool? ?? false);
-    final isInstantPrivacyOn = s.isMacFilterEnabled;
-    final isInstantPauseActive = s.parentalControls != null &&
-        ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
+    final bool? isWifiScheduleBlocking = s.wirelessSchedule == null
+        ? null : s.wirelessSchedule!['isEnabled'] as bool?;
+    final bool? isInstantPrivacyOn = s.macFilter == null
+        ? null : s.isMacFilterEnabled;
+    final bool? isInstantPauseActive = s.parentalControls == null
+        ? null : ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
          (s.parentalControls!['isParentalControlsEnabled'] as bool?) ??
-         (s.parentalControls!['enabled'] as bool?) ?? false);
+         (s.parentalControls!['enabled'] as bool?));
     // Gate CPU/memory on capability map — keys vary by firmware.
     // Only pass values if this device confirmed returning them.
     // Two-sample CPU (#24): only use the END sample for the CPU verdict.
@@ -569,7 +570,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     // ignore: unused_local_variable
     final int? wifiSnrDbFromChannel = channelInterferenceProxy == true ? 15 : null;
 
-    final isPmfRequired = s.networkSecurity != null &&
+    final bool? isPmfRequired = s.networkSecurity == null ? null :
         (s.networkSecurity!.values.whereType<String>().any(
           (v) => v.toUpperCase().contains('PMF') && v.toUpperCase().contains('REQUIRED')
         ) || (s.networkSecurity!['pmfMode'] as String?)?.toUpperCase() == 'REQUIRED');

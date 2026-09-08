@@ -38,6 +38,10 @@ npm test --prefix tools/instant_test -- 'http://127.0.0.1:8105/#/instant-prototy
 
 Screenshots and machine-readable results are written to ignored `artifacts/`. The runner fails on failed assertions, uncaught browser errors, or unexpected request failures. Previously reproduced font/version asset 404s are recorded separately.
 
+## Authenticated device follow-up
+
+See [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md) for the real JNAP deployment, live workflow checks, and the unsupported-check counting fix. The expanded standard suite has 215 passing Flutter tests; all 47 preview scenarios also pass after that fix.
+
 ## Remaining device acceptance
 
 Verify router login and expired sessions, actual JNAP probe results and failures, disruptive-action success/failure and recovery, channel/blocklist changes where supported, firmware update behavior, customer-build exclusion of preview controls, and the selected LinksysWRT 1.0 release branch. Pre-login assistance and USP migration remain later phases.
