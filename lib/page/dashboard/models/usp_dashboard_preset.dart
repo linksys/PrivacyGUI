@@ -49,10 +49,12 @@ extension UspDashboardPresetX on UspDashboardPreset {
   /// (`RemoteSurface.fixedDashboardLayout()` is where it is now applied, and the
   /// same `null` from `firstRunPresetFlow()` is what suppresses the picker in that
   /// build). Offering it locally was the defect: its [description] promises
-  /// "View-only mode", but
-  /// read-only comes from the RA gates on the build flag rather than from the
-  /// preset, so a local user who picked it got an 8-card layout that was fully
-  /// editable.
+  /// "View-only mode", and a preset is a list of cards and their geometry — it
+  /// carries no permission at all. What restraint Remote Assistance has comes from
+  /// two other places: `OperationGuard` refuses the operations whose
+  /// `DisruptionClass` that mode cannot recover from, and `SurfaceStrategy` hides
+  /// the affordances for the rest. So a local user who picked this got an 8-card
+  /// layout that was fully editable, with neither guard in play.
   bool get isUserSelectable => switch (this) {
         UspDashboardPreset.essential => true,
         UspDashboardPreset.standard => true,

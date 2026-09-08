@@ -328,6 +328,20 @@ void main() {
     // mode gets — both were asking whether the dashboard in front of the viewer
     // is theirs to keep, and each answered it from the flag separately. A member
     // per site would have passed acceptance 7 and left the same defect.
+    //
+    // TWO assertions, because the first on its own is a **tombstone** and review
+    // said so: `forcedPreset` is now a name nothing uses, so only a literal revert
+    // makes it non-empty — `remotePreset`, `fixedPreset` or a bare
+    // `UspDashboardPreset.remote` in a fresh mode read all stay green. That is the
+    // spelling-not-rule mistake this file records making once already, four tests
+    // above. It is cheap to keep, and it is paired with the scan below, which is
+    // the one that can actually fail.
+    //
+    // The pairing is not arbitrary. What made `forcedPreset` writable in the first
+    // place was a config class being allowed to name a type from `lib/page/`; any
+    // future per-mode config member of a page type has to cross that same edge
+    // whatever it ends up called. The import is the invariant, the identifier was
+    // its symptom.
     test('and no surface asks which dashboard preset the mode forces', () {
       expect(
         readers(['lib'], ['forcedPreset']),
@@ -337,6 +351,18 @@ void main() {
             'to `SurfaceStrategy.fixedDashboardLayout()`, which answers it for '
             'the grid and for the layout preferences at once — a second answer '
             'here is how those two come to disagree.',
+      );
+
+      expect(
+        readers(['lib/config'], ["import 'package:privacy_gui/page/"]),
+        isEmpty,
+        reason:
+            'a file under lib/config/ imports lib/page/. `forcedPreset` was '
+            'the only such edge and removing it closed the directory. A config '
+            'member typed on a page model is what reopens it — a build-time '
+            'constant answering a question some page then stops asking its '
+            'strategy. Put the member on the strategy for the cause it actually '
+            'depends on instead.',
       );
     });
   });

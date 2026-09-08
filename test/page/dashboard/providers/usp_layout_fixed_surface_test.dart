@@ -36,6 +36,7 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/mode/local_mode_profile.dart';
 import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
+import 'package:privacy_gui/page/dashboard/models/grid_widget_config.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
@@ -134,6 +135,70 @@ void main() {
             'the fixed layout is rebuilt from the surface every boot — so there '
             'is nothing a write could be for.',
       );
+
+      // The control is inside this test, not beside it, and that is the fix for a
+      // flake review found: `pumpAsync` is a wall clock, the write it must not see
+      // goes through an async queue, and an undrained write is indistinguishable
+      // from no write. A starved runner therefore flaked this test *green*. Booting
+      // local against the same store, in the same test, on the same budget makes
+      // a too-short wait fail here rather than pass.
+      final control = await bootGrid(local);
+      addTearDown(control.dispose);
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspSliverDashboardLayout),
+        isNotNull,
+        reason: 'the wait was long enough for local to persist but the remote '
+            'assertion above still saw nothing — so it saw nothing because the '
+            'surface is fixed, not because the write had not landed yet.',
+      );
+    });
+
+    test('remote persists nothing a mutation asks it to either', () async {
+      final c = await bootGrid(remote);
+      addTearDown(c.dispose);
+
+      // `updateItemSize` rather than a drag, because it is one of the five
+      // mutators that call `saveLayout()` **directly** rather than through the
+      // auto-persist hook — which is why the guard is in `saveLayout` and why
+      // suppressing the hook would have looked like a fix and left five holes.
+      await c
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .updateItemSize('device_info', 12, 4);
+      await pumpAsync();
+
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspSliverDashboardLayout),
+        isNull,
+        reason: 'first boot writing nothing is the weaker half: the layout is '
+            'not this viewer\'s at any point in the session, so a mutation must '
+            'not create the pref either. Reachable only from edit mode today, '
+            'which `layoutEditor()` closes — a promise resting on a different '
+            'member is one an unrelated edit can break.',
+      );
+    });
+
+    test('local persists the same mutation — the control', () async {
+      final c = await bootGrid(local);
+      addTearDown(c.dispose);
+
+      final before = (await SharedPreferences.getInstance())
+          .getString(pUspSliverDashboardLayout);
+
+      await c
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .updateItemSize('device_info', 12, 4);
+      await pumpAsync();
+
+      expect(
+        (await SharedPreferences.getInstance())
+            .getString(pUspSliverDashboardLayout),
+        isNot(before),
+        reason: 'the mutation does not reach storage in either mode, so the '
+            'remote assertion above is vacuous — check that `device_info` is '
+            'still in the default layout and that 12x4 is a legal size for it.',
+      );
     });
 
     test('local stores its default on a first boot — the control', () async {
@@ -155,18 +220,37 @@ void main() {
   // Which preferences the surface reads
   // ---------------------------------------------------------------------------
   group('the layout preferences a surface reads', () {
-    /// Stored preferences that differ from the defaults in all three fields, so
-    /// a partial read cannot pass.
+    /// Stored preferences that differ from the defaults in all **four** of
+    /// `UspLayoutPreferences`' Equatable props, so a partial read cannot pass.
+    ///
+    /// `widgetConfigs` was the one left at its default, and review was right that
+    /// it was the wrong one to omit: it is the only non-scalar field, so the only
+    /// one whose JSON round-trip can realistically break, and it is also the
+    /// field the leak this group is named after consists of — the agent's own
+    /// hidden cards. With `{}` on both sides, a remote skip that loaded
+    /// `widgetConfigs` and nothing else was green.
     final stored = UspLayoutPreferences(
       useCustomLayout: false,
+      widgetConfigs: const {
+        'device_info': GridWidgetConfig(
+          widgetId: 'device_info',
+          order: 0,
+          visible: false,
+        ),
+      },
       selectedPreset: UspDashboardPreset.standard,
       hasSeenPresetDialog: true,
     );
 
+    /// Reads the preferences under [profile].
+    ///
+    /// Deliberately does **not** boot the grid controller: `build()` touches only
+    /// `surfaceStrategyProvider` and the pref store. The earlier version did, copied
+    /// from [bootGrid], which under local also fired a layout write this group never
+    /// asserts on — a race added for nothing.
     Future<UspLayoutPreferences> read(AppModeProfile profile) async {
       final c = container(profile);
       addTearDown(c.dispose);
-      c.read(uspSliverDashboardControllerProvider);
       await c.read(uspLayoutPreferencesProvider.notifier).initialized;
       await pumpAsync();
       return c.read(uspLayoutPreferencesProvider);

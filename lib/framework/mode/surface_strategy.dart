@@ -159,7 +159,20 @@ abstract class SurfaceStrategy {
   /// `LayoutItem` is the `sliver_dashboard` package's, so only the latter can be
   /// named here. Plain data rather than a builder — unlike [firmwareManualEntry],
   /// there is nothing to defer: `createLayout()` allocates a list of value
-  /// objects and touches no provider.
+  /// objects and touches no provider. A **fresh** list per call, and not a cached
+  /// one: the grid mutates `LayoutItem` geometry in place, so a shared instance
+  /// would carry one session's drag into the next container.
+  ///
+  /// What the two halves are actually worth, since "nothing is written" is the
+  /// kind of promise that is easy to write and easy to leave unenforced. The read
+  /// half is an early `return` on both consumers. The write half is one guard in
+  /// `UspLayoutController.saveLayout()`, which every writer funnels through —
+  /// placed there rather than on the auto-persist hook, which five direct callers
+  /// of `saveLayout` bypass. Not enforced, and unreachable rather than guarded:
+  /// `resetLayout()` and `applyPreset()` still build their controller from the
+  /// default layout, so a *future* non-edit-mode entry point to either would swap
+  /// a fixed surface off its layout in memory. Both are reachable only from the
+  /// edit-mode settings panel today, i.e. behind [layoutEditor].
   ///
   /// Remote's consequence is deliberate: a support session's `selectedPreset` is
   /// `null` rather than `UspDashboardPreset.remote`, because nobody picked it and

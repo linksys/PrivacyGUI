@@ -37,6 +37,7 @@ import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
 import 'package:privacy_gui/page/_shared/mode/local_surface.dart';
 import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/first_run_preset_flow.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banner.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
@@ -208,6 +209,38 @@ void main() {
           reason: 'narrower than "hide it in RA": "log out" has no counterpart '
               '"log in" for a Guardian token, and sessionExitAction() is where '
               'that mode\'s exit lives instead');
+    });
+
+    // Stated here as well as in `usp_layout_fixed_surface_test.dart`, and the
+    // duplication is the point rather than an oversight. That file asserts what the
+    // two *providers* do with the answer; this one asserts that the two modes give
+    // different answers at all, which is Article XVII's bar for a member existing.
+    // Review found the member had only the first: making `RemoteSurface` return
+    // `null` — collapsing the two implementations into one, which §17.2 says demotes
+    // a member to a plain function — left this file entirely green, so skipping one
+    // test file removed the whole guard.
+    test('fixed dashboard layout: the eight cards, or the viewer\'s own', () {
+      expect(local.fixedDashboardLayout(), isNull,
+          reason:
+              'null is how the grid and the preferences provider learn that '
+              'the stored layout is authoritative in both directions');
+
+      final remoteLayout = remote.fixedDashboardLayout();
+      expect(remoteLayout, isNotNull);
+      expect(
+        remoteLayout!.map((item) => item.id).toList()..sort(),
+        UspDashboardPreset.remote.cardIds.toList()..sort(),
+        reason:
+            'the fixed layout is the `remote` preset\'s cards. Asserted by id '
+            'rather than by length so that a preset edited to hold eight '
+            '*different* cards cannot pass.',
+      );
+
+      expect(remote.fixedDashboardLayout(), isNot(same(remoteLayout)),
+          reason: 'a fresh list per call, deliberately: the grid mutates '
+              'LayoutItem geometry in place, so a cached instance would carry '
+              'one session\'s drag into the next container. Review proposed '
+              'caching it for the allocation — this is why not.');
     });
 
     test('layout editor: the callback itself, or nothing to run', () {

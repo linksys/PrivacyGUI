@@ -41,9 +41,16 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// recorded a pick nobody made. The one thing that reads [selectedPreset] is the
   /// edit-mode-only settings panel, and a surface with a fixed layout has no edit
   /// mode to open it from.
+  ///
+  /// `watch`, not `read`. Nothing rebuilds in production — `appModeProvider` has no
+  /// dependencies and is computed once per container — so the two are equivalent
+  /// today and `watch` is the one that stays correct if that changes. It is also
+  /// what makes the completer guard below honest: `read` forecloses a second
+  /// `build()` on this instance, so a guard against double-completion would be
+  /// documenting a situation its own dependency edge prevented.
   @override
   UspLayoutPreferences build() {
-    if (ref.read(surfaceStrategyProvider).fixedDashboardLayout() != null) {
+    if (ref.watch(surfaceStrategyProvider).fixedDashboardLayout() != null) {
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }

@@ -140,6 +140,17 @@ class UspSliverDashboardControllerNotifier
   /// opposed to the grid reporting one the user made — see [_importQuietly].
   bool _suppressAutoPersist = false;
 
+  /// True when the surface supplied the layout, so none of it is this viewer's to
+  /// store — see `SurfaceStrategy.fixedDashboardLayout` and [saveLayout].
+  ///
+  /// Separate from [_suppressAutoPersist], which is a *region* the callers restore
+  /// and which only guards [_handleLayoutChanged]. This is permanent and guards
+  /// [saveLayout] itself, because the auto-persist hook is not the only writer:
+  /// `updateItemSize`, `setCardForm`, `addWidget`, `removeWidget` and
+  /// `restoreSnapshot` all call [saveLayout] directly, so suppressing the hook
+  /// would have left five open paths and a contract comment claiming otherwise.
+  bool _layoutIsFixed = false;
+
   /// Orders the writes [_enqueue] hands out, oldest first.
   Future<void> _writeQueue = Future.value();
 
@@ -308,6 +319,11 @@ class UspSliverDashboardControllerNotifier
   Future<void> _initializeLayout() async {
     final fixed = _ref.read(surfaceStrategyProvider).fixedDashboardLayout();
     if (fixed != null) {
+      // Set before the swap, because the swap can reach [saveLayout] and the read
+      // direction is not the guarantee: an early `return` skips the load, whereas
+      // *not writing* has to hold for the rest of the notifier's life. Code review
+      // caught this being documented rather than enforced.
+      _layoutIsFixed = true;
       // Read the live breakpoint at the swap, not before an await: the pref read
       // below means this method can land several frames after the page was first
       // laid out — on a phone, several frames after the view moved the outgoing
@@ -654,7 +670,17 @@ class UspSliverDashboardControllerNotifier
   /// Capturing it keeps the write correct in both build modes. Ordering is
   /// unaffected: every mutation enqueues after it has mutated, so the last write in
   /// the queue is still the one holding the newest controller.
+  ///
+  /// A **fixed** surface writes nothing at all, and this is the only place that
+  /// holds it: every other writer — the auto-persist hook, `updateItemSize`,
+  /// `setCardForm`, `addWidget`, `removeWidget`, `restoreSnapshot` — funnels
+  /// through here, so the guarantee is one guard rather than six. It is not one of
+  /// them being unreachable today, which is what it was when review looked at it:
+  /// under RA those mutators are only entered from edit mode, which
+  /// `SurfaceStrategy.layoutEditor()` returning `null` makes unenterable, and a
+  /// promise resting on a *different* member is one an unrelated edit can break.
   Future<void> saveLayout() {
+    if (_layoutIsFixed) return Future.value();
     final controller = state;
     _assertMembershipAligned(controller);
     return _enqueue(() => _writeLayout(controller));
