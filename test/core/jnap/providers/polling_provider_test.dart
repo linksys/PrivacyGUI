@@ -615,6 +615,30 @@ void main() {
       await stopAndSettle(tester);
     });
 
+    testWidgets('an unauthorized poll is not asked again', (tester) async {
+      // What logging out on the first one is protecting. The router locks the
+      // admin account after a handful of refused credentials, and
+      // LinksysHttpClient retries a 401 once, so this single poll has already
+      // spent two of the operator's attempts. The short re-poll that a router
+      // *not answering* earns would spend two more every
+      // [pollRetryDelayInSec] - and carry the same rejected password every time,
+      // which is how a stale credential turns into a locked account.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction(
+          (_) async => throw const JNAPError(result: errorJNAPUnauthorized));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1));
+
+      await advance(tester, const Duration(seconds: 3 * pollRetryDelayInSec));
+
+      expect(transactions, hasLength(1),
+          reason: 'no attempt may be spent re-offering a refused credential');
+
+      await stopAndSettle(tester);
+    });
+
     testWidgets('any other JNAPError does not log out', (tester) async {
       // A JNAP-level complaint that is not about the credential is not evidence
       // about the credential.
@@ -721,6 +745,25 @@ void main() {
 
       await advanceToUnreachable(tester);
       expect(container.read(routerUnreachableProvider), greaterThan(0));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a router that answers with an error is not called unreachable',
+        (tester) async {
+      // The window is about silence, and a JNAPError is not silence: the router
+      // is there and talking, and 'Router Not Found' would be a plain untruth in
+      // front of an operator whose router is on the shelf next to them. What is
+      // wrong is the request or the session, and each of those reports itself.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction(
+          (_) async => throw const JNAPError(result: '_ErrorUnknownAction'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
+
+      expect(container.read(routerUnreachableProvider), 0);
 
       await stopAndSettle(tester);
     });
@@ -838,6 +881,40 @@ void main() {
 
       expect(container.read(routerUnreachableProvider), 0);
       expect(transactions, hasLength(1));
+    });
+
+    testWidgets('a stop gives whatever polls next its own window',
+        (tester) async {
+      // A stop has to call off the reckoning as well as the timers. A node reboot
+      // stops polling and then forces a single poll of its own, with no
+      // startPolling in between to clear things up
+      // (InstantTopologyView._doReboot): a window left standing as already used up
+      // would have that poll reported the instant it failed, with no grace at all
+      // - over the reboot's own progress dialog, which is the one place the
+      // operator already knows the router is away.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
+      final reportedBefore = container.read(routerUnreachableProvider);
+      expect(reportedBefore, greaterThan(0),
+          reason: 'this router has used its window up');
+
+      notifier.stopPolling();
+      await tester.pump();
+      final askedBefore = transactions.length;
+
+      await notifier.forcePolling();
+      await tester.pump();
+
+      expect(transactions.length, greaterThan(askedBefore),
+          reason: 'the forced poll did go out');
+      expect(container.read(routerUnreachableProvider), reportedBefore,
+          reason: 'and it has the whole window to answer in');
+
+      await stopAndSettle(tester);
     });
 
     testWidgets('a stop calls off the pending re-try', (tester) async {

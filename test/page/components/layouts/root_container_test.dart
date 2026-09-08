@@ -105,6 +105,7 @@ void main() {
     LoginType loginType = LoginType.local,
     LinksysRouteConfig? config,
     List<Override> overrides = const [],
+    GlobalKey<NavigatorState>? navigatorKey,
   }) async {
     // A desktop surface, because the alert is sized for one: its three bullets
     // and the Try again button do not fit the 800x600 default, and a laid-out
@@ -130,6 +131,10 @@ void main() {
     await tester.pumpWidget(testableSingleRoute(
       provider: container,
       locale: const Locale('en'),
+      // Defaults to shellNavigatorKey, which is the navigator the alert is pushed
+      // onto. A test passing its own key is standing the container up *outside*
+      // that shell, the way PnP and login run.
+      navigatorKey: navigatorKey,
       child: ValueListenableBuilder<LinksysRouteConfig?>(
         valueListenable: routeConfig,
         builder: (context, config, _) => AppRootContainer(
@@ -258,6 +263,25 @@ void main() {
       expect(alert, findsOneWidget);
 
       await closeAlert(tester);
+    });
+
+    testWidgets('nothing is raised before the dashboard shell is up',
+        (tester) async {
+      // #1419's own notes ask for PnP and login to be marked
+      // ignoreConnectivityEvent; what actually keeps them clear is that the alert
+      // is pushed onto the shell navigator, and those routes run before there is
+      // one. Pinned here because it is load-bearing and invisible: it holds for
+      // every route outside the shell without anybody having to remember to mark
+      // it, and it is the guard that would silently stop covering them if the
+      // alert were ever moved to the root navigator.
+      await pumpRootContainer(tester,
+          navigatorKey: GlobalKey<NavigatorState>());
+      expect(shellNavigatorKey.currentContext, isNull,
+          reason: 'the navigator this alert needs is not up yet');
+
+      await reportUnreachable(tester);
+
+      expect(alert, findsNothing);
     });
 
     testWidgets('nothing is raised before anybody is logged in',

@@ -299,10 +299,19 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // router: the flow that stopped polling is the one taking the router away,
     // and it tells the operator so itself.
     if (!_isCancelled(generation)) {
-      if (result.hasError) {
-        _recordPollFailure(repository);
-      } else {
+      // Only a poll that got no answer at all counts towards the router's
+      // silence. A JNAPError is an answer - the router is there and talking - so
+      // it is neither unreachable nor owed the short re-poll that silence earns.
+      // In the case that matters most, that re-poll would cost the operator
+      // something: the router locks the admin account after a handful of refused
+      // credentials ([errorAdminAccountLocked]), and LinksysHttpClient retries a
+      // 401 once, so a single unauthorized poll already spends two attempts.
+      // Asking again every [pollRetryDelayInSec] is how a password that went
+      // stale becomes an account nobody can log into.
+      if (!result.hasError || result.error is JNAPError) {
         _clearRouterSilence();
+      } else {
+        _recordPollFailure(repository);
       }
     }
 
@@ -389,6 +398,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   /// Whether the router rejected our credential, as opposed to never having
   /// answered. Only the former means the session is really gone.
+  ///
+  /// Acted on the first time it happens, and deliberately so: the router locks
+  /// the admin account after a handful of refused credentials
+  /// ([errorAdminAccountLocked]), and LinksysHttpClient retries a 401 once, so
+  /// every poll that carries a rejected one spends two of the operator's
+  /// attempts. Tolerating a few before logging out would trade a session they can
+  /// get back for an account they have to wait out.
   ///
   /// Cloud-side session invalidation is not checked here on purpose:
   /// [LinksysHttpClient.onError] already routes `INVALID_SESSION_TOKEN` through
@@ -522,8 +538,18 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // for the same reason: whatever stopped polling is taking the router away on
     // purpose and reports that itself.
     _retryTimer?.cancel();
+    _retryTimer = null;
     _silenceDeadline?.cancel();
     _silenceDeadline = null;
+    // And the reckoning along with them, so that whatever polls next is judged on
+    // its own silence rather than on the run that was called off. Not
+    // hypothetical: a node reboot stops polling and then forces a single poll of
+    // its own with no startPolling in between (InstantTopologyView._doReboot), and
+    // a window left standing as already used up would have that poll reported the
+    // moment it failed - over the reboot's own progress dialog. The report itself
+    // is left alone: a stop is not the router coming back.
+    _silenceDeadlinePassed = false;
+    _pollFailing = false;
   }
 
   _setTimePeriod(RouterRepository routerRepository) {
