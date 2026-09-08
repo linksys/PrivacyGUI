@@ -1,3 +1,5 @@
+import 'instant_test_layout.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
@@ -27,7 +29,7 @@ class MyNetworkTab extends ConsumerWidget {
           ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
       child: SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: InstantTestLayout.scrollPadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,11 +122,9 @@ class _InternetConnectionCard extends StatelessWidget {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => confirmAndRestart(context, ref),
-                  icon: const Icon(Icons.restart_alt),
-                  label: const Text('Restart Router'),
-                ),
+                child: AppOutlinedButton('Restart Router',
+                onTap: () => confirmAndRestart(context, ref),
+                icon: Icons.restart_alt),
               ),
             ],
             if (!connected && state.hasRestartedThisSession) ...[
@@ -196,13 +196,11 @@ class _YourRouterCard extends StatelessWidget {
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
+                child: AppOutlinedButton('Update Now',
+                onTap: () {
                     ref.read(instantVerifyPivotProvider.notifier).triggerFirmwareUpdate();
                   },
-                  icon: const Icon(Icons.system_update),
-                  label: const Text('Update Now'),
-                ),
+                icon: Icons.system_update),
               ),
             ],
             if (showUptime) ...[
@@ -230,11 +228,9 @@ class _YourRouterCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => confirmAndRestart(context, ref),
-                    icon: const Icon(Icons.restart_alt),
-                    label: const Text('Restart Router'),
-                  ),
+                  child: AppOutlinedButton('Restart Router',
+                onTap: () => confirmAndRestart(context, ref),
+                icon: Icons.restart_alt),
                 ),
               ],
             ],

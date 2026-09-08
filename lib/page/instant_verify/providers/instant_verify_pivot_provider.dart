@@ -1,4 +1,7 @@
 import 'dart:developer' as dev;
+import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/local_storage_stub.dart'
@@ -42,6 +45,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   /// Incremented on every fetch(). _runBrowserTests checks this before each
   /// state write — if it changed, a newer fetch started and we abort. (Fix: Item 2)
   int _fetchGeneration = 0;
+  bool _authenticationRejected = false;
 
   /// Timestamp of the last completed speed test. Used to skip re-running
   /// within 3 minutes on passive reloads (unless explicitly forced). (Fix: Item 3)
@@ -75,14 +79,25 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     Map<String, dynamic> data = const {},
   }) async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(
+    try {
+      final result = await repo.send(
       action,
       data: data,
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
       auth: auth,
     );
-    return result.output;
+      if (auth) _authenticationRejected = false;
+      return result.output;
+    } on JNAPError catch (error) {
+      if (error.result == errorJNAPUnauthorized && !_authenticationRejected) {
+        _authenticationRejected = true;
+        // JNAP rejects credentials inside an HTTP 200 response. Forward that
+        // result to the existing authentication owner once, until auth succeeds.
+        LinksysHttpClient.onError?.call(error);
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _sendOptional(JNAPAction action) async {
@@ -504,13 +519,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     final s = state;
 
     // ── New params for Checks 12-15 ──────────────────────────────────────
-    final isWifiScheduleBlocking = s.wirelessSchedule != null &&
-        (s.wirelessSchedule!['isEnabled'] as bool? ?? false);
-    final isInstantPrivacyOn = s.isMacFilterEnabled;
-    final isInstantPauseActive = s.parentalControls != null &&
-        ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
+    final bool? isWifiScheduleBlocking = s.wirelessSchedule == null
+        ? null : s.wirelessSchedule!['isEnabled'] as bool?;
+    final bool? isInstantPrivacyOn = s.macFilter == null
+        ? null : s.isMacFilterEnabled;
+    final bool? isInstantPauseActive = s.parentalControls == null
+        ? null : ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
          (s.parentalControls!['isParentalControlsEnabled'] as bool?) ??
-         (s.parentalControls!['enabled'] as bool?) ?? false);
+         (s.parentalControls!['enabled'] as bool?));
     // Gate CPU/memory on capability map — keys vary by firmware.
     // Only pass values if this device confirmed returning them.
     // Two-sample CPU (#24): only use the END sample for the CPU verdict.
@@ -569,7 +585,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     // ignore: unused_local_variable
     final int? wifiSnrDbFromChannel = channelInterferenceProxy == true ? 15 : null;
 
-    final isPmfRequired = s.networkSecurity != null &&
+    final bool? isPmfRequired = s.networkSecurity == null ? null :
         (s.networkSecurity!.values.whereType<String>().any(
           (v) => v.toUpperCase().contains('PMF') && v.toUpperCase().contains('REQUIRED')
         ) || (s.networkSecurity!['pmfMode'] as String?)?.toUpperCase() == 'REQUIRED');
@@ -696,11 +712,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   Future<void> restartRouter() async {
     state = state.copyWith(isRestarting: true, hasRestartedThisSession: true);
     _recordAction('restart_router');
-    _persistRestartTimestamp();
     try {
       await _send(JNAPAction.reboot);
+      _persistRestartTimestamp();
     } catch (e) {
       dev.log('InstantVerifyPivot: reboot failed: $e');
+      state = state.copyWith(isRestarting: false, hasRestartedThisSession: false);
+      _recordAction('restart_router', result: 'unconfirmed');
+      rethrow;
     }
     // Keep isRestarting=true — page shows countdown until router comes back
   }
@@ -1130,6 +1149,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dev.log('InstantVerifyPivot: deauthed $macAddress');
     } catch (e) {
       dev.log('InstantVerifyPivot: clientDeauth failed: $e');
+      rethrow;
     }
   }
 

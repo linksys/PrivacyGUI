@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
-/// A compact cue for a question or action the customer can act on.
+/// A full-width action band using the application's color and type tokens.
 class UserStepHeading extends StatelessWidget {
-  const UserStepHeading(this.text, {super.key});
+  const UserStepHeading(this.text, {super.key, this.centered = false});
   final String text;
+  final bool centered;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
     return Semantics(
       header: true,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.medium, vertical: Spacing.small3),
         decoration: BoxDecoration(
           color: colors.primaryContainer,
           border: Border(left: BorderSide(color: colors.primary, width: 3)),
         ),
-        child: Text(text,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: colors.onPrimaryContainer,
-              fontWeight: FontWeight.w600,
-            )),
+        child: AppText.titleSmall(text,
+            color: colors.onPrimaryContainer,
+            textAlign: centered ? TextAlign.center : TextAlign.start),
       ),
     );
   }

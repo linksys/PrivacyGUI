@@ -6,14 +6,24 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import '../../../mocks/router_repository_mocks.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 
 // Minimal real notifier — build() has no deps, loadMockScenario() is pure.
 class _TestNotifier extends InstantVerifyPivotNotifier {
+  _TestNotifier({this.initial = const InstantVerifyPivotState()});
+  final InstantVerifyPivotState initial;
   @override
-  InstantVerifyPivotState build() => const InstantVerifyPivotState();
+  InstantVerifyPivotState build() => initial;
 }
 
 ProviderContainer _container() => ProviderContainer(
@@ -23,6 +33,93 @@ ProviderContainer _container() => ProviderContainer(
     );
 
 void main() {
+  test('privacy background initialization handles rejected credentials', () async {
+    final repo = MockRouterRepository();
+    when(repo.send(JNAPAction.getMACFilterSettings, fetchRemote: true, auth: true))
+        .thenThrow(const JNAPError(result: '_ErrorUnauthorized'));
+    final c = ProviderContainer(overrides: [routerRepositoryProvider.overrideWithValue(repo)]);
+    addTearDown(c.dispose);
+    c.read(instantPrivacyProvider);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(instantPrivacyProvider), isNotNull);
+    await expectLater(c.read(instantPrivacyProvider.notifier).fetch(fetchRemote: true),
+        throwsA(isA<JNAPError>()), reason: 'Explicit callers still receive their errors');
+  });
+
+  test('rejected device reconnect reports failure', () async {
+    final repo = MockRouterRepository();
+    when(repo.send(JNAPAction.clientDeauth, data: {'macAddress': 'AA:BB:CC:DD:EE:01'},
+        fetchRemote: true, cacheLevel: CacheLevel.noCache, auth: true))
+        .thenThrow(StateError('reconnect rejected'));
+    final c = ProviderContainer(overrides: [routerRepositoryProvider.overrideWithValue(repo)]);
+    addTearDown(c.dispose);
+    await expectLater(c.read(instantVerifyPivotProvider.notifier).deauthClient('AA:BB:CC:DD:EE:01'),
+        throwsStateError);
+  });
+
+  test('HTTP-200 unauthorized JNAP result reaches authentication owner once', () async {
+    final repo = MockRouterRepository();
+    when(repo.send(JNAPAction.reboot, data: {}, fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: true))
+        .thenThrow(const JNAPError(result: '_ErrorUnauthorized'));
+    final previous = LinksysHttpClient.onError;
+    final errors = <dynamic>[];
+    LinksysHttpClient.onError = errors.add;
+    addTearDown(() => LinksysHttpClient.onError = previous);
+    final c = ProviderContainer(overrides: [routerRepositoryProvider.overrideWithValue(repo)]);
+    addTearDown(c.dispose);
+    for (var i = 0; i < 2; i++) {
+      await expectLater(c.read(instantVerifyPivotProvider.notifier).restartRouter(),
+          throwsA(isA<JNAPError>()));
+    }
+    expect(errors, hasLength(1));
+    when(repo.send(JNAPAction.reboot, data: {}, fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: true))
+        .thenAnswer((_) async => const JNAPSuccess(result: 'OK'));
+    await c.read(instantVerifyPivotProvider.notifier).restartRouter();
+    when(repo.send(JNAPAction.reboot, data: {}, fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: true))
+        .thenThrow(const JNAPError(result: '_ErrorUnauthorized'));
+    await expectLater(c.read(instantVerifyPivotProvider.notifier).restartRouter(),
+        throwsA(isA<JNAPError>()));
+    expect(errors, hasLength(2), reason: 'A later authenticated session must still handle rejection');
+  });
+
+  test('rejected restart clears progress and reports failure', () async {
+    final repo = MockRouterRepository();
+    when(repo.send(JNAPAction.reboot, data: {}, fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: true))
+        .thenThrow(StateError('restart rejected'));
+    final c = ProviderContainer(overrides: [
+      routerRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(c.dispose);
+    await expectLater(c.read(instantVerifyPivotProvider.notifier).restartRouter(),
+        throwsStateError);
+    expect(c.read(instantVerifyPivotProvider).isRestarting, isFalse);
+    expect(c.read(instantVerifyPivotProvider).hasRestartedThisSession, isFalse);
+  });
+
+  test('unsupported optional checks are excluded from the pass count', () {
+    int count(InstantVerifyPivotState initial) {
+      final c = ProviderContainer(overrides: [
+        instantVerifyPivotProvider.overrideWith(() => _TestNotifier(initial: initial)),
+      ]);
+      addTearDown(c.dispose);
+      c.read(instantVerifyPivotProvider.notifier).setPlanSpeed(null);
+      return c.read(instantVerifyPivotProvider).verdict!.checksRun;
+    }
+    final unavailable = count(const InstantVerifyPivotState());
+    final available = count(const InstantVerifyPivotState(
+      wirelessSchedule: {'isEnabled': false},
+      parentalControls: {'isParentalControlEnabled': false},
+      networkSecurity: {'pmfMode': 'Optional'},
+      macFilter: {'macFilterMode': 'disabled'},
+    ));
+    expect(available - unavailable, 4,
+        reason: 'Unsupported firmware APIs are untested, not successful checks');
+  });
+
   group('loadMockScenario — state shape', () {
     test('all 5 scenarios reach phase=complete', () {
       for (var i = 0; i < 5; i++) {

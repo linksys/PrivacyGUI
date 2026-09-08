@@ -15,6 +15,9 @@ class VerdictFinding {
   /// Short headline: "Your internet is slow (12 Mbps)"
   final String headline;
 
+  /// Optional plain-language summary; the full headline remains in details.
+  final String? summary;
+
   /// Plain-language explanation + what to do next.
   final String explanation;
 
@@ -33,6 +36,7 @@ class VerdictFinding {
   const VerdictFinding({
     required this.priority,
     required this.headline,
+    this.summary,
     required this.explanation,
     this.actionLabel,
     this.actionKey,
@@ -394,6 +398,7 @@ class VerdictEngine {
           priority: VerdictPriority.warning,
           headline:
               'Your internet is slower than expected (${downloadMbps.toStringAsFixed(0)} Mbps$planText)',
+          summary: 'Your internet is slower than expected',
           explanation:
               'Getting about ${downloadMbps.toStringAsFixed(0)} Mbps.$weakNote '
               'Speed can vary based on time of day, how many devices are active, '
@@ -571,6 +576,7 @@ class VerdictEngine {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
         headline: 'Your router is under high load ($cpuLoadPct% CPU)',
+        summary: 'Your router is very busy',
         explanation: 'An overloaded processor can drop packets and slow all devices. A restart usually clears this.',
         actionLabel: 'Restart Router',
         actionKey: actionRestartRouter,
@@ -580,6 +586,7 @@ class VerdictEngine {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
         headline: 'Your router\'s memory is nearly full ($memoryLoadPct%)',
+        summary: 'Your router is running low on memory',
         explanation: 'Low memory causes slowdowns and dropped connections. A restart will clear it.',
         actionLabel: 'Restart Router',
         actionKey: actionRestartRouter,

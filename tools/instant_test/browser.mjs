@@ -1,3 +1,4 @@
+import {walkthroughs} from './walkthroughs.mjs';
 import assert from 'node:assert/strict';
 import {mkdir, writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -5,6 +6,7 @@ import {chromium} from 'playwright';
 
 const url = process.argv[2] || 'http://127.0.0.1:8105/#/instant-prototype';
 const target = new URL(url);
+const scenario = process.argv[3];
 assert(['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname), 'This harness is for a local simulated preview.');
 assert.equal(target.hash, '#/instant-prototype', 'Use the clean prototype URL, without workflow parameters.');
 const output = fileURLToPath(new URL('./artifacts/', import.meta.url));
@@ -17,7 +19,7 @@ const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFo
 // Flutter scrolls its canvas viewport; reveal the contextual links with real
 // scrolling rather than only moving their accessibility elements in the DOM.
 async function clickInScrollView(page, label) {
-  const link = button(page,label);
+  const link = typeof label === 'string' ? button(page,label) : label;
   await link.waitFor();
   for (let n=0;n<12;n++) {
     const box = await link.boundingBox();
@@ -32,6 +34,7 @@ async function clickInScrollView(page, label) {
   throw Error(`Could not reach ${label} in the scrollable page`);
 }
 async function check(name, run, mobile = false) {
+  if (scenario && scenario !== name) return;
   const context = await browser.newContext({viewport:mobile ? {width:390,height:844} : {width:1440,height:1000}, colorScheme:mobile?'light':'dark'});
   const page = await context.newPage();
   const errors=[], failures=[], known=[];
@@ -67,6 +70,55 @@ async function check(name, run, mobile = false) {
   } finally {await context.close();}
 }
 try {
+  for (const mobile of [false, true]) {
+    await check(`demo-controls-${mobile ? 'mobile' : 'desktop'}`, async p => {
+      const jnap = [];
+      p.on('request', r => { if (new URL(r.url()).pathname === '/JNAP/') jnap.push(r.url()); });
+      await button(p, 'Demo controls').click();
+      await button(p, 'Workflow test results Healthy connection').click();
+      await p.getByText('Speed check fails', {exact:true}).last().click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').waitFor();
+      await button(p, 'Whole internet is slow').click();
+      await clickInScrollView(p, 'Check my speed');
+      await p.getByText(/The speed check could not finish/).waitFor();
+      // Reapplying the same fixture must reset the current workflow.
+      await button(p, 'Demo controls').click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').waitFor();
+      await button(p, 'Demo controls').click();
+      await button(p, 'Workflow test results Speed check fails').click();
+      await p.getByText('Healthy connection', {exact:true}).last().click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').click();
+      await clickInScrollView(p, 'Check my speed');
+      await visible(p, "Here's what your connection can do");
+      assert.deepEqual(jnap, [], 'Demo controls must remain isolated from router requests');
+    }, mobile);
+  }
+  for (const mobile of [false,true]) {
+    await check(mobile?'compact-followup-mobile':'compact-followup-wide',async p=>{
+      if (!mobile) await p.setViewportSize({width:2048,height:1100});
+      const start=await button(p,"Internet isn't working").boundingBox();
+      const end=await button(p,'Keeps cutting out').boundingBox();
+      if (!mobile) assert(end.x+end.width-start.x>1800,'Wide layout still wastes the available width');
+      await button(p,"Internet isn't working").click();
+      await visible(p,'Still seeing an issue?');
+      assert.equal(await p.getByText(/Everything looks fine right now/).count(),0);
+      await p.getByText(/The connection looks healthy/).waitFor();
+      const action=await button(p,'Yes — troubleshoot a specific device').boundingBox();
+      assert(action.width<420,'Follow-up action should fit its label');
+      assert(action.x>=0 && action.x+action.width<=p.viewportSize().width);
+      const support=p.getByText('Still need help?',{exact:true});
+      assert.equal(await support.count(),1,'Support should appear once in the shared footer');
+      const supportBox=await support.boundingBox();
+      const returnBox=await button(p,'Back to Instant-Test').last().boundingBox();
+      assert(supportBox.y>returnBox.y+returnBox.height,'Support must follow the page actions');
+      await p.screenshot({path:`${output}/followup-${mobile?'mobile':'wide'}.png`});
+      await clickInScrollView(p,'Yes — troubleshoot a specific device');
+      await button(p,'Office-Printer WiFi').waitFor();
+    },mobile);
+  }
   for (const mobile of [false,true]) {
     await check(mobile?'home-actions-mobile':'home-actions-desktop',async p=>{
       const labels=["Internet isn't working",'Whole internet is slow','Keeps cutting out','One device is slow',"Device won't connect","Doesn't reach a room"];
@@ -81,23 +133,84 @@ try {
       assert(details.y>last.y+last.height,'Detail links must follow the action section and diagnostics');
     },mobile);
   }
+  for (const mobile of [false,true]) {
+    await check(mobile?'optional-details-mobile':'optional-details-desktop',async p=>{
+      assert.equal(await p.getByText('Test details',{exact:true}).count(),0);
+      await clickInScrollView(p,'View test details');
+      await button(p,'Hide test details').waitFor();
+      await clickInScrollView(p,'Hide test details');
+      await clickInScrollView(p,'One device is slow');
+      await button(p,'Office-Printer WiFi').click();
+      await visible(p,'Weak WiFi signal');
+      assert.equal(await button(p,'Office-Printer WiFi').count(),0,'Device list should collapse after selection');
+      assert.equal(await p.getByText('Band',{exact:true}).count(),0);
+      if (mobile) {
+        await clickInScrollView(p,'Connection details');
+      } else {
+        await button(p,'Connection details').focus();
+        await p.keyboard.press('Enter');
+      }
+      await visible(p,'Band');
+      await clickInScrollView(p,'Hide connection details');
+      await p.getByText('Band',{exact:true}).waitFor({state:'detached'});
+      assert.equal(await p.getByText('Band',{exact:true}).count(),0);
+      await clickInScrollView(p,'Change device');
+      await button(p,'Office-Printer WiFi').waitFor();
+      await clickInScrollView(p,'Hide change device');
+      await clickInScrollView(p,'Change problem');
+      await clickInScrollView(p,'Keeps disconnecting');
+      await clickInScrollView(p,'Hide change problem');
+      await clickInScrollView(p,'Try the next step');
+      await visible(p,'Forget this WiFi network on the device, then reconnect fresh. Have your WiFi password ready.');
+      await clickInScrollView(p,'Previous step');
+      await visible(p,'Move the device closer to your router or a child node');
+    },mobile);
+  }
   await check('weak-device-finding', async p=>{
     await clickInScrollView(p,'Troubleshoot these devices');
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
     await visible(p,'Help for Office-Printer');
+    assert.equal(await p.getByText('Link rate',{exact:true}).count(),0);
+    await visible(p,'Try this first');
+    await button(p,'Connection details').click();
     await visible(p,'Link rate');
     assert.equal(await button(p,'Yes — I can see it').count(),0);
     assert.match(p.url(),/instant=31/);
   });
   await check('mesh-health',async p=>{
-    await visible(p,'Weak backhaul');
+    await visible(p,'A WiFi node has a weak connection.');
     await clickInScrollView(p,'View network');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
+  await check('responsive-layout-state',async p=>{
+    await button(p,"Internet isn't working").click();
+    await button(p,'View test details').click();
+    for (const width of [320,768,1024,1440,2048]) {
+      await p.setViewportSize({width,height:1100});
+      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await button(p,'Hide test details').waitFor();
+      assert.equal(await p.getByText('This device reached your router',{exact:true}).count(),1,'Resizing must preserve expanded details');
+      const result=await p.getByText('Your router can reach the internet',{exact:true}).boundingBox();
+      assert(result.x>=0 && result.x+result.width<=width,'Diagnostic result exceeds the available width');
+    }
+    await button(p,'Hide test details').click();
+    await clickInScrollView(p,'Yes — troubleshoot a specific device');
+    await button(p,'Office-Printer WiFi').click();
+    await button(p,'Change problem').click();
+    await button(p,'Slow connection').click();
+    await clickInScrollView(p,'Connection details');
+    for (const width of [390,1024,2048]) {
+      await p.setViewportSize({width,height:1100});
+      await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await button(p,'Hide connection details').waitFor();
+      assert.equal(await p.getByText('Band',{exact:true}).count(),1,'Resizing must preserve device details');
+    }
+  });
   await check('diagnostic-completion',async p=>{
     await button(p,"Internet isn't working").click();
-    await visible(p,'Diagnostics complete');
+    await visible(p,'Your router can reach the internet');
+    assert.equal(await p.getByText('This device reached your router',{exact:true}).count(),0,'Outcome must be visible while individual checks remain collapsed');
     assert.equal(await p.getByText('Running diagnostics…',{exact:true}).count(),0);
   });
   await check('browser-history',async p=>{
@@ -116,11 +229,11 @@ try {
     await button(p,'A few times a day').click();
     await button(p,'Specific devices').click();
     await button(p,'Choose the affected device').click();
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
     await visible(p,'Device keeps dropping WiFi');
     await p.goBack();await button(p,'Choose the affected device').waitFor();
-    await p.goForward();await button(p,'Office-Printer 2.4 GHz').waitFor();
-    await p.reload();await button(p,'Office-Printer 2.4 GHz').waitFor();
+    await p.goForward();await button(p,'Office-Printer WiFi').waitFor();
+    await p.reload();await button(p,'Office-Printer WiFi').waitFor();
     assert.equal(await button(p,'Device stopped dropping').count(),0, 'Refresh must not restore device data');
     await button(p,'Back to connection check').click();
     await button(p,'Start connection test').waitFor();
@@ -136,8 +249,8 @@ try {
       }
       throw Error(`Not reachable with Tab: ${label}`);
     }
-    await activate("Device won't connect");await button(p,'Office-Printer 2.4 GHz').waitFor();
-    await activate('Office-Printer 2.4 GHz');await button(p,'Yes — I can see it').waitFor();
+    await activate("Device won't connect");await button(p,'Office-Printer WiFi').waitFor();
+    await activate('Office-Printer WiFi');await button(p,'Yes — I can see it').waitFor();
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
   await check('device-details-handoff',async p=>{
@@ -162,7 +275,8 @@ try {
     await visible(p,'Restart your router?');
     await p.keyboard.press('Escape');
     await button(p,"Device won't connect").click();
-    await button(p,'Office-Printer 2.4 GHz').click();
+    await button(p,'Office-Printer WiFi').click();
+    await button(p,'Change problem').click();
     await button(p,'Keeps disconnecting').click();
     await button(p,'Force reconnect a device').click();
     await visible(p,'Force reconnect?');
@@ -203,8 +317,9 @@ try {
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
     await button(p,'My device uses an Ethernet cable').click();await visible(p,'Wired device troubleshooting');
   });
+  await walkthroughs({check,button,visible,clickInScrollView,url});
 } finally {
   await writeFile(`${output}/results.json`, JSON.stringify({url,results},null,2));
   await browser.close();
 }
-if(results.some(result=>!result.pass)) process.exitCode=1;
+if(results.length===0 || results.some(result=>!result.pass)) process.exitCode=1;

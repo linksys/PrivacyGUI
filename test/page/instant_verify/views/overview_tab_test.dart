@@ -15,10 +15,6 @@ import '../../../mocks/mock_instant_verify_pivot_notifier.dart';
 
 // ── Test state factories ─────────────────────────────────────────────────────
 
-InstantVerifyPivotState _idleState() {
-  return const InstantVerifyPivotState(phase: PivotLoadPhase.idle);
-}
-
 InstantVerifyPivotState _loadingState() {
   return const InstantVerifyPivotState(
     phase: PivotLoadPhase.loading,
@@ -201,25 +197,37 @@ Widget _buildOverviewTab(
   );
 }
 
+Future<void> _tap(WidgetTester tester, String label) async {
+  final target = find.text(label).last;
+  await tester.ensureVisible(target);
+  await tester.tap(target);
+  await tester.pump();
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 void main() {
   mockDependencyRegister();
 
   group('OverviewTab — loading state', () {
-    testWidgets('shows "Checking your connection" during loading',
+    testWidgets('shows a compact checking result during loading',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();
 
-      expect(find.text('Checking your connection'), findsOneWidget);
+      expect(find.text('Checking...'), findsOneWidget);
+      expect(find.text('Router'), findsNothing);
+      expect(find.text('View test progress'), findsOneWidget);
     });
 
-    testWidgets('shows check rows during loading', (tester) async {
+    testWidgets('opens individual check progress on request', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();
 
-      // "Router" appears in both header (model default) and check row
+      await _tap(tester, 'View test progress');
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
       expect(find.text('Router'), findsAtLeast(1));
       expect(find.text('Internet'), findsOneWidget);
       expect(find.text('Speed test'), findsOneWidget);
@@ -278,30 +286,32 @@ void main() {
       expect(find.textContaining('Something else?'), findsOneWidget);
     });
 
-    testWidgets('shows test details section always visible', (tester) async {
+    testWidgets('keeps the result visible while test details are collapsed', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      // Test details are always shown — no toggle needed
-      expect(find.text('Test details'), findsOneWidget);
-      expect(find.text('Router reached'), findsOneWidget);
+      expect(find.text('View test details'), findsOneWidget);
+      expect(find.text('Router reached'), findsNothing);
+      expect(find.text("We didn't detect any issues"), findsOneWidget);
     });
 
-    testWidgets('shows router model in header', (tester) async {
+    testWidgets('shows router model only in test details', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      // MX6200 appears in header + in test details checklist
+      expect(find.text('MX6200'), findsNothing);
+      await _tap(tester, 'View test details');
       expect(find.text('MX6200'), findsAtLeast(1));
     });
 
-    testWidgets('shows "Connected to ISP" chip when WAN up, DNS not yet run', (tester) async {
+    testWidgets('shows connection evidence in optional details', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      // Chip shows 'Connected to ISP' when WAN is up but DNS not yet confirmed;
-      // or 'Internet: Working' if DNS also passed in this state
-      expect(find.textContaining('Connected'), findsAtLeast(1));
+      expect(find.text('Connected'), findsNothing);
+      await _tap(tester, 'View test details');
+      expect(find.text('Connected'), findsOneWidget);
+      expect(find.text('Internet reachable'), findsOneWidget);
     });
   });
 
@@ -313,10 +323,13 @@ void main() {
       expect(find.text("Your internet isn't working"), findsOneWidget);
     });
 
-    testWidgets('shows explanation text', (tester) async {
+    testWidgets('opens explanation without hiding the recommended action', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_criticalFindingState()));
       await tester.pump();
 
+      expect(find.text('Restart Router'), findsOneWidget);
+      expect(find.text('Verified: Router reachable. Websites: not loading.'), findsNothing);
+      await _tap(tester, 'Why this matters');
       expect(
           find.text('Verified: Router reachable. Websites: not loading.'),
           findsOneWidget);
@@ -346,25 +359,30 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('shows "Also found:" for secondary findings', (tester) async {
+    testWidgets('counts secondary findings without showing their text', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(find.text('Also found:'), findsOneWidget);
+      expect(find.text('3 other findings'), findsOneWidget);
+      expect(find.text('High lag detected (120ms)'), findsNothing);
     });
 
     testWidgets('shows secondary finding headline', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
+      await _tap(tester, '3 other findings');
       expect(find.text('High lag detected (120ms)'), findsOneWidget);
     });
 
-    testWidgets('shows "2 more findings" expandable', (tester) async {
+    testWidgets('secondary findings can be closed again', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(find.text('2 more findings'), findsOneWidget);
+      await _tap(tester, '3 other findings');
+      await _tap(tester, 'Hide 3 other findings');
+      expect(find.text('High lag detected (120ms)'), findsNothing);
+      expect(find.text('Your internet is slower than expected (15 Mbps)'), findsOneWidget);
     });
 
     testWidgets('expanding shows hidden findings', (tester) async {
@@ -376,7 +394,7 @@ void main() {
           findsNothing);
 
       // Tap expand
-      await tester.tap(find.text('2 more findings'));
+      await _tap(tester, '3 other findings');
       await tester.pump();
 
       // Now they should be visible
@@ -388,11 +406,11 @@ void main() {
   });
 
   group('OverviewTab — WAN down', () {
-    testWidgets('shows "Not connected to ISP" chip when WAN down', (tester) async {
+    testWidgets('shows the WAN failure result without expanding details', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('Not connected to the Internet'), findsOneWidget);
+      expect(find.text('No internet connection detected'), findsOneWidget);
     });
 
     testWidgets('shows WAN-down inline light guide callout', (tester) async {
@@ -458,6 +476,8 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Mesh Network'), findsOneWidget);
+      expect(find.text('Kitchen'), findsNothing);
+      await _tap(tester, 'View WiFi node details');
       expect(find.text('Kitchen'), findsOneWidget);
       expect(find.text('Living Room'), findsOneWidget);
       expect(find.text('Bedroom'), findsOneWidget);
@@ -469,6 +489,7 @@ void main() {
 
       // Header shows total device count (not "nodes")
       expect(find.text('Mesh Network — 3 devices'), findsOneWidget);
+      await _tap(tester, 'View WiFi node details');
       // Role labels shown per node
       expect(find.text('Parent'), findsOneWidget);
       expect(find.text('Child'), findsWidgets);
@@ -489,6 +510,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Devices with weak WiFi'), findsOneWidget);
+      expect(find.text('iPhone'), findsNothing);
+      await _tap(tester, 'View affected devices');
       expect(find.text('iPhone'), findsOneWidget);
     });
 
@@ -496,6 +519,8 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
       await tester.pump();
 
+      expect(find.textContaining('-82 dBm'), findsNothing);
+      await _tap(tester, 'View affected devices');
       expect(find.textContaining('-82 dBm'), findsOneWidget);
     });
 
@@ -529,12 +554,13 @@ void main() {
   });
 
   group('OverviewTab — progressive disclosure (S-5)', () {
-    testWidgets('test details always shows checklist summary',
+    testWidgets('opening test details reveals the checklist summary',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      // Checklist rows always visible (no toggle)
+      expect(find.text('Router reached'), findsNothing);
+      await _tap(tester, 'View test details');
       expect(find.text('Router reached'), findsOneWidget);
       expect(find.text('Internet connected'), findsOneWidget);
       expect(find.text('Websites loading'), findsOneWidget);
@@ -552,8 +578,9 @@ void main() {
           find.textContaining('We connected to your router'),
           findsNothing);
 
-      // Tap "Router reached" row
-      await tester.tap(find.text('Router reached'));
+      // Open the checklist, then inspect an individual result.
+      await _tap(tester, 'View test details');
+      await _tap(tester, 'Router reached');
       await tester.pump();
 
       // Expanded detail should now be visible
@@ -581,8 +608,8 @@ void main() {
     });
   });
 
-  group('OverviewTab — status chip label states', () {
-    testWidgets('WAN connected, DNS not run → shows "Connected to ISP"',
+  group('OverviewTab — connection evidence in details', () {
+    testWidgets('WAN connected with DNS not run stays explicitly untested',
         (tester) async {
       final state = InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
@@ -595,10 +622,13 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.text('Connected to the Internet'), findsOneWidget);
+      await _tap(tester, 'View test details');
+      expect(find.text('Connected'), findsOneWidget);
+      expect(find.text('Not tested'), findsOneWidget);
+      expect(find.text('Internet reachable'), findsNothing);
     });
 
-    testWidgets('WAN connected, DNS resolved → shows "Internet: Working"',
+    testWidgets('successful DNS shows evidence of internet reachability',
         (tester) async {
       final state = InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
@@ -612,11 +642,13 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.text('Internet: Working'), findsOneWidget);
+      await _tap(tester, 'View test details');
+      expect(find.text('Internet reachable'), findsOneWidget);
+      expect(find.text('Not tested'), findsNothing);
     });
 
     testWidgets(
-        'WAN connected, DNS failed → shows "Connected to ISP — websites aren\'t loading"',
+        'failed DNS stays failed even when WAN reports connected',
         (tester) async {
       final state = InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
@@ -630,16 +662,20 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.textContaining('Connected,'), findsAtLeast(1));
-      expect(find.textContaining("websites aren't loading"), findsAtLeast(1));
+      await _tap(tester, 'View test details');
+      expect(find.text('Internet not responding'), findsOneWidget);
+      expect(find.text('No internet service'), findsOneWidget);
+      expect(find.text('Internet reachable'), findsNothing);
     });
 
-    testWidgets('WAN disconnected → shows "Not connected to ISP"',
+    testWidgets('WAN disconnected shows no internet service in details',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('Not connected to the Internet'), findsOneWidget);
+      await _tap(tester, 'View test details');
+      expect(find.text('No internet service'), findsOneWidget);
+      expect(find.text('Connected'), findsNothing);
     });
   });
 

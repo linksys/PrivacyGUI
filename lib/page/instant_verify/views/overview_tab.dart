@@ -1,4 +1,9 @@
+import 'instant_test_layout.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'dart:async';
+import 'package:go_router/go_router.dart';
+import 'details_disclosure.dart';
 
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/constants/build_config.dart';
@@ -84,7 +89,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     final state = ref.watch(instantVerifyPivotProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: InstantTestLayout.scrollPadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -115,11 +120,11 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
               padding: const EdgeInsets.only(top: 4),
               child: Wrap(spacing: 12, runSpacing: 4, children: [
                 if (widget.onViewClients != null)
-                  TextButton(onPressed: widget.onViewClients,
-                      child: const Text('View devices')),
+                  AppTextButton('View devices',
+                onTap: widget.onViewClients),
                 if (widget.onViewNetwork != null)
-                  TextButton(onPressed: widget.onViewNetwork,
-                      child: const Text('View network')),
+                  AppTextButton('View network',
+                onTap: widget.onViewNetwork),
               ]),
             ),
           if (state.recentPriorRestart &&
@@ -174,13 +179,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 state.phase == PivotLoadPhase.jnapLoaded ||
                 _restartCountdown > 0;
             return Center(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text(
-                    cooldown > 0 ? '$baseLabel (${cooldown}s)' : baseLabel),
+              child: AppOutlinedButton(
+                cooldown > 0 ? '$baseLabel (${cooldown}s)' : baseLabel,
+                icon: LinksysIcons.refresh,
                 // Disabled while a run is in flight OR during the 15s
                 // anti-hammer cooldown after a speed test.
-                onPressed: isBusy || cooldown > 0
+                onTap: isBusy || cooldown > 0
                     ? null
                     : () {
                         setState(() {
@@ -296,14 +300,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           'Don\'t unplug your router during the update.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Update Now'),
-          ),
+          AppTextButton('Cancel',
+                onTap: () => Navigator.pop(ctx, false)),
+          AppFilledButton('Update Now',
+                onTap: () => Navigator.pop(ctx, true)),
         ],
       ),
     );
@@ -425,7 +425,14 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     _findingsExpanded = false;
                     _checksExpanded = false;
                   });
-                  notifier.loadMockScenario(s.index);
+                  final router = GoRouter.maybeOf(context);
+                  if (router != null &&
+                      router.routeInformationProvider.value.uri.path != '/instant-prototype') {
+                    // Reviewer fixtures must never share the live action provider.
+                    router.go('/instant-prototype?overview=${s.index}');
+                  } else {
+                    notifier.loadMockScenario(s.index);
+                  }
                 },
               )).toList(),
                 ),
@@ -627,7 +634,7 @@ class _StatusCard extends StatelessWidget {
           children: [
             _statusRow(context),
             const Divider(height: 20),
-            _ChecklistProgress(state: state),
+            DetailsDisclosure(label: 'View test progress', child: _ChecklistProgress(state: state)),
           ],
         ),
       );
@@ -648,10 +655,8 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _statusRow(context),
-            const Divider(height: 20),
             Row(children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 22),
+              const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -695,15 +700,13 @@ class _StatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _statusRow(context),
-          const Divider(height: 20),
           // Headline
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _priorityIcon(primary.priority),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                primary.headline,
+                primary.summary ?? primary.headline,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600, fontSize: 16),
               ),
@@ -712,8 +715,13 @@ class _StatusCard extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: Text(primary.explanation,
-                style: TextStyle(color: scheme.onSurfaceVariant)),
+            child: primary.hasAutoFix
+                ? DetailsDisclosure(label: 'Why this matters',
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      if (primary.summary != null) Text(primary.headline),
+                      Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+                    ]))
+                : Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
 
           // Primary action button — or ISP escalation after restart (D-26)
@@ -752,62 +760,20 @@ class _StatusCard extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.only(left: 32),
-              child: FilledButton.icon(
-                icon: Icon(_actionIcon(primary.actionKey!), size: 16),
-                label: Text(primary.actionLabel!),
-                onPressed: () => onAction(primary.actionKey!),
-              ),
+              child: AppFilledButton(primary.actionLabel!,
+                onTap: () => onAction(primary.actionKey!),
+                icon: _actionIcon(primary.actionKey!)),
             ),
           ],
 
-          // Secondary findings (always show up to 2)
-          if (visible.length > 1) ...[
-            const Divider(height: 24),
-            const Text('Also found:',
-                style: TextStyle(
-                    fontWeight: FontWeight.w500, fontSize: 13)),
-            const SizedBox(height: 8),
-            ...visible.skip(1).map((f) => _FindingRow(
-                  finding: f,
-                  onAction: onAction,
-                )),
-          ],
-
-          // Hidden findings expandable
-          if (hidden.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            InkWell(
-              onTap: onToggleFindings,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(children: [
-                  Icon(
-                    findingsExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    findingsExpanded
-                        ? 'Show less'
-                        : '${hidden.length} more ${hidden.length == 1 ? 'finding' : 'findings'}',
-                    style: TextStyle(
-                        color: scheme.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500),
-                  ),
-                ]),
-              ),
+          if (visible.length > 1 || hidden.isNotEmpty)
+            DetailsDisclosure(
+              label: '${visible.length - 1 + hidden.length} other findings',
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ...[...visible.skip(1), ...hidden].map((f) => _FindingRow(
+                    finding: f, onAction: onAction)),
+              ]),
             ),
-            if (findingsExpanded)
-              ...hidden.map((f) => _FindingRow(
-                    finding: f,
-                    onAction: onAction,
-                  )),
-          ],
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
@@ -855,7 +821,7 @@ class _StatusCard extends StatelessWidget {
               onTap: () => onNavigateToFlow?.call(1),
             ),
             _FlowCard(
-              icon: Icons.wifi_off,
+              icon: LinksysIcons.signalWifiOff,
               label: 'A device won\'t\nconnect',
               onTap: () => onNavigateToFlow?.call(2),
             ),
@@ -927,16 +893,16 @@ class _StatusCard extends StatelessWidget {
       case VerdictPriority.warning:
         return const Icon(Icons.warning_amber, color: Colors.orange, size: 22);
       case VerdictPriority.info:
-        return const Icon(Icons.info_outline, color: Colors.blue, size: 22);
+        return const Icon(LinksysIcons.infoCircle, color: Colors.blue, size: 22);
       case VerdictPriority.allClear:
-        return const Icon(Icons.check_circle, color: Colors.green, size: 22);
+        return const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 22);
     }
   }
 
   IconData _actionIcon(String actionKey) {
     switch (actionKey) {
       case VerdictEngine.actionRestartRouter:
-        return Icons.refresh;
+        return LinksysIcons.refresh;
       case VerdictEngine.actionFirmwareUpdate:
         return Icons.system_update;
       case VerdictEngine.actionBridgeModeHelp:
@@ -957,8 +923,6 @@ class _FindingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -974,17 +938,8 @@ class _FindingRow extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.w500, fontSize: 13)),
                 if (finding.hasAutoFix)
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 28),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => onAction(finding.actionKey!),
-                    child: Text(finding.actionLabel!,
-                        style: TextStyle(
-                            fontSize: 12, color: scheme.primary)),
-                  ),
+                  AppTextButton(finding.actionLabel!,
+                    onTap: () => onAction(finding.actionKey!)),
               ],
             ),
           ),
@@ -1000,7 +955,7 @@ class _FindingRow extends StatelessWidget {
       case VerdictPriority.warning:
         return const Icon(Icons.warning_amber, color: Colors.orange, size: 18);
       case VerdictPriority.info:
-        return const Icon(Icons.info_outline, color: Colors.blue, size: 18);
+        return const Icon(LinksysIcons.infoCircle, color: Colors.blue, size: 18);
       case VerdictPriority.allClear:
         return const Icon(Icons.check_circle_outline,
             color: Colors.green, size: 18);
@@ -1037,6 +992,9 @@ class _DeviceIssuesCard extends StatelessWidget {
             'Devices with weak WiFi',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
+          Text('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may need a stronger signal.'),
+          DetailsDisclosure(label: 'View affected devices', child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 12),
           ...issueDevices.take(5).map((d) => _DeviceIssueRow(score: d)),
           if (issueDevices.length > 5)
@@ -1052,18 +1010,17 @@ class _DeviceIssuesCard extends StatelessWidget {
           Text(advice,
               style: TextStyle(
                   fontSize: 13, color: scheme.onSurfaceVariant)),
+          ])),
           // Direct action into the fix flow instead of only telling the user
           // to go to My Devices (on-device feedback).
           if (onNavigateToFlow != null || onTroubleshoot != null) ...[
             const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onTroubleshoot ?? () =>
+              child: AppTextButton('Troubleshoot these devices',
+                onTap: onTroubleshoot ?? () =>
                     onNavigateToFlow!.call(2), // → Device connectivity flow
-                style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                icon: const Icon(Icons.build_outlined, size: 18),
-                label: const Text('Troubleshoot these devices'),
+                icon: Icons.build_outlined,
               ),
             ),
           ],
@@ -1181,11 +1138,14 @@ class _MeshCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ]),
+          if (nodes.any((n) => n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical))
+            const Text('A WiFi node has a weak connection.'),
+          DetailsDisclosure(label: 'View WiFi node details', child: Column(children: [
           const SizedBox(height: 12),
           ...nodes.map((node) => _MeshNodeRow(
                 node: node,
                 clientCount: state.clientCountForNode(node.deviceId),
-              )),
+              )),          ])),
         ],
       ),
     );
@@ -1213,17 +1173,17 @@ class _MeshNodeRow extends StatelessWidget {
     } else {
       switch (node.backhaulHealth) {
         case BackhaulHealth.strong:
-          roleIcon = Icons.wifi;
+          roleIcon = LinksysIcons.wifi;
           roleColor = Colors.green;
         case BackhaulHealth.moderate:
-          roleIcon = Icons.wifi;
+          roleIcon = LinksysIcons.wifi;
           roleColor = Colors.orange;
         case BackhaulHealth.weak:
         case BackhaulHealth.critical:
           roleIcon = Icons.warning_amber;
           roleColor = Colors.red;
         case BackhaulHealth.unknown:
-          roleIcon = Icons.wifi;
+          roleIcon = LinksysIcons.wifi;
           roleColor = Colors.green;
       }
     }
@@ -1379,7 +1339,7 @@ class _MeshNodeRow extends StatelessWidget {
 
 class _CheckResultsExpand extends StatelessWidget {
   final InstantVerifyPivotState state;
-  // expanded and onToggle kept for API compat but toggle is removed — always visible
+  // Legacy host arguments; disclosure state belongs to the mounted details.
   final bool expanded;
   final VoidCallback onToggle;
 
@@ -1391,20 +1351,9 @@ class _CheckResultsExpand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        Text(
-          'Test details',
-          style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 6),
-        _ChecklistSummary(state: state),
-      ],
+    return DetailsDisclosure(
+      label: 'View test details',
+      child: _ChecklistSummary(state: state),
     );
   }
 }
@@ -1603,7 +1552,7 @@ class _SummaryRowWidget extends StatelessWidget {
     Color iconColor;
     switch (row.state) {
       case _CheckDisplayState.pass:
-        iconData = Icons.check_circle;
+        iconData = LinksysIcons.checkCircle;
         iconColor = Colors.green;
       case _CheckDisplayState.fail:
         iconData = Icons.cancel;
@@ -1651,7 +1600,7 @@ class _SummaryRowWidget extends StatelessWidget {
                 ),
               const SizedBox(width: 4),
               Icon(
-                isExpanded ? Icons.expand_less : Icons.expand_more,
+                isExpanded ? LinksysIcons.arrowDropUp : LinksysIcons.arrowDropDown,
                 size: 14,
                 color: scheme.onSurfaceVariant,
               ),
@@ -1923,7 +1872,7 @@ class _CheckRow extends StatelessWidget {
               strokeWidth: 2, color: scheme.primary),
         );
       case _CheckStatus.pass:
-        icon = const Icon(Icons.check_circle, size: 18, color: Colors.green);
+        icon = const Icon(LinksysIcons.checkCircle, size: 18, color: Colors.green);
       case _CheckStatus.fail:
         icon = const Icon(Icons.cancel, size: 18, color: Colors.red);
         labelColor = Colors.red;
@@ -2016,18 +1965,9 @@ class _LightGuideLink extends StatelessWidget {
         // Persistent link (always visible)
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            icon: Icon(Icons.lightbulb_outline, size: 16, color: scheme.primary),
-            label: Text(
-              'What does my router light mean?',
-              style: TextStyle(fontSize: 12, color: scheme.primary),
-            ),
-            onPressed: () => _showLightGuide(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+          child: AppTextButton('What does my router light mean?',
+            icon: Icons.lightbulb_outline,
+            onTap: () => _showLightGuide(context),
           ),
         ),
       ],
@@ -2207,36 +2147,8 @@ class _FlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: 155,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          side: BorderSide(color: scheme.outlineVariant),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: scheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return AppOutlinedButton(label,
+        onTap: onTap, icon: icon, size: const Size(155, 64));
   }
 }
 

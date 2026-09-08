@@ -1,3 +1,4 @@
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -9,7 +10,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 /// dialog (PRD D-23), then calls the single source of truth
 /// `provider.restartRouter()`. Pass [onRestarted] for any surface-specific
 /// follow-up (e.g. the overview tab's restart countdown).
-Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
+Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
     {VoidCallback? onRestarted}) async {
   final state = ref.read(instantVerifyPivotProvider);
   // The address to return to is the one the browser reached the router at —
@@ -24,7 +25,7 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
         behavior: SnackBarBehavior.floating,
       ));
     }
-    return;
+    return false;
   }
   final confirmed = await showDialog<bool>(
     context: context,
@@ -35,23 +36,20 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
           'If you\'re on WiFi, this page will go blank. '
           'Wait 2 minutes, reconnect to your WiFi, then return to $returnAddress.'),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: const Text('Restart'),
-        ),
+        AppTextButton('Cancel',
+                onTap: () => Navigator.of(ctx).pop(false)),
+        AppFilledButton('Restart',
+                onTap: () => Navigator.of(ctx).pop(true)),
       ],
     ),
   );
   if (confirmed == true && context.mounted) {
+    final navigator = Navigator.of(context, rootNavigator: true);
     // Prominent, centered progress while the router reboots (J-08 — a bottom
     // SnackBar was too subtle; QA wanted a clear "it's happening" signal).
     // On WiFi the page reloads on reconnect and clears this; the barrier is
     // dismissible so a wired user is never stuck.
-    showDialog<void>(
+    final progressRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => const AlertDialog(
@@ -71,7 +69,20 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
         ),
       ),
     );
-    await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+    navigator.push(progressRoute);
+    try {
+      await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+    } catch (_) {
+      if (progressRoute.isActive) navigator.removeRoute(progressRoute);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('The restart could not be confirmed. Wait for your router to reconnect, then check again before retrying.'),
+        ));
+      }
+      return false;
+    }
     onRestarted?.call();
+    return true;
   }
+  return false;
 }
