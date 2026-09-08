@@ -173,6 +173,56 @@ void main() {
           ));
     });
 
+    // The orchestrator triggers devices and ethernet back to back
+    // (dashboard_orchestrator.dart:158-159), so at boot this provider's own
+    // _fetch() usually reads devicesDataProvider as AsyncLoading and passes an
+    // empty list. When the device list then settles *also* empty, the input has
+    // not changed and there is nothing to re-fetch — but `prev` carries no
+    // value, and `ListEquality.equals(null, [])` is `false`, so without the
+    // `?? const []` in the guard the boot settle spends a second USP round-trip
+    // on the identical input.
+    test('a boot settle with no clients does not cost a second fetch',
+        () async {
+      final notifier = _SlowDevicesDataNotifier(_devicesWith([]));
+      final container = ProviderContainer(overrides: [
+        uspEthernetDataServiceProvider.overrideWithValue(mockEthernetSvc),
+        devicesDataProvider.overrideWith(() => notifier),
+      ]);
+      addTearDown(container.dispose);
+
+      container.listen(ethernetDataProvider, (_, __) {});
+      await container.read(ethernetDataProvider.future);
+      // Let devicesData settle after this provider already holds data.
+      await Future.delayed(const Duration(milliseconds: 30));
+
+      verify(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          )).called(1);
+    });
+
+    // The same race, but the device list settles non-empty: the first fetch
+    // consumed [], so the second one is required, not redundant.
+    test('a boot settle that adds clients does re-fetch', () async {
+      final notifier = _SlowDevicesDataNotifier(
+          _devicesWith([DevicesTestData.createWiredClient()]));
+      final container = ProviderContainer(overrides: [
+        uspEthernetDataServiceProvider.overrideWithValue(mockEthernetSvc),
+        devicesDataProvider.overrideWith(() => notifier),
+      ]);
+      addTearDown(container.dispose);
+
+      container.listen(ethernetDataProvider, (_, __) {});
+      await container.read(ethernetDataProvider.future);
+      await Future.delayed(const Duration(milliseconds: 30));
+
+      final captured = verify(() => mockEthernetSvc.fetch(
+            deviceModels: captureAny(named: 'deviceModels'),
+          )).captured;
+      expect(captured, hasLength(2));
+      expect(captured[0], isEmpty);
+      expect(captured[1], hasLength(1));
+    });
+
     test('re-fetches when clientDevices changes', () async {
       final (container, notifier) = pushableContainer(_devicesWith([]));
       addTearDown(container.dispose);
@@ -215,6 +265,21 @@ class _PushableDevicesDataNotifier extends DevicesDataNotifier {
   Future<DevicesData> build() async => _initial;
 
   void emit(DevicesData data) => state = AsyncData(data);
+}
+
+/// Test override that settles *after* `ethernetDataProvider`'s own fetch, which
+/// is the boot ordering the orchestrator produces: it reads devices and ethernet
+/// back to back, so ethernet's `_fetch()` sees devicesData as AsyncLoading.
+class _SlowDevicesDataNotifier extends DevicesDataNotifier {
+  final DevicesData _data;
+
+  _SlowDevicesDataNotifier(this._data);
+
+  @override
+  Future<DevicesData> build() async {
+    await Future.delayed(const Duration(milliseconds: 10));
+    return _data;
+  }
 }
 
 /// Creates DevicesData whose `clientDevices` is exactly [clients].

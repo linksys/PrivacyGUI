@@ -66,11 +66,23 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     // `ListEquality`, not `==`: `clientDevices` is a plain List built fresh by
     // `MeshNetwork.allClients`, so `==` is reference equality and would make
     // this guard inert. Template: dhcp_data_provider.dart:58 (MapEquality).
+    // The *elements* do compare by value — `ClientDevice extends NetworkEntity`,
+    // which is `EquatableMixin` — so the comparison is deep end to end. If a
+    // future model drops that, this guard silently reverts to always-unequal.
+    //
+    // `?? const []` mirrors _fetch()'s own `?? []` at :85. The orchestrator
+    // triggers devices and ethernet back to back (dashboard_orchestrator.dart
+    // :158-159), so whenever this provider wins that race its first _fetch()
+    // read `devicesDataProvider.valueOrNull` as null and passed an empty list.
+    // "No previous value" therefore means "the last fetch consumed []", not
+    // "unknown": comparing against null instead would make the first settle
+    // unconditionally unequal and spend a second fetch on the identical input
+    // when the device list settles empty.
     ref.listen(devicesDataProvider, (prev, next) {
       if (!next.hasValue || !state.hasValue) return;
       const eq = ListEquality<ClientDevice>();
-      if (eq.equals(
-          prev?.valueOrNull?.clientDevices, next.value!.clientDevices)) {
+      if (eq.equals(prev?.valueOrNull?.clientDevices ?? const [],
+          next.value!.clientDevices)) {
         return;
       }
       ref.invalidateSelf();

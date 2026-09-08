@@ -254,21 +254,29 @@ undocumented.
 
 ## Test coverage for the 7 fixes
 
-The 264-test affected set passed **identically before and after** the fixes, so it could not see the
+The 282-test affected set passed **identically before and after** the fixes, so it could not see the
 behaviour change at all. Each fix therefore got a test, and each test was run against the pre-fix source to
 confirm it is red there — a test that is green both ways is not coverage.
 
 | Site | Test | Instrument | Pre-fix | Post-fix |
 | --- | --- | --- | --- | --- |
 | 8 ethernet | `ethernet_data_provider_test.dart` | `verifyNever(svc.fetch)` after an equal-valued emission | fetch runs | no fetch |
-| 9 wifi advanced | `usp_wifi_advanced_notifier_test.dart` | `svc.fetchIeee80211h()` count | 2 | 1 |
-| 10 wifi settings | `usp_wifi_settings_notifier_test.dart` | `svc.buildWifiNetworks()` count | 2 | 1 |
-| 11 firewall | `usp_firewall_notifier_test.dart` | `performFetch(forceRemote:)` count, counting subclass | 2 | 1 |
-| 12 devices | `devices_data_provider_test.dart` | `svc.rebuildWithWifiData()` count | 2 | 1 |
+| 8 ethernet (boot) | `ethernet_data_provider_test.dart` | `svc.fetch` count when the device list settles empty after this provider already holds data | 2 | 1 |
+| 9 devices | `devices_data_provider_test.dart` | `svc.rebuildWithWifiData()` count | 2 | 1 |
+| 10 wifi advanced | `usp_wifi_advanced_notifier_test.dart` | `svc.fetchIeee80211h()` count | 2 | 1 |
+| 11 wifi settings | `usp_wifi_settings_notifier_test.dart` | `svc.buildWifiNetworks()` count | 2 | 1 |
+| 12 firewall | `usp_firewall_notifier_test.dart` | `performFetch(forceRemote:)` count, counting subclass | 2 | 1 |
 | 14 system monitor | `usp_system_monitor_notifier_test.dart` | `svc.fetchSnapshot()` count | 2 | 1 |
 | 15 traffic analysis | `usp_traffic_analysis_notifier_test.dart` | `svc.fetchBaselines()` count | 2 | 1 |
 
-Four things this exercise established that the audit alone had not:
+The site numbers in this table were transposed in the first version (rows read 9 wifi advanced / 10 wifi
+settings / 11 firewall / 12 devices, one off against the verdict table above); the test↔fix pairing was
+always right. Two of the ten new tests are deliberately **not** red pre-fix and are labelled as such below:
+`re-fetches when clientDevices changes` and `a boot settle that adds clients does re-fetch` assert re-fetches
+the unguarded version also performed. They are controls that keep the two guarded assertions from passing
+vacuously, not coverage.
+
+Five things this exercise established that the audit alone had not:
 
 1. **The committed site-8 fix was inert.** It read
    `prev?.valueOrNull?.clientDevices == next.value!.clientDevices`. `clientDevices` is a plain `List` built
@@ -276,7 +284,7 @@ Four things this exercise established that the audit alone had not:
    through. `DevicesData` itself is `Equatable` and compares deeply, which is what made the mistake easy to
    miss: the enclosing type has value semantics, the getter's return type does not. Now
    `ListEquality<ClientDevice>().equals(...)`, matching `dhcp_data_provider:58`'s `MapEquality`. Only the test
-   caught this; the audit, the review checklist, `analyze` and 264 existing tests all passed it.
+   caught this; the audit, the review checklist, `analyze` and 282 existing tests all passed it.
 2. **`invalidateSelf()` is lazy without listeners.** A provider with no active subscription is only marked
    dirty; the rebuild waits for the next read. The first version of the site-8 test used `container.read(...
    .future)` alone and so passed against the *unguarded* source too. Every one of these tests needs a
@@ -291,6 +299,18 @@ Four things this exercise established that the audit alone had not:
    `usp_wifi_advanced_notifier_test.dart:70-73` reads
    `verify(...).called(greaterThanOrEqualTo(1))` under the comment "may be called again if SSE listener
    triggers". The loose matcher turned a defect into an accepted range.
+5. **A payload diff needs a stated meaning for "no previous value", and at site 8 the boot path hits it every
+   time.** `ListEquality.equals(null, [])` is `false` (collection `equality.dart`: `if (list1 == null ||
+   list2 == null) return false`), so `prev?.valueOrNull?.clientDevices` — null whenever the prior frame was a
+   bare `AsyncLoading` — makes the guard fall through. That is not a corner case here: the orchestrator reads
+   `devicesDataProvider` and `ethernetDataProvider` back to back
+   (`dashboard_orchestrator.dart:158-159`), so the two settle in a race and whenever Ethernet wins, its own
+   `_fetch()` already read devices as `AsyncLoading` and passed `deviceModels: []`. `?? const []` is
+   therefore not defensive padding but the statement that matches `_fetch()`'s own `?? []` at `:94`: "no
+   previous value" means "the last fetch consumed an empty list", which is exactly what happened. Without it
+   a home with no wired clients pays one extra Ethernet round-trip on every dashboard boot. Measured:
+   `fetches=2 deviceModelCounts=[0, 0]` before, `1` after — and the paired control (device list settles
+   *non-empty*) still shows `[0], [1]`, so the fix suppresses only the identical-input call.
 
 ## Method
 
@@ -322,10 +342,11 @@ drift, not mine: the ticket lists
 
 ## Verification
 
-- `./run_tests.sh` → **6521/6521 pass** (6513 baseline + the 8 new tests)
-- Affected set (21 files: direct tests for the 8 changed sources plus every `*_test.dart` importing them) →
-  **272/272 pass** (264 before the new tests)
-- Each new test also run against the pre-fix source: **7/7 red there**, listed in "Test coverage" above
+- `./run_tests.sh` → **6523/6523 pass, exit 0** (6513 baseline + the 10 new tests)
+- Affected set (23 files: direct tests for the 8 changed sources plus every `*_test.dart` importing them) →
+  **292/292 pass** (282 before the new tests)
+- Each new test also run against the pre-fix source: **8 of the 10 red there**; the other two are the labelled
+  controls, listed in "Test coverage" above
 - `fvm flutter analyze` → **480 issues, identical to the `d484a23a` baseline**; **0** attributable to any of
   the changed files. (Analyze reports 810 with 330 errors in a fresh worktree until `flutter pub get`
   generates `l10n/gen/app_localizations.dart` — that is an environment artefact, not a finding.)

@@ -35,8 +35,9 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     // is not a pure function of its argument — it reads DateTime.now() at :138
     // and appends a new hourly bucket when the hour has rolled over, so an
     // identical device list at a later time produces a different result. A diff
-    // here would leave gaps in the hourly history. See #1502 / AC-4 and
-    // doc/riverpod/listen_site_audit.md.
+    // here would leave gaps in the hourly history, and this notifier is not
+    // autoDispose, so the gap persists for the session. Filed as #1504; see
+    // also #1502 / AC-4 and doc/riverpod/listen_site_audit.md.
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
