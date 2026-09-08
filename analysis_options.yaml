@@ -49,6 +49,16 @@ analyzer:
     - web/**
   errors:
     prefer_const_constructors: ignore
+    # Enabled under `linter: rules:` below and promoted to error here — the two
+    # keys do different jobs: `rules:` turns the lint on, `errors:` sets its
+    # severity, and the lint is off by default so it needs both.
+    #
+    # Load-bearing, not hygiene. 11 of the 13 `ref.listen(sseInvalidationProvider)`
+    # sites consume the event as `next.valueOrNull?.domain == InvalidationDomain.x`,
+    # and dropping the `?.domain` leaves `InvalidationEvent? == InvalidationDomain`
+    # — legal Dart, permanently false, and it silently kills SSE refresh on that
+    # page with a clean build. At `info` severity that reads as advice. Measured
+    # cost of the promotion repo-wide: zero (480 issues before and after).
     unrelated_type_equality_checks: error
 include: package:flutter_lints/flutter.yaml
 

@@ -186,6 +186,11 @@ void main() {
   // ---------------------------------------------------------------------------
   group('ServiceError identity through a provider read', () {
     /// Async provider whose build fails with a concrete ServiceError subtype.
+    ///
+    /// Declared once and shared by the four tests below. That is safe because a
+    /// provider object is only a descriptor — the state lives in the
+    /// `ProviderContainer`, and each test builds its own, so nothing crosses
+    /// between them.
     final failingAsync = FutureProvider<int>(
       (ref) async => throw const InvalidCredentialsError(),
     );

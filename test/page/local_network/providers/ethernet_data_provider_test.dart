@@ -150,6 +150,10 @@ void main() {
     ///
     /// Both tests below drain the same amount so the negative one cannot pass
     /// merely by looking earlier than the positive one.
+    ///
+    /// Measured: 2 hops is the minimum that passes here, 1 fails. 4 is
+    /// deliberate margin — an extra hop on a chain that has already settled is
+    /// free, whereas one too few reads as "the listener is broken".
     Future<void> settle() async {
       for (var i = 0; i < 4; i++) {
         await Future.delayed(Duration.zero);

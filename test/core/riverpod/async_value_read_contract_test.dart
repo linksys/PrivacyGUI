@@ -25,6 +25,18 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 /// The `?? false` in every one of them reads as "default to logged out on
 /// failure". That is not what happens — see the tests below. Three of the seven
 /// are inside a selector, which is the worst place for a throw. See #1501.
+///
+/// To be explicit about what these tests are: the behaviour below is a KNOWN
+/// DEFECT, not intended behaviour. It is pinned here rather than fixed because
+/// the fix is a `lib/` behaviour change — swapping `.value` for `.valueOrNull`
+/// at all seven sites makes the first-build-failure case actually take the
+/// logged-out branch it already claims to take, which changes app routing — and
+/// #1501 is a characterization ticket. No `TODO(#nnnn)` is left here on purpose:
+/// #1501 closes with these tests, and a marker pointing at a closed ticket is
+/// worse than none. The migration is a prerequisite for the riverpod 3 upgrade,
+/// where `.value` stops throwing and these sites silently flip to the
+/// logged-out branch instead — at which point these tests go red, which is
+/// exactly the signal they exist to give.
 
 /// An [AuthNotifier] whose `build()` follows a caller-supplied script, so a
 /// single provider can succeed and then fail across an invalidate.
@@ -60,13 +72,19 @@ void main() {
   }
 
   /// Drives the provider to its settled state, swallowing a build failure.
+  ///
+  /// Awaiting `.future` is the whole synchronization: riverpod has already
+  /// published the `AsyncData`/`AsyncError` by the time it completes or rejects,
+  /// so no extra microtask hop is needed here. (Measured — a trailing
+  /// `Future.delayed(Duration.zero)` was inert, all 8 tests pass without it.
+  /// The SSE listener tests DO need extra hops, because there the chain
+  /// continues past the state into `ref.listen` -> `invalidateSelf()`.)
   Future<void> settle(ProviderContainer container) async {
     try {
       await container.read(authProvider.future);
     } catch (_) {
       // Expected for the failing scripts; the state is what we assert on.
     }
-    await Future.delayed(Duration.zero);
   }
 
   const failure = InvalidCredentialsError();
@@ -143,6 +161,25 @@ void main() {
         throwsA(isA<InvalidCredentialsError>()),
       );
     });
+
+    test('the `.value?.loginType` selector throws too — no `?? false` to reach',
+        () async {
+      final container = scriptedContainer([failure]);
+      await settle(container);
+
+      // lib/route/router_provider.dart:223 is the one site whose selector
+      // returns a nullable enum rather than a bool, so it is the only one where
+      // "null means logged out" is the *documented* contract: `redirectLogic`
+      // sends the user home when `loginType == null`. It still never gets that
+      // null — the throw is in `.value`, before `?.` runs — so the redirect
+      // fails instead of bouncing to Home. Asserted separately because this is
+      // the shape that changes on riverpod 3, where `.value` returns null and
+      // this site starts silently taking its logged-out branch.
+      expect(
+        () => container.read(authProvider.select((v) => v.value?.loginType)),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
+    });
   });
 
   group('failure AFTER a successful build (previous value retained)', () {
@@ -177,6 +214,13 @@ void main() {
         isTrue,
         reason:
             'the redirect keeps routing as logged-in after a failed rebuild',
+      );
+      // Same for router_provider.dart:223's shape: the stale login TYPE is
+      // carried forward, so a failed re-auth out of remote assistance keeps
+      // routing as remote assistance rather than falling to the null branch.
+      expect(
+        container.read(authProvider.select((v) => v.value?.loginType)),
+        LoginType.local,
       );
     });
   });

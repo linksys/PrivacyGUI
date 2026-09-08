@@ -47,7 +47,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   Future<WanData> build() async {
     // SSE listener: WAN status changes (link up/down, IP changes)
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.value?.domain == InvalidationDomain.wanStatus) {
+      if (next.valueOrNull?.domain == InvalidationDomain.wanStatus) {
         ref.invalidateSelf();
       }
     });
