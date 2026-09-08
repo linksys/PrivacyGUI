@@ -153,6 +153,18 @@ class UspClient {
   ///   attempt return quietly instead.
   /// - The [throttler]'s dedup levels are per-connection even though the
   ///   throttler itself is not; see [BridgeRequestThrottler.invalidateSession].
+  ///
+  /// **Never throws once it has taken [transport], and that is a contract the
+  /// caller relies on rather than a nicety.** `RemoteAssistanceNotifier
+  /// .installTransport` decides whether to `free()` the wasm handle from whether
+  /// this call returned: a throw means "nobody took it, release it". So a throw
+  /// *after* the assignment on the first line would make it free the handle the
+  /// registered façade is now using — a double free of the live connection across
+  /// the 41 services holding this object by value, which is #1322's exact field
+  /// symptom (`null pointer passed to rust`) arriving from the code that exists to
+  /// prevent its mirror image. The bookkeeping below therefore cannot escape;
+  /// leaving one connection's dedup levels stale is the lesser failure by a wide
+  /// margin. Added by #1474 phase 9, which is where the reliance was introduced.
   void rebindTransport(UspTransport transport, {required String baseUrl}) {
     final previous = _client;
     _client = transport;
@@ -160,31 +172,36 @@ class UspClient {
     _generation++;
     _lastCallRetried = false;
 
-    // Wake anyone parked on the outgoing session's reauth gate. Its owner is
-    // suspended on the transport we are about to free, so it may never resume to
-    // settle the gate itself — and an awaiter of a Completer that never
-    // completes waits forever, with no timeout anywhere above it.
-    //
-    // Completed successfully, not with an error, and that is the deliberate
-    // reading: the question the gate answers is "can this client authenticate
-    // now?", and after the swap the answer is yes. The waiter's caller is
-    // [_withAuthRetry], which re-runs its action against the *new* transport;
-    // failing it here would abort a call the new connection can serve, and if
-    // the new connection cannot, its own 401 says so a moment later.
-    final orphanedReauth = _reauthInProgress;
-    _reauthInProgress = null;
-    if (orphanedReauth != null && !orphanedReauth.isCompleted) {
-      logger.d('$_tag Releasing a reauth gate held by the previous connection');
-      orphanedReauth.complete();
+    try {
+      // Wake anyone parked on the outgoing session's reauth gate. Its owner is
+      // suspended on the transport we are about to free, so it may never resume to
+      // settle the gate itself — and an awaiter of a Completer that never
+      // completes waits forever, with no timeout anywhere above it.
+      //
+      // Completed successfully, not with an error, and that is the deliberate
+      // reading: the question the gate answers is "can this client authenticate
+      // now?", and after the swap the answer is yes. The waiter's caller is
+      // [_withAuthRetry], which re-runs its action against the *new* transport;
+      // failing it here would abort a call the new connection can serve, and if
+      // the new connection cannot, its own 401 says so a moment later.
+      final orphanedReauth = _reauthInProgress;
+      _reauthInProgress = null;
+      if (orphanedReauth != null && !orphanedReauth.isCompleted) {
+        logger
+            .d('$_tag Releasing a reauth gate held by the previous connection');
+        orphanedReauth.complete();
+      }
+
+      throttler?.invalidateSession();
+    } catch (e) {
+      logger.w('$_tag Post-swap bookkeeping failed, swap stands: $e');
     }
 
-    throttler?.invalidateSession();
-
+    // Sequential to the guard above, not nested inside it, and the difference is
+    // the point: a throttler that throws must not cost us the *old* transport's
+    // `free()`. Nesting made one wasm leak the price of avoiding another.
     if (!identical(previous, transport)) {
-      // A transport that throws on release must not abort the swap: `_client` is
-      // already the new one, so an escaping exception would leave the caller
-      // (`RemoteAssistanceNotifier.activate`) believing the rebind failed while
-      // it has in fact fully happened.
+      // A transport that throws on release must not abort the swap either.
       try {
         previous.dispose();
       } catch (e) {

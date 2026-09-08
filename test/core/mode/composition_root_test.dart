@@ -258,12 +258,22 @@ void main() {
       );
     });
 
-    // The forcing function for phase 9, and the reason this is a `==` and not a
-    // "no more than": when #1498 removes the `/usp*` redirect's read, this test
-    // fails as "expected 5 got 4" and the list has to be edited. That edit is the
-    // moment someone notices the census is now short enough to delete outright.
-    test('the remaining reads are the two phase 9 owns, and the declarations',
-        () {
+    // This was phase 9's forcing function, and it fired exactly as designed: the
+    // list held four paths at the phase-7 tip and #1498 took
+    // `lib/route/router_provider.dart` out of it, failing here as a four-element
+    // expectation against a three-element actual. (The prose above this list used to
+    // say "expected 5 got 4"; it was counting `build_config.dart`, which the
+    // qualified needle never matched. Corrected here rather than left as a riddle.)
+    //
+    // The `==` stays rather than becoming a "no more than", and the reason has
+    // changed now that the epic is done: what it guards is no longer "finish phase
+    // 9" but "the three survivors are survivors *by decision*". Each has a written
+    // reason below. A fourth entry appearing means someone reintroduced the shape
+    // the whole epic removed, and the failure is the only place that argument gets
+    // made.
+    test(
+        'the only remaining reads are the two deliberate ones, and the '
+        'declaration', () {
       expect(
         readers(['lib'], modeReads),
         [
@@ -279,17 +289,63 @@ void main() {
           // declaration and every unrelated method of that name, and the thing
           // being counted is *call sites*, not definitions.
           'lib/config/global_config.dart',
-          // Phase 9 (#1498). The `/usp*` redirect and the SSE bootstrap gate are
-          // the last two, and both are about routing/transport rather than a
-          // surface, which is why phase 7 left them.
+          // The two #1498 deliberately left, documented in place at each site —
+          // and for two *different* reasons, which is worth stating because an
+          // earlier revision of this comment (and of the guide) claimed one reason
+          // for both. `sse_providers.dart` is compensating for a fabricated
+          // endpoint: `BridgeEndpoints.remote()`'s `health` path is not served by
+          // Guardian, so the `if` is skipping a call that cannot work, and wrapping
+          // it in a strategy member would freeze the fabrication into a contract —
+          // the fix is to delete the path, which is transport cleanup outside this
+          // epic. `di.dart` is the boot-order one: it decides whether the
+          // app-origin USP client slot may be filled at all, and it runs during
+          // GetIt registration, before any `ProviderContainer` exists, so there is
+          // no profile to read.
           'lib/core/usp/providers/sse_providers.dart',
           'lib/di.dart',
-          'lib/route/router_provider.dart',
         ],
         reason:
             'the set of files still reading the mode directly changed. If a '
-            'file was added, it is the 8th `if` and belongs on a strategy; if one '
-            'was removed, shorten this list and check whether phase 9 is done.',
+            'file was added, it is the `if` the epic exists to prevent and belongs '
+            'on a strategy — five contracts, and the cause decides which. If one '
+            'was removed, shorten this list and say why in place.',
+      );
+    });
+
+    // The `==` list above is only as strong as its two needles, and both are
+    // *derived* spellings — `GlobalConfig.remote.isActive` forwards to
+    // `BuildConfig.isRemote()`, which reads `BuildConfig.forceCommandType`. A file
+    // that asked the underlying field, or called the resolver, would read the mode
+    // just as directly and be invisible to that list. Neither spelling is
+    // hypothetical: both are already idiomatic here, which is exactly why they need
+    // confining rather than trusting.
+    test('the underlying field and the resolver are confined to two files', () {
+      expect(
+        readers(['lib'], ['forceCommandType']),
+        [
+          // The resolver. This is the *one* legitimate consumer of the field: it
+          // turns a build flag into an `AppMode` once, and every other question is
+          // asked of the profile composed from that.
+          'lib/core/mode/app_mode.dart',
+          // The declaration, plus the two `isLocal()` / `isRemote()` predicates
+          // built on it and the non-Web fallback that assigns it.
+          'lib/constants/build_config.dart',
+        ]..sort(),
+        reason: 'a file outside these two is reading '
+            '`BuildConfig.forceCommandType` directly. That is the same mode read '
+            'the epic removed, one layer lower down and invisible to the census '
+            'above — which matches only `remote.isActive` and '
+            '`BuildConfig.isRemote()`. Ask `appModeProfileProvider` instead.',
+      );
+
+      expect(
+        readers(['lib'], ['AppMode.resolve()']),
+        ['lib/core/mode/app_mode.dart'],
+        reason: 'the resolver is being called outside its own file. The '
+            '`appModeProvider` census in this file matches the *provider* name '
+            'only, so a bare `AppMode.resolve()` slips past it — its own comment '
+            'records that happening once already. One resolution per container, '
+            'through the provider.',
       );
     });
 

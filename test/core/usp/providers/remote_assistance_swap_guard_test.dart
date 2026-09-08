@@ -43,11 +43,20 @@
 // becomes `-1` reads the whole file, and a `isNot(contains(...))` over a region
 // that grew is still green.
 //
+// #1474 PHASE 9 NARROWED THE DISPOSAL ASSERTION, WHICH IS THE OPPOSITE MOVE FROM
+// PHASE 5's AND FOR THE SAME REASON. Phase 5 could widen because the one legitimate
+// exception went away; phase 9 has to narrow because a new legitimate case arrived —
+// releasing a wasm handle that no façade ever took ownership of, which is the other
+// half of #1322's ownership question. A blanket `isNot(contains('dispose()'))` would
+// have forbidden the fix rather than the bug, so it became an exact census of the
+// disposal sites. See that test for why the census is stronger on the axis that
+// matters.
+//
 // Overlaps `remote_assistance_provider_test.dart`'s "no production path frees the
 // registered UspClient façade" on purpose, and neither subsumes the other: that
 // one sweeps all of `lib/` for `unregister<UspClient>`, this one is narrow enough
-// to also demand the positive — `rebindFromBuilder` is present, and no `dispose()`
-// of any kind appears.
+// to also demand the positive — `rebindFromBuilder` is present, and the only
+// `dispose()` calls are the two that name a façade GetIt never received.
 
 import 'dart:io';
 
@@ -121,12 +130,87 @@ void main() {
               '41 ref.read holders keep the old one. Use rebindFromBuilder.');
     });
 
-    test('it never disposes a UspClient', () {
-      expect(providerFile, isNot(contains('dispose()')),
-          reason: 'disposing the façade calls free() on the WASM client and '
-              'zeroes __wbg_ptr for everyone still holding it. '
-              'rebindTransport() disposes the old *transport* instead, so the '
-              'WASM object is still freed exactly once per swap.');
+    test('the release is conditional on nobody having taken the handle', () {
+      // The one arm of the ownership rule no VM test can reach, and the reason it
+      // gets a structural pin: `handleOwned` only becomes true after a façade has
+      // successfully wrapped the handle, and wrapping is precisely what fails off
+      // the web platform — so the behavioural tests in
+      // `remote_assistance_provider_test.dart` always run the *other* branch. A
+      // mutation that released unconditionally passed all of them.
+      //
+      // Releasing when a façade did take ownership is a double free, and it frees
+      // the handle the registered façade is using: #1322's field symptom exactly,
+      // `null pointer passed to rust` across 41 services that never asked for a new
+      // session.
+      expect(providerFile, contains('if (!handleOwned) {'),
+          reason:
+              'the orphan release is no longer guarded by ownership. Freeing a '
+              'handle a façade already took is a double free of the live '
+              'connection — see #1322. If the flag was renamed, re-point this; if '
+              'ownership is tracked some other way, the new spelling has to make '
+              'the same distinction and this assertion has to follow it.');
+    });
+
+    test('the only façades it disposes are ones GetIt never saw', () {
+      // Was `isNot(contains('dispose()'))` until #1474 phase 9, and the narrowing
+      // is the interesting part — the claim did not weaken, it got said properly.
+      //
+      // The claim was never "no `dispose()` appears in this file". It is "the
+      // *registered* façade is never freed", and a blanket ban was an adequate proxy
+      // only while the file had no other façade to talk about. Phase 9 gave it one:
+      // `activate()` builds the wasm handle outside the mutation lock, so a critical
+      // section that throws leaves a live wasm-bindgen object with no reference to
+      // `free()` — a leak per failed attempt, on the path a user retries. Fixing it
+      // means disposing something, and a ban would have forced the fix to be spelled
+      // in a way this test could not read.
+      //
+      // So: an exact census of the disposal sites, which is strictly stronger than
+      // the ban on the axis that matters. Both allowed receivers are provably
+      // unreachable from GetIt — one is a local that is nulled the instant
+      // `registerSingleton` returns, the other a throwaway wrapper built inside the
+      // release path — and any third spelling, including the `getIt<UspClient>()`
+      // receiver the old ban was really aimed at, fails here.
+      const allowed = {
+        // A façade constructed but not yet handed to GetIt. Nulled immediately
+        // after `registerSingleton`, so this can only be non-null if registration
+        // itself threw.
+        'pendingFacade?.dispose();',
+        // A wasm handle no façade ever took. Wrapped only to reach `free()` —
+        // `UspClientWeb` is private to `lib/core/usp/services/`, so `dispose()` on a
+        // throwaway is the one public route to it.
+        'UspClient.fromBuilder(jsClient, baseUrl: baseUrl).dispose();',
+      };
+
+      final sites = providerFile
+          .split('\n')
+          .map((l) => l.trim())
+          .where((l) => l.contains('dispose()'))
+          .toSet();
+
+      expect(
+        sites.difference(allowed),
+        isEmpty,
+        reason: 'a new dispose() site appeared in this file: '
+            '${sites.difference(allowed)}. Disposing the *registered* façade calls '
+            'free() on the WASM client and zeroes __wbg_ptr for all 41 services '
+            'holding it by value — that is #1322, and it reproduces only in a '
+            'browser as unrelated features failing with "null pointer passed to '
+            'rust". A swap disposes the old *transport* via rebindTransport(), '
+            'which frees the WASM object exactly once without touching the '
+            'instance. If this really is a handle GetIt never received, add it to '
+            '`allowed` above with the argument for why it is unreachable.',
+      );
+
+      expect(
+        allowed.difference(sites),
+        isEmpty,
+        reason: 'a release site listed above is gone: '
+            '${allowed.difference(sites)}. Both exist to stop a wasm handle leaking '
+            'when installation fails, so deleting one silently restores the leak — '
+            'and a leak is invisible to every other test in this repo. If the '
+            'ownership rule was restructured, re-point this list at the new '
+            'spelling rather than shortening it.',
+      );
     });
   });
 }

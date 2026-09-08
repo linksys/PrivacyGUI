@@ -4,9 +4,47 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockAuthNotifier extends Mock implements AuthNotifier {}
+
+/// Stands in for a live connection so a `UspClient` can be registered in GetIt
+/// without a wasm runtime. Nothing below calls through it.
+class MockUspTransport extends Mock implements UspTransport {}
+
+/// Counts releases instead of performing them.
+///
+/// The property under test is "exactly once", not "via interop" — and the real
+/// implementation reaches `UspClient.fromBuilder`, which refuses off the web
+/// platform, so a VM test cannot let it run and still learn anything. A subclass
+/// plus a provider override rather than a mutable static hook: #1474's
+/// falsification criterion 2 is that a lifecycle test needs no global.
+class _CountingNotifier extends RemoteAssistanceNotifier {
+  int releases = 0;
+  final List<dynamic> released = [];
+
+  @override
+  void releaseOrphanedHandle(dynamic jsClient, String baseUrl) {
+    releases++;
+    released.add(jsClient);
+  }
+}
+
+/// A release that fails, with an error nothing else in the flow throws.
+///
+/// The distinct type is the whole reason it is injected: the production release path
+/// throws the same `UnsupportedError` as the installation it is cleaning up after,
+/// so provoking it naturally would produce a test that cannot fail.
+class _ExplodingReleaseNotifier extends _CountingNotifier {
+  @override
+  void releaseOrphanedHandle(dynamic jsClient, String baseUrl) {
+    super.releaseOrphanedHandle(jsClient, baseUrl);
+    throw StateError('free() on a handle that was already dead');
+  }
+}
 
 void main() {
   setUpAll(() {
@@ -323,6 +361,154 @@ void main() {
 
       verifyNever(() => mockAuthNotifier.setLoginType(any()));
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // installTransport — #1322's ownership question, read the other way
+  // ---------------------------------------------------------------------------
+
+  group('installTransport releases a handle nobody took', () {
+    // WHAT THIS IS. #1322 fixed a handle being freed while 41 services still held
+    // it. This is the same question from the other end: `activate()` builds the wasm
+    // client *before* taking the mutation lock, deliberately — construction races
+    // with nothing — so between `builder.build()` and a façade wrapping it, the only
+    // reference to a live wasm-bindgen object is a local variable. If the critical
+    // section throws, that variable goes out of scope with the object still
+    // allocated and nothing left to call `free()` on. One leak per failed attempt,
+    // on the path a user retries: a Guardian that rejects the token, a supporter
+    // link that has expired.
+    //
+    // WHY IT IS TESTABLE AT ALL, given `activate()` refuses off-web on its first
+    // line. The critical section is extracted into `installTransport`, and the
+    // ownership rule it enforces is platform-independent. In the VM both
+    // installation paths fail at their own `kIsWeb` guard — `rebindFromBuilder` and
+    // `UspClient.fromBuilder` — which is a truthful "installation threw" with no
+    // mock standing in for the failure. The handle is a plain sentinel because
+    // nothing ever dereferences it on this path; only its identity is asserted.
+    late ProviderContainer container;
+    late _CountingNotifier notifier;
+
+    /// An opaque stand-in for `UspClientBuilderJS.build()`'s return value.
+    final handle = Object();
+
+    setUp(() {
+      notifier = _CountingNotifier();
+      container = ProviderContainer(overrides: [
+        remoteAssistanceProvider.overrideWith(() => notifier),
+      ]);
+      addTearDown(container.dispose);
+      // Registered per test rather than in a `tearDown` reading a `late` field: a
+      // leftover singleton makes the *next* test take the rebind branch, and the
+      // whole point of the pair below is which branch ran.
+      //
+      // Restores rather than clears, and the difference is not academic. `getIt` is
+      // a process-global; an unconditional `unregister` would delete whatever was
+      // there before this test regardless of who put it there, and the failure it
+      // causes is a *branch-coverage lie* — a later test silently taking the
+      // register path — not a crash anyone would trace back here. So: remove only
+      // what this test itself added.
+      final preexisting =
+          getIt.isRegistered<UspClient>() ? getIt<UspClient>() : null;
+      addTearDown(() {
+        if (getIt.isRegistered<UspClient>() &&
+            !identical(getIt<UspClient>(), preexisting)) {
+          getIt.unregister<UspClient>();
+        }
+      });
+    });
+
+    test('with nothing registered, the orphan is released exactly once',
+        () async {
+      // The first-activation path: `UspClient.fromBuilder` throws before anything
+      // owns the handle, so the handle is an orphan and this is the only code that
+      // can free it.
+      await expectLater(
+        container
+            .read(remoteAssistanceProvider.notifier)
+            .installTransport(handle, 'https://guardian.example.com'),
+        throwsUnsupportedError,
+      );
+
+      expect(notifier.releases, 1);
+      expect(notifier.released.single, same(handle),
+          reason:
+              'released something other than the handle that was passed in, '
+              'which means the leaked object is still leaked and a different one '
+              'was freed');
+    });
+
+    test('with a client registered, the orphan is still released exactly once',
+        () async {
+      // The re-activation path, and the branch where getting it wrong is worse.
+      // `rebindFromBuilder` throws *before* `rebindTransport` assigns anything, so
+      // the registered façade still owns its previous handle and the new one is the
+      // orphan. Freeing the registered façade instead would be #1322 all over again.
+      getIt.registerSingleton<UspClient>(
+          UspClient.withTransport(MockUspTransport()));
+
+      await expectLater(
+        container
+            .read(remoteAssistanceProvider.notifier)
+            .installTransport(handle, 'https://guardian.example.com'),
+        throwsUnsupportedError,
+      );
+
+      expect(notifier.releases, 1);
+      expect(getIt.isRegistered<UspClient>(), isTrue,
+          reason: 'a failed installation unregistered the live façade. The 41 '
+              'services that resolved it hold it by value and never re-read, so '
+              'this is the shape of #1322: a retry would register a second '
+              'instance and leave every one of them on the first.');
+    });
+
+    test('a cleanup that fails does not replace the error the caller sees',
+        () async {
+      // The release path reaches interop too — it wraps the handle in a throwaway
+      // `UspClient.fromBuilder` to get at `free()` — so a handle that is already
+      // dead, or was never a wasm object, throws from inside the `catch`. Unguarded,
+      // that second throw replaces the first: the confirm view turns whatever
+      // surfaces into its "Connection failed" copy, and it would be reporting the
+      // tidy-up instead of the Guardian's rejection.
+      //
+      // The failure is injected rather than provoked, because in the VM the
+      // production release path throws the *same* `UnsupportedError` with the same
+      // message as the installation it is cleaning up after — so a test that let it
+      // run could not tell which one it caught, and would pass whether the guard
+      // existed or not.
+      final exploding = _ExplodingReleaseNotifier();
+      final c = ProviderContainer(overrides: [
+        remoteAssistanceProvider.overrideWith(() => exploding),
+      ]);
+      addTearDown(c.dispose);
+
+      await expectLater(
+        c
+            .read(remoteAssistanceProvider.notifier)
+            .installTransport(handle, 'https://guardian.example.com'),
+        throwsUnsupportedError,
+      );
+      expect(exploding.releases, 1,
+          reason: 'the release was never attempted, so this test is not '
+              'measuring the guard');
+    });
+
+    // NOT COVERED HERE, and worth saying so rather than leaving the gap to be
+    // discovered. Everything on the `handleOwned == true` side of the rule is
+    // unreachable in the VM, for the same reason that makes the tests above possible:
+    // wrapping the handle is what fails off-web, so the flag can never be true by the
+    // time the `catch` runs. Two claims live on that side —
+    //
+    //   - the `pendingFacade?.dispose()` arm, which fires when a façade wrapped the
+    //     handle and then `registerSingleton` threw;
+    //   - that the release is *skipped* when a façade did take ownership, which is
+    //     the difference between recovering a leak and double-freeing the live
+    //     connection.
+    //
+    // Measured, not assumed: a mutation releasing unconditionally passed all three
+    // tests above. Both are pinned structurally instead, in
+    // `remote_assistance_swap_guard_test.dart` — the disposal census requires that
+    // exact `dispose()` line, and a separate test requires the `if (!handleOwned)`
+    // guard around it.
   });
 
   // ---------------------------------------------------------------------------

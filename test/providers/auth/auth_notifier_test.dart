@@ -18,6 +18,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
+import 'package:privacy_gui/framework/mode/session_entry.dart';
+import 'package:privacy_gui/framework/mode/session_request.dart';
 import 'package:privacy_gui/framework/mode/session_strategy.dart';
 import 'package:privacy_gui/framework/mode/transport_strategy.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -58,6 +60,25 @@ class _SpySessionStrategy implements SessionStrategy {
     calls.add(cause);
     onEnd?.call();
   }
+
+  // The entry half of cause 3, added in #1474 phase 9. Throwing rather than
+  // recording, for the same reason `_SpyModeProfile` throws for the other three
+  // causes: these tests are about `logout()`, and ending a session must not reach
+  // for the way *into* one. The `localLogin` group below deliberately does not
+  // install this profile — it runs the real `LocalSessionStrategy` against
+  // overridden services, which is what makes it the test that `start()` did not
+  // change local behaviour.
+  @override
+  Future<void> start(Ref ref, SessionRequest request) =>
+      throw StateError('logout() must not open a session');
+
+  @override
+  SessionEntry entryPoint(Ref ref, Uri location) =>
+      throw StateError('logout() must not resolve a session entry point');
+
+  @override
+  SessionEntry guardEntry(Ref ref) =>
+      throw StateError('logout() must not guard a session entry');
 }
 
 /// A profile that answers cause 3 with the spy and throws for the other three.

@@ -4,14 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+// Both config imports survive #1474 phase 9, and neither is a mode read: this
+// library uses `BuildConfig.skipPnp` in `_prepare()` and
+// `GlobalConfig.feature.enableTestConsole` in the `route_usp_dashboard.dart` part.
+// Those are feature flags. The mode axis is now read only through
+// `appModeProfileProvider`, and `test/core/mode/composition_root_test.dart` is what
+// keeps this file at zero.
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
-import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/session_entry.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
@@ -120,6 +126,44 @@ final sharedAppRoutes = [
 /// TODO: Migrate components to use uspShellNavigatorKey and remove this.
 final shellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Turn a [SupportSessionEntry] into the confirm-route location it names.
+///
+/// The page-layer half of cause 3's entry: `lib/core/` may not depend on
+/// `lib/route/`, so the strategies answer with a *kind* of entry and this maps it —
+/// the same division that lets `SessionOutcome` exist. Three shapes, and they are
+/// the three the two call sites below used to build inline.
+///
+/// Top-level rather than a method on [RouterNotifier] because both consumers need
+/// it and one of them is the `redirect` closure, which has no notifier in scope for
+/// the branch it lives in. Public only so its three answers can be asserted
+/// directly: they are the destinations of all eight automatic RA endings plus every
+/// supporter link, and reached through the router they are unreachable from a test —
+/// which is how the `?ended=true` arm could have been inverted with a green suite.
+@visibleForTesting
+String supportSessionLocation(
+  String? sessionId,
+  String? token,
+  bool previousSessionEnded,
+) {
+  // Keyed on the session id alone, with an empty token spelled out rather than
+  // omitted. Two reasons, and the first is the one that made this a review finding:
+  // [SupportSessionEntry]'s fields are independently nullable, so an id with no
+  // token is a value the sealed type invites — and requiring both would silently
+  // *discard the id*, sending a resumable session to the bare confirm path and its
+  // red `_buildMissingParamsView()`. Second, `&token=` empty is preserved from the
+  // string this replaced: a half-formed supporter link should reach the confirm view
+  // and be reported by its `_hasRequiredParams`, not be rerouted as if the session
+  // had ended.
+  if (sessionId != null) {
+    return '${RoutePath.remoteAssistanceConfirm}'
+        '?session=$sessionId'
+        '&token=${token ?? ''}';
+  }
+  return previousSessionEnded
+      ? '${RoutePath.remoteAssistanceConfirm}?ended=true'
+      : RoutePath.remoteAssistanceConfirm;
+}
+
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -133,6 +177,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') {
         return router.autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
+        // The discarded `Future` is **pre-existing**, and #1498 did not change what
+        // it discards — before phase 9 this call ended in `return RoutePath
+        // .remoteAssistanceConfirm` for a remote build and that was dropped too;
+        // now it ends in `SessionStrategy.entryPoint` and the answer is dropped.
+        // Recorded rather than fixed because both halves are outside a refactor's
+        // remit: the fire-and-forget also runs `authCheck` concurrently with the
+        // `redirectLogic` whose value *is* returned, so two redirect decisions are
+        // in flight for one navigation, and awaiting it would change where a remote
+        // build's hand-typed `/localLoginPassword` lands. `localLoginRoute` is in
+        // `sharedAppRoutes`, i.e. registered in both modes, so "which surface owns
+        // the login route" is the `SurfaceStrategy.routes()` question this really
+        // is. Belongs on #1498's ticket, not in it.
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
@@ -163,60 +219,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         // go_router's error page, so no route table can decline it.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
-        // USP routes — check auth, redirect to login when logged out.
-        // In Remote build mode, redirect to confirm page with restored session params.
-        if (GlobalConfig.remote.isActive) {
-          // If already connected (USP layer active), allow access
-          final isRemoteAssistance = ref.read(authProvider
-              .select((value) => value.value?.isRemoteAssistance ?? false));
-          if (isRemoteAssistance) {
-            return state.uri.toString();
-          }
-
-          // Not connected — check for restored session to re-connect
-          final raState = ref.read(remoteAccessProvider);
-          if (raState.sessionInfo != null && raState.sessionToken != null) {
-            // Redirect to confirm page to re-establish connection
-            logger
-                .i('[Route]: Remote mode refresh, redirecting to confirm page');
-            return '${RoutePath.remoteAssistanceConfirm}'
-                '?session=${raState.sessionInfo!.id}'
-                '&token=${raState.sessionToken}';
-          }
-          // No session. Two very different situations reach this line, and #1323
-          // (phase 5) is what makes the difference visible: since cause 3 clears
-          // `remoteAccessProvider` on *every* exit, this is now the landing point
-          // for all eight automatic RA endings — idle timeout, a 401 on the
-          // bridge, an SSE give-up, a serial mismatch, a factory reset, a relogin
-          // that failed — not just for a cold load.
-          //
-          // Told apart by `remoteAssistanceProvider.isActive`, which means "a
-          // Guardian session was activated in this page lifetime". Nothing ever
-          // sets it back to false (`deactivate()` was removed by acceptance 10, and
-          // `activate()` is what sets it), so it survives the session teardown and
-          // is exactly the "there *was* a session" signal this needs. A browser
-          // reload rebuilds the provider, which is correct: a reloaded tab really
-          // has no session to have lost.
-          //
-          // Without this, an RA session that ended by itself landed on
-          // `_buildMissingParamsView()` — a red developer error page reading
-          // "Missing Parameters" — because the bare path has no `session`/`token`
-          // for `_hasRequiredParams`. That is what `SessionOutcome
-          // .supportSessionEnded` is supposed to name, and the two page-layer
-          // sites that hard-code `?ended=true` were the only ones getting it.
-          final endedHere = ref.read(remoteAssistanceProvider).isActive;
-          logger.i('[Route]: Remote mode no session, redirecting to RA page '
-              '(endedHere: $endedHere)');
-          return endedHere
-              ? '${RoutePath.remoteAssistanceConfirm}?ended=true'
-              : RoutePath.remoteAssistanceConfirm;
-        }
-        final isLoggedIn = ref.watch(
-            authProvider.select((value) => value.value?.isLoggedIn ?? false));
-        if (!isLoggedIn) {
-          return router._home();
-        }
-        return state.uri.toString();
+        // USP routes — is there a session, and if not, where does this mode get
+        // one? Cause 3 answers both halves; this branch only maps the answer onto
+        // a location, which is the half `lib/core/` cannot do.
+        //
+        // The `if (GlobalConfig.remote.isActive)` that stood here was the last mode
+        // read in `lib/route/` outside `autoConfigurationLogic`, and it wrapped
+        // *three* of the four returns below. Note that the local and remote arms
+        // read auth with different verbs (`watch` and `read`) and different
+        // predicates (`isLoggedIn`, `isRemoteAssistance`); both are preserved
+        // inside the strategies, and the difference is documented on
+        // `SessionStrategy.guardEntry` as the reason this is a member.
+        return switch (
+            ref.read(appModeProfileProvider).session.guardEntry(ref)) {
+          SessionAlreadyHeld() => state.uri.toString(),
+          OwnCredentialsEntry() => router._home(),
+          SupportSessionEntry(
+            :final sessionId,
+            :final token,
+            :final previousSessionEnded,
+          ) =>
+            supportSessionLocation(sessionId, token, previousSessionEnded),
+        };
       }
       return router.redirectLogic(state);
     },
@@ -245,40 +269,49 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
-    // Check for Remote Assistance mode via URL parameter.
+    // Where does this mode's session come from, given the location we were entered
+    // at? Cause 3 (`SessionStrategy.entryPoint`) decides; this maps the answer.
     //
-    // Build-gated as of #1474 phase 1 / #1357 item 1. Ungated, this was the
-    // second RA entry point and the more dangerous one, because it produced a
-    // *hybrid* configuration rather than a refusal: `activate(config)` registers
-    // a Guardian-proxied `UspClient`, while `BuildConfig.isRemote()` stays false,
-    // so `sse_providers.dart` takes its local branch and builds a bridge with
-    // `BridgeEndpoints.local` paths and `AuthBehavior.local` against the
-    // Guardian origin — on-router paths, no bearer token, wrong host.
+    // Two `BuildConfig.isRemote()` reads stood here until #1474 phase 9 — the
+    // `?session=` translation and the `force=remote` cold-entry redirect — and both
+    // were session entry by cause, which is why the ticket's scope widened to take
+    // them. With them gone `lib/route/` reads no mode flag at all.
     //
-    // A local build now ignores the parameter and continues to the normal login
-    // flow. It is not sanitised out of the URL: nothing downstream reads it once
-    // this branch declines, and rewriting the location here would fight the
-    // `?session=` the login redirect already passes through.
-    final raSession = state.uri.queryParameters['session'];
-    if (raSession != null && raSession.isNotEmpty) {
-      if (!BuildConfig.isRemote()) {
-        // Warn, for the same reason as entry 1: the likeliest cause of a
-        // `?session=` arriving in a non-Remote build is an RA deployment whose
-        // `force` dart-define is unset or misspelled, which `ForceCommand.reslove`
-        // downgrades to `ForceCommand.none` without complaint. This log line is
-        // then the only evidence that every supporter's link is dead.
-        logger.w('[Route]: RA session param in a non-Remote build, ignoring');
-      } else {
-        final raToken = state.uri.queryParameters['token'] ?? '';
-        logger.i('[Route]: Detected Remote Assistance session: $raSession');
-        return '${RoutePath.remoteAssistanceConfirm}?session=$raSession&token=$raToken';
-      }
-    }
-
-    // Check for Remote build mode (force=remote)
-    if (BuildConfig.isRemote()) {
-      logger.i('[Route]: Remote build mode detected, redirecting to RA page');
-      return RoutePath.remoteAssistanceConfirm;
+    // The `?session=` one was the more dangerous of the epic's two RA entry points,
+    // because ungated it produced a *hybrid* configuration rather than a refusal:
+    // `activate(config)` registers a Guardian-proxied `UspClient` while
+    // `BuildConfig.isRemote()` stays false, so `sse_providers.dart` takes its local
+    // branch and builds a bridge with `BridgeEndpoints.local` paths and
+    // `AuthBehavior.local` against the Guardian origin — on-router paths, no bearer
+    // token, wrong host. It is now inexpressible: only `RemoteSessionStrategy`
+    // constructs the request that `activate` needs (see `SessionRequest`).
+    //
+    // A local build still ignores the parameter and continues to the normal login
+    // flow — with a `logger.w`, authored in `LocalSessionStrategy.entryPoint`,
+    // because it is the only evidence an RA deployment's `force` dart-define is
+    // unset or misspelled. The parameter is not sanitised out of the URL: nothing
+    // downstream reads it once entry declines, and rewriting the location here would
+    // fight the `?session=` the login redirect already passes through.
+    final entryLocation =
+        switch (_ref.read(appModeProfileProvider).session.entryPoint(
+              _ref,
+              state.uri,
+            )) {
+      SupportSessionEntry(
+        :final sessionId,
+        :final token,
+        :final previousSessionEnded,
+      ) =>
+        supportSessionLocation(sessionId, token, previousSessionEnded),
+      // Local entry answers "not a location", so that `authCheck` below stays the
+      // one thing that decides where a credential-less app goes — it knows about
+      // PnP, first-time login and cloud-versus-local, which cause 3 does not.
+      // `SessionAlreadyHeld` is unreachable from `entryPoint` (see `SessionEntry`);
+      // it is listed rather than defaulted so the switch stays exhaustive.
+      OwnCredentialsEntry() || SessionAlreadyHeld() => null,
+    };
+    if (entryLocation != null) {
+      return entryLocation;
     }
 
     final loginType = _ref.read(authProvider

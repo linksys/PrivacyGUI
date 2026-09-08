@@ -1,5 +1,20 @@
-// #1323 phase 5: cause 3's two members — `SessionStrategy.destination` and
-// `SessionStrategy.end`.
+// Cause 3 — what a session *is*. `destination` and `end` arrived with #1323 phase
+// 5; `start`, `entryPoint` and `guardEntry` with #1498 phase 9, which is the entry
+// half of the same cause.
+//
+// WHY THE ENTRY HALF BELONGS IN THIS FILE AND NOT ITS OWN. The five members answer
+// one question between them, and the interesting assertions are the ones that read
+// across the halves. `guardEntry`'s third answer — `previousSessionEnded` — is only
+// ever true because `end` cleared `remoteAccessProvider` first; the two are a
+// protocol, and split across two files the `endedHere` flag looks like an
+// unexplained boolean. `start` and `end` are likewise a pair: `start` may throw and
+// `end` must not, which is a difference worth reading in one place.
+//
+// The one entry claim that is NOT here is `entryPoint`'s. It lives in
+// `test/route/remote_assistance_entry_gate_test.dart`, because there the two answers
+// are the gate that keeps the agent UI out of a local build (#1357 item 1) — the
+// same member, asserted for a different reason, next to the route-table half of that
+// same gate.
 //
 // One file for both modes, same reason as `recovery_strategies_test.dart`: every
 // claim below is a *difference* between the two answers to one question, and split
@@ -33,28 +48,46 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 import 'package:privacy_gui/core/mode/impl/local_session_strategy.dart';
 import 'package:privacy_gui/core/mode/impl/remote_session_strategy.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
+import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
+import 'package:privacy_gui/framework/mode/session_entry.dart';
+import 'package:privacy_gui/framework/mode/session_request.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
+
+import '../../../mocks/provider_overrides/mock_login.dart';
 
 class MockRemoteAssistanceService extends Mock
     implements RemoteAssistanceService {}
 
-/// Records `clearSession()` without stubbing the rest of the notifier.
+/// Records the two calls cause 3 makes into RA session state, without stubbing the
+/// rest of the notifier.
 ///
 /// A `Mock implements RemoteAccessNotifier` would work for the verification and
 /// would then also have to answer `state`, which the strategy reads on the way in
 /// — two mocks describing one object, where the second one silently decides what
-/// the first one sees. Subclassing keeps the state real and spies on the one call.
+/// the first one sees. Subclassing keeps the state real and spies on the calls.
 class _SpyRemoteAccessNotifier extends RemoteAccessNotifier {
-  _SpyRemoteAccessNotifier(this._seed);
+  _SpyRemoteAccessNotifier(this._seed, {List<String>? events})
+      : events = events ?? [];
 
   final RemoteAccessState _seed;
+
+  /// Shared with [_SpyRemoteAssistanceNotifier] when a test cares about order.
+  final List<String> events;
+
   int clearSessionCalls = 0;
+  final List<({GRASessionInfo? info, int? seconds, String? token})> updates =
+      [];
 
   @override
   RemoteAccessState build() => _seed;
@@ -62,11 +95,68 @@ class _SpyRemoteAccessNotifier extends RemoteAccessNotifier {
   @override
   void clearSession() {
     clearSessionCalls++;
+    events.add('clearSession');
     // Deliberately does NOT call super: the real one cancels two timers and
     // touches `sessionStorage`, neither of which exists in a VM test, and the
     // claim being made here is "the strategy asks", not "the notifier delivers".
   }
+
+  @override
+  void updateSessionInfo(
+    GRASessionInfo? info,
+    int? remainingSeconds, {
+    String? sessionToken,
+  }) {
+    updates.add((info: info, seconds: remainingSeconds, token: sessionToken));
+    events.add('updateSessionInfo');
+    // Not calling super for the same reason as above, and one more: the real one
+    // starts a `Timer.periodic` countdown and a status poll, so a VM test that let
+    // it through would leak two timers per case and fail in whatever test ran next.
+  }
 }
+
+/// Records `activate()` — or fails it — without a wasm runtime.
+///
+/// The real one refuses off-web on its first line, so a test of what `start()` does
+/// *around* it needs this. What is installed is not this file's claim:
+/// `remote_assistance_provider_test.dart` owns the transport-installation and
+/// handle-ownership rules.
+class _SpyRemoteAssistanceNotifier extends RemoteAssistanceNotifier {
+  _SpyRemoteAssistanceNotifier({
+    this.seed = const RemoteAssistanceState(),
+    this.failWith,
+    List<String>? events,
+  }) : events = events ?? [];
+
+  final RemoteAssistanceState seed;
+
+  /// When set, `activate()` throws it — standing in for a Guardian that rejected
+  /// the token or a wasm client that would not build.
+  final Object? failWith;
+
+  final List<String> events;
+  final List<RemoteAssistanceConfig> activations = [];
+
+  @override
+  RemoteAssistanceState build() => seed;
+
+  @override
+  Future<void> activate(RemoteAssistanceConfig config) async {
+    activations.add(config);
+    events.add('activate');
+    if (failWith != null) {
+      throw failWith!;
+    }
+  }
+}
+
+/// Seeds `authProvider` with a settled login type.
+///
+/// Reuses the shared `FixedAuthStateNotifier` rather than declaring another local
+/// one: `guardEntry` reads nothing else off auth, so a bespoke stub here would be a
+/// near-duplicate whose only difference is that a future reader has to check.
+Override _authAs(LoginType loginType) => authProvider.overrideWith(
+    () => FixedAuthStateNotifier(AuthState(loginType: loginType)));
 
 GRASessionInfo _sessionInfo(String id) => GRASessionInfo(
       id: id,
@@ -336,11 +426,333 @@ void main() {
           )).called(1);
     });
   });
+
+  group('SessionStrategy.start', () {
+    test('each mode refuses the other mode\'s request, and refuses it first',
+        () {
+      // The reason [SessionRequest] is sealed rather than one class with nullable
+      // fields, and #1357 item 1 read structurally: the hybrid configuration that
+      // bug produced — a Guardian transport installed while the app believed it was
+      // local — needed a password and a session token to coexist in one object. They
+      // cannot. There is no `if` guarding this; the type is the guard, and the
+      // `switch` is exhaustive, so a third request kind would not compile.
+      //
+      // Every provider either strategy could reach throws on first read, so this
+      // also pins *when*: a refusal that happened after `tryUspLogin` or after
+      // `activate` would be a refusal arriving too late to prevent anything.
+      final container = ProviderContainer(overrides: [
+        uspAuthCoordinatorProvider.overrideWith(
+            (_) => throw StateError('start() opened a local login')),
+        sessionProvider.overrideWith(
+            () => throw StateError('start() fetched device info')),
+        remoteAssistanceProvider.overrideWith(
+            () => throw StateError('start() installed a transport')),
+        remoteAccessProvider
+            .overrideWith(() => throw StateError('start() recorded a session')),
+      ]);
+      addTearDown(container.dispose);
+      final ref = _refOf(container);
+
+      expect(
+        () => const LocalSessionStrategy()
+            .start(ref, SupportSessionRequest(sessionId: 's', token: 't')),
+        throwsArgumentError,
+      );
+      expect(
+        () => const RemoteSessionStrategy()
+            .start(ref, const OwnCredentialsRequest('hunter2')),
+        throwsArgumentError,
+      );
+    });
+
+    group('RemoteSessionStrategy', () {
+      late List<String> events;
+      late _SpyRemoteAssistanceNotifier spyRa;
+      late _SpyRemoteAccessNotifier spyAccess;
+
+      ProviderContainer containerWith({Object? activateFails}) {
+        events = [];
+        spyRa = _SpyRemoteAssistanceNotifier(
+            failWith: activateFails, events: events);
+        spyAccess =
+            _SpyRemoteAccessNotifier(const RemoteAccessState(), events: events);
+        final container = ProviderContainer(overrides: [
+          remoteAssistanceProvider.overrideWith(() => spyRa),
+          remoteAccessProvider.overrideWith(() => spyAccess),
+        ]);
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      SupportSessionRequest request() => SupportSessionRequest(
+            sessionId: 'sess-1',
+            token: 'tok-1',
+            sessionInfo: _sessionInfo('sess-1'),
+            remainingSeconds: 1800,
+          );
+
+      test('installs the transport before it records the engagement', () async {
+        // Order, and the reverse is the plausible mistake: "record what we know,
+        // then connect" reads as the careful one. It is not — `updateSessionInfo`
+        // starts the expiry countdown and the status poll, and the RA chip appears
+        // as soon as it lands, so recording first shows the operator a live session
+        // over a connection that does not exist yet.
+        final container = containerWith();
+
+        await const RemoteSessionStrategy().start(_refOf(container), request());
+
+        expect(events, ['activate', 'updateSessionInfo']);
+      });
+
+      test('the token reaches both the transport and the session record',
+          () async {
+        // Two consumers of one credential, and they are reached by different calls
+        // — so a refactor can drop either without the other noticing. The transport
+        // authenticates USP with it; the record is what the `/usp*` guard later
+        // rebuilds a resumable confirm URL from (see `guardEntry` below), and a
+        // record without a token cannot be resumed.
+        final container = containerWith();
+
+        await const RemoteSessionStrategy().start(_refOf(container), request());
+
+        expect(spyRa.activations.single.temporaryAccessToken, 'tok-1');
+        expect(spyRa.activations.single.sessionId, 'sess-1');
+        expect(spyAccess.updates.single.token, 'tok-1');
+        expect(spyAccess.updates.single.seconds, 1800);
+        expect(spyAccess.updates.single.info?.id, 'sess-1');
+      });
+
+      test('the Guardian host comes from build config, not from the request',
+          () async {
+        // The whole reason `guardianBaseUrl` and `clientTypeId` are absent from
+        // [SupportSessionRequest]: a caller that could name the Guardian could point
+        // a session at the wrong one, and the request arrives from a URL. Asserted
+        // against the same expression the config getter uses rather than a literal,
+        // because the value is per-build — a literal would pin whichever environment
+        // this test happened to run in.
+        final container = containerWith();
+
+        await const RemoteSessionStrategy().start(_refOf(container), request());
+
+        expect(spyRa.activations.single.guardianBaseUrl,
+            cloudEnvironmentConfig[kCloudBase]);
+        expect(spyRa.activations.single.clientTypeId, kClientTypeId);
+      });
+
+      test('a failed activation records nothing and lets the error through',
+          () async {
+        // The difference from `end`, which is documented as non-throwing and is
+        // tested above for exactly that. Entry must throw: the confirm view awaits
+        // this and turns a throw into its "Connection failed" state, and a swallowed
+        // failure would leave the operator on a page that says it connected.
+        //
+        // And the state must stay empty. A recorded session over a transport that
+        // failed to install is worse than no session: `guardEntry` would read it back
+        // as resumable and send a retry straight past the confirm form.
+        final container =
+            containerWith(activateFails: Exception('Guardian 401'));
+
+        await expectLater(
+          const RemoteSessionStrategy().start(_refOf(container), request()),
+          throwsException,
+        );
+        expect(events, ['activate']);
+        expect(spyAccess.updates, isEmpty);
+      });
+    });
+
+    // No local `start()` case here, and the absence is deliberate rather than a gap.
+    // Its two calls and their order are asserted in
+    // `test/providers/auth/auth_notifier_test.dart` — "login does not call
+    // fetchDeviceInfo if USP fails" — and that group runs the *real*
+    // `LocalSessionStrategy` because it does not override `appModeProfileProvider`.
+    // That is what makes it the proof phase 9 left local login alone; re-asserting it
+    // here against spies would be a weaker copy of it.
+  });
+
+  group('SessionStrategy.guardEntry', () {
+    // Runs on every in-session navigation to a `/usp*` location, which is why the
+    // two implementations differ on something as basic as `watch` versus `read`.
+
+    test('local: logged in holds the location, logged out goes to login',
+        () async {
+      for (final (loginType, expected) in [
+        (LoginType.local, isA<SessionAlreadyHeld>()),
+        (LoginType.none, isA<OwnCredentialsEntry>()),
+      ]) {
+        // Both RA providers throw on first read. A local build has no RA state to
+        // consult, and the pre-#1498 redirect could not have made that mistake
+        // because the local branch was on the other side of an `if` — so the guard
+        // has to be here now that the branch is a strategy choice instead.
+        final container = ProviderContainer(overrides: [
+          _authAs(loginType),
+          remoteAccessProvider.overrideWith(
+              () => throw StateError('local guardEntry read RA state')),
+          remoteAssistanceProvider.overrideWith(
+              () => throw StateError('local guardEntry read RA activation')),
+        ]);
+        addTearDown(container.dispose);
+
+        expect(
+            const LocalSessionStrategy()
+                .guardEntry(await _settledRef(container)),
+            expected);
+      }
+    });
+
+    group('remote', () {
+      /// Also settles `authProvider` — see [_settledRef].
+      Future<Ref> refWith({
+        LoginType loginType = LoginType.none,
+        RemoteAccessState access = const RemoteAccessState(),
+        bool raActive = false,
+      }) async {
+        final container = ProviderContainer(overrides: [
+          _authAs(loginType),
+          remoteAccessProvider
+              .overrideWith(() => _SpyRemoteAccessNotifier(access)),
+          remoteAssistanceProvider.overrideWith(() =>
+              _SpyRemoteAssistanceNotifier(
+                  seed: RemoteAssistanceState(isActive: raActive))),
+        ]);
+        addTearDown(container.dispose);
+        return _settledRef(container);
+      }
+
+      test('a live Guardian session holds the location', () async {
+        // `isRemoteAssistance`, not `isLoggedIn`, and the difference is not cosmetic:
+        // `loginType == remote` is the only value that means "this app is on a
+        // Guardian transport". A local `loginType` in a remote build would be a bug,
+        // and answering `SessionAlreadyHeld` to it would hide that bug behind a
+        // working dashboard.
+        final ref = await refWith(loginType: LoginType.remote);
+
+        expect(const RemoteSessionStrategy().guardEntry(ref),
+            isA<SessionAlreadyHeld>());
+      });
+
+      test('a local login in a remote build is not a held session', () async {
+        final ref = await refWith(loginType: LoginType.local);
+
+        expect(const RemoteSessionStrategy().guardEntry(ref),
+            isA<SupportSessionEntry>());
+      });
+
+      test('a reload mid-session comes back resumable, with its parameters',
+          () async {
+        // The mode-specific arm. RA parameters survive a page reload in
+        // `sessionStorage`, so a refresh can re-establish rather than start over —
+        // and the id and token are what make that possible, because the confirm view
+        // refuses to connect without both.
+        final ref = await refWith(
+          access: RemoteAccessState(
+            sessionInfo: _sessionInfo('sess-9'),
+            sessionToken: 'tok-9',
+          ),
+        );
+
+        final entry = const RemoteSessionStrategy().guardEntry(ref);
+
+        expect(entry, isA<SupportSessionEntry>());
+        expect((entry as SupportSessionEntry).sessionId, 'sess-9');
+        expect(entry.token, 'tok-9');
+        expect(entry.previousSessionEnded, isFalse,
+            reason:
+                'a resumable session has not ended — the flag would send the '
+                'operator to the terminal surface instead of letting them '
+                'reconnect');
+      });
+
+      test('a half-populated record is not resumable', () async {
+        // `sessionInfo != null && sessionToken != null`, both halves. Reachable:
+        // `_forceSessionEnd()` rewrites `sessionInfo.status` to invalid and keeps the
+        // token, and `clearSession()` drops both — but a partial write in between
+        // would build a confirm URL with `token=null` in it, which the view rejects
+        // as a missing parameter on a page the operator cannot get past.
+        final ref = await refWith(
+          access: RemoteAccessState(sessionInfo: _sessionInfo('sess-9')),
+        );
+
+        final entry = const RemoteSessionStrategy().guardEntry(ref)
+            as SupportSessionEntry;
+
+        expect(entry.sessionId, isNull);
+      });
+
+      test('an ended session is told apart from a cold load', () async {
+        // #1323 phase 5's `?ended=true`, and the pair below is the whole claim: the
+        // *same* empty `remoteAccessProvider` means two different things depending on
+        // whether a Guardian session was ever activated in this page lifetime.
+        //
+        // It matters because phase 5 made the empty state the normal way to arrive.
+        // All eight automatic RA endings — an idle timeout, a 401 on the bridge, an
+        // SSE give-up, a serial mismatch, a factory reset, a failed relogin — now
+        // clear the session on the way out and land here. Without this flag they
+        // rendered the confirm view's `_buildMissingParamsView()`: a red developer
+        // page reading "Missing Parameters", shown to an operator whose session had
+        // simply expired.
+        //
+        // `remoteAssistanceProvider.isActive` is the discriminator because it is the
+        // one piece of RA state `end()` does *not* clear — see the "NO deactivate()"
+        // note on `RemoteAssistanceNotifier`, which is why that is true by design and
+        // not by accident.
+        final cold = await refWith();
+        final afterEnding = await refWith(raActive: true);
+
+        expect(
+          (const RemoteSessionStrategy().guardEntry(cold)
+                  as SupportSessionEntry)
+              .previousSessionEnded,
+          isFalse,
+        );
+        expect(
+          (const RemoteSessionStrategy().guardEntry(afterEnding)
+                  as SupportSessionEntry)
+              .previousSessionEnded,
+          isTrue,
+        );
+      });
+
+      test('the two modes disagree on the same state', () async {
+        // The census, same intent as the `end` group's version: a member whose
+        // implementations agree everywhere does not belong on the contract. Not
+        // logged in, no session — local sends the user to type a password, remote
+        // sends them to the agent UI, because in a remote build there is no password
+        // to type.
+        final ref = await refWith();
+
+        expect(const LocalSessionStrategy().guardEntry(ref),
+            isA<OwnCredentialsEntry>());
+        expect(const RemoteSessionStrategy().guardEntry(ref),
+            isA<SupportSessionEntry>());
+      });
+    });
+  });
 }
 
-/// Riverpod exposes no public `Ref` on a container, and these strategies only ever
-/// `read` — so a one-line adapter is enough, and is honest about the fact that the
-/// strategies use `Ref` as a service locator rather than for lifecycle.
+/// Riverpod exposes no public `Ref` on a container, so a one-line adapter it is —
+/// honest about the fact that these strategies use `Ref` as a service locator
+/// rather than for lifecycle.
+///
+/// `LocalSessionStrategy.guardEntry` is the one member that `watch`es rather than
+/// `read`s, and it works through this adapter too: in riverpod 2 a `Ref` obtained
+/// from a built provider still resolves `watch` — it just has nothing left to
+/// rebuild. Which is exactly the shape of the production call, where the router's
+/// `redirect` runs outside any build and go_router re-runs it from the
+/// `refreshListenable` instead.
 Ref _refOf(ProviderContainer container) => container.read(_refExposerProvider);
+
+/// [_refOf], after `authProvider` has resolved.
+///
+/// `AuthNotifier.build` returns a `Future`, so a freshly-overridden container sits
+/// at `AsyncLoading` for one microtask — and both `guardEntry` implementations read
+/// through `value.value?`, where loading and logged-out are the same answer. Without
+/// this every case below would read as "no session" whatever it was seeded with, and
+/// the two that expect a held session would fail while the four that expect an entry
+/// point would pass for the wrong reason.
+Future<Ref> _settledRef(ProviderContainer container) async {
+  await container.read(authProvider.future);
+  return _refOf(container);
+}
 
 final _refExposerProvider = Provider<Ref>((ref) => ref);

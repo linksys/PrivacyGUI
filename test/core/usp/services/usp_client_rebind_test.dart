@@ -749,5 +749,59 @@ void main() {
       expect(first.disposeCount, 1);
       expect(client.baseUrl, 'https://two');
     });
+
+    test('a throttler that throws does not abort the swap', () {
+      // #1474 phase 9 turned "does not throw once it has taken the transport"
+      // from a property of this body into a *contract*, because
+      // `RemoteAssistanceNotifier.installTransport` now decides whether to
+      // `free()` the wasm handle from whether this call returned. A throw here
+      // would be read as "nobody took the handle", and the handle would be freed
+      // underneath the façade that had just taken it: #1322's field symptom
+      // (`null pointer passed to rust` across 41 services) arriving from the code
+      // written to prevent its mirror image.
+      //
+      // The throttler is the reachable half of the post-assignment region — it is
+      // an injected object, so a decorator or a future subclass really can throw.
+      final first = _RecordingTransport('session-1');
+      final client = UspClient.withTransport(first, baseUrl: 'https://one');
+      client.throttler = _ExplodingThrottler();
+
+      final second = _RecordingTransport('session-2');
+      expect(() => client.rebindTransport(second, baseUrl: 'https://two'),
+          returnsNormally);
+
+      expect(client.baseUrl, 'https://two');
+    });
+
+    test('a throttler that throws does not cost the old transport its free()',
+        () {
+      // The reason the two guards in `rebindTransport` are sequential rather than
+      // nested. Nesting the release inside the bookkeeping guard makes a throttler
+      // failure skip `previous.dispose()` — trading the double free for a leak of
+      // the outgoing wasm client, which is the same class of bug one step over.
+      final first = _RecordingTransport('session-1');
+      final client = UspClient.withTransport(first, baseUrl: 'https://one');
+      client.throttler = _ExplodingThrottler();
+
+      client.rebindTransport(_RecordingTransport('session-2'),
+          baseUrl: 'https://two');
+
+      expect(first.disposeCount, 1,
+          reason:
+              'the outgoing transport was never released, so its WASM client '
+              'leaked for the whole page lifetime');
+    });
   });
+}
+
+/// A throttler whose per-connection reset fails.
+///
+/// Stands in for any decorator or subclass of the injected throttler: the point is
+/// that this call-out is not under `UspClient`'s control, not that
+/// `BridgeRequestThrottler` itself is likely to throw.
+class _ExplodingThrottler extends BridgeRequestThrottler {
+  @override
+  void invalidateSession() {
+    throw StateError('invalidateSession() failed');
+  }
 }
