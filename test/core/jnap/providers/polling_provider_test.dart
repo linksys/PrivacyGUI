@@ -617,12 +617,12 @@ void main() {
 
     testWidgets('an unauthorized poll is not asked again', (tester) async {
       // What logging out on the first one is protecting. The router locks the
-      // admin account after a handful of refused credentials, and
-      // LinksysHttpClient retries a 401 once, so this single poll has already
-      // spent two of the operator's attempts. The short re-poll that a router
-      // *not answering* earns would spend two more every
+      // admin account after five consecutive refused credentials, so this single
+      // poll has already spent one of the operator's five. The short re-poll that
+      // a router *not answering* earns would spend another every
       // [pollRetryDelayInSec] - and carry the same rejected password every time,
-      // which is how a stale credential turns into a locked account.
+      // which is how a stale credential turns into a locked account in under half
+      // a minute. #1180 is the same lockout reached from a different poll loop.
       whenSend((_) async => deviceMode('Master'));
       whenTransaction(
           (_) async => throw const JNAPError(result: errorJNAPUnauthorized));

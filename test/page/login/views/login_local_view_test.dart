@@ -1,9 +1,9 @@
 // Widget tests for what the login page says about a locked admin account.
 //
 // This is the far end of the poll loop's forced logout: a router that starts
-// refusing the stored credential locks the admin account after a handful of
-// attempts, and PollingNotifier logs the operator out rather than go on spending
-// them (see polling_provider_test.dart's 'a locked admin account logs out'). The
+// refusing the stored credential locks the admin account after five attempts,
+// and PollingNotifier logs the operator out rather than go on spending them (see
+// polling_provider_test.dart's 'a locked admin account logs out'). The
 // page they land on is the only thing that tells them why, and it works that out
 // for itself - it asks the router for the admin password auth status on the way
 // in, rather than being handed a message by whatever logged them out.

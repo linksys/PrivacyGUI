@@ -304,11 +304,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       // silence. A JNAPError is an answer - the router is there and talking - so
       // it is neither unreachable nor owed the short re-poll that silence earns.
       // In the case that matters most, that re-poll would cost the operator
-      // something: the router locks the admin account after a handful of refused
-      // credentials ([errorAdminAccountLocked]), and LinksysHttpClient retries a
-      // 401 once, so a single unauthorized poll already spends two attempts.
-      // Asking again every [pollRetryDelayInSec] is how a password that went
-      // stale becomes an account nobody can log into.
+      // something: a refused credential comes back as an ordinary 200 carrying
+      // `_ErrorUnauthorized`, and each one spends one of the five attempts the
+      // router's JNAP CGI allows before it locks the admin account. At
+      // [BuildConfig.refreshTimeInterval] that leaves five minutes of grace; at
+      // [pollRetryDelayInSec] it leaves twenty-five seconds, which is how a
+      // password that went stale becomes an account nobody can log into.
       if (!result.hasError || result.error is JNAPError) {
         _clearRouterSilence();
       } else {
@@ -400,21 +401,27 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// Whether the router rejected our credential, as opposed to never having
   /// answered. Only the former means the session is really gone.
   ///
-  /// Acted on the first time it happens, and deliberately so: the router locks
-  /// the admin account after a handful of refused credentials
-  /// ([errorAdminAccountLocked]), and LinksysHttpClient retries a 401 once, so
-  /// every poll that carries a rejected one spends two of the operator's
-  /// attempts. Tolerating a few before logging out would trade a session they can
-  /// get back for an account they have to wait out.
+  /// Acted on the first time it happens, and deliberately so: the router's JNAP
+  /// CGI locks the admin account after five consecutive refused credentials, and
+  /// clears that count only on a successful login - so once it is locked, even
+  /// the right password is refused. That is the deadlock #1180 hit on real
+  /// hardware, from a poll loop asking again every five seconds. Every poll
+  /// carrying a rejected credential spends one of those five, and nothing retries
+  /// it for us, so tolerating a few before logging out would trade a session the
+  /// operator can get back for an account they have to wait out.
   ///
-  /// [errorAdminAccountLocked] is the same verdict one step further along: the
-  /// attempts have already run out, so the credential is not merely wrong, it
-  /// will not be looked at again until the lockout expires. Polling on with it
-  /// keeps feeding the very counter that has to run down, and leaves the operator
-  /// in front of a dashboard that has quietly stopped updating with nothing to
-  /// say why. Logging out puts them on the login page, whose own
-  /// getAdminPasswordAuthStatus probe is what reports the lockout and counts it
-  /// down.
+  /// The refusal arrives as an ordinary 200 whose envelope reads
+  /// `{"result": "_ErrorUnauthorized", "error": "Invalid authorization
+  /// credentials ..."}` - hence a [JNAPError] test rather than a status code.
+  /// [errorAdminAccountLocked] is checked beside it as the same verdict one step
+  /// further along: the attempts have already run out, so the credential will not
+  /// be looked at again until the lockout expires, and polling on keeps the
+  /// operator in front of a dashboard that has quietly stopped updating with
+  /// nothing to say why. The JNAP spec documents that code only as a result of
+  /// CheckAdminPassword3, so on this path it is a belt-and-braces case rather
+  /// than an expected one. Either way logging out puts them on the login page,
+  /// whose own getAdminPasswordAuthStatus probe is what reports the lockout and
+  /// counts it down.
   ///
   /// Cloud-side session invalidation is not checked here on purpose:
   /// [LinksysHttpClient.onError] already routes `INVALID_SESSION_TOKEN` through
