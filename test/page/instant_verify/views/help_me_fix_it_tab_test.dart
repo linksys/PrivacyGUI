@@ -130,7 +130,7 @@ void main() {
       await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pump(); // don't pumpAndSettle — Flow 1 auto-runs async
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.byTooltip('Back to flows'), findsOneWidget);
     });
 
     testWidgets('back button returns to menu', (tester) async {
@@ -139,7 +139,7 @@ void main() {
       await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byTooltip('Back to flows'));
       await tester.pumpAndSettle();
       expect(find.text('What are you running into?'), findsOneWidget);
     });

@@ -1,3 +1,4 @@
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
@@ -133,8 +134,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester);
-    final first = find.widgetWithText(OutlinedButton, "Internet isn't working");
-    final last = find.widgetWithText(OutlinedButton, 'Keeps cutting out');
+    final first = find.widgetWithText(AppOutlinedButton, "Internet isn't working");
+    final last = find.widgetWithText(AppOutlinedButton, 'Keeps cutting out');
     expect(tester.getBottomRight(last).dx - tester.getTopLeft(first).dx, greaterThan(1800));
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();

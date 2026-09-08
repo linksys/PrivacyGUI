@@ -1,3 +1,4 @@
+import 'instant_test_page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'instant_test_location.dart';
@@ -130,15 +131,12 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                                 excluding: _showFlow,
                                 child: SelectionArea(
                                     child: Column(children: [
-                                  ListTile(
-                                    leading: IconButton(
-                                        tooltip: 'Back to Instant-Test',
-                                        icon: const Icon(Icons.arrow_back),
-                                        onPressed: () => _navigate()),
-                                    title: Text(_details == 1
-                                        ? 'Device details'
-                                        : 'Network details'),
-                                  ),
+                                  InstantTestPageHeader(
+                                      title: _details == 1
+                                          ? 'Device details'
+                                          : 'Network details',
+                                      backLabel: 'Back to Instant-Test',
+                                      onBack: () => _navigate()),
                                   Expanded(
                                       child: _details == 1
                                           ? MyDevicesTab(

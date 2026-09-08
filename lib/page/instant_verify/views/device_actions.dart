@@ -1,3 +1,4 @@
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -26,14 +27,10 @@ Future<bool> confirmAndDeauth(
           'automatically within a few seconds, which may improve its '
           'connection quality.'),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Reconnect'),
-        ),
+        AppTextButton('Cancel',
+                onTap: () => Navigator.pop(ctx, false)),
+        AppFilledButton('Reconnect',
+                onTap: () => Navigator.pop(ctx, true)),
       ],
     ),
   );

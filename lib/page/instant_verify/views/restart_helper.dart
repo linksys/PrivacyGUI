@@ -1,3 +1,4 @@
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -35,14 +36,10 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
           'If you\'re on WiFi, this page will go blank. '
           'Wait 2 minutes, reconnect to your WiFi, then return to $returnAddress.'),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: const Text('Restart'),
-        ),
+        AppTextButton('Cancel',
+                onTap: () => Navigator.of(ctx).pop(false)),
+        AppFilledButton('Restart',
+                onTap: () => Navigator.of(ctx).pop(true)),
       ],
     ),
   );

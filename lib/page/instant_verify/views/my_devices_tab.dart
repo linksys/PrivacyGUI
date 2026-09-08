@@ -1,3 +1,4 @@
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
@@ -772,8 +773,8 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Troubleshoot
-        OutlinedButton.icon(
-          onPressed: () {
+        AppOutlinedButton('Troubleshoot this device',
+                onTap: () {
             Navigator.pop(context);
             if (onNavigateToFlow != null) {
               onNavigateToFlow!(30, device: client); // 30 = Flow 3 pre-connected
@@ -787,9 +788,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
               );
             }
           },
-          icon: const Icon(Icons.build_outlined, size: 18),
-          label: const Text('Troubleshoot this device'),
-        ),
+                icon: Icons.build_outlined),
 
         // Disconnect/Reconnect — useful for weak signal devices and all wireless
         if (client.isWireless) ...[
@@ -803,11 +802,9 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2)),
                   label: const Text('Disconnecting…'),
                 )
-              : OutlinedButton.icon(
-                  onPressed: () => _disconnectDevice(context),
-                  icon: const Icon(Icons.wifi_off_outlined, size: 18),
-                  label: const Text('Disconnect and reconnect this device'),
-                ),
+              : AppOutlinedButton('Disconnect and reconnect this device',
+                onTap: () => _disconnectDevice(context),
+                icon: Icons.wifi_off_outlined),
           if (isWeak)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -832,11 +829,9 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2)),
                   label: const Text('Changing channel…'),
                 )
-              : OutlinedButton.icon(
-                  onPressed: () => _triggerChannelRescan(context),
-                  icon: const Icon(Icons.wifi_tethering, size: 18),
-                  label: const Text('Try a cleaner WiFi channel'),
-                ),
+              : AppOutlinedButton('Try a cleaner WiFi channel',
+                onTap: () => _triggerChannelRescan(context),
+                icon: Icons.wifi_tethering),
         ],
       ],
     );
@@ -865,14 +860,10 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
             'automatically. This takes about a minute, and devices may briefly '
             'disconnect and reconnect.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Optimize'),
-          ),
+          AppTextButton('Cancel',
+                onTap: () => Navigator.pop(ctx, false)),
+          AppFilledButton('Optimize',
+                onTap: () => Navigator.pop(ctx, true)),
         ],
       ),
     );

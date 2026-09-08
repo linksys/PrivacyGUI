@@ -1,3 +1,8 @@
+import 'instant_test_page_header.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'details_disclosure.dart';
 import 'dart:async';
 import 'user_step_heading.dart';
@@ -232,9 +237,11 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           const SizedBox(height: 12),
           Wrap(spacing: 12, runSpacing: 8, children: [
             if (widget.onCheckAgain != null)
-              FilledButton.icon(onPressed: widget.onCheckAgain,
-                  icon: const Icon(Icons.refresh), label: const Text('Check again')),
-            TextButton(onPressed: _exitFlow, child: Text(widget.exitLabel)),
+              AppFilledButton('Check again',
+                onTap: widget.onCheckAgain,
+                icon: LinksysIcons.refresh),
+            AppTextButton(widget.exitLabel,
+                onTap: _exitFlow),
           ]),
         ],
         const SizedBox(height: 24),
@@ -316,20 +323,17 @@ class _FlowMenuState extends State<_FlowMenu> {
                 const SizedBox(height: 12),
                 Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                    onPressed: () => widget.onSelect(3), // → Flow 3
-                    icon: const Icon(Icons.smartphone),
-                    label: const Text('One specific device'),
+              child: AppOutlinedButton('One specific device',
+                    onTap: () => widget.onSelect(3), // → Flow 3
+                    icon: LinksysIcons.genericDevice,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                    onPressed: () => setState(() => _showAllFlows = true),
-                    icon: const Icon(Icons.devices),
-                    label: const Text('Everything in my home'),
-                  ),
+              child: AppOutlinedButton('Everything in my home',
+                onTap: () => setState(() => _showAllFlows = true),
+                icon: LinksysIcons.devices),
                 ),
               ],
             ),
@@ -341,11 +345,11 @@ class _FlowMenuState extends State<_FlowMenu> {
 
   Widget _flowCards(BuildContext context) {
     final flows = [
-      (1, Icons.wifi_off, 'My internet isn\'t working',
+      (1, LinksysIcons.signalWifiOff, 'My internet isn\'t working',
           'Websites won\'t load, devices can\'t get online'),
-      (2, Icons.speed, 'My internet is slow',
+      (2, LinksysIcons.networkCheck, 'My internet is slow',
           'Videos buffer, downloads are sluggish'),
-      (3, Icons.devices, 'Device connectivity issues',
+      (3, LinksysIcons.devices, 'Device connectivity issues',
           'A device won\'t connect or keeps dropping off WiFi'),
       (4, Icons.signal_wifi_bad, 'WiFi doesn\'t reach a room',
           'Weak signal in part of your home'),
@@ -378,7 +382,7 @@ class _FlowMenuState extends State<_FlowMenu> {
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              trailing: const Icon(LinksysIcons.chevronRight, color: Colors.grey),
               onTap: () => widget.onSelect(index),
             ),
           ),
@@ -410,35 +414,18 @@ class _FlowShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Material(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: ListTile(
-            leading: ValueListenableBuilder<VoidCallback?>(
-              valueListenable: stepBackNotifier,
-              builder: (_, stepBack, __) => IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: onBack,
-                tooltip: stepBack != null && backLabel != 'Back to flows'
-                    ? 'Back to previous step' : backLabel,
-              ),
-            ),
-            title: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: stepIndicatorNotifier != null
-                ? ValueListenableBuilder<String?>(
+        ValueListenableBuilder<VoidCallback?>(
+          valueListenable: stepBackNotifier,
+          builder: (_, stepBack, __) => InstantTestPageHeader(
+            title: title, onBack: onBack,
+            backLabel: stepBack != null && backLabel != 'Back to flows'
+                ? 'Back to previous step' : backLabel,
+            subtitle: stepIndicatorNotifier == null ? null
+                : ValueListenableBuilder<String?>(
                     valueListenable: stepIndicatorNotifier!,
-                    builder: (_, indicator, __) => indicator != null
-                        ? Text(indicator,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant))
-                        : const SizedBox.shrink(),
-                  )
-                : null,
+                    builder: (_, indicator, __) => indicator == null
+                        ? const SizedBox.shrink()
+                        : Text(indicator, style: Theme.of(context).textTheme.labelSmall)),
           ),
         ),
         Expanded(
@@ -459,15 +446,16 @@ class _FlowShell extends StatelessWidget {
 // Uses the design-system AppCard (same primitive as the dashboardMenu page)
 // so border color, surface, and radius exactly match the rest of the app.
 Widget _stepCard(BuildContext context, Widget child) => Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Spacing.medium),
       child: SizedBox(width: double.infinity, child: AppCard(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(ResponsiveLayout.isMobileLayout(context)
+            ? Spacing.medium : Spacing.large2),
         child: child,
       )),
     );
 
 Widget _infoBox(BuildContext context, String text,
-    {IconData icon = Icons.info_outline, Color? color}) {
+    {IconData icon = LinksysIcons.infoCircle, Color? color}) {
   return Container(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Row(
@@ -590,7 +578,7 @@ Widget _linksysSupportTile(BuildContext context) => Padding(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.headset_mic,
+            Icon(LinksysIcons.supportAgent,
                 size: 20, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text('Still need help?',
@@ -628,11 +616,9 @@ Widget _restartOrEscalate(BuildContext context, WidgetRef ref, InstantVerifyPivo
       ],
     );
   }
-  return OutlinedButton.icon(
-    onPressed: () => _confirmAndRestart(context, ref),
-    icon: const Icon(Icons.restart_alt),
-    label: const Text('Restart Router'),
-  );
+  return AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt);
 }
 
 class _LoadingButton extends StatelessWidget {
@@ -641,6 +627,11 @@ class _LoadingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          shape: const RoundedRectangleBorder(),
+          minimumSize: Size(64, ResponsiveLayout.isMobileLayout(context) ? 48 : 40),
+          textStyle: Theme.of(context).textTheme.labelMedium,
+        ),
         onPressed: null,
         icon: const SizedBox(
             width: 14,
@@ -734,18 +725,25 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _diagnosticProgressCard(context),
-        const SizedBox(height: 4),
-        if (_phase == _Flow1Phase.running) ..._running(context),
-        if (_phase == _Flow1Phase.gatewayFail) ..._gatewayFailPath(context),
-        if (_phase == _Flow1Phase.internetFail) ..._internetFailPath(context),
-        if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context),
-        if (_phase == _Flow1Phase.allOk) ..._allOkPath(context),
-      ],
-    );
+    final advice = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (_phase == _Flow1Phase.running) ..._running(context),
+      if (_phase == _Flow1Phase.gatewayFail) ..._gatewayFailPath(context),
+      if (_phase == _Flow1Phase.internetFail) ..._internetFailPath(context),
+      if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context),
+      if (_phase == _Flow1Phase.allOk) ..._allOkPath(context),
+    ]);
+    return LayoutBuilder(builder: (context, constraints) {
+      final summary = _diagnosticProgressCard(context);
+      if (constraints.maxWidth >= 1100) {
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(width: constraints.maxWidth * 0.28, child: summary),
+          const SizedBox(width: Spacing.large2),
+          Expanded(child: advice),
+        ]);
+      }
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [summary, advice]);
+    });
   }
 
   Widget _diagnosticProgressCard(BuildContext context) {
@@ -786,7 +784,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
           : const Icon(Icons.remove, size: 18);
     } else if (result) {
       indicator =
-          const Icon(Icons.check_circle, color: Colors.green, size: 18);
+          const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 18);
     } else {
       indicator = const Icon(Icons.cancel, color: Colors.red, size: 18);
     }
@@ -802,7 +800,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
   }
 
   List<Widget> _running(BuildContext context) => [
-        _infoBox(context, 'Checking your connection…', icon: Icons.search),
+        _infoBox(context, 'Checking your connection…', icon: LinksysIcons.search),
       ];
 
   List<Widget> _gatewayFailPath(BuildContext context) => [
@@ -821,11 +819,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _runDiagnostics,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Check again'),
-              ),
+              child: AppOutlinedButton('Check again',
+                onTap: _runDiagnostics,
+                icon: LinksysIcons.refresh),
             ),
           ],
         )),
@@ -848,11 +844,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _runDiagnostics,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Check again'),
-              ),
+              child: AppOutlinedButton('Check again',
+                onTap: _runDiagnostics,
+                icon: LinksysIcons.refresh),
             ),
           ],
         )),
@@ -867,10 +861,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Done — my internet is working now'),
-              ),
+              child: AppFilledButton('Done — my internet is working now',
+                onTap: widget.onDone),
             ),
           ],
         )),
@@ -892,11 +884,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: _restart,
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Restart Router'),
-              ),
+              child: AppFilledButton('Restart Router',
+                onTap: _restart,
+                icon: LinksysIcons.restartAlt),
             ),
             if (_restarted) ...[
               const SizedBox(height: 8),
@@ -917,10 +907,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
               const SizedBox(height: 12),
               Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                  onPressed: widget.onDone,
-                  child: const Text('Done — my internet is working now'),
-                ),
+              child: AppFilledButton('Done — my internet is working now',
+                onTap: widget.onDone),
               ),
               const _SatisfactionPrompt(),
             ],
@@ -938,26 +926,22 @@ class _Flow1State extends ConsumerState<_Flow1> {
             Text(
               'The connection looks healthy from the router\'s side. '
               'This can happen if the problem is intermittent or affects only one device.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
-            const Text('Is this happening on just one device?',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+            Text('Is this happening on just one device?',
+                style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => widget.onNavigateToFlow?.call(30),
-              icon: const Icon(Icons.devices, size: 16),
-              label: const Text('Yes — troubleshoot a specific device'),
-            ),
+            AppOutlinedButton('Yes — troubleshoot a specific device',
+                onTap: () => widget.onNavigateToFlow?.call(30),
+                icon: LinksysIcons.devices),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _runDiagnostics,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Still seeing issues — test again'),
-              ),
+              child: AppOutlinedButton('Still seeing issues — test again',
+                onTap: _runDiagnostics,
+                icon: LinksysIcons.refresh),
             ),
           ],
         )),
@@ -1137,11 +1121,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
           ] else ...[
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: _runSpeedTest,
-                icon: const Icon(Icons.speed),
-                label: const Text('Check my speed'),
-              ),
+              child: AppFilledButton('Check my speed',
+                onTap: _runSpeedTest,
+                icon: LinksysIcons.networkCheck),
             ),
           ],
         ],
@@ -1233,31 +1215,27 @@ class _Flow2State extends ConsumerState<_Flow2> {
           const SizedBox(height: 12),
           Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Yes — it feels fine'),
-            ),
+              child: AppFilledButton('Yes — it feels fine',
+                onTap: widget.onDone),
           ),
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton(
+              child: AppOutlinedButton('No — something still feels slow',
               // "Still slow" → check specific devices / factors
-              onPressed: () => _pushStep(2),
-              child: const Text('No — something still feels slow'),
+              onTap: () => _pushStep(2),
             ),
           ),
           const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: _runSpeedTest,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Run test again'),
-          ),
+          AppTextButton('Run test again',
+                onTap: _runSpeedTest,
+                icon: LinksysIcons.refresh),
         ],
       )),
       if (widget.singlePage)
-        TextButton.icon(onPressed: _runSpeedTest, icon: const Icon(Icons.refresh),
-            label: const Text('Run test again')),
+        AppTextButton('Run test again',
+                onTap: _runSpeedTest,
+                icon: LinksysIcons.refresh),
     ];
   }
 
@@ -1300,30 +1278,25 @@ class _Flow2State extends ConsumerState<_Flow2> {
 
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: () => _pushStep(3),
-              icon: const Icon(Icons.devices),
-              label: const Text('Everything in my home is slow'),
-            ),
+              child: AppOutlinedButton('Everything in my home is slow',
+                onTap: () => _pushStep(3),
+                icon: LinksysIcons.devices),
           ),
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
+              child: AppOutlinedButton('Just one specific device',
               // Route to Flow 3 pre-set to "connected but slow" — skips "can it connect?" step
-              onPressed: () => widget.onNavigateToFlow(31),
-              icon: const Icon(Icons.smartphone),
-              label: const Text('Just one specific device'),
+              onTap: () => widget.onNavigateToFlow(31),
+              icon: LinksysIcons.genericDevice,
             ),
           ),
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: () => _pushStep(5),
-              icon: const Icon(Icons.sports_esports),
-              label: const Text('Games or video calls are laggy'),
-            ),
+              child: AppOutlinedButton('Games or video calls are laggy',
+                onTap: () => _pushStep(5),
+                icon: Icons.sports_esports),
           ),
         ],
       )),
@@ -1386,17 +1359,13 @@ class _Flow2State extends ConsumerState<_Flow2> {
             width: double.infinity,
             child: _isRunning
                 ? const _LoadingButton(label: 'Testing speed after restart…')
-                : FilledButton.icon(
-                    onPressed: _restartAndRetest,
-                    icon: const Icon(Icons.restart_alt),
-                    label: const Text('Restart + Run Speed Test Again'),
-                  ),
+                : AppFilledButton('Restart + Run Speed Test Again',
+                onTap: _restartAndRetest,
+                icon: LinksysIcons.restartAlt),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => _pushStep(4),
-            child: const Text('Skip — already restarted'),
-          ),
+          AppTextButton('Skip — already restarted',
+                onTap: () => _pushStep(4)),
         ],
       )),
     ];
@@ -1419,10 +1388,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Done'),
-              ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
             ),
             const _SatisfactionPrompt(),
           ],
@@ -1466,19 +1433,15 @@ class _Flow2State extends ConsumerState<_Flow2> {
           const SizedBox(height: 12),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: () => _confirmAndRestart(context, ref),
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Restart Router'),
-            ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
           ),
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Done'),
-            ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
           ),
           const _SatisfactionPrompt(),
         ],
@@ -1699,7 +1662,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
       if (state.clients.length > _devicesPerPage) ...[
         TextField(
-          decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+          decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(LinksysIcons.search), border: OutlineInputBorder()),
           onChanged: (value) => setState(() { _deviceQuery = value; _devicePage = 0; }),
         ),
         const SizedBox(height: 12),
@@ -1736,21 +1699,23 @@ class _Flow3State extends ConsumerState<_Flow3> {
         Row(children: [
           Expanded(child: Text('${page * _devicesPerPage + 1}–${page * _devicesPerPage + visible.length} of ${matches.length}')),
           IconButton(tooltip: 'Previous devices', onPressed: page == 0 ? null : () => setState(() => _devicePage = page - 1), icon: const Icon(Icons.chevron_left)),
-          IconButton(tooltip: 'Next devices', onPressed: page == lastPage ? null : () => setState(() => _devicePage = page + 1), icon: const Icon(Icons.chevron_right)),
+          IconButton(tooltip: 'Next devices', onPressed: page == lastPage ? null : () => setState(() => _devicePage = page + 1), icon: const Icon(LinksysIcons.chevronRight)),
         ]),
       const Divider(height: 24),
       Text('Device not listed?', style: theme.textTheme.titleSmall),
-      TextButton(onPressed: () => setState(() {
+      AppTextButton("I don't see my device",
+                onTap: () => setState(() {
         _selectedDevice = null;
         _connectState = _ConnectState.cantConnect;
         _canSeeSsid = null;
         _step = 1;
-      }), child: const Text("I don't see my device")),
-      TextButton(onPressed: () => setState(() {
+      })),
+      AppTextButton('My device uses an Ethernet cable',
+                onTap: () => setState(() {
         _selectedDevice = null;
         _connectState = _ConnectState.wired;
         _step = 1;
-      }), child: const Text('My device uses an Ethernet cable')),
+      })),
     ]));
     final deviceChoice = _selectedDevice != null && selectedPresent
         ? _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1826,38 +1791,32 @@ class _Flow3State extends ConsumerState<_Flow3> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('Yes — it\'s connected but something is wrong',
+                onTap: () {
                   setState(() => _connectState = _ConnectState.canConnect);
                   _pushStep(1);
                 },
-                icon: const Icon(Icons.wifi),
-                label: const Text('Yes — it\'s connected but something is wrong'),
-              ),
+                icon: LinksysIcons.wifi),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('No — it won\'t connect at all',
+                onTap: () {
                   setState(() => _connectState = _ConnectState.cantConnect);
                   _pushStep(1);
                 },
-                icon: const Icon(Icons.wifi_off),
-                label: const Text('No — it won\'t connect at all'),
-              ),
+                icon: LinksysIcons.signalWifiOff),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('No — my device uses an Ethernet cable',
+                onTap: () {
                   setState(() => _connectState = _ConnectState.wired);
                   _pushStep(1);
                 },
-                icon: const Icon(Icons.settings_ethernet),
-                label: const Text('No — my device uses an Ethernet cable'),
-              ),
+                icon: Icons.settings_ethernet),
             ),
           ],
         )),
@@ -1892,17 +1851,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () => _confirmAndRestart(context, ref),
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Restart Router'),
-              ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
             ),
             const SizedBox(height: 8),
-            FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Problem solved'),
-            ),
+            AppFilledButton('Problem solved',
+                onTap: widget.onDone),
           ],
         )),
 
@@ -1920,38 +1875,32 @@ class _Flow3State extends ConsumerState<_Flow3> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('It keeps dropping off WiFi',
+                onTap: () {
                   setState(() => _connectIssue = _ConnectIssue.keepsDropping);
                   _pushStep(2);
                 },
-                icon: const Icon(Icons.sync_problem),
-                label: const Text('It keeps dropping off WiFi'),
-              ),
+                icon: Icons.sync_problem),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('It\'s connected but internet is slow on this device',
+                onTap: () {
                   setState(() => _connectIssue = _ConnectIssue.slowOnDevice);
                   _pushStep(2); // Will redirect to slow-device advice
                 },
-                icon: const Icon(Icons.speed),
-                label: const Text('It\'s connected but internet is slow on this device'),
-              ),
+                icon: LinksysIcons.networkCheck),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () {
+              child: AppOutlinedButton('Something else',
+                onTap: () {
                   setState(() => _connectIssue = _ConnectIssue.other);
                   _pushStep(3);
                 },
-                icon: const Icon(Icons.help_outline),
-                label: const Text('Something else'),
-              ),
+                icon: Icons.help_outline),
             ),
           ],
         )),
@@ -2007,7 +1956,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(children: [
-                  Icon(Icons.devices, size: 18, color: colors.onSurfaceVariant),
+                  Icon(LinksysIcons.devices, size: 18, color: colors.onSurfaceVariant),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2019,7 +1968,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                       ),
                     ]),
                   ),
-                  Icon(Icons.chevron_right, size: 18, color: colors.outlineVariant),
+                  Icon(LinksysIcons.chevronRight, size: 18, color: colors.outlineVariant),
                 ]),
               ),
             ),
@@ -2064,7 +2013,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     // 2. Stuck on 2.4 GHz when capable of 5 GHz
     if (band.contains('2.4') && txRate != null && txRate > 80) {
       findings.add(_SlowDeviceFinding(
-        icon: Icons.wifi,
+        icon: LinksysIcons.wifi,
         color: Colors.orange,
         title: 'On slower 2.4 GHz — capable of 5 GHz',
         detail: 'This device has a fast link rate (${txRate}Mbps) so it\'s likely '
@@ -2074,7 +2023,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       ));
     } else if (band.contains('2.4') && (signal == null || signal >= -75)) {
       findings.add(_SlowDeviceFinding(
-        icon: Icons.wifi,
+        icon: LinksysIcons.wifi,
         color: Colors.orange,
         title: 'On 2.4 GHz (slower band)',
         detail: 'The 2.4 GHz band is slower than 5 GHz. '
@@ -2108,7 +2057,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       final threshold = band.contains('5') ? 100 : 30;
       if (txRate < threshold) {
         findings.add(_SlowDeviceFinding(
-          icon: Icons.speed,
+          icon: LinksysIcons.networkCheck,
           color: Colors.orange,
           title: 'Slow link rate for ${band.contains('5') ? '5 GHz' : '2.4 GHz'} ($txRate Mbps)',
           detail: 'This device is connected at $txRate Mbps — much lower than '
@@ -2128,16 +2077,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.devices, size: 18, color: colors.primary),
+            Icon(LinksysIcons.devices, size: 18, color: colors.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(widget.singlePage ? 'Connection check' : device.displayNameWithOui,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
-            if (!widget.singlePage) TextButton(
-              onPressed: () => setState(() => _selectedDevice = null),
-              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
-              child: const Text('Switch Device'),
+            if (!widget.singlePage) AppTextButton('Switch Device',
+              onTap: () => setState(() => _selectedDevice = null),
             ),
           ]),
           const SizedBox(height: 12),
@@ -2173,7 +2120,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           // Speed test result
           if (state.speedTest != null) ...[
             _allClearDataRow(context, colors,
-              icon: Icons.speed,
+              icon: LinksysIcons.networkCheck,
               label: 'Internet speed',
               value: '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down · '
                      '${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps up',
@@ -2187,7 +2134,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           // Active device count
           if (state.clients.isNotEmpty) ...[
             _allClearDataRow(context, colors,
-              icon: Icons.devices,
+              icon: LinksysIcons.devices,
               label: 'Devices active',
               value: '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} connected',
               note: state.clients.length > 10
@@ -2200,7 +2147,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
           // Band distribution
           if (state.wirelessDeviceCount > 0) ...[
             _allClearDataRow(context, colors,
-              icon: Icons.wifi,
+              icon: LinksysIcons.wifi,
               label: 'Band distribution',
               value: '${state.twoPointFourGhzCount} on 2.4 GHz · '
                      '${state.fiveGhzCount} on 5 GHz',
@@ -2363,11 +2310,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                OutlinedButton.icon(
-                  onPressed: enabled ? () => _showDeauthPicker(ctx, state) : null,
-                  icon: const Icon(Icons.wifi_off_outlined, size: 18),
-                  label: const Text('Force reconnect a device'),
-                ),
+                AppOutlinedButton('Force reconnect a device',
+                onTap: enabled ? () => _showDeauthPicker(ctx, state) : null,
+                icon: Icons.wifi_off_outlined),
                 const SizedBox(height: 4),
                 Text(
                   !hasDevices
@@ -2385,11 +2330,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
           if (hasChannelData) ...[
             const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _optimizeChannels(context),
-              icon: const Icon(Icons.wifi_tethering, size: 18),
-              label: const Text('Optimize my WiFi channels'),
-            ),
+            AppOutlinedButton('Optimize my WiFi channels',
+                onTap: () => _optimizeChannels(context),
+                icon: Icons.wifi_tethering),
             const SizedBox(height: 4),
             Text(
               'Interference from nearby networks can cause drops. Your router '
@@ -2401,16 +2344,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
           ],
 
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => _confirmAndRestart(context, ref),
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Restart Router'),
-          ),
+          AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
           const SizedBox(height: 8),
-          FilledButton(
-            onPressed: widget.onDone,
-            child: const Text('Device stopped dropping'),
-          ),
+          AppFilledButton('Device stopped dropping',
+                onTap: widget.onDone),
         ],
       )),
       const _SatisfactionPrompt(),
@@ -2498,14 +2437,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
           'This may briefly disconnect devices or cause a short slowdown '
           'while the change takes effect.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dlg).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dlg).pop(true),
-            child: const Text('Optimize'),
-          ),
+          AppTextButton('Cancel',
+                onTap: () => Navigator.of(dlg).pop(false)),
+          AppFilledButton('Optimize',
+                onTap: () => Navigator.of(dlg).pop(true)),
         ],
       ),
     );
@@ -2558,10 +2493,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
         title: Text(title),
         content: Text(body),
         actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dlg).pop(),
-            child: const Text('Done'),
-          ),
+          AppFilledButton('Done',
+                onTap: () => Navigator.of(dlg).pop()),
         ],
       ),
     );
@@ -2632,7 +2565,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     if (disabledBands.isNotEmpty) {
       findings.add(_SsidFinding(
-        icon: Icons.wifi_off,
+        icon: LinksysIcons.signalWifiOff,
         color: Colors.red,
         title: '${disabledBands.join(' and ')} radio is turned off',
         detail: 'The ${disabledBands.join('/')} band is disabled in your router settings. '
@@ -2747,26 +2680,22 @@ class _Flow3State extends ConsumerState<_Flow3> {
               '6 GHz WiFi (WiFi 6E/7) requires a compatible device — most phones and '
               'laptops from 2021 or earlier won\'t see the 6 GHz network at all. '
               'Check if your device supports WiFi 6E.',
-              icon: Icons.info_outline),
+              icon: LinksysIcons.infoCircle),
           const SizedBox(height: 12),
         ],
 
         // Restart action
         Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-            onPressed: () => _confirmAndRestart(context, ref),
-            icon: const Icon(Icons.restart_alt, size: 18),
-            label: const Text('Restart Router'),
-          ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
         ),
         const SizedBox(height: 8),
         Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton(
-            onPressed: () => setState(() => _canSeeSsid = null),
-            child: const Text('Back'),
-          ),
+              child: AppOutlinedButton('Back',
+                onTap: () => setState(() => _canSeeSsid = null)),
         ),
       ],
     ));
@@ -2778,7 +2707,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(children: [
         Icon(
-          disabled ? Icons.cancel : Icons.check_circle,
+          disabled ? Icons.cancel : LinksysIcons.checkCircle,
           size: 14,
           color: disabled ? Colors.red : Colors.green,
         ),
@@ -2875,18 +2804,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: () => setState(() => _canSeeSsid = true),
-                child: const Text('Yes — I can see it'),
-              ),
+              child: AppFilledButton('Yes — I can see it',
+                onTap: () => setState(() => _canSeeSsid = true)),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton(
-                onPressed: () => setState(() => _canSeeSsid = false),
-                child: const Text('No — I don\'t see it'),
-              ),
+              child: AppOutlinedButton('No — I don\'t see it',
+                onTap: () => setState(() => _canSeeSsid = false)),
             ),
           ],
         )),
@@ -2932,11 +2857,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const SizedBox(height: 12),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: () => _confirmAndRestart(context, ref),
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Restart Router'),
-            ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
           ),
         ],
       )),
@@ -2986,17 +2909,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
               Expanded(
                 child: _isDisablingMacFilter
                     ? const _LoadingButton(label: 'Turning off…')
-                    : FilledButton(
-                        onPressed: _disableMacFilter,
-                        child: const Text('Turn off blocklist'),
-                      ),
+                    : AppFilledButton('Turn off blocklist',
+                onTap: _disableMacFilter),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Leave it on'),
-                ),
+                child: AppOutlinedButton('Leave it on',
+                onTap: () {}),
               ),
             ]),
           ],
@@ -3018,19 +2937,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const SizedBox(height: 12),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: () => _confirmAndRestart(context, ref),
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Restart Router'),
-            ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: () => _confirmAndRestart(context, ref),
+                icon: LinksysIcons.restartAlt),
           ),
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Device is connected now'),
-            ),
+              child: AppFilledButton('Device is connected now',
+                onTap: widget.onDone),
           ),
         ],
       )),
@@ -3069,10 +2984,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
       const SizedBox(height: 8),
       Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-          onPressed: widget.onDone,
-          child: const Text('Device is connected now'),
-        ),
+              child: AppFilledButton('Device is connected now',
+                onTap: widget.onDone),
       ),
 
     ];
@@ -3194,11 +3107,8 @@ class _Flow4State extends ConsumerState<_Flow4> {
           const SizedBox(height: 12),
           if (!widget.singlePage) Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed:
-                  _placement == null ? null : _goToStep1,
-              child: const Text('Continue'),
-            ),
+              child: AppFilledButton('Continue',
+                onTap: _placement == null ? null : _goToStep1),
           ),
         ],
       )),
@@ -3269,7 +3179,8 @@ class _Flow4State extends ConsumerState<_Flow4> {
       ])),
       Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(onPressed: widget.onDone, child: const Text('Done')),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
       ),
       const _SatisfactionPrompt(),
 
@@ -3493,8 +3404,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
         ]),
       ])),
       if (_scope == _DropScope.specificDevices)
-        OutlinedButton.icon(onPressed: () => widget.onNavigateToFlow(32),
-          icon: const Icon(Icons.devices), label: const Text('Choose the affected device'))
+        AppOutlinedButton('Choose the affected device',
+                onTap: () => widget.onNavigateToFlow(32),
+                icon: LinksysIcons.devices)
       else if (_step == 3) ..._step3Result(context)
       else if (_step == 4) ..._step4PostRestart(context)
       else ...[
@@ -3533,12 +3445,10 @@ class _Flow5State extends ConsumerState<_Flow5> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: _frequency == null
+              child: AppFilledButton('Continue',
+                onTap: _frequency == null
                     ? null
-                    : () => _pushStep(1),
-                child: const Text('Continue'),
-              ),
+                    : () => _pushStep(1)),
             ),
           ],
         )),
@@ -3579,21 +3489,17 @@ class _Flow5State extends ConsumerState<_Flow5> {
               const SizedBox(height: 8),
               Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                  onPressed: () => widget.onNavigateToFlow(3),
-                  icon: const Icon(Icons.devices),
-                  label: const Text('Go to Device connectivity issues'),
-                ),
+              child: AppFilledButton('Go to Device connectivity issues',
+                onTap: () => widget.onNavigateToFlow(3),
+                icon: LinksysIcons.devices),
               ),
             ] else ...[
               Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                  onPressed: _scope == null
+              child: AppFilledButton('Continue',
+                onTap: _scope == null
                       ? null
-                      : () => _pushStep(2),
-                  child: const Text('Continue'),
-                ),
+                      : () => _pushStep(2)),
               ),
             ],
           ],
@@ -3618,12 +3524,10 @@ class _Flow5State extends ConsumerState<_Flow5> {
             if (!_isMonitoring && _checksCompleted == 0) ...[
               SizedBox(
                 width: widget.singlePage ? null : double.infinity,
-                child: FilledButton.icon(
-                  onPressed: widget.singlePage && (_frequency == null || _scope == null)
+                child: AppFilledButton('Start connection test',
+                onTap: widget.singlePage && (_frequency == null || _scope == null)
                       ? null : _startMonitor,
-                  icon: const Icon(Icons.monitor_heart),
-                  label: const Text('Start connection test'),
-                ),
+                icon: Icons.monitor_heart),
               ),
             ] else if (_isMonitoring) ...[
               Row(children: [
@@ -3669,11 +3573,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: _restartAndCheck,
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Restart Router'),
-              ),
+              child: AppFilledButton('Restart Router',
+                onTap: _restartAndCheck,
+                icon: LinksysIcons.restartAlt),
             ),
           ],
         )),
@@ -3686,7 +3588,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Row(children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 20),
+              Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
               SizedBox(width: 8),
               Expanded(child: Text('No drops caught during the test.')),
             ]),
@@ -3698,11 +3600,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: _restartAndCheck,
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Restart Router'),
-              ),
+              child: AppFilledButton('Restart Router',
+                onTap: _restartAndCheck,
+                icon: LinksysIcons.restartAlt),
             ),
           ],
         )),
@@ -3715,7 +3615,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 20),
+            Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
             SizedBox(width: 8),
             Expanded(child: Text('No drops detected right now.')),
           ]),
@@ -3730,11 +3630,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
           const SizedBox(height: 8),
           Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-              onPressed: _restartAndCheck,
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Restart Router'),
-            ),
+              child: AppOutlinedButton('Restart Router',
+                onTap: _restartAndCheck,
+                icon: LinksysIcons.restartAlt),
           ),
           const SizedBox(height: 8),
           Text('If drops continue after a restart:',
@@ -3745,10 +3643,8 @@ class _Flow5State extends ConsumerState<_Flow5> {
           const SizedBox(height: 12),
           Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Done'),
-            ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
           ),
         ],
       )),
@@ -3777,7 +3673,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Row(children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 20),
+              Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
               SizedBox(width: 8),
               Expanded(
                   child: Text('Looks like the restart fixed it!')),
@@ -3785,8 +3681,8 @@ class _Flow5State extends ConsumerState<_Flow5> {
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                  onPressed: widget.onDone, child: const Text('Done')),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
             ),
             const _SatisfactionPrompt(),
           ],
@@ -3823,10 +3719,8 @@ class _Flow5State extends ConsumerState<_Flow5> {
           const SizedBox(height: 16),
           Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('I\'ll call my provider'),
-            ),
+              child: AppFilledButton('I\'ll call my provider',
+                onTap: widget.onDone),
           ),
           const _SatisfactionPrompt(),
         ],
@@ -3969,17 +3863,10 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
   Widget _ratingBtn(BuildContext context, int rating, String label,
       IconData icon, Color color) {
     return Expanded(
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: color,
-          side: BorderSide(color: color.withOpacity(0.4)),
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          minimumSize: const Size(0, 36),
-          textStyle: const TextStyle(fontSize: 11),
-        ),
-        icon: Icon(icon, size: 15),
-        label: Text(label),
-        onPressed: () => setState(() => _rating = rating),
+      child: AppOutlinedButton(label,
+        icon: icon,
+        color: color,
+        onTap: () => setState(() => _rating = rating),
       ),
     );
   }
@@ -4070,7 +3957,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
               _infoBox(context,
                   'Your internet company is using a shared IP address (Carrier-Grade NAT). '
                   'This is managed by your provider — you can\'t change it on the router.',
-                  icon: Icons.info_outline)
+                  icon: LinksysIcons.infoCircle)
             else
               _infoBox(context,
                   'Your Linksys router is connected behind another router — '
@@ -4092,7 +3979,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
               ),
               const Divider(height: 12),
               ListTile(
-                leading: const Icon(Icons.wifi),
+                leading: const Icon(LinksysIcons.wifi),
                 title: const Text('Switch Linksys to WiFi access point mode'),
                 subtitle: const Text('Good for extending WiFi — ISP gateway handles routing'),
                 onTap: () => _pushStep(2),
@@ -4158,10 +4045,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Done'),
-              ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
             ),
           ],
         )),
@@ -4194,10 +4079,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Done'),
-              ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
             ),
           ],
         )),
@@ -4225,10 +4108,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Done'),
-              ),
+              child: AppFilledButton('Done',
+                onTap: widget.onDone),
             ),
           ],
         )),
@@ -4252,10 +4133,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: widget.onDone,
-                child: const Text('Got it — my internet is working'),
-              ),
+              child: AppFilledButton('Got it — my internet is working',
+                onTap: widget.onDone),
             ),
           ],
         )),

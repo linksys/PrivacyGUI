@@ -1,3 +1,5 @@
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
 
 /// Optional information stays out of the reading and focus order until opened.
@@ -20,13 +22,14 @@ class _DetailsDisclosureState extends State<DetailsDisclosure> {
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(_expanded
-                  ? 'Hide ${widget.label.replaceFirst(RegExp(r'^View '), '').toLowerCase()}'
-                  : widget.label),
-            ),
+            child: AppTextButton(
+                _expanded
+                    ? 'Hide ${widget.label.replaceFirst(RegExp(r'^View '), '').toLowerCase()}'
+                    : widget.label,
+                onTap: () => setState(() => _expanded = !_expanded),
+                icon: _expanded
+                    ? LinksysIcons.arrowDropUp
+                    : LinksysIcons.arrowDropDown),
           ),
           if (_expanded) widget.child,
         ],
@@ -56,13 +59,11 @@ class _GuidedStepsState extends State<GuidedSteps> {
       const SizedBox(height: 8),
       Wrap(spacing: 8, children: [
         if (index > 0)
-          TextButton(
-              onPressed: () => setState(() => _index = index - 1),
-              child: const Text('Previous step')),
+          AppTextButton('Previous step',
+              onTap: () => setState(() => _index = index - 1)),
         if (index < widget.steps.length - 1)
-          OutlinedButton(
-              onPressed: () => setState(() => _index = index + 1),
-              child: const Text('Try the next step')),
+          AppOutlinedButton('Try the next step',
+              onTap: () => setState(() => _index = index + 1)),
       ]),
     ]);
   }
