@@ -198,6 +198,14 @@ void main() {
   Future<void> advanceOneTick(WidgetTester tester) =>
       advance(tester, const Duration(seconds: BuildConfig.refreshTimeInterval));
 
+  /// Time from the first poll to the far side of the silence window.
+  ///
+  /// The window is armed when a poll goes out, which is a moment *before*
+  /// [advanceToFirstPoll] returns, so standing a whole
+  /// [pollUnreachableAfterInSec] on from there lands just past it.
+  Future<void> advanceToUnreachable(WidgetTester tester) =>
+      advance(tester, const Duration(seconds: pollUnreachableAfterInSec));
+
   /// Cancels the periodic timer and lets any poll it started finish.
   ///
   /// The fake clock fails a test that ends with a timer still pending, and this
@@ -492,6 +500,35 @@ void main() {
           reason: 'the stop must have prevented the timer install');
     });
 
+    testWidgets('a stopPolling during a forced poll installs no timer',
+        (tester) async {
+      // forcePolling installs the timer too - a pull-to-refresh is allowed to
+      // revive a loop an earlier start-up lost - and its install sits on the far
+      // side of an await just the same. A reboot is the likely collision: the
+      // operator pulls to refresh, then restarts the router, and a timer put back
+      // here would have its next ticks report the router unreachable over the
+      // restart's own progress dialog.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 2) notifier.stopPolling();
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1));
+
+      await notifier.forcePolling();
+      await tester.pump();
+      expect(transactions, hasLength(2), reason: 'the forced poll did happen');
+
+      await advanceOneTick(tester);
+      await advanceOneTick(tester);
+
+      expect(transactions, hasLength(2),
+          reason: 'the stop must have prevented the timer install');
+    });
+
     testWidgets('a pause during the first-poll delay stops everything',
         (tester) async {
       // `paused` cancels the timer directly rather than through stopPolling, and
@@ -598,8 +635,13 @@ void main() {
     // #1419. A tolerated failure is still a failure the operator needs to hear
     // about: the provider keeps the previous snapshot as its value, so every
     // consumer goes on drawing it and nothing on screen says the router stopped
-    // answering. [pollingFailureCountProvider] is the signal the UI reads, and
+    // answering. [routerUnreachableProvider] is the signal the UI reads, and
     // what these tests hold to is when it does and does not claim a problem.
+    //
+    // The claim is made on a clock, not on a tally of failed polls - see
+    // [pollUnreachableAfterInSec] - so what most of these tests turn on is where
+    // the fake clock stands relative to that window, and how many requests the
+    // router got its chance to answer along the way.
 
     testWidgets('a router that is answering makes no claim', (tester) async {
       whenSend((_) async => deviceMode('Master'));
@@ -607,17 +649,19 @@ void main() {
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
 
-      expect(container.read(pollingFailureCountProvider), 0);
+      expect(container.read(routerUnreachableProvider), 0);
 
       await stopAndSettle(tester);
     });
 
-    testWidgets('one failed poll is not enough to raise the alert',
+    testWidgets('a blip that ends inside the window is never reported',
         (tester) async {
-      // The whole point of the delay: a router restarting its HTTP service is
+      // The whole point of the window: a router restarting its HTTP service is
       // back within seconds, and a blocking dialog for a blip is worse than the
-      // blip.
+      // blip. The clock ends up the far side of where the deadline was, which is
+      // what says the deadline was called off rather than merely reset.
       whenSend((_) async => deviceMode('Master'));
       whenTransaction((n) async {
         if (n == 1) throw TimeoutException('no answer');
@@ -626,18 +670,18 @@ void main() {
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
 
-      expect(container.read(pollingFailureCountProvider),
-          lessThan(pollFailuresBeforeUnreachable));
+      expect(container.read(routerUnreachableProvider), 0);
 
       await stopAndSettle(tester);
     });
 
     testWidgets('a failed poll is re-tried without waiting out the interval',
         (tester) async {
-      // Left to the periodic timer alone the operator would sit in front of a
-      // stale dashboard for two whole intervals - two minutes - before being
-      // told anything.
+      // What keeps the report honest. Left to the periodic timer alone, a router
+      // that came back five seconds in would still be reported unreachable at
+      // twenty, because nothing had asked it since.
       whenSend((_) async => deviceMode('Master'));
       whenTransaction((n) async {
         if (n == 1) throw TimeoutException('no answer');
@@ -649,45 +693,107 @@ void main() {
       expect(transactions, hasLength(1));
 
       await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(transactions, hasLength(2), reason: 'the re-try must have run');
-      expect(container.read(pollingFailureCountProvider), 0,
-          reason: 'a re-try that answers clears the streak');
+      expect(transactions, hasLength(2), reason: 'the re-poll must have run');
+      expect(container.read(routerUnreachableProvider), 0,
+          reason:
+              'a re-poll that answers withdraws nothing, and claims nothing');
 
       await stopAndSettle(tester);
     });
 
-    testWidgets('a failure whose re-try also fails raises the alert',
+    testWidgets('a refused connection is not reported before the window is up',
+        (tester) async {
+      // A refused connection fails the instant it is made, so the re-polls come
+      // thick and fast. Several failures in is exactly where a rule that counted
+      // them would have fired - four seconds into an HTTP-service restart, the
+      // very blip this must sit through.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw const SocketException('refused'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advance(tester, const Duration(seconds: 3 * pollRetryDelayInSec));
+
+      expect(transactions.length, greaterThan(3),
+          reason: 'the router had several chances to answer');
+      expect(container.read(routerUnreachableProvider), 0,
+          reason: 'and the window it has to answer in is not up yet');
+
+      await advanceToUnreachable(tester);
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a router that never answers is reported once the window is up',
         (tester) async {
       whenSend((_) async => deviceMode('Master'));
       whenTransaction((_) async => throw TimeoutException('no answer'));
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
-      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
+      expect(container.read(routerUnreachableProvider), 0);
 
-      expect(transactions, hasLength(2));
-      expect(container.read(pollingFailureCountProvider),
-          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+      await advanceToUnreachable(tester);
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
 
       await stopAndSettle(tester);
     });
 
-    testWidgets('the re-try is not a loop of its own', (tester) async {
-      // One extra request per streak. Re-trying every 5s while the router is
-      // away would pile up requests behind a dialog that is already up and
-      // saying so.
+    testWidgets(
+        'a failure that takes its time is reported on the same schedule',
+        (tester) async {
+      // The reason the window is a clock and not a tally. A refused connection
+      // fails at once; a timeout takes the request's full 10s and gets one retry
+      // from the HTTP client on top. Counting failures would put an unplugged
+      // router's alert twice as far out as a merely deaf one's, and the operator
+      // in front of it is waiting on the same stale dashboard either way.
+      //
+      // One request is all this router gets before the window is up, and one is
+      // all it takes: the deadline runs out while that poll is still on the wire,
+      // and the poll coming back empty is what settles it.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async {
+        await Future.delayed(
+            const Duration(seconds: pollUnreachableAfterInSec - 2));
+        throw TimeoutException('no answer');
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
+
+      expect(transactions, hasLength(1));
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('the re-polls stop once the router has been reported',
+        (tester) async {
+      // They exist to give a router that is coming back the chance to say so
+      // before anybody is told it is gone. Once the operator has been told,
+      // re-polling every few seconds behind a dialog that is already up would
+      // just pile up requests.
       whenSend((_) async => deviceMode('Master'));
       whenTransaction((_) async => throw TimeoutException('no answer'));
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
-      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(transactions, hasLength(2));
+      await advanceToUnreachable(tester);
+      final pollsWhileWaiting = transactions.length;
+
+      expect(
+          pollsWhileWaiting,
+          lessThanOrEqualTo(
+              pollUnreachableAfterInSec ~/ pollRetryDelayInSec + 1),
+          reason: 'the window bounds how many re-polls fit inside it');
 
       await advance(tester, const Duration(seconds: pollRetryDelayInSec));
       await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(transactions, hasLength(2),
-          reason: 'only the periodic tick polls from here on');
+
+      expect(transactions, hasLength(pollsWhileWaiting),
+          reason: 'only the periodic tick asks from here on');
 
       await stopAndSettle(tester);
     });
@@ -703,16 +809,35 @@ void main() {
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
-      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(container.read(pollingFailureCountProvider),
-          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+      await advanceToUnreachable(tester);
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
 
       failing = false;
       await advanceOneTick(tester);
 
-      expect(container.read(pollingFailureCountProvider), 0);
+      expect(container.read(routerUnreachableProvider), 0);
 
       await stopAndSettle(tester);
+    });
+
+    testWidgets('a stop calls off the deadline the silence runs against',
+        (tester) async {
+      // The re-poll is not the only thing a failed poll leaves behind: the
+      // deadline outlives it, and a deadline allowed to run out after the stop
+      // would report a router that the flow which stopped polling took away on
+      // purpose - over that flow's own progress dialog.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.stopPolling();
+
+      await advanceToUnreachable(tester);
+      await advanceToUnreachable(tester);
+
+      expect(container.read(routerUnreachableProvider), 0);
+      expect(transactions, hasLength(1));
     });
 
     testWidgets('a stop calls off the pending re-try', (tester) async {
@@ -754,7 +879,7 @@ void main() {
       onTheWire.completeError(TimeoutException('no answer'));
       await tester.pump();
 
-      expect(container.read(pollingFailureCountProvider), 0,
+      expect(container.read(routerUnreachableProvider), 0,
           reason: 'the stop said nobody is watching this router any more');
 
       await advance(tester, const Duration(seconds: pollRetryDelayInSec + 1));
@@ -764,25 +889,24 @@ void main() {
     testWidgets('a fresh start makes no claim about the new router',
         (tester) async {
       // startPolling is the recovery path the alert's own Try again button runs,
-      // so a streak surviving it would put the dialog straight back up.
+      // so a report surviving it would put the dialog straight back up.
       whenSend((_) async => deviceMode('Master'));
       whenTransaction((_) async => throw TimeoutException('no answer'));
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
-      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(container.read(pollingFailureCountProvider),
-          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+      await advanceToUnreachable(tester);
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
 
       notifier.stopPolling();
       notifier.startPolling();
 
-      expect(container.read(pollingFailureCountProvider), 0);
+      expect(container.read(routerUnreachableProvider), 0);
 
       await stopAndSettle(tester);
     });
 
-    testWidgets('a logout clears the streak', (tester) async {
+    testWidgets('a logout clears the report', (tester) async {
       // init() is the logout reset. The login page has no dashboard to correct,
       // and the next login may well be to a router that is perfectly fine.
       whenSend((_) async => deviceMode('Master'));
@@ -790,14 +914,13 @@ void main() {
 
       notifier.startPolling();
       await advanceToFirstPoll(tester);
-      await advance(tester, const Duration(seconds: pollRetryDelayInSec));
-      expect(container.read(pollingFailureCountProvider),
-          greaterThanOrEqualTo(pollFailuresBeforeUnreachable));
+      await advanceToUnreachable(tester);
+      expect(container.read(routerUnreachableProvider), greaterThan(0));
 
       await stopAndSettle(tester);
       notifier.init();
 
-      expect(container.read(pollingFailureCountProvider), 0);
+      expect(container.read(routerUnreachableProvider), 0);
     });
   });
 }

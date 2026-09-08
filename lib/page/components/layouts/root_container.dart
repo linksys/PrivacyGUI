@@ -49,11 +49,13 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     // and the dashboard went on presenting its last good snapshot as if it were
     // live.
     //
-    // Listening to the count rather than to a settled 'unreachable' flag is
-    // deliberate: a tick that lands while an exempt route is up is then not the
-    // last word on it, because the next failed tick raises the count again.
-    ref.listen(pollingFailureCountProvider, (previous, next) {
-      if (next >= pollFailuresBeforeUnreachable) {
+    // How long the router has to be silent before this fires is the provider's
+    // business, not the layout's - see [pollUnreachableAfterInSec]. Listening to a
+    // count rather than to a settled flag is what lets a report that lands while
+    // an exempt route is up be dropped without being lost: the next failed poll
+    // raises the count again, and by then that route may be gone.
+    ref.listen(routerUnreachableProvider, (previous, next) {
+      if (next > 0) {
         _reportRouterUnreachable();
       }
     });

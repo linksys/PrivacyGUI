@@ -20,36 +20,44 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 
 const int pollFirstDelayInSec = 1;
 
-/// How long after a failed poll to try the router once more, instead of waiting
-/// out the whole [BuildConfig.refreshTimeInterval].
+/// How long after a failed poll to ask the router again, instead of waiting out
+/// the whole [BuildConfig.refreshTimeInterval].
 ///
-/// Short on purpose: this is the difference between telling the operator their
-/// router is unreachable after a quarter of a minute and after two minutes.
+/// Short on purpose: it is what lets a router that was away for a moment prove
+/// it is back before anybody is told it is gone.
 const int pollRetryDelayInSec = 5;
 
-/// Failed polls in a row before the router counts as unreachable.
+/// How long the router may go without answering a poll before it counts as
+/// unreachable.
 ///
-/// Two, not one, because [pollRetryDelayInSec] means the second attempt lands
-/// seconds after the first: a router restarting its HTTP service answers again
-/// well inside that window, and a blocking dialog for a blip is worse than the
-/// blip.
-const int pollFailuresBeforeUnreachable = 2;
+/// Measured in time rather than in failed polls because the two failure modes
+/// this has to cover are eight times apart: a refused connection fails at once
+/// and gets no retry from the HTTP client (only a TimeoutException does), while
+/// a timeout takes the request's full 10s twice over. Counting failures would
+/// put the alert 4s into a router restarting its HTTP service - the very blip it
+/// must not fire on - and 46s into an unplugged one.
+const int pollUnreachableAfterInSec = 20;
 
 final pollingProvider =
     AsyncNotifierProvider<PollingNotifier, CoreTransactionData>(
         () => PollingNotifier());
 
-/// How many core polls have failed in a row - 0 whenever the router is
-/// answering.
+/// How many polls have found the router silent for longer than
+/// [pollUnreachableAfterInSec] - 0 for as long as it is answering.
 ///
 /// The signal for 'the router has gone away', which nothing else reports: every
 /// *deliberate* disappearance (a save with a DeviceRestart side effect, a reboot,
 /// a firmware update) is announced by the flow that caused it, and a failing
 /// background poll used to be announced by nobody. [pollingProvider] itself
 /// cannot carry this: a failed poll leaves it in [AsyncError], and Riverpod
-/// hands an AsyncError the *previous* value, so a count written into
+/// hands an AsyncError the *previous* value, so anything written into
 /// [CoreTransactionData] on the way to an error would never be read.
-final pollingFailureCountProvider = StateProvider<int>((ref) => 0);
+///
+/// Anything above zero means unreachable; the number itself matters only so that
+/// a report is not a one-off. A report landing while a route that raises the
+/// alert itself is up has to be dropped, and a count lets the next failed poll
+/// raise it again once that route is gone - which a settled flag could not.
+final routerUnreachableProvider = StateProvider<int>((ref) => 0);
 
 class CoreTransactionData extends Equatable {
   final int lastUpdate;
@@ -90,9 +98,27 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// timer that is still running.
   static int _generation = 0;
 
-  /// The one-shot re-poll a failure earns itself, or null when no poll has
-  /// failed. Static for the same reason as [_timer].
+  /// The short re-poll a failure earns, or null while the router is answering.
+  /// Static for the same reason as [_timer].
   static Timer? _retryTimer;
+
+  /// Runs out once the router has been silent for [pollUnreachableAfterInSec].
+  /// Static for the same reason as [_timer].
+  ///
+  /// Armed when a poll goes out rather than when one fails, which is what makes
+  /// the deadline independent of how long a failure takes to happen - see
+  /// [pollUnreachableAfterInSec].
+  static Timer? _silenceDeadline;
+
+  /// Whether [_silenceDeadline] has run out.
+  ///
+  /// Kept, rather than reported on the spot, because the deadline can run out
+  /// while a poll is still on the wire: the router has been silent that long
+  /// either way, but it is that poll coming back empty that settles it.
+  static bool _silenceDeadlinePassed = false;
+
+  /// Whether the last poll to come back did so empty-handed.
+  static bool _pollFailing = false;
 
   bool _paused = false;
   set paused(bool value) {
@@ -100,6 +126,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (_paused) {
       _timer?.cancel();
       _retryTimer?.cancel();
+      _silenceDeadline?.cancel();
+      _silenceDeadline = null;
     } else {
       checkAndStartPolling();
     }
@@ -138,7 +166,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // own read failed, and give the new router its own repair budget.
     _lastKnownMode = null;
     _modeRetriesLeft = _maxModeRetries;
-    _clearFailureStreak();
+    _clearRouterSilence();
     state = AsyncValue.data(
         const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
   }
@@ -202,6 +230,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       _modeRetriesLeft--;
       await _resolveCoreTransaction();
     }
+
+    // Starts the clock on the router's silence, before the request that may go
+    // unanswered rather than after it has given up.
+    _armSilenceDeadline();
 
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
@@ -270,27 +302,53 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       if (result.hasError) {
         _recordPollFailure(repository);
       } else {
-        _clearFailureStreak();
+        _clearRouterSilence();
       }
     }
 
     benchMark.end();
   }
 
-  /// Counts a failed poll and, on the first one, asks the router again shortly.
+  /// Starts the clock on the router's silence, unless it is already running.
+  ///
+  /// Anchored at the moment a poll goes out, not at the moment one gives up:
+  /// what the operator needs to hear about is how long the router has been quiet,
+  /// and anchoring it to a failure would report the HTTP client's timeout policy
+  /// instead. See [pollUnreachableAfterInSec].
+  void _armSilenceDeadline() {
+    if (_silenceDeadline != null || _silenceDeadlinePassed) {
+      return;
+    }
+    _silenceDeadline =
+        Timer(const Duration(seconds: pollUnreachableAfterInSec), () {
+      _silenceDeadline = null;
+      _silenceDeadlinePassed = true;
+      // A deadline that runs out while a poll is still on the wire waits for
+      // that poll: see [_silenceDeadlinePassed].
+      if (_pollFailing) {
+        _reportRouterUnreachable();
+      }
+    });
+  }
+
+  /// Notes a failed poll, and either reports the router unreachable or gives it
+  /// another chance to answer shortly.
   ///
   /// Failing quietly is what made #1419: the provider keeps its previous value
   /// through an [AsyncError], so every consumer goes on drawing the last good
-  /// snapshot and nothing on screen says the router stopped answering. The count
-  /// is what the UI reads to say so - see [pollingFailureCountProvider] - and the
-  /// re-poll is what keeps it honest, since a router that is merely restarting
-  /// its HTTP service answers the second attempt.
+  /// snapshot and nothing on screen says the router stopped answering.
+  ///
+  /// The short re-polls are what keep the report honest. Waiting out the whole
+  /// [BuildConfig.refreshTimeInterval] between attempts would mean a router that
+  /// came back ten seconds in still got reported unreachable at twenty, because
+  /// nothing had asked it since.
   void _recordPollFailure(RouterRepository repository) {
-    final failures = ref.read(pollingFailureCountProvider) + 1;
-    ref.read(pollingFailureCountProvider.notifier).state = failures;
-    // Only the first failure of a streak earns a re-try: past that the periodic
-    // tick is enough, and the operator is already being told.
-    if (failures > 1) {
+    _pollFailing = true;
+    if (_silenceDeadlinePassed) {
+      // Long enough, and this poll is the proof. From here the periodic tick is
+      // enough on its own - re-polling every few seconds behind a dialog that is
+      // already up would just pile up requests.
+      _reportRouterUnreachable();
       return;
     }
     // No cancellation check in the callback: everything that stops or pauses
@@ -302,9 +360,22 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         () => _polling(repository));
   }
 
-  void _clearFailureStreak() {
+  void _reportRouterUnreachable() {
+    logger.i('[RouterNotFound] no answer for ${pollUnreachableAfterInSec}s');
+    ref.read(routerUnreachableProvider.notifier).state =
+        ref.read(routerUnreachableProvider) + 1;
+  }
+
+  /// Puts everything about a router that was not answering back to how it looks
+  /// when one is.
+  void _clearRouterSilence() {
     _retryTimer?.cancel();
-    ref.read(pollingFailureCountProvider.notifier).state = 0;
+    _retryTimer = null;
+    _silenceDeadline?.cancel();
+    _silenceDeadline = null;
+    _silenceDeadlinePassed = false;
+    _pollFailing = false;
+    ref.read(routerUnreachableProvider.notifier).state = 0;
   }
 
   /// Whether the run that started in [generation] is still the one anybody is
@@ -344,11 +415,25 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // }
   }
 
-  Future forcePolling() {
+  Future forcePolling() async {
+    // Same reason [_runStartupSequence] takes a generation: the timer install is
+    // on the far side of an await, so a stopPolling() that lands while the forced
+    // poll is on the wire would be undone here. A logout is the worst of those -
+    // polling would resume with no credential, and the first _ErrorUnauthorized
+    // would force another logout - but a reboot is the likelier one: a
+    // pull-to-refresh still in flight when the operator restarts the router would
+    // put the timer back, and the ticks that followed would report the router
+    // unreachable over the restart's own progress dialog.
+    final generation = _generation;
     final routerRepository = ref.read(routerRepositoryProvider);
 
-    return _polling(routerRepository, force: true)
-        .then((_) => _setTimePeriod(routerRepository));
+    await _polling(routerRepository, force: true);
+    if (_isCancelled(generation)) {
+      logger
+          .d('polling was called off during a forced poll, no timer installed');
+      return;
+    }
+    _setTimePeriod(routerRepository);
   }
 
   void checkAndStartPolling([bool force = false]) {
@@ -399,8 +484,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     _modeRetriesLeft = _maxModeRetries;
     // A fresh session makes no claim about this router yet, and this is the
     // recovery path the router-not-found alert's own Try again button runs: a
-    // streak that survived it would put the alert straight back up.
-    _clearFailureStreak();
+    // report that survived it would put the alert straight back up.
+    _clearRouterSilence();
     try {
       await _resolveCoreTransaction();
       if (cancelled()) return;
@@ -432,9 +517,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }
-    // The re-try a failed poll left behind would otherwise poll a router nobody
-    // is waiting on any more, and count a failure against it.
+    // The re-poll a failed poll left behind would otherwise ask a router nobody
+    // is waiting on any more, and count its silence against it. The deadline goes
+    // for the same reason: whatever stopped polling is taking the router away on
+    // purpose and reports that itself.
     _retryTimer?.cancel();
+    _silenceDeadline?.cancel();
+    _silenceDeadline = null;
   }
 
   _setTimePeriod(RouterRepository routerRepository) {
