@@ -335,6 +335,58 @@ void main() {
         container.dispose();
       });
     });
+
+    // The tests above emit one event each, and the earlier pair uses *different*
+    // domains — so none of them can see a same-domain repeat being collapsed.
+    // That collapse is what riverpod 3.x's `==`-based updateShouldNotify would
+    // cause without the `seq` tag on `InvalidationEvent` (#1501 AC-B1), and it
+    // is what this test pins.
+    //
+    // The two events are spaced past the 500ms debounce window on purpose:
+    // inside it they are *meant* to merge into one refresh, so a repeat asserted
+    // there could not tell a real collapse from the debouncer doing its job.
+    test('two dhcpReservations events past the debounce window re-fetch twice',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspClientProvider.overrideWithValue(mockUsp),
+            uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+            devicesDataProvider.overrideWith(
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(dhcpDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        // First reservation added elsewhere.
+        sseController
+            .add((domain: InvalidationDomain.dhcpReservations, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+        clearInteractions(mockUsp);
+
+        // A second one, well after the first refresh settled. Same domain, so
+        // `seq` is the only thing that differs between the two events.
+        sseController
+            .add((domain: InvalidationDomain.dhcpReservations, seq: 1));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
   });
 }
 

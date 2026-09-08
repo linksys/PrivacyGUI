@@ -318,6 +318,67 @@ void main() {
       });
     });
 
+    // The two tests above emit one event each, so neither can see a same-domain
+    // repeat being collapsed. That collapse is what riverpod 3.x's `==`-based
+    // updateShouldNotify would cause without the `seq` tag on
+    // `InvalidationEvent` (#1501 AC-B1), and it is what this test pins.
+    //
+    // The two events are spaced past the 500ms debounce window on purpose:
+    // inside it they are *meant* to merge into one refresh, so a repeat asserted
+    // there could not tell a real collapse from the debouncer doing its job.
+    test('two connectedDevices events past the debounce window re-fetch twice',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspClientProvider.overrideWithValue(mockUsp),
+            uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockDevicesSvc);
+
+        void expectOneFetch() {
+          verify(() => mockDevicesSvc.fetch(
+                wifiClientMap: any(named: 'wifiClientMap'),
+                connectionDetailMap: any(named: 'connectionDetailMap'),
+                gatewayName: any(named: 'gatewayName'),
+                systemInfo: any(named: 'systemInfo'),
+              )).called(1);
+        }
+
+        // A device joins.
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expectOneFetch();
+
+        // Another one joins, well after the first refresh settled. Same domain,
+        // so `seq` is the only thing that differs between the two events — and
+        // if the second is dropped the new device never appears in the list.
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expectOneFetch();
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
     test('gatewayName uses modelName from sysData', () async {
       final sysData = SystemInfoData(
         model: SystemInfoUIModel(
