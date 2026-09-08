@@ -44,11 +44,12 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
     ),
   );
   if (confirmed == true && context.mounted) {
+    final navigator = Navigator.of(context, rootNavigator: true);
     // Prominent, centered progress while the router reboots (J-08 — a bottom
     // SnackBar was too subtle; QA wanted a clear "it's happening" signal).
     // On WiFi the page reloads on reconnect and clears this; the barrier is
     // dismissible so a wired user is never stuck.
-    showDialog<void>(
+    final progressRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => const AlertDialog(
@@ -68,7 +69,18 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
         ),
       ),
     );
-    await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+    navigator.push(progressRoute);
+    try {
+      await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+    } catch (_) {
+      if (progressRoute.isActive) navigator.removeRoute(progressRoute);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('The restart could not be confirmed. Wait for your router to reconnect, then check again before retrying.'),
+        ));
+      }
+      return false;
+    }
     onRestarted?.call();
     return true;
   }

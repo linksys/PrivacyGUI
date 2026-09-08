@@ -4,7 +4,12 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 // Run explicitly against one registered device. Credentials stay inside this process.
+assert(process.argv[3] === '--reconnect-and-restart', 'Explicit recovery mode required');
 const mac=process.argv[2];
+const clientMac=process.argv[4];
+const clientName=process.argv[5];
+assert.match(clientMac||'', /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i);
+assert(clientName, 'Client display name required');
 assert.match(mac||'',/^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i,'Supply the registered hardware MAC');
 const mcpRoot=process.env.LINKSYS_MCP_ROOT||fileURLToPath(new URL('../../../linksys-mcp/',import.meta.url));
 const {loadRegistry,resolveDevice,resolveCredential,DeviceIdentityVerifier}=await import(join(mcpRoot,'packages/common/src/index.ts'));
@@ -12,7 +17,7 @@ const {default:pino}=await import(join(mcpRoot,'node_modules/pino/pino.js'));
 const device=resolveDevice(loadRegistry({scope:'devices'}),mac);
 const verified=await new DeviceIdentityVerifier(pino({level:'silent'})).verify(device);
 const origin=`https://${verified.device.host}`;
-const output=fileURLToPath(new URL('./artifacts/device/',import.meta.url));
+const output=fileURLToPath(new URL('./artifacts/recovery/',import.meta.url));
 await mkdir(output,{recursive:true});
 const completed=[];
 let pass=false;
@@ -24,11 +29,15 @@ page.on('response',async r=>{if(new URL(r.url()).pathname==='/JNAP/') {try {cons
 const blocked=[];
 let currentFirmwareSettings;
 const setupRequests=[];
+let rebootSent=false;
+let reconnectSent=false;
 await page.route('**/JNAP/',async route=>{const req=route.request();const action=req.headers()['x-jnap-action']?.split('/').pop()||'';const data=req.postDataJSON();
  const unchangedFirmwareSettings=action==='SetFirmwareUpdateSettings'&&currentFirmwareSettings&&data?.updatePolicy===currentFirmwareSettings.updatePolicy&&JSON.stringify(data?.autoUpdateWindow)===JSON.stringify(currentFirmwareSettings.autoUpdateWindow);
  const setupAcknowledgement=action==='SetUserAcknowledgedAutoConfiguration'&&data&&Object.keys(data).length===0;
  if(setupAcknowledgement||unchangedFirmwareSettings)setupRequests.push(action);
- const permitted=setupAcknowledgement||unchangedFirmwareSettings||/^(Get|Check|Is|Has)/.test(action)||(action==='UpdateFirmwareNow'&&data?.onlyCheck===true)||(action==='Transaction'&&Array.isArray(data)&&data.every(a=>/\/(Get|Check|Is|Has)[^/]*$/.test(a.action)));
+ const recovery=(action==='Reboot'&&!rebootSent&&Object.keys(data||{}).length===0)||(action==='ClientDeauth'&&!reconnectSent&&data?.macAddress?.toLowerCase()===clientMac.toLowerCase());
+ if(recovery){if(action==='Reboot')rebootSent=true;else reconnectSent=true;}
+ const permitted=recovery||setupAcknowledgement||unchangedFirmwareSettings||/^(Get|Check|Is|Has)/.test(action)||(action==='UpdateFirmwareNow'&&data?.onlyCheck===true)||(action==='Transaction'&&Array.isArray(data)&&data.every(a=>/\/(Get|Check|Is|Has)[^/]*$/.test(a.action)));
  if(!permitted){blocked.push(action);await route.abort();return;}await route.continue();});
 try{
  await page.goto(`${origin}/#/dashboardMenu/menuInstantTest`);
@@ -46,32 +55,39 @@ try{
  const click=async name=>{const link=typeof name==='string'?btn(name):name;await link.waitFor();for(let i=0;i<12;i++){const box=await link.boundingBox();if(box&&box.y>=0&&box.y+box.height<990){await link.click();return;}await page.mouse.move(720,700);await page.mouse.wheel(0,box&&box.y<0?-420:420);await page.waitForTimeout(100);}throw Error('Control not reachable');};
  const snap=async name=>{await page.screenshot({path:`${output}/${name}.png`});completed.push(name);console.log(`PASS ${name}`);};
  await snap('live-overview');
- for(const [name,label] of [['internet',"Internet isn't working"],['speed','Whole internet is slow'],['device-connect',"Device won't connect"],['device-slow','One device is slow'],['coverage',"Doesn't reach a room"],['drops','Keeps cutting out']]){
-  await click(label);await page.waitForTimeout(1800);
-  if(name==='speed'){await click('Check my speed');await page.getByText("Here's what your connection can do",{exact:true}).waitFor({timeout:60000});}
-  if(name==='device-connect'){await click(page.getByRole('button',{name:/ WiFi$/}).first());await click('Yes — I can see it');await page.getByText('Check your WiFi details',{exact:true}).waitFor();}
-  if(name==='device-slow'){await click(page.getByRole('button',{name:/ WiFi$/}).first());await click('Connection details');await page.getByText('Link rate',{exact:true}).waitFor();await click('Hide connection details');await click('Change problem');await click('Keeps disconnecting');await click('Force reconnect a device');await page.getByText('Force reconnect?',{exact:true}).waitFor();await click('Cancel');await page.getByText('Force reconnect?',{exact:true}).waitFor({state:'hidden'});}
-  if(name==='drops'){await click('Every few minutes');await click('All devices');await click('Start connection test');await page.getByText('No drops caught during the test.',{exact:true}).waitFor({timeout:150000});}
-  await snap(name);
-  await click('Back to Instant-Test');await btn("Internet isn't working").waitFor();
+
+ await click('One device is slow');
+ await click(page.getByRole('button',{name:`${clientName} WiFi`,exact:true}));
+ await click('Change problem');await click('Keeps disconnecting');
+ await click('Force reconnect a device');await click('Reconnect');
+ await page.getByText(`${clientName} disconnected — it should reconnect in a moment.`,{exact:true}).waitFor();
+ completed.push('reconnect-request-accepted');
+ await click('Back to Instant-Test');
+ await click('Whole internet is slow');await click('Check my speed');
+ await page.getByText("Here's what your connection can do",{exact:true}).waitFor({timeout:60000});
+ await click('Everything in my home is slow');
+ await click('Restart + Run Speed Test Again');await click('Restart');
+ await page.getByText(/Restarting your router/).waitFor();
+ completed.push('restart-request-submitted');
+ await snap('restart-progress');
+ console.log('Waiting for router recovery');
+ const deadline=Date.now()+180000;
+ let recovered=false;
+ await page.waitForTimeout(20000);
+ while(Date.now()<deadline){
+   try{const r=await context.request.get(`${origin}/`,{timeout:3000});if(r.ok()){recovered=true;break;}}catch{}
+   await page.waitForTimeout(3000);
  }
- for(const [name,label] of [['live-devices','View devices'],['live-network','View network']]){await click(label);await page.waitForTimeout(800);await snap(name);await click('Back to Instant-Test');}
- await click('Test scenarios');
- await click(page.getByText('Router overloaded + mesh issues',{exact:false}).last());
- await page.getByText('Instant-Test preview',{exact:true}).waitFor();
- await click('Restart Router');await click('Restart');
- await page.getByText(/Restarting your router/).waitFor();await page.keyboard.press('Escape');
- completed.push('authenticated-demo-entry-isolated');
- console.log('PASS authenticated-demo-entry-isolated');
- assert.deepEqual(blocked,[],'Unexpected setting-changing request');
- assert.deepEqual(errors,[],'Uncaught browser errors');
- await context.clearCookies();
- await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();});
- await page.goto('about:blank');
- await page.goto(`${origin}/#/dashboardMenu/menuInstantTest`);
- await page.locator('input[type=password]').waitFor({timeout:30000});
- completed.push('cleared-session-redirect');
- console.log('PASS cleared-session-redirect');
- assert.deepEqual(errors,[],'Uncaught errors after session removal');
+ assert(recovered,'Router HTTPS did not recover within three minutes');
+ await page.screenshot({path:`${output}/after-restart-before-reload.png`});
+ // Revalidate the router identity before the browser resumes authenticated work.
+ await new DeviceIdentityVerifier(pino({level:'silent'})).verify(device);
+ await page.reload();
+ await page.getByText('What needs help?',{exact:true}).waitFor({timeout:60000});
+ await page.getByText("We didn't detect any issues",{exact:true}).waitFor({timeout:60000});
+ completed.push('router-recovered-and-diagnostics-passed');
+ await snap('recovered-overview');
+ assert.deepEqual(blocked,[]);
+ assert.deepEqual(errors,[]);
  pass=true;
 }finally{await writeFile(`${output}/results.json`,JSON.stringify({mac,pass,completed,requests,errors,blocked,setupRequests},null,2));await browser.close();}

@@ -70,6 +70,32 @@ async function check(name, run, mobile = false) {
   } finally {await context.close();}
 }
 try {
+  for (const mobile of [false, true]) {
+    await check(`demo-controls-${mobile ? 'mobile' : 'desktop'}`, async p => {
+      const jnap = [];
+      p.on('request', r => { if (new URL(r.url()).pathname === '/JNAP/') jnap.push(r.url()); });
+      await button(p, 'Demo controls').click();
+      await button(p, 'Workflow test results Healthy connection').click();
+      await p.getByText('Speed check fails', {exact:true}).last().click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').waitFor();
+      await button(p, 'Whole internet is slow').click();
+      await clickInScrollView(p, 'Check my speed');
+      await p.getByText(/The speed check could not finish/).waitFor();
+      // Reapplying the same fixture must reset the current workflow.
+      await button(p, 'Demo controls').click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').waitFor();
+      await button(p, 'Demo controls').click();
+      await button(p, 'Workflow test results Speed check fails').click();
+      await p.getByText('Healthy connection', {exact:true}).last().click();
+      await button(p, 'Apply scenario').click();
+      await button(p, 'Whole internet is slow').click();
+      await clickInScrollView(p, 'Check my speed');
+      await visible(p, "Here's what your connection can do");
+      assert.deepEqual(jnap, [], 'Demo controls must remain isolated from router requests');
+    }, mobile);
+  }
   for (const mobile of [false,true]) {
     await check(mobile?'compact-followup-mobile':'compact-followup-wide',async p=>{
       if (!mobile) await p.setViewportSize({width:2048,height:1100});

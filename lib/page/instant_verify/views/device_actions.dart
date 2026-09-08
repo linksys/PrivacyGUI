@@ -36,8 +36,18 @@ Future<bool> confirmAndDeauth(
   );
   if (confirmed != true || !context.mounted) return false;
   onProgress?.call(true);
-  await ref.read(instantVerifyPivotProvider.notifier).deauthClient(mac);
-  onProgress?.call(false);
+  try {
+    await ref.read(instantVerifyPivotProvider.notifier).deauthClient(mac);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('The reconnect request could not be confirmed. Check the device connection before trying again.'),
+      ));
+    }
+    return false;
+  } finally {
+    if (context.mounted) onProgress?.call(false);
+  }
   if (!context.mounted) return true;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

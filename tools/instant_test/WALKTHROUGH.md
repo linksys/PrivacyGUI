@@ -1,6 +1,6 @@
 # Instant-Test feature acceptance — simplified JNAP workflow
 
-The standard harness runs all Instant-Test view tests. The browser walkthrough uses the isolated local preview, with fixed diagnostic fixtures and neutralized router actions. This is feature acceptance for the presentation branch; authenticated on-device acceptance remains required.
+The standard harness runs all Instant-Test view tests. The browser walkthrough uses the isolated local preview, with fixed diagnostic fixtures and neutralized router actions. This is feature acceptance for the review/demo branch; hardware results are recorded separately in DEVICE_ACCEPTANCE.md.
 
 ## Path inventory
 
@@ -42,6 +42,8 @@ Screenshots and machine-readable results are written to ignored `artifacts/`. Th
 
 See [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md) for the real JNAP deployment, live workflow checks, and the unsupported-check counting fix. The expanded standard suite has 215 passing Flutter tests; all 47 preview scenarios also pass after that fix.
 
-## Remaining device acceptance
+## Current review/demo acceptance
 
-Verify router login and expired sessions, actual JNAP probe results and failures, disruptive-action success/failure and recovery, channel/blocklist changes where supported, firmware update behavior, customer-build exclusion of preview controls, and the selected LinksysWRT 1.0 release branch. Pre-login assistance and USP migration remain later phases.
+The final follow-up passes 221 Flutter tests, 51 preview browser scenarios, 12 hardware checkpoints, and 4 authentication checkpoints. The actual five-minute browser idle timer and authorization rejection/re-login are covered. Physical reconnect and restart commands succeeded; macOS switched networks during reboot, requiring rejoining the lab WiFi before post-recovery acceptance. See DEVICE_ACCEPTANCE.md for the preserved recovery-timeout report and the clean post-rejoin runs.
+
+Scenario controls and the mock preview remain available and are expanded for reviewers and demos. Channel/blocklist changes, firmware installation, release integration, and independent review remain open. Excluding reviewer controls is a later productization task. Pre-login assistance and USP migration remain later phases.

@@ -2,6 +2,7 @@ import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'details_disclosure.dart';
 
 import 'package:flutter/material.dart';
@@ -424,7 +425,14 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     _findingsExpanded = false;
                     _checksExpanded = false;
                   });
-                  notifier.loadMockScenario(s.index);
+                  final router = GoRouter.maybeOf(context);
+                  if (router != null &&
+                      router.routeInformationProvider.value.uri.path != '/instant-prototype') {
+                    // Reviewer fixtures must never share the live action provider.
+                    router.go('/instant-prototype?overview=${s.index}');
+                  } else {
+                    notifier.loadMockScenario(s.index);
+                  }
                 },
               )).toList(),
                 ),

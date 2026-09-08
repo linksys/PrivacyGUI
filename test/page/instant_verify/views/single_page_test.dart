@@ -32,7 +32,9 @@ const printer = DiagnosticClient(
     txRateMbps: 20);
 
 class FixtureNotifier extends InstantVerifyPivotNotifier {
-  FixtureNotifier({this.clients = const [printer], this.meshNodes, this.dnsCheck});
+  FixtureNotifier({this.clients = const [printer], this.meshNodes, this.dnsCheck, this.rejectRestart = false, this.rejectReconnect = false});
+  final bool rejectRestart;
+  final bool rejectReconnect;
   final DnsCheckResult? dnsCheck;
   final List<MeshNodeInfo>? meshNodes;
   final List<DiagnosticClient> clients;
@@ -52,6 +54,11 @@ class FixtureNotifier extends InstantVerifyPivotNotifier {
                   backhaulRssi: -80)
             ],
       );
+  @override
+  Future<void> deauthClient(String macAddress) async {
+    if (rejectReconnect) throw StateError('reconnect rejected');
+  }
+
   int fetchCount = 0;
   @override
   Future<void> fetch({bool forceSpeedTest = false}) async {
@@ -62,6 +69,7 @@ class FixtureNotifier extends InstantVerifyPivotNotifier {
 
   @override
   Future<void> restartRouter() async {
+    if (rejectRestart) throw StateError('restart rejected');
     state = state.copyWith(hasRestartedThisSession: true);
   }
 }
@@ -430,6 +438,33 @@ void main() {
     service.fail = false;
     await tapText(tester, 'Try connection check again');
     expect(find.text('Your router can reach the internet'), findsOneWidget);
+  });
+
+  testWidgets('rejected reconnect reports failure without claiming disconnection', (tester) async {
+    await mount(tester, notifier: FixtureNotifier(rejectReconnect: true));
+    await tapText(tester, 'One device is slow');
+    await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
+    await tapText(tester, 'Keeps disconnecting');
+    await tapText(tester, 'Force reconnect a device');
+    await tapText(tester, 'Reconnect');
+    expect(find.textContaining('The reconnect request could not be confirmed'), findsOneWidget);
+    expect(find.textContaining('Office printer disconnected'), findsNothing);
+  });
+
+  testWidgets('rejected restart dismisses progress without claiming recovery', (tester) async {
+    final service = ProbeService()..dnsUnavailable = true;
+    await mount(tester, notifier: FixtureNotifier(rejectRestart: true), service: service);
+    await tapText(tester, "Internet isn't working");
+    final calls = service.calls;
+    await tapText(tester, 'Restart Router');
+    await tapText(tester, 'Restart');
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('The restart could not be confirmed'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(service.calls, calls);
+    expect(find.text("If restarting didn't fix it:"), findsNothing);
   });
 
   testWidgets('cancelled DNS restart does not claim a restart or rerun probes', (tester) async {

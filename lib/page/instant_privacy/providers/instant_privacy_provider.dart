@@ -20,7 +20,12 @@ final instantPrivacyProvider =
 class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
   @override
   InstantPrivacyState build() {
-    fetch(fetchRemote: true);
+    // Initialization has no awaiting caller. A rejected/expired login must not
+    // escape as an unhandled Future error while the app returns to login.
+    fetch(fetchRemote: true).onError((error, stackTrace) {
+      logger.w('[InstantPrivacy]: Background settings load failed');
+      return InstantPrivacyState.init();
+    });
     return InstantPrivacyState.init();
   }
 

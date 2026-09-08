@@ -63,10 +63,22 @@ Refresh reopens the addressed page/workflow and fetches current data. It does no
 
 See [WALKTHROUGH.md](WALKTHROUGH.md) for the executed path inventory and release limits. `walkthroughs.mjs` extends the browser runner with failure, recovery, and terminal paths. Its fixed `probe` query values are read only by `PrototypeRoot`; the authenticated router route uses the real diagnostic service. Each fixture change loads a fresh document, avoiding stale state from hash-only navigation. Connection-monitor checks advance the browser clock through the real timer callbacks; they do not change the production monitoring interval.
 
-## Remaining release checks
+## Current review/demo scope
 
-Run mandatory login and expired-session behavior, real router data/error states, confirmation/cancellation of disruptive actions, restart/reconnect recovery, support/escalation, broader accessibility, and the selected JNAP release line's existing checks on the target device. Confirm customer builds exclude prototype/scenario controls. No pre-login or USP capability is part of this launch pass.
+The final acceptance totals are recorded in WALKTHROUGH.md and DEVICE_ACCEPTANCE.md. The current build retains and expands scenario controls for reviewers and the demo team. Productization, channel/blocklist and firmware-installation acceptance, release integration, and independent review remain separate work. Pre-login assistance and USP migration remain later phases.
 
 ## Authenticated router harness
 
 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md) documents the device deployment and `bun tools/instant_test/device.ts <registered-MAC>` walkthrough. It uses real JNAP reads and probes in an isolated authenticated browser, and blocks disruptive actions. Its results are separate from the simulated preview suite.
+
+## Reviewer demo controls
+
+Open the isolated preview and select **Demo controls**. Choose an overview fixture and a workflow result, then select **Apply scenario**. The controls expose healthy, unavailable-router/internet/DNS, connection/speed failure, slow/high-latency, intermittent-drop, post-restart speed failure, and rejected restart/reconnect scenarios. Applying a scenario resets the walkthrough, including when reapplying the same choice. Cancel preserves it.
+
+On the authenticated device page, choosing an overview test scenario opens the isolated preview, whose diagnostics and actions are simulated. It does not load fictitious devices into the live router action provider. The real page stays behind router login. All controls remain available for reviewers and the demo team.
+
+## Authentication and recovery acceptance
+
+`bun tools/instant_test/auth.ts <registered-MAC>` verifies rejection of read requests with authorization omitted, return to login, reauthentication, and the real five-minute browser idle timeout. It neither changes nor prints credentials. Allow roughly six minutes. `--quick` omits the idle interval for focused rejection/re-login diagnosis. This tests local JNAP authentication and browser idle logout, not cloud token expiry.
+
+`bun tools/instant_test/recovery.ts <registered-router-MAC> --reconnect-and-restart <client-MAC> '<client-display-name>'` is a separate disruptive lab test. Run only with authorization for that router/client and a console recovery connection ready. The request guard permits at most one matching ClientDeauth and one Reboot, and otherwise retains the read/setup guards. It does not install firmware or change passwords, channels, or filtering rules. Results and screenshots are stored separately under ignored `artifacts/recovery/`.

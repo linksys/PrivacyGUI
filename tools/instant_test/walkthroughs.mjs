@@ -24,6 +24,20 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await p.clock.fastForward(ms);
     await p.clock.runFor(40);
   }
+  await check('restart-request-rejected', async p => {
+    await open(p, 'restartRejected');
+    await click(p, 'Restart Router'); await click(p, 'Restart');
+    await contentText(p, 'The restart could not be confirmed');
+    assert.equal(await p.getByText(/Restarting your router/).count(), 0);
+  });
+  await check('reconnect-request-rejected', async p => {
+    await open(p, 'reconnectRejected');
+    await click(p, 'One device is slow'); await click(p, 'Office-Printer WiFi');
+    await click(p, 'Change problem'); await click(p, 'Keeps disconnecting');
+    await click(p, 'Force reconnect a device'); await click(p, 'Reconnect');
+    await contentText(p, 'The reconnect request could not be confirmed');
+    assert.equal(await p.getByText(/Office-Printer disconnected/).count(), 0);
+  });
   for(const [probe,result,heading] of [
     ['gatewayDown',"Your device can't reach the router",'Check your connection to the router'],
     ['internetDown',"Your router can't reach the internet",'Check the connection to your modem'],
