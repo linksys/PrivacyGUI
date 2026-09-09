@@ -67,13 +67,17 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
 
   // W-1 fix: wire auth failure to logout (both modes)
   //
-  // TODO(#1529): the one place under `lib/core/` still allowed to sign the user
-  // out, and `session_teardown_call_sites_test.dart` declares it as such. A 401
-  // can arrive before any page is mounted, so converting it to a report the way
-  // phase 5 did the three connection exits would fail open. #1529 owns the
-  // replacement — under Remote Assistance this lands on the confirm view's
-  // session-ended surface, which reports a rejected credential with a green check
-  // mark and the copy for an operator who finished on purpose.
+  // The one place under `lib/core/` still allowed to sign the user out, and
+  // `session_teardown_call_sites_test.dart` declares it as such. A 401 can arrive
+  // before any page is mounted, so converting it to a report the way phase 5 did
+  // the three connection exits would fail open. #1323 carries that reasoning.
+  //
+  // Under Remote Assistance this lands on the confirm view's "Session Ended"
+  // screen — the same screen an operator who finished on purpose sees. That is a
+  // decision, not an oversight: Austin's call on 2026-09-09 was not to tell the two
+  // apart, so this is a closed question and not pending work. Reopening it costs a
+  // stored end cause the route redirect can read, plus new copy in 26 locales;
+  // #1529 records the decision and what it would take.
   bridge.onAuthFailed = () {
     logger.w('[USP][Auth]: Session expired — triggering logout');
     // Spelled out rather than left to the default, which is the same value. These
@@ -122,8 +126,8 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
 
   // Wire force logout — shared guard prevents duplicate triggers
   //
-  // TODO(#1529): the same waiver as `bridge.onAuthFailed` above, reached from the
-  // auth coordinator and the client instead of the bridge. The log line says
+  // The same waiver as `bridge.onAuthFailed` above, and closed the same way, reached
+  // from the auth coordinator and the client instead of the bridge. The log line says
   // "navigating to login", which has no counterpart in Remote Assistance.
   bool logoutTriggered = false;
   void forceLogout() {
