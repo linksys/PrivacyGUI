@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 export async function walkthroughs({check,button,visible,clickInScrollView,url}) {
   const click=(p,target)=>clickInScrollView(p,typeof target==='string'?button(p,target).last():target);
   const tap=(p,label)=>click(p,p.getByText(label,{exact:false}).last());
-  const contentText=(p,text)=>p.getByText(text,{exact:false}).last().waitFor();
+  // Some transient overlay messages have painted HTML before semantics catches up.
+  const contentText=(p,text)=>p.locator('body').getByText(text,{exact:false}).filter({visible:true}).last().waitFor();
   async function open(p,probe='healthy',flow) {
     const target=new URL(url);
     const query=new URLSearchParams({probe});
@@ -137,7 +138,7 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await click(p,'Keeps disconnecting');await visible(p,'Device keeps dropping WiFi');
     await guide(p,3);await click(p,'Force reconnect a device');
     await visible(p,'Force reconnect?');await click(p,'Reconnect');
-    await p.getByText(/Office-Printer disconnected/).waitFor();
+    await contentText(p,/Office-Printer disconnected/);
     await click(p,'Device stopped dropping');await button(p,'One device is slow').waitFor();
   });
   await check('coverage-placement-options',async p=>{
@@ -197,11 +198,11 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
       await click(p,'View test details');await p.getByText(/Router reached/).waitFor();
       await click(p,p.locator('flt-semantics[flt-tappable]').filter({hasText:'Router reached'}).last());await p.getByText(/We connected to your router/).waitFor();
       await click(p,'Hide test details');
-      await click(p,'View network');await visible(p,'Your Network');
+      await p.goto(p.url().replace(/([?&])instant=[^&]*/,'$1').replace(/[?&]$/,'') + (p.url().includes('?') ? '&' : '?') + 'instant=network');await visible(p,'Your Network');
       if(title==='Slow internet + weak WiFi') {
         await click(p,'Update Now');await visible(p,'Your Network');
       }
-      await click(p,'Back to Instant-Test');await click(p,'View devices');
+      await click(p,'Back to Instant-Test');await click(p,'One device is slow');
       await click(p,'Back to Instant-Test');
       await button(p,"Internet isn't working").waitFor();
     });

@@ -1,4 +1,7 @@
 import 'instant_test_layout.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'instant_test_page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -101,6 +104,12 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppTextButton('Back to router home',
+                    icon: LinksysIcons.arrowBack,
+                    onTap: () => context.goNamed(RouteNamed.dashboardHome)),
+              ),
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,
@@ -114,8 +123,6 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                           showProblemCards: false,
                           leading:
                               SymptomChooser(onSelect: (flow) => _launch(flow)),
-                          onViewNetwork: () => _navigate(details: 2),
-                          onViewClients: () => _navigate(details: 1),
                           onNavigateToFlow: (index) => _launch(index + 1),
                           onTroubleshootWeakDevices: () => _launch(31),
                         )),

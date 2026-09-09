@@ -33,6 +33,24 @@ ProviderContainer _container() => ProviderContainer(
     );
 
 void main() {
+  test('required router read failure ends checking and permits a new run', () async {
+    final repo = MockRouterRepository();
+    when(repo.send(any, data: anyNamed('data'), fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: anyNamed('auth')))
+        .thenThrow(StateError('read unavailable'));
+    final c = ProviderContainer(overrides: [routerRepositoryProvider.overrideWithValue(repo)]);
+    addTearDown(c.dispose);
+    final notifier = c.read(instantVerifyPivotProvider.notifier);
+    for (var attempt = 0; attempt < 2; attempt++) {
+      await notifier.fetch();
+      final state = c.read(instantVerifyPivotProvider);
+      expect(state.phase, PivotLoadPhase.complete);
+      expect(state.browserTestStep, 'error');
+      expect(state.errorMessage, isNotNull);
+      expect(state.verdict, isNull);
+    }
+  });
+
   test('privacy background initialization handles rejected credentials', () async {
     final repo = MockRouterRepository();
     when(repo.send(JNAPAction.getMACFilterSettings, fetchRemote: true, auth: true))

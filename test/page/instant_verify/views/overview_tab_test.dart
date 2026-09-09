@@ -210,21 +210,20 @@ void main() {
   mockDependencyRegister();
 
   group('OverviewTab — loading state', () {
-    testWidgets('shows a compact checking result during loading',
+    testWidgets('shows visible check progress during loading',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();
 
-      expect(find.text('Checking...'), findsOneWidget);
-      expect(find.text('Router'), findsNothing);
-      expect(find.text('View test progress'), findsOneWidget);
+      expect(find.text('Checking your connection'), findsOneWidget);
+      expect(find.text('Router'), findsOneWidget);
+      expect(find.text('View test progress'), findsNothing);
     });
 
-    testWidgets('opens individual check progress on request', (tester) async {
+    testWidgets('shows individual checks without a disclosure', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();
 
-      await _tap(tester, 'View test progress');
       for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(seconds: 1));
       }
@@ -433,7 +432,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();
 
-      expect(find.text('Checking...'), findsOneWidget);
+      expect(find.text('Checking your connection'), findsOneWidget);
     });
   });
 
@@ -509,7 +508,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
       await tester.pump();
 
-      expect(find.text('Devices with weak WiFi'), findsOneWidget);
+      expect(find.text('Devices that may need help'), findsOneWidget);
       expect(find.text('iPhone'), findsNothing);
       await _tap(tester, 'View affected devices');
       expect(find.text('iPhone'), findsOneWidget);
@@ -528,7 +527,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Devices with weak WiFi'), findsNothing);
+      expect(find.text('Devices that may need help'), findsNothing);
     });
   });
 
@@ -623,7 +622,7 @@ void main() {
       await tester.pump();
 
       await _tap(tester, 'View test details');
-      expect(find.text('Connected'), findsOneWidget);
+      expect(find.text('Not confirmed'), findsOneWidget);
       expect(find.text('Not tested'), findsOneWidget);
       expect(find.text('Internet reachable'), findsNothing);
     });

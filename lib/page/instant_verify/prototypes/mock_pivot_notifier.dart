@@ -1,4 +1,5 @@
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
@@ -13,7 +14,9 @@ import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_serv
 /// Base scenario: D (rich — 3 mesh nodes, ethernet ports, CPU/mem, speed test,
 /// verdict findings), augmented to 4+ devices so no device panel reads empty.
 class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier {
-  MockInstantVerifyPivotNotifier({this.overviewScenario = 3, this.actionScenario = PreviewProbeScenario.healthy});
+  MockInstantVerifyPivotNotifier({this.showProgress = false, this.overviewScenario = 3, this.actionScenario = PreviewProbeScenario.healthy});
+  final bool showProgress;
+  bool _running = false;
   final PreviewProbeScenario actionScenario;
   final int overviewScenario;
   bool _loaded = false;
@@ -45,7 +48,31 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier {
   /// data instead of issuing JNAP calls.
   @override
   Future<void> fetch({bool forceSpeedTest = false}) async {
+    if (_running) return;
     _ensureLoaded();
+    if (!showProgress) return;
+    _running = true;
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+    final result = state;
+    state = const InstantVerifyPivotState(phase: PivotLoadPhase.loading);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (disposed) return;
+    state = InstantVerifyPivotState(phase: PivotLoadPhase.jnapLoaded,
+        browserTestStep: 'dns', deviceInfo: result.deviceInfo,
+        wanStatus: result.wanStatus, clients: result.clients,
+        deviceScores: result.deviceScores,
+        gatewayPing: const GatewayPingResult(reachable: true));
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (disposed) return;
+    state = state.copyWith(browserTestStep: 'speed:download', dnsCheck: result.dnsCheck);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (disposed) return;
+    state = actionScenario == PreviewProbeScenario.probeError
+        ? const InstantVerifyPivotState(phase: PivotLoadPhase.complete,
+            browserTestStep: 'error', errorMessage: 'Simulated check failure')
+        : result;
+    _running = false;
   }
 
   // ── Neutralize the interactive router actions (no live calls in mock) ──────

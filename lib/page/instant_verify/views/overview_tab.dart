@@ -93,10 +93,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.leading != null) widget.leading!,
           // Router light guide link (PRD v0.7 S-1)
           _LightGuideLink(
-            showInlineCallout: state.phase != PivotLoadPhase.idle &&
+            showInlineCallout: state.wanStatus != null && state.errorMessage == null &&
+                state.phase != PivotLoadPhase.idle &&
                 state.phase != PivotLoadPhase.loading &&
                 !state.wanConnected,
           ),
@@ -115,18 +115,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
-          if (widget.onViewClients != null || widget.onViewNetwork != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Wrap(spacing: 12, runSpacing: 4, children: [
-                if (widget.onViewClients != null)
-                  AppTextButton('View devices',
-                onTap: widget.onViewClients),
-                if (widget.onViewNetwork != null)
-                  AppTextButton('View network',
-                onTap: widget.onViewNetwork),
-              ]),
-            ),
+          if (widget.leading != null) ...[
+            const SizedBox(height: 16),
+            widget.leading!,
+          ],
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
@@ -622,19 +614,29 @@ class _StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
+    if (state.errorMessage != null ||
+        (state.phase == PivotLoadPhase.complete && state.verdict == null)) {
+      return _card(context, child: Semantics(liveRegion: true, child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("We couldn't finish checking your connection",
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
+        ],
+      )));
+    }
+
     // Loading / preliminary state — show individual check progress
     if (state.phase == PivotLoadPhase.idle ||
         state.phase == PivotLoadPhase.loading ||
-        (state.phase == PivotLoadPhase.jnapLoaded &&
-            state.verdictIsPreliminary)) {
+        state.phase == PivotLoadPhase.jnapLoaded) {
       return _card(
         context,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _statusRow(context),
-            const Divider(height: 20),
-            DetailsDisclosure(label: 'View test progress', child: _ChecklistProgress(state: state)),
+            _ChecklistProgress(state: state),
           ],
         ),
       );
@@ -648,7 +650,7 @@ class _StatusCard extends StatelessWidget {
     // No special-case card needed here.
 
     // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
-    if (verdict == null || verdict.isAllClear) {
+    if (verdict!.isAllClear) {
       return _card(
         context,
         borderColor: Colors.green,
@@ -989,10 +991,10 @@ class _DeviceIssuesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Devices with weak WiFi',
+            'Devices that may need help',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
-          Text('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may need a stronger signal.'),
+          Text('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may have a weak signal or a slow WiFi connection.'),
           DetailsDisclosure(label: 'View affected devices', child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 12),
@@ -1375,20 +1377,26 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
     final state = widget.state;
 
     // Firmware 3-state (PRD v0.7): pass / update available / not a failure
+    final missingDeviceMeasurements = state.clients.any((client) => client.isWireless && (client.signalDecibels == null || client.txRateMbps == null));
     final bool fwUpToDate = !state.firmwareUpdateAvailable;
     final String fwLabel = state.firmwareUpdateAvailable
         ? 'Firmware update available'
-        : 'Firmware is up to date';
+        : state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
+            ? 'Firmware not checked'
+            : 'No firmware update found';
     // Use a special "available" state icon — not pass, not fail
     final _CheckDisplayState fwState = state.firmwareUpdateAvailable
         ? _CheckDisplayState.available
-        : _CheckDisplayState.pass;
+        : state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
+            ? _CheckDisplayState.skipped
+            : _CheckDisplayState.pass;
 
     // "Internet connected" must reflect real reachability, not just the JNAP
     // WAN status — which can report Connected even with the WAN cable unplugged
     // (Q-04). Prefer the actual internet reachability test (DNS lookup, or the
     // public-DNS fallback that distinguishes ISP-DNS-down from internet-down).
     // Fall back to the JNAP signal only before the reachability test has run.
+    final internetUntested = state.dnsCheck == null && (state.wanStatus == null || state.wanConnected);
     final bool internetReachable = state.dnsCheck == null
         ? state.wanConnected
         : (state.dnsCheck!.resolved || (state.publicDnsCheck?.resolved ?? false));
@@ -1399,21 +1407,22 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
     final rows = <_SummaryRow>[
       _SummaryRow(
         label: 'Router reached',
-        state: _CheckDisplayState.pass,
+        state: state.deviceInfo == null ? _CheckDisplayState.skipped : _CheckDisplayState.pass,
         detail: state.routerModel ?? '',
-        expandedDetail:
-            'We connected to your router${routerAddress.isNotEmpty ? ' at $routerAddress' : ''}. '
+        expandedDetail: state.deviceInfo == null
+            ? 'Router information was unavailable. Run the checks again.'
+            : 'We connected to your router${routerAddress.isNotEmpty ? ' at $routerAddress' : ''}. '
             'This means your device can communicate with your router over WiFi or Ethernet.',
       ),
       _SummaryRow(
         label: 'Internet connected',
-        state: internetReachable ? _CheckDisplayState.pass : _CheckDisplayState.fail,
-        detail: internetReachable ? 'Connected' : 'No internet service',
-        expandedDetail: internetReachable
-            ? 'Your router has an active connection to your internet provider. '
-              'Data can flow between your home and the internet.'
-            : 'Your router is not receiving a signal from your internet provider. '
-              'Check that the cable from your provider\'s box to your router is firmly plugged in.',
+        state: internetUntested ? _CheckDisplayState.skipped : internetReachable ? _CheckDisplayState.pass : _CheckDisplayState.fail,
+        detail: internetUntested ? 'Not confirmed' : internetReachable ? 'Connected' : 'No internet service',
+        expandedDetail: internetUntested
+            ? 'Internet access was not confirmed by this run. Choose Internet isn\'t working for help.'
+            : internetReachable
+            ? 'The connection check reached the internet.'
+            : 'We could not confirm internet access. Choose Internet isn\'t working for guided checks.',
       ),
       _SummaryRow(
         label: 'Websites loading',
@@ -1427,7 +1436,9 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
             : state.dnsCheck!.resolved
                 ? 'Internet reachable'
                 : 'Internet not responding',
-        expandedDetail: state.dnsCheck?.resolved == true
+        expandedDetail: state.dnsCheck == null
+            ? 'Website access was not checked. Run the checks again or choose Internet isn\'t working for help.'
+            : state.dnsCheck?.resolved == true
             ? 'We sent a request to look up a website address (like google.com). '
               'Your router found it \u2014 websites should load normally.'
             : 'We tried to look up a website address and your router couldn\'t find it. '
@@ -1447,7 +1458,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
                     ? _CheckDisplayState.warning
                     : _CheckDisplayState.pass),
         detail: state.speedTestFailed
-            ? "Didn't complete \u2014 tap Run Again"
+            ? "Didn't complete \u2014 try again"
             : state.speedTest == null
                 ? 'Not completed'
                 : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
@@ -1471,22 +1482,24 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
             ? _CheckDisplayState.skipped
             : (state.issueDevices.isNotEmpty
                 ? _CheckDisplayState.warning
-                : _CheckDisplayState.pass),
+                : missingDeviceMeasurements ? _CheckDisplayState.skipped : _CheckDisplayState.pass),
         detail: state.clients.isEmpty
             ? 'No devices found'
             : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} \u2014 '
-                '${state.issueDevices.length} with weak signal',
+                '${state.issueDevices.isNotEmpty ? '${state.issueDevices.length} may need help' : missingDeviceMeasurements ? 'Some measurements unavailable' : 'No issues detected'}',
         expandedDetail: state.clients.isEmpty
             ? 'No connected devices were detected.'
-            : 'We checked the WiFi signal strength and speed for each connected device. '
-              '${state.issueDevices.isEmpty ? 'All devices have a good connection.' : '${state.issueDevices.length} device${state.issueDevices.length == 1 ? ' has' : 's have'} a weak signal \u2014 tap My Devices for details.'}',
+            : 'We reviewed the connection measurements available from your router. '
+              '${state.issueDevices.isEmpty ? 'No device issues were detected in those measurements. Some devices may not report signal or speed.' : '${state.issueDevices.length} device${state.issueDevices.length == 1 ? ' may' : 's may'} have a weak signal or a slow WiFi connection. Choose One device is slow to select a device and get help.'}',
       ),
       _SummaryRow(
         label: fwLabel,
         state: fwState,
         detail: fwUpToDate ? '' : state.availableFirmwareVersion ?? '',
-        expandedDetail: fwUpToDate
-            ? 'Your router is running the latest firmware. '
+        expandedDetail: state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
+            ? 'Your router did not provide an update result. Try running the checks again.'
+            : fwUpToDate
+            ? 'Your router did not report an available update. '
               'Updates improve performance and security.'
             : 'A newer version of your router\'s firmware is available. '
               'Updates improve performance, fix bugs, and improve security.',
@@ -1637,59 +1650,23 @@ class _SummaryRowWidget extends StatelessWidget {
 
 // ── Checklist progress (loading + preliminary phase) ─────────────────────────
 
-enum _CheckStatus { pending, running, pass, fail }
+enum _CheckStatus { pending, running, pass, fail, skipped }
 
-class _ChecklistProgress extends StatefulWidget {
+class _ChecklistProgress extends StatelessWidget {
   final InstantVerifyPivotState state;
   const _ChecklistProgress({required this.state});
 
   @override
-  State<_ChecklistProgress> createState() => _ChecklistProgressState();
-}
-
-class _ChecklistProgressState extends State<_ChecklistProgress> {
-  /// D-41: Staggered reveal — suppress instant-green by tracking how many
-  /// JNAP checks are visually "released" to show their real status.
-  int _revealedJnapChecks = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    // Stagger the reveal of JNAP-sourced checks (Router, Internet, Devices)
-    // so user sees sequential progression instead of all-at-once green.
-    _staggerReveal();
-  }
-
-  void _staggerReveal() async {
-    // Brief "Starting diagnostics..." pause before first check reveals
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _revealedJnapChecks = 1); // Router
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _revealedJnapChecks = 2); // Internet
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() => _revealedJnapChecks = 3); // Devices
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final state = widget.state;
     final step = state.browserTestStep;
 
-    // D-41: Stagger reveal — show "pending" until this check's slot is reached,
-    // then show real status from provider.
-    final routerStatus = _revealedJnapChecks < 1
-        ? _CheckStatus.pending
-        : (state.phase == PivotLoadPhase.idle ||
+    // Progress follows received evidence, without simulated success timers.
+    final routerStatus = (state.phase == PivotLoadPhase.idle ||
                 state.phase == PivotLoadPhase.loading)
             ? _CheckStatus.running
             : _CheckStatus.pass;
 
-    final internetStatus = _revealedJnapChecks < 2
-        ? _CheckStatus.pending
-        : (state.phase == PivotLoadPhase.loading ||
+    final internetStatus = (state.phase == PivotLoadPhase.loading ||
                 state.phase == PivotLoadPhase.idle)
             ? _CheckStatus.pending
             : state.wanConnected
@@ -1712,10 +1689,8 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
       } else if (!state.gatewayPing!.reachable) {
         gatewayDetail = 'Could not reach router';
       }
-    } else if (step == 'dns' ||
-        step.startsWith('speed') ||
-        step == 'complete') {
-      gatewayStatus = _CheckStatus.pass;
+    } else if (step == 'dns' || step.startsWith('speed') || step == 'complete') {
+      gatewayStatus = _CheckStatus.pending;
     } else {
       gatewayStatus = _CheckStatus.pending;
     }
@@ -1736,7 +1711,7 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
           ? 'Internet reachable'
           : 'Internet not responding';
     } else if (step.startsWith('speed') || step == 'complete') {
-      dnsStatus = _CheckStatus.pass;
+      dnsStatus = _CheckStatus.pending;
     } else {
       dnsStatus = _CheckStatus.pending;
     }
@@ -1745,17 +1720,17 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
     String speedDetail = '';
     if (!step.startsWith('speed') && step != 'complete' && state.speedTest == null) {
       speedStatus = _CheckStatus.pending;
-    } else if (step.startsWith('speed:')) {
+    } else if (step.startsWith('speed')) {
       speedStatus = _CheckStatus.running;
       final substep = step.split(':').last;
       speedDetail = switch (substep) {
-        'latency' => 'Measuring latency...',
-        'download' => 'Testing download speed...',
-        'upload' => 'Testing upload speed...',
-        _ => 'Running speed test...',
+        'latency' => 'Measuring response time…',
+        'download' => 'Testing download speed…',
+        'upload' => 'Testing upload speed…',
+        _ => 'Running speed test…',
       };
     } else if (state.speedTest != null) {
-      speedStatus = _CheckStatus.pass;
+      speedStatus = state.speedTest!.latencyMs > 100 ? _CheckStatus.fail : _CheckStatus.pass;
       speedDetail =
           '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down';
     } else if (step == 'error') {
@@ -1765,12 +1740,12 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
       speedStatus = _CheckStatus.pending;
     }
 
-    final deviceStatus = _revealedJnapChecks < 3
-        ? _CheckStatus.pending
-        : (state.phase == PivotLoadPhase.loading ||
+    final deviceStatus = (state.phase == PivotLoadPhase.loading ||
                 state.phase == PivotLoadPhase.idle)
             ? _CheckStatus.pending
-            : _CheckStatus.pass;
+            : state.issueDevices.isNotEmpty ? _CheckStatus.fail
+            : state.clients.isEmpty || state.clients.any((c) => c.isWireless && (c.signalDecibels == null || c.txRateMbps == null))
+                ? _CheckStatus.skipped : _CheckStatus.pass;
     final deviceDetail = state.clients.isEmpty
         ? ''
         : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} found';
@@ -1796,9 +1771,7 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  _revealedJnapChecks == 0
-                      ? 'Starting diagnostics…'
-                      : 'Checking your connection',
+                  'Checking your connection',
                   style:
                       const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
                 ),
@@ -1815,7 +1788,7 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
         ),
         const Divider(height: 28),
         _CheckRow(label: 'Router', status: routerStatus,
-            detail: _revealedJnapChecks >= 1 ? (state.routerModel ?? '') : ''),
+            detail: state.routerModel ?? ''),
         _CheckRow(
             label: 'Internet',
             status: internetStatus,
@@ -1825,7 +1798,7 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
                     ? ''
                     : 'No internet service'),
         _CheckRow(
-            label: 'Gateway response',
+            label: 'Router response',
             status: gatewayStatus,
             detail: gatewayDetail),
         _CheckRow(
@@ -1864,6 +1837,8 @@ class _CheckRow extends StatelessWidget {
         icon = Icon(Icons.radio_button_unchecked,
             size: 18, color: scheme.outlineVariant);
         labelColor = scheme.onSurfaceVariant;
+      case _CheckStatus.skipped:
+        icon = Icon(Icons.remove_circle_outline, size: 18, color: scheme.onSurfaceVariant);
       case _CheckStatus.running:
         icon = SizedBox(
           width: 18,
@@ -1878,31 +1853,27 @@ class _CheckRow extends StatelessWidget {
         labelColor = Colors.red;
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(children: [
-        icon,
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 140,
-          child: Text(label,
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: labelColor,
-                  fontSize: 14)),
-        ),
-        Expanded(
-          child: Text(
-            detail,
-            style: TextStyle(
-                fontSize: 13,
-                color: status == _CheckStatus.fail
-                    ? Colors.red.shade700
-                    : scheme.onSurfaceVariant),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ]),
+    final statusLabel = switch (status) {
+      _CheckStatus.pending => 'Waiting',
+      _CheckStatus.skipped => 'Measurements unavailable',
+      _CheckStatus.running => 'Checking',
+      _CheckStatus.pass => 'Passed',
+      _CheckStatus.fail => 'Needs attention',
+    };
+    return Semantics(
+      label: '$label: $statusLabel',
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          icon,
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: labelColor)),
+            Text(detail.isEmpty ? statusLabel : detail,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ])),
+        ]),
+      ),
     );
   }
 }
