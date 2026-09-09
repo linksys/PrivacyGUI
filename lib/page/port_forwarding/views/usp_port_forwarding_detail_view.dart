@@ -23,11 +23,21 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Reads from [uspPortForwardingPageProvider] (combined page notifier).
 class UspPortForwardingDetailView extends ConsumerStatefulWidget {
+  /// How many tabs this page has. Shared with the `clamp` below so the two
+  /// cannot drift: adding a fourth tab without widening the clamp would pin
+  /// `?tab=3` to tab 2 silently, and `initialTab` is an `int` behind that
+  /// clamp, so every wrong value is a legal one.
+  static const tabCount = 3;
+
   /// Which tab this page opens on: 0 = Single Port, 1 = Port Range,
   /// 2 = Port Triggering.
   ///
   /// Supplied by the route from `?tab=N` and clamped in [initState], so an
   /// out-of-range deep link opens the Single Port tab rather than throwing.
+  ///
+  /// Read **once, at mount** — see the same note on `UspWifiSettingsView`: a
+  /// second navigation to this route with a different `?tab=` reuses this
+  /// `State` and the tab stays where it is.
   final int initialTab;
 
   const UspPortForwardingDetailView({super.key, this.initialTab = 0});
@@ -46,9 +56,10 @@ class _UspPortForwardingDetailViewState
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: UspPortForwardingDetailView.tabCount,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 2),
+      initialIndex: widget.initialTab
+          .clamp(0, UspPortForwardingDetailView.tabCount - 1),
     );
   }
 

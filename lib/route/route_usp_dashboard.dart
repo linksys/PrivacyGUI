@@ -2,6 +2,17 @@ part of 'router_provider.dart';
 
 final uspShellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// `?tab=N` for the three tab-carrying USP pages, defaulting to the first tab.
+///
+/// One spelling on purpose. Each view clamps this against its own `tabCount`, so
+/// an unparseable or out-of-range value opens tab 0 instead of throwing — which
+/// also means a typo here (`'tabs'`, or a stale clamp bound) degrades silently to
+/// tab 0 for real users while every layout-gate cell stays green, because the
+/// sweep passes `initialTab:` to the constructor and never goes through this file.
+/// A defect with no test to catch it should at least have only one place to be.
+int _uspTabQueryParam(GoRouterState state) =>
+    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+
 final uspDashboardRoute = ShellRoute(
   navigatorKey: uspShellNavigatorKey,
   builder: (BuildContext context, GoRouterState state, Widget child) =>
@@ -135,11 +146,8 @@ final uspDashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.uspStatistics,
       path: RoutePath.uspStatistics,
-      builder: (context, state) {
-        final tabParam = state.uri.queryParameters['tab'];
-        final initialTab = int.tryParse(tabParam ?? '') ?? 0;
-        return UspStatisticsView(initialTab: initialTab);
-      },
+      builder: (context, state) =>
+          UspStatisticsView(initialTab: _uspTabQueryParam(state)),
     ),
     LinksysRoute(
       name: RouteNamed.uspAdvancedSettings,
@@ -179,8 +187,7 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspPortForwardingDetail,
           path: RoutePath.uspPortForwardingDetail,
           builder: (context, state) => UspPortForwardingDetailView(
-            initialTab:
-                int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0,
+            initialTab: _uspTabQueryParam(state),
           ),
           enableDirtyCheck: true,
           preservableProvider: preservableUspPortForwardingPageProvider,
@@ -212,9 +219,8 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspWifiSettings,
       preservableProvider: preservableUspWifiPageProvider,
       enableDirtyCheck: true,
-      builder: (context, state) => UspWifiSettingsView(
-        initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0,
-      ),
+      builder: (context, state) =>
+          UspWifiSettingsView(initialTab: _uspTabQueryParam(state)),
     ),
     LinksysRoute(
       name: RouteNamed.uspApps,

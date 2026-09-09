@@ -999,10 +999,12 @@ void main() {
 
     test('page.statistics_system requires a section card on the tab it opens',
         () {
-      // Tab 2, System: four of four — the one case in this family whose page-tab has no
-      // depth limit left, so it is the only one whose green sweep means the tab rather
-      // than the top of it. That makes the premise the *only* thing standing between
-      // that claim and an empty viewport.
+      // Tab 2, System: four of four — the one *statistics* tab with no depth limit
+      // left, so it is the only one of the three whose green sweep means the tab
+      // rather than the top of it. (Three of #1489's other tab cases are also
+      // whole-tab; this is a statement about statistics, not about the family.)
+      // That makes the premise the *only* thing standing between that claim and an
+      // empty viewport.
       expect(
         kStatisticsSystemPageCase.requires,
         contains(StatsSectionCard),
@@ -1034,6 +1036,15 @@ void main() {
       // An identical premise would forbid the one entry that makes the tab claim
       // checkable, so what is pinned is the shape: a shared premise every case carries,
       // plus exactly one entry that is the tab, and the three of those all different.
+      //
+      // Two of those properties — distinct tabs, distinct discriminators — are also
+      // asserted generically below, for every per-tab page. The overlap is deliberate
+      // and its cost is known: an edit to the statistics cases reds both tests, with
+      // two different messages. What only this test says is that the three sweeps are
+      // *comparable* — one fixture, one shared premise, exactly one extra type — which
+      // is the whole reason to declare them as three cases of one page instead of as
+      // three pages. The generic one says only that each case can tell which tab it
+      // opened.
       final statisticsCases = kPageSurfaceCases
           .where((c) => c.view().runtimeType == UspStatisticsView)
           .toList();
@@ -1108,43 +1119,85 @@ void main() {
       // measured, and without it a case that opened the wrong tab reports its 234
       // cells green — which is the defect #1489 found on `statistics` and its
       // follow-up found waiting on these two.
-      int tabOf(Widget view) => switch (view) {
-            UspStatisticsView(:final initialTab) => initialTab,
-            UspWifiSettingsView(:final initialTab) => initialTab,
-            UspPortForwardingDetailView(:final initialTab) => initialTab,
-            // Deliberately not a throw. A fourth tabbed page arriving here reads as
-            // tab 0 for all of its cases, so the distinctness check below is what
-            // fails — one assertion, naming the page, instead of an exception from a
-            // helper.
-            _ => 0,
+      //
+      // What that check can and cannot see, since it is the load-bearing one: it
+      // compares *declarations*, so it proves each case named something its siblings
+      // did not. It does not prove that type renders only on this tab — `MapsToRow`
+      // is on all three `port_forwarding` tabs, so a case declaring it would satisfy
+      // this test and still be satisfiable on the wrong tab. Only pumping shows that,
+      // which is what the mutation recorded in #1489 did by hand.
+      //
+      // `(int, int)` per tab-carrying view: the tab this case opens, and how many
+      // that page has. The count comes off the view's own `tabCount`, so a case
+      // declaring a tab the page does not have — which `clamp` would silently fold
+      // onto an already-swept tab — is a red here rather than 234 duplicate cells.
+      (int, int)? tabOf(Widget view) => switch (view) {
+            UspStatisticsView(:final initialTab) => (
+                initialTab,
+                UspStatisticsView.tabCount
+              ),
+            UspWifiSettingsView(:final initialTab) => (
+                initialTab,
+                UspWifiSettingsView.tabCount
+              ),
+            UspPortForwardingDetailView(:final initialTab) => (
+                initialTab,
+                UspPortForwardingDetailView.tabCount
+              ),
+            // `null`, not 0: "this page has no tabs as far as this test knows" is a
+            // different fact from "this case opens tab 0", and conflating them is
+            // what would make a *fixture-state* second case read as a tab case.
+            _ => null,
           };
 
+      // Grouped by view class, but selected by "some case declares a non-zero tab"
+      // rather than by "this page has two cases". The family's next planned coverage
+      // step is a second *fixture state* for an existing page — two cases, one tab —
+      // and keying on the count would red this test with a diagnosis about tabs.
       final byPage = <Type, List<PageSurfaceCase>>{};
       for (final page in kPageSurfaceCases) {
         byPage.putIfAbsent(page.view().runtimeType, () => []).add(page);
       }
       final perTab = Map.of(byPage)
-        ..removeWhere((_, cases) => cases.length < 2);
+        ..removeWhere((_, cases) =>
+            cases.every((c) => (tabOf(c.view())?.$1 ?? 0) == 0));
 
       expect(
         perTab.keys.toSet(),
         {UspStatisticsView, UspWifiSettingsView, UspPortForwardingDetailView},
         reason:
-            'the three pages swept per tab, found by counting cases per view '
-            'class rather than by reading ids. A fourth page joining them lands '
-            'here first, which is the prompt to give it a `tabOf` arm and a doc '
-            'on its case.',
+            'the three pages swept per tab, found by the tab their cases declare '
+            'rather than by reading ids. A fourth page joining them lands here '
+            'first — this assertion runs before the per-page ones below — which is '
+            'the prompt to give it a `tabOf` arm and a doc on its case.',
       );
 
       perTab.forEach((viewClass, cases) {
+        final tabs = cases.map((c) => tabOf(c.view())!).toList();
+        final shown =
+            cases.map((c) => '${c.id}=${tabOf(c.view())!.$1}').join(', ');
         expect(
-          cases.map((c) => tabOf(c.view())).toList()..sort(),
-          List.generate(cases.length, (i) => i),
-          reason: '$viewClass\'s cases must open tabs 0..${cases.length - 1}, '
-              'one each. Every `initialTab` is an `int` behind a `clamp`, so a '
-              'duplicated or out-of-range literal is legal at runtime and sweeps '
-              'an already-swept tab: ${cases.map((c) => '${c.id}=${tabOf(c.view())}').join(', ')}.',
+          tabs.map((t) => t.$1).toSet(),
+          hasLength(cases.length),
+          reason: '$viewClass\'s cases must each open a *different* tab. Every '
+              '`initialTab` is an `int` behind a `clamp`, so a duplicated literal '
+              'is legal at runtime and sweeps an already-swept tab twice while '
+              'still reporting 234 cells each: $shown.',
         );
+        for (final (tab, count) in tabs) {
+          expect(
+            tab,
+            allOf(greaterThanOrEqualTo(0), lessThan(count)),
+            reason: '$viewClass has $count tabs, so a case declaring tab $tab '
+                'clamps onto another case\'s tab and sweeps it twice: $shown. '
+                'Distinctness above cannot catch this one, because the clamp '
+                'happens inside the view and the declarations still differ.',
+          );
+        }
+        // Deliberately not "tabs 0..n-1, one each": a page may be swept on a
+        // non-contiguous subset of its tabs. #1370 recorded exactly that shape —
+        // a tab whose fixture cannot get past its loader — and contiguity would
+        // report the honest {0, 2, 3} as a duplicate-tab error.
 
         for (final page in cases) {
           final siblings = cases.where((c) => c.id != page.id);
@@ -1153,10 +1206,11 @@ void main() {
             page.requires.where((t) => !shared.contains(t)),
             isNotEmpty,
             reason: 'page.${page.id} requires nothing its siblings do not, so '
-                'no cell of it can tell that it opened tab ${tabOf(page.view())} '
-                'rather than a sibling tab. Add the tab\'s own widget type to '
-                '`requires` — `TabBarView` builds the selected page only, which '
-                'is what makes such a type a per-cell fact.',
+                'no cell of it can tell that it opened tab '
+                '${tabOf(page.view())!.$1} rather than a sibling tab. Add the '
+                'tab\'s own widget type to `requires` — `TabBarView` builds the '
+                'selected page only, which is what makes such a type a per-cell '
+                'fact.',
           );
         }
       });

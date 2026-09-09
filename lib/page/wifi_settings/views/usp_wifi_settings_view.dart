@@ -16,10 +16,23 @@ import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
+  /// How many tabs this page has. Shared with the `clamp` below so the two
+  /// cannot drift: adding a tab without widening the clamp would pin `?tab=3`
+  /// to tab 2 silently, and `initialTab` is an `int` behind that clamp, so
+  /// every wrong value is a legal one.
+  static const tabCount = 2;
+
   /// Which tab this page opens on: 0 = WiFi list, 1 = Advanced.
   ///
   /// Supplied by the route from `?tab=N` and clamped in [initState], so an
   /// out-of-range deep link opens the WiFi tab rather than throwing.
+  ///
+  /// Read **once, at mount**. A second navigation to this route with a different
+  /// `?tab=` reuses this `State`, so `initState` does not run again and the tab
+  /// does not move — the URL says one tab and the page shows another. Every
+  /// caller today arrives from outside the page, so it has not bitten; a card
+  /// deep-linking to a tab of the page the user is already on would need a
+  /// `didUpdateWidget`. `usp_statistics_view` has the same shape.
   final int initialTab;
 
   const UspWifiSettingsView({super.key, this.initialTab = 0});
@@ -40,9 +53,10 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: UspWifiSettingsView.tabCount,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 1),
+      initialIndex:
+          widget.initialTab.clamp(0, UspWifiSettingsView.tabCount - 1),
     );
     // Read the index back off the controller rather than from `initialTab`:
     // the dirty guard below compares against the tab being *left*, so seeding

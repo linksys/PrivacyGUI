@@ -162,7 +162,11 @@
 # tabs rows, and the sweep those rows describe is now 48 cases = 11,232 cells. page.tsv's own `# cells`
 # tabs header is the sweep's count and moves with the cases; this file's counts do not.
 # tabs Real pump cost of the five tab cases: 234 x (28.2 + 28.0 + 17.6 + 23.3 + 21.2) = 27.7s, against
-# tabs the 33.7s their rows project. #1489's first two alone measured 13.2s against a ~21s projection.
+# tabs the 38.1s their rows project - 234 x (45.3 + 45.3 + 29.2 + 21.6 + 21.6), i.e. 10.4s of the budget
+# tabs bought nothing, which is the "~10.5s high" page_sweep_suites_test.dart prints. Both registers say
+# tabs the same number on purpose; the first draft of this line said 33.7s, having summed four of the
+# tabs five rows, and nothing could have failed on it. #1489's first two alone measured 13.2s against a
+# tabs ~21s projection.
 # tabs One practical consequence: `--plain-name page.statistics` matches all three of its groups and
 # tabs `page.wifi_settings` would match its Advanced case too, so re-measuring a tab 0 in isolation
 # tabs takes the coordinate suffix: `--plain-name 'page.statistics screen_px'`.

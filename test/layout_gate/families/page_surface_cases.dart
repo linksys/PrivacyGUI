@@ -291,8 +291,10 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 ///
 /// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
 /// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
-/// width — this and [kStatisticsSystemPageCase] are the only page-tab cases in the
-/// family whose green means *the tab* and not a prefix of it.
+/// width — this one's green means *the tab*, not a prefix of it. Four of the five tab
+/// cases are like that ([kStatisticsSystemPageCase], [kPortRangePageCase] and
+/// [kPortTriggeringPageCase] are the others); `page.statistics` and
+/// `page.statistics_devices` are the two that stop at [kPageSweepHeight].
 ///
 /// That also makes it the cheapest tab in the family and the one least likely to find
 /// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
@@ -314,7 +316,10 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
 /// text where the card lays out a row — a fixture thinned to an empty map would sweep
 /// 234 cells of an empty-state message and report them as this tab's coverage.
-/// `advancedDfsOnState` carries two radios, and [AppSwitch] is what fails if it stops.
+/// `defaultAdvancedState` — an alias for `advancedDfsOnState`, which is the name
+/// [kWifiSettingsPageCase]'s doc uses for the same object — carries two radios, and
+/// [AppSwitch] is what fails if it stops. Whichever name the alias points at is what
+/// this case actually sweeps, which is the reason to say both here.
 final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
   id: 'wifi_settings_advanced',
   view: () => const UspWifiSettingsView(initialTab: 1),
@@ -529,11 +534,18 @@ final kPortRangePageCase = PageSurfaceCase(
 ///
 /// The widget is the same [MapsToRow] all three tabs use
 /// (`usp_port_triggering_tab.dart:84`); what differs is what goes into it, and that is
-/// the width. Tab 0 and tab 1 map a port range to a single internal target. This tab
-/// maps `"Trigger: 21 TCP"` to `"Forward: 1024-1030 TCP"`
-/// (`port_triggering_rule_ui_model.dart:110` and `:114`) — a label, a port range and a
-/// protocol on *both* sides of the arrow. That is the widest row on the page, and it had
-/// never been laid out at 320px in any locale.
+/// the width. Tab 0 and tab 1 put a port range on the left and a single internal target
+/// on the right. This tab labels *both* halves and lets either be a range:
+/// `"Trigger: 21 TCP"` → `"Forward: 1024-1030 TCP"`
+/// (`port_triggering_rule_ui_model.dart:110` and `:114`). Two prefixes and a second
+/// protocol is the widest row on the page, and it had never been laid out at 320px in
+/// any locale.
+///
+/// Not the widest it *can* be, though, and the fixture is the limit: `ftpTriggerRule` is
+/// single → range and `ircTriggerRule` is range → single (`port_forwarding_scene_data.dart:81`
+/// and `:98`), so a range on both sides at once — the genuine worst case — is still
+/// unswept. Adding it means widening a fixture three cases share, so it is measured as it
+/// stands and the gap is written down rather than papered over.
 ///
 /// One caveat these 234 cells cannot cover, recorded because it changes what a green
 /// means here: both halves are built from hardcoded English prefixes, not `loc(context)`,
@@ -544,8 +556,8 @@ final kPortRangePageCase = PageSurfaceCase(
 /// other 25.
 ///
 /// Coverage is the whole tab: `dataState()`'s `ftpTriggerRule` and `ircTriggerRule` make
-/// a header plus two rows, one of them with a range on both sides. No depth limit, and
-/// no tap — see [kStatisticsDevicesPageCase].
+/// a header plus two rows, each with a range on one side of the arrow and a single port
+/// on the other. No depth limit, and no tap — see [kStatisticsDevicesPageCase].
 ///
 /// Premise and `forbids` are [kPortRangePageCase]'s, for its reasons: [UspPortTriggeringTab]
 /// is this tab's discriminator, and [DetailEmptyBlock] is forbidden because
