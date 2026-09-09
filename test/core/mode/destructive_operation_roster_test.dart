@@ -21,14 +21,21 @@
 //      resetting router. This is the lesson `session_teardown_call_sites_test.dart`
 //      records from phase 5, where `contains(gate)` was measured to be vacuous.
 //
-//   2. **The command inventory.** Every call in `lib/` to the two codegen
-//      operation classes that hold destructive TR-181 commands, pinned per file
-//      **with repeats**. This is the census that can see a *new* operation,
-//      because a new one has to reach the router through one of these calls. It
-//      found something the ticket's own five-row table had missed on its first
-//      run — see `_unguardedByDesign`.
+//   2. **The command inventory.** Every call in `lib/` to *any* of the five
+//      codegen classes that can issue a TR-181 Operate, pinned per file **with
+//      repeats**. This is the census that can see a *new* operation, because a
+//      new one has to reach the router through one of these calls. It found
+//      something the ticket's own five-row table had missed on its first run —
+//      see `_unguardedByDesign`.
 //
-// FALSIFIED IN TEN DIRECTIONS. All eleven tests passed on their first run, which
+//      It covered two of the five until review of PR #1513 asked why acceptance
+//      6's compile-time clause was unmet. The clause is unmeetable, but the
+//      answer exposed something that was not: the census stood in for it over
+//      40% of the operate surface, so a destructive command was caught only if
+//      it happened to live in the right class. The three former exclusions are
+//      now waivers pinned per call site — see `_notDestructive`.
+//
+// FALSIFIED IN TWELVE DIRECTIONS. All eleven tests passed on their first run, which
 // is the state a source-scanning census is least trustworthy in — a regex that
 // matches nothing looks exactly like a codebase that is correct. So each
 // assertion was made to fail on purpose, and each failed where it should:
@@ -59,6 +66,25 @@
 // reachability, i.e. the two assertions phrased negatively, which an empty file
 // satisfies perfectly. A negative assertion over a scanned corpus is only as good
 // as the proof that the corpus is real, and that is a separate test on purpose.
+//
+// And two more from PR #1513's review, both aimed at this census rather than at
+// the code it watches:
+//
+//   rename `enforce` to `requireAllowed` everywhere → 5 seam tests + the count
+//   a speed test calling `downloadDiagnostic`       → inventory + reachability
+//
+// The rename mutant is here because the review reply that first went out claimed
+// this census could not survive one. It can: the count test asserts *exactly*
+// five `.enforce(DisruptionClass.` sites, so a rename reads as zero and takes the
+// five adjacency tests down with it. Six red tests, and the claim was wrong.
+//
+// The speed-test mutant is the one that changed the code. Added to `pingTest()`,
+// which already holds a waived `NetworkDiagnostics.ping`, it fires the inventory
+// (the file's pinned list is short one command) and reachability (the new command
+// is unwaived, so the file it lives in loses the waiver its neighbours earned —
+// which is what keying waivers on `(file, command)` buys). Against the two-class
+// census it was **green in all eleven**, and that measurement is why
+// `_operationClasses` now names five.
 //
 // WHY NOT A WIDGET TEST. The affordances are hidden by phase 7 (#1497) through
 // `SurfaceStrategy`, so a widget test would assert about the layer that is about
@@ -113,40 +139,35 @@ const _seams = <({String file, String method, String disruption})>[
 /// The guard's own file, which must contain no per-class branching.
 const _guard = 'lib/core/mode/operation_guard.dart';
 
-/// The codegen classes whose static methods are destructive TR-181 commands.
+/// Every codegen class in `lib/generated/` that can issue a TR-181 **Operate**.
 ///
-/// Two of the five operation classes in `lib/generated/`. The other three are
-/// excluded, and each exclusion is stated over its **live call sites** rather
-/// than over what the class declares — the first draft of this comment did the
-/// opposite and got it wrong twice, naming two of `NetworkDiagnostics`'s seven
-/// members and skipping the four that saturate an uplink. Measured 2026-09-08:
+/// All five, not the two that hold today's destructive commands. Review of the
+/// epic asked why acceptance 6's compile-time clause was unmet; it cannot be met
+/// (see the header), but the census standing in for it was answering a narrower
+/// question than the acceptance asked — it saw a new destructive command only if
+/// that command happened to live in `DeviceOperations` or `FirmwareOperations`.
+/// A speed test calling `NetworkDiagnostics.downloadDiagnostic` saturates the
+/// very WAN uplink an RA session rides and would have been invisible here.
 ///
-/// * **`NetworkDiagnostics`** — 7 members, **1** reachable: `ping` at
-///   `pnp_service.dart:101`, an ICMP echo to `8.8.8.8`. The four that would
-///   matter — `downloadDiagnostic`, `uploadDiagnostic`, `udpEchoDiagnostic`,
-///   `serverSelectionDiagnostic` — are declared by codegen and called from
-///   nowhere. So the exclusion is about reach, not about the class: the day a
-///   speed-test feature calls `downloadDiagnostic`, it saturates the very WAN
-///   uplink an RA session rides, and this class belongs in the list.
-/// * **`WanOperations`** — 2 members, both live, 3 call sites
-///   (`pnp_service.dart:468`, `usp_internet_settings_service.dart:599,608`).
-///   The likeliest of the three exclusions to go wrong, because a DHCP renew
-///   *does* drop the WAN address and the WAN is the RA path. It is excluded
-///   because it costs at most `transientRestart`: the router re-acquires the
-///   address itself, and Guardian's tunnel is dialled outward by the agent, so
-///   nothing on the browser's side needs to learn the new one. Both proximity
-///   strategies answer `transientRestart` alike, so a seam here would refuse
-///   nothing in any mode that exists. A member that ever *holds* the WAN down —
-///   a release with no renew — is `transportLoss` and belongs here.
-/// * **`SetupOperations`** — 2 members, 1 live
-///   (`setUserAcknowledgedAutoConfig` at `pnp_status_service.dart:121`).
-///   Excluded because neither member is destructive: one records an
-///   acknowledgement, the other sets a flag. (`setConfigured` is uncalled and
-///   deliberately out of PnP's TR-181 scope.)
+/// Widening the list moves the three former exclusions from **prose to
+/// waivers**: their live call sites are pinned in [_commandCallSites] and each is
+/// named in [_notDestructive] with the reason it needs no seam. The difference is
+/// what happens on the next edit — the prose version described a codebase and a
+/// reader had to notice it had changed, this version fails.
 ///
-/// If a destructive command lands in one of the three, add the class here —
-/// that edit is the decision this file exists to force.
-const _operationClasses = <String>['DeviceOperations', 'FirmwareOperations'];
+/// It is deliberately the *operate* surface and not "everything destructive". A
+/// TR-181 **Set** can be as destructive as an Operate —
+/// [_reauthAfterPasswordChange] is exactly that case — and no census here can see
+/// it, because a Set is how every ordinary settings write goes out too. That
+/// residual is stated on #1496 rather than papered over with a pattern that would
+/// match the whole app.
+const _operationClasses = <String>[
+  'DeviceOperations',
+  'FirmwareOperations',
+  'NetworkDiagnostics',
+  'SetupOperations',
+  'WanOperations',
+];
 
 /// Every call site of [_operationClasses] in `lib/`, pinned per file.
 ///
@@ -174,6 +195,15 @@ const _commandCallSites = <String, List<String>>{
   ],
   'lib/page/instant_setup/services/pnp_service.dart': [
     'DeviceOperations.reboot',
+    'NetworkDiagnostics.ping',
+    'WanOperations.renewDhcpLease',
+  ],
+  'lib/page/instant_setup/services/pnp_status_service.dart': [
+    'SetupOperations.setUserAcknowledgedAutoConfig',
+  ],
+  'lib/page/internet_settings/services/usp_internet_settings_service.dart': [
+    'WanOperations.renewDhcpLease',
+    'WanOperations.renewDhcpv6Lease',
   ],
 };
 
@@ -203,6 +233,63 @@ const _unguardedByDesign = <({String file, String command})>{
     command: 'DeviceOperations.reboot',
   ),
 };
+
+/// Operate call sites that are live and need no seam, because the command itself
+/// costs the session nothing. Measured 2026-09-09.
+///
+/// A separate set from [_unguardedByDesign] rather than five more entries in it,
+/// because the two waivers expire on opposite events. Those are waived for having
+/// **no caller** and need a seam the day they acquire one; these are waived for
+/// **what they do** and would need one only if that changed. Collapsing them
+/// would leave a reader unable to tell which question a waiver had answered.
+///
+/// * `NetworkDiagnostics.ping` — an ICMP echo to `8.8.8.8`. The four members of
+///   that class that *would* matter — `downloadDiagnostic`, `uploadDiagnostic`,
+///   `udpEchoDiagnostic`, `serverSelectionDiagnostic` — are declared by codegen
+///   and called from nowhere, which is why the class is censused and its one live
+///   member waived rather than the class excluded.
+/// * `WanOperations.renewDhcpLease` / `.renewDhcpv6Lease` — the likeliest waiver
+///   here to go wrong, because a renew *does* drop the WAN address and the WAN is
+///   the RA path. Waived because it costs at most `transientRestart`: the router
+///   re-acquires the address itself, and Guardian's tunnel is dialled outward by
+///   the agent, so nothing on the browser's side needs to learn the new one. Both
+///   proximity strategies answer `transientRestart` alike, so a seam would refuse
+///   nothing in any mode that exists. A member that ever *holds* the WAN down — a
+///   release with no renew — is `transportLoss` and belongs in `_seams`.
+/// * `SetupOperations.setUserAcknowledgedAutoConfig` — records an
+///   acknowledgement. (`setConfigured` is uncalled and deliberately out of PnP's
+///   TR-181 scope.)
+const _notDestructive = <({String file, String command})>{
+  (
+    file: 'lib/page/instant_setup/services/pnp_service.dart',
+    command: 'NetworkDiagnostics.ping',
+  ),
+  (
+    file: 'lib/page/instant_setup/services/pnp_service.dart',
+    command: 'WanOperations.renewDhcpLease',
+  ),
+  (
+    file: 'lib/page/instant_setup/services/pnp_status_service.dart',
+    command: 'SetupOperations.setUserAcknowledgedAutoConfig',
+  ),
+  (
+    file:
+        'lib/page/internet_settings/services/usp_internet_settings_service.dart',
+    command: 'WanOperations.renewDhcpLease',
+  ),
+  (
+    file:
+        'lib/page/internet_settings/services/usp_internet_settings_service.dart',
+    command: 'WanOperations.renewDhcpv6Lease',
+  ),
+};
+
+/// Whether [site] has a stated reason to carry no seam.
+///
+/// The union is taken here, at the one place that asks, so that neither set can
+/// quietly become the other's dumping ground.
+bool _waived(({String file, String command}) site) =>
+    _unguardedByDesign.contains(site) || _notDestructive.contains(site);
 
 /// The operation that looks like `credentialLoss` and is not, plus the line that
 /// makes it not.
@@ -431,8 +518,8 @@ void main() {
       // new command in an exempt file lands back in this test rather than
       // inheriting the waiver its neighbour earned.
       final unaccounted = found.entries
-          .where((e) => !e.value.every((command) =>
-              _unguardedByDesign.contains((file: e.key, command: command))))
+          .where((e) => !e.value
+              .every((command) => _waived((file: e.key, command: command))))
           .map((e) => e.key)
           .where((path) => !_reachableFromSeam(path, sources, guardedSeamFiles))
           .toList()
