@@ -180,6 +180,28 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     // guarded, so a throw from the reauth gate or the throttler would have landed
     // here as `handleOwned == false` and freed the handle the registered façade had
     // just taken. Do not weaken either side without reading the other.
+    //
+    // Setting the flag *before* each call was proposed in review, as hardening in
+    // case a future edit breaks that contract: a throw that had already taken the
+    // handle would leave `handleOwned == false` and free the live façade's handle,
+    // which is #1322's `null pointer passed to rust` arriving from the code written
+    // to prevent its mirror image. Considered and rejected, because the two orders
+    // are not a trade between equal risks:
+    //
+    //   - the throw it guards against does not exist. Both of `rebindFromBuilder`'s
+    //     throw sites are *before* the wrap — its own `kIsWeb` guard, and
+    //     `UspClientWeb.fromJsClient`, which is the constructor that does the
+    //     taking — and `rebindTransport` enforces the rest in code, not in prose;
+    //   - the failures it would break are the reachable ones. A rejected Guardian
+    //     token, an expired supporter link, a handle from a previous failed attempt:
+    //     every one of those throws with the handle untaken, and claiming early
+    //     turns each from "released" into "leaked per retry", which is the leak this
+    //     method exists to close.
+    //
+    // "The call threw" and "nobody took the handle" are therefore the same set, so
+    // late is not merely safe here, it is the only order that frees anything.
+    // `remote_assistance_provider_test.dart`'s "with a client registered, the orphan
+    // is still released exactly once" fails if this is flipped, and is right to.
     var handleOwned = false;
 
     // A façade that owns the handle but that nothing else can reach yet. Only the

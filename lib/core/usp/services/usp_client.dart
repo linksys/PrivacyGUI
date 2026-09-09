@@ -393,8 +393,16 @@ class UspClient {
       // login screen — which in Remote Assistance ends a live Guardian session.
       // Take the recoverable reading: if the new connection really is broken, its
       // own next 401 will say so.
+      //
+      // What is suppressed is the **force logout**, not the error. The failure still
+      // propagates, because the caller's request genuinely did not complete and
+      // `_withAuthRetry` must not report a success it never got; swallowing here
+      // would hand it a `null`-shaped result from a reauth that failed. So the two
+      // halves are deliberate and different: the session survives, the request does
+      // not.
       if (_superseded(generation)) {
-        logger.w('$_tag Reauth failed on a superseded connection — ignoring');
+        logger.w('$_tag Reauth failed on a superseded connection — '
+            'not forcing logout, reporting to the caller');
         rethrow;
       }
       // The original trigger was a confirmed 401 (token expired/revoked).
