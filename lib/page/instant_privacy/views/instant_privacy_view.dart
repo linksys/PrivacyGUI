@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/composed/input_formatters.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
@@ -409,6 +411,10 @@ class InstantPrivacyView extends ConsumerWidget {
 
     await showAppDialog<void>(
       context: context,
+      // Tapping the scrim used to discard whatever had been typed. The field
+      // only reveals its validation error on unfocus, so the tap that was
+      // meant to trigger validation was closing the dialog instead (#1059).
+      barrierDismissible: false,
       builder: (ctx) => _AddMacDialog(
         existingDevices: state.allowedDevices,
         deviceOptions: deviceOptions,
@@ -492,15 +498,17 @@ class _AddMacDialogState extends State<_AddMacDialog> {
     });
   }
 
-  void _onChanged(String value) {
-    // Don't setState here - any state change causes focus loss on Web
-    // Validation happens on unfocus via _onFocusChange
+  /// Whether the current text is a MAC that is not already on the list.
+  ///
+  /// Deliberately independent of [_errorText]: that field only exists to render
+  /// the message, and it is populated on unfocus. Gating the button on it as
+  /// well left a valid MAC un-submittable until the user tabbed away.
+  bool get _canConfirm {
+    final value = _controller.text;
+    if (!UspInstantPrivacyService.validateMac(value)) return false;
+    final normalized = UspInstantPrivacyService.normalizeMac(value);
+    return !widget.existingDevices.any((d) => d.mac == normalized);
   }
-
-  bool get _canConfirm =>
-      _controller.text.isNotEmpty &&
-      _errorText == null &&
-      UspInstantPrivacyService.validateMac(_controller.text);
 
   Future<void> _confirm() async {
     if (!_canConfirm) return;
@@ -537,7 +545,16 @@ class _AddMacDialogState extends State<_AddMacDialog> {
               controller: _controller,
               focusNode: _focusNode,
               hintText: 'AA:BB:CC:DD:EE:FF',
-              onChanged: _onChanged,
+              // Not `text`: keeps the platform from auto-capitalising or
+              // autocorrecting what it reads as a word.
+              keyboardType: TextInputType.visiblePassword,
+              // The field cannot hold anything but a well-formed MAC. Colons
+              // appear as the user types, so the deliberate `:` in the allow
+              // list is for pasted values, not for typing them by hand.
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-fA-F0-9:]')),
+                MacAddressFormatter(),
+              ],
               errorText: _localizeError(_errorText),
             ),
           ),
@@ -549,10 +566,18 @@ class _AddMacDialogState extends State<_AddMacDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        AppButton.primary(
-          identifier: 'instant-privacy-add-mac-confirm',
-          label: _isConfirming ? loc(context).adding : loc(context).add,
-          onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
+        // Rebuilt from the controller rather than from setState. The whole
+        // reason validation was moved to unfocus is that a setState mid-typing
+        // rebuilds the tree and severs the TextField's TextInputConnection on
+        // Web (#1059). The field is not inside this builder, so enabling the
+        // button as the user types cannot reach it.
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _controller,
+          builder: (context, _, __) => AppButton.primary(
+            identifier: 'instant-privacy-add-mac-confirm',
+            label: _isConfirming ? loc(context).adding : loc(context).add,
+            onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
+          ),
         ),
       ],
     );
