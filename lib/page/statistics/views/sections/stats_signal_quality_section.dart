@@ -128,15 +128,18 @@ class _StatsSignalQualitySectionState
                 (1, loc(context).fair, Colors.orange),
                 (0, loc(context).poor, colorScheme.error),
               ])
-                if (distribution.signalLevelDistribution.containsKey(entry.$1))
+                // One lookup, bound: the previous `containsKey` + `[...]` pair read
+                // the map twice and interpolated an `int?`, so a level present with
+                // a null count would have rendered "Excellent: null" instead of
+                // being left out.
+                if (distribution.signalLevelDistribution[entry.$1]
+                    case final count?)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       StatsLegendDot(color: entry.$3),
                       AppGap.xs(),
-                      AppText.labelSmall(
-                        '${entry.$2}: ${distribution.signalLevelDistribution[entry.$1]}',
-                      ),
+                      AppText.labelSmall('${entry.$2}: $count'),
                     ],
                   ),
             ],

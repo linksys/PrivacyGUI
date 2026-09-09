@@ -528,11 +528,14 @@ void main() {
       expect(
         kPortForwardingPageCase.requires,
         contains(UspSinglePortTab),
-        reason: 'tab 0 is the only tab the sweep measures — the other two are '
-            'behind a `TabController` and would each need a tap per cell. So this '
-            'is both the premise and the surface under measurement, and it is on '
-            'the loaded path only: `_buildTabContent` returns an `AppLoader` '
-            'while loading and a `ServiceErrorView` on error.',
+        reason: 'this case measures tab 0, so the single-port tab is both its '
+            'premise and its surface under measurement — and it is on the loaded '
+            'path only: `_buildTabContent` returns an `AppLoader` while loading '
+            'and a `ServiceErrorView` on error. The other two tabs are measured '
+            'by `page.port_range` and `page.port_triggering`, which reach them '
+            'through `initialTab` rather than a tap; the earlier version of this '
+            'reason said a tap per cell was the only way in, which was the claim '
+            '#1489 falsified.',
       );
     });
 

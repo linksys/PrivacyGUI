@@ -1850,7 +1850,7 @@ final kStatisticsPageCase = PageSurfaceCase(
 /// [kStatisticsPageCase] but for `initialTab: 1`: same view class, same fixture, same
 /// premise, same 234 cells.
 ///
-/// ## Why this page gets a case per tab where the family's other tabbed pages do not
+/// ## Why a case per tab costs no interaction
 ///
 /// `TabBarView` builds the selected page only — `UiKitPageView.withSliver`'s
 /// `tabContentViews` reach it at `ui_kit_library`'s
@@ -1860,12 +1860,18 @@ final kStatisticsPageCase = PageSurfaceCase(
 /// `physics: NeverScrollableScrollPhysics()` there, so not even a drag reaches a
 /// sibling tab: tapping the tab bar is the only interaction that does, and it costs an
 /// interaction per cell and pumps a tree [pageSurfaceHost] does not model. The other
-/// way in is to **construct the page on it**. On
-/// `wifi_settings` and `port_forwarding` only the first exists, which is why those
-/// cases stop at their first tab. Here the second exists — `initialTab` is a
-/// constructor argument the app itself supplies from `?tab=N` — so this case enters
-/// the tab the same way a deep link does. Nothing is tapped and nothing about the
-/// tree is synthesised for the test.
+/// way in is to **construct the page on it**: `initialTab` is a constructor argument
+/// the app itself supplies from `?tab=N`, so this case enters the tab the same way a
+/// deep link does. Nothing is tapped and nothing about the tree is synthesised for the
+/// test.
+///
+/// When this case landed, this was the only page in the family where that second way
+/// existed, and the paragraph here said so. It is no longer a property of this page:
+/// the follow-up gave [UspWifiSettingsView] and [UspPortForwardingDetailView] the same
+/// argument — four lines each — and their sibling tabs entered as ordinary cases too.
+/// So all three tabbed pages now get a case per tab, by the same mechanism, and what
+/// was once this page's distinguishing feature is just the family's way of reaching a
+/// tab. See [kWifiSettingsPageCase] for the claim that kept the other two waiting.
 ///
 /// ## Coverage in numbers: 4 of this tab's 7 sections
 ///

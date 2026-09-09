@@ -358,6 +358,14 @@ final _sites = <_LegendSite>[
   // 26 of 26 locales at 320px, plus `ru` at 480px — which is the coordinate
   // golden CI reported (30.0px), so the four worst locales here are the top four
   // of the whole measurement: ru 190, th 136, es 125, pl 119.
+  //
+  // Four and not all 26, though this is the site where all 26 failed: what this
+  // suite adds over the gate is *readability* — no ellipsis, no clipped label, no
+  // mid-word break, at most two runs — and that costs a pump per (site, locale).
+  // Overflow itself is held for all 26 by `page.statistics_devices`, which sweeps
+  // this section at 9 widths × 26 locales (`page_surface_cases.dart`), so the 22
+  // not listed here are measured, just not for legibility. These four are the
+  // widest realizations of the row, so a regression in it reddens here first.
   _LegendSite(
     name: 'signal quality',
     section: () => const StatsSignalQualitySection(),
@@ -413,8 +421,13 @@ final _softWrapSite = _LegendSite(
 );
 
 /// The three sites whose degradation is a `Wrap`.
+///
+/// Split by identity, not by [_LegendSite.name]: the name is display prose for test
+/// names and failure output, so a wording change to it would silently put the
+/// soft-wrap site into this list — where the assertions are `maxLines` is null and the
+/// run count is at most 2, both of which are false of it by design.
 final _wrapSites =
-    _sites.where((s) => s.name != _softWrapSite.name).toList(growable: false);
+    _sites.where((s) => !identical(s, _softWrapSite)).toList(growable: false);
 
 /// How many lines a `Wrap` laid its groups out on, from the groups' own label
 /// tops.
