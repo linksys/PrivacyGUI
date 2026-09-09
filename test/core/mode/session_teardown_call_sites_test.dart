@@ -81,7 +81,17 @@ const _exitActions = 'lib/components/session/session_exit_actions.dart';
 /// violation. Closing it needs a state-carrying owner for transport auth failure;
 /// that is recorded on #1323 rather than attempted here.
 const _transportAuthFailure = 'lib/core/usp/providers/sse_providers.dart';
-const _sessionSink = 'lib/page/shell/usp_dashboard_shell.dart';
+const _sessionSink = 'lib/components/session/session_exit_sink.dart';
+
+/// The one file that subscribes the sink to the connection state.
+///
+/// Separate from [_sessionSink] because the two censuses below fail for different
+/// reasons, and the split is what round 2 of the review made necessary: the verb
+/// and its wiring lived in the same file, so the only mutation that mattered —
+/// deleting the `listenManual` — was invisible to a census naming the file that
+/// still held the verb. Measured: removing those three lines left all fourteen
+/// tests in the sink's own suite and in this file green.
+const _sessionSinkWiring = 'lib/page/shell/usp_dashboard_shell.dart';
 
 /// The recovery dialogs that must take their exit action from cause 5.
 ///
@@ -112,6 +122,39 @@ const _recoveryDialogs = <String>[
 /// bracket-restricted rather than word-restricted.
 final _composedExitAction =
     RegExp(r'actions:\s*\[[^\[\]]*sessionExitAction\(\)');
+
+/// Drop `//` comments, trailing ones included.
+///
+/// A named function rather than an expression inlined into the corpus builder,
+/// because [_endsAppSession] below is only correct *composed with this*, and the
+/// fixture test that pins the pair has to be able to call both. See the corpus's
+/// own doc comment for why stripping is load-bearing at all.
+String _stripComments(String source) => source
+    .split('\n')
+    .map((l) => l.replaceFirst(RegExp(r'(?<!:)//.*$'), ''))
+    .join('\n');
+
+/// Does this file end the **app's** session, as opposed to closing a connection?
+///
+/// Two needles, paired at file level, and round 2's review is right that this is a
+/// coarse instrument — so here is what it is coarse *towards*, and why the
+/// suggested narrowing to a single call-shape regex was declined.
+///
+/// The spelling varies: `ref.read(authProvider.notifier).logout()` in most places,
+/// `authNotifier.logout(cause: ...)` through a local in `remote_session_chip.dart`.
+/// A regex tight enough to match only the first misses the second, which is the one
+/// failure mode a census cannot afford — a false negative here is a field bug,
+/// while a false positive is a comment on the allowlist. `.logout(` alone is too
+/// wide in the other direction: four `lib/core/` files call the USP protocol's own
+/// `_usp.logout()` / `_client.logout()` on a transport, and those mention
+/// `authProvider` zero times, which is measured rather than assumed.
+///
+/// The under-approximation the review names is real and unfixed by any regex: a
+/// core file that ends the session through a helper matches neither needle. The one
+/// helper that exists is caught by name below; a second one would not be, and no
+/// source scan can see it. That is the standing limit of this instrument.
+bool _endsAppSession(String stripped) =>
+    stripped.contains('authProvider') && stripped.contains('.logout(');
 
 /// The four spellings of a dialog deciding its own exit, banned per dialog.
 ///
@@ -153,17 +196,17 @@ void main() {
   /// `app_localizations_*.dart` all carry `returnToLoginPage` as a key or a
   /// string literal. That is the copy, not an affordance; the string has to stay
   /// translated for the local build that still offers the button.
-  late final Map<String, String> sources = {
+  late final Map<String, String> rawSources = {
     for (final f in Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
         .where((f) => !f.path.startsWith('lib/l10n/')))
-      f.path: f
-          .readAsStringSync()
-          .split('\n')
-          .map((l) => l.replaceFirst(RegExp(r'(?<!:)//.*$'), ''))
-          .join('\n'),
+      f.path: f.readAsStringSync(),
+  };
+
+  late final Map<String, String> sources = {
+    for (final e in rawSources.entries) e.key: _stripComments(e.value),
   };
 
   List<String> filesMatching(RegExp pattern) => sources.entries
@@ -186,6 +229,61 @@ void main() {
       expect(sources[path], contains('actions:'),
           reason: '$path stripped down to something with no dialog in it');
     }
+  });
+
+  test('_endsAppSession separates the app session from a transport', () {
+    // Fixture-testing the matcher, which round 2's review asked for and which the
+    // corpus cannot provide: every real file is either a match or not, so nothing
+    // in `lib/` demonstrates that the *pairing* is what does the separating. These
+    // four cases do. Each is a spelling that exists in the tree, reduced to the
+    // line that decides it.
+    const cases = <String, bool>{
+      // The common form, and the one all three removed exits in
+      // app_connection_state_provider.dart used.
+      'ref.read(authProvider.notifier).logout();': true,
+      // remote_session_chip.dart's form: the receiver is a local, so a regex
+      // anchored on `authProvider.notifier).logout` would miss it. This is the
+      // false negative the pairing exists to avoid.
+      'final authNotifier = ref.read(authProvider.notifier);\n'
+          'authNotifier.logout(cause: EndCause.userRequested);': true,
+      // The USP protocol closing a connection. Four lib/core/ files do this and
+      // none of them is this rule's subject; `.logout(` alone would name them all.
+      'await _usp.logout();': false,
+      // Reading auth without ending anything.
+      'final isLoggedIn = ref.read(authProvider).value != null;': false,
+    };
+    for (final entry in cases.entries) {
+      expect(_endsAppSession(_stripComments(entry.key)), entry.value,
+          reason: 'expected _endsAppSession to be ${entry.value} for:\n'
+              '${entry.key}');
+    }
+  });
+
+  test('the core exit census depends on the stripper, and says so', () {
+    // The precise false positive round 2 found, pinned rather than argued away.
+    // `app_connection_state_provider.dart` — the file this whole group exists to
+    // keep clean — still contains `.logout(` in its own prose, because the prose
+    // documents the three calls that were removed. The census passes only because
+    // `_stripComments` takes them out first.
+    //
+    // Asserting both halves means a stripper that stopped removing trailing
+    // comments fails *here*, naming the file and the mechanism, instead of failing
+    // the census below with a message about layer violations that would send the
+    // next reader looking for a logout() that is not there. And deleting the prose
+    // to make some future census green would fail here too, which is the point:
+    // the explanation is load-bearing.
+    const core =
+        'lib/core/connection/providers/app_connection_state_provider.dart';
+    expect(rawSources[core], contains('.logout('),
+        reason: '$core no longer documents the logout() calls #1323 removed. '
+            'If the prose was deleted, restore it; this census reads as "core '
+            'never signed anyone out", which is the opposite of the history.');
+    expect(_endsAppSession(sources[core]!), isFalse,
+        reason:
+            '$core reads as a session-ending file after stripping. Either it '
+            'has genuinely regained a logout() call — the defect #1323 closed — '
+            'or _stripComments has stopped removing the comments that mention '
+            'one. Check which before touching the census.');
   });
 
   group('RA teardown funnels through SessionStrategy.end (acceptances 2, 3)',
@@ -228,27 +326,17 @@ void main() {
 
   group('lib/core/ reports that a session is over rather than ending it', () {
     test('only the declared exception signs the user out', () {
-      // Two keys, and the pairing is what makes this precise enough to assert.
-      // `.logout(` alone has four more callers under `lib/core/` that are the USP
-      // protocol's own logout on a transport (`_usp.logout()`,
-      // `_client.logout()`), which are not this rule's subject; mentioning
-      // `authProvider` is what separates "ends the app's session" from "closes a
-      // connection". Measured, not assumed: those four files mention
-      // `authProvider` zero times.
-      //
-      // It is a file-level pairing rather than a single expression on purpose. The
-      // spelling varies — `ref.read(authProvider.notifier).logout()` here,
-      // `authNotifier.logout(cause: ...)` via a local in `remote_session_chip.dart`
-      // — and a regex tight enough to match only the first would miss the second,
-      // which is the failure mode a census cannot afford. The cost is a false
-      // positive if a `lib/core/` file ever reads `authProvider` for some unrelated
-      // reason *and* calls a transport `logout()`; erring that way is correct here,
-      // because the fix for a false positive is a comment on this list and the
-      // fix for a false negative is a field bug.
+      // The matcher, its coarseness and the reason the coarseness points the way
+      // it does are all on `_endsAppSession`; the fixture test above is what keeps
+      // that argument honest. One extra discovery key here: the sink verb by name,
+      // because it is the only helper in the tree that ends a session without
+      // naming `authProvider`, and a `lib/core/` file calling it would be the same
+      // layer violation one indirection further out.
       final callers = sources.entries
           .where((e) => e.key.startsWith('lib/core/'))
-          .where((e) => e.value.contains('authProvider'))
-          .where((e) => e.value.contains('.logout('))
+          .where((e) =>
+              _endsAppSession(e.value) ||
+              e.value.contains('endSessionIfCoreReportedOne('))
           .map((e) => e.key)
           .toList()
         ..sort();
@@ -292,9 +380,36 @@ void main() {
             'dialog closes, the state reads loggedOut and the user stays signed '
             'in on a router that is gone. More than one means two listeners '
             'competing for a one-shot value. If the consumer has to move, it has '
-            'to move somewhere mounted whenever any of those three exits can '
-            'fire; the reachability argument for this one is written on its '
-            'initState.',
+            'to move somewhere that will be mounted again after any of those three '
+            'exits can fire; the reachability argument, and why "always mounted" '
+            'was the wrong thing to claim, are on listenForCoreSessionExit.',
+      );
+    });
+
+    test('the consumer is actually subscribed to something', () {
+      // The census above pins where the verb *lives*; this one pins that something
+      // calls it. They were the same file until round 2 of the review, and that is
+      // exactly why neither of them saw the mutation that matters: deleting the
+      // three-line `listenManual` out of the shell's initState left the verb, its
+      // file, and all fourteen tests over both untouched, and disabled every
+      // automatic path out of a dead session.
+      //
+      // Both entries are expected. `_sessionSink` holds the definition and the
+      // catch-up read inside `listenForCoreSessionExit` itself; `_sessionSinkWiring`
+      // is the only caller. Deleting either one reds this.
+      final wiring = filesMatching(RegExp(r'listenForCoreSessionExit\('));
+
+      expect(
+        wiring,
+        [_sessionSink, _sessionSinkWiring],
+        reason: 'expected listenForCoreSessionExit to be defined in '
+            '$_sessionSink and called from $_sessionSinkWiring, found $wiring. '
+            'One entry means the subscription was deleted and the verb is now '
+            'dead code: three exits in app_connection_state_provider.dart set a '
+            'state and an EndCause that nothing will ever read, so the user stays '
+            'signed in on a router that is gone, factory-reset, or a different '
+            'router entirely. More than two means a second subscriber racing for '
+            'a value takePendingSessionExit clears on read.',
       );
     });
   });
@@ -326,6 +441,37 @@ void main() {
             'right only because the first one had already been fixed. If a new '
             'exit affordance is needed, add it beside ReturnToLoginAction and '
             'return it from SurfaceStrategy.sessionExitAction().',
+      );
+    });
+
+    test('only the local surface produces ReturnToLoginAction', () {
+      // The premise `exitToLogout()`'s docstring rests on, pinned as a grep.
+      //
+      // That method now records EndCause.userRequested where a bare logout()
+      // defaulted to sessionLost, and the argument that this is inert spans three
+      // files and one empty method body: the only caller is ReturnToLoginAction,
+      // only LocalSurface returns it, and LocalSessionStrategy.end ignores its
+      // cause. The middle link is the one a future edit breaks silently — a remote
+      // build that starts offering "Return to login page" would send
+      // userRequested into RemoteSessionStrategy.end, which *does* read it, and
+      // release the Guardian session on what the operator meant as a retreat to a
+      // login form that a one-shot token cannot use.
+      //
+      // Both entries are expected: `_exitActions` matches on its own constructor
+      // declaration. Left broad rather than narrowed to `ReturnToLoginAction()`
+      // with empty parens, which would exclude the declaration and also miss a
+      // producer that passed a `key:` — the same false-negative trade the census
+      // above declines.
+      final producers = filesMatching(RegExp(r'ReturnToLoginAction\('));
+
+      expect(
+        producers,
+        [_exitActions, 'lib/page/_shared/mode/local_surface.dart'],
+        reason: 'expected LocalSurface.sessionExitAction() to be the only '
+            'producer of ReturnToLoginAction, found $producers. If a remote or '
+            "shared surface now returns it, exitToLogout()'s "
+            'EndCause.userRequested stops being inert — re-read that docstring '
+            'before adding the entry here.',
       );
     });
 

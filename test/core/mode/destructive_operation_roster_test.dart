@@ -86,6 +86,20 @@
 // census it was **green in all eleven**, and that measurement is why
 // `_operationClasses` now names five.
 //
+// And two more from round 2 of that review, which pointed out that the waivers the
+// widening created are strings and nothing checked they still hit anything. Now
+// thirteen tests, and both mutants land:
+//
+//   rename the command in a `_notDestructive` entry  → _notDestructive + reachability
+//   rename the command in `_unguardedByDesign`       → _unguardedByDesign + reachability
+//
+// Reachability going red alongside each is the honest reading of what a stale
+// waiver costs: the site stops being accounted for. It is not a substitute, because
+// reachability is a *negative* assertion over two hops of class names — a waived
+// file whose neighbour happens to hold a seam for something else passes it — which
+// is the same lesson the greedy-strip mutant above teaches about negative
+// assertions.
+//
 // WHY NOT A WIDGET TEST. The affordances are hidden by phase 7 (#1497) through
 // `SurfaceStrategy`, so a widget test would assert about the layer that is about
 // to change, and would go green for the wrong reason the moment a button moves.
@@ -288,6 +302,13 @@ const _notDestructive = <({String file, String command})>{
 ///
 /// The union is taken here, at the one place that asks, so that neither set can
 /// quietly become the other's dumping ground.
+///
+/// A union is the right shape *for this question* — "does anything account for
+/// this site" has one answer either way — and review round 2 is right that it is
+/// the wrong shape for every other question about a waiver. So the two sets are
+/// asserted separately, each against its own expiry condition, in `every waiver
+/// still names a live call site`; this predicate is only reached after both of
+/// those have held.
 bool _waived(({String file, String command}) site) =>
     _unguardedByDesign.contains(site) || _notDestructive.contains(site);
 
@@ -503,6 +524,58 @@ void main() {
             'no caller and therefore no seam, add it to _unguardedByDesign with '
             'the reason, which is what PnpService.reboot did.',
       );
+    });
+
+    /// Every `(file, command)` pair the scan actually found.
+    late final Set<({String file, String command})> foundSites = {
+      for (final e in found.entries)
+        for (final command in e.value) (file: e.key, command: command),
+    };
+
+    group('every waiver still names a live call site', () {
+      // Both waiver sets are keyed on `(file, command)` strings, so a rename on
+      // either half turns a waiver into a non-match — and a non-match is silent in
+      // the direction that matters. The census above only compares `found` against
+      // `_commandCallSites`, so renaming a command in the code *and* in
+      // `_commandCallSites` while forgetting the waiver keeps that test green and
+      // drops the site into the reachability test below, which will pass it if
+      // anything above it happens to hold a seam for some other command. The site
+      // is then unguarded and nothing says so.
+      //
+      // Two tests rather than one over the union, because the two sets go stale for
+      // opposite reasons and the message has to say which question stopped being
+      // answered.
+
+      test('_unguardedByDesign', () {
+        final stale = _unguardedByDesign.difference(foundSites).toList();
+        expect(
+          stale,
+          isEmpty,
+          reason: 'these entries waive a call site that no longer exists: '
+              '$stale. This set means "destructive, but the wrapper has no '
+              'caller", so a vanished site is one of two things. If the call was '
+              'deleted, delete the entry. If it was renamed or moved, the waiver '
+              'has silently stopped applying to a call that is still there — and '
+              'the reason it was waived was never that it is safe, only that '
+              'nothing reached it. Check whether it has a caller now, because '
+              'that is the event this entry was written to expire on.',
+        );
+      });
+
+      test('_notDestructive', () {
+        final stale = _notDestructive.difference(foundSites).toList();
+        expect(
+          stale,
+          isEmpty,
+          reason: 'these entries waive a call site that no longer exists: '
+              '$stale. This set means "live, but the command costs the session '
+              'nothing", and the measurement was against a specific command — '
+              '`ping` is an ICMP echo, `renewDhcpLease` re-acquires an address '
+              'the agent dials out from. A renamed command is not the command '
+              'that was measured. Re-read the reason on the entry against what '
+              'the code now calls before moving the string.',
+        );
+      });
     });
 
     test('every command call site is reachable from a guarded seam', () {

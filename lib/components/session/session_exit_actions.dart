@@ -55,12 +55,19 @@ class ReturnToLoginAction extends ConsumerWidget {
 /// offering a login page the one-shot token can never get back into.
 ///
 /// Goes straight to `logout(cause:)` rather than through `exitToLogout()`, which
-/// would be the tidier-looking reuse: `exitToLogout()`'s own `logout()` is bare,
-/// and its default [EndCause.sessionLost] skips `endSessionForCA` on the one path
-/// where the operator explicitly asked to end the session. Navigation is the
-/// route redirect's job either way — cause 3 clears the RA session and the
-/// `/usp*` guard answers a session-less remote build with the confirm page's
-/// session-ended surface.
+/// would be the tidier-looking reuse. The reason this comment used to give is no
+/// longer true and is recorded here so nobody re-derives it: `exitToLogout()`'s
+/// own `logout()` was bare, so its default [EndCause.sessionLost] would have
+/// skipped `endSessionForCA` on the one path where the operator explicitly asked
+/// to end the session. That method now records [EndCause.userRequested] and calls
+/// nothing at all.
+///
+/// What is left is smaller. `exitToLogout()` only *reports* — the sign-out happens
+/// when `listenForCoreSessionExit` consumes the cause, so the hop would make an
+/// explicit tap on a widget that already holds the `ref` for `logout()` depend on
+/// a subscription elsewhere being live. Navigation is the route redirect's job
+/// either way — cause 3 clears the RA session and the `/usp*` guard answers a
+/// session-less remote build with the confirm page's session-ended surface.
 class EndSessionAction extends ConsumerWidget {
   const EndSessionAction({super.key});
 

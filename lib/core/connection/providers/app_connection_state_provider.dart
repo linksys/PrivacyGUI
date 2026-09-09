@@ -72,8 +72,10 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   /// decision to sign a person out, the RA-teardown-by-cause that
   /// `SessionStrategy.end` owns, and the navigation that follows from it, inside a
   /// provider under `lib/core/`. Now each one sets the state and the cause and
-  /// stops; `UspDashboardShell` is the single consumer and the only place that
-  /// calls `logout()`. Pinned by `session_teardown_call_sites_test.dart`.
+  /// stops; `endSessionIfCoreReportedOne` in
+  /// `lib/components/session/session_exit_sink.dart` is the single consumer and the
+  /// only place that calls `logout()`. Pinned by
+  /// `session_teardown_call_sites_test.dart`.
   ///
   /// **Not the four-variant `RecoveryOutcome` #1323 sketched**, because three of
   /// those variants already exist. "Recovered" and "still waiting" are
@@ -92,8 +94,15 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   /// already *is* over — a logout someone else initiated. Only the first sets the
   /// field, so a consumer keying off the state transition alone would call
   /// `logout()` a second time on the path where auth had just finished one.
-  /// Clearing on read is also what stops a cause that has been acted on from
-  /// being replayed by an unrelated later transition.
+  ///
+  /// **Three clear sites, and the read is only one of them.** Clearing on read
+  /// says nothing about a cause that is never read: it is also cleared in
+  /// [enterWaiting], and — the case review found — in *both* arms of [build]'s
+  /// `authProvider` listener, so a cause the consumer missed cannot be replayed
+  /// onto an unrelated later logout or carried across a re-login into the next
+  /// session. What keeps a missed report merely late rather than lost is on the
+  /// consumer side: `listenForCoreSessionExit` reads once on wiring, before it
+  /// starts listening.
   EndCause? takePendingSessionExit() {
     final cause = _pendingSessionExit;
     _pendingSessionExit = null;
@@ -118,6 +127,17 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _probeTimer = null;
         _cooldownTimer?.cancel();
         _cooldownTimer = null;
+        // Before the state assignment, and for the opposite reason the exits
+        // below set it before theirs. The session is *already* over here — auth
+        // ended it — so whatever this notifier had decided is moot, and a
+        // consumer that took a cause on this transition would ask for a second
+        // teardown of a session nobody holds. Clearing here is also the half that
+        // stops a stale cause outliving its session: a report made with no
+        // consumer mounted is consumed by the next one to appear (see
+        // `listenForCoreSessionExit`), but if auth signs out first there is no
+        // longer anything to consume, and carrying it forward would replay
+        // `EndCause.sessionLost` onto an unrelated later logout.
+        _pendingSessionExit = null;
         state = AppConnectionState.loggedOut;
       } else if (state == AppConnectionState.loggedOut) {
         // Re-login within the same session (no page reload). The app uses a
@@ -131,6 +151,12 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         //
         // Only transition out of `loggedOut`; never override
         // `waitingForRecovery`, which owns its own exit path via _runProbe().
+        //
+        // Cleared here too: a re-login is the other way an unconsumed cause can
+        // stop belonging to the current session. This is the arm that made the
+        // replay reachable — the field survived it, and the next ordinary logout
+        // handed the shell a `sessionLost` decided about a router two sessions ago.
+        _pendingSessionExit = null;
         state = AppConnectionState.authenticated;
       }
     });
@@ -225,8 +251,9 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   /// and `LocalSessionStrategy.end` is an empty body that ignores the cause. What
   /// it buys is that the one exit here a person actually asked for now says so, so
   /// if this ever does become reachable from a Remote surface it releases the
-  /// Guardian session instead of leaving it open — which is the asymmetry
-  /// `EndSessionAction` documents having had to route around this method to avoid.
+  /// Guardian session instead of leaving it open — which retires the asymmetry
+  /// `EndSessionAction` used to cite for calling `logout(cause:)` directly. Its
+  /// comment records what is left of that reason.
   void exitToLogout() {
     _probeTimer?.cancel();
     _probeTimer = null;
