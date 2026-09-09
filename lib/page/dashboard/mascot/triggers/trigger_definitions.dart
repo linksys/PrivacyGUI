@@ -124,20 +124,7 @@ abstract final class TriggerDomainMapping {
     InvalidationDomain.dmz,
   };
 
-  /// Domains that may trigger proactive notifications.
-  static const Set<InvalidationDomain> notificationDomains = {
-    InvalidationDomain.wanStatus,
-    InvalidationDomain.connectedDevices,
-    InvalidationDomain.wifiRadios,
-    InvalidationDomain.firewallRules,
-    InvalidationDomain.dmz,
-  };
-
   /// Check if a domain should trigger health re-evaluation.
   static bool isHealthCritical(InvalidationDomain domain) =>
       healthCriticalDomains.contains(domain);
-
-  /// Check if a domain may trigger a notification.
-  static bool canTriggerNotification(InvalidationDomain domain) =>
-      notificationDomains.contains(domain);
 }

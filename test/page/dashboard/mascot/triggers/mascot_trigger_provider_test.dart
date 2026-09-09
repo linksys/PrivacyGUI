@@ -17,18 +17,26 @@ import '../../../../mocks/test_data/mascot_test_data.dart';
 import '../../../../mocks/test_data/system_health_test_data.dart';
 import '../../../../mocks/test_data/wifi_settings_test_data.dart';
 
-/// The four L1 providers the trigger notifier reads, each swapped for a
-/// mutable stand-in so a test can change the router's state between SSE events.
+/// The four L1 providers the trigger notifier reads, each swapped for a mutable
+/// stand-in so a test can change the router's state and observe the reaction.
 ///
 /// `build()` is overridden wholesale (not calling `super.build()`), which also
-/// strips each L1 provider's own SSE listener — these tests must observe only
-/// the mascot notifier's reaction, not a cascade of L1 re-fetches.
+/// strips each L1 provider's own SSE listener and its 500 ms invalidate
+/// debounce — those are the *other* side of the collision these tests are about,
+/// and a test models them by choosing *when* it calls [setData].
+/// [buildDelay] holds this provider in `AsyncLoading` past the point where
+/// `mount` mounts the trigger notifier, which is how a test reproduces an L1
+/// provider that `dashboardDomainReadyProvider` does not await.
 class _MutableWanNotifier extends WanDataNotifier {
-  _MutableWanNotifier(this._data);
+  _MutableWanNotifier(this._data, {this.buildDelay = Duration.zero});
   WanData _data;
+  final Duration buildDelay;
 
   @override
-  Future<WanData> build() async => _data;
+  Future<WanData> build() async {
+    if (buildDelay > Duration.zero) await Future.delayed(buildDelay);
+    return _data;
+  }
 
   void setData(WanData data) {
     _data = data;
@@ -50,11 +58,15 @@ class _MutableDevicesNotifier extends DevicesDataNotifier {
 }
 
 class _MutableFirewallNotifier extends FirewallDataNotifier {
-  _MutableFirewallNotifier(this._data);
+  _MutableFirewallNotifier(this._data, {this.buildDelay = Duration.zero});
   FirewallData _data;
+  final Duration buildDelay;
 
   @override
-  Future<FirewallData> build() async => _data;
+  Future<FirewallData> build() async {
+    if (buildDelay > Duration.zero) await Future.delayed(buildDelay);
+    return _data;
+  }
 
   void setData(FirewallData data) {
     _data = data;
@@ -100,11 +112,22 @@ void main() {
   /// notifier with [fired] wired to `onTrigger`.
   ///
   /// `mascotTriggerProvider` is autoDispose, so the standing `listen` is what
-  /// keeps the notifier — and its debounce timer — alive between events.
-  ProviderContainer mount(FakeAsync async) {
+  /// keeps the notifier — and its four domain listeners — alive.
+  /// Pass `dashboardReady: false` to hold [dashboardDomainReadyProvider] in
+  /// `AsyncLoading` for the whole test — the one state in which `build()`
+  /// deliberately captures no baseline.
+  ///
+  /// The `sseInvalidationProvider` override is deliberately still here even
+  /// though the notifier no longer reads it: it is what lets
+  /// `a change that lands long after the event still fires` replay the full
+  /// production sequence — event first, value 550 ms later — and that sequence
+  /// is what the previous clock-driven implementation got wrong.
+  ProviderContainer mount(FakeAsync async, {bool dashboardReady = true}) {
     final container = ProviderContainer(overrides: [
       sseInvalidationProvider.overrideWith((ref) => sse.stream),
-      dashboardDomainReadyProvider.overrideWith((ref) async {}),
+      dashboardDomainReadyProvider.overrideWith(
+        (ref) => dashboardReady ? Future.value() : Completer<void>().future,
+      ),
       wanDataProvider.overrideWith(() => wan),
       devicesDataProvider.overrideWith(() => devices),
       firewallDataProvider.overrideWith(() => firewall),
@@ -112,13 +135,12 @@ void main() {
     ]);
 
     // Resolve every async dependency before the notifier builds, so
-    // `_initializeState` runs against loaded data rather than AsyncLoading.
+    // `_seedBaseline` runs against loaded data rather than AsyncLoading — unless
+    // a stand-in was given a `buildDelay`, which is the point of that knob.
     //
     // Any non-zero duration works; `flushMicrotasks()` does not, because it
     // runs the notifier's own work without publishing the build result — the
-    // container still reads AsyncLoading. The value is deliberately small only
-    // to keep the elapsed clock readable in the debounce assertions below; the
-    // trigger notifier is not mounted yet, so no timer of its own is armed here.
+    // container still reads AsyncLoading.
     container.listen(dashboardDomainReadyProvider, (_, __) {});
     container.listen(wanDataProvider, (_, __) {});
     container.listen(devicesDataProvider, (_, __) {});
@@ -131,87 +153,55 @@ void main() {
     return container;
   }
 
-  /// Pushes one SSE event and lets the notifier's 500 ms debounce fire.
-  void emit(FakeAsync async, InvalidationDomain domain, int seq) {
-    sse.add((domain: domain, seq: seq));
-    async.elapse(const Duration(milliseconds: 600));
-  }
+  /// Lets a published L1 value reach the notifier's listeners.
+  void settle(FakeAsync async) => async.elapse(const Duration(milliseconds: 1));
 
   group('MascotTriggerNotifier', () {
-    // TODO(#1509): invert this test when the seeding defect is fixed.
-    // Documents a real defect, not desired behaviour: `_initializeState()`
-    // assigns `state = MascotTriggerState(previousWanUp: ...)` *inside*
-    // `build()`, and riverpod 2.6.1 immediately overwrites it with build()'s
-    // return value — `setState(provider.runNotifierBuild(notifier))`,
-    // riverpod-2.6.1/lib/src/notifier/base.dart:212. So every `previousXxx`
-    // stays null however much data is loaded, and the first SSE event per
-    // domain can only seed, never fire. Filed as #1509; when that is fixed,
-    // this test must be inverted to expect the seeded values.
-    test(
-        'build does not seed previous values (state assigned in build is lost)',
-        () {
+    // This is the inverted #1509 pin. It used to assert four nulls: the
+    // baseline was assigned to `state` *inside* `build()`, and riverpod applies
+    // build()'s return value afterwards — `setState(provider.runNotifierBuild(
+    // notifier))`, riverpod-2.6.1/lib/src/notifier/base.dart:212 (3.4.3 does the
+    // same at providers/notifier.dart:94) — so the assignment was silently
+    // discarded, every `previousXxx` stayed null, and the first change per
+    // domain could only seed, never fire. Returning the baseline from build()
+    // is the fix; this test is what goes red if anyone assigns it again.
+    test('build seeds every previous value from the loaded L1 providers', () {
       fakeAsync((async) {
         final container = mount(async);
 
         final state = container.read(mascotTriggerProvider);
         expect(state.lastTrigger, isNull);
-        expect(state.previousWanUp, isNull);
-        expect(state.previousDeviceCount, isNull);
-        expect(state.previousFirewallEnabled, isNull);
-        expect(state.previousDisabledRadios, isNull);
-
-        // The observable consequence: WAN is already down when the very first
-        // wanStatus event arrives, and nothing fires.
-        wan.setData(SystemHealthTestData.createWanData(isUp: false));
-        emit(async, InvalidationDomain.wanStatus, 0);
-
-        expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).previousWanUp, isFalse);
+        expect(state.previousWanUp, isTrue);
+        expect(state.previousDeviceCount, 2);
+        expect(state.previousFirewallEnabled, isTrue);
+        expect(state.previousDisabledRadios, isEmpty);
 
         container.dispose();
       });
     });
 
-    test('SSE wanStatus fires wan_down, then wan_restored on the way back', () {
+    // The observable half of the fix, one test per watched domain: the router
+    // changes, and the *first* change fires. Every one of these asserted
+    // `fired, isEmpty` before #1509.
+    test('the first WAN change fires wan_down', () {
       fakeAsync((async) {
         final container = mount(async);
 
-        // Event 1 only seeds previousWanUp = true (see the defect above).
-        emit(async, InvalidationDomain.wanStatus, 0);
-        expect(fired, isEmpty);
-
         wan.setData(SystemHealthTestData.createWanData(isUp: false));
-        emit(async, InvalidationDomain.wanStatus, 1);
+        settle(async);
+
         expect(fired.map((t) => t.id), ['wan_down']);
-        expect(fired.last.priority, TriggerPriority.critical);
-
-        wan.setData(SystemHealthTestData.createWanData(isUp: true));
-        emit(async, InvalidationDomain.wanStatus, 2);
-        expect(fired.map((t) => t.id), ['wan_down', 'wan_restored']);
-
-        // Both events reached the notifier: same domain three times, so `seq`
-        // (#1501 AC-B1) is the only difference between consecutive events, and
-        // each is spaced past the 500 ms debounce window — inside it they are
-        // *meant* to merge, so a repeat asserted there could not tell a real
-        // collapse from the debouncer doing its job.
-        expect(container.read(mascotTriggerProvider).lastTrigger?.id,
-            'wan_restored');
 
         container.dispose();
       });
     });
 
-    test('SSE connectedDevices fires new_device_joined when the count grows',
-        () {
+    test('the first device-count change fires new_device_joined', () {
       fakeAsync((async) {
         final container = mount(async);
-
-        emit(async, InvalidationDomain.connectedDevices, 0);
-        expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).previousDeviceCount, 2);
 
         devices.setData(MascotTestData.createDevicesData(clientCount: 3));
-        emit(async, InvalidationDomain.connectedDevices, 1);
+        settle(async);
 
         expect(fired.map((t) => t.id), ['new_device_joined']);
         expect(fired.last.message, contains('Client-3'));
@@ -220,18 +210,12 @@ void main() {
       });
     });
 
-    test('SSE firewallRules fires firewall_disabled when SPI is turned off',
-        () {
+    test('the first firewall change fires firewall_disabled', () {
       fakeAsync((async) {
         final container = mount(async);
 
-        emit(async, InvalidationDomain.firewallRules, 0);
-        expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
-            isTrue);
-
         firewall.setData(FirewallTestData.createFirewallDisabledData());
-        emit(async, InvalidationDomain.firewallRules, 1);
+        settle(async);
 
         expect(fired.map((t) => t.id), ['firewall_disabled']);
 
@@ -239,111 +223,223 @@ void main() {
       });
     });
 
-    test('SSE wifiRadios fires wifi_radio_disabled for the newly-off band', () {
+    test('the first radio change fires wifi_radio_disabled', () {
       fakeAsync((async) {
         final container = mount(async);
 
-        emit(async, InvalidationDomain.wifiRadios, 0);
+        wifi.setData(WifiSettingsTestData.createWifiData(
+          radioModels:
+              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
+        ));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['wifi_radio_disabled_5GHz']);
+
+        container.dispose();
+      });
+    });
+
+    // The reason this notifier is value-driven and not SSE-plus-timer-driven.
+    //
+    // `firewallDataProvider` debounces its own SSE-triggered refetch by 500 ms
+    // (`firewall_data_provider.dart:137-141`; `wifi_data_provider.dart:109-112`
+    // and `devices_data_provider.dart:246-249` are the same shape), so the new
+    // value cannot exist before T+500 — the USP round-trip only *starts* then.
+    // A mascot-side 500 ms debounce therefore evaluated against the unchanged
+    // value and announced nothing: measured `[]` for firewallRules, wifiRadios
+    // and connectedDevices, and only `wanStatus` worked because
+    // `wan_data_provider.dart:49-51` invalidates with no debounce.
+    //
+    // 550 ms models that whole chain: the L1's own debounce plus a round-trip.
+    // Nothing in the notifier may depend on when the value shows up.
+    test('a change that lands long after the event still fires', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        sse.add((domain: InvalidationDomain.firewallRules, seq: 0));
+        Timer(
+          const Duration(milliseconds: 550),
+          () => firewall.setData(FirewallTestData.createFirewallDisabledData()),
+        );
+        async.elapse(const Duration(seconds: 2));
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    // `build()` can only seed what is already loaded, and
+    // `dashboardDomainReadyProvider` awaits systemInfo/devices/ethernet only, so
+    // `wanDataProvider` and `firewallDataProvider` — both card-driven, and
+    // `firewall_overview` sits below the fold — can still be in flight when the
+    // mascot mounts. The domain listener closes that gap for free: the first
+    // settled value seeds, and the change after it fires.
+    test('a domain still loading at build seeds from its first settled value',
+        () {
+      fakeAsync((async) {
+        firewall = _MutableFirewallNotifier(
+          FirewallTestData.createFirewallData(),
+          buildDelay: const Duration(milliseconds: 50),
+        );
+
+        final container = mount(async);
+
+        // mount() elapses 5 ms; the firewall fetch needs 50 ms.
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isNull);
+
+        async.elapse(const Duration(milliseconds: 100));
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isTrue);
+        expect(fired, isEmpty);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    // Each domain is listened to independently. The previous implementation
+    // shared one debounce timer across all four and cancelled it
+    // unconditionally, so an event on one domain discarded another's pending
+    // evaluation; here wan is still in flight while firewall fires.
+    test('a domain still in flight does not stop another from firing', () {
+      fakeAsync((async) {
+        wan = _MutableWanNotifier(
+          SystemHealthTestData.createWanData(isUp: true),
+          buildDelay: const Duration(milliseconds: 50),
+        );
+
+        final container = mount(async);
+        expect(container.read(mascotTriggerProvider).previousWanUp, isNull);
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isTrue);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    // Two domains changing at once both get announced — neither is dropped.
+    test('changes on two domains each fire', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+
+        expect(fired.map((t) => t.id),
+            containsAll(['wan_down', 'firewall_disabled']));
+
+        container.dispose();
+      });
+    });
+
+    // The boundary of the fix, pinned deliberately. `build()` only captures a
+    // baseline once the dashboard is ready, so a notifier mounted before that
+    // seeds from the first value it sees instead — which means the change that
+    // arrived during the gap is absorbed, not announced. Kept as a test because
+    // it is the one path where the null baseline is by design rather than by
+    // accident, and in production the coordinator only wires `onTrigger` once
+    // `isDashboardReady` (`mascot_providers.dart`).
+    test('no baseline is captured while the dashboard is not ready', () {
+      fakeAsync((async) {
+        final container = mount(async, dashboardReady: false);
+
+        expect(container.read(mascotTriggerProvider).previousWanUp, isNull);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+
+        expect(fired, isEmpty);
+        expect(container.read(mascotTriggerProvider).previousWanUp, isFalse);
+
+        container.dispose();
+      });
+    });
+
+    test('wan_down, then wan_restored on the way back', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+        expect(fired.map((t) => t.id), ['wan_down']);
+        expect(fired.last.priority, TriggerPriority.critical);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: true));
+        settle(async);
+        expect(fired.map((t) => t.id), ['wan_down', 'wan_restored']);
+
+        expect(container.read(mascotTriggerProvider).lastTrigger?.id,
+            'wan_restored');
+
+        container.dispose();
+      });
+    });
+
+    test('a device leaving does not fire', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(clientCount: 1));
+        settle(async);
+
+        expect(fired, isEmpty);
+        expect(container.read(mascotTriggerProvider).previousDeviceCount, 1);
+
+        container.dispose();
+      });
+    });
+
+    test('a republished but unchanged value does not fire', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+        expect(fired.map((t) => t.id), ['wan_down']);
+
+        // Same state published again: the change detector must swallow it (the
+        // cooldown is a second line of defence, not the one under test).
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+        expect(fired.map((t) => t.id), ['wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    // A radio going *back* on is not a notification, and must not be reported
+    // as one just because the disabled-set changed.
+    test('re-enabling a radio does not fire', () {
+      fakeAsync((async) {
+        wifi = _MutableWifiNotifier(WifiSettingsTestData.createWifiData(
+          radioModels:
+              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
+        ));
+
+        final container = mount(async);
+        expect(container.read(mascotTriggerProvider).previousDisabledRadios,
+            {'5GHz'});
+
+        wifi.setData(WifiSettingsTestData.createWifiData(
+          radioModels: WifiSettingsTestData.createRadioUIModels(),
+        ));
+        settle(async);
+
         expect(fired, isEmpty);
         expect(container.read(mascotTriggerProvider).previousDisabledRadios,
             isEmpty);
-
-        wifi.setData(WifiSettingsTestData.createWifiData(
-          radioModels:
-              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
-        ));
-        emit(async, InvalidationDomain.wifiRadios, 1);
-
-        expect(fired.map((t) => t.id), ['wifi_radio_disabled_5GHz']);
-
-        container.dispose();
-      });
-    });
-
-    // wifiSsids is the sharpest wrong answer: wifiRadios *is* in
-    // `notificationDomains`, so a guard that matched the WiFi family would
-    // survive a test using an obviously unrelated domain. The state is primed
-    // to fire — previousDisabledRadios is seeded and 5 GHz is already off — so
-    // the only reason nothing happens is the domain filter itself.
-    test('SSE wifiSsids does not trigger anything', () {
-      fakeAsync((async) {
-        final container = mount(async);
-
-        emit(async, InvalidationDomain.wifiRadios, 0);
-        expect(fired, isEmpty);
-
-        wifi.setData(WifiSettingsTestData.createWifiData(
-          radioModels:
-              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
-        ));
-        emit(async, InvalidationDomain.wifiSsids, 1);
-
-        expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).lastTrigger, isNull);
-
-        // Proof the primed state really would have fired: the same data with
-        // the watched domain does.
-        emit(async, InvalidationDomain.wifiRadios, 2);
-        expect(fired.map((t) => t.id), ['wifi_radio_disabled_5GHz']);
-
-        container.dispose();
-      });
-    });
-
-    // The listener's domain filter is *not* observable through the fire/no-fire
-    // assertion above: `_evaluateTriggers` switches on the domain and
-    // `wifiSsids` lands on `default: break`, so an unwatched domain produces no
-    // trigger either way. Measured by forcing the guard permanently true — all
-    // seven other tests here still passed.
-    //
-    // What the guard actually buys is this: `_debouncedEvaluate` *cancels* the
-    // pending timer, so an unfiltered event arriving inside the 500 ms window
-    // would replace a queued watched-domain evaluation with a no-op one and the
-    // mascot notification would be lost outright.
-    test(
-        'an unwatched domain inside the debounce window does not swallow a '
-        'pending trigger', () {
-      fakeAsync((async) {
-        final container = mount(async);
-
-        // Seed previousDisabledRadios = {} (both radios enabled).
-        emit(async, InvalidationDomain.wifiRadios, 0);
-        expect(fired, isEmpty);
-
-        wifi.setData(WifiSettingsTestData.createWifiData(
-          radioModels:
-              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
-        ));
-
-        // Watched domain: arms the debounce timer for t+500ms.
-        sse.add((domain: InvalidationDomain.wifiRadios, seq: 1));
-        async.elapse(const Duration(milliseconds: 300));
-        expect(fired, isEmpty);
-
-        // Unwatched domain 200ms before that timer is due. It must be dropped
-        // by the listener — not re-arm the timer with its own domain.
-        sse.add((domain: InvalidationDomain.wifiSsids, seq: 2));
-        async.elapse(const Duration(milliseconds: 300));
-
-        expect(fired.map((t) => t.id), ['wifi_radio_disabled_5GHz']);
-
-        container.dispose();
-      });
-    });
-
-    test('a repeat of the same change does not re-fire', () {
-      fakeAsync((async) {
-        final container = mount(async);
-
-        emit(async, InvalidationDomain.wanStatus, 0);
-        wan.setData(SystemHealthTestData.createWanData(isUp: false));
-        emit(async, InvalidationDomain.wanStatus, 1);
-        expect(fired.map((t) => t.id), ['wan_down']);
-
-        // Same state, new event: the change detector must swallow it (the
-        // cooldown is a second line of defence, not the one under test).
-        emit(async, InvalidationDomain.wanStatus, 2);
-        expect(fired.map((t) => t.id), ['wan_down']);
 
         container.dispose();
       });

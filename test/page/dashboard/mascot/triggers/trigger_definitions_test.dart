@@ -105,18 +105,5 @@ void main() {
         false,
       );
     });
-
-    test('canTriggerNotification returns true for notification domains', () {
-      expect(
-        TriggerDomainMapping.canTriggerNotification(
-            InvalidationDomain.wanStatus),
-        true,
-      );
-      expect(
-        TriggerDomainMapping.canTriggerNotification(
-            InvalidationDomain.connectedDevices),
-        true,
-      );
-    });
   });
 }
