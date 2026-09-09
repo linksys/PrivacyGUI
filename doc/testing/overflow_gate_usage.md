@@ -22,7 +22,7 @@ are for people maintaining the gate itself:
 fvm flutter test --tags overflow
 ```
 
-That runs every overflow sweep in the repo: **14,145 coordinates**, each one a
+That runs every overflow sweep in the repo: **14,847 coordinates**, each one a
 screen × width × tab × locale combination, pumped as its own widget tree and
 asked one question — did a `RenderFlex` overflow?
 
@@ -35,10 +35,10 @@ and the gate is tagged `layout-gate`, so it already runs on every PR.
 
 | Command | Tests | Test clock / wall | When |
 |---|---|---|---|
-| naming the five sweep files (below) | 744 | 8m17s / 8m22s | inner loop while fixing |
-| `fvm flutter test --tags overflow` | 744 | 9m23s / 9m40s | before committing |
-| `fvm flutter test --tags layout-gate` | 2,061 + 99 | 9m34s / 9m43s | the whole PR-blocking gate |
-| `./run_tests.sh` | **7,074** | **9m23s** / — | what CI runs |
+| naming the five sweep files (below) | 774 | 8m17s / 8m22s | inner loop while fixing |
+| `fvm flutter test --tags overflow` | 774 | 9m23s / 9m40s | before committing |
+| `fvm flutter test --tags layout-gate` | 2,061 + 140 | 9m34s / 9m43s | the whole PR-blocking gate |
+| `./run_tests.sh` | **7,111** | **10m58s** / — | what CI runs |
 
 **Read this table before you plan your afternoon: the gate takes about ten minutes now,
 not three.** (Rows 1–3 measured 2026-08-27, after #1380 took the page sweep from twenty-two
@@ -51,30 +51,43 @@ moved all four test counts and no clock: #1367 removed one forced-form coordinat
 everywhere) and brought a `layout-gate`-carrying stats-panel suite (+21 to the last two
 rows), and #1376 brought an untagged identifier suite (+8 to the last row only) plus one
 extra test inside an identifier suite that already existed (+1, also last row only). One
-cell of 13,677 (14,145 since #1489) is three orders of magnitude below the drift these runs show, so the counts
+cell of 13,677 (14,847 since #1489) is three orders of magnitude below the drift these runs show, so the counts
 are corrected and the clocks are kept.
 
 **#1488/#1489 moved the counts again, and the third row is written as a sum on purpose.**
-#1489 added two `statistics` cases to the page sweep, so its file — and both rows that select
-it — gain **20** tests (9 coordinate groups plus one cell count, twice): 724 → **744**, exact,
-because no other sweep file was touched. It also added **3** tests to
+#1489 added five sibling-tab cases to the page sweep — two on `statistics`, two on
+`port_forwarding`, one on `wifi_settings` — so its file, and both rows that select it, gain
+**50** tests (9 coordinate groups plus one cell count, five times): 724 → **774**, exact,
+because no other sweep file was touched. It also added **14** to
 `page_surface_family_test.dart`, which carries `layout-gate` and not `overflow`. #1488 added
-`stats_legend_rows_test.dart`, **76** more of the same kind. So `overflow` gains 20 and
-`layout-gate` gains 20 + 3 + 76 = **99**, which is the sum in the third row. The
-`layout-gate` row is then left as `2,061 + 99` rather than resolved, because 2,061 was counted
+`stats_legend_rows_test.dart`, **76** more of the same kind. So `overflow` gains 50 and
+`layout-gate` gains 50 + 14 + 76 = **140**, which is the sum in the third row.
+
+That 14 is worth one sentence, because the first draft of this paragraph said 4 and was
+wrong by ten. Four is what the diff shows: four `test(` lines were typed. The other ten are
+generated — `page_surface_family_test.dart` loops `kPageSurfaceCases` and declares **two**
+tests per case, so five new cases wrote themselves ten more. A count read off a diff is a
+count of what you typed; only a run counts what exists. The suite total below is what caught
+it: it moved by 37 where 34 had been predicted, and the missing 3 were the third case's pair
+plus its oracle.
+
+The `layout-gate` row is then left as `2,061 + 140` rather than resolved, because 2,061 was counted
 on `dev-2.7.0` on 2026-08-27 and this work is on `dev-2.7.1`: the delta is measured, the base is
 two weeks stale, and adding them would publish a total nobody ran. Run the row if you need its
 absolute.
 
 **The last row is a fresh measurement and it shows how stale that base is.** `./run_tests.sh`
-on `dev-2.7.1` with this work in reads **7,074 tests, 9m23s** on `flutter test`'s own clock,
-2026-09-09, green — and **7,074 again at 14m39s** on a second run the same evening, which is
-this file's clock warning reproduced inside a single day: the count is a property of the tree,
-the clock is a property of the box. Against 6,063 + 99 that is **+912 tests nobody in this table added** — two
+on `dev-2.7.1` with this work in reads **7,111 tests, 10m58s** on `flutter test`'s own clock,
+2026-09-09, green. The same tree three cases earlier read **7,074 twice that evening — 9m23s
+and 14m39s** — which is this file's clock warning reproduced inside a single day: the count is
+a property of the tree, the clock is a property of the box. Against 6,063 + 140 that is **+908 tests nobody in this table added** — two
 weeks of unrelated suites landing on the branch. So do not add a delta to a base in this table
-and publish the sum: the base decays much faster than the gate does. The clock, notably, did
-*not* move with it, which is this file's other standing point — the page sweep is the clock and
-almost everything else finishes inside it.
+and publish the sum: the base decays much faster than the gate does. The clock moved by 78s
+across those two weeks (9m40s → 10m58s), and the only part of it anyone here bought is the
+sweep: 1,170 new cells at the ~20ms each the roster measures is about 23s. The other ~900
+tests are not visible in the clock at all, which is this file's other standing point — the
+page sweep is the clock and almost everything else finishes inside it. The remaining ~55s is
+the box, and the two runs of the same tree above (9m23s and 14m39s) are the scale of that.
 
 **The run that confirmed those counts is also the clearest warning in this file about the
 clocks.** On the merged tree, back to back, the gate came in at **18m01s** and the suite at
@@ -92,7 +105,7 @@ Four readings that matter more than the numbers:
   `./run_tests.sh`'s whole wall clock. Move it aside and the same two arms read 2m17s and
   3m09s. So the other four sweeps and the other 5,615 tests are effectively free: they
   finish while the page file is still going.
-- **The top two rows are the same 744 tests**, 77s apart, because `@Tags` is read by
+- **The top two rows are the same 774 tests**, 77s apart, because `@Tags` is read by
   *loading* a suite — the tag compiles every test file in the repo to then skip all but
   five. Identical selection either way. Name the files for the inner loop.
 - **Fixing one page? Do not run any of these four.** Run the one file, or better, one page
@@ -127,7 +140,8 @@ fvm flutter test \
 
 **One thing this selector cannot tell you: whether every page is still swept.**
 All forty-three pages are in one file and every page is in the PR gate — declared as
-**forty-five cases**, because `statistics` is swept three times, once per tab (#1489). (#1371 measured
+**forty-eight cases**, because three of them are swept once per tab — `statistics` and
+`port_forwarding` three times each, `wifi_settings` twice (#1489). (#1371 measured
 the alternative at fifteen pages and kept one file; at 43 the measurement reversed, so
 **#1380 decided to split it into four** and left the move to a successor ticket — §11.12
 of the architecture doc. Until that lands, "one file" is still what you are running, and
@@ -232,7 +246,7 @@ The names in this subsystem mislead in a specific way, so:
 | **family** | The declaration of one sweep: which coordinates exist, and how one coordinate becomes a widget. Five sweeps, nine families. |
 | **cell** | One coordinate. A `clean` cell is a recorded row, **not** an absence. |
 | **ratchet** / **allowlist** | [known_overflows.json](../../test/fixtures/known_overflows.json). A tolerance list that *weakens* the verdict. **Currently empty**, so nothing is exempt. See §6. |
-| **baseline** (`.tsv`) | A coverage register — a record of *which* 14,145 coordinates were measured. It judges nothing. See §5. |
+| **baseline** (`.tsv`) | A coverage register — a record of *which* 14,847 coordinates were measured. It judges nothing. See §5. |
 | `sweep_test.dart`, `ratchet_test.dart` | **Not sweeps.** Unit tests of the framework itself. You never run them deliberately. |
 
 The two easiest mistakes: thinking `sweep` is an auxiliary check on top of the
@@ -289,9 +303,9 @@ Coverage today, per sweep:
 | `card` | 1,943 | every dashboard card × narrowest grid width per span × tab × 26 locales |
 | `chrome` | 1,248 | top bar and dashboard header at screen width × locale × action mode |
 | `popup` | 347 | the same cards pinned into the popup form |
-| `page` | 10,530 | **forty-three whole pages, declared as forty-five cases** — every page view under `lib/page/` except the two excluded as unreachable, plus two extra cases for the statistics page's other two tabs (#1489) — at 9 widths × 26 locales each. The #1349 pilot (`dhcp`, `wifi_settings`), #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`), and #1380's wave 4, the remaining twenty-one (`admin`, `advanced_settings`, `apps`, `dmz`, `firewall`, `firmware_update`, `instant_privacy`, `instant_safety`, `internet_settings`, `ipv6_port_service`, `local_network`, `remote_assistance`, `router_assistant`, `sliver_dashboard`, `usp_dashboard`, `static_routing`, `statistics`, `support`, `system_log`, `test_console`, `unified_diagnostics`), and #1489's two tab cases `statistics_devices` and `statistics_system`, which add cells without adding a page. `test/fixtures/page_roster.tsv` is the register that says so — it holds **43** rows, one per page view *file*, so it counts pages and not cases |
+| `page` | 11,232 | **forty-three whole pages, declared as forty-eight cases** — every page view under `lib/page/` except the two excluded as unreachable, plus five extra cases for the sibling tabs of the three tabbed pages (#1489) — at 9 widths × 26 locales each. The #1349 pilot (`dhcp`, `wifi_settings`), #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`), and #1380's wave 4, the remaining twenty-one (`admin`, `advanced_settings`, `apps`, `dmz`, `firewall`, `firmware_update`, `instant_privacy`, `instant_safety`, `internet_settings`, `ipv6_port_service`, `local_network`, `remote_assistance`, `router_assistant`, `sliver_dashboard`, `usp_dashboard`, `static_routing`, `statistics`, `support`, `system_log`, `test_console`, `unified_diagnostics`), and #1489's five tab cases `statistics_devices`, `statistics_system`, `wifi_settings_advanced`, `port_range` and `port_triggering`, which add cells without adding a page. `test/fixtures/page_roster.tsv` is the register that says so — it holds **43** rows, one per page view *file*, so it counts pages and not cases |
 | `forced_form` | 77 | the boxes a user's forced-size pick produces, which no drag could — 78 until the 2026-08-27 `dev-2.7.0` merge, where #1367's per-card resolution for the KPI stats panel retired the `skeleton\|variant=stats` coordinate. The only figure in this table that has ever gone **down**, and the reason a shrinking baseline is a diff to read rather than a sweep that stopped measuring |
-| | **14,145** | |
+| | **14,847** | |
 
 `page` is the row that moves, on both of its axes. The epic (#1369) takes the
 remaining 21 page views in waves, at **234** cells each — and #1372 moved the width
@@ -436,7 +450,7 @@ Both are why `shoot` exists. When a cell's verdict matters, look at the picture.
 
 ```bash
 # ── run ─────────────────────────────────────────────────────────────────────
-fvm flutter test --tags overflow          # the five sweeps, 14,145 cells
+fvm flutter test --tags overflow          # the five sweeps, 14,847 cells
 fvm flutter test --tags layout-gate       # the whole PR-blocking gate
 ./run_tests.sh                            # what CI runs (includes the above)
 

@@ -16,7 +16,13 @@ import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
-  const UspWifiSettingsView({super.key});
+  /// Which tab this page opens on: 0 = WiFi list, 1 = Advanced.
+  ///
+  /// Supplied by the route from `?tab=N` and clamped in [initState], so an
+  /// out-of-range deep link opens the WiFi tab rather than throwing.
+  final int initialTab;
+
+  const UspWifiSettingsView({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<UspWifiSettingsView> createState() =>
@@ -33,7 +39,15 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 1),
+    );
+    // Read the index back off the controller rather than from `initialTab`:
+    // the dirty guard below compares against the tab being *left*, so seeding
+    // this with 0 while the controller opened on 1 would check the WiFi tab's
+    // dirty state on the way out of Advanced.
     _previousTabIndex = _tabController.index;
     _tabController.addListener(_handleTabChange);
   }

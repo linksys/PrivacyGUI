@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_det
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribution_section.dart';
@@ -25,6 +26,7 @@ import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
+import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -55,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when forty-five cases fit. It is *also*
-/// green when forty-five cases never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when forty-eight cases fit. It is *also*
+/// green when forty-eight cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -75,28 +77,32 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is forty-five cases over
-  // forty-three pages, because `statistics` is swept once per tab. The two counts were
-  // equal for the whole of #1369 and the group title read "pages" throughout, which is
-  // exactly the kind of coincidence a name should not be built on — `kPageViewCount` is
-  // also 45 and is a third quantity again (page view *files*, which no case can move).
+  // "Cases" and not "pages", corrected by #1489: this list is forty-eight cases over
+  // forty-three pages, because three of those pages are swept once per tab. The two
+  // counts were equal for the whole of #1369 and the group title read "pages"
+  // throughout, which is exactly the kind of coincidence a name should not be built on
+  // — `kPageViewCount` is 45, a third quantity again (page view *files*, which no case
+  // can move), and it is now equal to neither.
   group(
-      'the gate declares forty-five cases over forty-three pages, and which '
-      'forty-five is a decision', () {
+      'the gate declares forty-eight cases over forty-three pages, and which '
+      'forty-eight is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
-        'wave 3\'s six, wave 4\'s twenty-one and #1489\'s two extra statistics '
+        'wave 3\'s six, wave 4\'s twenty-one and #1489\'s five non-default '
         'tabs', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
           'dhcp',
           'wifi_settings',
+          'wifi_settings_advanced',
           'device_list',
           'device_detail',
           'topology',
           'node_detail',
           'port_forwarding',
+          'port_range',
+          'port_triggering',
           'pnp_entry',
           'pnp_no_internet',
           'pnp_isp_settings',
@@ -242,19 +248,33 @@ void main() {
         // their reasons in `test/fixtures/page_roster.tsv` — so this list and that file
         // now account for all 45, which is the whole of what #1369 was opened to do.
         //
-        // **#1489's two, which are not a fifth wave.** `statistics_devices` and
-        // `statistics_system` add no page — they are tabs 1 and 2 of one already here,
-        // constructible because `UspStatisticsView` takes an `initialTab` the app itself
-        // passes from `?tab=N`. Their grounds are not "one more wave" but "a stated
-        // limit was re-read and did not hold": the case doc's reason for sweeping tab 0
-        // only — the others are behind a `TabController` and would need a tap per cell —
-        // is true of `wifi_settings` and `port_forwarding` and was **false of this
-        // page**, and the 11 sections it left unswept were hiding four overflowing
-        // legend rows (#1488: 35 red cells the moment these two cases existed). The
-        // other two tabbed pages keep their limit, because for them the reason holds.
+        // **#1489's five, which are not a fifth wave.** `statistics_devices`,
+        // `statistics_system`, `wifi_settings_advanced`, `port_range` and
+        // `port_triggering` add no page — they are the non-default tabs of three pages
+        // already here. Their grounds are not "one more wave" but "a stated limit was
+        // re-read and did not hold": every one of those three cases carried a doc saying
+        // the sibling tabs are behind a `TabController` and would need a tap per cell.
+        // On `statistics` that was false when written, and the 11 sections it left
+        // unswept were hiding four overflowing legend rows (#1488: 35 red cells the
+        // moment those two cases existed).
+        //
+        // The first two landed saying the limit "holds for `wifi_settings` and
+        // `port_forwarding`", which was this checkpoint repeating a claim from the very
+        // docs it had just falsified. It did not hold there either. A tap was never the
+        // only way in — constructing the page on the tab is — and what actually blocked
+        // those two was that neither view took an `initialTab`. That is a missing
+        // parameter, not a second axis, and the parameter is four lines per view. Both
+        // now take one, from `?tab=N`, the way `statistics` always did.
+        //
+        // Those three tabs measured **702 cells at zero incidents**, so unlike #1488
+        // nothing in `lib/` needed fixing — but two of them were not free of findings:
+        // `usp_port_range_tab.dart:32` carried #1370's `Expanded` fix copied across "by
+        // inspection rather than by a red cell", by its own comment, and `port_range` is
+        // what finally measured it. A fix nobody has seen work is the thing this gate is
+        // for, and it sat one constructor argument away for four months.
         //
         // So this list stops being one row per page here, and the wave arithmetic above
-        // stops adding up to its length: 2 + 5 + 9 + 6 + 21 = 43 pages, 45 cases.
+        // stops adding up to its length: 2 + 5 + 9 + 6 + 21 = 43 pages, 48 cases.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -1073,6 +1093,73 @@ void main() {
             'above catches on the other side — one tab swept twice — reached '
             'from the premise instead of from the view.',
       );
+    });
+
+    test('every page swept per-tab opens a distinct tab and can prove which',
+        () {
+      // The test above is the statistics trio's own, tighter, contract: one fixture,
+      // one shared premise, one section each. This one is the rule that outlives it,
+      // and applies to all three pages the family now sweeps per tab.
+      //
+      // The rule is not "the cases look alike" — `wifi_settings`' two do not, and
+      // should not: its tabs render unrelated trees, so they have no premise to
+      // share. What every per-tab case must have is a required type **no sibling
+      // requires**. That is the whole mechanism by which a cell knows which tab it
+      // measured, and without it a case that opened the wrong tab reports its 234
+      // cells green — which is the defect #1489 found on `statistics` and its
+      // follow-up found waiting on these two.
+      int tabOf(Widget view) => switch (view) {
+            UspStatisticsView(:final initialTab) => initialTab,
+            UspWifiSettingsView(:final initialTab) => initialTab,
+            UspPortForwardingDetailView(:final initialTab) => initialTab,
+            // Deliberately not a throw. A fourth tabbed page arriving here reads as
+            // tab 0 for all of its cases, so the distinctness check below is what
+            // fails — one assertion, naming the page, instead of an exception from a
+            // helper.
+            _ => 0,
+          };
+
+      final byPage = <Type, List<PageSurfaceCase>>{};
+      for (final page in kPageSurfaceCases) {
+        byPage.putIfAbsent(page.view().runtimeType, () => []).add(page);
+      }
+      final perTab = Map.of(byPage)
+        ..removeWhere((_, cases) => cases.length < 2);
+
+      expect(
+        perTab.keys.toSet(),
+        {UspStatisticsView, UspWifiSettingsView, UspPortForwardingDetailView},
+        reason:
+            'the three pages swept per tab, found by counting cases per view '
+            'class rather than by reading ids. A fourth page joining them lands '
+            'here first, which is the prompt to give it a `tabOf` arm and a doc '
+            'on its case.',
+      );
+
+      perTab.forEach((viewClass, cases) {
+        expect(
+          cases.map((c) => tabOf(c.view())).toList()..sort(),
+          List.generate(cases.length, (i) => i),
+          reason: '$viewClass\'s cases must open tabs 0..${cases.length - 1}, '
+              'one each. Every `initialTab` is an `int` behind a `clamp`, so a '
+              'duplicated or out-of-range literal is legal at runtime and sweeps '
+              'an already-swept tab: ${cases.map((c) => '${c.id}=${tabOf(c.view())}').join(', ')}.',
+        );
+
+        for (final page in cases) {
+          final siblings = cases.where((c) => c.id != page.id);
+          final shared = siblings.expand((c) => c.requires).toSet();
+          expect(
+            page.requires.where((t) => !shared.contains(t)),
+            isNotEmpty,
+            reason: 'page.${page.id} requires nothing its siblings do not, so '
+                'no cell of it can tell that it opened tab ${tabOf(page.view())} '
+                'rather than a sibling tab. Add the tab\'s own widget type to '
+                '`requires` — `TabBarView` builds the selected page only, which '
+                'is what makes such a type a per-cell fact.',
+          );
+        }
+      });
     });
 
     test(

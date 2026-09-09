@@ -178,7 +178,10 @@ final uspDashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,
           path: RoutePath.uspPortForwardingDetail,
-          builder: (context, state) => const UspPortForwardingDetailView(),
+          builder: (context, state) => UspPortForwardingDetailView(
+            initialTab:
+                int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0,
+          ),
           enableDirtyCheck: true,
           preservableProvider: preservableUspPortForwardingPageProvider,
         ),
@@ -209,7 +212,9 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspWifiSettings,
       preservableProvider: preservableUspWifiPageProvider,
       enableDirtyCheck: true,
-      builder: (context, state) => const UspWifiSettingsView(),
+      builder: (context, state) => UspWifiSettingsView(
+        initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0,
+      ),
     ),
     LinksysRoute(
       name: RouteNamed.uspApps,

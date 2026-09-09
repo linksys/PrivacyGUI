@@ -127,31 +127,45 @@
 # unblocked test/page/instant_setup/views/pnp_setup_view_test.dart went red with an empty incident list
 # unblocked on the bump, which is the signal it was written to give, and was then deleted. Swept the
 # unblocked same day, so this row's disposition is the shorter half of its story.
-# tabs usp_statistics_view.dart is the one row that maps to more than one gate case, and the
-# tabs ms_per_cell column has no slot for the difference. #1489 sweeps that page THREE times, once
-# tabs per tab - page.statistics, page.statistics_devices, page.statistics_system - while this
-# tabs register's key is the page view FILE and PageRoster._rejectDuplicates refuses a second row for
-# tabs one path. So the per-tab figures live here, on the column's own basis (--plain-name, --reporter
-# tabs json per-test durations over the coordinate tests only, / 234, three runs, median), all
-# tabs measured 2026-09-09: tab 1 Devices 28.2 (32.9 / 27.5 / 28.2), tab 2 System 28.0
-# tabs (28.0 / 31.1 / 27.0). The 45.3 in the row itself is tab 0 Network and STAYS: re-read the same
-# tabs day it gave 47.5 (48.4 / 47.5 / 46.5), +4.9%, inside #1377's +/-7% floor.
+# tabs THREE rows map to more than one gate case each, and the ms_per_cell column has no slot for
+# tabs the difference. #1489 and its follow-up sweep those pages once per tab - 8 cases over 3 rows -
+# tabs while this register's key is the page view FILE and PageRoster._rejectDuplicates refuses a
+# tabs second row for one path. So the per-tab figures live here, on the column's own basis
+# tabs (--plain-name, --reporter json per-test durations over the coordinate tests only, / 234, three
+# tabs runs, median), all measured 2026-09-09:
+# tabs
+# tabs   usp_statistics_view.dart          row 45.3   tab 1 Devices  28.2 (32.9 / 27.5 / 28.2)
+# tabs                                                tab 2 System   28.0 (28.0 / 31.1 / 27.0)
+# tabs   usp_wifi_settings_view.dart       row 29.2   tab 1 Advanced 17.6 (17.6 / 20.6 / 16.2)
+# tabs   usp_port_forwarding_detail...     row 21.6   tab 1 Range    23.3 (23.9 / 21.9 / 23.3)
+# tabs                                                tab 2 Trigger  21.2 (24.5 / 21.2 / 21.1)
+# tabs
+# tabs Every row figure STAYS: re-read the same day, statistics gave 47.5 (48.4 / 47.5 / 46.5) against
+# tabs 45.3, wifi_settings 31.1 (32.0 / 28.4 / 31.1) against 29.2, port_forwarding 22.1
+# tabs (22.6 / 22.1 / 21.8) against 21.6 - +4.9%, +6.5% and +2.3%, all inside #1377's +/-7% floor.
+# tabs What the second page's worth of tabs adds is that the inheritance error has NO consistent
+# tabs direction or size. Sibling tabs of port_forwarding land within 8% of tab 0 either way, because
+# tabs all three render the same tree - a header and rule rows. wifi_settings' Advanced tab is 40%
+# tabs CHEAPER than its tab 0, i.e. tab 0 over-projects it by 66%, because the two tabs render
+# tabs unrelated trees: a list of network cards against a single card holding one switch. So the size
+# tabs of the error tracks how alike the tabs are, which is not something a register keyed on the file
+# tabs can know. Anchoring any projection on a sibling tab is the mistake; the direction it fails in
+# tabs is not predictable enough to correct for.
 # tabs Why these are written out rather than left to be derived: page_sweep_suites_test.dart's "no
-# tabs suite weight is guessed" resolves all three cases through this one path, so it would have handed
-# tabs both new tabs tab 0's 45.3 and passed - a figure that reads as measured while being inherited,
-# tabs and ~60% high. The budget projection cannot catch it either: it sums roster ROWS x cellsPerPage,
-# tabs gains no rows here, and asserts greaterThan a floor, so 468 uncounted cells can only make it
-# tabs more true. Neither number is load-bearing today; both would be wrong the first time someone
-# tabs planned a shard on one, which is what this block is for.
+# tabs suite weight is guessed" resolves all eight cases through this one path, so it hands each
+# tabs sibling tab its tab 0 figure and passes - a number that reads as measured while being inherited,
+# tabs and wrong by anything from -8% to +66%. The budget projection cannot catch it either: it sums
+# tabs roster ROWS x cellsPerPage, gains no rows from a new tab, and asserts greaterThan a floor, so
+# tabs 1,170 uncounted cells can only make it more true. Neither number is load-bearing today; both
+# tabs would be wrong the first time someone planned a shard on one, which is what this block is for.
 # tabs Read the distribution block above as arithmetic over ROWS: its "43 x 234 = 10,062 cells" is 43
-# tabs rows, and the sweep those rows describe is now 45 cases = 10,530 cells. page.tsv's own `# cells`
+# tabs rows, and the sweep those rows describe is now 48 cases = 11,232 cells. page.tsv's own `# cells`
 # tabs header is the sweep's count and moves with the cases; this file's counts do not.
-# tabs The two new cases really cost 13.2s of pump time, not the ~21s #1489 projected off tab 0's rate.
-# tabs The Devices and System tabs are cheaper per cell than Network at the same 4 sections built, so
-# tabs anchoring a projection on a sibling tab read 60% high - the same direction, and for the same
-# tabs kind of reason, as the queued-figure rule in the basis notes above.
-# tabs One practical consequence: `--plain-name page.statistics` now matches all three groups, so
-# tabs re-measuring tab 0 in isolation takes `--plain-name 'page.statistics screen_px'`.
+# tabs Real pump cost of the five tab cases: 234 x (28.2 + 28.0 + 17.6 + 23.3 + 21.2) = 27.7s, against
+# tabs the 33.7s their rows project. #1489's first two alone measured 13.2s against a ~21s projection.
+# tabs One practical consequence: `--plain-name page.statistics` matches all three of its groups and
+# tabs `page.wifi_settings` would match its Advanced case too, so re-measuring a tab 0 in isolation
+# tabs takes the coordinate suffix: `--plain-name 'page.statistics screen_px'`.
 # tabs Whether one row per FILE is still the right key is a real question, deliberately not answered
 # tabs here: the alternative is a per-case register, which is a redesign of this file and needs its own
 # tabs ticket. #1489 chose to measure and record rather than redesign, and this block is that record.

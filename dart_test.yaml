@@ -62,9 +62,9 @@ tags:
   # Complete, not quick — and since #1380 that means ten minutes, not three:
   # `@Tags` is read by loading a suite, so the tag compiles all 400 test files to
   # skip 395 of them. Re-measured 2026-08-27 for #1380's wave 4 at 724 tests —
-  # 744 since #1489 added two cases, a 2.3% change on a clock these same runs have
-  # since shown drifting by 90%, so the count is corrected and the clock kept — the
-  # same tests take 9m23s under the tag and 8m17s when the five
+  # 774 since #1489 added five tab cases, a 6.9% change on a clock these same runs
+  # have since shown drifting by 90%, so the count is corrected and the clock kept —
+  # the same tests take 9m23s under the tag and 8m17s when the five
   # files are named (`flutter test`'s own clock both times; the shell adds package
   # resolution and build on top of each — 9m40s and 8m22s). Name the file for a
   # tight loop; use the

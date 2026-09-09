@@ -17,20 +17,20 @@
 #   those records into sorted TSV under test/fixtures/overflow_baselines/.
 #
 #   All five sweeps pass today and the allowlist is empty, so what these baselines
-#   freeze is coverage: 14,145 coordinates that are measured and clean — card 1,943,
+#   freeze is coverage: 14,847 coordinates that are measured and clean — card 1,943,
 #   popup 347, forced_form 77, chrome 1,248, re-checked at the `dev-2.7.0` merge on
 #   2026-08-24, where +29 cells arrived from a production spec change (#1325's
-#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 10,530 —
-#   forty-three whole pages as forty-five cases at 9 widths x 26 locales. That last
-#   figure has moved seven
+#   `normalAbove` on `dhcp_reservations`) with no sweep edited, plus page 11,232 —
+#   forty-three whole pages as forty-eight cases at 9 widths x 26 locales. That last
+#   figure has moved eight
 #   times: 416 at #1349's pilot (the fifth sweep, and the
 #   first one registered here after the framework existed: two lines, see
 #   `suite_for`), 1,456 at #1377's wave 1, 3,120 at #1378's wave 2, 3,510 when #1372
 #   added the 1080 width to all fifteen groups then swept, 3,744 when wave 2's ninth
-#   page landed a day late, 5,148 at #1379's wave 3, 10,062 at #1380's wave 4 and
-#   10,530 at #1489 — which is the only one of the seven that added no page: the
-#   statistics page's other two tabs, each a case of its own because that page takes
-#   an `initialTab` the app itself passes. Every one of those a purely
+#   page landed a day late, 5,148 at #1379's wave 3, 10,062 at #1380's wave 4, then
+#   10,530 and 11,232 at #1489 — the only two of the eight that added no page: five
+#   sibling tabs of three pages already swept, each a case of its own because each of
+#   those views takes an `initialTab` the app itself passes. Every one of those a purely
 #   additive diff with no row removed and none changed.
 #
 #   "and only `page` ever moves" stood here until the 2026-08-27 `dev-2.7.0` merge,

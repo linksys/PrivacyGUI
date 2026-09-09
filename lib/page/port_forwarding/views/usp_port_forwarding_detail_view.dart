@@ -23,7 +23,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Reads from [uspPortForwardingPageProvider] (combined page notifier).
 class UspPortForwardingDetailView extends ConsumerStatefulWidget {
-  const UspPortForwardingDetailView({super.key});
+  /// Which tab this page opens on: 0 = Single Port, 1 = Port Range,
+  /// 2 = Port Triggering.
+  ///
+  /// Supplied by the route from `?tab=N` and clamped in [initState], so an
+  /// out-of-range deep link opens the Single Port tab rather than throwing.
+  final int initialTab;
+
+  const UspPortForwardingDetailView({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<UspPortForwardingDetailView> createState() =>
@@ -38,7 +45,11 @@ class _UspPortForwardingDetailViewState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 2),
+    );
   }
 
   @override

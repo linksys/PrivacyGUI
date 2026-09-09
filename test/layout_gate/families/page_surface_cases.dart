@@ -129,6 +129,8 @@ import 'package:privacy_gui/page/login/views/local_reset_router_password_view.da
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confirm_view.dart';
@@ -153,6 +155,7 @@ import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_start_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
+import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart'
@@ -252,11 +255,17 @@ final kDhcpPageCase = PageSurfaceCase(
 /// more of the page. Paired with `defaultAdvancedState` because the view watches
 /// both providers on every build regardless of which tab is showing.
 ///
-/// Only the WiFi tab is measured. `UspWifiAdvancedTab` is behind a `TabController`
-/// and would need a tap per cell — a second axis, and one the pilot deliberately
-/// does not buy: the point of these two pages is a cost number, and doubling the
-/// expensive page's cells before that number exists would be deciding the question
-/// the sweep is meant to answer.
+/// This case measures **tab 0 only**; [kWifiSettingsAdvancedPageCase] is the other
+/// tab. Until #1489's follow-up they were one case and this doc said the second tab
+/// "would need a tap per cell — a second axis, and one the pilot deliberately does
+/// not buy". The cost half of that was true and is now paid at a known price. The
+/// mechanism half was not: a tap was never the only way in, and the pilot's own page
+/// proved it — `usp_statistics_view` already took an `initialTab` the app supplies
+/// from `?tab=N`. What kept this tab unmeasured was that this view had no such
+/// argument, which is a missing parameter rather than a second axis. It has one now.
+///
+/// The lesson worth keeping is the one #1489 states: a limit inherited from another
+/// case is a measurement nobody took. This paragraph was that, for four months.
 ///
 /// `DetailSpeedCard` is not here and would be wrong here: it belongs to the device
 /// and node detail pages, which are two of the areas §8's rule excludes.
@@ -269,6 +278,52 @@ final kWifiSettingsPageCase = PageSurfaceCase(
   ),
   requires: const [WifiNetworkCard],
   forbids: const [AppLoader],
+);
+
+/// `usp_wifi_settings_view` at **tab 1 — Advanced**, the tab [kWifiSettingsPageCase]'s
+/// doc spent four months explaining why nobody measured.
+///
+/// Same view class, same fixture, 234 more cells. It enters the tab the way a deep
+/// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
+/// pages now share one mechanism rather than one excuse.
+///
+/// ## Coverage: the whole tab, because the tab is one card
+///
+/// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
+/// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
+/// width — this and [kStatisticsSystemPageCase] are the only page-tab cases in the
+/// family whose green means *the tab* and not a prefix of it.
+///
+/// That also makes it the cheapest tab in the family and the one least likely to find
+/// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
+/// of this file keeps arriving at as the *fix*. Swept anyway, and worth saying why —
+/// "it looks safe" is the claim a gate exists to stop anyone from having to make. The
+/// 234 cells are the receipt, and a future card added to this tab inherits them.
+///
+/// ## The premise, and the one thing it has to rule out
+///
+/// [UspWifiAdvancedTab] is on this tab and no other, so it is what makes `initialTab: 1`
+/// a per-cell fact rather than a literal nobody checks — the same role
+/// [StatsDeviceDistributionSection] plays for `page.statistics_devices`, and needed here
+/// for the same reason: `initialTab` is an `int` behind a `clamp(0, 1)`, so every wrong
+/// value is a legal one.
+///
+/// [AppSwitch] is the second entry because this tab has a *third* rendering that is
+/// neither loader nor error: `wifi_advanced_tab.dart:55` returns a centred
+/// `noAdvancedWifiSettings` string when `ieee80211hByRadio` is empty. That arm is inside
+/// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
+/// text where the card lays out a row — a fixture thinned to an empty map would sweep
+/// 234 cells of an empty-state message and report them as this tab's coverage.
+/// `advancedDfsOnState` carries two radios, and [AppSwitch] is what fails if it stops.
+final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
+  id: 'wifi_settings_advanced',
+  view: () => const UspWifiSettingsView(initialTab: 1),
+  overrides: () => wifiSettingsOverrides(
+    wifiState: quickSetupOffState,
+    advancedState: defaultAdvancedState,
+  ),
+  requires: const [UspWifiAdvancedTab, AppSwitch],
+  forbids: const [AppLoader, ServiceErrorView],
 );
 
 // ===========================================================================
@@ -412,9 +467,11 @@ final kNodeDetailPageCase = PageSurfaceCase(
 /// Not `dirtyState()` — a dirty page also renders the bottom save bar, which is
 /// page chrome the #1314/#1328 sweep already owns.
 ///
-/// Only tab 0 is measured, for the reason `kWifiSettingsPageCase` gives about its
-/// own second tab: the other two tabs are behind a `TabController` and would each
-/// need a tap per cell, which is a second axis this wave does not buy.
+/// This case measures **tab 0**; [kPortRangePageCase] and [kPortTriggeringPageCase] are
+/// the other two. All three arrived together with `initialTab`, replacing this doc's old
+/// claim that the sibling tabs "would each need a tap per cell" — see
+/// [kWifiSettingsPageCase] for what was wrong with that and what stays true about it.
+///
 /// [UspSinglePortTab] is therefore both the premise and the tab under measurement,
 /// and it is on the loaded path only — `_buildTabContent` returns an [AppLoader]
 /// while `status.isLoading` and a `ServiceErrorView` on error.
@@ -424,6 +481,83 @@ final kPortForwardingPageCase = PageSurfaceCase(
   overrides: () => portForwardingOverrides(pf.dataState()),
   requires: const [UspSinglePortTab],
   forbids: const [AppLoader],
+);
+
+/// `usp_port_forwarding_detail_view` at **tab 1 — Port Range**, and the case with the
+/// sharpest reason to exist in this file: the widget it measures carries a fix that was
+/// never verified.
+///
+/// `usp_port_range_tab.dart:32` says it, in a comment written when the fix landed: the
+/// header `Row` has the same shape #1370 caught overflowing by up to 70px on
+/// [UspSinglePortTab], so it was given the same `Expanded`, and the comment recorded
+/// that the constraint was there "**by inspection rather than by a red cell**" because
+/// the sweep reached tab 0 only. An honest note and a standing liability — a fix copied
+/// to a surface no cell measures is a fix nobody has seen work. These 234 cells are what
+/// settle it, and if the copy was wrong they are where that shows up. The comment has
+/// been updated in place to point here, so it no longer reads as a live exemption.
+///
+/// ## Coverage
+///
+/// Whole tab, no depth limit: `dataState()`'s two range rules make a header plus two
+/// rule rows, well inside [kPageSweepHeight] at every width. Entering the tab needs no
+/// tap — see [kStatisticsDevicesPageCase].
+///
+/// ## The premise
+///
+/// [UspPortRangeTab] is on this tab and no other, which is what makes `initialTab: 1`
+/// per-cell rather than a literal — `initialTab` is an `int` behind a `clamp(0, 2)`, so
+/// a 0 typed here, or a 3, sweeps a tab that is already swept and still reports 234
+/// cells.
+///
+/// [DetailEmptyBlock] is *forbidden* rather than a second required type, because this
+/// tab's thin rendering is not a different widget but the same one with `rules.isEmpty`:
+/// `usp_port_range_tab.dart:50` puts an empty block where the rows go, inside
+/// [UspPortRangeTab], where the first entry cannot see it. A fixture that stopped
+/// carrying range rules — `dataState()` filters by `isPortRange`, so dropping
+/// `gameServerRangeRule` and `mediaStreamingRangeRule` from a *shared* default is
+/// enough — would sweep a header and an icon and call it this tab's coverage.
+final kPortRangePageCase = PageSurfaceCase(
+  id: 'port_range',
+  view: () => const UspPortForwardingDetailView(initialTab: 1),
+  overrides: () => portForwardingOverrides(pf.dataState()),
+  requires: const [UspPortRangeTab],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
+/// `usp_port_forwarding_detail_view` at **tab 2 — Port Triggering**, the deepest rule
+/// row on the page and the reason this tab is worth its 234 cells.
+///
+/// The widget is the same [MapsToRow] all three tabs use
+/// (`usp_port_triggering_tab.dart:84`); what differs is what goes into it, and that is
+/// the width. Tab 0 and tab 1 map a port range to a single internal target. This tab
+/// maps `"Trigger: 21 TCP"` to `"Forward: 1024-1030 TCP"`
+/// (`port_triggering_rule_ui_model.dart:110` and `:114`) — a label, a port range and a
+/// protocol on *both* sides of the arrow. That is the widest row on the page, and it had
+/// never been laid out at 320px in any locale.
+///
+/// One caveat these 234 cells cannot cover, recorded because it changes what a green
+/// means here: both halves are built from hardcoded English prefixes, not `loc(context)`,
+/// so this row's width does not vary with locale the way the rest of the page's does.
+/// These cells sweep nine widths of one string, not nine widths of 26. Localizing those
+/// two prefixes would widen this row in exactly the locales that are longest elsewhere,
+/// so it is the one place on this page where a green cell is not evidence about the
+/// other 25.
+///
+/// Coverage is the whole tab: `dataState()`'s `ftpTriggerRule` and `ircTriggerRule` make
+/// a header plus two rows, one of them with a range on both sides. No depth limit, and
+/// no tap — see [kStatisticsDevicesPageCase].
+///
+/// Premise and `forbids` are [kPortRangePageCase]'s, for its reasons: [UspPortTriggeringTab]
+/// is this tab's discriminator, and [DetailEmptyBlock] is forbidden because
+/// `usp_port_triggering_tab.dart:50` renders one *inside* that type when
+/// `triggeringRules` is empty — and `triggeringRules` is a separate list from the
+/// forwarding rules, so this tab can be emptied without either sibling case noticing.
+final kPortTriggeringPageCase = PageSurfaceCase(
+  id: 'port_triggering',
+  view: () => const UspPortForwardingDetailView(initialTab: 2),
+  overrides: () => portForwardingOverrides(pf.dataState()),
+  requires: const [UspPortTriggeringTab],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
 // ===========================================================================
@@ -1819,11 +1953,14 @@ final kSystemLogPageCase = PageSurfaceCase(
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
+  kWifiSettingsAdvancedPageCase,
   kDeviceListPageCase,
   kDeviceDetailPageCase,
   kTopologyPageCase,
   kNodeDetailPageCase,
   kPortForwardingPageCase,
+  kPortRangePageCase,
+  kPortTriggeringPageCase,
   // Wave 2 (#1378), in flow order rather than cost order — the flow is what makes
   // the set legible, and every page in it costs about the same anyway.
   kPnpEntryPageCase,
