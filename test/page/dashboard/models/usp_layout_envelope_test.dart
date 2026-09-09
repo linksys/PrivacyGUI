@@ -262,6 +262,32 @@ void main() {
             '12': ['device_info'],
           },
         }),
+        // #1310. These two are maps, so `every((item) => item is Map)` accepted
+        // them, and the import then threw `'Null' is not a subtype of 'String'`
+        // out of `_initializeLayout`'s unawaited call — where nothing catches it.
+        // The pref kept its corrupt value, so the throw repeated on every boot.
+        // The reject path is what this class promises for anything the grid
+        // "cannot place at all", and a map with no id is one of those.
+        'a layout item with no id': jsonEncode({
+          'version': 2,
+          'layouts': {
+            '12': [
+              {'x': 0, 'y': 0, 'w': 4, 'h': 2},
+            ],
+          },
+        }),
+        'a layout item whose id is not a string': jsonEncode({
+          'version': 2,
+          'layouts': {
+            '12': [
+              {'id': 7, 'x': 0, 'y': 0, 'w': 4, 'h': 2},
+            ],
+          },
+        }),
+        // The legacy bare list reaches the same check by its own path.
+        'a legacy bare list holding an item with no id': jsonEncode([
+          {'x': 0, 'y': 0, 'w': 4, 'h': 2},
+        ]),
         'a future version': jsonEncode({
           'version': UspLayoutEnvelope.currentVersion + 1,
           'layouts': {'12': []},

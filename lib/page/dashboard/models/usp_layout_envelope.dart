@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
@@ -172,8 +174,9 @@ class UspLayoutEnvelope extends Equatable {
   /// the *encode* path: it runs inside `_writeLayout`, behind the persistence
   /// queue, where a throw is logged and swallowed — so one non-map entry would
   /// quietly stop the dashboard saving for the rest of the session. [tryDecode]
-  /// validates through `_isItemList` for the same reason, and only what it built
-  /// is guaranteed to hold maps.
+  /// validates through [_isItemList] for the same reason, and only what it built
+  /// is guaranteed to hold importable items — an envelope constructed directly,
+  /// which every caller on the encode path does, has been through no check at all.
   bool get _hasFormBeyondNormal =>
       layouts.values.any((layout) => layout.any((item) =>
           switch (item is Map ? CardFormChoice.readFrom(item['extra']) : null) {
@@ -210,7 +213,7 @@ class UspLayoutEnvelope extends Equatable {
     // Legacy: a bare list of 12-column items.
     if (decoded is List) {
       if (!_isItemList(decoded)) {
-        return _reject('legacy bare list holds a non-map item');
+        return _reject('legacy bare list holds an item the grid cannot import');
       }
       return UspLayoutEnvelope({desktopSlotCount: decoded});
     }
@@ -237,7 +240,8 @@ class UspLayoutEnvelope extends Equatable {
       }
       final layout = entry.value;
       if (layout is! List || !_isItemList(layout)) {
-        return _reject('layout at slot count $slotCount is not a list of maps');
+        return _reject('layout at slot count $slotCount is not a list of '
+            'importable items');
       }
       layouts[slotCount] = layout;
     }
@@ -322,6 +326,33 @@ class UspLayoutEnvelope extends Equatable {
     return null;
   }
 
-  static bool _isItemList(List<dynamic> layout) =>
-      layout.every((item) => item is Map);
+  /// Whether every entry in [layout] is an item the grid can actually import.
+  ///
+  /// "Is a `Map`" was the whole test until #1310, and it is not enough: the
+  /// import path ends in `LayoutItem.fromMap`, which reads `map['id'] as String`
+  /// and *throws* on a map without one rather than returning null. A map missing
+  /// `id` satisfied `every((item) => item is Map)`, so [tryDecode] accepted a
+  /// payload that then threw two frames later, out of `_initializeLayout`'s
+  /// unawaited call — where nothing catches it. Measured: one uncaught
+  /// `'Null' is not a subtype of 'String'`, the grid left on the constructor's
+  /// default rather than a reseed, and the corrupt value still in the pref, so
+  /// the throw repeated on every boot for the life of the install.
+  ///
+  /// Answering it with `fromMap` itself, rather than by checking for `id` here,
+  /// is deliberate: the question is "would the import throw", and the only
+  /// authority on that is the constructor the import calls. A hand-written field
+  /// check would drift the moment the package required a second field.
+  ///
+  /// This is the class's stated contract finally being kept — "what is rejected
+  /// is only what cannot be placed at all" — and it costs one throwaway
+  /// `LayoutItem` per item on the load path, once per boot.
+  static bool _isItemList(List<dynamic> layout) => layout.every((item) {
+        if (item is! Map) return false;
+        try {
+          LayoutItem.fromMap(item.cast<String, dynamic>());
+          return true;
+        } catch (_) {
+          return false;
+        }
+      });
 }

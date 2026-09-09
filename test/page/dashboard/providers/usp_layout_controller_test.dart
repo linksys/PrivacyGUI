@@ -208,6 +208,45 @@ void main() {
       expect(decoded.length, 18);
     });
 
+    // Well-formed JSON holding a well-formed envelope holding an item the grid
+    // cannot import: `id` absent. Its own case sits in the envelope's decode
+    // table; this is the consequence at the boot it happens on, which is the
+    // part that made #1310's third trap worth fixing rather than noting.
+    //
+    // `expect(layout.length, 18)` is deliberately not the assertion. It passes
+    // either way, and for opposite reasons: with the fix, because the reject
+    // path reseeds the default; without it, because `LayoutItem.fromMap` threw
+    // inside `_importQuietly` *before* `_swapController`, leaving the grid on
+    // the controller the constructor built. Same count, and the second one is
+    // the bug. What separates them is the pref — the reject path overwrites the
+    // unreadable value, so the next boot is an ordinary one, whereas the throw
+    // left it stored and repeated on every boot for the life of the install.
+    //
+    // The throw itself also fails this test, without an assertion for it:
+    // `_initializeLayout` is called unawaited from the constructor, so its error
+    // reaches the test zone with nothing between.
+    test('a saved item the grid cannot import → overwrites the pref', () async {
+      final corrupt = jsonEncode({
+        'version': 2,
+        'layouts': {
+          '12': [
+            {'x': 0, 'y': 0, 'w': 6, 'h': 3},
+          ],
+        },
+      });
+      final container = await createInitializedContainer(
+        initialValues: {pUspSliverDashboardLayout: corrupt},
+      );
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(pUspSliverDashboardLayout);
+      expect(saved, isNot(corrupt),
+          reason: 'the unreadable value is still stored, so every future boot '
+              'reads it again');
+      expect(_savedDesktopLayout(saved!).length, 18);
+    });
+
     test('saved layout with fewer cards (preset) is valid', () async {
       final savedLayout = [
         _layoutItem('stats_panel', x: 0, y: 0, w: 12, h: 1),
