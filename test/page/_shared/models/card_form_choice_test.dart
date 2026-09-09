@@ -118,8 +118,12 @@ void main() {
   const tablet = UspLayoutEnvelope.tabletSlotCount;
   const mobile = UspLayoutEnvelope.mobileSlotCount;
 
-  /// A layout item map in the shape `exportLayout()` produces.
-  Map<String, dynamic> item(
+  /// One grid item, in the shape the controller's own layout beacon holds.
+  ///
+  /// A `LayoutItem` since #1310. It used to be the map `exportLayout()`
+  /// produces, which is the same content one `fromMap` away — and that gap is
+  /// what [formsOf] below used to have to close by hand.
+  LayoutItem item(
     String id, {
     int x = 0,
     int y = 0,
@@ -131,37 +135,39 @@ void main() {
     double maxH = 6.0,
     CardFormChoice? pick,
   }) =>
-      {
-        'id': id,
-        'x': x,
-        'y': y,
-        'w': w,
-        'h': h,
-        'minW': minW,
-        'maxW': maxW,
-        'minH': minH,
-        'maxH': maxH,
-        if (pick != null) 'extra': pick.writeInto(null),
-      };
+      LayoutItem(
+        id: id,
+        x: x,
+        y: y,
+        w: w,
+        h: h,
+        minW: minW,
+        maxW: maxW,
+        minH: minH,
+        maxH: maxH,
+        extra: pick?.writeInto(null),
+      );
 
-  Map<String, dynamic> applyTo(
-    Map<String, dynamic> subject, {
+  LayoutItem applyTo(
+    LayoutItem subject, {
     required CardDensity density,
     required int cols,
   }) =>
       UspWidgetSpecs.withCardForm(
         [subject],
-        subject['id'] as String,
+        subject.id,
         CardFormChoice(density: density),
         cols: cols,
-      ).single as Map<String, dynamic>;
+      ).single;
 
   /// The picks a grid holding [layout] publishes, built the way
   /// `UspSliverDashboardControllerNotifier` builds it from its live items.
-  CardForms formsOf(List<dynamic> layout) => CardForms.of(layout.map((item) {
-        final live = LayoutItem.fromMap((item as Map).cast<String, dynamic>());
-        return (live.id, live.extra);
-      }));
+  ///
+  /// The `fromMap` this used to open with is gone: the fixture now *is* what the
+  /// controller holds, so "the way the notifier builds it" is the whole body
+  /// rather than a re-parse standing in for the live item (#1310).
+  CardForms formsOf(List<LayoutItem> layout) =>
+      CardForms.of(layout.map((item) => (item.id, item.extra)));
 
   // ---------------------------------------------------------------------------
   // The no-pick path has to stay exactly where it was
@@ -187,9 +193,9 @@ void main() {
       final widened = item('device_info', w: 10, maxW: 12.0);
 
       final result =
-          UspWidgetSpecs.applyPickedForms([widened], desktop).single as Map;
+          UspWidgetSpecs.applyPickedForms([widened], desktop).single;
 
-      expect([result['w'], result['maxW']], [10, 12.0],
+      expect([result.w, result.maxW], [10, 12.0],
           reason:
               '"No pick" has to mean untouched, not "treated as normal". An '
               'absent pick means the width decides the form (#1232), and the '
@@ -239,7 +245,7 @@ void main() {
       final popped = applyTo(item('device_info'),
           density: CardDensity.popup, cols: desktop);
 
-      expect(popped['isResizable'], false,
+      expect(popped.isResizable, false,
           reason: 'The flag, not the caps. `isResizable: false` makes '
               'dashboard_item_wrapper skip building the handles entirely; caps '
               'alone leave a handle that can be grabbed and does nothing, which '
@@ -250,7 +256,7 @@ void main() {
       final popped = applyTo(item('device_info'),
           density: CardDensity.popup, cols: desktop);
 
-      expect(popped['isStatic'], isNot(true),
+      expect(popped.isStatic, isNot(true),
           reason:
               'isStatic disables dragging too. Reordering is the one edit a '
               'popup tile should keep — on a phone it is the only way to move a '
@@ -261,8 +267,8 @@ void main() {
       final popped = applyTo(item('device_info', w: 6, h: 3),
           density: CardDensity.popup, cols: desktop);
 
-      expect(popped['w'], 2);
-      expect(popped['h'], 1,
+      expect(popped.w, 2);
+      expect(popped.h, 1,
           reason: 'An icon, a label and a value on one line. A locked '
               '6-column icon-plus-value is absurd, and with the handles gone it '
               'is also unrecoverable.');
@@ -272,8 +278,8 @@ void main() {
       final popped = applyTo(item('device_info'),
           density: CardDensity.popup, cols: desktop);
 
-      expect([popped['minW'], popped['maxW']], [2, 2.0]);
-      expect([popped['minH'], popped['maxH']], [1, 1.0],
+      expect([popped.minW, popped.maxW], [2, 2.0]);
+      expect([popped.minH, popped.maxH], [1, 1.0],
           reason: 'A `w` outside its own [minW, maxW] is the shape that made '
               '#1293 permanent: correctBounds and setSlotCount both read the '
               'caps, so a pin that only sets `w` gets snapped back.');
@@ -283,13 +289,13 @@ void main() {
       final popped = applyTo(item('device_info', w: 4, minW: 4, maxW: 4.0),
           density: CardDensity.popup, cols: mobile);
 
-      expect(popped['w'], mobile,
+      expect(popped.w, mobile,
           reason:
               'Decision 2. The #1293 lock pins x: 0, w: cols and popup wants '
               'to be small; the two rules would overwrite each other, so each '
               'takes one axis. On a phone popup is a short full-width bar.');
-      expect(popped['h'], 1);
-      expect(popped['isResizable'], false);
+      expect(popped.h, 1);
+      expect(popped.isResizable, false);
     });
 
     test('the mobile width lock is a no-op on a popup tile', () {
@@ -299,20 +305,20 @@ void main() {
           density: CardDensity.popup, cols: mobile);
 
       final locked =
-          UspWidgetSpecs.lockToFullWidth([popped], mobile).single as Map;
+          UspWidgetSpecs.lockToFullWidth([popped], mobile).single;
 
-      expect(locked['w'], popped['w']);
-      expect(locked['minW'], popped['minW']);
-      expect(locked['maxW'], popped['maxW']);
-      expect(locked['h'], 1, reason: 'The lock reads x/w only.');
-      expect(locked['isResizable'], false);
+      expect(locked.w, popped.w);
+      expect(locked.minW, popped.minW);
+      expect(locked.maxW, popped.maxW);
+      expect(locked.h, 1, reason: 'The lock reads x/w only.');
+      expect(locked.isResizable, false);
     });
 
     test('an overhanging stored item is pulled back onto the grid', () {
       final popped = applyTo(item('device_info', x: 11, w: 6),
           density: CardDensity.popup, cols: desktop);
 
-      expect(popped['x'], 0,
+      expect(popped.x, 0,
           reason:
               'An item outside the grid is dropped rather than corrected on '
               'import, and a stale pref can arrive holding one.');
@@ -330,8 +336,8 @@ void main() {
       final compacted = applyTo(item('device_info', minW: 3),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['minW'], UspWidgetSpecs.compactMinColumns);
-      expect(compacted['minW'], greaterThan(3),
+      expect(compacted.minW, UspWidgetSpecs.compactMinColumns);
+      expect(compacted.minW, greaterThan(3),
           reason:
               'If the floor equals the spec, compact constrains nothing and '
               'the whole "can be enlarged, not shrunk" rule is decoration.');
@@ -341,7 +347,7 @@ void main() {
       final compacted = applyTo(item('device_info', w: 6),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['w'], 6,
+      expect(compacted.w, 6,
           reason:
               'Enlarging works: compact raises the floor, it does not resize '
               'to it. A wide compact card is sparse, not broken.');
@@ -351,7 +357,7 @@ void main() {
       final compacted = applyTo(item('device_info', w: 3, minW: 3),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['w'], UspWidgetSpecs.compactMinColumns,
+      expect(compacted.w, UspWidgetSpecs.compactMinColumns,
           reason:
               'Raising minW to 4 while leaving w at 3 puts the card outside '
               'its own cap — the same self-inconsistent shape #1293 was.');
@@ -362,7 +368,7 @@ void main() {
           density: CardDensity.compact, cols: tablet);
 
       // scaleSpan(4, 12 -> 8) == 3, and the spec's own 3 scales to 2.
-      expect(compacted['minW'], 3,
+      expect(compacted.minW, 3,
           reason: 'Every column figure in a WidgetSpec is written for the '
               '12-column grid. Read literally on an 8-column one, a 4-column '
               'floor claims half the row.');
@@ -380,7 +386,7 @@ void main() {
       final compacted = applyTo(item('dhcp_reservations', w: 4, minW: 2),
           density: CardDensity.compact, cols: tablet);
 
-      expect(compacted['minW'], 3,
+      expect(compacted.minW, 3,
           reason: 'A spec column figure is twelfths at every site that reads '
               'one, including the one it is compared against its own grid at.');
     });
@@ -389,8 +395,8 @@ void main() {
       final compacted = applyTo(item('device_info', h: 1, minH: 1),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['minH'], UspWidgetSpecs.compactMinHeightRows);
-      expect(compacted['h'], UspWidgetSpecs.compactMinHeightRows,
+      expect(compacted.minH, UspWidgetSpecs.compactMinHeightRows);
+      expect(compacted.h, UspWidgetSpecs.compactMinHeightRows,
           reason: 'Shrinking is refused on both axes, not only sideways. The '
               'figure is a title line and a content line; it is a floor, not a '
               'measured raise, because the compact form is *shorter* than normal '
@@ -411,9 +417,9 @@ void main() {
       final compacted =
           applyTo(pinned, density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['maxW'], 8.0);
-      expect(compacted['maxH'], 6.0);
-      expect(compacted['minW'], UspWidgetSpecs.compactMinColumns,
+      expect(compacted.maxW, 8.0);
+      expect(compacted.maxH, 6.0);
+      expect(compacted.minW, UspWidgetSpecs.compactMinColumns,
           reason:
               'The floor is still raised; it is the ceiling that came back.');
     });
@@ -424,7 +430,7 @@ void main() {
       final compacted = applyTo(item('connected_devices', h: 4, minH: 3),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['minH'], 3,
+      expect(compacted.minH, 3,
           reason: 'The floor is a max(), so it can only ever raise. Lowering a '
               'card past its own declared minimum would let compact clip content '
               'the card measured itself against.');
@@ -434,18 +440,18 @@ void main() {
       final compacted = applyTo(item('device_info', w: 4, minW: 4, h: 1),
           density: CardDensity.compact, cols: mobile);
 
-      expect(compacted['minW'], 4,
+      expect(compacted.minW, 4,
           reason: 'Mobile widths belong to lockToFullWidth. Writing a scaled '
               'compact floor here could only fight the lock — the same reason '
               'correctedSize leaves mobile widths alone.');
-      expect(compacted['minH'], UspWidgetSpecs.compactMinHeightRows);
+      expect(compacted.minH, UspWidgetSpecs.compactMinHeightRows);
     });
 
     test('puts the handles back after popup', () {
       final compacted = applyTo(item('device_info'),
           density: CardDensity.compact, cols: desktop);
 
-      expect(compacted['isResizable'], true,
+      expect(compacted.isResizable, true,
           reason:
               'popup wrote false into the stored item. Leaving it unset here '
               'means a card can enter popup but never get its handles back — '
@@ -458,8 +464,8 @@ void main() {
           density: CardDensity.compact,
           cols: desktop);
 
-      expect((compacted['maxW'] as num) >= (compacted['minW'] as num), isTrue);
-      expect((compacted['maxH'] as num) >= (compacted['minH'] as num), isTrue,
+      expect((compacted.maxW as num) >= (compacted.minW as num), isTrue);
+      expect((compacted.maxH as num) >= (compacted.minH as num), isTrue,
           reason:
               'The item arriving here is whatever popup pinned, so its caps '
               'are 2x1. A floor above the ceiling makes every resize delta clamp '
@@ -475,11 +481,11 @@ void main() {
       final restored = applyTo(item('device_info', w: 4, minW: 4),
           density: CardDensity.normal, cols: desktop);
 
-      expect(restored['minW'], 3,
+      expect(restored.minW, 3,
           reason: 'device_info\'s own minColumns. If normal kept the compact '
               'floor, the choice would be one-way: the user could never drag the '
               'card back to the width its spec allows.');
-      expect(restored['isResizable'], true);
+      expect(restored.isResizable, true);
     });
 
     test('is a pin, not the absence of a pick', () {
@@ -489,7 +495,7 @@ void main() {
       final pinned = applyTo(item('device_info', w: 6, h: 3),
           density: CardDensity.normal, cols: desktop);
 
-      expect([pinned['w'], pinned['h']], [6, 3]);
+      expect([pinned.w, pinned.h], [6, 3]);
     });
   });
 
@@ -501,9 +507,9 @@ void main() {
       final popped = applyTo(item('device_info', w: 6, h: 3),
           density: CardDensity.popup, cols: desktop);
 
-      expect(CardFormChoice.readFrom(popped['extra']),
+      expect(CardFormChoice.readFrom(popped.extra),
           const CardFormChoice(density: CardDensity.popup));
-      expect([popped['w'], popped['h']], [2, 1],
+      expect([popped.w, popped.h], [2, 1],
           reason: 'One copy of one map carries both halves, so whatever '
               'exportLayout, a snapshot or the undo history takes carries the '
               'pick and the box it justifies or neither. #1299 wrote them to two '
@@ -519,10 +525,10 @@ void main() {
       // What `setCardForm` reads to hand `restoreW`/`restoreH` back on the way
       // out of popup: the previous pick comes off the item, not out of a map
       // keyed by this grid's slot count.
-      final reading = CardFormChoice.readFrom(popped['extra']);
+      final reading = CardFormChoice.readFrom(popped.extra);
 
       expect(reading?.density, CardDensity.popup);
-      expect(popped['isResizable'], false,
+      expect(popped.isResizable, false,
           reason: 'With the handles gone the item map is the only record of '
               'what the card was, which is why the pick has to be readable back '
               'off it rather than inferred from the 2x1 box.');
@@ -538,14 +544,14 @@ void main() {
       );
 
       final phone =
-          UspWidgetSpecs.scaleLayout(stored, desktop, mobile).single as Map;
+          UspWidgetSpecs.scaleLayout(stored, desktop, mobile).single;
 
-      expect([phone['w'], phone['h']], [mobile, 1],
+      expect([phone.w, phone.h], [mobile, 1],
           reason: 'A scale is proportional and a pin is not: scaled, the 2x1 '
               'desktop tile arrives 0 or 1 columns wide on a phone. The pick is '
               'what the derived grid reads, so it gets the phone\'s own popup '
               'geometry — a short full-width bar.');
-      expect(CardFormChoice.readFrom(phone['extra']),
+      expect(CardFormChoice.readFrom(phone.extra),
           const CardFormChoice(density: CardDensity.popup, restoreW: 6),
           reason: 'And the pick rides into the derived grid intact, restore '
               'size included. #1299 keyed the picks by slot count, so a '
@@ -631,9 +637,16 @@ void main() {
           CardFormChoice(density: CardDensity.popup, restoreW: 4, restoreH: 3);
       final stored = item('device_info', pick: choice);
 
-      final reloaded = jsonDecode(jsonEncode(stored)) as Map;
+      // `toMap`/`fromMap` around the JSON rather than the item itself: they are
+      // the trip, and since #1310 they are also the only two places an item
+      // becomes bytes. `jsonEncode(item)` would have thrown here — there is no
+      // `toJson` on `LayoutItem` — which is the encoding step the old map fixture
+      // let a test do by accident and a caller do by mistake.
+      final reloaded = LayoutItem.fromMap(
+          (jsonDecode(jsonEncode(stored.toMap())) as Map)
+              .cast<String, dynamic>());
 
-      expect(CardFormChoice.readFrom(reloaded['extra']), choice,
+      expect(CardFormChoice.readFrom(reloaded.extra), choice,
           reason:
               'The restore size is the only thing standing between popup and '
               'a one-way door, so it has to be as durable as the pick itself.');
@@ -699,7 +712,7 @@ void main() {
       );
 
       final deleted =
-          layout.where((item) => (item as Map)['id'] != 'device_info').toList();
+          layout.where((item) => item.id != 'device_info').toList();
 
       expect(formsOf(deleted).byCard['device_info'], isNull,
           reason: 'Structural now, where #1299 had to prune a sibling map by '
@@ -741,7 +754,12 @@ void main() {
       );
 
       final live = formsOf(layout);
-      final reloaded = formsOf(jsonDecode(jsonEncode(layout)) as List);
+      // The pref's own round trip, spelled as the two functions that are it.
+      final reloaded = formsOf([
+        for (final raw in jsonDecode(
+                jsonEncode([for (final item in layout) item.toMap()])) as List)
+          LayoutItem.fromMap((raw as Map).cast<String, dynamic>()),
+      ]);
 
       expect(reloaded, live,
           reason:

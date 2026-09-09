@@ -16,6 +16,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_platfor
 // ignore: depend_on_referenced_packages
 import 'package:shared_preferences_platform_interface/types.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+
+import '../../../util/dashboard/layout_provider_harness.dart';
 // The drag entry points are not on the exported interface: `DashboardOverlay`
 // and the item widget reach them through this extension, and #1393 is about what
 // happens when they are called. Driving them directly is what lets the grab /
@@ -23,11 +25,6 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 // widget layer's own bindings are covered by the package.
 // ignore: implementation_imports
 import 'package:sliver_dashboard/src/controller/utility.dart';
-
-/// Wait for async initialization chains (SharedPreferences) to settle.
-Future<void> pumpAsync() async {
-  await Future.delayed(const Duration(milliseconds: 100));
-}
 
 /// Helper: creates a minimal valid layout item map for testing.
 Map<String, dynamic> _layoutItem(
@@ -86,16 +83,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   /// Creates a ProviderContainer, triggers async init, waits for it to settle.
+  ///
+  /// No `awaitPreferences`: nothing in this file reads a preference, and
+  /// `usp_layout_controller.dart` does not read that provider either, so asking
+  /// for it would put a provider in the container that the code under test never
+  /// touches.
   Future<ProviderContainer> createInitializedContainer({
     Map<String, Object> initialValues = const {},
-  }) async {
-    SharedPreferences.setMockInitialValues(initialValues);
-    final container = ProviderContainer();
-    // Force provider creation (triggers constructor → _initializeLayout)
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
+  }) =>
+      bootLayout(initialValues: initialValues);
 
   // ---------------------------------------------------------------------------
   // Initialization
@@ -867,19 +863,26 @@ void main() {
       );
 
       for (final entry in notifier.exportAllBreakpoints().entries) {
-        final matches = entry.value
-            .where((i) => (i as Map)['id'] == 'unconstrained_widget')
-            .toList();
+        final matches =
+            entry.value.where((i) => i.id == 'unconstrained_widget').toList();
         expect(matches, hasLength(1),
             reason: 'missing from the ${entry.key}-column grid');
-        final added = matches.single as Map;
+
+        // Asserted on `toMap()` rather than on the item, because an infinite cap
+        // is legal in memory and only illegal on the wire. #1310 moved the line
+        // between those two: `exportAllBreakpoints` now returns items, so the
+        // desktop grid legitimately hands back `maxW: double.infinity` — the very
+        // value the scale used to choke on — and it is `toMap()`'s
+        // `isInfinite ? null` that makes it JSON. Reading `isFinite` off the item
+        // here would assert the opposite of what the code guarantees.
+        final serialised = matches.single.toMap();
         for (final key in ['maxW', 'maxH']) {
-          final value = added[key];
+          final value = serialised[key];
           expect(value == null || (value as num).isFinite, isTrue,
               reason: '$key on the ${entry.key}-column grid is $value');
         }
         // And the whole payload still has to reach SharedPreferences as JSON.
-        expect(() => jsonEncode(added), returnsNormally);
+        expect(() => jsonEncode(serialised), returnsNormally);
       }
     });
 

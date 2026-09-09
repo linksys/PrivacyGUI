@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
-import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../util/dashboard/layout_provider_harness.dart';
 
 /// #1299 — the bridge that carries the grid's selection into Riverpod.
 ///
@@ -59,14 +59,8 @@ void main() {
   /// value from before the tap.
   Future<void> settle() => Future<void>.delayed(Duration.zero);
 
-  Future<ProviderContainer> createContainer() async {
-    SharedPreferences.setMockInitialValues(const {});
-    final container = ProviderContainer();
-    container.read(uspSliverDashboardControllerProvider);
-    await container.read(uspLayoutPreferencesProvider.notifier).initialized;
-    await Future.delayed(const Duration(milliseconds: 100));
-    return container;
-  }
+  Future<ProviderContainer> createContainer() =>
+      bootLayout(initialValues: const {}, awaitPreferences: true);
 
   test('a card starts unselected', () async {
     final container = await createContainer();

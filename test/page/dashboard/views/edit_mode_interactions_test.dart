@@ -556,14 +556,14 @@ void main() {
             .getString(pUspSliverDashboardLayout);
 
     /// The ids the pref holds, per breakpoint.
-    Map<int, List<dynamic>> savedIds(String raw) {
+    Map<int, List<String>> savedIds(String raw) {
       final envelope = UspLayoutEnvelope.tryDecode(raw);
       expect(envelope, isNotNull,
           reason: 'the pref holds an envelope this build can read');
       return {
         for (final slots in UspLayoutEnvelope.persistedSlotCounts)
-          slots: (envelope![slots] ?? const [])
-              .map((item) => (item as Map)['id'])
+          slots: (envelope![slots] ?? const <LayoutItem>[])
+              .map((item) => item.id)
               .toList(),
       };
     }

@@ -102,30 +102,30 @@ void main() {
   /// One call to [UspWidgetSpecs.withCardForm] per pick, because that is the shape
   /// of a pick since #1400: it is made on one card, and it writes the choice and
   /// the geometry that choice justifies into the same item.
-  List<dynamic> pickedLayout(Map<String, CardFormChoice> choices) {
-    var layout = <dynamic>[
-      {
-        'id': 'device_info',
-        'x': 0,
-        'y': 0,
-        'w': 6,
-        'h': 3,
-        'minW': 3,
-        'maxW': 8.0,
-        'minH': 2,
-        'maxH': 6.0,
-      },
-      {
-        'id': 'lan_info',
-        'x': 6,
-        'y': 0,
-        'w': 6,
-        'h': 3,
-        'minW': 3,
-        'maxW': 8.0,
-        'minH': 2,
-        'maxH': 6.0,
-      },
+  List<LayoutItem> pickedLayout(Map<String, CardFormChoice> choices) {
+    var layout = <LayoutItem>[
+      const LayoutItem(
+        id: 'device_info',
+        x: 0,
+        y: 0,
+        w: 6,
+        h: 3,
+        minW: 3,
+        maxW: 8.0,
+        minH: 2,
+        maxH: 6.0,
+      ),
+      const LayoutItem(
+        id: 'lan_info',
+        x: 6,
+        y: 0,
+        w: 6,
+        h: 3,
+        minW: 3,
+        maxW: 8.0,
+        minH: 2,
+        maxH: 6.0,
+      ),
     ];
     for (final pick in choices.entries) {
       layout = UspWidgetSpecs.withCardForm(
@@ -146,9 +146,13 @@ void main() {
   /// pump a tree that is not the one shipping. Each item renders its own id, which
   /// is how a handle is later attributed to a card.
   Future<DashboardController> pumpGrid(
-      WidgetTester tester, List<dynamic> layout) async {
+      WidgetTester tester, List<LayoutItem> layout) async {
     final controller = DashboardController(initialSlotCount: 12);
-    controller.importLayout(layout);
+    // `toMap()` because `importLayout` is the package's boundary and takes
+    // `List<dynamic>` — the same one conversion `_importQuietly` makes in lib, and
+    // for the same reason: it is the only entry point that runs `correctBounds`
+    // and the compactor, which is what makes this a grid the widgets can lay out.
+    controller.importLayout([for (final item in layout) item.toMap()]);
     controller.setEditMode(true);
     addTearDown(controller.dispose);
 

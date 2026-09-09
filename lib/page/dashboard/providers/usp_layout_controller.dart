@@ -436,7 +436,12 @@ class UspSliverDashboardControllerNotifier
     // that derivation to where the geometry is written, leaving [_normalize] the
     // mobile width lock again — identity at 12 columns — so normalising here is a
     // no-op the next reader would have to re-derive the deadness of.
-    final desktopLayout = controller.exportLayout();
+    //
+    // Read off the beacon rather than through `exportLayout()`, which is that
+    // beacon put through `toMap()` (#1310). Not copied, unlike in
+    // [_exportAllBreakpoints]: this list does not outlive the walk, and both
+    // readers below build new lists from it.
+    final desktopLayout = controller.layout.value;
 
     for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
       if (slots == _desktopSlots) continue;
@@ -469,7 +474,7 @@ class UspSliverDashboardControllerNotifier
     // on the desktop grid because that is the one this walk normalised first;
     // after the seed every breakpoint agrees, so which one is read is arbitrary.
     _seededIds = {
-      for (final item in controller.exportLayout()) item['id'] as String,
+      for (final item in controller.layout.value) item.id,
     };
 
     // And back to the grid the page is actually rendering.
@@ -496,7 +501,7 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Idempotent, which is what lets this run on every import rather than only on
   /// the edit that caused it.
-  List<dynamic> _normalize(List<dynamic> layout, int slotCount) =>
+  List<LayoutItem> _normalize(List<LayoutItem> layout, int slotCount) =>
       slotCount <= UspLayoutEnvelope.mobileSlotCount
           ? UspWidgetSpecs.lockToFullWidth(layout, slotCount)
           : layout;
@@ -632,11 +637,18 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Restores the previous value rather than clearing the flag, so a caller that
   /// mutes a wider region cannot be un-muted by an import inside it.
-  void _importQuietly(DashboardController controller, List<dynamic> layout) {
+  ///
+  /// The `toMap()` here is the one conversion #1310 leaves in place, and it is the
+  /// package's boundary rather than ours: `importLayout` takes `List<dynamic>` and
+  /// re-parses each entry with `fromMap`, and it is the only entry point that runs
+  /// `correctBounds`, the compactor, the history record and the change
+  /// notification. Writing `controller.layout.value` directly would take typed
+  /// items and skip all four.
+  void _importQuietly(DashboardController controller, List<LayoutItem> layout) {
     final wasSuppressed = _suppressAutoPersist;
     _suppressAutoPersist = true;
     try {
-      controller.importLayout(layout);
+      controller.importLayout([for (final item in layout) item.toMap()]);
     } finally {
       _suppressAutoPersist = wasSuppressed;
     }
@@ -686,9 +698,9 @@ class UspSliverDashboardControllerNotifier
   /// delete reconciles safely, which is the asymmetry [_exportAllBreakpoints]
   /// documents.
   bool _membershipIsAligned(DashboardController controller) =>
-      !controller.exportLayout().any((item) =>
-          !_seededIds.contains(item['id'] as String) &&
-          (item['w'] as int) > UspLayoutEnvelope.mobileSlotCount);
+      !controller.layout.value.any((item) =>
+          !_seededIds.contains(item.id) &&
+          item.w > UspLayoutEnvelope.mobileSlotCount);
 
   /// Runs [write] after the writes already queued, and returns its result.
   ///
@@ -726,7 +738,7 @@ class UspSliverDashboardControllerNotifier
   /// is the walk that writes, so an unaligned membership reaching it produces a
   /// snapshot with an over-wide card in the narrow grids — which a cancel would
   /// then restore *and* store.
-  Map<int, List<dynamic>> exportAllBreakpoints() {
+  Map<int, List<LayoutItem>> exportAllBreakpoints() {
     final controller = state;
     _assertMembershipAligned(controller);
     return _exportAllBreakpoints(controller);
@@ -760,14 +772,27 @@ class UspSliverDashboardControllerNotifier
   /// silently — nothing in `lib/` does today, and the fixture in
   /// `card_form_toolbar_test.dart` adds at a width every grid can hold because of
   /// it. Failing loudly in debug is the whole defence.
-  Map<int, List<dynamic>> _exportAllBreakpoints(
+  Map<int, List<LayoutItem>> _exportAllBreakpoints(
       DashboardController controller) {
     final origin = controller.slotCount.value;
-    final layouts = <int, List<dynamic>>{};
+    final layouts = <int, List<LayoutItem>>{};
 
     for (final slots in UspLayoutEnvelope.persistedSlotCounts) {
       controller.setSlotCount(slots);
-      layouts[slots] = _normalize(controller.exportLayout(), slots);
+      // `layout.value`, not `exportLayout()`: the latter is that beacon put
+      // through `toMap()`, so reading the beacon is the same walk with one
+      // serialise-and-reparse removed (#1310).
+      //
+      // Copied because the walk's result outlives the read — it is edit mode's
+      // entry snapshot — while [_normalize] is identity above 4 columns, so the
+      // desktop and tablet entries would otherwise alias the beacon's own list.
+      // That alias is in fact safe today (the package replaces `layout.value`
+      // wholesale and never mutates it, and `LayoutItem` is immutable), but it
+      // would make "a map of lists freshly built on every capture" —
+      // [DashboardEditState.layoutSnapshot]'s stated property — true only by a
+      // property of the package. One list per breakpoint per save is cheaper than
+      // the `toMap()` walk this replaced.
+      layouts[slots] = _normalize(List.of(controller.layout.value), slots);
     }
 
     controller.setSlotCount(origin);
@@ -780,7 +805,7 @@ class UspSliverDashboardControllerNotifier
   /// the layout settings panel watches this provider to work out which cards are
   /// still available to add, and `StateNotifier` only notifies listeners when
   /// the instance changes.
-  void _replaceController(Map<int, List<dynamic>> layouts) {
+  void _replaceController(Map<int, List<LayoutItem>> layouts) {
     final previous = state;
     final origin = previous.slotCount.value;
     final wasEditing = previous.isEditing.value;
@@ -838,24 +863,15 @@ class UspSliverDashboardControllerNotifier
   /// precisely the one that exists to pull a card back inside it.
   Future<void> updateItemSize(String id, int w, int h) async {
     final controller = state;
-    final currentLayout = controller.exportLayout();
     bool changed = false;
 
-    final newLayout = currentLayout.map((item) {
-      if (item['id'] == id) {
-        final mutableItem = Map<String, dynamic>.from(item);
-        final minW = mutableItem['minW'];
-        final minH = mutableItem['minH'];
-        final nextW = minW is int && w < minW ? minW : w;
-        final nextH = minH is int && h < minH ? minH : h;
-        if (mutableItem['w'] != nextW || mutableItem['h'] != nextH) {
-          mutableItem['w'] = nextW;
-          mutableItem['h'] = nextH;
-          changed = true;
-        }
-        return mutableItem;
-      }
-      return item;
+    final newLayout = controller.layout.value.map((item) {
+      if (item.id != id) return item;
+      final nextW = w < item.minW ? item.minW : w;
+      final nextH = h < item.minH ? item.minH : h;
+      if (item.w == nextW && item.h == nextH) return item;
+      changed = true;
+      return item.copyWith(w: nextW, h: nextH);
     }).toList();
 
     if (changed) {
@@ -902,15 +918,15 @@ class UspSliverDashboardControllerNotifier
 
     final controller = state;
     final slots = controller.slotCount.value;
-    final layout = controller.exportLayout();
+    final layout = controller.layout.value;
     final item = _findItem(layout, cardId);
     if (item == null) return;
 
     // The previous pick comes off the item rather than out of a map keyed by this
     // grid's slot count (#1400). Same answer, one fewer way to ask the wrong grid.
-    final previous = CardFormChoice.readFrom(item['extra']);
+    final previous = CardFormChoice.readFrom(item.extra);
     final wasPopup = previous?.density == CardDensity.popup;
-    List<dynamic> next = layout;
+    List<LayoutItem> next = layout;
     final CardFormChoice choice;
 
     if (density == CardDensity.popup) {
@@ -922,8 +938,8 @@ class UspSliverDashboardControllerNotifier
           ? previous!
           : CardFormChoice(
               density: density,
-              restoreW: item['w'] as int?,
-              restoreH: item['h'] as int?,
+              restoreW: item.w,
+              restoreH: item.h,
             );
     } else {
       choice = CardFormChoice(density: density);
@@ -993,7 +1009,7 @@ class UspSliverDashboardControllerNotifier
   /// [_seedBreakpoints] — exactly the behaviour this ticket replaced — while a
   /// missing desktop grid wipes the dashboard. A fallback here could only make one
   /// of those two cases better, and would be a branch no test can reach.
-  Future<void> restoreSnapshot(Map<int, List<dynamic>> layouts) async {
+  Future<void> restoreSnapshot(Map<int, List<LayoutItem>> layouts) async {
     assert(
       UspLayoutEnvelope.persistedSlotCounts
           .every((slots) => layouts[slots] != null),
@@ -1006,28 +1022,26 @@ class UspSliverDashboardControllerNotifier
     await saveLayout();
   }
 
-  static Map<String, Object?>? _findItem(List<dynamic> layout, String id) {
+  static LayoutItem? _findItem(List<LayoutItem> layout, String id) {
     for (final item in layout) {
-      if (item is Map && item['id'] == id) return item.cast<String, Object?>();
+      if (item.id == id) return item;
     }
     return null;
   }
 
   /// Returns [layout] with [id] resized, leaving every other card untouched.
-  static List<dynamic> _withSize(
-    List<dynamic> layout,
+  ///
+  /// A null [w] or [h] leaves that axis alone, which `copyWith` already means by
+  /// `w ?? this.w` — the map form had to spell it as a conditional key (#1310).
+  static List<LayoutItem> _withSize(
+    List<LayoutItem> layout,
     String id,
     int? w,
     int? h,
   ) =>
-      layout.map((item) {
-        if ((item as Map)['id'] != id) return item;
-        return {
-          ...item.cast<String, dynamic>(),
-          if (w != null) 'w': w,
-          if (h != null) 'h': h,
-        };
-      }).toList();
+      layout
+          .map((item) => item.id == id ? item.copyWith(w: w, h: h) : item)
+          .toList();
 
   /// Add a widget to the dashboard layout (appended at the bottom).
   ///
@@ -1035,7 +1049,7 @@ class UspSliverDashboardControllerNotifier
   Future<void> addWidget(String id, {WidgetSpec? spec}) async {
     final layouts = _exportAllBreakpoints(state);
     final desktopLayout = layouts[_desktopSlots] ?? const [];
-    if (desktopLayout.any((item) => (item as Map)['id'] == id)) {
+    if (desktopLayout.any((item) => item.id == id)) {
       return; // Already exists
     }
 
@@ -1045,38 +1059,32 @@ class UspSliverDashboardControllerNotifier
     // Calculate position at the bottom of the grid
     int maxY = 0;
     for (final item in desktopLayout) {
-      final map = item as Map;
-      final y = map['y'] as int;
-      final h = map['h'] as int;
-      if (y + h > maxY) maxY = y + h;
+      if (item.y + item.h > maxY) maxY = item.y + item.h;
     }
 
+    // The item itself, on the lists the other cards are on. Nine of `toMap()`'s
+    // sixteen keys used to be spelled out here by hand, while every other entry
+    // came from [_exportAllBreakpoints]; #1310 closed that by making the lists
+    // hold [LayoutItem], so there is no encoding step left to get wrong.
+    //
+    // The width caps are what made the hand-written map a bug rather than an
+    // inconsistency, and the shape of that bug is why [UspWidgetSpecs.scaleLayout]
+    // now reads `maxW` off the field. `toMap()` writes an infinite bound as `null`
+    // for JSON validity, and the scale absorbed the null; the raw
+    // `double.infinity` instead threw `Unsupported operation: Infinity or NaN
+    // toInt` on the 8-column pass below, before persistence was reached.
+    //
+    // Only a spec declaring no `DisplayMode.normal` constraints produces an
+    // infinite bound — [LayoutItemFactory.fromSpec]'s fallback — which no
+    // registered caller supplies: all eighteen specs declare them, and so does
+    // `PackageWidgetTemplate.toWidgetSpec`. The `spec:` parameter above is the
+    // hole, and it is covered by a test rather than by that coincidence.
     final item = LayoutItemFactory.fromSpec(
       resolvedSpec,
       x: 0,
       y: maxY,
       displayMode: DisplayMode.normal,
     );
-
-    // `toMap()`, not a hand-written subset of it. Nine of its sixteen keys were
-    // spelled out here, while every other item on these lists came from
-    // [_exportAllBreakpoints], i.e. from `toMap()`, i.e. all sixteen (#1310).
-    //
-    // The width caps are what made that a bug rather than an inconsistency. The
-    // seven absent keys were harmless: `_replaceController` imports through
-    // `importLayout`, so the package's `fromMap` refilled them with the same
-    // `LayoutItem` defaults [LayoutItemFactory.fromSpec] leaves them at. `maxW`
-    // and `maxH` were present and wrong. `toMap()` writes an infinite bound as
-    // `null`, which `scaleLayout` absorbs with `?? fromCols`; passing the
-    // `double.infinity` through instead throws `Unsupported operation: Infinity
-    // or NaN toInt` on the 8-column pass below, before persistence is reached.
-    //
-    // Only a spec declaring no `DisplayMode.normal` constraints produces an
-    // infinite bound — [LayoutItemFactory.fromSpec]'s fallback — which no caller
-    // supplies today: all eighteen registered specs declare them, and so does
-    // `PackageWidgetTemplate.toWidgetSpec`. The `spec:` parameter above is the
-    // hole, and it is now covered by a test rather than by that coincidence.
-    final newItemMap = item.toMap();
 
     // Placed on each grid at that grid's own scale. Letting the package
     // reconcile it in instead would carry the current breakpoint's width
@@ -1086,10 +1094,10 @@ class UspSliverDashboardControllerNotifier
         entry.key: [
           ...entry.value,
           if (entry.key == _desktopSlots)
-            newItemMap
+            item
           else
             UspWidgetSpecs.scaleLayout(
-              [newItemMap],
+              [item],
               _desktopSlots,
               entry.key,
             ).single,
@@ -1121,13 +1129,12 @@ class UspSliverDashboardControllerNotifier
   /// card were ever added back — arriving pre-collapsed for no visible reason.
   Future<void> removeWidget(String id) async {
     final layouts = _exportAllBreakpoints(state);
-    final desktopLayout = layouts[_desktopSlots] ?? const [];
-    if (!desktopLayout.any((item) => (item as Map)['id'] == id)) return;
+    final desktopLayout = layouts[_desktopSlots] ?? const <LayoutItem>[];
+    if (!desktopLayout.any((item) => item.id == id)) return;
 
     _replaceController({
       for (final entry in layouts.entries)
-        entry.key:
-            entry.value.where((item) => (item as Map)['id'] != id).toList(),
+        entry.key: entry.value.where((item) => item.id != id).toList(),
     });
     await saveLayout();
   }
