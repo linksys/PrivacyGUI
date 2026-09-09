@@ -5,9 +5,8 @@ import 'package:http/browser_client.dart';
 import 'ai_session_service.dart';
 
 AiSessionService createAiSessionService() {
-  final client = BrowserClient()..withCredentials = true;
   return HttpAiSessionService(
-    client: client,
+    clientFactory: () => BrowserClient()..withCredentials = true,
     baseUri: Uri.base,
     onLogout: () {
       // sessionStorage survives the route change back to the login screen.

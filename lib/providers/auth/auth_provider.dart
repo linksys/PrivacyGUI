@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
@@ -171,7 +172,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         loginType = LoginType.remote;
       } else if (localPassword != null) {
         loginType = LoginType.local;
-        await _bootstrapAiSession(localPassword);
       }
       logger.d(
           '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
@@ -184,7 +184,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         localPassword: localPassword,
       );
     });
-    return state.value;
+    final restored = state.value;
+    if (!state.hasError &&
+        restored?.loginType == LoginType.local &&
+        restored?.localPassword != null) {
+      unawaited(_bootstrapAiSession(restored!.localPassword!));
+    }
+    return restored;
   }
 
   Future<SessionToken?> checkSessionToken() async {
@@ -356,7 +362,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         // Save the new local credentials
         const storage = FlutterSecureStorage();
         await storage.write(key: pLocalPassword, value: password);
-        await _bootstrapAiSession(password);
         return previousState.copyWith(
           localPassword: password,
           loginType: LoginType.local,
@@ -365,6 +370,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         throw response;
       }
     }, (error) => guardError);
+    if (!state.hasError && state.value?.loginType == LoginType.local) {
+      unawaited(_bootstrapAiSession(password));
+    }
     logger.d(
         '[Auth]: Local login done: authenticated=${state.value?.loginType == LoginType.local}');
   }
@@ -405,13 +413,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future logout() async {
     logger.d('[Prepare]: Logout');
-    await ref
-        .read(aiSessionServiceProvider)
-        .logout()
-        .onError((error, stackTrace) {
-      logger.w('[Auth]: AI session logout was unavailable');
-    });
-    state = const AsyncValue.loading();
+    // Optional server revocation must not delay native logout or retain the
+    // previous authenticated state while the endpoint is unavailable.
+    unawaited(_logoutAiSession());
+    state = AsyncValue.data(AuthState.empty());
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
@@ -443,6 +448,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+  }
+
+  Future<void> _logoutAiSession() async {
+    try {
+      await ref.read(aiSessionServiceProvider).logout();
+    } catch (_) {
+      logger.w('[Auth]: AI session logout was unavailable');
+    }
   }
 
   Future<void> _bootstrapAiSession(String password) async {
