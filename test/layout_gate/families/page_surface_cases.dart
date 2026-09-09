@@ -135,6 +135,13 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confi
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
+// One section per statistics tab, imported for a premise and nothing else: an
+// unselected `TabBarView` page has no elements, so the first section of a tab is the
+// only widget that can tell a cell which tab it actually opened. See
+// `kStatisticsDevicesPageCase`.
+import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribution_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
@@ -1595,47 +1602,193 @@ final kStaticRoutingPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
-/// `usp_statistics_view` — twenty chart sections behind three tabs, and the case in
-/// this family whose coverage claim is the smallest relative to its page. Both limits
-/// are by construction and neither is fixable here, so both are stated as numbers.
+/// `usp_statistics_view` — twenty chart sections behind three tabs, and the one page
+/// in this family swept by **three cases**: this one, [kStatisticsDevicesPageCase]
+/// and [kStatisticsSystemPageCase], differing only in `initialTab`. Why one page can
+/// be three cases here where `wifi_settings` and `port_forwarding` stop at their
+/// first tab is argued at [kStatisticsDevicesPageCase]. This doc covers tab 0 and the
+/// depth limit all three share.
 ///
-/// 1. **Tab 0 of 3**, for the reason `kWifiSettingsPageCase` and
-///    `kPortForwardingPageCase` give about their own second tabs: the others are
-///    behind a `TabController` and would need a tap per cell.
-/// 2. **Four of tab 0's nine sections.** Every other page in this family hands its
-///    scroll view a `Column`, which lays out all of its children whatever the
-///    height. This one hands it a `CustomScrollView` + `SliverList`, which lays out
-///    the viewport plus the cache extent and no more. Measured rather than assumed:
-///    at [kPageSweepHeight] exactly `Traffic Monitor`, `Traffic Comparison`,
-///    `Traffic Distribution` and `Traffic Trends` build — and the count is **4 at
-///    all nine swept widths**, and 4 in `en`, `ru` and `zh` alike, because what
-///    decides it is the sliver's extent and not the text. The other five
-///    (`HealthScore`, `ErrorRates`, `PacketLoss`, `FirewallRules`, `PortMapping`)
-///    never build, so this sweep says nothing about them at any width.
+/// **Tab 0 is Network, and these 234 cells cover four of its nine sections.** Every
+/// other page in this family hands its scroll view a `Column`, which lays out all of
+/// its children whatever the height. This one hands it a `CustomScrollView` +
+/// `SliverList`, which lays out the viewport plus the cache extent and no more.
+/// Measured rather than assumed: at [kPageSweepHeight] exactly `Traffic Monitor`,
+/// `Traffic Comparison`, `Traffic Distribution` and `Traffic Trends` build — and the
+/// count is **4 at all nine swept widths**, and 4 in `en`, `ru` and `zh` alike,
+/// because what decides it is the sliver's extent and not the text. The other five
+/// (`HealthScore`, `ErrorRates`, `PacketLoss`, `FirewallRules`, `PortMapping`) never
+/// build, so this sweep says nothing about them at any width.
 ///
 /// So 234 green cells here mean: the page frame — top bar, tab bar, the sliver
-/// padding arithmetic — plus the four sections a phone opens on. Raising
-/// [kPageSweepHeight] would measure more and would cost every other page in the
-/// family the same multiple; that trade belongs to whoever wants the coverage, and
-/// #1380 declined to take it silently.
+/// padding arithmetic — plus the four sections a phone opens the Network tab on.
+/// Raising [kPageSweepHeight] would measure more and would cost every other page in
+/// the family the same multiple; that trade belongs to whoever wants the coverage,
+/// and #1380 declined to take it silently.
 ///
-/// **What already covers the rest, and did before this wave.**
-/// `stats_traffic_monitor_legend_test.dart` and `stats_wifi_channels_section_test.dart`
-/// pump single sections through `test/util/statistics/stats_section_probe.dart`, which
-/// models this page's two different paddings on purpose — its header explains why the
-/// Devices tab is measured narrower than production. This case does not replace them
-/// and must not be read as covering what they cover: a section suite is how a section
-/// below the fold gets measured at all.
+/// ## The tab limit this doc used to state, and why it was wrong (#1489)
 ///
-/// [StatsSectionCard] is the premise because it is every section's own container, so
-/// it separates "the tab's sliver laid out content" from "the tab bar rendered above
-/// an empty viewport" — which is exactly what a fixture-less scene produces here, and
-/// `gateStatisticsOverrides()` says why this scene populates every provider.
+/// Until the two sibling cases landed, limit 1 here read: "**Tab 0 of 3**, for the
+/// reason `kWifiSettingsPageCase` and `kPortForwardingPageCase` give about their own
+/// second tabs: the others are behind a `TabController` and would need a tap per
+/// cell." That reason is true of those two pages and was **false of this one**. It
+/// was inherited from a case about a different page and never re-checked here:
+/// `UspStatisticsView` takes an `initialTab` argument
+/// (`usp_statistics_view.dart:15`), clamps it into the controller at :31, and the app
+/// itself supplies it from a route parameter — `?tab=N` at
+/// `route_usp_dashboard.dart:139-140`. A cell therefore opens tab 1 or tab 2 by
+/// construction, with no tap, and the tree it measures is one the app really serves.
+///
+/// What believing it cost is the argument for re-reading an inherited limit instead of
+/// copying it: 11 of this page's 20 sections were never laid out at any width in any
+/// locale, and four legend `Row`s inside them overflowed a 288px section in up to 26
+/// locales — **35 red cells that appeared the instant the two cases existed**, fixed
+/// under #1488. The 234 cells here were honest the whole time. They were green because
+/// those rows were absent from the measurement, not because they fit.
+///
+/// ## What already covers the rest, and did before this wave
+///
+/// `stats_traffic_monitor_legend_test.dart`, `stats_legend_rows_test.dart` and
+/// `stats_wifi_channels_section_test.dart` pump single sections through
+/// `test/util/statistics/stats_section_probe.dart`, which models this page's two
+/// different paddings on purpose — its header explains why the Devices tab is measured
+/// narrower than production. The three cases do not replace them and must not be read
+/// as covering what they cover: a section suite is how a section below the fold gets
+/// measured at all, and after #1489 that is still **8 of the page's 20** — five on
+/// tab 0, three on tab 1, none on tab 2.
+///
+/// ## The premise, which is four types and not one, and why each is there
+///
+/// [PageSurfaceCase.requires] is checked per cell, so every entry has to be a widget a
+/// *wrong* cell would lack. All three cases carry the same four-part shape, and only
+/// entry 3 differs per tab:
+///
+/// 1. [UspTopBar] — the page frame rendered at all.
+/// 2. [StatsSectionCard] — every section's own container, so it separates "the tab's
+///    sliver laid out content" from "the tab bar rendered above an empty viewport",
+///    which is exactly what a fixture-less scene produces here.
+/// 3. **The first section of this case's tab** — [StatsTrafficMonitorSection] here,
+///    [StatsDeviceDistributionSection] and [StatsSystemGaugesSection] on the siblings.
+///    This is the entry that makes the tab claim falsifiable, and it exists because of
+///    the one thing `initialTab` cannot do: it is a *number*, so a case that fell back
+///    to tab 0 — a copy-pasted literal, or `initialIndex:` dropped from
+///    `usp_statistics_view.dart:31` — would still render a top bar, a tab bar and four
+///    section cards, and all 702 cells would stay green while two thirds of them
+///    measured the same tab. `TabBarView` builds only the selected page, so a section
+///    that belongs to another tab is absent from the element tree, which makes "which
+///    tab is this" a `find.byType` away. Every other tabbed case in this family states
+///    its tab in prose; these three assert it, once per cell.
+/// 4. [StatsLegendDot] — the entry that proves the fixture, not the layout. Every
+///    section renders its placeholder *inside* its [StatsSectionCard] (`state.current ==
+///    null ? Center(waitingForDeviceData) : _buildChart(...)`), so entries 2 and 3
+///    survive a scene thinned down to placeholders — and a placeholder has no legend
+///    row, which is precisely the widget #1488's 35 red cells lived in. The dot is
+///    rendered only on the populated path, by sections on all three tabs, so requiring
+///    it turns "someone dropped a provider from `gateStatisticsOverrides()`" from a
+///    silent narrowing into 234 red cells. `mock_statistics.dart` says which providers
+///    those are.
 final kStatisticsPageCase = PageSurfaceCase(
   id: 'statistics',
   view: () => const UspStatisticsView(),
   overrides: () => gateStatisticsOverrides(),
-  requires: const [UspTopBar, StatsSectionCard],
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsTrafficMonitorSection,
+    StatsLegendDot,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_statistics_view` at **tab 1 — Devices** (#1489). Identical to
+/// [kStatisticsPageCase] but for `initialTab: 1`: same view class, same fixture, same
+/// premise, same 234 cells.
+///
+/// ## Why this page gets a case per tab where the family's other tabbed pages do not
+///
+/// `TabBarView` builds the selected page only — `UiKitPageView.withSliver`'s
+/// `tabContentViews` reach it at `ui_kit_library`'s
+/// `lib/src/layout/app_page_view.dart:671`, note the file is in the package and not in
+/// this repo — so an unselected tab has no elements, no `RenderFlex`es, and nothing the
+/// overflow collector can receive. It is handed
+/// `physics: NeverScrollableScrollPhysics()` there, so not even a drag reaches a
+/// sibling tab: tapping the tab bar is the only interaction that does, and it costs an
+/// interaction per cell and pumps a tree [pageSurfaceHost] does not model. The other
+/// way in is to **construct the page on it**. On
+/// `wifi_settings` and `port_forwarding` only the first exists, which is why those
+/// cases stop at their first tab. Here the second exists — `initialTab` is a
+/// constructor argument the app itself supplies from `?tab=N` — so this case enters
+/// the tab the same way a deep link does. Nothing is tapped and nothing about the
+/// tree is synthesised for the test.
+///
+/// ## Coverage in numbers: 4 of this tab's 7 sections
+///
+/// [kStatisticsPageCase]'s depth limit applies here unchanged, and was measured the
+/// same way. At [kPageSweepHeight], at all nine swept widths, in `en`, `ru` and `zh`,
+/// this tab builds its first four: `DeviceDistribution`, `ConnectionTrends`,
+/// `ActivityHeatmap`, `SignalQuality`.
+///
+/// **`WifiSignal`, `WifiSpeed` and `WifiChannels` never build.** They are named here
+/// so that a green `page.statistics_devices` cannot be read as covering the tab:
+/// these 234 cells say nothing about those three at any width. `WifiChannels` has its
+/// own section suite (`stats_wifi_channels_section_test.dart`); the other two have
+/// nothing, which is the honest state of it.
+///
+/// Both of this tab's #1488 defect sites are inside the built four —
+/// `DeviceDistribution` 1st, `SignalQuality` 4th — which is why this case lands at
+/// the current [kPageSweepHeight] rather than waiting on a taller surface.
+///
+/// [StatsDeviceDistributionSection] is in the premise for the reason
+/// [kStatisticsPageCase] gives at entry 3: it is on this tab and no other, so it is what
+/// makes "tab 1" a per-cell assertion rather than a claim in a doc comment. It is also
+/// this tab's first section, so the depth limit cannot reach past it, and it is one of
+/// #1488's two sites here — a cell that finds it has the fixed row on screen.
+final kStatisticsDevicesPageCase = PageSurfaceCase(
+  id: 'statistics_devices',
+  view: () => const UspStatisticsView(initialTab: 1),
+  overrides: () => gateStatisticsOverrides(),
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsDeviceDistributionSection,
+    StatsLegendDot,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_statistics_view` at **tab 2 — System** (#1489), and the one case in this
+/// family whose page-tab has **no depth limit left**: the System tab has four
+/// sections and all four build.
+///
+/// Measured, not inferred from the count — the reason [kStatisticsPageCase] states its
+/// depth as a number is that "the sliver lays out the viewport plus the cache extent"
+/// is not a bound anyone can read off a section list. At [kPageSweepHeight], at all
+/// nine swept widths, in `en`, `ru` and `zh`: `SystemGauges`, `ResourceTrends`,
+/// `CpuDistribution`, `Correlation` — **4 of 4**. This is the shallowest of the three
+/// tabs (9 / 7 / 4 sections), which is why the height that reaches four of nine on
+/// tab 0 reaches the end of this one.
+///
+/// So this is the only one of the three cases whose green sweep means *the tab*, and
+/// the one to reach for when asking what full-page coverage would look like: it is
+/// what the other two would be at a height that reached their ends.
+///
+/// Its two #1488 defect sites are `ResourceTrends` and `CpuDistribution`, 2nd and 3rd
+/// of the four. See [kStatisticsDevicesPageCase] for why entering a tab on this page
+/// needs no tap, and [kStatisticsPageCase] for the four-part premise all three share.
+///
+/// [StatsSystemGaugesSection] carries the most weight of the three tab discriminators,
+/// because this is the case whose green sweep is claimed to mean the whole tab: without
+/// it, "4 of 4" and "0 of 4, on the wrong tab" are the same green.
+final kStatisticsSystemPageCase = PageSurfaceCase(
+  id: 'statistics_system',
+  view: () => const UspStatisticsView(initialTab: 2),
+  overrides: () => gateStatisticsOverrides(),
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsSystemGaugesSection,
+    StatsLegendDot,
+  ],
   forbids: const [AppLoader, ServiceErrorView],
 );
 
@@ -1730,5 +1883,13 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kLocalNetworkPageCase,
   kStaticRoutingPageCase,
   kStatisticsPageCase,
+  // #1489, and the only place this list holds three cases for one page view. They sit
+  // beside `statistics` rather than at the end because the reader of this list wants
+  // "which pages" and they are one page; the id suffix is what says they are tabs of
+  // it. `page_roster.tsv` keys on the *file*, so all three still join to the single
+  // `usp_statistics_view.dart` row — its `# tabs` header block carries the per-tab
+  // ms/cell, which the register has no column for.
+  kStatisticsDevicesPageCase,
+  kStatisticsSystemPageCase,
   kSystemLogPageCase,
 ];

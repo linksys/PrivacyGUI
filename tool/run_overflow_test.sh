@@ -14,14 +14,16 @@
 # they existed.
 #
 # The tag costs load time, and it is not small. `@Tags` is discovered by loading
-# the suite, so `--tags overflow` compiles all 330 test files and then skips 325
-# of them: re-measured 2026-08-27 for #1380, the same 724 tests
-# take 9m40s under the tag and 8m22s when the five files are named (shell clock;
+# the suite, so `--tags overflow` compiles all 400 test files and then skips 395
+# of them: re-measured 2026-08-27 for #1380, when the same selection was 724 tests,
+# they take 9m40s under the tag and 8m22s when the five files are named (shell clock;
 # `flutter test`'s own is 9m23s and 8m17s). The test count fell from 2,386 to 296
 # without losing a cell — #1344 and #1343 regrouped each sweep's locales inside
-# one test per coordinate, so 13,677 cells are named by 706 of those tests, the
+# one test per coordinate, so 14,145 cells are named by 726 of those tests, the
 # other 18 being the readability guards in 13 groups (#1349's, #1377's and
-# #1380's), which pump 845 trees between them and name no cell.
+# #1380's), which pump 845 trees between them and name no cell. The clocks above
+# are #1380's and are kept; the two counts are 744 and 726 since #1489 gave the
+# statistics page a case per tab (+20 tests, +468 cells, no new page).
 # Correctness is identical — the selection is
 # exactly those five either way — so the tag is right for a pre-commit run and
 # for this script, whose job is to be complete.

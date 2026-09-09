@@ -141,15 +141,34 @@ List<Override> statisticsOverrides({
 ///
 /// The gate wants the opposite, and this is the one scene in the family that is a
 /// *superset* of what any single golden state passes. The golden suite splits its
-/// fixtures across three states because it photographs three tabs; the gate pumps tab
-/// 0 only (see `kStatisticsPageCase` for why) and cannot tap, so the cheapest way to
-/// guarantee no section renders an empty placeholder for want of a fixture is to hand
-/// every provider its data regardless of which tab reads it.
+/// fixtures across three states because it photographs one tab per shot; the gate
+/// pumps **all three tabs, one case each** (`kStatisticsPageCase` and its two
+/// siblings, #1489), so the cheapest way to guarantee no section renders an empty
+/// placeholder for want of a fixture is to hand every provider its data regardless of
+/// which tab reads it. One scene, three cases: a green cell on tab 1 and a green cell
+/// on tab 0 are then about the same data.
+///
+/// That was true before the tabs were swept as well, and for a weaker reason — it read
+/// "the gate pumps tab 0 only ... and cannot tap", which was the same falsified limit
+/// `kStatisticsPageCase` used to carry. The scene was already a superset, so nothing
+/// here changed when the two cases landed; only the sentence explaining why it needed
+/// to be.
+///
+/// Thinning this scene is now a test failure rather than a silent narrowing. Each of the
+/// three cases requires `StatsLegendDot`, and a section renders its "waiting for device
+/// data" placeholder *inside* its own card — so dropping a state back to its `const`
+/// empty default would keep the tab bar, keep the cards, keep the section types, and
+/// still fail all 234 of that tab's cells on the missing legend. That is deliberate: the
+/// row #1488 fixed is a legend row, so a cell that cannot find a legend is not
+/// measuring the thing these sweeps exist for. Add a provider to
+/// [statisticsOverrides] and the gate wants its fixture here too.
 ///
 /// `firewallData` is left at its `FirewallData.empty()` default because that is the
 /// only [FirewallData] either suite has ever had — `StatsFirewallRulesSection` is
-/// eighth of the nine sections on tab 0 and below the fold at every swept width, so an
-/// empty one changes nothing this scene measures.
+/// eighth of the Network tab's nine sections and below the fold at every swept width,
+/// so an empty one changes nothing this scene measures. Still true against three tabs,
+/// and now for a narrower reason than "the gate cannot get there": the tab it is on
+/// *is* swept, and the section is still outside the depth the sliver builds.
 List<Override> gateStatisticsOverrides() => statisticsOverrides(
       trafficState: testTrafficState,
       deviceAnalyticsState: testDeviceAnalyticsState,

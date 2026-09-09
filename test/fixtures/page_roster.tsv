@@ -127,6 +127,34 @@
 # unblocked test/page/instant_setup/views/pnp_setup_view_test.dart went red with an empty incident list
 # unblocked on the bump, which is the signal it was written to give, and was then deleted. Swept the
 # unblocked same day, so this row's disposition is the shorter half of its story.
+# tabs usp_statistics_view.dart is the one row that maps to more than one gate case, and the
+# tabs ms_per_cell column has no slot for the difference. #1489 sweeps that page THREE times, once
+# tabs per tab - page.statistics, page.statistics_devices, page.statistics_system - while this
+# tabs register's key is the page view FILE and PageRoster._rejectDuplicates refuses a second row for
+# tabs one path. So the per-tab figures live here, on the column's own basis (--plain-name, --reporter
+# tabs json per-test durations over the coordinate tests only, / 234, three runs, median), all
+# tabs measured 2026-09-09: tab 1 Devices 28.2 (32.9 / 27.5 / 28.2), tab 2 System 28.0
+# tabs (28.0 / 31.1 / 27.0). The 45.3 in the row itself is tab 0 Network and STAYS: re-read the same
+# tabs day it gave 47.5 (48.4 / 47.5 / 46.5), +4.9%, inside #1377's +/-7% floor.
+# tabs Why these are written out rather than left to be derived: page_sweep_suites_test.dart's "no
+# tabs suite weight is guessed" resolves all three cases through this one path, so it would have handed
+# tabs both new tabs tab 0's 45.3 and passed - a figure that reads as measured while being inherited,
+# tabs and ~60% high. The budget projection cannot catch it either: it sums roster ROWS x cellsPerPage,
+# tabs gains no rows here, and asserts greaterThan a floor, so 468 uncounted cells can only make it
+# tabs more true. Neither number is load-bearing today; both would be wrong the first time someone
+# tabs planned a shard on one, which is what this block is for.
+# tabs Read the distribution block above as arithmetic over ROWS: its "43 x 234 = 10,062 cells" is 43
+# tabs rows, and the sweep those rows describe is now 45 cases = 10,530 cells. page.tsv's own `# cells`
+# tabs header is the sweep's count and moves with the cases; this file's counts do not.
+# tabs The two new cases really cost 13.2s of pump time, not the ~21s #1489 projected off tab 0's rate.
+# tabs The Devices and System tabs are cheaper per cell than Network at the same 4 sections built, so
+# tabs anchoring a projection on a sibling tab read 60% high - the same direction, and for the same
+# tabs kind of reason, as the queued-figure rule in the basis notes above.
+# tabs One practical consequence: `--plain-name page.statistics` now matches all three groups, so
+# tabs re-measuring tab 0 in isolation takes `--plain-name 'page.statistics screen_px'`.
+# tabs Whether one row per FILE is still the right key is a real question, deliberately not answered
+# tabs here: the alternative is a per-case register, which is a redesign of this file and needs its own
+# tabs ticket. #1489 chose to measure and record rather than redesign, and this block is that record.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart

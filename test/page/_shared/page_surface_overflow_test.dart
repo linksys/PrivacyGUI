@@ -29,13 +29,16 @@ import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2,
-/// #1379's wave 3 and #1380's wave 4.
+/// #1379's wave 3, #1380's wave 4, and #1489's two extra tab cases, which are not a wave
+/// because they added no page.
 ///
-/// **Forty-three whole pages** × 9 screen widths × 26 locales = **10,062 cells**,
+/// **Forty-three whole pages, declared as forty-five cases** — `statistics` is three
+/// of them, one per tab (#1489), and the two counts are different quantities rather
+/// than one of them being stale — × 9 screen widths × 26 locales = **10,530 cells**,
 /// declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
-/// forty-three pages, and why those, lives in `page_surface_cases.dart`. This file is
-/// the declaration, the forty-three pins, and the readability guards that sit beside
+/// pages, and why those, lives in `page_surface_cases.dart`. This file is
+/// the declaration, the forty-five pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
 /// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
@@ -69,8 +72,9 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// renders a content box wider than 977px. Fifteen literals moved in one edit,
 /// which is the shape the ticket wanted: a coverage change nobody can make while
 /// looking away. `pnp_setup` brought the sixteenth later the same day, wave 3's six
-/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three —
-/// so the literal is now written out forty-three times, and #1372's argument for the
+/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three.
+/// #1489 then added two without adding a page — the statistics page's other two tabs —
+/// so the literal is now written out **forty-five** times, and #1372's argument for the
 /// repetition is the argument that survived the list doubling.
 ///
 /// ## Where this file sits in the gate
@@ -356,14 +360,33 @@ void main() {
     expectedCellCount: 234,
   );
 
-  // `statistics` — tab 0, and of tab 0 only what the viewport lays out;
-  // `kStatisticsPageCase` states both limits and names the suites that cover the rest.
+  // `statistics` — one page, three cases, one per tab (#1489). Each sweeps what its
+  // tab's sliver lays out at `kPageSweepHeight` and no more: 4 of tab 0's 9 sections,
+  // 4 of tab 1's 7, and all 4 of tab 2's. The earlier "tab 0 only" note here repeated
+  // `kStatisticsPageCase`'s reason for stopping at the first tab, which turned out to
+  // be false of this page — `initialTab` is a constructor argument the app supplies
+  // from `?tab=N`, so a cell opens tab 1 or 2 with no tap. That case doc carries the
+  // whole correction, the eight sections that still never build — tab 0's last five
+  // and tab 1's last three — and the section suites that cover what these 702 cells
+  // do not.
   runOverflowSweep(
     family: PageSurfaceFamily(kStatisticsPageCase),
     expectedCellCount: 234,
   );
 
-  // `system_log` — the 45th page, and the last one this epic had to account for.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsDevicesPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsSystemPageCase),
+    expectedCellCount: 234,
+  );
+
+  // `system_log` — the 45th page *view file* under `lib/page/`, and the last one this
+  // epic had to account for. That 45 is the roster's count and has nothing to do with
+  // the 45 cases this file now declares; #1489 made the two coincide again by accident.
   runOverflowSweep(
     family: PageSurfaceFamily(kSystemLogPageCase),
     expectedCellCount: 234,
