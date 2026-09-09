@@ -66,6 +66,39 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
   void emit(AuthState next) => state = AsyncData(next);
 }
 
+/// An auth notifier that writes its state the way the real one does.
+///
+/// Not a convenience: [MockAuthNotifier] stubs `logout` to `async {}`, so it never
+/// performs `AuthNotifier.logout`'s **first statement** —
+/// `state = const AsyncValue.loading()`. That statement is the whole hazard round 3
+/// found, which means a mock of the funnel cannot see a defect that lives in the
+/// funnel's body, no matter what the surrounding widget tree looks like. Measured
+/// both ways against the unfixed code: with the stubbed mock nothing raises; with
+/// this notifier it raises every time.
+///
+/// Kept to the one statement under test rather than mirroring the whole method. The
+/// rest of `logout()` — the mode teardown, SSE disconnect, credential clearing — is
+/// tested where it lives and would need the entire session stack here.
+class SyncWritingAuthNotifier extends AsyncNotifier<AuthState>
+    implements AuthNotifier {
+  final List<EndCause> logoutCauses = [];
+
+  @override
+  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+
+  @override
+  Future logout({EndCause cause = EndCause.sessionLost}) async {
+    logoutCauses.add(cause);
+    state = const AsyncValue.loading();
+    state = AsyncData(AuthState(loginType: LoginType.none));
+  }
+
+  // Everything else on `AuthNotifier` is out of this fake's scope; reaching it is a
+  // test-authoring mistake and should say so rather than return null.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class MockRecoveryProbeService extends Mock implements RecoveryProbeService {}
 
 /// The smallest thing that wires the sink the way the shell does.
@@ -98,6 +131,7 @@ void main() {
   late MockSseManager sse;
   late MockRecoveryProbeService probe;
   late List<Override> overrides;
+  late List<Override> overridesWithoutAuth;
 
   setUpAll(() {
     // Only the type is used by `any(named: 'cause')`; the value never reaches an
@@ -118,13 +152,19 @@ void main() {
     // matters: the catch-up test pumps twice and needs the second pump to keep the
     // first pump's container, so that the cause decided between them is the same
     // notifier's.
-    overrides = [
-      authProvider.overrideWith(() => auth),
+    //
+    // Split at the auth override because one test needs a different auth notifier
+    // and the same everything-else — see [SyncWritingAuthNotifier].
+    overridesWithoutAuth = [
       sseManagerProvider.overrideWithValue(sse),
       recoveryProbeServiceProvider.overrideWithValue(probe),
       sseConnectionStateProvider.overrideWith(
         (ref) => Stream.value(SseConnectionState.connected),
       ),
+    ];
+    overrides = [
+      authProvider.overrideWith(() => auth),
+      ...overridesWithoutAuth,
     ];
   });
 
@@ -327,6 +367,75 @@ void main() {
       expect(after, same(container));
 
       verifyNever(() => auth.logout(cause: any(named: 'cause')));
+    });
+  });
+
+  // Round 3's Critical, confirmed by measurement rather than by argument.
+  //
+  // The catch-up read is reached from `initState`, so it used to run *during* the
+  // build pass, and `AuthNotifier.logout`'s first statement is
+  // `state = const AsyncValue.loading()`. `AuthNotifier.init` already carries a
+  // comment saying that exact shape "would trigger provider notifications that cause
+  // a !_dirty assertion in ProviderScope" and is written to avoid it; the catch-up
+  // read was the first `initState`-time path to `logout()` in the app, so it
+  // reintroduced a hazard the class had documented. The fix defers only that one
+  // read by a frame, leaving the listener synchronous.
+  //
+  // WHY THIS IS A NEW NOTIFIER AND NOT A NEW `expect`. What made the existing five
+  // subscription tests blind is [MockAuthNotifier]: `logout` is stubbed to
+  // `async {}`, so it never performs the write that *is* the hazard. Measured — with
+  // the fix reverted and everything below unchanged except the notifier, this test
+  // passes. A mock of the funnel cannot see a defect in the funnel's body, and no
+  // amount of arranging the widget tree around it helps.
+  //
+  // AND WHY THERE IS NO SIBLING `Consumer` HERE, which round 3 also asked for. Its
+  // reasoning was that a provider write during build only raises if something
+  // depends on the provider. Measured against the unfixed code, three ways: with no
+  // watcher it raises `framework.dart:5551 '!_dirty': is not true` — the assertion
+  // `AuthNotifier.init`'s comment names by hand — and with a `Consumer` watching
+  // `authProvider` beside the wiring it raises *nothing*, whether that sibling mounts
+  // in the same pump or survives from the previous one. So the watcher is not what
+  // makes this visible; adding it would have shipped a test with no failing mode.
+  group('the catch-up read runs after the build pass', () {
+    testWidgets('a stranded cause signs out without tripping the build pass',
+        (tester) async {
+      final syncAuth = SyncWritingAuthNotifier();
+      final scopeOverrides = [
+        authProvider.overrideWith(() => syncAuth),
+        ...overridesWithoutAuth,
+      ];
+
+      // Strand a cause with the wiring absent, the same setup as the catch-up test
+      // above — that is the only way to reach the read at all.
+      await tester.pumpWidget(ProviderScope(
+        overrides: scopeOverrides,
+        child: const SizedBox.shrink(),
+      ));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SizedBox)),
+      );
+      // Built and settled *before* the cause is planted, for the reason `pumpScope`
+      // documents: `build()` is async, and an auth resolution landing after the
+      // cause reaches the promotion arm, which clears it.
+      container.read(appConnectionStateProvider.notifier);
+      await tester.pump();
+
+      container.read(appConnectionStateProvider.notifier).exitToLogout();
+      await tester.pump();
+      expect(syncAuth.logoutCauses, isEmpty,
+          reason:
+              'the wiring was absent, so there is no stranded cause here and '
+              'this test would be measuring an ordinary transition');
+
+      await tester.pumpWidget(ProviderScope(
+        overrides: scopeOverrides,
+        child: const _SubscribesToCoreSessionExit(),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(syncAuth.logoutCauses, [EndCause.userRequested],
+          reason: 'deferring the read must not lose it');
     });
   });
 }

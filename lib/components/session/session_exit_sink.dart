@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
@@ -85,7 +85,25 @@ void endSessionIfCoreReportedOne(WidgetRef ref) {
 /// for a narrow one.
 ProviderSubscription<AppConnectionState> listenForCoreSessionExit(
     WidgetRef ref) {
-  endSessionIfCoreReportedOne(ref);
+  // Deferred by one frame, and only this call. Callers wire this from `initState`,
+  // so an inline read runs during the build pass — and `AuthNotifier.logout` opens
+  // with `state = const AsyncValue.loading()`, a synchronous provider write.
+  // `AuthNotifier.init` avoids the same shape for the same reason, in a comment on
+  // itself; measured on riverpod 2.6.1, the inline version here raises
+  // `framework.dart:5551 '!_dirty': is not true`. Pinned by the last test in
+  // `session_exit_sink_test.dart`.
+  //
+  // The *listener* stays synchronous, deliberately: it fires from a provider change —
+  // a button handler or the probe timer — never from a build pass, and the design's
+  // "the cause is set before `state =`" ordering depends on it running in the same
+  // turn as the transition.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // The subscription dies with the `State`, so by the next frame this widget
+    // may be gone. A cause left behind is picked up by the next consumer to
+    // mount, which is the whole property of the catch-up read.
+    if (!ref.context.mounted) return;
+    endSessionIfCoreReportedOne(ref);
+  });
   return ref.listenManual(appConnectionStateProvider, (prev, next) {
     if (next != AppConnectionState.loggedOut) return;
     endSessionIfCoreReportedOne(ref);
