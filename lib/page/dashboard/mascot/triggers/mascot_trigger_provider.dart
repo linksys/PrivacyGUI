@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -15,11 +12,12 @@ import 'trigger_definitions.dart';
 
 /// Provider for the mascot trigger system.
 ///
-/// Listens to SSE events and fires mascot notifications based on
-/// predefined trigger conditions. Features:
+/// Listens to the four L1 domain providers and fires mascot notifications based
+/// on predefined trigger conditions. Features:
 /// - Cooldown management (prevents spam)
-/// - Priority ordering (critical events interrupt)
 /// - State change detection (only triggers on actual changes)
+///
+/// Value-driven rather than SSE-driven on purpose — see [_listenToDomainData].
 final mascotTriggerProvider =
     NotifierProvider.autoDispose<MascotTriggerNotifier, MascotTriggerState>(
   MascotTriggerNotifier.new,
@@ -77,7 +75,6 @@ class MascotTriggerState {
 
 class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
   final _cooldownState = TriggerCooldownState();
-  Timer? _debounceTimer;
 
   /// External callback for firing triggers.
   ///
@@ -86,12 +83,9 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
   @override
   MascotTriggerState build() {
-    _listenToSseEvents();
+    _listenToDomainData();
 
-    ref.onDispose(() {
-      _debounceTimer?.cancel();
-      _cooldownState.clearAll();
-    });
+    ref.onDispose(_cooldownState.clearAll);
 
     return _seedBaseline();
   }
@@ -105,8 +99,15 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
   /// providers/notifier.dart:94), so an in-build `state = …` is silently
   /// discarded — it compiles clean and analyze says nothing. That is the #1509
   /// defect: every `previousXxx` stayed null, so each `_evaluateXxx` hit its
-  /// `previous == null` early return and the first SSE event per domain could
-  /// only seed, never fire.
+  /// `previous == null` early return and the first change per domain could only
+  /// seed, never fire.
+  ///
+  /// Only captures what is already loaded, which is enough:
+  /// `dashboardDomainReadyProvider` awaits systemInfo/devices/ethernet only, so
+  /// `wanDataProvider` and `firewallDataProvider` (both card-driven, and
+  /// `firewall_overview` sits below the fold in every preset) can still be in
+  /// flight here. The `ref.read`s below *start* those fetches, and
+  /// [_listenToDomainData] seeds each of them from its first settled value.
   MascotTriggerState _seedBaseline() {
     final isDashboardReady = ref.read(dashboardDomainReadyProvider).hasValue;
     if (!isDashboardReady) return const MascotTriggerState();
@@ -127,107 +128,57 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     );
   }
 
-  void _listenToSseEvents() {
-    ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull?.domain;
-      if (domain != null &&
-          TriggerDomainMapping.canTriggerNotification(domain)) {
-        _fillMissingBaseline();
-        _debouncedEvaluate(domain);
-      }
-    });
-  }
-
-  /// True once every domain has something to compare against.
-  bool get _hasCompleteBaseline =>
-      state.previousWanUp != null &&
-      state.previousDeviceCount != null &&
-      state.previousFirewallEnabled != null &&
-      state.previousDisabledRadios != null;
-
-  /// Captures the pre-event value for any domain [build] could not seed.
+  /// Evaluates each domain when *its own* L1 provider publishes a settled value.
   ///
-  /// Necessary because `build()` can only capture what is already loaded, and
-  /// `dashboardDomainReadyProvider` awaits systemInfo/devices/ethernet only:
-  /// `devicesDataProvider` is covered directly and `wifiDataProvider`
-  /// transitively (`devices_data_provider.dart:164` awaits it), but
-  /// `wanDataProvider` and `firewallDataProvider` are card-driven, so nothing
-  /// orders them before the mascot mounts. `firewall_overview` in particular
-  /// sits below the fold in every preset. Without this, the first
-  /// firewall-disable of a session could go unannounced even with the seed in
-  /// place.
+  /// Deliberately **not** driven by `sseInvalidationProvider`. Every L1 provider
+  /// the mascot reads debounces its own SSE-triggered refetch by 500 ms
+  /// (`firewall_data_provider.dart:137-141`, `wifi_data_provider.dart:109-112`,
+  /// `devices_data_provider.dart:246-249`), so a mascot-side timer can only ever
+  /// read the *pre-change* value: at T+500 the refetch has merely been *started*
+  /// and the USP round-trip is still in flight. Measured with a 500 ms
+  /// mascot-side debounce — `firewallRules`, `wifiRadios` and `connectedDevices`
+  /// all compared the baseline against the unchanged value, fired nothing, and
+  /// committed the stale value back as the baseline; only `wanStatus` worked,
+  /// because `wan_data_provider.dart:49-51` invalidates with no debounce.
+  /// Reacting to the value instead of to the clock takes 500 ms out of the
+  /// correctness argument altogether, and drops the shared debounce timer that
+  /// used to let one domain's event cancel another's pending evaluation.
+  void _listenToDomainData() {
+    ref.listen(
+        wanDataProvider, (_, next) => _onDomainData(next, _evaluateWanStatus));
+    ref.listen(devicesDataProvider,
+        (_, next) => _onDomainData(next, _evaluateDeviceChanges));
+    ref.listen(firewallDataProvider,
+        (_, next) => _onDomainData(next, _evaluateFirewallChanges));
+    ref.listen(wifiDataProvider,
+        (_, next) => _onDomainData(next, _evaluateWifiChanges));
+  }
+
+  /// Runs [evaluate] once per settled frame, and announces what it returns.
   ///
-  /// Running it synchronously inside the SSE listener is what makes it a
-  /// *pre-event* value: the L1 provider for the domain cannot have refreshed
-  /// yet — its own listener merely marks it dirty and the refetch is a USP
-  /// round-trip — while `_debouncedEvaluate` reads the new value 500 ms later.
-  /// Even against an already-invalidated provider the refreshing frame is
-  /// `AsyncData(previous, isLoading: true)`, so `valueOrNull` still yields the
-  /// old value. (`build()`'s reads are also what *start* those card-driven
-  /// fetches, so by the time any SSE event arrives the data is normally there.)
-  void _fillMissingBaseline() {
-    if (_hasCompleteBaseline) return;
+  /// The `isLoading` guard skips the re-run frame: `invalidateSelf()`
+  /// republishes the *previous* value with `isLoading` set, so evaluating on it
+  /// would compare the baseline against itself and then commit that stale value
+  /// as the new baseline — losing the change for good. Same guard and same
+  /// reason as `devices_data_provider.dart:128-131`; see
+  /// `doc/riverpod/listen_site_audit.md`. Error frames are skipped for the same
+  /// reason: `AsyncError` carries the previous value forward.
+  ///
+  /// Each `_evaluateXxx` compares against the stored baseline *before*
+  /// overwriting it, so these four sites are edge-triggered by construction and
+  /// unaffected by riverpod 3 collapsing two equal `AsyncData` frames into one
+  /// notification (#1512 P2) — the suppressed frame carried no delta anyway.
+  void _onDomainData(
+    AsyncValue<Object?> next,
+    MascotTrigger? Function() evaluate,
+  ) {
+    if (next.isLoading || next.hasError || !next.hasValue) return;
 
-    final baseline = _seedBaseline();
-    state = MascotTriggerState(
-      lastTrigger: state.lastTrigger,
-      lastTriggerTime: state.lastTriggerTime,
-      previousWanUp: state.previousWanUp ?? baseline.previousWanUp,
-      previousDeviceCount:
-          state.previousDeviceCount ?? baseline.previousDeviceCount,
-      previousFirewallEnabled:
-          state.previousFirewallEnabled ?? baseline.previousFirewallEnabled,
-      previousDisabledRadios:
-          state.previousDisabledRadios ?? baseline.previousDisabledRadios,
-    );
-  }
+    final trigger = evaluate();
+    if (trigger == null) return;
+    if (_cooldownState.isInCooldown(trigger)) return;
 
-  void _debouncedEvaluate(InvalidationDomain domain) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _evaluateTriggers(domain);
-    });
-  }
-
-  void _evaluateTriggers(InvalidationDomain domain) {
-    final triggers = <MascotTrigger>[];
-
-    switch (domain) {
-      case InvalidationDomain.wanStatus:
-        final wanTrigger = _evaluateWanStatus();
-        if (wanTrigger != null) triggers.add(wanTrigger);
-        break;
-
-      case InvalidationDomain.connectedDevices:
-        final deviceTrigger = _evaluateDeviceChanges();
-        if (deviceTrigger != null) triggers.add(deviceTrigger);
-        break;
-
-      case InvalidationDomain.firewallRules:
-      case InvalidationDomain.dmz:
-        final firewallTrigger = _evaluateFirewallChanges();
-        if (firewallTrigger != null) triggers.add(firewallTrigger);
-        break;
-
-      case InvalidationDomain.wifiRadios:
-        final wifiTrigger = _evaluateWifiChanges();
-        if (wifiTrigger != null) triggers.add(wifiTrigger);
-        break;
-
-      default:
-        break;
-    }
-
-    // Sort by priority (lower = higher priority)
-    triggers.sort((a, b) => a.priority.compareTo(b.priority));
-
-    // Fire highest priority trigger that isn't in cooldown
-    for (final trigger in triggers) {
-      if (!_cooldownState.isInCooldown(trigger)) {
-        _fireTrigger(trigger);
-        break;
-      }
-    }
+    _fireTrigger(trigger);
   }
 
   MascotTrigger? _evaluateWanStatus() {
