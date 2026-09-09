@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
@@ -25,6 +26,13 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 /// key off. Keying on the cause is what makes that case merely late rather than
 /// lost — see [listenForCoreSessionExit]. A destructive read that returns `null`
 /// costs nothing; a stranded cause does.
+///
+/// `@visibleForTesting` because [listenForCoreSessionExit] is now its only caller
+/// in `lib/` — the extraction that answered round 2's first finding also made this
+/// one a test seam rather than an API. Left top-level rather than made private so
+/// the read-and-clear-once property keeps its own three tests, which a state
+/// transition cannot express: the claim there is about calling it *twice*.
+@visibleForTesting
 void endSessionIfCoreReportedOne(WidgetRef ref) {
   final cause =
       ref.read(appConnectionStateProvider.notifier).takePendingSessionExit();
