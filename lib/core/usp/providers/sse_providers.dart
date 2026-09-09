@@ -65,6 +65,13 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   );
 
   // W-1 fix: wire auth failure to logout (both modes)
+  //
+  // TODO(#1529): the one place under `lib/core/` still allowed to sign the user
+  // out, and `session_teardown_call_sites_test.dart` declares it as such. A 401
+  // can arrive before any page is mounted, so converting it to a report the way
+  // phase 5 did the three connection exits would fail open. #1529 owns the
+  // replacement — under Remote Assistance this currently ends a support session
+  // with no explanation and nothing to sign back in to.
   bridge.onAuthFailed = () {
     logger.w('[USP][Auth]: Session expired — triggering logout');
     ref.read(authProvider.notifier).logout();
@@ -104,6 +111,10 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   manager.onHeartbeatAuth = () => authCoordinator.ensureAuth();
 
   // Wire force logout — shared guard prevents duplicate triggers
+  //
+  // TODO(#1529): the same waiver as `bridge.onAuthFailed` above, reached from the
+  // auth coordinator and the client instead of the bridge. The log line says
+  // "navigating to login", which has no counterpart in Remote Assistance.
   bool logoutTriggered = false;
   void forceLogout() {
     if (logoutTriggered) return;

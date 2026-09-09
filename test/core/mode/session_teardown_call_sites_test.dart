@@ -78,8 +78,11 @@ const _exitActions = 'lib/components/session/session_exit_actions.dart';
 /// and the 401 they answer can arrive during boot, before any page is mounted.
 /// Turning them into a report would therefore fail *open*: the app would keep a
 /// session the router has already rejected, which is strictly worse than the layer
-/// violation. Closing it needs a state-carrying owner for transport auth failure;
-/// that is recorded on #1323 rather than attempted here.
+/// violation. Closing it needs a state-carrying owner for transport auth failure,
+/// which is #1529's first scope item — filed because round 2 of #1513's review
+/// pointed out that the waiver previously named #1323, which carries the reasoning
+/// but no acceptance line for these two sites, so a green census here read as
+/// "done". Both sites now carry a `TODO(#1529)`.
 const _transportAuthFailure = 'lib/core/usp/providers/sse_providers.dart';
 const _sessionSink = 'lib/components/session/session_exit_sink.dart';
 
