@@ -28,6 +28,26 @@ Run the loader contract before submitting a web-shell change:
 python3 tools/test_router_ai_loader.py
 ```
 
+## Optional AI sessions
+
+The optional AI session bootstrap and revocation run independently of native
+router login/logout. Each AI request has a five-second deadline; logout aborts
+pending bootstrap requests before revocation so a delayed response cannot
+restore the browser session. AI unavailability leaves native authentication
+usable. Successful server-side revocation still requires the endpoint to be
+available.
+
+Run the native-auth and transport regression tests with:
+
+```bash
+flutter test --no-pub test/core/ai_session/ai_session_service_test.dart test/providers/auth/ai_session_auth_bridge_test.dart test/providers/auth/ai_session_stall_test.dart
+python3 tools/test_ai_session_browser.py
+```
+
+The browser test uses a loopback fixture and synthetic credentials. Set
+`CHROME_EXECUTABLE` when Chrome is not on the default path; use `--flutter` to
+select the Flutter executable.
+
 ## JNAP firmware build path
 
 JNAP PrivacyGUI branches are built by the Jenkins Cloud
