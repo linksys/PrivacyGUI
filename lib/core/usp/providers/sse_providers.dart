@@ -70,8 +70,9 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   // out, and `session_teardown_call_sites_test.dart` declares it as such. A 401
   // can arrive before any page is mounted, so converting it to a report the way
   // phase 5 did the three connection exits would fail open. #1529 owns the
-  // replacement — under Remote Assistance this currently ends a support session
-  // with no explanation and nothing to sign back in to.
+  // replacement — under Remote Assistance this lands on the confirm view's
+  // session-ended surface, which reports a rejected credential with a green check
+  // mark and the copy for an operator who finished on purpose.
   bridge.onAuthFailed = () {
     logger.w('[USP][Auth]: Session expired — triggering logout');
     ref.read(authProvider.notifier).logout();
