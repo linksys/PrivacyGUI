@@ -2916,7 +2916,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, _infoBox(context,
             'Your router is set to WPA3-only security. '
             'Older devices (phones before 2019, many smart home devices) can\'t connect with this setting. '
-            'Go to My Network → WiFi Security and enable WPA2/WPA3 compatibility mode.')),
+            'Choose Back to router home, open Incredible-WiFi, and check whether WPA2/WPA3 compatibility is available.')),
       if (macActive)
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3000,7 +3000,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context,
             _infoBox(
               context,
-              'Some older smart home devices don\'t support the latest WiFi security standard. If this device keeps failing:\n\nGo to My Network → WiFi Security and check if "WPA2 compatibility" is enabled.',
+              'Some older smart home devices don\'t support the latest WiFi security standard. If this device keeps failing:\n\nChoose Back to router home, open Incredible-WiFi, and check whether WPA2 compatibility is available.',
             )),
       const SizedBox(height: 8),
       Align(
@@ -4055,7 +4055,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             GuidedSteps(steps: [
               'Log into your internet company\'s gateway — usually at 192.168.100.1 or printed on the device',
               'Look for settings labelled "Bridge Mode", "IP Passthrough", or "DMZ". The name varies by provider.',
-              'Enter your Linksys router\'s MAC address (shown in My Network tab) when prompted',
+              'If your provider asks for a MAC address, use the internet (WAN) MAC address from your router settings. Ask your provider if you are unsure.',
               'Save and wait 2 minutes — both devices will restart',
               'Run the Instant-Test again to confirm you now have a public IP address',
             ]),

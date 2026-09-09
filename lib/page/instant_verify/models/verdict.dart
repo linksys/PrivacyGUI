@@ -362,12 +362,11 @@ class VerdictEngine {
       if (hasWeakDevices && downloadMbps < 25) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
-          headline: 'Your device has a weak WiFi connection',
+          headline: 'WiFi may be affecting the speed test',
           explanation:
-              'This speed test runs from your device \u2014 your device has a weak '
-              'WiFi connection, which may be making the reading look lower than '
-              'your actual internet speed.\n\n'
-              'Fix your device\'s signal first, then run again.',
+              'This speed test runs from this device. We found connection issues on '
+              'one or more devices, but cannot tell whether this device is affected.\n\n'
+              'Choose One device is slow to check an affected device, then run the speed test again.',
           checkNumber: 7,
         ));
       }
