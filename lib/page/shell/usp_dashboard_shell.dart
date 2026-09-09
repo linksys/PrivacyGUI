@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
@@ -60,6 +62,37 @@ void pushHealthActionTarget(BuildContext context, String routeName) {
   context.pushNamed(routeName);
 }
 
+/// End the app session if `lib/core/` has reported that one is over.
+///
+/// The acting half of `AppConnectionStateNotifier.takePendingSessionExit`, and the
+/// only place in the app that turns that report into a sign-out.
+///
+/// Keyed on the cause being present rather than on the state transition alone.
+/// [AppConnectionState.loggedOut] also arrives when auth logged *itself* out — an
+/// idle timeout, a 401 through `sse_providers.dart`, the account menu — and the
+/// connection notifier merely followed; calling `logout()` again there would be a
+/// second teardown of a session already gone. `takePendingSessionExit()` returns
+/// non-null only for an exit the core itself decided, and only once, so this is
+/// safe to call on every transition into `loggedOut`.
+///
+/// A top-level function rather than a closure inside [initState] for the same
+/// reason as [pushHealthActionTarget] above: the shell needs the router, the SSE
+/// stack, the dashboard's domain-ready gate, the mascot controller and the
+/// theme-studio config before it renders a frame, so a test that pumped it to
+/// reach this behaviour would fail for reasons that are almost never about the
+/// session — a position `surface_consumers_test.dart` already takes explicitly.
+/// Split instead: the verb is tested directly in
+/// `test/page/shell/session_exit_sink_test.dart`, and that the shell is its single
+/// caller is a census in `session_teardown_call_sites_test.dart`.
+void endSessionIfCoreReportedOne(WidgetRef ref) {
+  final cause =
+      ref.read(appConnectionStateProvider.notifier).takePendingSessionExit();
+  if (cause == null) return;
+  logger.i('[Recovery] Connection state reports the session is over '
+      '(${cause.name}) — ending it');
+  ref.read(authProvider.notifier).logout(cause: cause);
+}
+
 /// USP Dashboard shell — wraps USP child routes with a shared Scaffold.
 ///
 /// Uses the shared [MenuHolder] widget (same as JNAP) with the USP-specific
@@ -79,6 +112,34 @@ class UspDashboardShell extends ConsumerStatefulWidget {
 class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
   bool _recoveryDialogShowing = false;
 
+  /// The two things this shell does with the connection state: open the natural
+  /// recovery dialog on the way *into* a wait, and end the session when
+  /// `lib/core/` reports that one is over.
+  ///
+  /// ## Why the session ends here and not where it is decided
+  ///
+  /// `AppConnectionStateNotifier`'s three exits — the manual one, a router that
+  /// came back factory-reset, a router that came back with a different serial —
+  /// each used to finish with `ref.read(authProvider.notifier).logout()`. That put
+  /// three things inside a provider under `lib/core/`: the decision to sign a
+  /// person out, the Remote-Assistance teardown-by-cause that
+  /// `SessionStrategy.end` owns, and the navigation that follows. #1323 makes the
+  /// core report instead — a state plus an [EndCause] — and this the one consumer
+  /// that acts on it. `session_teardown_call_sites_test.dart` is what keeps it one.
+  ///
+  /// ## Why this shell is a safe place to put the only consumer
+  ///
+  /// A report nobody consumes fails *open*: auth would stay logged in while the
+  /// connection state said otherwise. So the consumer has to be mounted whenever
+  /// any of the three can fire, and all three are reachable only from inside this
+  /// shell. `exitToLogout()` has a single caller, `ReturnToLoginAction`, which a
+  /// recovery dialog renders. The two probe exits need
+  /// `AppConnectionState.waitingForRecovery`, which is only entered from
+  /// `authenticated` — by an SSE reconnect giving up, a polling failure, or an
+  /// operational trigger — and every one of those originates on a `/usp*` page.
+  /// This is a `ShellRoute` builder wrapping all of them, and its `State` survives
+  /// navigation between them, so there is no window where a page is up and this
+  /// listener is not.
   @override
   void initState() {
     super.initState();
@@ -92,6 +153,10 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         if (isNatural) {
           _showNaturalRecoveryDialog();
         }
+      }
+
+      if (next == AppConnectionState.loggedOut) {
+        endSessionIfCoreReportedOne(ref);
       }
     });
   }

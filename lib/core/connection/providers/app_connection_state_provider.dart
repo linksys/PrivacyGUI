@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// The recovery probe, wired to this mode's answers.
@@ -45,6 +46,10 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   ProbeResult? _lastProbeResult;
   int _consecutiveFailures = 0;
 
+  /// The session exit this notifier has *decided on* and is waiting for the page
+  /// layer to carry out. See [takePendingSessionExit].
+  EndCause? _pendingSessionExit;
+
   /// Number of consecutive `unreachable` probe results in the current waiting
   /// session. Resets when probe recovers or the notifier leaves the waiting
   /// state. Surfaced for UIs that want to switch from "please wait" to
@@ -57,6 +62,43 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
 
   /// The current recovery context, or `null` if not in recovery.
   RecoveryContext? get recoveryContext => _recoveryContext;
+
+  /// Read-and-clear the session exit this notifier has decided on, if any.
+  ///
+  /// **This is how `lib/core/` stops ending the user's session itself.** All three
+  /// of this file's exits — the manual one, a router that came back
+  /// factory-reset, a router that came back with a different serial — used to
+  /// finish with a bare `ref.read(authProvider.notifier).logout()`, which put the
+  /// decision to sign a person out, the RA-teardown-by-cause that
+  /// `SessionStrategy.end` owns, and the navigation that follows from it, inside a
+  /// provider under `lib/core/`. Now each one sets the state and the cause and
+  /// stops; `UspDashboardShell` is the single consumer and the only place that
+  /// calls `logout()`. Pinned by `session_teardown_call_sites_test.dart`.
+  ///
+  /// **Not the four-variant `RecoveryOutcome` #1323 sketched**, because three of
+  /// those variants already exist. "Recovered" and "still waiting" are
+  /// [AppConnectionState.authenticated] and
+  /// [AppConnectionState.waitingForRecovery] — values this notifier's own state
+  /// already publishes to the same listener that would read the sealed type. Only
+  /// "must end the session" carried information nothing else did, and its whole
+  /// payload is the [EndCause] `AuthNotifier.logout` takes. A sealed hierarchy
+  /// with one live variant would have been ceremony around this field, and the
+  /// other three would have been a second spelling of the state — two sources for
+  /// one fact, which is the defect the epic spent nine phases removing.
+  ///
+  /// **One-shot, and that is correctness rather than tidiness.**
+  /// [AppConnectionState.loggedOut] is reachable two ways: this notifier deciding
+  /// the session is over, and [build]'s `authProvider` listener observing that it
+  /// already *is* over — a logout someone else initiated. Only the first sets the
+  /// field, so a consumer keying off the state transition alone would call
+  /// `logout()` a second time on the path where auth had just finished one.
+  /// Clearing on read is also what stops a cause that has been acted on from
+  /// being replayed by an unrelated later transition.
+  EndCause? takePendingSessionExit() {
+    final cause = _pendingSessionExit;
+    _pendingSessionExit = null;
+    return cause;
+  }
 
   @override
   AppConnectionState build() {
@@ -135,6 +177,10 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _recoveryPlan = plan;
     _consecutiveFailures = 0;
     _lastProbeResult = null;
+    // Cleared alongside the rest of the per-wait bookkeeping. A pending exit that
+    // nobody consumed belongs to a wait that is over; carrying it into this one
+    // would let a stale cause be taken on the next transition to `loggedOut`.
+    _pendingSessionExit = null;
     state = AppConnectionState.waitingForRecovery;
 
     // Disconnect SSE immediately
@@ -167,6 +213,20 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     enterWaiting(context: RecoveryContext.natural);
   }
 
+  /// Give up on recovery: stop probing and report that the session is over.
+  ///
+  /// Does not sign the user out — it reports, via [takePendingSessionExit], and
+  /// the page layer acts. The `logout()` that used to be this method's last line
+  /// is the one `lib/core/` is no longer allowed to make.
+  ///
+  /// [EndCause.userRequested] rather than the [EndCause.sessionLost] that bare
+  /// `logout()` defaulted to. Not a behaviour change: the only caller is
+  /// `ReturnToLoginAction`, which only `LocalSurface.sessionExitAction()` returns,
+  /// and `LocalSessionStrategy.end` is an empty body that ignores the cause. What
+  /// it buys is that the one exit here a person actually asked for now says so, so
+  /// if this ever does become reachable from a Remote surface it releases the
+  /// Guardian session instead of leaving it open — which is the asymmetry
+  /// `EndSessionAction` documents having had to route around this method to avoid.
   void exitToLogout() {
     _probeTimer?.cancel();
     _probeTimer = null;
@@ -176,9 +236,13 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _recoveryPlan = null;
     _consecutiveFailures = 0;
     _lastProbeResult = null;
+    // Before the state assignment, not after. Riverpod notifies listeners
+    // synchronously from `state =`, so the consumer runs inside that line and has
+    // to find the cause already there — the same ordering the two probe exits
+    // below rely on.
+    _pendingSessionExit = EndCause.userRequested;
     state = AppConnectionState.loggedOut;
-    logger.i('[Connection] Manual exit to loggedOut');
-    ref.read(authProvider.notifier).logout();
+    logger.i('[Connection] Manual exit to loggedOut (userRequested)');
   }
 
   /// Force an immediate probe attempt regardless of the periodic timer.
@@ -227,9 +291,15 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _recoveryContext = null;
         _recoveryPlan = null;
         if (trigger == RecoveryTrigger.operationalFactoryReset) {
-          logger.i('[Connection] Recovered (factoryReset) — logging out');
+          logger.i('[Connection] Recovered (factoryReset) — session is over');
+          // [EndCause.sessionLost], which is what the bare `logout()` here
+          // defaulted to, and it is the right reading rather than the
+          // conservative one: a router that came back factory-reset has already
+          // discarded whatever authorised this session, so asking Guardian to
+          // close it politely would be a call against a device that no longer
+          // recognises the token.
+          _pendingSessionExit = EndCause.sessionLost;
           state = AppConnectionState.loggedOut;
-          ref.read(authProvider.notifier).logout();
         } else {
           state = AppConnectionState.authenticated;
           logger.i('[Connection] Recovered — reconnecting SSE');
@@ -241,9 +311,11 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _recoveryPlan = null;
         _probeTimer?.cancel();
         _probeTimer = null;
+        logger.w('[Connection] Serial mismatch — session is over');
+        // Same cause and the same reason as the factory-reset arm above: the
+        // device that answered is not the one this session was opened against.
+        _pendingSessionExit = EndCause.sessionLost;
         state = AppConnectionState.loggedOut;
-        logger.w('[Connection] Serial mismatch — force logout');
-        ref.read(authProvider.notifier).logout();
         break;
     }
   }

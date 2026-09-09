@@ -12,6 +12,14 @@
 //     two lines back into its own handler, and if it does, everything still
 //     passes: the copy works.
 //
+//   - ending the session at all lived wherever the code that noticed happened to
+//     be. `app_connection_state_provider.dart` — a provider under `lib/core/` —
+//     finished three of its exits with a bare `logout()`, which is the decision to
+//     sign a person out, the RA teardown-by-cause `SessionStrategy.end` owns, and
+//     the navigation that follows, all made from the layer that is only supposed to
+//     know the connection is gone. Phase 5 gave it a report to make instead; the
+//     third census below is what stops the next such file from making the call.
+//
 //   - "Return to login page" is correct in a local build and dishonest in RA,
 //     where the credential was a one-shot Guardian token. Phase 5 gated the two
 //     dialogs that offer it and gave each an `else` arm offering "End session". A
@@ -59,6 +67,21 @@ const _sessionStrategy = 'lib/core/mode/impl/remote_session_strategy.dart';
 /// in `LocalSurface`/`RemoteSurface` would have satisfied the contract and failed
 /// it, since Rule 17.1.3 puts those under `lib/page/_shared/mode/`.
 const _exitActions = 'lib/components/session/session_exit_actions.dart';
+
+/// The one file under `lib/core/` still allowed to sign the user out, and the one
+/// outside it that acts on the core's report.
+///
+/// `sse_providers.dart` is an exception with a reason, not an oversight. Its two
+/// calls are `bridge.onAuthFailed` and a shared `forceLogout` handed to the auth
+/// coordinator and the client — **callbacks assigned onto transport objects inside
+/// provider build bodies**, so there is no notifier state for a page to listen to,
+/// and the 401 they answer can arrive during boot, before any page is mounted.
+/// Turning them into a report would therefore fail *open*: the app would keep a
+/// session the router has already rejected, which is strictly worse than the layer
+/// violation. Closing it needs a state-carrying owner for transport auth failure;
+/// that is recorded on #1323 rather than attempted here.
+const _transportAuthFailure = 'lib/core/usp/providers/sse_providers.dart';
+const _sessionSink = 'lib/page/shell/usp_dashboard_shell.dart';
 
 /// The recovery dialogs that must take their exit action from cause 5.
 ///
@@ -199,6 +222,79 @@ void main() {
             'app back on the confirm page holding the parameters of the session '
             'it just left — where one tap re-activates it. Scattering the call '
             'back out means the next exit path is one someone forgot.',
+      );
+    });
+  });
+
+  group('lib/core/ reports that a session is over rather than ending it', () {
+    test('only the declared exception signs the user out', () {
+      // Two keys, and the pairing is what makes this precise enough to assert.
+      // `.logout(` alone has four more callers under `lib/core/` that are the USP
+      // protocol's own logout on a transport (`_usp.logout()`,
+      // `_client.logout()`), which are not this rule's subject; mentioning
+      // `authProvider` is what separates "ends the app's session" from "closes a
+      // connection". Measured, not assumed: those four files mention
+      // `authProvider` zero times.
+      //
+      // It is a file-level pairing rather than a single expression on purpose. The
+      // spelling varies — `ref.read(authProvider.notifier).logout()` here,
+      // `authNotifier.logout(cause: ...)` via a local in `remote_session_chip.dart`
+      // — and a regex tight enough to match only the first would miss the second,
+      // which is the failure mode a census cannot afford. The cost is a false
+      // positive if a `lib/core/` file ever reads `authProvider` for some unrelated
+      // reason *and* calls a transport `logout()`; erring that way is correct here,
+      // because the fix for a false positive is a comment on this list and the
+      // fix for a false negative is a field bug.
+      final callers = sources.entries
+          .where((e) => e.key.startsWith('lib/core/'))
+          .where((e) => e.value.contains('authProvider'))
+          .where((e) => e.value.contains('.logout('))
+          .map((e) => e.key)
+          .toList()
+        ..sort();
+
+      expect(
+        callers,
+        [_transportAuthFailure],
+        reason: 'expected $_transportAuthFailure to be the only file under '
+            'lib/core/ that ends the app session, found $callers. This was '
+            'app_connection_state_provider.dart until #1323 phase 5: three exits '
+            'there — the manual one, a router back from a factory reset, a router '
+            'back with a different serial — each finished with a bare logout(), '
+            'and a bare logout() is three decisions, not one. It defaults to '
+            'EndCause.sessionLost, which is RemoteSessionStrategy.end deciding '
+            'not to release the Guardian session; it drops the credential, which '
+            'is what the route redirect reads to pick a destination; and it is '
+            'the sign-out itself. A provider that knows the connection is gone is '
+            'not the layer that gets to make any of them. Report instead: set the '
+            'state and an EndCause, and let the consumer act — see '
+            'AppConnectionStateNotifier.takePendingSessionExit.',
+      );
+    });
+
+    test('exactly one consumer acts on the report', () {
+      // The mirror of the ban above, and the half that matters more. A report
+      // nobody reads fails *open*: the connection state says the session is over
+      // while auth still holds it, and nothing navigates. So "core stopped calling
+      // logout()" is only an improvement if this list is non-empty, and only
+      // unambiguous if it has one entry — `takePendingSessionExit` clears on read,
+      // so a second consumer would race the first for a cause exactly one of them
+      // can see. The declaration in `app_connection_state_provider.dart` has no
+      // leading dot, so it is not a consumer.
+      final consumers = filesMatching(RegExp(r'\.takePendingSessionExit\('));
+
+      expect(
+        consumers,
+        [_sessionSink],
+        reason: 'expected the core session-exit report to be consumed in '
+            '$_sessionSink alone, found $consumers. Empty means the three exits '
+            'in app_connection_state_provider.dart now do nothing at all — the '
+            'dialog closes, the state reads loggedOut and the user stays signed '
+            'in on a router that is gone. More than one means two listeners '
+            'competing for a one-shot value. If the consumer has to move, it has '
+            'to move somewhere mounted whenever any of those three exits can '
+            'fire; the reachability argument for this one is written on its '
+            'initState.',
       );
     });
   });

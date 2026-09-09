@@ -46,6 +46,7 @@ import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -76,6 +77,14 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
 const _kReachabilityPath = 'Device.DeviceInfo.SerialNumber';
 
 void main() {
+  setUpAll(() {
+    // Required by the `any(named: 'cause')` matchers below. Without it mocktail
+    // throws from *inside* the verification and leaves its argument-matcher stack
+    // dirty, which silently disables later stubbing in this file instead of failing
+    // where the mistake is.
+    registerFallbackValue(EndCause.sessionLost);
+  });
+
   late MockUspClient mockUsp;
   late MockUspBridgeClient mockBridge;
   late MockUspAuthCoordinator mockAuth;
@@ -97,7 +106,16 @@ void main() {
     // `logout()` returns null where a Future is expected, so a regression would
     // fail with a TypeError from inside `_runProbe` instead of the `verifyNever`
     // that names the actual defect.
-    when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
+    //
+    // Matched on `cause` rather than as a bare `logout()`, and so are the
+    // `verifyNever`s. `logout({EndCause cause = EndCause.sessionLost})` has a
+    // default, so `logout()` and `logout(cause: …)` are two different invocations
+    // to mocktail: a bare matcher does not match a call that passed the argument.
+    // Since #1323 phase 5 the only way back to a sign-out here is with a cause, so
+    // the bare form would have been a stub nothing hits and — worse — three
+    // `verifyNever`s that cannot fail.
+    when(() => mockAuthNotifier.logout(cause: any(named: 'cause')))
+        .thenAnswer((_) async {});
   });
 
   /// Note what is *not* overridden: `recoveryProbeServiceProvider`. The real
@@ -162,7 +180,7 @@ void main() {
           AppConnectionState.authenticated,
           reason: 'the router was answering the whole time');
       expect(notifier.lastProbeResult, ProbeResult.recovered);
-      verifyNever(() => mockAuthNotifier.logout());
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
       verify(() => mockSseManager.connect()).called(1);
     });
 
@@ -213,7 +231,14 @@ void main() {
       expect(notifier.lastProbeResult, isNot(ProbeResult.serialMismatch));
       expect(container.read(appConnectionStateProvider),
           isNot(AppConnectionState.loggedOut));
-      verifyNever(() => mockAuthNotifier.logout());
+      // The decision, not just the sign-out. Since #1323 phase 5 this notifier
+      // *reports* an exit for the page layer to carry out, so "did not force a
+      // logout" is now two claims: nothing decided the session was over, and
+      // nothing acted on it. The first is the one this acceptance is about — a
+      // reported exit with no consumer mounted would leave the support session
+      // looking alive while the app had already given up on it.
+      expect(notifier.takePendingSessionExit(), isNull);
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
     });
 
     test('a Wi-Fi change does not enter recovery at all', () async {
@@ -263,7 +288,7 @@ void main() {
       verify(() => mockSseManager.disconnect()).called(1);
     });
 
-    test('a changed serial still forces a logout', () async {
+    test('a changed serial still ends the session', () async {
       // The fingerprint check is not weakened, it is scoped. Locally it still
       // does the job it was written for: the operator power-cycled one router and
       // plugged in another, or a factory reset handed the same IP to a different
@@ -285,7 +310,12 @@ void main() {
       expect(notifier.lastProbeResult, ProbeResult.serialMismatch);
       expect(container.read(appConnectionStateProvider),
           AppConnectionState.loggedOut);
-      verify(() => mockAuthNotifier.logout()).called(1);
+      // "Ends the session" is now a report rather than a call — see
+      // `AppConnectionStateNotifier.takePendingSessionExit`. The scoping claim this
+      // test makes is unaffected: what matters is that the local profile still
+      // reaches a decided exit at all, and `EndCause.sessionLost` is the exit.
+      expect(notifier.takePendingSessionExit(), EndCause.sessionLost);
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
     });
   });
 }
