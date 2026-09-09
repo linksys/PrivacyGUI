@@ -1,9 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/theme/theme_source.dart';
 
 /// Global configuration entry point.
@@ -19,9 +17,16 @@ import 'package:privacy_gui/theme/theme_source.dart';
 /// ```dart
 /// if (GlobalConfig.remote.mascotEnabled) { ... }
 /// if (GlobalConfig.feature.enableThemeStudio) { ... }
-/// if (GlobalConfig.device.supportIPv6) { ... }
 /// if (GlobalConfig.theme.source != null) { ... }
 /// ```
+///
+/// Everything here is static config: compile-time flags plus the CI/CD JSON.
+/// There is deliberately no runtime tier. #1474 phase 8 deleted a
+/// `DeviceConfig`/`DeviceCapability` one — 117 lines whose `initDevice()` was
+/// never called from anywhere, so `showIPv6Settings` and its two siblings read
+/// `false` even in a local build. Device capability belongs in a provider that
+/// something actually watches, not in a static the login path forgot to
+/// populate.
 class GlobalConfig {
   GlobalConfig._();
 
@@ -38,15 +43,6 @@ class GlobalConfig {
 
   /// UI configuration
   static final ui = UIConfig._();
-
-  // === Dynamic config (runtime initialization) ===
-
-  static DeviceConfig? _device;
-
-  /// Device capability config.
-  ///
-  /// Empty before login, initialized via [initDevice] after login.
-  static DeviceConfig get device => _device ?? DeviceConfig.empty();
 
   // === Initialization ===
 
@@ -75,40 +71,6 @@ class GlobalConfig {
       theme._loadFromJson(null);
     }
   }
-
-  // === Device config management ===
-
-  /// Initialize device config (call after login).
-  ///
-  /// In RA mode, [info] comes from the remote device being controlled.
-  static void initDevice(DeviceCapability info) {
-    _device = DeviceConfig._(info);
-    _notifyListeners();
-  }
-
-  /// Clear device config (call on logout).
-  static void clearDevice() {
-    _device = null;
-    _notifyListeners();
-  }
-
-  // === Reactive UI updates ===
-
-  static final _changeNotifier = _ConfigChangeNotifier();
-
-  /// Listen to config changes (for ListenableBuilder).
-  ///
-  /// ```dart
-  /// ListenableBuilder(
-  ///   listenable: GlobalConfig.changes,
-  ///   builder: (context, _) => ...,
-  /// )
-  /// ```
-  static Listenable get changes => _changeNotifier;
-
-  static void _notifyListeners() {
-    _changeNotifier._notify();
-  }
 }
 
 // =============================================================================
@@ -117,8 +79,63 @@ class GlobalConfig {
 
 /// Remote mode configuration and restrictions.
 ///
-/// Centralizes all UI and feature restrictions for Remote Assistance mode.
 /// Access via [GlobalConfig.remote].
+///
+/// **Not** a table of per-mode policy flags, and #1474 phase 8 shrank it to make
+/// that true. `allowDashboardEdit`, `allowConfigChanges` and
+/// `showAdvancedSettings` were removed with zero consumers each: well named,
+/// documented, centralised, and never read. That is the failure mode of per-mode
+/// *data*, and it is why #1474 rejected a `UiCapabilities` table: an unread bool
+/// cannot be seen to be wrong.
+///
+/// Measured 2026-09-07, one of the three named a policy in force and the other
+/// two named a policy #1474 has decided **against** — so this is not three gates
+/// awaiting an implementation.
+///
+/// `allowDashboardEdit` duplicated a live gate. `usp_sliver_dashboard_view.dart`
+/// gated the `dashboard-edit` action in `DashboardHeaderBar` — a `isRemoteMode`
+/// bool then, `SurfaceStrategy.layoutEditor()` returning `null` since #1497 — and
+/// the Settings → "Change" entry exists only inside `if (isEditMode)`. Editing
+/// really is unreachable in RA.
+///
+/// `showPresetDialog` went the same way in phase 7, and for the reason this
+/// paragraph exists rather than by accident: its one consumer became
+/// `SurfaceStrategy.firstRunPresetFlow()`, which left the getter with none, and
+/// `global_config_dead_member_test.dart` failed until it was deleted. That test is
+/// the forcing function — a flag whose behaviour has moved to a strategy cannot be
+/// left behind as a second, quieter answer to the same question.
+///
+/// `forcedPreset` followed it out, and it is the one that shows why "unread" is
+/// the wrong test on its own. It had **two** live consumers — the layout
+/// controller and the layout-preferences notifier — so no dead-member scan would
+/// ever have found it; what was wrong is that neither of them was asking about a
+/// preset. Both were asking "is this dashboard the viewer's to keep", and each
+/// answered it separately from the same flag. `SurfaceStrategy.fixedDashboardLayout()`
+/// is that question, once, and it is the reason this class no longer imports
+/// `lib/page/` at all — `forcedPreset`'s return type was the only edge.
+///
+/// `allowConfigChanges` was the wrong *shape*, not merely unread. It says "no
+/// writes in RA"; #1496 decided per operation, and reboot and cloud-OTA upgrade
+/// stay **allowed** — a blanket flag would have blocked the two remote support
+/// most needs. What that phase blocks is narrower: factory reset
+/// (`credentialLoss`) and local firmware upload (`transportLoss`).
+///
+/// `showAdvancedSettings` hides a surface, which is the shape #1474 rules out:
+/// "a concept the remote mode does not have is expressed by its strategy not
+/// using it, not by a flag that hides UI". Advanced settings is not a concept
+/// remote lacks — the agent needs it — and no phase of the epic hides it. #1497's
+/// seven surfaces are exactly the seven existing `isActive` reads under
+/// `lib/page/` + `lib/components/`; `usp_menu_view.dart` is not among them and has
+/// no RA condition by design.
+///
+/// One real gap survives, and it belongs to #1496 rather than to a flag here:
+/// `lib/page/admin/` and `lib/page/firmware_update/` contain **zero** mode reads,
+/// while an RA session holds a full-capability `UspClient` aimed at the Guardian
+/// `/actions/usp` proxy. Nothing on this side stops a destructive operation today.
+///
+/// So a new member here needs a consumer in the same change, and
+/// `test/config/global_config_dead_member_test.dart` enforces that rather than
+/// leaving it to this paragraph.
 class RemoteConfig {
   RemoteConfig._();
 
@@ -135,26 +152,6 @@ class RemoteConfig {
   /// rendering). The user's own on/off preference is a separate axis
   /// (`appSettings.showMascot`) applied on top of this.
   bool get mascotEnabled => !isActive && !BuildConfig.e2eMock;
-
-  /// Whether to allow Dashboard editing
-  bool get allowDashboardEdit => !isActive;
-
-  /// Whether to show preset selection dialog
-  bool get showPresetDialog => !isActive;
-
-  // === Feature restrictions ===
-
-  /// Whether to allow config changes
-  bool get allowConfigChanges => !isActive;
-
-  /// Whether to show advanced settings
-  bool get showAdvancedSettings => !isActive;
-
-  // === Dashboard ===
-
-  /// Forced dashboard preset in remote mode
-  UspDashboardPreset? get forcedPreset =>
-      isActive ? UspDashboardPreset.remote : null;
 }
 
 // =============================================================================
@@ -298,88 +295,4 @@ class UIConfig {
 
   /// Fast animation duration
   Duration get fastAnimationDuration => const Duration(milliseconds: 150);
-}
-
-// =============================================================================
-// DeviceConfig
-// =============================================================================
-
-/// Device capability configuration.
-///
-/// Initialized at runtime from TR-181 or login API after device connection.
-/// Access via [GlobalConfig.device].
-class DeviceConfig {
-  final DeviceCapability? _info;
-
-  DeviceConfig._(this._info);
-  DeviceConfig.empty() : _info = null;
-
-  /// Whether device info is available (only after login)
-  bool get isAvailable => _info != null;
-
-  // === Device capabilities (from TR-181 or API) ===
-
-  /// Whether IPv6 is supported
-  bool get supportIPv6 => _info?.supportIPv6 ?? false;
-
-  /// Whether Mesh is supported
-  bool get supportMesh => _info?.supportMesh ?? false;
-
-  /// Whether Guest Network is supported
-  bool get supportGuestNetwork => _info?.supportGuestNetwork ?? false;
-
-  /// Maximum SSID count
-  int get maxSSIDCount => _info?.maxSSIDCount ?? 3;
-
-  // === Combined checks (device capability + mode restrictions) ===
-
-  /// Whether to show IPv6 settings
-  bool get showIPv6Settings =>
-      isAvailable && supportIPv6 && !GlobalConfig.remote.isActive;
-
-  /// Whether to show Mesh settings
-  bool get showMeshSettings =>
-      isAvailable && supportMesh && !GlobalConfig.remote.isActive;
-
-  /// Whether to show Guest Network settings
-  bool get showGuestNetworkSettings =>
-      isAvailable && supportGuestNetwork && !GlobalConfig.remote.isActive;
-}
-
-/// Device information (from TR-181 or login API).
-class DeviceCapability {
-  final bool supportIPv6;
-  final bool supportMesh;
-  final bool supportGuestNetwork;
-  final int maxSSIDCount;
-
-  const DeviceCapability({
-    this.supportIPv6 = false,
-    this.supportMesh = false,
-    this.supportGuestNetwork = false,
-    this.maxSSIDCount = 3,
-  });
-
-  DeviceCapability copyWith({
-    bool? supportIPv6,
-    bool? supportMesh,
-    bool? supportGuestNetwork,
-    int? maxSSIDCount,
-  }) {
-    return DeviceCapability(
-      supportIPv6: supportIPv6 ?? this.supportIPv6,
-      supportMesh: supportMesh ?? this.supportMesh,
-      supportGuestNetwork: supportGuestNetwork ?? this.supportGuestNetwork,
-      maxSSIDCount: maxSSIDCount ?? this.maxSSIDCount,
-    );
-  }
-}
-
-// =============================================================================
-// Internal
-// =============================================================================
-
-/// Internal ChangeNotifier to prevent external manipulation
-class _ConfigChangeNotifier extends ChangeNotifier {
-  void _notify() => notifyListeners();
 }

@@ -1,60 +1,94 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
-import 'package:privacy_gui/core/usp/services/sse_local_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
-import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
-import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
-import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/framework/mode/bridge_config.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+/// How this build's transport is described — the mode-dependent half of
+/// [uspBridgeClientProvider], split out so a test can read it.
+///
+/// The answer comes from `TransportStrategy.bridgeConfig`, so there is no `if`
+/// here. Before #1474 phase 3 the five arguments below were chosen by an inline
+/// `if (GlobalConfig.remote.isActive)` and handed straight to a constructor that
+/// the VM stub *discards* — no getters, nothing to assert on — so the difference
+/// between talking to the router and talking to Guardian was unobservable from a
+/// unit test. This provider is that observation point.
+///
+/// Null means "no transport yet", which is a real state in Remote Assistance: the
+/// mode is known at build time but the Guardian session only arrives with the
+/// agent's link. See `RemoteTransportStrategy.bridgeConfig`.
+final bridgeConfigProvider = Provider<BridgeConfig?>((ref) {
+  final transport = ref.watch(appModeProfileProvider).transport;
+  // `ref` is forwarded rather than resolved here: the remote answer watches
+  // `remoteAssistanceProvider`, so the dependency has to be registered against
+  // this provider. That is why the contract takes a Ref instead of being a getter.
+  return transport.bridgeConfig(ref);
+});
+
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
 ///
-/// In Remote Assistance mode, uses Guardian proxy endpoints.
-/// In local mode, uses on-router usp-bridge endpoints.
+/// A pure assembler since #1474 phase 3: which endpoints, host, token and auth
+/// behaviour to use is [bridgeConfigProvider]'s answer, and this provider only
+/// builds the client and wires its auth-failure callback. `endpoints: local` /
+/// `baseUrl: null` is exactly what the omitted arguments used to mean —
+/// `_endpoints = endpoints ?? BridgeEndpoints.local` and
+/// `_baseUrl => _overrideBaseUrl ?? _usp.baseUrl` — so naming them changes
+/// nothing but makes the local case as inspectable as the remote one.
 final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
 
-  final UspBridgeClient bridge;
+  final config = ref.watch(bridgeConfigProvider);
+  if (config == null) return null;
 
-  if (GlobalConfig.remote.isActive) {
-    // W-4 fix: use select to avoid rebuilds on unrelated state changes
-    final config = ref.watch(
-      remoteAssistanceProvider.select((s) => s.config),
-    );
-    if (config == null) return null;
-
-    bridge = UspBridgeClient(
-      usp,
-      endpoints: BridgeEndpoints.remote(config.sessionId),
-      // Same host as the Guardian session REST API — NOT the app's own origin.
-      baseUrl: config.guardianOrigin,
-      authToken: config.temporaryAccessToken,
-      clientTypeId: config.clientTypeId,
-      authBehavior: AuthBehavior.remote,
-    );
-  } else {
-    bridge = UspBridgeClient(
-      usp,
-      authBehavior: AuthBehavior.local,
-    );
-  }
+  final bridge = UspBridgeClient(
+    usp,
+    endpoints: config.endpoints,
+    // Remotely, the same host as the Guardian session REST API — NOT the app's
+    // own origin. Locally null, which the client reads as "same origin".
+    baseUrl: config.baseUrl,
+    authToken: config.authToken,
+    clientTypeId: config.clientTypeId,
+    authBehavior: config.authBehavior,
+  );
 
   // W-1 fix: wire auth failure to logout (both modes)
+  //
+  // The one place under `lib/core/` still allowed to sign the user out, and
+  // `session_teardown_call_sites_test.dart` declares it as such. A 401 can arrive
+  // before any page is mounted, so converting it to a report the way phase 5 did
+  // the three connection exits would fail open. #1323 carries that reasoning.
+  //
+  // Under Remote Assistance this lands on the confirm view's "Session Ended"
+  // screen — the same screen an operator who finished on purpose sees. That is a
+  // decision, not an oversight: Austin's call on 2026-09-09 was not to tell the two
+  // apart, so this is a closed question and not pending work. Reopening it costs a
+  // stored end cause the route redirect can read, plus new copy in 26 locales;
+  // #1529 records the decision and what it would take.
   bridge.onAuthFailed = () {
     logger.w('[USP][Auth]: Session expired — triggering logout');
-    ref.read(authProvider.notifier).logout();
+    // Spelled out rather than left to the default, which is the same value. These
+    // two were the last `logout()` calls in the tree passing no cause, and #1474
+    // makes the cause the thing `SessionStrategy.end` switches on: under Remote
+    // Assistance `sessionLost` is what skips `endSessionForCA`. Here that is
+    // correct and not merely conservative — the credential this reports on has
+    // just been rejected, so asking Guardian to close the session with it would be
+    // a call the router cannot honour. Written out so that reading it needs no trip
+    // to the default.
+    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
   };
 
   return bridge;
@@ -67,16 +101,21 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
 /// - [SseSubscriptionRegistry] — OBUSPA + bridge subscription tracking
 /// - [SseEventRouter] — event demux by subscription_id
 ///
-/// Uses [LocalSseStrategy] or [RemoteSseStrategy] based on mode.
+/// Uses `LocalSseStrategy` or `RemoteSseStrategy` based on mode — reached
+/// *through* the transport since #1474 phase 3, not by its own `if`.
+///
+/// The strategy itself is unchanged; only who picks it moved. "Which subscription
+/// dance" is a consequence of "which path": the Guardian proxy rejects duplicate
+/// subscription IDs and scopes them to the stream, the on-router bridge is
+/// idempotent. Asking the transport keeps that consequence expressed as one, so a
+/// third transport cannot arrive with a matching SSE discipline nobody wired up.
 final sseManagerProvider = Provider<SseManager?>((ref) {
   final usp = ref.watch(uspClientProvider);
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
-  // Select strategy based on mode
-  final SseOperationStrategy strategy = GlobalConfig.remote.isActive
-      ? RemoteSseStrategy(bridge)
-      : LocalSseStrategy(bridge);
+  final SseOperationStrategy strategy =
+      ref.watch(appModeProfileProvider).transport.sseStrategy(bridge);
 
   final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 
@@ -86,12 +125,19 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   manager.onHeartbeatAuth = () => authCoordinator.ensureAuth();
 
   // Wire force logout — shared guard prevents duplicate triggers
+  //
+  // The same waiver as `bridge.onAuthFailed` above, and closed the same way, reached
+  // from the auth coordinator and the client instead of the bridge. The log line says
+  // "navigating to login", which has no counterpart in Remote Assistance.
   bool logoutTriggered = false;
   void forceLogout() {
     if (logoutTriggered) return;
     logoutTriggered = true;
     logger.w('[USP][Auth]: Force logout triggered — navigating to login');
-    ref.read(authProvider.notifier).logout();
+    // Same cause and the same reason as `bridge.onAuthFailed` above: whichever of
+    // the two paths noticed, what it noticed is a credential the router has stopped
+    // accepting.
+    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
   }
 
   authCoordinator.onForceLogout = forceLogout;
@@ -173,6 +219,15 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // If the bridge is busy (504) or slow, we still attempt SSE connection
   // because SseConnectionManager has its own retry/backoff logic.
   // Skip in Remote mode — Guardian proxy has no health endpoint.
+  //
+  // #1474 phase 3 deliberately left this read alone, taking the file from 3 mode
+  // reads to 1. It is not a mode *cause*: it exists because
+  // `BridgeEndpoints.remote()`'s `health` path is a fabrication — Guardian has no
+  // such endpoint — so this `if` is compensating for a wrong endpoint table, and
+  // the fix is to delete that path, not to give the mode a strategy member for
+  // "does my transport have a health check". That is transport-layer cleanup
+  // outside this epic; wrapping it in a strategy first would freeze the
+  // fabrication into a contract.
   if (!GlobalConfig.remote.isActive) {
     try {
       await bridge.health().timeout(const Duration(seconds: 5));

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/operation_guard.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
@@ -113,7 +115,19 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   // Reboot / Factory Reset — delegates to service
   // ---------------------------------------------------------------------------
 
+  /// Restarts the box. `transientRestart`: it comes back with the credential and
+  /// the route intact, so every mode allows it — including Remote Assistance,
+  /// where it is one of the two things an agent most often needs.
+  ///
+  /// The guard call is here even though it cannot refuse today, and that is
+  /// deliberate: with only [factoryReset] guarded, these two methods would differ
+  /// by the *presence* of a check, and a reader could not tell whether reboot is
+  /// permitted or whether somebody forgot. Guarded both ways, the only difference
+  /// between them is one enum value. See `lib/core/mode/operation_guard.dart`.
   Future<void> reboot() async {
+    ref
+        .read(operationGuardProvider)
+        .enforce(DisruptionClass.transientRestart, operation: 'reboot');
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.reboot();
@@ -124,7 +138,19 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
     }
   }
 
+  /// Wipes the box back to defaults. `credentialLoss`: the admin password
+  /// becomes the one printed on the label, which is a recovery step only for
+  /// someone who can read the label.
+  ///
+  /// Refused in Remote Assistance, and refused *here* rather than in the view.
+  /// The view's affordance is phase 7's (#1497) to hide; this is the floor
+  /// underneath it, and it has to be above `withLock` — a guard that threw after
+  /// the command would leave a resetting router, an error dialog, and nobody in
+  /// the building.
   Future<void> factoryReset() async {
+    ref
+        .read(operationGuardProvider)
+        .enforce(DisruptionClass.credentialLoss, operation: 'factory reset');
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.factoryReset();

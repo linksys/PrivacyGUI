@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockRecoveryProbeService extends Mock implements RecoveryProbeService {}
@@ -25,6 +26,13 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
 }
 
 void main() {
+  setUpAll(() {
+    // For `any(named: 'cause')` below. `logout({EndCause cause = …})` has a default,
+    // so to mocktail a bare `logout()` matcher does not match a call that passed the
+    // argument — which would make the `verifyNever` unable to fail.
+    registerFallbackValue(EndCause.sessionLost);
+  });
+
   group('Recovery flow integration', () {
     test(
       'natural trigger → probe retries → recovery',
@@ -99,7 +107,6 @@ void main() {
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
       when(() => mockSse.disconnect()).thenAnswer((_) async {});
-      when(() => mockAuth.logout()).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -126,7 +133,19 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.loggedOut,
       );
-      verify(() => mockAuth.logout()).called(1);
+      // Since #1323 phase 5 the flow ends with a *report*, not a sign-out: this
+      // notifier lives in `lib/core/`, and the sign-out, the RA teardown that
+      // `EndCause` selects and the navigation that follows all belong to the layer
+      // above. The consumer end of it is `endSessionIfCoreReportedOne`, covered in
+      // `test/page/shell/session_exit_sink_test.dart`; that there is exactly one of
+      // them is a census in `test/core/mode/session_teardown_call_sites_test.dart`.
+      expect(
+        container
+            .read(appConnectionStateProvider.notifier)
+            .takePendingSessionExit(),
+        EndCause.sessionLost,
+      );
+      verifyNever(() => mockAuth.logout(cause: any(named: 'cause')));
     });
   });
 }

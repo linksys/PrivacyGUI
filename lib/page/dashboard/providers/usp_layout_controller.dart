@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -139,6 +139,17 @@ class UspSliverDashboardControllerNotifier
   /// True while this notifier is putting a layout *into* the controller, as
   /// opposed to the grid reporting one the user made — see [_importQuietly].
   bool _suppressAutoPersist = false;
+
+  /// True when the surface supplied the layout, so none of it is this viewer's to
+  /// store — see `SurfaceStrategy.fixedDashboardLayout` and [saveLayout].
+  ///
+  /// Separate from [_suppressAutoPersist], which is a *region* the callers restore
+  /// and which only guards [_handleLayoutChanged]. This is permanent and guards
+  /// [saveLayout] itself, because the auto-persist hook is not the only writer:
+  /// `updateItemSize`, `setCardForm`, `addWidget`, `removeWidget` and
+  /// `restoreSnapshot` all call [saveLayout] directly, so suppressing the hook
+  /// would have left five open paths and a contract comment claiming otherwise.
+  bool _layoutIsFixed = false;
 
   /// Orders the writes [_enqueue] hands out, oldest first.
   Future<void> _writeQueue = Future.value();
@@ -302,17 +313,23 @@ class UspSliverDashboardControllerNotifier
   /// specs load asynchronously after dashboard init. The grid renders them
   /// as "Unknown widget" until their template is available.
   ///
-  /// In Remote mode, always uses the remote preset layout (no persistence).
+  /// A surface whose layout is fixed skips the pref in both directions — see
+  /// `SurfaceStrategy.fixedDashboardLayout`, which is also what stops
+  /// `uspLayoutPreferencesProvider` loading widget preferences for it.
   Future<void> _initializeLayout() async {
-    // Remote mode: use fixed remote preset layout, skip persistence
-    final forcedPreset = GlobalConfig.remote.forcedPreset;
-    if (forcedPreset != null) {
+    final fixed = _ref.read(surfaceStrategyProvider).fixedDashboardLayout();
+    if (fixed != null) {
+      // Set before the swap, because the swap can reach [saveLayout] and the read
+      // direction is not the guarantee: an early `return` skips the load, whereas
+      // *not writing* has to hold for the rest of the notifier's life. Code review
+      // caught this being documented rather than enforced.
+      _layoutIsFixed = true;
       // Read the live breakpoint at the swap, not before an await: the pref read
       // below means this method can land several frames after the page was first
       // laid out — on a phone, several frames after the view moved the outgoing
       // controller off desktop.
       final live = state.slotCount.value;
-      _swapController(_createController(forcedPreset.createLayout()));
+      _swapController(_createController(fixed));
       _seedBreakpoints(live: live);
       return;
     }
@@ -653,7 +670,17 @@ class UspSliverDashboardControllerNotifier
   /// Capturing it keeps the write correct in both build modes. Ordering is
   /// unaffected: every mutation enqueues after it has mutated, so the last write in
   /// the queue is still the one holding the newest controller.
+  ///
+  /// A **fixed** surface writes nothing at all, and this is the only place that
+  /// holds it: every other writer — the auto-persist hook, `updateItemSize`,
+  /// `setCardForm`, `addWidget`, `removeWidget`, `restoreSnapshot` — funnels
+  /// through here, so the guarantee is one guard rather than six. It is not one of
+  /// them being unreachable today, which is what it was when review looked at it:
+  /// under RA those mutators are only entered from edit mode, which
+  /// `SurfaceStrategy.layoutEditor()` returning `null` makes unenterable, and a
+  /// promise resting on a *different* member is one an unrelated edit can break.
   Future<void> saveLayout() {
+    if (_layoutIsFixed) return Future.value();
     final controller = state;
     _assertMembershipAligned(controller);
     return _enqueue(() => _writeLayout(controller));
@@ -805,7 +832,12 @@ class UspSliverDashboardControllerNotifier
   /// The picks go with it and no line here says so (#1400): they were on the items
   /// the default layout replaces, so "reset the geometry" and "clear the picks"
   /// are the same act rather than two that have to agree.
+  ///
+  /// A no-op on a fixed surface — see [saveLayout], same reason: "the default
+  /// layout" is not a thing a viewer whose layout was chosen for them can be
+  /// returned to.
   Future<void> resetLayout() async {
+    if (_layoutIsFixed) return;
     final live = state.slotCount.value;
     _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
@@ -1094,7 +1126,13 @@ class UspSliverDashboardControllerNotifier
   ///
   /// Uses the preset's hand-crafted layout (optimised card positions and sizes)
   /// rather than generic 2-column packing.
+  ///
+  /// A no-op on a fixed surface. This is the one of the three guards that would
+  /// have been *silently* wrong without the others: it reaches `saveLayout()`,
+  /// which refuses, so the pref stays clean — and the grid in front of the viewer
+  /// would still have been replaced by whatever preset was passed.
   Future<void> applyPreset(UspDashboardPreset preset) async {
+    if (_layoutIsFixed) return;
     final layout = preset.createLayout();
     final live = state.slotCount.value;
     _swapController(_createController(layout));

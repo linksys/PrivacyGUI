@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/constants/url_links.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 import 'package:privacy_gui/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/localization/supported_locales_provider.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
-import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/config/global_config.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
@@ -26,9 +24,6 @@ class GeneralSettingsWidget extends ConsumerStatefulWidget {
 class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = ref.watch(
-        authProvider.select((state) => state.value?.isLoggedIn ?? false));
-
     // Watch Theme.of(context) to trigger rebuild when global theme changes
     Theme.of(context);
 
@@ -116,28 +111,11 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                       child: _buildMascotToggle(showMascot),
                     ),
 
-                  // Legal links and logout (hidden in remote mode)
-                  if (!GlobalConfig.remote.isActive && isLoggedIn) ...[
-                    AppGap.md(),
-                    const AppDivider(),
-                    AppGap.md(),
-
-                    // Legal links as compact row
-                    _buildLegalLinks(),
-                    AppGap.lg(),
-
-                    // Logout
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton.dangerOutline(
-                        label: loc(context).logout,
-                        onTap: () {
-                          logger.i('[Auth]: The user manually logs out');
-                          ref.read(authProvider.notifier).logout();
-                        },
-                      ),
-                    ),
-                  ],
+                  // Legal links and sign-out, or nothing at all: a Remote
+                  // Assistance session has no account to sign out of, and the
+                  // block knows for itself whether anyone is logged in.
+                  ref.watch(surfaceStrategyProvider).accountActions() ??
+                      const SizedBox.shrink(),
                   AppGap.lg(),
 
                   // Version
@@ -192,38 +170,6 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLegalLinks() {
-    // The normalized locale, not the raw setting: an English-only build reading a
-    // leftover `ja` would open linksys.com/jp/… for a user whose picker is hidden.
-    //
-    // Watched, not read: this runs inside the popup's builder, so a language
-    // change while the popup is open has to reach the links. The picker's own
-    // `ref.read` is correct by contrast — it sits in an onTap callback.
-    final locale = ref.watch(activeLocaleProvider);
-
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        AppButton.text(
-          label: loc(context).termsOfService,
-          size: AppButtonSize.small,
-          onTap: () => gotoOfficialWebUrl(linkTerms, locale: locale),
-        ),
-        AppButton.text(
-          label: loc(context).thirdPartyLicenses,
-          size: AppButtonSize.small,
-          onTap: () => gotoOfficialWebUrl(linkThirdParty, locale: locale),
-        ),
-        AppButton.text(
-          label: loc(context).privacyAndSecurity,
-          size: AppButtonSize.small,
-          onTap: () => gotoOfficialWebUrl(linkPrivacy, locale: locale),
-        ),
-      ],
     );
   }
 }

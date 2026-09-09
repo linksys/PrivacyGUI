@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-07-28
+**Last Amended:** 2026-09-07
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -1531,5 +1531,104 @@ Code Review MUST check:
 - ✅ No identifier added to presentational content no spec interacts with (§16.2 ❌) — but a labelled control on an interaction path is ✅ Required, not redundant
 - ✅ Raw `Semantics` test hooks use `identifier:`, not `label:` (a bare `label` is announced aloud AND invisible to the generator)
 - ✅ Any `semanticLabel`→`identifier` migration — even with an unchanged slug — regenerated the map AND migrated every spec from `getByRole({name})` to `byIdentifier()` (16.4)
+
+---
+
+## Article XVII: App Mode Strategies
+
+**Rationale**: The app ships in more than one mode — a **local** build served by the router it configures, a **Remote Assistance** build reaching that router through the Guardian proxy on a session-scoped token, a **cloud** build, and the `lib/demo/` entry point. Before phase 3 of epic #1474, "which mode is this?" was asked **15 separate times** across `lib/` — 11 as `GlobalConfig.remote.isActive` and 4 as the `BuildConfig.isRemote()` that getter wraps — all over a mutable static (`BuildConfig.forceCommandType`). (The epic's own published figure of 12 is a grep that counted one comment line and none of the `isRemote()` sites; re-measure before quoting it.) Each site answered independently and each had a plausible `else`, which produces two failures that no test could see: a third mode is mis-answered at every site nobody remembered to visit, and the two answers can **disagree** — a `?session=` URL in a local build once registered a Guardian-proxied client while `isRemote()` read `false`, yielding on-router endpoint paths and no bearer token aimed at the Guardian host. Every request was well formed and went nowhere. This Article makes the mode decision structural: made once, per cause, where the compiler can check it.
+
+**Section 17.1: Five Causes, Not a Capability Table**
+
+Mode-dependent behaviour MUST be expressed as a member on the contract for the **cause** of the difference, in `lib/framework/mode/`:
+
+| Cause | Contract | Question |
+|:---|:---|:---|
+| 1 | `TransportStrategy` | How do bytes reach the router? |
+| 2 | `CredentialStrategy` | Who holds the credential, and what does expiry mean? |
+| 3 | `SessionStrategy` | What does "the session ended" mean? |
+| 4 | `ProximityStrategy` | Is the operator standing next to the router? |
+| 5 | `SurfaceStrategy` | Which surfaces does this mode have a concept for? |
+
+A per-mode **flag table** is forbidden, and this is measured rather than stylistic: #1474 phase 8 deleted `allowDashboardEdit`, `allowConfigChanges` and `showAdvancedSettings` from `GlobalConfig.remote` — each well named, documented, centralised, and **read by nothing**. One duplicated a live gate, one was the wrong shape (reboot and cloud OTA must stay allowed in RA), one hid a surface RA needs. An unread bool cannot be seen to be wrong; a cause can.
+
+Full developer guide: `doc/mode_strategy/mode_strategy_guide.md`.
+
+**Rule 17.1.1 — Exhaustive switch, no escape hatch.** Each composition root MUST select its strategy with a `switch` over `AppMode` that has **no `default:` and no `_` arm**, so a new mode is a compile error.
+
+*How it fails silently:* a developer adds an `AppMode`, gets two compile errors, and silences them with a catch-all. The code compiles, behaves correctly for the three old modes, and gives the new one whichever profile the catch-all names. The compiler pointed at the right place and offered the wrong fix. A switch **with** a catch-all is valid Dart and no runtime observation distinguishes the two, so this is guarded by a source scan: `test/core/mode/composition_root_test.dart`.
+
+**Rule 17.1.2 — Two composition roots, and only they read the mode.** There are exactly two: `appModeProfileProvider` in `lib/core/mode/app_mode_profile.dart` (causes 1–4) and `surfaceStrategyProvider` in `lib/page/_shared/mode/surface_strategy_provider.dart` (cause 5). Only `appModeProfileProvider` may name `appModeProvider`; the page root takes its mode from the profile, so that one override moves both roots. **No new read of `GlobalConfig.remote.isActive` or `BuildConfig.isRemote()` may be added anywhere.**
+
+*The `isRemote` half is "no new read", not "none", and the difference is deliberate:* 13 reads were still live when this Article was ratified — the epic migrates them phase by phase, and one in `sse_providers.dart` is kept on purpose. The ledger in §1 of the guide is the authority for which remain and which phase owns each; it carries the measurement point, because the count moves under you. An absolute prohibition here would have been false the day it merged, and a rule with known violations and no scan behind it is a convention.
+
+```dart
+// ✅ ask the cause
+final behavior = ref.watch(appModeProfileProvider).credential.authBehavior;
+
+// ❌ ask the mode — the 14th `if`: correct today, wrong the day a mode is added
+if (ref.watch(appModeProvider) == AppMode.remote) { ... }
+
+// ❌❌ ask the global — invisible to every provider override, therefore untestable
+if (GlobalConfig.remote.isActive) { ... }
+```
+
+*Why two and not one:* `SurfaceStrategy`'s implementations talk to page state, so they live under `lib/page/`, and CLAUDE.md forbids `lib/core/` → `lib/page/`. A `surface` member on the core profile would be exactly that import.
+
+*Why the page root reads the profile and not `appModeProvider`:* because the alternative silently breaks the one-override property. A page root on the raw provider is unmoved by `appModeProfileProvider.overrideWithValue(...)`, so the four core causes go remote while the surfaces stay local — and every transport assertion still passes. #1493 shipped it the wrong way round and nothing detected it until a test read `surfaceStrategyProvider` under a profile-only override. Both readings are guarded by the census in the same scan.
+
+**Rule 17.1.3 — Contract in `lib/framework/mode/`, implementation at the layer it talks to; the framework imports neither implementation directory.** The four core causes implement in `lib/core/mode/impl/`; `SurfaceStrategy` implements in `lib/page/_shared/mode/`. A contract file MUST contain no `if` and no implementation, and MUST NOT import `lib/core/mode/impl/` or `lib/page/_shared/mode/`.
+
+*How it fails silently.* A value type a contract needs for its own signature gets filed next to the classes that build it, and then the contract imports the implementation directory — the dependency this rule exists to prevent, arriving through a type that is not itself an implementation. `BridgeConfig` did exactly that in #1493. The test: if the framework must import it to state a signature, it belongs in `lib/framework/mode/`.
+
+**Rule 17.1.4 — One definition per contract; none of them `sealed`.**
+
+*How it fails silently, twice.* A duplicated contract compiles and then splits the app in two, because `AppModeProfile` composes strategies **by type** and the copy nothing wires up is simply never selected — the identical silent failure Article IV Rule 4 records for `PreservableContract`. And `sealed` is what an IDE *suggests* for a closed two-implementation hierarchy: it breaks `test/core/usp/mocks.dart`-style fakes declared in another library, and the failure surfaces in the mock file, so the obvious fix looks like "delete that stale mock". Guarded by `test/core/mode/mode_contract_roster_test.dart`, which also holds the roster census: **six contracts, two implementations each** — the five causes plus `SseOperationStrategy`, the mode contract that predates this Article. `AppModeProfile` is *not* the sixth; it is checked for the same two shape rules but not counted, because #1474 §9.1 expects a third profile once cloud diverges. Substituting it for the sixth slot keeps the census reading 12 and un-guards a real contract.
+
+**Rule 17.1.5 — One contract per cause, one per rendering layer; a multi-cause divergence is a *consumer*, never a new contract.** The two axes are *why* behaviour differs (four physical causes → four contracts) and *where* it is observed (the page layer renders, so it gets `SurfaceStrategy`; core renders nothing, so it gets none).
+
+*How it fails silently.* The messiest modules are the ones that draw on several causes at once, and the reflex is to give each its own `Local`/`Remote` pair. Recovery draws on causes 1, 2 and 4; the operation guard on cause 4 — so `RecoveryProbeService` and `OperationGuard` **take strategies as parameters and keep exactly one implementation each**. Splitting them duplicates everything the two modes do identically (probing, guarding, logging), and the two copies then drift on all of it except the one line that actually differed. The failure is invisible because both copies pass their own tests. Guarded by the negative half of `test/core/mode/mode_contract_roster_test.dart`; this rule is what holds the epic's class count at 12 rather than 16, and phases 4 and 6 are judged against it.
+
+**Rule 17.1.6 — Shape follows use, not subject matter.** Called polymorphically → `abstract class`. Switched on → `enum` when no case carries data, `sealed class` when any case does. `AppMode` carries no per-case data, so it is an `enum`; the six contracts are called polymorphically, so they are `abstract class` — which Rule 17.1.4 independently requires for the mocking reason. The rule exists so the two requirements are known to agree rather than coinciding: if a future mode value needs to carry data, `AppMode` becomes a `sealed class` and the composition roots stay exhaustive, while the contracts do **not** follow it.
+
+**Section 17.2: Three Disciplines**
+
+These need judgement, so they are disciplines rather than mechanically-checkable rules. Code Review owns them.
+
+**No `RemoteX extends LocalX` overriding only the differences.** The two implementations are **peers**. Inheriting one from the other re-creates precisely the defect this Article removes — local as the silent default, which is why `ForceCommand.none` receives local behaviour nearly everywhere and why `lib/core/connection/` (349 lines) has no mode concept at all. It fails silently because the subclass is correct on the day it is written: every member it does not override is the local answer, so a member added to the parent later is inherited by remote without anyone deciding that it should be.
+
+**A member needs a measured difference, not an anticipated one.** Before adding a contract member, count the production call sites that actually differ. #1493 applied this to multi-step USP sequences straddling a transport rebind and answered **no**: both sequences have exactly one caller each and it is the debug console, itself gated behind `BuildConfig.enableTestConsole`, so there is no production path that can reach the scenario. A member justified only by a scenario nobody can reach still has to be honoured by every future implementation. The verdict and the alternative seam (`usp_mutation_lock.dart`) are recorded in §7 of the guide.
+
+**A mode expresses a missing concept by its strategy not using a surface — never by a bool that hides UI.** "Remote has no mascot" is not `hideMascot: true`; it is a remote `SurfaceStrategy` that does not offer one. The flag form is what §17.1 deleted three instances of.
+
+**Section 17.3: Testing Mode-Dependent Behaviour**
+
+A test MUST select a mode by overriding a provider, and MUST NOT assign `BuildConfig.forceCommandType`. `test/di_test.dart` is the sole exception, for a pure function; it is not precedent.
+
+```dart
+// coarse — re-derives the profile AND the surface root
+appModeProvider.overrideWithValue(AppMode.remote)
+
+// fine — one strategy swapped, the rest real
+appModeProfileProvider.overrideWithValue(const RemoteModeProfile())
+```
+
+A test that mutates the static needs a `tearDown` to restore it, and a forgotten one leaks the mode into every later test in the file — order-dependent, and green until the file is reordered. Overriding a provider cannot leak.
+
+Additionally, the `force=remote` flavour MUST stay compiling in CI (step `🏗️ Smoke Build (Web, force=remote)` on the `build_web` job). `force` is a `String.fromEnvironment` const, so the two flavours differ in const evaluation and tree-shaking; every other check in the pipeline only ever sees `force=none`.
+
+**Section 17.4: Code Review Checklist**
+
+Code Review MUST check:
+- ✅ New mode-dependent behaviour is a member on the contract for its **cause**, not a flag and not an `if`
+- ✅ Neither composition root gained a `default:` or `_` arm; a new `AppMode` has an explicit arm in **both**
+- ✅ No new read of `appModeProvider` outside the two roots, and no new read of `GlobalConfig.remote.isActive` anywhere
+- ✅ Contracts stay in `lib/framework/mode/` with no implementation; implementations stay at the layer they talk to
+- ✅ No contract is `sealed`, and none has a second definition
+- ✅ A *service* that depends on the mode takes a strategy — it does **not** become a `Local`/`Remote` pair
+- ✅ The two implementations are peers: no `RemoteX extends LocalX`, no shared base carrying the local answer
+- ✅ Shape follows use — a new type that is switched on is an `enum`/`sealed class`, one that is called polymorphically is an `abstract class`
+- ✅ New mode tests override a provider; none assigns `BuildConfig.forceCommandType` or needs a `tearDown` to restore it
+- ✅ A new contract member cites the measured production difference that justifies it
 
 ---

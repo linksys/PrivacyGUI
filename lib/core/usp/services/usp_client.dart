@@ -72,9 +72,33 @@ class Subscription<T> {
 }
 
 /// Platform-agnostic Service for interacting with the router via USP.
+///
+/// **This instance is meant to outlive any one connection.** The transport
+/// underneath it can be swapped with [rebindTransport] / [rebindFromBuilder];
+/// the façade itself must not be replaced while the app is running, and #1322 is
+/// the bug report explaining why. Remote Assistance used to `dispose()` this
+/// object and register a fresh one in GetIt on every `activate()`, but **41**
+/// call sites resolve it with `ref.read(uspClientProvider)` in a non-autoDispose
+/// provider body — they bind it into a service constructor once and never look
+/// again — against **11** that `ref.watch` and would follow a swap. Freeing the
+/// façade therefore left 41 services holding a wasm-bindgen object whose
+/// `__wbg_ptr` had been zeroed, and every call through them died with
+/// `null pointer passed to rust` until the browser was refreshed.
+///
+/// So `_client` and `_baseUrl` are mutable on purpose. Anything that is
+/// per-*connection* rather than per-*façade* has to be reset by
+/// [rebindTransport]; anything wired in from outside ([onSseSubscribe],
+/// [throttler], [onReauthRequired] and friends) must not be, because their owners
+/// key off this same stable instance and re-attach themselves when Riverpod
+/// rebuilds them.
 class UspClient {
-  late final UspTransport _client;
-  final String _baseUrl;
+  late UspTransport _client;
+  String _baseUrl;
+
+  /// Bumped by [rebindTransport]. Lets an async operation that started on a
+  /// previous connection notice, when it finally resumes, that its session is
+  /// gone — see the supersession checks in [reauth].
+  int _generation = 0;
 
   UspClient(String baseUrl) : _baseUrl = baseUrl {
     if (!kIsWeb) {
@@ -105,6 +129,104 @@ class UspClient {
     _client = transport;
   }
 
+  /// Re-points this façade at a new connection, releasing the old one.
+  ///
+  /// This is the operation that replaces "dispose the façade and register a new
+  /// one" — see the class doc and #1322. Callers keep whatever reference they
+  /// already hold; only the transport underneath changes, so the 41 services that
+  /// captured this object at construction time keep working and start talking to
+  /// the new session on their next call.
+  ///
+  /// The previous transport is disposed, so the WASM client is still freed
+  /// exactly once per swap and nothing leaks. Re-passing the transport already in
+  /// use is a no-op rather than a self-free — that guard is for direct
+  /// [rebindTransport] callers only, and [rebindFromBuilder] cannot benefit from
+  /// it (see the precondition on its doc).
+  ///
+  /// Per-connection state is reset:
+  ///
+  /// - [_lastCallRetried] is only a log label.
+  /// - A pending [reauth] is not. Left in place, the next 401 on the **new**
+  ///   session would await the **old** session's completer, and the old attempt's
+  ///   eventual failure would call [onForceLogout] — signing the user out of a
+  ///   session that was fine. Bumping [_generation] is what lets that superseded
+  ///   attempt return quietly instead.
+  /// - The [throttler]'s dedup levels are per-connection even though the
+  ///   throttler itself is not; see [BridgeRequestThrottler.invalidateSession].
+  ///
+  /// **Never throws once it has taken [transport], and that is a contract the
+  /// caller relies on rather than a nicety.** `RemoteAssistanceNotifier
+  /// .installTransport` decides whether to `free()` the wasm handle from whether
+  /// this call returned: a throw means "nobody took it, release it". So a throw
+  /// *after* the assignment on the first line would make it free the handle the
+  /// registered façade is now using — a double free of the live connection across
+  /// the 41 services holding this object by value, which is #1322's exact field
+  /// symptom (`null pointer passed to rust`) arriving from the code that exists to
+  /// prevent its mirror image. The bookkeeping below therefore cannot escape;
+  /// leaving one connection's dedup levels stale is the lesser failure by a wide
+  /// margin. Added by #1474 phase 9, which is where the reliance was introduced.
+  void rebindTransport(UspTransport transport, {required String baseUrl}) {
+    final previous = _client;
+    _client = transport;
+    _baseUrl = baseUrl;
+    _generation++;
+    _lastCallRetried = false;
+
+    try {
+      // Wake anyone parked on the outgoing session's reauth gate. Its owner is
+      // suspended on the transport we are about to free, so it may never resume to
+      // settle the gate itself — and an awaiter of a Completer that never
+      // completes waits forever, with no timeout anywhere above it.
+      //
+      // Completed successfully, not with an error, and that is the deliberate
+      // reading: the question the gate answers is "can this client authenticate
+      // now?", and after the swap the answer is yes. The waiter's caller is
+      // [_withAuthRetry], which re-runs its action against the *new* transport;
+      // failing it here would abort a call the new connection can serve, and if
+      // the new connection cannot, its own 401 says so a moment later.
+      final orphanedReauth = _reauthInProgress;
+      _reauthInProgress = null;
+      if (orphanedReauth != null && !orphanedReauth.isCompleted) {
+        logger
+            .d('$_tag Releasing a reauth gate held by the previous connection');
+        orphanedReauth.complete();
+      }
+
+      throttler?.invalidateSession();
+    } catch (e) {
+      logger.w('$_tag Post-swap bookkeeping failed, swap stands: $e');
+    }
+
+    // Sequential to the guard above, not nested inside it, and the difference is
+    // the point: a throttler that throws must not cost us the *old* transport's
+    // `free()`. Nesting made one wasm leak the price of avoiding another.
+    if (!identical(previous, transport)) {
+      // A transport that throws on release must not abort the swap either.
+      try {
+        previous.dispose();
+      } catch (e) {
+        logger.w('$_tag Releasing the previous transport failed: $e');
+      }
+    }
+  }
+
+  /// [rebindTransport] for a pre-built WASM client, mirroring [fromBuilder].
+  ///
+  /// Transport construction has to happen inside this library: `UspClientWeb` is
+  /// an implementation detail that callers cannot reach.
+  ///
+  /// [jsClient] must be **freshly built**. Each call wraps it in a new
+  /// `UspClientWeb`, so `rebindTransport`'s identity guard never fires here and
+  /// re-passing the handle the live transport is already using would `free()` it
+  /// underneath the wrapper that just took it over. The one production caller
+  /// builds a client immediately before calling this.
+  void rebindFromBuilder(dynamic jsClient, {required String baseUrl}) {
+    if (!kIsWeb) {
+      throw UnsupportedError('This POC only supports Web platforms currently.');
+    }
+    rebindTransport(UspClientWeb.fromJsClient(jsClient), baseUrl: baseUrl);
+  }
+
   static final _random = Random();
   static const _tag = '[USPClient]:';
   bool _lastCallRetried = false;
@@ -132,7 +254,9 @@ class UspClient {
   bool get isReauthInProgress => _reauthInProgress != null;
 
   /// Callback for full re-authentication when token refresh fails.
-  /// Set by [UspAuthCoordinator] to provide re-login via stored password.
+  /// Set by [UspAuthCoordinator] to `restoreSession()`, which is **token-only**:
+  /// the in-memory token first, then the one in sessionStorage. No password is
+  /// stored anywhere, so this cannot re-login from credentials.
   Future<void> Function()? onReauthRequired;
 
   /// Called after [reauth] Stage 2 (full re-login) succeeds.
@@ -180,6 +304,22 @@ class UspClient {
     return error.toString().contains('HTTP 401');
   }
 
+  /// A [rebindTransport] since an operation started means the connection it was
+  /// working on is gone. Its outcome says nothing about the current session, so
+  /// it must not fire session-level callbacks — most importantly [onForceLogout].
+  bool _superseded(int generation) => generation != _generation;
+
+  /// `complete()` that tolerates the gate having already been settled.
+  ///
+  /// [rebindTransport] completes the gate belonging to the connection it
+  /// replaces, precisely so nobody is left parked on it. This attempt may then
+  /// resume and try to publish its own result; a bare `complete()` would throw
+  /// `Future already completed` out of its own success path, land in the catch
+  /// below, and be reported as a reauth failure.
+  void _settleReauthGate(Completer<void> gate) {
+    if (!gate.isCompleted) gate.complete();
+  }
+
   /// Two-stage re-authentication: refreshToken first, then full re-login.
   /// Uses a Completer lock to prevent concurrent reauth attempts.
   ///
@@ -187,43 +327,88 @@ class UspClient {
   /// reconnect with the new token (prevents silent subscription routing
   /// failures when the bridge session changes).
   Future<void> reauth() async {
-    if (_reauthInProgress != null) {
-      await _reauthInProgress!.future;
+    final inFlight = _reauthInProgress;
+    if (inFlight != null) {
+      await inFlight.future;
       return;
     }
-    _reauthInProgress = Completer<void>();
+    // Held locally, not re-read through the field: `rebindTransport` may clear or
+    // replace `_reauthInProgress` at any await point below, and `!` on the field
+    // would then throw from inside our own error handling.
+    final gate = Completer<void>();
+    final generation = _generation;
+    _reauthInProgress = gate;
     bool didFullRelogin = false;
     try {
       // Stage 1: quick token refresh (no password needed)
       try {
         await refreshToken();
         logger.d('$_tag Token refreshed successfully');
-        try {
-          onRefreshTokenSuccess?.call();
-        } catch (cbError) {
-          logger.w('$_tag onRefreshTokenSuccess callback error: $cbError');
+        if (!_superseded(generation)) {
+          try {
+            onRefreshTokenSuccess?.call();
+          } catch (cbError) {
+            logger.w('$_tag onRefreshTokenSuccess callback error: $cbError');
+          }
         }
-        _reauthInProgress!.complete();
+        _settleReauthGate(gate);
         return;
       } catch (e) {
         logger.w('$_tag Token refresh failed: $e');
       }
-      // Stage 2: full re-login via stored password
+      // Stage 1 ran against the connection we started on — `_client` is read
+      // synchronously, before any await, so a swap cannot redirect it. Stage 2 is
+      // different: it goes through [onReauthRequired], which reaches
+      // `UspAuthCoordinator.restoreSession` and re-authenticates whatever
+      // `_client` is by then. Run superseded, it would validate the *old*
+      // session's stored token against the connection that replaced it, and on
+      // failure clear that token and force logout from inside the callback —
+      // where the supersession check below cannot stop it. Stop here instead; a
+      // session that genuinely needs reauth will get a 401 of its own.
+      if (_superseded(generation)) {
+        logger.w('$_tag Reauth abandoned — its connection was replaced');
+        _settleReauthGate(gate);
+        return;
+      }
+      // Stage 2: full session restore (token-only — see restoreSession)
       final reauth = onReauthRequired;
       if (reauth != null) {
         await reauth();
         didFullRelogin = true;
         logger.d('$_tag Full re-login succeeded');
       }
-      _reauthInProgress!.complete();
+      _settleReauthGate(gate);
     } catch (e) {
-      if (!_reauthInProgress!.isCompleted) {
-        _reauthInProgress!.completeError(e);
+      if (!gate.isCompleted) {
+        gate.completeError(e);
+        // Only a *concurrent* reauth caller ever listens to this future, so on a
+        // solo failure it has none and the error would be reported to the zone as
+        // unhandled — noise that says nothing the rethrow below does not. Adding
+        // a handler here does not take the error away from real listeners.
+        gate.future.ignore();
+      }
+      // Only Stage 2 can reach here now, so a superseded failure means the swap
+      // landed mid-relogin. We cannot tell "the old connection vanished" from
+      // "the new one cannot authenticate", and `onForceLogout` navigates to the
+      // login screen — which in Remote Assistance ends a live Guardian session.
+      // Take the recoverable reading: if the new connection really is broken, its
+      // own next 401 will say so.
+      //
+      // What is suppressed is the **force logout**, not the error. The failure still
+      // propagates, because the caller's request genuinely did not complete and
+      // `_withAuthRetry` must not report a success it never got; swallowing here
+      // would hand it a `null`-shaped result from a reauth that failed. So the two
+      // halves are deliberate and different: the session survives, the request does
+      // not.
+      if (_superseded(generation)) {
+        logger.w('$_tag Reauth failed on a superseded connection — '
+            'not forcing logout, reporting to the caller');
+        rethrow;
       }
       // The original trigger was a confirmed 401 (token expired/revoked).
       // Both Stage 1 (refreshToken) and Stage 2 (restoreSession) failed,
       // so the session is unrecoverable regardless of Stage 2 failure reason
-      // (auth error, network error, or no stored password).
+      // (auth error, network error, or no stored token).
       logger.w('$_tag All reauth stages failed — forcing logout');
       try {
         onForceLogout?.call();
@@ -232,10 +417,28 @@ class UspClient {
       }
       rethrow;
     } finally {
-      _reauthInProgress = null;
+      // Only give up the lock if we still hold it. A rebind releases it, and a
+      // 401 on the new connection may already have taken it — clearing it here
+      // would let a third reauth start alongside that one.
+      if (identical(_reauthInProgress, gate)) {
+        _reauthInProgress = null;
+      }
       // Notify SSE to reconnect after full re-login (new session/token).
       // Stage 1 (refreshToken) typically extends the same session, so
       // SSE reconnect is only needed after Stage 2 (full re-login).
+      //
+      // Deliberately NOT gated on supersession, unlike everything above. Reaching
+      // here past the Stage 2 bail-out means the swap landed *during* the
+      // re-login, so that re-login went through the **new** transport and changed
+      // the **live** session's token; suppressing the reconnect would leave SSE on
+      // a dead token, the exact failure this callback exists to prevent.
+      //
+      // Today the only [rebindTransport] caller is Remote Assistance, and
+      // `SseManager` leaves this callback null in Remote mode
+      // (`HeartbeatConfig.remote.authCheckEnabled == false`), so the combination
+      // is unreachable in production and this is a no-op there. Stated because the
+      // ungated call looks like an oversight otherwise: it is the correct
+      // behaviour for the next caller, not a live path.
       if (didFullRelogin) {
         onTokenRefreshed?.call();
       }

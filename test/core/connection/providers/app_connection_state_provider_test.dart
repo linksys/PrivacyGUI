@@ -9,7 +9,10 @@ import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+
+import '../../../mocks/test_data/auth_test_data.dart';
 
 class MockRecoveryProbeService extends Mock implements RecoveryProbeService {}
 
@@ -26,9 +29,7 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async => AuthState(
-        loginType: LoginType.local,
-      );
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 }
 
 /// Auth notifier whose state can be driven by tests to simulate a
@@ -37,19 +38,35 @@ class ControllableAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 
-  void emitLoggedOut() =>
-      state = AsyncValue.data(AuthState(loginType: LoginType.none));
+  void emitLoggedOut() => state = AsyncValue.data(AuthTestData.loggedOut());
 
-  void emitLoggedIn() =>
-      state = AsyncValue.data(AuthState(loginType: LoginType.local));
+  void emitLoggedIn() => state = AsyncValue.data(AuthTestData.loggedIn());
+
+  /// A second logged-in emission that is *not* a re-login.
+  ///
+  /// A separate method rather than a second [emitLoggedIn] call, because that one
+  /// would emit an *equal* state and Riverpod would suppress the notification —
+  /// `AuthTestData.loggedInAgain` carries the whole argument.
+  void emitHintRefresh() =>
+      state = AsyncValue.data(AuthTestData.loggedInAgain('hint refreshed'));
 }
 
 void main() {
   late MockRecoveryProbeService mockProbe;
   late MockSseManager mockSseManager;
   late MockAuthNotifier mockAuthNotifier;
+
+  setUpAll(() {
+    // Needed by `any(named: 'cause')` in the `verifyNever` calls below, and the
+    // failure without it is not local to those calls: mocktail throws from *inside*
+    // the verification, which leaves its argument-matcher stack dirty and makes
+    // every `when(...)` later in this file silently stop applying — 18 unrelated
+    // tests failing on an unstubbed `SseManager.disconnect()`. Only the type is
+    // used; the value never reaches an argument.
+    registerFallbackValue(EndCause.sessionLost);
+  });
 
   setUp(() {
     mockProbe = MockRecoveryProbeService();
@@ -239,22 +256,23 @@ void main() {
       verify(() => mockSseManager.connect()).called(1);
     });
 
-    test('recovery probe returning serialMismatch transitions to loggedOut',
-        () async {
+    test(
+        'recovery probe returning serialMismatch reports sessionLost '
+        'without ending the session', () async {
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
       when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
-      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
 
-      container.read(appConnectionStateProvider.notifier).enterWaiting(
-            context: RecoveryContext(
-              trigger: RecoveryTrigger.operationalWifiChange,
-              cooldown: Duration.zero,
-            ),
-          );
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalWifiChange,
+          cooldown: Duration.zero,
+        ),
+      );
 
       // Allow the probe to run
       await Future.delayed(const Duration(milliseconds: 100));
@@ -263,7 +281,47 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.loggedOut,
       );
-      verify(() => mockAuthNotifier.logout()).called(1);
+      // The half #1323 phase 5 changed. A different router answered, so the
+      // session is over — but signing the user out is the page layer's call, and
+      // `EndCause.sessionLost` is what tells `RemoteSessionStrategy.end` not to ask
+      // Guardian to close a session against a device that never had it.
+      expect(notifier.takePendingSessionExit(), EndCause.sessionLost);
+      verifyNever(() => mockAuthNotifier.logout());
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
+    });
+
+    test('recovery after a factory reset reports sessionLost', () async {
+      // The `operationalFactoryReset` arm of `ProbeResult.recovered`, which had no
+      // coverage here before #1323 phase 5 gave it a value to report. It is the one
+      // place a *successful* probe still ends the session: the router came back,
+      // and came back with nothing of the session left in it.
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.recovered);
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFactoryReset,
+          cooldown: Duration.zero,
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.loggedOut,
+      );
+      expect(notifier.takePendingSessionExit(), EndCause.sessionLost);
+      // Not the `recovered` path's SSE reconnect: there is no session left to
+      // stream into.
+      verifyNever(() => mockSseManager.connect());
+      verifyNever(() => mockAuthNotifier.logout());
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
     });
 
     test('recovery probe returning unreachable continues probing', () async {
@@ -294,11 +352,10 @@ void main() {
       );
     });
 
-    test('exitToLogout stops probe and transitions to loggedOut', () {
+    test('exitToLogout stops probe and reports userRequested', () {
       when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
-      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -317,22 +374,73 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.loggedOut,
       );
-      verify(() => mockAuthNotifier.logout()).called(1);
+      // `userRequested`, not the `sessionLost` the removed bare `logout()`
+      // defaulted to: the only caller is a button. Behaviourally identical today
+      // because `LocalSessionStrategy.end` ignores the cause, and it is the local
+      // surface that offers this affordance — but it is the truthful value, and it
+      // is what makes a Remote caller release its Guardian session rather than
+      // leave it open.
+      expect(notifier.takePendingSessionExit(), EndCause.userRequested);
+      verifyNever(() => mockAuthNotifier.logout());
+      verifyNever(() => mockAuthNotifier.logout(cause: any(named: 'cause')));
     });
 
     test('exitToLogout from authenticated state', () {
-      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
-
       final container = createContainer();
       addTearDown(container.dispose);
 
-      container.read(appConnectionStateProvider.notifier).exitToLogout();
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.exitToLogout();
 
       expect(
         container.read(appConnectionStateProvider),
         AppConnectionState.loggedOut,
       );
-      verify(() => mockAuthNotifier.logout()).called(1);
+      expect(notifier.takePendingSessionExit(), EndCause.userRequested);
+    });
+
+    test('the reported exit is one-shot', () {
+      // What lets the consumer key off the cause instead of the state transition.
+      // `loggedOut` is also reached by `build`'s authProvider listener when
+      // something else logged out, and a consumer that acted on every transition
+      // would tear the session down twice. Reading clears, so the second look —
+      // whether it is a second listener or a later unrelated transition — sees
+      // nothing to do.
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.exitToLogout();
+
+      expect(notifier.takePendingSessionExit(), EndCause.userRequested);
+      expect(notifier.takePendingSessionExit(), isNull);
+    });
+
+    test('a logout the app did not decide reports nothing', () async {
+      // The other way into `loggedOut`: auth logged itself out — an idle timeout,
+      // a 401 through `sse_providers.dart`, the account menu — and this notifier
+      // followed. Nothing for the consumer to do, and `logout()` again would be a
+      // second teardown of a session already gone.
+      final auth = ControllableAuthNotifier();
+      final container = createContainer(authNotifier: () => auth);
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      // `ControllableAuthNotifier.build` is async, and `build`'s listener skips a
+      // loading value — so the first emit has to land after it has settled or the
+      // listener never sees the transition.
+      await Future.delayed(Duration.zero);
+      expect(container.read(appConnectionStateProvider),
+          AppConnectionState.authenticated);
+
+      auth.emitLoggedOut();
+      await Future.delayed(Duration.zero);
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.loggedOut,
+      );
+      expect(notifier.takePendingSessionExit(), isNull);
     });
 
     test('consecutiveFailures increments on each unreachable probe', () async {
@@ -443,7 +551,6 @@ void main() {
 
     test('exitToLogout resets recovery counters', () async {
       when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
-      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -622,7 +729,6 @@ void main() {
       when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
-      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -739,6 +845,77 @@ void main() {
           container.read(appConnectionStateProvider),
           AppConnectionState.waitingForRecovery,
         );
+      });
+
+      test('a logged-in auth event does not un-decide a reported exit',
+          () async {
+        // Round 3's arm-2 finding. The promotion above keys on
+        // `state == loggedOut`, which before this PR could only mean "auth logged
+        // out and this notifier followed". It now also means "this notifier decided
+        // the session is over and nobody has carried it out yet" — auth is still
+        // holding a session, so the next non-loading emission is not necessarily a
+        // re-login. The arm used to clear the cause and promote, which consumed the
+        // report on the consumer's behalf: signed in to a session the core had given
+        // up on, with nothing left to re-report it. In Remote Assistance the report
+        // is what releases the Guardian session, so the leak is a support session
+        // left open until it expires.
+        //
+        // The pairing with the arm above is what makes this safe to gate rather than
+        // track: a *genuine* re-login passes through a logout first, and that arm
+        // clears the field unconditionally.
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        await Future.delayed(Duration.zero);
+
+        // The core decides. Auth is untouched and still logged in — this is the
+        // stranded-report state, reachable whenever no `/usp*` page is mounted.
+        notifier.exitToLogout();
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+        );
+
+        auth.emitHintRefresh();
+        await Future.delayed(Duration.zero);
+
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+          reason: 'the promotion arm re-authenticated a session the core had '
+              'already reported as over',
+        );
+        expect(notifier.takePendingSessionExit(), EndCause.userRequested,
+            reason: 'the cause was dropped, so the next consumer to mount has '
+                'nothing to act on and the sign-out never happens');
+      });
+
+      test('a cause planted while auth is still resolving survives it',
+          () async {
+        // The same arm, reached by timing rather than by a refresh — and the one
+        // round 3 pointed at, because `session_exit_sink_test.dart`'s `pumpScope`
+        // helper arranges this ordering away for every test in that file. `build()`
+        // is `async`, so `authProvider` is still loading here; when it resolves
+        // logged-in it lands on the promotion arm with the cause already set. A
+        // precondition a test helper can arrange is not one production has: the same
+        // race is a probe answering while a hint refresh is in flight.
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        notifier.exitToLogout();
+
+        // Auth resolves *after* the report.
+        await Future.delayed(Duration.zero);
+
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+        );
+        expect(notifier.takePendingSessionExit(), EndCause.userRequested);
       });
     });
   });
