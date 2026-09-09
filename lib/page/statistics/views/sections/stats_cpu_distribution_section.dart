@@ -63,12 +63,34 @@ class StatsCpuDistributionSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
+        // DEGRADATION SHAPE (#1488) — and the one of that ticket's four legend
+        // rows that a `Wrap` does **not** fix. This row holds a single group: one
+        // dot and one `cpuUsageSamples` label. `Wrap` reflows between children, so
+        // with one child there is nothing to reflow — and it hands that child
+        // loose constraints, so a label wider than the row would overflow inside a
+        // `Wrap` exactly as it does inside this `Row`.
+        //
+        // So the *text* yields, not the row: `Flexible` gives the label the width
+        // left after the dot, and it soft-wraps to at most two lines. Two is the
+        // budget rather than unlimited because the chart above is `Expanded` and
+        // pays for every line — at 238px, French's "Échantillons d'utilisation du
+        // processeur : 10" (the longest of the 26, and 26px over before this) takes
+        // two.
+        //
+        // No ellipsis: the label ends in the sample count, which is the only thing
+        // this legend states.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall(loc(context).cpuUsageSamples(history.length)),
+            Flexible(
+              child: AppText.labelSmall(
+                loc(context).cpuUsageSamples(history.length),
+                maxLines: 2,
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ],
