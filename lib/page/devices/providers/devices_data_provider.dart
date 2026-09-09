@@ -114,7 +114,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<DevicesData> build() async {
     // SSE: listen for device domain changes → debounce → re-fetch
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.connectedDevices) {
         _debouncedInvalidate();
       }

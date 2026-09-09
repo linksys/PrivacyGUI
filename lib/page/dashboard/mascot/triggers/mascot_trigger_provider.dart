@@ -120,7 +120,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
   void _listenToSseEvents() {
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain != null &&
           TriggerDomainMapping.canTriggerNotification(domain)) {
         _debouncedEvaluate(domain);
