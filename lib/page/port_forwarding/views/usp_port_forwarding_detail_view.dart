@@ -58,8 +58,8 @@ class _UspPortForwardingDetailViewState
     _tabController = TabController(
       length: UspPortForwardingDetailView.tabCount,
       vsync: this,
-      initialIndex: widget.initialTab
-          .clamp(0, UspPortForwardingDetailView.tabCount - 1),
+      initialIndex:
+          widget.initialTab.clamp(0, UspPortForwardingDetailView.tabCount - 1),
     );
   }
 

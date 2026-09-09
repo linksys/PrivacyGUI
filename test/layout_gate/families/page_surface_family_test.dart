@@ -1159,8 +1159,8 @@ void main() {
         byPage.putIfAbsent(page.view().runtimeType, () => []).add(page);
       }
       final perTab = Map.of(byPage)
-        ..removeWhere((_, cases) =>
-            cases.every((c) => (tabOf(c.view())?.$1 ?? 0) == 0));
+        ..removeWhere(
+            (_, cases) => cases.every((c) => (tabOf(c.view())?.$1 ?? 0) == 0));
 
       expect(
         perTab.keys.toSet(),
