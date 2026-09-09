@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
@@ -55,29 +56,30 @@ void main() {
   });
 
   group('scaleLayout', () {
-    List<dynamic> _singleItemLayout({
+    /// One item, with the caps given as `int?` so a test can ask for *no* cap
+    /// and get [double.infinity] the way [LayoutItem] itself defaults it.
+    List<LayoutItem> _singleItemLayout({
       int x = 0,
       int y = 0,
       int w = 6,
       int h = 3,
       int minW = 3,
-      int maxW = 8,
+      int? maxW = 8,
     }) {
       return [
-        {
-          'id': 'test',
-          'x': x,
-          'y': y,
-          'w': w,
-          'h': h,
-          'minW': minW,
-          'maxW': maxW,
-        }
+        LayoutItem(
+          id: 'test',
+          x: x,
+          y: y,
+          w: w,
+          h: h,
+          minW: minW,
+          maxW: maxW?.toDouble() ?? double.infinity,
+        )
       ];
     }
 
-    Map<String, dynamic> _first(List<dynamic> layout) =>
-        layout.first as Map<String, dynamic>;
+    LayoutItem _first(List<LayoutItem> layout) => layout.first;
 
     test('tablet 12→8: w=6 → w=4', () {
       final result = UspWidgetSpecs.scaleLayout(
@@ -85,7 +87,7 @@ void main() {
         12,
         8,
       );
-      expect(_first(result)['w'], 4);
+      expect(_first(result).w, 4);
     });
 
     test('tablet 12→8: w=12 → w=8', () {
@@ -94,7 +96,7 @@ void main() {
         12,
         8,
       );
-      expect(_first(result)['w'], 8);
+      expect(_first(result).w, 8);
     });
 
     test('mobile 12→4: forces full-width', () {
@@ -103,7 +105,7 @@ void main() {
         12,
         4,
       );
-      expect(_first(result)['w'], 4);
+      expect(_first(result).w, 4);
     });
 
     test('mobile 12→4: forces x=0', () {
@@ -112,7 +114,7 @@ void main() {
         12,
         4,
       );
-      expect(_first(result)['x'], 0);
+      expect(_first(result).x, 0);
     });
 
     test('scales minW proportionally', () {
@@ -122,7 +124,7 @@ void main() {
         8,
       );
       // 3 * 8 / 12 = 2
-      expect(_first(result)['minW'], 2);
+      expect(_first(result).minW, 2);
     });
 
     test('scales maxW proportionally', () {
@@ -132,17 +134,29 @@ void main() {
         8,
       );
       // 8 * 8 / 12 = 5.33 → 5
-      final maxW = (_first(result)['maxW'] as num).toInt();
-      expect(maxW, 5);
+      expect(_first(result).maxW.toInt(), 5);
     });
 
-    test('maxW is stored as double', () {
+    // There used to be a 'maxW is stored as double' test here. It was asserting
+    // `isA<double>()` on a map value, because the map form could hold an `int`
+    // there and `LayoutItem.fromMap`'s `as num?` would have accepted it —
+    // silently, then compared it against doubles elsewhere. `LayoutItem.maxW` is
+    // declared `double`, so the claim is now the compiler's and a test for it
+    // could only ever pass (#1310).
+
+    test('an unbounded cap scales to the whole target grid', () {
+      // The `Infinity.toInt()` trap, from the other side. `maxW` defaults to
+      // [double.infinity] and only `toMap()` turns that into the `null` the map
+      // form read as "absent"; handed a live item — which is every item on the
+      // grid — the old `(map['maxW'] as num?)?.toInt() ?? fromCols` matched the
+      // infinity and threw `Unsupported operation: Infinity or NaN toInt`
+      // (#1310).
       final result = UspWidgetSpecs.scaleLayout(
-        _singleItemLayout(),
+        _singleItemLayout(w: 6, minW: 1, maxW: null),
         12,
         8,
       );
-      expect(_first(result)['maxW'], isA<double>());
+      expect(_first(result).maxW, 8.0);
     });
 
     test('clamps minW to at least 1', () {
@@ -151,7 +165,7 @@ void main() {
         12,
         4,
       );
-      expect(_first(result)['minW'], greaterThanOrEqualTo(1));
+      expect(_first(result).minW, greaterThanOrEqualTo(1));
     });
 
     test('clamps maxW to toCols', () {
@@ -160,8 +174,7 @@ void main() {
         12,
         4,
       );
-      final maxW = (_first(result)['maxW'] as num).toInt();
-      expect(maxW, lessThanOrEqualTo(4));
+      expect(_first(result).maxW.toInt(), lessThanOrEqualTo(4));
     });
 
     test('overflow correction shifts x left when newX+newW > toCols', () {
@@ -172,7 +185,7 @@ void main() {
         8,
       );
       final item = _first(result);
-      expect((item['x'] as int) + (item['w'] as int), lessThanOrEqualTo(8));
+      expect(item.x + item.w, lessThanOrEqualTo(8));
     });
 
     test('underflow correction forces full-width when newX < 0', () {
@@ -180,23 +193,20 @@ void main() {
       // x=11, w=2 on 12 → scale to 8: newX~7, newW~1 → should fit
       // But test the code path by creating extreme case
       final layout = [
-        {
-          'id': 'test',
-          'x': 11,
-          'y': 0,
-          'w': 3,
-          'h': 2,
-          'minW': 1,
-          'maxW': 12,
-        }
+        LayoutItem(
+          id: 'test',
+          x: 11,
+          y: 0,
+          w: 3,
+          h: 2,
+          minW: 1,
+          maxW: 12,
+        )
       ];
       final result = UspWidgetSpecs.scaleLayout(layout, 12, 8);
       final item = _first(result);
-      expect(item['x'], greaterThanOrEqualTo(0));
-      expect(
-        (item['x'] as int) + (item['w'] as int),
-        lessThanOrEqualTo(8),
-      );
+      expect(item.x, greaterThanOrEqualTo(0));
+      expect(item.x + item.w, lessThanOrEqualTo(8));
     });
 
     test('preserves y, h, and id', () {
@@ -206,9 +216,9 @@ void main() {
         8,
       );
       final item = _first(result);
-      expect(item['y'], 5);
-      expect(item['h'], 4);
-      expect(item['id'], 'test');
+      expect(item.y, 5);
+      expect(item.h, 4);
+      expect(item.id, 'test');
     });
   });
 
@@ -479,6 +489,105 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // Which cards exist is global; only their geometry is per grid (#1293)
+  //
+  // `alignMembership` is the join between those two rules, and until #1310 it had
+  // no tests of its own — it was covered only through the controller, where a
+  // failure arrives as a card missing from a breakpoint nobody rendered. Its two
+  // lines make four separate promises, so each is staked here where the inputs
+  // are visible.
+  //
+  // Mutation table — each row is one edit to the two-line body:
+  //
+  //   | # | mutation | killed by |
+  //   |---|----------|-----------|
+  //   | 1 | return `refItem` unscaled instead of `scaleLayout([refItem], ...)` | 2 — the missing-card test and the empty-grid one |
+  //   | 2 | `scaleLayout(reference, ...)`, dropping the `stored` lookup | 1 — the keeps-its-own-geometry test, and only that one |
+  //   | 3 | iterate `layout` filtered by the reference's ids, instead of `reference` | 3 — missing-card, order, empty-grid |
+  //   | 4 | union: the reference's cards *plus* the ones only `layout` has | 1 — the dropped-card test, and only that one |
+  //
+  // Rows 2 and 4 are each killed by exactly one test, which is why neither of
+  // those two is redundant with the others: without row 2's the stored geometry
+  // could be thrown away silently, and without row 4's a deleted card could come
+  // back on the grids nobody was looking at.
+  // ---------------------------------------------------------------------------
+  group('alignMembership', () {
+    LayoutItem at(String id, {int x = 0, int w = 6, int h = 3}) =>
+        LayoutItem(id: id, x: x, y: 0, w: w, h: h, minW: 3, maxW: 8.0);
+
+    test('a card the stored grid is missing is scaled in from the reference',
+        () {
+      final aligned = UspWidgetSpecs.alignMembership(
+        [at('device_info', w: 4)],
+        [at('device_info', w: 6), at('lan_info', w: 6)],
+        fromCols: 12,
+        toCols: 8,
+      );
+
+      expect(aligned.map((i) => i.id), ['device_info', 'lan_info']);
+      expect(aligned.last.w, 4,
+          reason: 'the added card arrives at the target grid\'s width, not the '
+              'reference\'s 6 of 12 — passing it through unscaled is what makes '
+              'a desktop card overflow an 8-column grid');
+    });
+
+    test('a card the stored grid already has keeps its own geometry', () {
+      // The whole point of storing per breakpoint: this card was resized on the
+      // 8-column grid, and the reference is the 12-column one. Re-deriving it
+      // would silently discard the user's edit.
+      final aligned = UspWidgetSpecs.alignMembership(
+        [at('device_info', x: 2, w: 5, h: 7)],
+        [at('device_info', w: 6)],
+        fromCols: 12,
+        toCols: 8,
+      );
+
+      expect([aligned.single.x, aligned.single.w, aligned.single.h], [2, 5, 7]);
+    });
+
+    test('a card the reference dropped is dropped here too', () {
+      // Deleting a card on a phone deletes the card. The stored grid is the
+      // stale side, so an entry it still holds is not evidence the card exists.
+      final aligned = UspWidgetSpecs.alignMembership(
+        [at('device_info'), at('lan_info')],
+        [at('device_info')],
+        fromCols: 12,
+        toCols: 8,
+      );
+
+      expect(aligned.map((i) => i.id), ['device_info']);
+    });
+
+    test('the order is the reference\'s, not the stored grid\'s', () {
+      // Not cosmetic: `setSlotCount` reconciles the grid it is leaving against
+      // the one it is entering, and the package matches by position when it
+      // places items it does not recognise.
+      final aligned = UspWidgetSpecs.alignMembership(
+        [at('lan_info'), at('device_info')],
+        [at('device_info'), at('lan_info')],
+        fromCols: 12,
+        toCols: 8,
+      );
+
+      expect(aligned.map((i) => i.id), ['device_info', 'lan_info']);
+    });
+
+    test('an empty stored grid is the whole reference, scaled', () {
+      // What a fresh breakpoint looks like — nothing stored yet — and the path
+      // that must not return an empty grid.
+      final aligned = UspWidgetSpecs.alignMembership(
+        const [],
+        [at('device_info', w: 6), at('lan_info', x: 6, w: 6)],
+        fromCols: 12,
+        toCols: 8,
+      );
+
+      expect(aligned.map((i) => i.id), ['device_info', 'lan_info']);
+      expect(aligned.map((i) => i.w), everyElement(4));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // The phone width lock is now these four fields and nothing else (#1399)
   //
   // It used to be two mechanisms: this pin, plus `lockItemsToFullWidth`
@@ -494,7 +603,7 @@ void main() {
   // tests only pin what that page is handed.
   // ---------------------------------------------------------------------------
   group('lockToFullWidth', () {
-    List<dynamic> oneCard({
+    List<LayoutItem> oneCard({
       int x = 0,
       int y = 0,
       int w = 4,
@@ -505,21 +614,20 @@ void main() {
       num maxH = 6,
     }) =>
         [
-          {
-            'id': 'a',
-            'x': x,
-            'y': y,
-            'w': w,
-            'h': h,
-            'minW': minW,
-            'maxW': maxW,
-            'minH': minH,
-            'maxH': maxH,
-          }
+          LayoutItem(
+            id: 'a',
+            x: x,
+            y: y,
+            w: w,
+            h: h,
+            minW: minW,
+            maxW: maxW.toDouble(),
+            minH: minH,
+            maxH: maxH.toDouble(),
+          )
         ];
 
-    Map<String, dynamic> firstOf(List<dynamic> layout) =>
-        layout.first as Map<String, dynamic>;
+    LayoutItem firstOf(List<LayoutItem> layout) => layout.first;
 
     test('all four width fields collapse onto the grid width', () {
       // Asserted together rather than one per test: it is the *combination*
@@ -528,14 +636,14 @@ void main() {
       // single point once the caps are equal — bounds the left-hand ones.
       // Any one of the four alone leaves a handle live.
       //
-      // The `4` / `4.0` asymmetry mirrors `LayoutItem`'s own fields — `int minW`,
-      // `double maxW` (`layout_item.dart:233,239`) — and is documentation, not
-      // enforcement: `4 == 4.0` in Dart, and `fromMap` coerces with
-      // `(map['maxW'] as num?)?.toDouble()`, so either literal would pass here
-      // and either type would survive a round trip.
+      // The `4` / `4.0` asymmetry is now the field types themselves — `int minW`,
+      // `double maxW` (`layout_item.dart:233,239`) — rather than documentation
+      // about what a map could hold. It used to be the latter: `4 == 4.0` in
+      // Dart, so either literal passed, and the note here had to explain that
+      // `fromMap`'s `(map['maxW'] as num?)?.toDouble()` would coerce whichever
+      // one was stored. #1310 makes the wrong one a compile error.
       final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(), 4));
-      expect(
-          [item['x'], item['w'], item['minW'], item['maxW']], [0, 4, 4, 4.0]);
+      expect([item.x, item.w, item.minW, item.maxW], [0, 4, 4, 4.0]);
     });
 
     test('a card the previous grid left displaced is pinned too', () {
@@ -545,7 +653,7 @@ void main() {
       // read rather than needing a migration.
       final item =
           firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(x: 1, w: 3), 4));
-      expect([item['x'], item['w']], [0, 4]);
+      expect([item.x, item.w], [0, 4]);
     });
 
     test('a scaled maxW below the width is raised, not left to snap', () {
@@ -553,7 +661,7 @@ void main() {
       // set to 4 — a width outside its own cap, which the first resize would
       // have snapped down to 3 of 4 columns.
       final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(maxW: 3), 4));
-      expect(item['maxW'], 4.0);
+      expect(item.maxW, 4.0);
     });
 
     test('a desktop maxW wider than the phone grid is brought down', () {
@@ -564,7 +672,7 @@ void main() {
       // rather than left to the equality in the first test.
       final item =
           firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(maxW: 12), 4));
-      expect(item['maxW'], 4.0);
+      expect(item.maxW, 4.0);
     });
 
     test('a spec minW wider than the phone grid is lowered', () {
@@ -573,7 +681,7 @@ void main() {
       // page is building, so a projection that lowered only `w` would crash
       // rather than mis-size.
       final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(minW: 6), 4));
-      expect(item['minW'], 4);
+      expect(item.minW, 4);
     });
 
     test('the height is left to the user, bounds and all', () {
@@ -581,7 +689,7 @@ void main() {
         oneCard(y: 5, h: 3, minH: 2, maxH: 6),
         4,
       ));
-      expect([item['y'], item['h'], item['minH'], item['maxH']], [5, 3, 2, 6]);
+      expect([item.y, item.h, item.minH, item.maxH], [5, 3, 2, 6]);
     });
 
     test('an 8-column grid gets the 8-column pin', () {
@@ -589,15 +697,14 @@ void main() {
       // grid does not use it — this is here so that a hard-coded 4 in the
       // implementation cannot pass.
       final item = firstOf(UspWidgetSpecs.lockToFullWidth(oneCard(w: 3), 8));
-      expect([item['w'], item['minW'], item['maxW']], [8, 8, 8.0]);
+      expect([item.w, item.minW, item.maxW], [8, 8, 8.0]);
     });
 
     test('fields the lock has no opinion about survive', () {
-      final locked = UspWidgetSpecs.lockToFullWidth([
-        {'id': 'a', 'x': 1, 'y': 0, 'w': 3, 'h': 2, 'isStatic': true}
-      ], 4);
-      expect(firstOf(locked)['id'], 'a');
-      expect(firstOf(locked)['isStatic'], isTrue);
+      final locked = UspWidgetSpecs.lockToFullWidth(
+          [LayoutItem(id: 'a', x: 1, y: 0, w: 3, h: 2, isStatic: true)], 4);
+      expect(firstOf(locked).id, 'a');
+      expect(firstOf(locked).isStatic, isTrue);
     });
   });
 }

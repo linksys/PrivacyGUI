@@ -6,6 +6,9 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+
+import '../../../util/dashboard/layout_provider_harness.dart';
 
 /// Per-breakpoint layout persistence, and the mobile full-width lock (#1293).
 ///
@@ -37,30 +40,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  /// Wait for the notifier's async init/save chains to settle.
-  Future<void> pumpAsync() => Future.delayed(const Duration(milliseconds: 100));
-
-  Future<ProviderContainer> boot({
-    Map<String, Object>? initialValues,
-  }) async {
-    if (initialValues != null) {
-      SharedPreferences.setMockInitialValues(initialValues);
-    }
-    final container = ProviderContainer();
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
-
-  /// Reboots the app against whatever is already in the mock pref store — the
-  /// "close the tab and come back on a laptop" path.
-  Future<ProviderContainer> reboot() async {
-    final container = ProviderContainer();
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
-
   Future<UspLayoutEnvelope> storedEnvelope() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(pUspSliverDashboardLayout);
@@ -70,18 +49,32 @@ void main() {
     return envelope!;
   }
 
-  /// The geometry keys only. `moved` and friends are engine bookkeeping that
-  /// flips on compaction, so comparing whole maps would compare noise.
-  List<Map<String, Object?>> geometryOf(List<dynamic> layout) => layout
+  /// The layout the controller is holding right now.
+  ///
+  /// `layout.value` rather than `exportLayout()`, which is that same beacon put
+  /// through `toMap()` (`dashboard_controller_impl.dart:1055`). Reading the typed
+  /// side is what lets the two helpers below take `LayoutItem` for both callers —
+  /// the live grid and a decoded envelope — instead of `List<dynamic>` because the
+  /// two used to arrive in different shapes (#1310).
+  List<LayoutItem> liveLayout(ProviderContainer container) =>
+      container.read(uspSliverDashboardControllerProvider).layout.value;
+
+  /// The geometry fields only. `moved` and friends are engine bookkeeping that
+  /// flips on compaction, so comparing whole items would compare noise.
+  List<Map<String, Object?>> geometryOf(List<LayoutItem> layout) => layout
       .map((item) => {
-            for (final k in ['id', 'x', 'y', 'w', 'h', 'minW', 'maxW'])
-              k: (item as Map)[k],
+            'id': item.id,
+            'x': item.x,
+            'y': item.y,
+            'w': item.w,
+            'h': item.h,
+            'minW': item.minW,
+            'maxW': item.maxW,
           })
       .toList();
 
-  Map<String, Object?> itemNamed(List<dynamic> layout, String id) =>
-      (layout.firstWhere((item) => (item as Map)['id'] == id) as Map)
-          .cast<String, Object?>();
+  LayoutItem itemNamed(List<LayoutItem> layout, String id) =>
+      layout.firstWhere((item) => item.id == id);
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -91,9 +84,8 @@ void main() {
   group('a save at one breakpoint cannot rewrite another', () {
     test('editing on mobile leaves the desktop layout byte-identical',
         () async {
-      final first = await boot();
-      final desktopBefore = geometryOf(
-          first.read(uspSliverDashboardControllerProvider).exportLayout());
+      final first = await bootLayout();
+      final desktopBefore = geometryOf(liveLayout(first));
 
       // Narrow the window to phone width, then do the one edit mobile allows:
       // make a card taller.
@@ -103,12 +95,11 @@ void main() {
           .updateItemSize('device_info', 4, 5);
       first.dispose();
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
 
       expect(
-        geometryOf(
-            second.read(uspSliverDashboardControllerProvider).exportLayout()),
+        geometryOf(liveLayout(second)),
         desktopBefore,
         reason: 'A phone edit rewrote the desktop grid. This is #1293: the '
             'desktop cards come back at mobile widths, with minW/maxW capped '
@@ -117,25 +108,25 @@ void main() {
     });
 
     test('the mobile edit itself survives the reboot', () async {
-      final first = await boot();
+      final first = await bootLayout();
       first.read(uspSliverDashboardControllerProvider).setSlotCount(4);
       await first
           .read(uspSliverDashboardControllerProvider.notifier)
           .updateItemSize('device_info', 4, 5);
       first.dispose();
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
       final controller = second.read(uspSliverDashboardControllerProvider);
       controller.setSlotCount(4);
 
-      expect(itemNamed(controller.exportLayout(), 'device_info')['h'], 5,
+      expect(itemNamed(controller.layout.value, 'device_info').h, 5,
           reason: 'Per-breakpoint storage is only worth having if the '
               'breakpoint that was edited actually keeps its edit.');
     });
 
     test('a desktop resize does not disturb a stored mobile layout', () async {
-      final first = await boot();
+      final first = await bootLayout();
       first.read(uspSliverDashboardControllerProvider).setSlotCount(4);
       await first
           .read(uspSliverDashboardControllerProvider.notifier)
@@ -147,10 +138,10 @@ void main() {
       first.dispose();
 
       final envelope = await storedEnvelope();
-      expect(itemNamed(envelope[4]!, 'device_info')['h'], 5);
-      expect(itemNamed(envelope[4]!, 'device_info')['w'], 4);
-      expect(itemNamed(envelope[12]!, 'device_info')['w'], 8);
-      expect(itemNamed(envelope[12]!, 'device_info')['h'], 3);
+      expect(itemNamed(envelope[4]!, 'device_info').h, 5);
+      expect(itemNamed(envelope[4]!, 'device_info').w, 4);
+      expect(itemNamed(envelope[12]!, 'device_info').w, 8);
+      expect(itemNamed(envelope[12]!, 'device_info').h, 3);
     });
 
     test('saving repeatedly at mobile does not drift the desktop entry',
@@ -158,7 +149,7 @@ void main() {
       // Every save visits all three grids to read them out of the controller,
       // so a rounding or compaction wobble in that walk would creep the desktop
       // layout one row at a time across a session.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -176,7 +167,7 @@ void main() {
 
     test('the walk leaves the controller on the breakpoint it started on',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
 
@@ -195,7 +186,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('mobile pins every card full-width', () {
     test('the seeded mobile layout is a locked single column', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
       controller.setSlotCount(4);
@@ -216,7 +207,7 @@ void main() {
       // What every existing install has: a mobile entry written before the lock
       // (or derived by the old scaler, which left w=4 with maxW=3 — a width
       // already outside its own cap).
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({
           12: [
             _item('stats_panel', w: 12, h: 1, minW: 6, maxW: 12),
@@ -241,18 +232,18 @@ void main() {
     });
 
     test('what we persist for mobile is locked too', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       for (final item in (await storedEnvelope())[4]!) {
-        expect((item as Map)['w'], 4);
-        expect(item['minW'], 4);
+        expect(item.w, 4);
+        expect(item.minW, 4);
       }
     });
 
     test('tablet keeps proportional widths — the lock is mobile-only',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
       controller.setSlotCount(8);
@@ -270,7 +261,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('adding and removing cards reaches every breakpoint', () {
     test('removing a card on mobile removes it everywhere', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       container.read(uspSliverDashboardControllerProvider).setSlotCount(4);
 
@@ -281,7 +272,7 @@ void main() {
       final envelope = await storedEnvelope();
       for (final slots in [12, 8, 4]) {
         expect(
-          envelope[slots]!.map((item) => (item as Map)['id']),
+          envelope[slots]!.map((item) => item.id),
           isNot(contains('device_info')),
           reason: 'device_info survived at $slots columns. Deleting a card on '
               'a phone must delete the card, not just its phone placement.',
@@ -290,7 +281,7 @@ void main() {
     });
 
     test('adding a card on mobile gives desktop its desktop width', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -300,9 +291,9 @@ void main() {
       await notifier.addWidget('port_forwarding');
 
       final envelope = await storedEnvelope();
-      expect(itemNamed(envelope[4]!, 'port_forwarding')['w'], 4);
+      expect(itemNamed(envelope[4]!, 'port_forwarding').w, 4);
       expect(
-        itemNamed(envelope[12]!, 'port_forwarding')['w'],
+        itemNamed(envelope[12]!, 'port_forwarding').w,
         greaterThan(4),
         reason: 'A card added while on a phone came back to desktop stuck at '
             'phone width — the package reconciles new items by carrying the '
@@ -316,8 +307,8 @@ void main() {
   // ---------------------------------------------------------------------------
   group('reading what is already on disk', () {
     test('a legacy bare list loads as the desktop layout', () async {
-      final container = await boot(initialValues: {
-        pUspSliverDashboardLayout: jsonEncode([
+      final container = await bootLayout(initialValues: {
+        pUspSliverDashboardLayout: _legacyBareList([
           _item('stats_panel', w: 12, h: 1, minW: 6, maxW: 12),
           _item('device_info', y: 1, w: 6, h: 3, minW: 3, maxW: 8),
         ]),
@@ -325,14 +316,14 @@ void main() {
       addTearDown(container.dispose);
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final layout = controller.exportLayout();
+      final layout = controller.layout.value;
       expect(layout, hasLength(2));
-      expect(itemNamed(layout, 'device_info')['w'], 6);
+      expect(itemNamed(layout, 'device_info').w, 6);
     });
 
     test('a legacy value is upgraded in place on the first save', () async {
-      final container = await boot(initialValues: {
-        pUspSliverDashboardLayout: jsonEncode([
+      final container = await bootLayout(initialValues: {
+        pUspSliverDashboardLayout: _legacyBareList([
           _item('device_info', w: 6, h: 3, minW: 3, maxW: 8),
         ]),
       });
@@ -350,7 +341,7 @@ void main() {
 
     test('an unreadable pref falls back to the default and rewrites it',
         () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: '{"version": 99}',
       });
       addTearDown(container.dispose);
@@ -365,7 +356,7 @@ void main() {
         () async {
       // The shape a partial migration leaves behind: desktop has been edited
       // since the mobile entry was written.
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({
           12: [
             _item('stats_panel', w: 12, h: 1, minW: 6, maxW: 12),
@@ -395,7 +386,7 @@ void main() {
     });
 
     test('resetLayout re-seeds every breakpoint', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
 
@@ -419,8 +410,19 @@ void main() {
   });
 }
 
-/// A layout item map in the shape `exportLayout()` produces.
-Map<String, dynamic> _item(
+/// A pre-envelope pref value: the bare JSON list the app wrote before the
+/// layouts were keyed by slot count.
+///
+/// `toMap()` is spelled here rather than in each caller because this is one of
+/// the two shapes an item legitimately becomes bytes in — the other being
+/// `UspLayoutEnvelope.encode()` — and #1310's whole claim is that those are the
+/// only two. A fixture that reached for `jsonEncode(item)` directly would be
+/// inventing a third.
+String _legacyBareList(List<LayoutItem> items) =>
+    jsonEncode([for (final item in items) item.toMap()]);
+
+/// One grid item, in the shape the controller's own layout beacon holds.
+LayoutItem _item(
   String id, {
   int x = 0,
   int y = 0,
@@ -431,14 +433,14 @@ Map<String, dynamic> _item(
   int minH = 1,
   double maxH = 8.0,
 }) =>
-    {
-      'id': id,
-      'x': x,
-      'y': y,
-      'w': w,
-      'h': h,
-      'minW': minW,
-      'maxW': maxW,
-      'minH': minH,
-      'maxH': maxH,
-    };
+    LayoutItem(
+      id: id,
+      x: x,
+      y: y,
+      w: w,
+      h: h,
+      minW: minW,
+      maxW: maxW,
+      minH: minH,
+      maxH: maxH,
+    );

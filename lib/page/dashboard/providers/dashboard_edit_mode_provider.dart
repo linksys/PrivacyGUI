@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 /// Manages dashboard edit mode state and layout snapshots for revert on cancel.
 ///
@@ -40,7 +41,7 @@ class DashboardEditState extends Equatable {
   /// reverted only the geometry would leave the two disagreeing. The pick now
   /// travels on the grid item it shaped, so it is inside these layouts and cannot
   /// be reverted without them.
-  final Map<int, List<dynamic>>? layoutSnapshot;
+  final Map<int, List<LayoutItem>>? layoutSnapshot;
   final UspLayoutPreferences? prefsSnapshot;
 
   const DashboardEditState({
@@ -51,7 +52,7 @@ class DashboardEditState extends Equatable {
 
   DashboardEditState copyWith({
     bool? isEditing,
-    Map<int, List<dynamic>>? layoutSnapshot,
+    Map<int, List<LayoutItem>>? layoutSnapshot,
     UspLayoutPreferences? prefsSnapshot,
     bool clearSnapshots = false,
   }) {

@@ -9,27 +9,20 @@ import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart'
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Wait for async initialization chains to settle.
-Future<void> pumpAsync() async {
-  await Future.delayed(const Duration(milliseconds: 100));
-}
+import '../../../util/dashboard/layout_provider_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   /// Creates a container with both providers, waits for initialization.
+  ///
+  /// Every test in this file asserts on preferences, so all of them need the
+  /// preferences provider created and loaded — hence the flag is set here rather
+  /// than per call.
   Future<ProviderContainer> createContainer({
     Map<String, Object> initialValues = const {},
-  }) async {
-    SharedPreferences.setMockInitialValues(initialValues);
-    final container = ProviderContainer();
-    // Force creation of both providers
-    container.read(uspSliverDashboardControllerProvider);
-    final notifier = container.read(uspLayoutPreferencesProvider.notifier);
-    await notifier.initialized;
-    await pumpAsync();
-    return container;
-  }
+  }) =>
+      bootLayout(initialValues: initialValues, awaitPreferences: true);
 
   // ---------------------------------------------------------------------------
   // Build / init

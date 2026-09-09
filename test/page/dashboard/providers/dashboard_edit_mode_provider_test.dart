@@ -8,7 +8,6 @@ import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
-import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,13 +22,11 @@ import 'package:sliver_dashboard/sliver_dashboard.dart'
 // ignore: implementation_imports
 import 'package:sliver_dashboard/src/controller/utility.dart';
 
-Future<void> pumpAsync() async {
-  await Future.delayed(const Duration(milliseconds: 100));
-}
+import '../../../util/dashboard/layout_provider_harness.dart';
 
 /// The desktop grid out of a persisted layout envelope (#1293 keys it by slot
 /// count), so an assertion can name the grid the test acted on.
-List<dynamic> _savedDesktopLayout(String raw) =>
+List<LayoutItem> _savedDesktopLayout(String raw) =>
     UspLayoutEnvelope.tryDecode(raw)![UspLayoutEnvelope.desktopSlotCount]!;
 
 /// The geometry of [layout], one line per card, id-ordered.
@@ -38,9 +35,9 @@ List<dynamic> _savedDesktopLayout(String raw) =>
 /// is a `minW` scaled past the column count of a grid nobody was looking at
 /// (`layout_engine.dart`'s `assert(currentL.minW <= cols)`), and a comparison of
 /// `x,y,w,h` alone would call that grid restored.
-List<String> _geometry(List<dynamic> layout) => layout
-    .map((i) => '${(i as Map)['id']}: ${i['x']},${i['y']},${i['w']},${i['h']} '
-        'caps ${i['minW']},${i['maxW']},${i['minH']},${i['maxH']}')
+List<String> _geometry(List<LayoutItem> layout) => layout
+    .map((i) => '${i.id}: ${i.x},${i.y},${i.w},${i.h} '
+        'caps ${i.minW},${i.maxW},${i.minH},${i.maxH}')
     .toList()
   ..sort();
 
@@ -53,24 +50,37 @@ Map<int, List<String>> _storedGeometry(String raw) {
   final envelope = UspLayoutEnvelope.tryDecode(raw)!;
   return {
     for (final slots in UspLayoutEnvelope.persistedSlotCounts)
-      slots: _geometry(envelope[slots] ?? const []),
+      slots: _geometry(envelope[slots] ?? const <LayoutItem>[]),
   };
 }
+
+/// A stand-in item for the two [DashboardEditState] value tests, which only ask
+/// whether a snapshot is held or cleared and never look inside one.
+///
+/// A `const` item rather than a builder because that is all those two need, and
+/// because #1310 made it necessary: the snapshot used to be maps, so the same
+/// stand-in was a one-key literal that no longer type-checks.
+const _probeItem = LayoutItem(id: 'test', x: 0, y: 0, w: 1, h: 1);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  /// `awaitPreferences` because that is what this file's own boot did before the
+  /// harness was extracted, and a refactor should not change what it boots.
+  ///
+  /// It is not what protects the snapshot, though: `enterEditMode` awaits the
+  /// same completer itself (`dashboard_edit_mode_provider.dart:123`) before
+  /// reading the preferences it snapshots. Measured — flipping this to `false`
+  /// leaves all 25 tests here green.
   Future<ProviderContainer> createContainer({
     Map<String, Object> initialValues = const {},
     List<Override> overrides = const [],
-  }) async {
-    SharedPreferences.setMockInitialValues(initialValues);
-    final container = ProviderContainer(overrides: overrides);
-    container.read(uspSliverDashboardControllerProvider);
-    await container.read(uspLayoutPreferencesProvider.notifier).initialized;
-    await pumpAsync();
-    return container;
-  }
+  }) =>
+      bootLayout(
+        initialValues: initialValues,
+        awaitPreferences: true,
+        overrides: overrides,
+      );
 
   group('DashboardEditState', () {
     test('default state has isEditing=false and null snapshots', () {
@@ -84,10 +94,8 @@ void main() {
       const state = DashboardEditState();
       final updated = state.copyWith(
         isEditing: true,
-        layoutSnapshot: {
-          12: [
-            {'id': 'test'}
-          ]
+        layoutSnapshot: const {
+          12: [_probeItem]
         },
         prefsSnapshot: const UspLayoutPreferences(useCustomLayout: false),
       );
@@ -101,9 +109,7 @@ void main() {
       const state = DashboardEditState(
         isEditing: true,
         layoutSnapshot: {
-          12: [
-            {'id': 'test'}
-          ]
+          12: [_probeItem]
         },
         prefsSnapshot: UspLayoutPreferences(),
       );
@@ -172,9 +178,9 @@ void main() {
       await container.read(dashboardEditModeProvider.notifier).enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final originalCount = controller.exportLayout().length;
+      final originalCount = controller.layout.value.length;
       controller.removeItems(['stats_panel']);
-      final afterRemove = controller.exportLayout().length;
+      final afterRemove = controller.layout.value.length;
       expect(afterRemove, lessThan(originalCount));
 
       await container.read(dashboardEditModeProvider.notifier).commitEditMode();
@@ -182,7 +188,8 @@ void main() {
       // Change is kept, not reverted back to originalCount.
       final finalCount = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
+          .layout
+          .value
           .length;
       expect(finalCount, equals(afterRemove));
     });
@@ -195,18 +202,19 @@ void main() {
 
       final originalLayout = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
+          .layout
+          .value
           .length;
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       controller.removeItems(['stats_panel']);
-      final afterRemove = controller.exportLayout().length;
+      final afterRemove = controller.layout.value.length;
       expect(afterRemove, lessThan(originalLayout));
 
       await container.read(dashboardEditModeProvider.notifier).cancelEditMode();
 
       final restoredLayout =
-          container.read(uspSliverDashboardControllerProvider).exportLayout();
+          container.read(uspSliverDashboardControllerProvider).layout.value;
       expect(restoredLayout.length, equals(originalLayout));
 
       final state = container.read(dashboardEditModeProvider);
@@ -225,11 +233,11 @@ void main() {
       await notifier.enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final originalCount = controller.exportLayout().length;
+      final originalCount = controller.layout.value.length;
 
       // Modify the grid, then re-enter (simulating a double-tap / gesture race).
       controller.removeItems(['stats_panel']);
-      expect(controller.exportLayout().length, lessThan(originalCount));
+      expect(controller.layout.value.length, lessThan(originalCount));
 
       // Re-entrant call must be a no-op — it must NOT re-capture the modified
       // grid as the new baseline.
@@ -239,7 +247,8 @@ void main() {
       await notifier.cancelEditMode();
       final restoredCount = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
+          .layout
+          .value
           .length;
       expect(restoredCount, equals(originalCount));
     });
@@ -320,9 +329,10 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       final before = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
-      final originalW = before['w'] as int;
+          .layout
+          .value
+          .firstWhere((e) => e.id == 'device_info');
+      final originalW = before.w;
       expect(originalW, greaterThan(UspWidgetSpecs.popupColumns),
           reason: 'the collapse has to be observable for the restore to be');
 
@@ -341,10 +351,11 @@ void main() {
       );
       final after = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
-      expect(after['w'], originalW);
-      expect(after['isResizable'], isNot(isFalse),
+          .layout
+          .value
+          .firstWhere((e) => e.id == 'device_info');
+      expect(after.w, originalW);
+      expect(after.isResizable, isNot(isFalse),
           reason: 'a card with no pick has its handles back');
     });
 
@@ -371,11 +382,12 @@ void main() {
       );
       final item = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
-      expect(item['isResizable'], isNot(isFalse),
+          .layout
+          .value
+          .firstWhere((e) => e.id == 'device_info');
+      expect(item.isResizable, isNot(isFalse),
           reason: 'compact can still be enlarged, so the handles stay');
-      expect(item['minW'], greaterThan(1),
+      expect(item.minW, greaterThan(1),
           reason: "the reverted pick's floor is back on the geometry");
     });
 
@@ -396,10 +408,11 @@ void main() {
       );
       final item = container
           .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
-      expect(item['w'], UspWidgetSpecs.popupColumns);
-      expect(item['isResizable'], isFalse);
+          .layout
+          .value
+          .firstWhere((e) => e.id == 'device_info');
+      expect(item.w, UspWidgetSpecs.popupColumns);
+      expect(item.isResizable, isFalse);
     });
 
     // The selection is edit-mode state too: it is what the form picker aims at, and
@@ -494,13 +507,13 @@ void main() {
       await notifier.enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final beforeGrab = _geometry(controller.exportLayout());
+      final beforeGrab = _geometry(controller.layout.value);
       final baseline = prefs.getString(pUspSliverDashboardLayout);
       expect(baseline, isNotNull,
           reason: 'the seed writes a baseline layout on first init');
 
       grabAndMove(controller, 'device_info');
-      expect(_geometry(controller.exportLayout()), isNot(beforeGrab),
+      expect(_geometry(controller.layout.value), isNot(beforeGrab),
           reason: 'the grab is in flight and has moved the card');
 
       await notifier.commitEditMode();
@@ -508,7 +521,7 @@ void main() {
 
       expect(controller.isDragging.value, isFalse,
           reason: 'a grab must not outlive the edit session it was made in');
-      expect(_geometry(controller.exportLayout()), beforeGrab,
+      expect(_geometry(controller.layout.value), beforeGrab,
           reason: 'the card goes back where the grab started, as it would on '
               'Escape — the move was never dropped');
       expect(prefs.getString(pUspSliverDashboardLayout), baseline,
@@ -527,13 +540,13 @@ void main() {
       await notifier.enterEditMode();
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final onEntry = _geometry(controller.exportLayout());
+      final onEntry = _geometry(controller.layout.value);
 
       // A first reorder, dropped: stored as it happens (#1393).
       grabAndMove(controller, 'device_info');
       controller.internal.onDragEnd('device_info');
       await pumpAsync();
-      final afterFirstMove = _geometry(controller.exportLayout());
+      final afterFirstMove = _geometry(controller.layout.value);
       expect(afterFirstMove, isNot(onEntry),
           reason: 'the dropped move changed the grid');
 
@@ -549,7 +562,7 @@ void main() {
       // Re-read: restoring a snapshot can restore a card the session deleted,
       // which is a membership change, and those arrive as a new controller.
       final live = container.read(uspSliverDashboardControllerProvider);
-      expect(_geometry(live.exportLayout()), onEntry,
+      expect(_geometry(live.layout.value), onEntry,
           reason: 'cancel reverts the whole session. Ending the interaction '
               'after the snapshot is imported rather than before it would put '
               'the grid back to the first move instead.');
@@ -587,8 +600,8 @@ void main() {
   // the termination and #1395 brought that fix in; the walk is still only safe in
   // the delete direction.
   group('cancel after a delete (#1393)', () {
-    bool holds(List<dynamic> layout, String id) =>
-        layout.any((item) => (item as Map)['id'] == id);
+    bool holds(List<LayoutItem> layout, String id) =>
+        layout.any((item) => item.id == id);
 
     test('the deleted card comes back on every breakpoint', () async {
       final container = await createContainer();
@@ -617,7 +630,7 @@ void main() {
       await pumpAsync();
 
       final live = container.read(uspSliverDashboardControllerProvider);
-      expect(holds(live.exportLayout(), 'stats_panel'), isTrue,
+      expect(holds(live.layout.value, 'stats_panel'), isTrue,
           reason: 'the card the session deleted is back on the grid');
 
       final envelope = UspLayoutEnvelope.tryDecode(
@@ -663,7 +676,7 @@ void main() {
   //   | # | mutated | mutation | killed by |
   //   |---|---------|----------|-----------|
   //   | 1 | usp_layout_controller | `restoreSnapshot` back to the pre-#1396 body: keep the live grid from the snapshot, rebuild the other two with `alignMembership` | 3 — both tests here, and the desktop delete above on its new exact assertion |
-  //   | 2 | dashboard_edit_mode_provider | `enterEditMode` captures `controller.exportLayout()` again, i.e. the live grid only, wrapped in a one-entry map | 13 — every test in this file that cancels, plus the `enterEditMode` shape test |
+  //   | 2 | dashboard_edit_mode_provider | `enterEditMode` captures `controller.layout.value` again, i.e. the live grid only, wrapped in a one-entry map | 13 — every test in this file that cancels, plus the `enterEditMode` shape test |
   //   | 3 | usp_layout_controller | `restoreSnapshot` restores the picks *after* the swap instead of before | *retired by #1400* |
   //
   // Row 2's count is the assert in `restoreSnapshot` doing its job: with asserts
@@ -861,10 +874,10 @@ void main() {
       addTearDown(container.dispose);
 
       final controller = container.read(uspSliverDashboardControllerProvider);
-      final originalCount = controller.exportLayout().length;
+      final originalCount = controller.layout.value.length;
       await container.read(dashboardEditModeProvider.notifier).enterEditMode();
       controller.removeItems(['stats_panel']);
-      expect(controller.exportLayout().length, lessThan(originalCount));
+      expect(controller.layout.value.length, lessThan(originalCount));
 
       auth.logOut();
       await pumpAsync();
@@ -872,7 +885,8 @@ void main() {
       expect(
           container
               .read(uspSliverDashboardControllerProvider)
-              .exportLayout()
+              .layout
+              .value
               .length,
           originalCount);
     });
@@ -883,7 +897,7 @@ void main() {
       addTearDown(container.dispose);
 
       final before =
-          container.read(uspSliverDashboardControllerProvider).exportLayout();
+          container.read(uspSliverDashboardControllerProvider).layout.value;
 
       auth.logOut();
       await pumpAsync();
@@ -892,7 +906,8 @@ void main() {
       expect(
           container
               .read(uspSliverDashboardControllerProvider)
-              .exportLayout()
+              .layout
+              .value
               .length,
           before.length,
           reason: 'The reset must be idempotent: it fires on every logout, '
