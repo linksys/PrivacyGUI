@@ -89,7 +89,7 @@ class SystemHealthNotifier extends AsyncNotifier<SystemHealthState> {
 
   void _listenToSseEvents() {
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain != null && _shouldReEvaluate(domain)) {
         _debouncedReEvaluate();
       }

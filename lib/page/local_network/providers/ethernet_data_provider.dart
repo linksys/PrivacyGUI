@@ -45,7 +45,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   Future<EthernetData> build() async {
     // SSE listener: Ethernet interface status changes (link up/down)
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.value == InvalidationDomain.ethernetInterfaces) {
+      if (next.valueOrNull?.domain == InvalidationDomain.ethernetInterfaces) {
         ref.invalidateSelf();
       }
     });

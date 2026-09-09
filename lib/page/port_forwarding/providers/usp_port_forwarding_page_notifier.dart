@@ -46,7 +46,7 @@ class UspPortForwardingPageNotifier
   PortForwardingPageFeatureState build() {
     // SSE invalidation: re-fetch when port forwarding changes externally.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull == InvalidationDomain.portForwarding) {
+      if (next.valueOrNull?.domain == InvalidationDomain.portForwarding) {
         onSseInvalidation();
       }
     });
