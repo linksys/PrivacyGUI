@@ -268,7 +268,7 @@ class UspSliverDashboardControllerNotifier
   /// - `maxHistoryLength: 0` disables undo/redo, and this one is a defect rather
   ///   than a preference. [_importQuietly] suppresses this notifier's persist
   ///   hook, not the package's bookkeeping: `importLayout` records a history entry
-  ///   (`dashboard_controller_impl.dart:1030`), so [_seedBreakpoints]' walk pushes
+  ///   (`dashboard_controller_impl.dart:1082` at 2.7.0), so [_seedBreakpoints]' walk pushes
   ///   the 8- and 4-column layouts onto the stack before the user has touched
   ///   anything. A Ctrl+Z then re-projects one of those onto the grid the user is
   ///   looking at — measured on 2.6.0: `canUndo` was already true on a first run

@@ -514,7 +514,7 @@ void main() {
   // row.
   //
   // `sliver_dashboard` 2.6.0 clamps `x` against the same caps
-  // (`dashboard_controller_impl.dart:1828-1842`), so the subscription became
+  // (`dashboard_controller_impl.dart:1932-1946` at 2.7.0), so the subscription became
   // unreachable and was deleted (#1399). These tests therefore changed shape:
   // they used to simulate the gesture by writing its result to the layout beacon
   // and assert it was undone, which is no longer a thing that happens to any
@@ -1526,6 +1526,12 @@ void main() {
   //
   // The history is not a preference. It is a defect for this notifier: see the
   // first test.
+  //
+  // The group keeps its 2.6.0 name because #1395 is what it is anchored to, but
+  // the policy assertion below has since taken 2.7.0's `fluidResize` as well.
+  // That is the group working as intended rather than drifting: every minor that
+  // adds an interaction default lands here, and the constraint moved to `^2.7.0`
+  // precisely so that the next one is a version bump someone reviewed.
   group('2.6.0 input surface (#1395)', () {
     test('the undo history is off, because ours would restore a foreign grid',
         () async {
@@ -1534,7 +1540,7 @@ void main() {
 
       // `_importQuietly` suppresses *our* persist hook, not the package's
       // bookkeeping: `importLayout` records a history entry
-      // (`dashboard_controller_impl.dart:1030`), so seeding the 8- and 4-column
+      // (`dashboard_controller_impl.dart:1082` at 2.7.0), so seeding the 8- and 4-column
       // caches pushes those two layouts onto the undo stack before the user has
       // touched anything. `_restoreSnapshot` then re-projects a snapshot taken at
       // another slot count onto the live grid, and #1393's hook persists the
@@ -1641,6 +1647,16 @@ void main() {
         expect(shortcuts.lassoModifier, isNotEmpty,
             reason: 'lasso modifier: $site — inert while the lasso is off, and '
                 'the field that arms it if it is ever turned back on');
+
+        // The field 2.7.0 added, and the case this helper's comment predicted:
+        // it arrived on a `pub get` with no diff to review, because the
+        // constraint is `^2.6.0` and the lock is gitignored. Off by the package
+        // default, and named here to make that a decision rather than an
+        // inheritance — fluid resize previews the tile in raw pixels, which is
+        // the opposite of the slot-snapped geometry every rule in #1400 and
+        // #1293 is written against.
+        expect(controller.fluidResize.value, isFalse,
+            reason: 'fluid resize: $site');
       }
 
       // The instance a first run keeps, which is `_createDefaultController`'s —

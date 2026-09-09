@@ -559,10 +559,10 @@ class _UspSliverDashboardViewState
   /// It does not, because opening the dialog is itself the cancel. The tile holds
   /// the primary focus for the whole drag; the dialog's modal route takes it; and
   /// the item loses focus while active, which is a case the package handles by
-  /// calling `cancelInteraction()` for us (`dashboard_item_widget.dart:577-583`).
-  /// By the time we are waiting on an answer the layout is already back at `0,1`
-  /// and `isDragging` is false, so the `onDragEnd` that follows returns at its
-  /// first line (`dashboard_controller_impl.dart:1660`) — no compaction, no
+  /// calling `cancelInteraction()` for us (`dashboard_item_widget.dart:588-594`
+  /// at 2.7.0). By the time we are waiting on an answer the layout is already
+  /// back at `0,1` and `isDragging` is false, so the `onDragEnd` that follows
+  /// returns at its first line (`dashboard_controller_impl.dart:1718`) — no compaction, no
   /// notify, no write. This also decides what a *confirm* deletes: the overlay
   /// captured `itemsToDelete` before the await, and `removeItems` then runs
   /// against the restored layout, so the card is removed from where it was

@@ -755,9 +755,10 @@ abstract class UspWidgetSpecs {
   /// whole of what enforces that, as of `sliver_dashboard` 2.6.0 (#1399): the
   /// resolver clamps the new width to `[minW, maxW]` *and then* clamps `x` into
   /// `[originalRight - maxW, originalRight - minW]`
-  /// (`dashboard_controller_impl.dart:1828-1842`), which for a card pinned at
-  /// both caps is the single value it already has. The left-hand handles are held
-  /// by the second clamp and the right-hand ones by the first.
+  /// (`dashboard_controller_impl.dart:1932-1946` at 2.7.0; the same block was
+  /// `:1828-1842` at 2.6.0 and is byte-identical between the two), which for a
+  /// card pinned at both caps is the single value it already has. The left-hand
+  /// handles are held by the second clamp and the right-hand ones by the first.
   ///
   /// 0.9.1 had only the first, so the left-hand handles moved `x` and the package
   /// trimmed the width to what was left of the row — `x: 1, w: 3` dragged inwards
