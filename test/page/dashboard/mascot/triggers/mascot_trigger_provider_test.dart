@@ -23,12 +23,19 @@ import '../../../../mocks/test_data/wifi_settings_test_data.dart';
 /// `build()` is overridden wholesale (not calling `super.build()`), which also
 /// strips each L1 provider's own SSE listener — these tests must observe only
 /// the mascot notifier's reaction, not a cascade of L1 re-fetches.
+/// [buildDelay] holds this provider in `AsyncLoading` past the point where
+/// `mount` mounts the trigger notifier, which is how a test reproduces an L1
+/// provider that `dashboardDomainReadyProvider` does not await.
 class _MutableWanNotifier extends WanDataNotifier {
-  _MutableWanNotifier(this._data);
+  _MutableWanNotifier(this._data, {this.buildDelay = Duration.zero});
   WanData _data;
+  final Duration buildDelay;
 
   @override
-  Future<WanData> build() async => _data;
+  Future<WanData> build() async {
+    if (buildDelay > Duration.zero) await Future.delayed(buildDelay);
+    return _data;
+  }
 
   void setData(WanData data) {
     _data = data;
@@ -50,11 +57,15 @@ class _MutableDevicesNotifier extends DevicesDataNotifier {
 }
 
 class _MutableFirewallNotifier extends FirewallDataNotifier {
-  _MutableFirewallNotifier(this._data);
+  _MutableFirewallNotifier(this._data, {this.buildDelay = Duration.zero});
   FirewallData _data;
+  final Duration buildDelay;
 
   @override
-  Future<FirewallData> build() async => _data;
+  Future<FirewallData> build() async {
+    if (buildDelay > Duration.zero) await Future.delayed(buildDelay);
+    return _data;
+  }
 
   void setData(FirewallData data) {
     _data = data;
@@ -101,10 +112,15 @@ void main() {
   ///
   /// `mascotTriggerProvider` is autoDispose, so the standing `listen` is what
   /// keeps the notifier — and its debounce timer — alive between events.
-  ProviderContainer mount(FakeAsync async) {
+  /// Pass `dashboardReady: false` to hold [dashboardDomainReadyProvider] in
+  /// `AsyncLoading` for the whole test — the one state in which `build()`
+  /// deliberately captures no baseline.
+  ProviderContainer mount(FakeAsync async, {bool dashboardReady = true}) {
     final container = ProviderContainer(overrides: [
       sseInvalidationProvider.overrideWith((ref) => sse.stream),
-      dashboardDomainReadyProvider.overrideWith((ref) async {}),
+      dashboardDomainReadyProvider.overrideWith(
+        (ref) => dashboardReady ? Future.value() : Completer<void>().future,
+      ),
       wanDataProvider.overrideWith(() => wan),
       devicesDataProvider.overrideWith(() => devices),
       firewallDataProvider.overrideWith(() => firewall),
@@ -112,7 +128,8 @@ void main() {
     ]);
 
     // Resolve every async dependency before the notifier builds, so
-    // `_initializeState` runs against loaded data rather than AsyncLoading.
+    // `_seedBaseline` runs against loaded data rather than AsyncLoading — unless
+    // a stand-in was given a `buildDelay`, which is the point of that knob.
     //
     // Any non-zero duration works; `flushMicrotasks()` does not, because it
     // runs the notifier's own work without publishing the build result — the
@@ -138,30 +155,165 @@ void main() {
   }
 
   group('MascotTriggerNotifier', () {
-    // TODO(#1509): invert this test when the seeding defect is fixed.
-    // Documents a real defect, not desired behaviour: `_initializeState()`
-    // assigns `state = MascotTriggerState(previousWanUp: ...)` *inside*
-    // `build()`, and riverpod 2.6.1 immediately overwrites it with build()'s
-    // return value — `setState(provider.runNotifierBuild(notifier))`,
-    // riverpod-2.6.1/lib/src/notifier/base.dart:212. So every `previousXxx`
-    // stays null however much data is loaded, and the first SSE event per
-    // domain can only seed, never fire. Filed as #1509; when that is fixed,
-    // this test must be inverted to expect the seeded values.
-    test(
-        'build does not seed previous values (state assigned in build is lost)',
-        () {
+    // This is the inverted #1509 pin. It used to assert four nulls: the
+    // baseline was assigned to `state` *inside* `build()`, and riverpod applies
+    // build()'s return value afterwards — `setState(provider.runNotifierBuild(
+    // notifier))`, riverpod-2.6.1/lib/src/notifier/base.dart:212 (3.4.3 does the
+    // same at providers/notifier.dart:94) — so the assignment was silently
+    // discarded, every `previousXxx` stayed null, and the first SSE event per
+    // domain could only seed, never fire. Returning the baseline from build()
+    // is the fix; this test is what goes red if anyone assigns it again.
+    test('build seeds every previous value from the loaded L1 providers', () {
       fakeAsync((async) {
         final container = mount(async);
 
         final state = container.read(mascotTriggerProvider);
         expect(state.lastTrigger, isNull);
-        expect(state.previousWanUp, isNull);
-        expect(state.previousDeviceCount, isNull);
-        expect(state.previousFirewallEnabled, isNull);
-        expect(state.previousDisabledRadios, isNull);
+        expect(state.previousWanUp, isTrue);
+        expect(state.previousDeviceCount, 2);
+        expect(state.previousFirewallEnabled, isTrue);
+        expect(state.previousDisabledRadios, isEmpty);
 
-        // The observable consequence: WAN is already down when the very first
-        // wanStatus event arrives, and nothing fires.
+        container.dispose();
+      });
+    });
+
+    // The observable half of the fix, one test per watched domain: the router
+    // changes, and the *first* event announcing it fires. Every one of these
+    // asserted `fired, isEmpty` before #1509.
+    test('the first wanStatus event fires wan_down', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        emit(async, InvalidationDomain.wanStatus, 0);
+
+        expect(fired.map((t) => t.id), ['wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    test('the first connectedDevices event fires new_device_joined', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(clientCount: 3));
+        emit(async, InvalidationDomain.connectedDevices, 0);
+
+        expect(fired.map((t) => t.id), ['new_device_joined']);
+
+        container.dispose();
+      });
+    });
+
+    test('the first firewallRules event fires firewall_disabled', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        emit(async, InvalidationDomain.firewallRules, 0);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    test('the first wifiRadios event fires wifi_radio_disabled', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        wifi.setData(WifiSettingsTestData.createWifiData(
+          radioModels:
+              WifiSettingsTestData.createRadioUIModels(is5GhzEnabled: false),
+        ));
+        emit(async, InvalidationDomain.wifiRadios, 0);
+
+        expect(fired.map((t) => t.id), ['wifi_radio_disabled_5GHz']);
+
+        container.dispose();
+      });
+    });
+
+    // The half of #1509 the ticket's one-line fix does not reach.
+    // `dashboardDomainReadyProvider` awaits systemInfo/devices/ethernet only, so
+    // `wanDataProvider` and `firewallDataProvider` — both card-driven, and
+    // `firewall_overview` sits below the fold — can still be in flight when the
+    // mascot mounts, leaving `build()` nothing to seed from. `_fillMissingBaseline`
+    // closes it by reading the pre-event value as the event arrives.
+    //
+    // The ordering below is the production one and is what makes that read a
+    // *pre-event* value: the SSE event lands first, the L1 refetch it triggers
+    // lands inside the 500 ms debounce window.
+    test('a baseline missing at build is filled from the pre-event value', () {
+      fakeAsync((async) {
+        firewall = _MutableFirewallNotifier(
+          FirewallTestData.createFirewallData(),
+          buildDelay: const Duration(milliseconds: 50),
+        );
+
+        final container = mount(async);
+
+        // mount() elapses 5 ms; the firewall fetch needs 50 ms.
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isNull);
+        async.elapse(const Duration(milliseconds: 100));
+
+        sse.add((domain: InvalidationDomain.firewallRules, seq: 0));
+        async.elapse(const Duration(milliseconds: 100));
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isTrue);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        async.elapse(const Duration(milliseconds: 500));
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    // The trap inside the fill: `copyWith` prefers its argument, so expressing it
+    // as `state.copyWith(previousFirewallEnabled: baseline.previousFirewallEnabled)`
+    // would overwrite a good baseline with the already-changed value and swallow
+    // the notification. Here the baseline is genuinely incomplete — wan is still
+    // in flight, so the fill runs — while the firewall value it reads is the new
+    // one, which is exactly the state that punishes the wrong merge direction.
+    test('the fill never overwrites a baseline build already captured', () {
+      fakeAsync((async) {
+        wan = _MutableWanNotifier(
+          SystemHealthTestData.createWanData(isUp: true),
+          buildDelay: const Duration(milliseconds: 50),
+        );
+
+        final container = mount(async);
+        expect(container.read(mascotTriggerProvider).previousWanUp, isNull);
+        expect(container.read(mascotTriggerProvider).previousFirewallEnabled,
+            isTrue);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        emit(async, InvalidationDomain.firewallRules, 0);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        container.dispose();
+      });
+    });
+
+    // The boundary of the fix, pinned deliberately. `build()` only captures a
+    // baseline once the dashboard is ready, and `_fillMissingBaseline` defers to
+    // the same guard, so a notifier mounted before that still cannot fire on its
+    // first event per domain. Kept as a test because it is the one path where the
+    // null baseline is by design rather than by accident: pre-ready there is no
+    // trustworthy "previous" to speak of, and in production the coordinator only
+    // reads the trigger notifier once `isDashboardReady` (mascot_providers.dart).
+    test('no baseline is captured while the dashboard is not ready', () {
+      fakeAsync((async) {
+        final container = mount(async, dashboardReady: false);
+
+        expect(container.read(mascotTriggerProvider).previousWanUp, isNull);
+
         wan.setData(SystemHealthTestData.createWanData(isUp: false));
         emit(async, InvalidationDomain.wanStatus, 0);
 
@@ -176,7 +328,8 @@ void main() {
       fakeAsync((async) {
         final container = mount(async);
 
-        // Event 1 only seeds previousWanUp = true (see the defect above).
+        // Event 1 announces nothing: the baseline captured at build() already
+        // says the WAN is up, so there is no change to report.
         emit(async, InvalidationDomain.wanStatus, 0);
         expect(fired, isEmpty);
 
