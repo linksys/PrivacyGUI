@@ -35,6 +35,18 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   @override
   Future<SystemInfoData> build() async {
     // Listen to firmwareBanks changes → auto invalidate (pattern: EthernetDataProvider)
+    //
+    // Deliberately NOT guarded by a `banks` diff, even though `banks` is the
+    // only thing _fetch() passes on: this listener is the ONLY refresh trigger
+    // systemInfoDataProvider has in the whole app, and _fetch() reads SystemInfo
+    // live from USP. A `banks` diff would therefore suppress the app's only
+    // systemInfo refresh on a same-version reflash (banks identical,
+    // softwareVersion/uptime changed) for the rest of the session. Decoupling
+    // the two is a design change, not a guard — see #1505 and
+    // doc/riverpod/listen_site_audit.md.
+    //
+    // No `isLoading` guard either: the double firing on an upstream refetch is
+    // absorbed by invalidateSelf(), which coalesces, unlike a direct fetch().
     ref.listen(firmwareBanksDataProvider, (_, next) {
       if (next.hasValue && state.hasValue) {
         ref.invalidateSelf();

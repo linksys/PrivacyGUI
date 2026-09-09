@@ -40,8 +40,13 @@ class UspWifiAdvancedNotifier
 
   @override
   WifiAdvancedFeatureState build() {
-    // SSE: when WiFi data provider updates, trigger dirty guard
+    // SSE: when WiFi data provider updates, trigger dirty guard.
+    // `hasValue` alone is not enough: a re-running provider emits
+    // AsyncData(isLoading: true, value: previous) before the new value, so
+    // without the isLoading check this fires twice per refetch — once while the
+    // upstream fetch is still in flight. See doc/riverpod/listen_site_audit.md.
     ref.listen(wifiDataProvider, (_, next) {
+      if (next.isLoading) return;
       if (next.hasValue) onSseInvalidation();
     });
 
