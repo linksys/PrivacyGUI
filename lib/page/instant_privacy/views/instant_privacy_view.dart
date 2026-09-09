@@ -107,14 +107,52 @@ class InstantPrivacyView extends ConsumerWidget {
                 ],
               ),
             ),
-            AppSwitch(
-              identifier: 'instant-privacy-enable',
-              value: state.isEnabled,
-              onChanged: state.isToggleDisabled
-                  ? null
-                  : (value) => value
-                      ? _onEnable(context, ref)
-                      : _onDisable(context, ref),
+            // While a write is in flight the switch becomes a loader. Its only
+            // busy signal used to be the dimmed track `AppSwitch` renders for a
+            // null `onChanged`, which reads as "unavailable", not "saving" — and
+            // the enable/disable path holds that state for as long as a USP
+            // mutation takes.
+            //
+            // A `Stack` over a size-maintaining switch rather than a plain
+            // ternary: `AppSwitch` derives its footprint from the theme's
+            // `spacingFactor`, so swapping it out for a fixed-size box would
+            // reflow the row on any theme that does not scale at 1.0.
+            //
+            // `isToggleLocked`, not `isToggleDisabled` — the latter also covers
+            // "no connected devices, so it cannot be enabled", which is a
+            // permanently unavailable switch rather than work in progress.
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Visibility(
+                  visible: !state.isToggleLocked,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: AppSwitch(
+                    identifier: 'instant-privacy-enable',
+                    value: state.isEnabled,
+                    onChanged: state.isToggleDisabled
+                        ? null
+                        : (value) => value
+                            ? _onEnable(context, ref)
+                            : _onDisable(context, ref),
+                  ),
+                ),
+                if (state.isToggleLocked)
+                  // Thumb-sized and with foreground effects off, the way
+                  // `AppButton` renders its own in-place loader. Bounded so a
+                  // theme whose `LoaderStyle.size` exceeds the track cannot
+                  // grow the `Stack` past what the switch reserved.
+                  SizedBox.square(
+                    dimension: 24,
+                    child: AppLoader(
+                      variant: LoaderVariant.circular,
+                      foregroundEffectEnabled: false,
+                      semanticLabel: loc(context).processing,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
