@@ -154,10 +154,16 @@ String supportSessionLocation(
   // string this replaced: a half-formed supporter link should reach the confirm view
   // and be reported by its `_hasRequiredParams`, not be rerouted as if the session
   // had ended.
+  // Percent-encoded rather than interpolated raw. Guardian's token alphabet was
+  // not traced, and a value carrying `&`, `#`, `+` or `=` would be truncated or
+  // mis-split on the way back into the confirm view — surfacing as its red
+  // `_buildMissingParamsView()`, i.e. the one failure this helper exists to stop.
+  // Built by hand rather than with `Uri(queryParameters:)` so that the empty
+  // `&token=` below stays spelled out, which is the point of the note above.
   if (sessionId != null) {
     return '${RoutePath.remoteAssistanceConfirm}'
-        '?session=$sessionId'
-        '&token=${token ?? ''}';
+        '?session=${Uri.encodeQueryComponent(sessionId)}'
+        '&token=${Uri.encodeQueryComponent(token ?? '')}';
   }
   return previousSessionEnded
       ? '${RoutePath.remoteAssistanceConfirm}?ended=true'
