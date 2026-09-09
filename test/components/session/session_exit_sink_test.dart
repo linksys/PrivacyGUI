@@ -29,6 +29,8 @@
 // exactly one consumer in `lib/`, that `listenForCoreSessionExit` is defined in one
 // file and called from exactly one other, and that the other is the shell.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +45,8 @@ import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+import '../../mocks/test_data/auth_test_data.dart';
+
 class MockSseManager extends Mock implements SseManager {
   // The production notifier assigns this in `build()`. A plain `Mock` would record
   // the setter, which is harmless, but the field is what the reconnect path reads
@@ -56,7 +60,7 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 
   /// Push a new auth state, the way a real login or a hint refresh does.
   ///
@@ -84,13 +88,13 @@ class SyncWritingAuthNotifier extends AsyncNotifier<AuthState>
   final List<EndCause> logoutCauses = [];
 
   @override
-  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 
   @override
   Future logout({EndCause cause = EndCause.sessionLost}) async {
     logoutCauses.add(cause);
     state = const AsyncValue.loading();
-    state = AsyncData(AuthState(loginType: LoginType.none));
+    state = AsyncData(AuthTestData.loggedOut());
   }
 
   // Everything else on `AuthNotifier` is out of this fake's scope; reaching it is a
@@ -170,12 +174,18 @@ void main() {
 
   /// Pumps [child] under the shared scope and hands back its container.
   ///
-  /// Builds the connection notifier and settles one frame before returning, and
-  /// that is not tidiness. `MockAuthNotifier.build` is `async`, so `authProvider`
-  /// resolves loading → data on a microtask; if that lands *after* a test has
-  /// planted a pending cause, the notifier's promotion arm fires with
-  /// `state == loggedOut` and clears it. Real ordering, and it has its own test
-  /// below — but every other test would otherwise be measuring it by accident.
+  /// Builds the connection notifier and settles one frame before returning, so that
+  /// `MockAuthNotifier.build` — which is `async`, and so resolves `authProvider`
+  /// loading → data on a microtask — has landed before a test plants anything. Only
+  /// determinism now: this used to be load-bearing, because a resolution that landed
+  /// *after* a planted cause hit the promotion arm and cleared it, and every test in
+  /// the file was one microtask away from measuring that instead of its own claim.
+  /// Round 3 pointed out that a precondition a helper can arrange is not a
+  /// precondition production has, and the arm is fixed rather than tiptoed around.
+  /// The two tests that hold it are in `app_connection_state_provider_test.dart`:
+  /// `a logged-in auth event does not un-decide a reported exit`, and
+  /// `a cause planted while auth is still resolving survives it`, which reproduces
+  /// exactly the ordering this helper arranges away.
   Future<ProviderContainer> pumpScope(
     WidgetTester tester,
     Widget child,
@@ -252,6 +262,33 @@ void main() {
 
       verify(() => auth.logout(cause: EndCause.userRequested)).called(1);
     });
+
+    testWidgets('a failing sign-out does not surface as an unhandled error',
+        (tester) async {
+      // Round 3's other finding on this verb: the `Future` was dropped. Neither
+      // call site can await — one is a Riverpod listener, the other a post-frame
+      // callback — so the future stays unawaited on purpose; what it must not do is
+      // reject into the zone, which in a real build is an uncaught async error and
+      // here would be a failure attributed to whichever test happened to be running
+      // when the microtask landed.
+      //
+      // `thenAnswer` returning a rejected future rather than `thenThrow`, which
+      // would make the *call* throw synchronously and never reach `onError` — a
+      // different defect, and not the one the fix is about.
+      when(() => auth.logout(cause: any(named: 'cause')))
+          .thenAnswer((_) => Future.error(Exception('logout failed')));
+
+      final sink = await pumpSink(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SizedBox)),
+      );
+      container.read(appConnectionStateProvider.notifier).exitToLogout();
+
+      sink();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('the subscription, driven by real transitions', () {
@@ -268,6 +305,51 @@ void main() {
       await tester.pump();
 
       verify(() => auth.logout(cause: EndCause.userRequested)).called(1);
+    });
+
+    testWidgets('a second report inside the sign-out window does not double up',
+        (tester) async {
+      // `logout()` is async and deliberately not awaited, so there is a window
+      // between the report being consumed and auth publishing `LoginType.none`.
+      // Round 3 asked what a second exit decided inside that window does, and the
+      // answer had no test: in Remote Assistance a second
+      // `logout(cause: userRequested)` reaches `endSessionForCA` again, against a
+      // Guardian session the first call has already closed.
+      //
+      // Two existing properties make it safe and neither is a flag, which is why no
+      // `_signingOut` guard was added. The read is destructive; and Riverpod does not
+      // notify when an enum state is reassigned its current value, so the second
+      // `exitToLogout()` — with the state already `loggedOut` — produces no
+      // transition for the subscription to see. The cause it sets is left for the
+      // catch-up read, the same path as a report decided with nothing mounted.
+      //
+      // Which of the two this actually pins, measured rather than assumed: making
+      // the read non-destructive leaves it green, because the second report never
+      // reaches the listener either way. What reds it is `exitToLogout` gaining a
+      // notification — `state = authenticated` before the assignment, the shape a
+      // "reset, then decide" refactor produces — at which point the second report
+      // does reach the listener and does sign out twice.
+      final gate = Completer<void>();
+      when(() => auth.logout(cause: any(named: 'cause')))
+          .thenAnswer((_) => gate.future);
+
+      final container =
+          await pumpScope(tester, const _SubscribesToCoreSessionExit());
+      final notifier = container.read(appConnectionStateProvider.notifier);
+
+      notifier.exitToLogout();
+      await tester.pump();
+      verify(() => auth.logout(cause: EndCause.userRequested)).called(1);
+
+      // Still inside the window: the gate is uncompleted, so `logout()` has not
+      // returned.
+      notifier.exitToLogout();
+      await tester.pump();
+      verifyNever(() => auth.logout(cause: any(named: 'cause')));
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      verifyNever(() => auth.logout(cause: any(named: 'cause')));
     });
 
     testWidgets('a serial mismatch signs out as sessionLost', (tester) async {
@@ -326,21 +408,26 @@ void main() {
       verify(() => auth.logout(cause: EndCause.userRequested)).called(1);
     });
 
-    testWidgets('a promotion back to authenticated drops a cause nobody read',
+    testWidgets('an unread cause survives an auth event that is not a re-login',
         (tester) async {
-      // The other half of the same field's lifetime, and the defect round 2 found:
-      // clear-on-read says nothing about a cause never read. Both arms of the
-      // `authProvider` listener now clear it, so a stranded cause cannot be
-      // replayed later — which would sign a user out over a router two sessions
-      // ago, and in RA would release a Guardian session someone had just opened.
+      // The other half of the same field's lifetime, end to end. Round 2 asked what
+      // becomes of a cause that is never read; the answer this test pinned was
+      // "both arms of the `authProvider` listener clear it", and round 3 found that
+      // the second arm clearing it is itself the defect.
       //
-      // This exercises the *second* arm specifically, and the reason it is
-      // reachable at all is the stranded case itself: `lib/core/` no longer signs
-      // anyone out, so an exit decided with no consumer mounted leaves the
-      // connection state at `loggedOut` while auth still holds a session. Auth
+      // The reason that arm is reachable at all is the stranded case: `lib/core/` no
+      // longer signs anyone out, so an exit decided with no consumer mounted leaves
+      // the connection state at `loggedOut` while auth still holds a session. Auth
       // therefore never passes through `LoginType.none`, and any later auth
-      // transition — here a password-hint refresh — lands on the promotion arm
-      // with the cause still set. Nothing in arm one has run.
+      // emission — here a password-hint refresh — lands on the promotion arm with
+      // the cause still set. Nothing in arm one has run, so nothing else has decided
+      // this report is stale; clearing it there sent the person back to
+      // `authenticated` on a session the core had given up on, and dropped the only
+      // record of why.
+      //
+      // Asserted through the sink rather than on the field, because the consequence
+      // is the claim: the next `/usp*` page to mount still signs out, with the cause
+      // the core originally decided.
       final container = await pumpScope(tester, const SizedBox.shrink());
       container.read(appConnectionStateProvider.notifier).exitToLogout();
       await tester.pump();
@@ -349,24 +436,22 @@ void main() {
         AppConnectionState.loggedOut,
       );
 
-      auth.emit(AuthState(
-        loginType: LoginType.local,
-        localPasswordHint: 'still signed in',
-      ));
+      auth.emit(AuthTestData.loggedInAgain('still signed in'));
       await tester.pump();
       expect(
         container.read(appConnectionStateProvider),
-        AppConnectionState.authenticated,
+        AppConnectionState.loggedOut,
         reason:
-            'the promotion arm did not run, so this test is asserting about '
-            'a clear that never had the chance to happen',
+            'the promotion arm un-decided an exit the core had reported, so '
+            'the rest of this test is measuring a cause that is already gone',
       );
+      verifyNever(() => auth.logout(cause: any(named: 'cause')));
 
       final after =
           await pumpScope(tester, const _SubscribesToCoreSessionExit());
       expect(after, same(container));
 
-      verifyNever(() => auth.logout(cause: any(named: 'cause')));
+      verify(() => auth.logout(cause: EndCause.userRequested)).called(1);
     });
   });
 

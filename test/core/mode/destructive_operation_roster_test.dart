@@ -307,8 +307,15 @@ const _notDestructive = <({String file, String command})>{
 /// this site" has one answer either way — and review round 2 is right that it is
 /// the wrong shape for every other question about a waiver. So the two sets are
 /// asserted separately, each against its own expiry condition, in `every waiver
-/// still names a live call site`; this predicate is only reached after both of
-/// those have held.
+/// still names a live call site`.
+///
+/// Those two run *beside* this predicate, not before it. `package:test` executes
+/// tests in declaration order but does not gate later ones on earlier ones, so a
+/// stale waiver reds the expiry test while the reachability test runs anyway — and
+/// can pass, on a seam some other command in the same file earned. An earlier
+/// version of this comment claimed the precedence, which round 3 caught: there is
+/// no such guarantee, and the two verdicts have to be read together. The expiry
+/// failure is the one that names which question stopped being answered.
 bool _waived(({String file, String command}) site) =>
     _unguardedByDesign.contains(site) || _notDestructive.contains(site);
 

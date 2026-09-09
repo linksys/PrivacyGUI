@@ -137,6 +137,16 @@ String _stripComments(String source) => source
     .map((l) => l.replaceFirst(RegExp(r'(?<!:)//.*$'), ''))
     .join('\n');
 
+/// How many times [needle] appears in [source].
+///
+/// The file lists every other assertion here produces cannot count, and for the
+/// sink's wiring that is the difference between the property and its shadow: one
+/// file holding the declaration and one file holding a call reads identically to
+/// one file holding the declaration and one holding three. Three would be three
+/// subscriptions racing for a value `takePendingSessionExit` clears on read.
+int _countOccurrences(String source, String needle) =>
+    needle.allMatches(source).length;
+
 /// Does this file end the **app's** session, as opposed to closing a connection?
 ///
 /// Two needles, paired at file level, and round 2's review is right that this is a
@@ -331,15 +341,23 @@ void main() {
     test('only the declared exception signs the user out', () {
       // The matcher, its coarseness and the reason the coarseness points the way
       // it does are all on `_endsAppSession`; the fixture test above is what keeps
-      // that argument honest. One extra discovery key here: the sink verb by name,
-      // because it is the only helper in the tree that ends a session without
-      // naming `authProvider`, and a `lib/core/` file calling it would be the same
-      // layer violation one indirection further out.
+      // that argument honest. Two extra discovery keys here, because the sink has
+      // two entry points and both end a session without naming `authProvider`:
+      // the verb, and — added after round 3 — the wiring, which reaches the verb
+      // twice over (the catch-up read and the subscription). A `lib/core/` file
+      // calling either is the same layer violation one indirection further out.
+      //
+      // The wiring key overlaps with `the consumer is actually subscribed to
+      // something` below, which would also red on a third caller. The overlap is
+      // the point: that test fails with a message about the subscription being
+      // duplicated, this one fails naming the layer rule that was broken, and only
+      // one of those sends the next reader to the right argument.
       final callers = sources.entries
           .where((e) => e.key.startsWith('lib/core/'))
           .where((e) =>
               _endsAppSession(e.value) ||
-              e.value.contains('endSessionIfCoreReportedOne('))
+              e.value.contains('endSessionIfCoreReportedOne(') ||
+              e.value.contains('listenForCoreSessionExit('))
           .map((e) => e.key)
           .toList()
         ..sort();
@@ -413,6 +431,49 @@ void main() {
             'signed in on a router that is gone, factory-reset, or a different '
             'router entirely. More than two means a second subscriber racing for '
             'a value takePendingSessionExit clears on read.',
+      );
+
+      // Round 3: the file list above is not a call graph. It cannot tell the
+      // declaration from a call, nor one call from three, and both distinctions are
+      // load-bearing — so count, and then say where the one call has to sit.
+      expect(
+        _countOccurrences(sources[_sessionSink]!, 'listenForCoreSessionExit('),
+        1,
+        reason: 'expected $_sessionSink to hold the declaration and nothing '
+            'else. A second occurrence here is the function calling itself or a '
+            'second wiring helper beside it, and either way the list above still '
+            'reads as "defined in one file, called from one other".',
+      );
+      expect(
+        _countOccurrences(
+            sources[_sessionSinkWiring]!, 'listenForCoreSessionExit('),
+        1,
+        reason:
+            'expected exactly one call in $_sessionSinkWiring, which is the '
+            'whole of the wiring. Two would be two subscriptions and two '
+            'catch-up reads on one shell, competing for a one-shot cause: '
+            'whichever ran second would find null and do nothing, so the bug '
+            'this produces is not a double sign-out but a silent dependence on '
+            'which one won.',
+      );
+      expect(
+        sources[_sessionSinkWiring],
+        matches(RegExp(r'void initState\(\)[^}]*listenForCoreSessionExit\(')),
+        reason:
+            'expected the call in $_sessionSinkWiring to sit in the State\'s '
+            'initState. `ref.listenManual` is scoped to the State, so wiring it '
+            'from `build` — or from a `Consumer` builder — subscribes again on '
+            'every rebuild, and the shell rebuilds on every route change under '
+            '/usp*. That is the same one-shot race as above, arrived at without '
+            'anyone writing a second call.\n'
+            'This pattern is deliberately stricter than the property: `[^}]*` '
+            'forbids any closing brace between `initState() {` and the call, so '
+            'it also reds for a call that is still in initState but sits after '
+            'another block — which is harmless. A regex cannot balance braces, '
+            'and ordering inside initState is not load-bearing, so the strictness '
+            'costs a one-line move and buys an assertion that cannot be satisfied '
+            'from inside `build`. If this is what failed, move the call up rather '
+            'than widening the pattern.',
       );
     });
   });

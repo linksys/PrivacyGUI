@@ -12,6 +12,8 @@ import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+import '../../../mocks/test_data/auth_test_data.dart';
+
 class MockRecoveryProbeService extends Mock implements RecoveryProbeService {}
 
 class MockSseManager extends Mock implements SseManager {
@@ -27,9 +29,7 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async => AuthState(
-        loginType: LoginType.local,
-      );
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 }
 
 /// Auth notifier whose state can be driven by tests to simulate a
@@ -38,13 +38,19 @@ class ControllableAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+  Future<AuthState> build() async => AuthTestData.loggedIn();
 
-  void emitLoggedOut() =>
-      state = AsyncValue.data(AuthState(loginType: LoginType.none));
+  void emitLoggedOut() => state = AsyncValue.data(AuthTestData.loggedOut());
 
-  void emitLoggedIn() =>
-      state = AsyncValue.data(AuthState(loginType: LoginType.local));
+  void emitLoggedIn() => state = AsyncValue.data(AuthTestData.loggedIn());
+
+  /// A second logged-in emission that is *not* a re-login.
+  ///
+  /// A separate method rather than a second [emitLoggedIn] call, because that one
+  /// would emit an *equal* state and Riverpod would suppress the notification —
+  /// `AuthTestData.loggedInAgain` carries the whole argument.
+  void emitHintRefresh() =>
+      state = AsyncValue.data(AuthTestData.loggedInAgain('hint refreshed'));
 }
 
 void main() {
@@ -839,6 +845,77 @@ void main() {
           container.read(appConnectionStateProvider),
           AppConnectionState.waitingForRecovery,
         );
+      });
+
+      test('a logged-in auth event does not un-decide a reported exit',
+          () async {
+        // Round 3's arm-2 finding. The promotion above keys on
+        // `state == loggedOut`, which before this PR could only mean "auth logged
+        // out and this notifier followed". It now also means "this notifier decided
+        // the session is over and nobody has carried it out yet" — auth is still
+        // holding a session, so the next non-loading emission is not necessarily a
+        // re-login. The arm used to clear the cause and promote, which consumed the
+        // report on the consumer's behalf: signed in to a session the core had given
+        // up on, with nothing left to re-report it. In Remote Assistance the report
+        // is what releases the Guardian session, so the leak is a support session
+        // left open until it expires.
+        //
+        // The pairing with the arm above is what makes this safe to gate rather than
+        // track: a *genuine* re-login passes through a logout first, and that arm
+        // clears the field unconditionally.
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        await Future.delayed(Duration.zero);
+
+        // The core decides. Auth is untouched and still logged in — this is the
+        // stranded-report state, reachable whenever no `/usp*` page is mounted.
+        notifier.exitToLogout();
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+        );
+
+        auth.emitHintRefresh();
+        await Future.delayed(Duration.zero);
+
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+          reason: 'the promotion arm re-authenticated a session the core had '
+              'already reported as over',
+        );
+        expect(notifier.takePendingSessionExit(), EndCause.userRequested,
+            reason: 'the cause was dropped, so the next consumer to mount has '
+                'nothing to act on and the sign-out never happens');
+      });
+
+      test('a cause planted while auth is still resolving survives it',
+          () async {
+        // The same arm, reached by timing rather than by a refresh — and the one
+        // round 3 pointed at, because `session_exit_sink_test.dart`'s `pumpScope`
+        // helper arranges this ordering away for every test in that file. `build()`
+        // is `async`, so `authProvider` is still loading here; when it resolves
+        // logged-in it lands on the promotion arm with the cause already set. A
+        // precondition a test helper can arrange is not one production has: the same
+        // race is a probe answering while a hint refresh is in flight.
+        final auth = ControllableAuthNotifier();
+        final container = createContainer(authNotifier: () => auth);
+        addTearDown(container.dispose);
+
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        notifier.exitToLogout();
+
+        // Auth resolves *after* the report.
+        await Future.delayed(Duration.zero);
+
+        expect(
+          container.read(appConnectionStateProvider),
+          AppConnectionState.loggedOut,
+        );
+        expect(notifier.takePendingSessionExit(), EndCause.userRequested);
       });
     });
   });

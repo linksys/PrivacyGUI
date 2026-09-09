@@ -97,12 +97,21 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   ///
   /// **Three clear sites, and the read is only one of them.** Clearing on read
   /// says nothing about a cause that is never read: it is also cleared in
-  /// [enterWaiting], and — the case review found — in *both* arms of [build]'s
-  /// `authProvider` listener, so a cause the consumer missed cannot be replayed
-  /// onto an unrelated later logout or carried across a re-login into the next
-  /// session. What keeps a missed report merely late rather than lost is on the
-  /// consumer side: `listenForCoreSessionExit` reads once on wiring, before it
-  /// starts listening.
+  /// [enterWaiting] and in the signed-out arm of [build]'s `authProvider`
+  /// listener, so a cause the consumer missed cannot be replayed onto an
+  /// unrelated later logout or carried across a re-login into the next session.
+  /// What keeps a missed report merely late rather than lost is on the consumer
+  /// side: `listenForCoreSessionExit` reads once on wiring, before it starts
+  /// listening.
+  ///
+  /// The *other* arm of that listener — the one that promotes a `loggedOut` state
+  /// back to `authenticated` — deliberately does neither: a pending cause makes it
+  /// return untouched. The state it keys on is the intermediate one this design
+  /// introduced, so an arm meant to un-stick a re-login is also the arm that can
+  /// quietly un-decide a live report; clearing there would only have guarded against a
+  /// stale cause surviving a re-login, which the signed-out arm already prevents on the
+  /// way past. Recorded with its mutants in §12 of
+  /// `doc/mode_strategy/mode_strategy_guide.md`.
   EndCause? takePendingSessionExit() {
     final cause = _pendingSessionExit;
     _pendingSessionExit = null;
@@ -140,6 +149,21 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _pendingSessionExit = null;
         state = AppConnectionState.loggedOut;
       } else if (state == AppConnectionState.loggedOut) {
+        // A live report outranks this promotion, and this is the one arm where
+        // the two can meet. `loggedOut` plus auth still holding a session is the
+        // intermediate state: the core has decided the session is over and is
+        // waiting for the page layer to carry it out. The next non-loading
+        // emission from auth is then not necessarily a re-login — a password-hint
+        // refresh is one — so promoting here would consume the report on auth's
+        // behalf and leave the person signed in to a session the core had given
+        // up on, with nothing left to re-report it. Returning leaves both halves
+        // intact for the next consumer to mount; see `takePendingSessionExit`.
+        //
+        // A *genuine* re-login cannot reach here with a cause pending, because
+        // the logout that preceded it ran the arm above, which clears the field
+        // unconditionally. That is why this needs no "was logged in" tracking.
+        if (_pendingSessionExit != null) return;
+
         // Re-login within the same session (no page reload). The app uses a
         // single app-lifetime ProviderContainer, so build() — which seeds the
         // initial `authenticated` — does not re-run on re-login, and this
@@ -151,12 +175,6 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         //
         // Only transition out of `loggedOut`; never override
         // `waitingForRecovery`, which owns its own exit path via _runProbe().
-        //
-        // Cleared here too: a re-login is the other way an unconsumed cause can
-        // stop belonging to the current session. This is the arm that made the
-        // replay reachable — the field survived it, and the next ordinary logout
-        // handed the shell a `sessionLost` decided about a router two sessions ago.
-        _pendingSessionExit = null;
         state = AppConnectionState.authenticated;
       }
     });

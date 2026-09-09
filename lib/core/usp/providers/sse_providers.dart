@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/framework/mode/bridge_config.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
@@ -75,7 +76,15 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   // mark and the copy for an operator who finished on purpose.
   bridge.onAuthFailed = () {
     logger.w('[USP][Auth]: Session expired — triggering logout');
-    ref.read(authProvider.notifier).logout();
+    // Spelled out rather than left to the default, which is the same value. These
+    // two were the last `logout()` calls in the tree passing no cause, and #1474
+    // makes the cause the thing `SessionStrategy.end` switches on: under Remote
+    // Assistance `sessionLost` is what skips `endSessionForCA`. Here that is
+    // correct and not merely conservative — the credential this reports on has
+    // just been rejected, so asking Guardian to close the session with it would be
+    // a call the router cannot honour. Written out so that reading it needs no trip
+    // to the default.
+    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
   };
 
   return bridge;
@@ -121,7 +130,10 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
     if (logoutTriggered) return;
     logoutTriggered = true;
     logger.w('[USP][Auth]: Force logout triggered — navigating to login');
-    ref.read(authProvider.notifier).logout();
+    // Same cause and the same reason as `bridge.onAuthFailed` above: whichever of
+    // the two paths noticed, what it noticed is a credential the router has stopped
+    // accepting.
+    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
   }
 
   authCoordinator.onForceLogout = forceLogout;
