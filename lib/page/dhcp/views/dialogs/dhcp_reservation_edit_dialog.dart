@@ -16,6 +16,12 @@ class DhcpReservationEditDialog extends StatefulWidget {
 
   /// Existing reservations, used to reject duplicate MAC/IP addresses.
   /// When editing, the reservation being edited is excluded from the check.
+  ///
+  /// Required rather than defaulted: this used to fall back to `const []`,
+  /// against which every address is unique, so a call site that omitted it
+  /// validated against nothing and silently accepted duplicates — which is how
+  /// #1070 shipped. A caller with genuinely nothing to compare against passes an
+  /// empty list explicitly, at the call site, where a reader can see it.
   final List<DhcpReservationUIModel> existingReservations;
 
   const DhcpReservationEditDialog({
@@ -23,7 +29,7 @@ class DhcpReservationEditDialog extends StatefulWidget {
     this.reservation,
     this.macDeviceOptions = const [],
     this.ipDeviceOptions = const [],
-    this.existingReservations = const [],
+    required this.existingReservations,
   });
 
   @override

@@ -184,10 +184,14 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   ///
   /// [reservations] is what the card is currently rendering, and it is passed
   /// through as `existingReservations` so the dialog can reject a duplicate
-  /// MAC/IP. That argument is **not** optional in practice even though the
-  /// parameter has a default: `existingReservations` falls back to `const []`,
-  /// against which every address is unique, so omitting it turns the dialog's
-  /// duplicate check into a silent no-op on this entry point (#1070).
+  /// MAC/IP. It is taken as a parameter rather than re-read from
+  /// `dhcpDataProvider` here, so the list the dialog validates against is the
+  /// same one on screen.
+  ///
+  /// `existingReservations` used to default to `const []` — against which every
+  /// address is unique — so omitting it turned the dialog's duplicate check into
+  /// a silent no-op on this entry point, which is how #1070 shipped. It is now
+  /// `required`, so the same omission is a compile error rather than a live bug.
   Future<void> _showAddDhcpDialog(
     BuildContext context,
     WidgetRef ref,

@@ -119,6 +119,13 @@ Future<void> _pumpCard(WidgetTester tester) async {
 
 /// Taps the card's own add button, so the dialog under test is the one the card
 /// actually builds — arguments included.
+///
+/// The `existingReservations` assertion is the invariant this suite exists for,
+/// stated directly rather than inferred from an error message: every other
+/// assertion below reaches it through the dialog's validation, the blur
+/// listeners and the layout, any of which can change and break these tests for
+/// reasons unrelated to #1070. This one fails only when the card stops handing
+/// the dialog what it renders, and says so.
 Future<void> _openAddDialog(WidgetTester tester) async {
   final addButton = find.descendant(
     of: find.byType(UspDhcpReservationsCard),
@@ -131,16 +138,37 @@ Future<void> _openAddDialog(WidgetTester tester) async {
   await tester.pumpAndSettle();
   expect(find.byType(DhcpReservationEditDialog), findsOneWidget,
       reason: 'tapping add must open the shared reservation dialog');
+
+  final dialog = tester.widget<DhcpReservationEditDialog>(
+      find.byType(DhcpReservationEditDialog));
+  expect(dialog.existingReservations, testDhcpReservations,
+      reason: 'the card must hand the dialog the reservations it is rendering, '
+          'or the duplicate check validates against nothing (#1070)');
 }
 
-/// The two AppTextFields are ordered MAC (0), IP (1) in the dialog.
-AppTextField _macField() =>
-    find.byType(AppTextField).evaluate().elementAt(0).widget as AppTextField;
-AppTextField _ipField() =>
-    find.byType(AppTextField).evaluate().elementAt(1).widget as AppTextField;
+/// Locates a dialog field by the `identifier` the dialog already exposes for
+/// E2E, rather than by position.
+///
+/// Ordinal access (`elementAt(0/1)`) would couple this suite to the order of the
+/// two fields, and its failure mode is a false negative rather than a red build:
+/// swap MAC and IP and the helpers below type into the wrong field while an
+/// assertion can still be satisfied by a coincidentally-matching message.
+Finder _fieldByIdentifier(String identifier) => find.byWidgetPredicate(
+      (widget) => widget is AppTextField && widget.identifier == identifier,
+      description: "AppTextField(identifier: '$identifier')",
+    );
 
-Future<void> _enterField(WidgetTester tester, int index, String text) async {
-  await tester.enterText(find.byType(TextField).at(index), text);
+final _macFinder = _fieldByIdentifier('dhcp-reservation-mac');
+final _ipFinder = _fieldByIdentifier('dhcp-reservation-ip');
+
+AppTextField _macField(WidgetTester tester) => tester.widget(_macFinder);
+AppTextField _ipField(WidgetTester tester) => tester.widget(_ipFinder);
+
+Future<void> _enterField(WidgetTester tester, Finder field, String text) async {
+  await tester.enterText(
+    find.descendant(of: field, matching: find.byType(TextField)),
+    text,
+  );
   await tester.pumpAndSettle();
   // The dialog validates on blur (FocusNode listener), not on every keystroke.
   FocusManager.instance.primaryFocus?.unfocus();
@@ -148,9 +176,9 @@ Future<void> _enterField(WidgetTester tester, int index, String text) async {
 }
 
 Future<void> _enterMac(WidgetTester tester, String text) =>
-    _enterField(tester, 0, text);
+    _enterField(tester, _macFinder, text);
 Future<void> _enterIp(WidgetTester tester, String text) =>
-    _enterField(tester, 1, text);
+    _enterField(tester, _ipFinder, text);
 
 void main() {
   late String dupMac;
@@ -180,11 +208,10 @@ void main() {
       await _enterMac(tester, existingMac);
       await _enterIp(tester, '192.168.1.99'); // unique
 
-      expect(_macField().errorText, dupMac,
-          reason: 'the card opened the dialog without its reservation list, so '
-              'the duplicate check compared $existingMac against an empty list '
-              '(#1070)');
-      expect(_ipField().errorText, isNull);
+      expect(_macField(tester).errorText, dupMac,
+          reason: '$existingMac is already reserved in what the card renders, '
+              'so the dialog the card opens must flag it (#1070)');
+      expect(_ipField(tester).errorText, isNull);
 
       // Add must stay disabled: tapping it does not pop the dialog, so no USP
       // ADD is ever issued for the duplicate.
@@ -202,11 +229,10 @@ void main() {
       await _enterMac(tester, 'AA:BB:CC:DD:EE:99'); // unique
       await _enterIp(tester, existingIp);
 
-      expect(_ipField().errorText, dupIp,
-          reason: 'the card opened the dialog without its reservation list, so '
-              'the duplicate check compared $existingIp against an empty list '
-              '(#1070)');
-      expect(_macField().errorText, isNull);
+      expect(_ipField(tester).errorText, dupIp,
+          reason: '$existingIp is already reserved in what the card renders, '
+              'so the dialog the card opens must flag it (#1070)');
+      expect(_macField(tester).errorText, isNull);
 
       await tester.tap(find.widgetWithText(AppButton, addLabel));
       await tester.pumpAndSettle();
@@ -224,8 +250,8 @@ void main() {
       await _enterMac(tester, 'AA:BB:CC:DD:EE:99');
       await _enterIp(tester, '192.168.1.99');
 
-      expect(_macField().errorText, isNull);
-      expect(_ipField().errorText, isNull);
+      expect(_macField(tester).errorText, isNull);
+      expect(_ipField(tester).errorText, isNull);
 
       await tester.tap(find.widgetWithText(AppButton, addLabel));
       await tester.pumpAndSettle();
