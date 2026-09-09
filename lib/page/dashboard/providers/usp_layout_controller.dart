@@ -1058,17 +1058,25 @@ class UspSliverDashboardControllerNotifier
       displayMode: DisplayMode.normal,
     );
 
-    final newItemMap = {
-      'id': item.id,
-      'x': item.x,
-      'y': item.y,
-      'w': item.w,
-      'h': item.h,
-      'minW': item.minW,
-      'maxW': item.maxW,
-      'minH': item.minH,
-      'maxH': item.maxH,
-    };
+    // `toMap()`, not a hand-written subset of it. Nine of its sixteen keys were
+    // spelled out here, while every other item on these lists came from
+    // [_exportAllBreakpoints], i.e. from `toMap()`, i.e. all sixteen (#1310).
+    //
+    // The width caps are what made that a bug rather than an inconsistency. The
+    // seven absent keys were harmless: `_replaceController` imports through
+    // `importLayout`, so the package's `fromMap` refilled them with the same
+    // `LayoutItem` defaults [LayoutItemFactory.fromSpec] leaves them at. `maxW`
+    // and `maxH` were present and wrong. `toMap()` writes an infinite bound as
+    // `null`, which `scaleLayout` absorbs with `?? fromCols`; passing the
+    // `double.infinity` through instead throws `Unsupported operation: Infinity
+    // or NaN toInt` on the 8-column pass below, before persistence is reached.
+    //
+    // Only a spec declaring no `DisplayMode.normal` constraints produces an
+    // infinite bound — [LayoutItemFactory.fromSpec]'s fallback — which no caller
+    // supplies today: all eighteen registered specs declare them, and so does
+    // `PackageWidgetTemplate.toWidgetSpec`. The `spec:` parameter above is the
+    // hole, and it is now covered by a test rather than by that coincidence.
+    final newItemMap = item.toMap();
 
     // Placed on each grid at that grid's own scale. Letting the package
     // reconcile it in instead would carry the current breakpoint's width

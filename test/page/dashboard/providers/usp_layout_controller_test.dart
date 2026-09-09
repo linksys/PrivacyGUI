@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
+import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // The counting store below wraps whatever `setMockInitialValues` installed.
@@ -754,6 +755,93 @@ void main() {
       final newItem =
           layout.firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
       expect(newItem['x'], greaterThanOrEqualTo(0));
+    });
+
+    test('added card is indistinguishable from the items already on the grid',
+        () async {
+      // #1310 stage 1. `addWidget` used to splice a hand-written nine-key map
+      // into a list whose every other item came from `LayoutItem.toMap()`, i.e.
+      // sixteen.
+      //
+      // This does not fail on the old encoder, and the reason is worth having in
+      // writing: `_replaceController` imports through `controller.importLayout`,
+      // so the package's own `fromMap` re-types every map and fills the seven
+      // absent keys with `LayoutItem`'s defaults — which are the same values
+      // `LayoutItemFactory.fromSpec` leaves them at, because it sets none of
+      // them. The short map was therefore an intermediate value that never
+      // reached an observer. What made it a defect is the width caps, and that
+      // is the next test.
+      //
+      // Kept as a shape assertion rather than deleted: it is what stops a future
+      // `fromSpec` that *does* set one of these from silently losing it here.
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+      await notifier.applyPreset(UspDashboardPreset.essential);
+
+      await notifier.addWidget('topology');
+
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final added = layout.firstWhere((i) => (i as Map)['id'] == 'topology');
+      final existing = layout.firstWhere((i) => (i as Map)['id'] != 'topology');
+
+      expect(added.keys.toSet(), existing.keys.toSet());
+      // Named explicitly because these are the ones the old encoder omitted, and
+      // a key-set match alone would not say which.
+      expect(
+          added.keys, containsAll(['isResizable', 'isStatic', 'isDraggable']));
+    });
+
+    test('a spec with no constraints can be added', () async {
+      // The half of #1310 (c) that was a live throw rather than a wrong value.
+      //
+      // `LayoutItemFactory.fromSpec` falls back to `LayoutItem`'s defaults when a
+      // spec declares nothing for the requested `DisplayMode`, and those defaults
+      // put `double.infinity` in `maxW`/`maxH`. The added item is handed straight
+      // to `UspWidgetSpecs.scaleLayout` for the 8- and 4-column grids, which
+      // reads `(map['maxW'] as num?)?.toInt()` — and `.toInt()` on an infinity
+      // throws. `toMap()` writes an infinite bound as `null` instead, and
+      // `?? fromCols` absorbs it.
+      //
+      // Reached through the `spec:` parameter because that is the real one: it
+      // exists for widgets outside `UspWidgetSpecs`, all 18 of which declare
+      // `DisplayMode.normal` constraints. `PackageWidgetTemplate.toWidgetSpec`
+      // happens to fill `DisplayMode.normal` too, so no caller supplies this
+      // shape today — which is why the throw was latent rather than reported.
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+      await notifier.applyPreset(UspDashboardPreset.essential);
+
+      await notifier.addWidget(
+        'unconstrained_widget',
+        spec: const WidgetSpec(
+          id: 'unconstrained_widget',
+          displayName: 'Unconstrained',
+          constraints: {},
+        ),
+      );
+
+      for (final entry in notifier.exportAllBreakpoints().entries) {
+        final matches = entry.value
+            .where((i) => (i as Map)['id'] == 'unconstrained_widget')
+            .toList();
+        expect(matches, hasLength(1),
+            reason: 'missing from the ${entry.key}-column grid');
+        final added = matches.single as Map;
+        for (final key in ['maxW', 'maxH']) {
+          final value = added[key];
+          expect(value == null || (value as num).isFinite, isTrue,
+              reason: '$key on the ${entry.key}-column grid is $value');
+        }
+        // And the whole payload still has to reach SharedPreferences as JSON.
+        expect(() => jsonEncode(added), returnsNormally);
+      }
     });
 
     test('add to preset increments count by 1', () async {
