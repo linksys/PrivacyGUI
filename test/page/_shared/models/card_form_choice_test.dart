@@ -192,8 +192,7 @@ void main() {
       // card dragged to 10 would be snapped back to 8 by every scale.
       final widened = item('device_info', w: 10, maxW: 12.0);
 
-      final result =
-          UspWidgetSpecs.applyPickedForms([widened], desktop).single;
+      final result = UspWidgetSpecs.applyPickedForms([widened], desktop).single;
 
       expect([result.w, result.maxW], [10, 12.0],
           reason:
@@ -304,8 +303,7 @@ void main() {
       final popped = applyTo(item('device_info', w: 4),
           density: CardDensity.popup, cols: mobile);
 
-      final locked =
-          UspWidgetSpecs.lockToFullWidth([popped], mobile).single;
+      final locked = UspWidgetSpecs.lockToFullWidth([popped], mobile).single;
 
       expect(locked.w, popped.w);
       expect(locked.minW, popped.minW);
@@ -543,8 +541,7 @@ void main() {
         cols: desktop,
       );
 
-      final phone =
-          UspWidgetSpecs.scaleLayout(stored, desktop, mobile).single;
+      final phone = UspWidgetSpecs.scaleLayout(stored, desktop, mobile).single;
 
       expect([phone.w, phone.h], [mobile, 1],
           reason: 'A scale is proportional and a pin is not: scaled, the 2x1 '
@@ -711,8 +708,7 @@ void main() {
         cols: desktop,
       );
 
-      final deleted =
-          layout.where((item) => item.id != 'device_info').toList();
+      final deleted = layout.where((item) => item.id != 'device_info').toList();
 
       expect(formsOf(deleted).byCard['device_info'], isNull,
           reason: 'Structural now, where #1299 had to prune a sibling map by '
@@ -756,8 +752,9 @@ void main() {
       final live = formsOf(layout);
       // The pref's own round trip, spelled as the two functions that are it.
       final reloaded = formsOf([
-        for (final raw in jsonDecode(
-                jsonEncode([for (final item in layout) item.toMap()])) as List)
+        for (final raw
+            in jsonDecode(jsonEncode([for (final item in layout) item.toMap()]))
+                as List)
           LayoutItem.fromMap((raw as Map).cast<String, dynamic>()),
       ]);
 

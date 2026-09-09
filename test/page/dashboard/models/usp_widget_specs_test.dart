@@ -701,9 +701,8 @@ void main() {
     });
 
     test('fields the lock has no opinion about survive', () {
-      final locked = UspWidgetSpecs.lockToFullWidth([
-        LayoutItem(id: 'a', x: 1, y: 0, w: 3, h: 2, isStatic: true)
-      ], 4);
+      final locked = UspWidgetSpecs.lockToFullWidth(
+          [LayoutItem(id: 'a', x: 1, y: 0, w: 3, h: 2, isStatic: true)], 4);
       expect(firstOf(locked).id, 'a');
       expect(firstOf(locked).isStatic, isTrue);
     });

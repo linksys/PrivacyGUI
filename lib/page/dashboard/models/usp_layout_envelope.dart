@@ -189,9 +189,8 @@ class UspLayoutEnvelope extends Equatable {
   /// the field's type is the fix and not a nicety: the failure it was guarding
   /// against was silent, and a guard against a silent failure can only ever be
   /// believed.
-  bool get _hasFormBeyondNormal =>
-      layouts.values.any((layout) => layout.any((item) =>
-          switch (CardFormChoice.readFrom(item.extra)) {
+  bool get _hasFormBeyondNormal => layouts.values.any((layout) =>
+      layout.any((item) => switch (CardFormChoice.readFrom(item.extra)) {
             null => false,
             final choice => choice.density != CardDensity.normal,
           }));
@@ -206,7 +205,9 @@ class UspLayoutEnvelope extends Equatable {
         'version': version,
         'layouts': {
           for (final entry in layouts.entries)
-            entry.key.toString(): [for (final item in entry.value) item.toMap()],
+            entry.key.toString(): [
+              for (final item in entry.value) item.toMap()
+            ],
         },
       });
 

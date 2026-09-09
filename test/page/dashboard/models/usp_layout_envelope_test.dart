@@ -380,10 +380,13 @@ void main() {
       // `migratedPicks` (the test above) and replaces the geometry, which gives
       // a migrated envelope holding a pick-free layout — the one shape that can
       // differ from a plain envelope in nothing but the flag.
-      final plain = UspLayoutEnvelope({12: [item('device_info')]});
+      final plain = UspLayoutEnvelope({
+        12: [item('device_info')]
+      });
 
       expect(migrated.withLayout(12, [item('device_info')]), plain,
-          reason: 'The flag describes where the layouts came from, not what they '
+          reason:
+              'The flag describes where the layouts came from, not what they '
               'are, and `encode` does not write it. In `props` it would make a '
               'migrated envelope unequal to the identical one the next boot '
               'reads back, for a difference no consumer can observe.');
@@ -438,7 +441,8 @@ void main() {
     // `contentSignature` hashes `extra` the same shallow way, so an item holding a
     // pick reads as changed after an import and rebuilds once — spuriously, never
     // missed, and true since #1400 rather than since #1310.
-    test('two envelopes carrying an equal pick are NOT equal (mapEquals is '
+    test(
+        'two envelopes carrying an equal pick are NOT equal (mapEquals is '
         'shallow)', () {
       const pick = CardFormChoice(density: CardDensity.compact, restoreW: 6);
       expect(build(pick: pick), isNot(build(pick: pick)));
