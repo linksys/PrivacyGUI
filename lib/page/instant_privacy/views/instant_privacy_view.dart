@@ -525,20 +525,26 @@ class _AddMacDialogState extends State<_AddMacDialog> {
 
   void _validate() {
     setState(() {
-      final value = _controller.text;
-      if (value.isEmpty) {
-        _errorText = null;
-        return;
-      }
-      if (!UspInstantPrivacyService.validateMac(value)) {
-        _errorText = 'invalidMacFormat';
-        return;
-      }
-      final normalized = UspInstantPrivacyService.normalizeMac(value);
-      final isDuplicate =
-          widget.existingDevices.any((d) => d.mac == normalized);
-      _errorText = isDuplicate ? 'deviceAlreadyInAllowedList' : null;
+      _errorText = _errorFor(_controller.text);
     });
+  }
+
+  /// The error key for [value], or null when there is nothing to complain about.
+  ///
+  /// The single definition of "acceptable", shared by the message and the Add
+  /// button. They used to run this check separately, which let the two disagree
+  /// — and made "the button is enabled exactly when no error is shown" a
+  /// property maintained by hand in two places.
+  ///
+  /// Empty text yields null: nothing typed yet is not an error to display. The
+  /// button's own precondition is in [_canConfirm].
+  String? _errorFor(String value) {
+    if (value.isEmpty) return null;
+    if (!UspInstantPrivacyService.validateMac(value)) return 'invalidMacFormat';
+    final normalized = UspInstantPrivacyService.normalizeMac(value);
+    return widget.existingDevices.any((d) => d.mac == normalized)
+        ? 'deviceAlreadyInAllowedList'
+        : null;
   }
 
   /// Whether the current text is a MAC that is not already on the list.
@@ -548,16 +554,25 @@ class _AddMacDialogState extends State<_AddMacDialog> {
   /// well left a valid MAC un-submittable until the user tabbed away.
   bool get _canConfirm {
     final value = _controller.text;
-    if (!UspInstantPrivacyService.validateMac(value)) return false;
-    final normalized = UspInstantPrivacyService.normalizeMac(value);
-    return !widget.existingDevices.any((d) => d.mac == normalized);
+    return value.isNotEmpty && _errorFor(value) == null;
   }
 
   Future<void> _confirm() async {
     if (!_canConfirm) return;
     setState(() => _isConfirming = true);
-    await widget
-        .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+    try {
+      await widget
+          .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+    } finally {
+      // [_AddMacDialog.onConfirm] pops this dialog before it awaits, so today
+      // the state is already gone when the future completes — hence the
+      // `mounted` guard rather than a bare `setState`. The reset itself is for
+      // the next change that keeps the dialog open on failure: without it the
+      // button would sit on "Adding..." with nothing able to clear it.
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
+    }
   }
 
   String? _localizeError(String? key) {

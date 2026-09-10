@@ -10,10 +10,15 @@ import 'package:flutter/services.dart';
 /// inserted itself feeds on its own output — one pair of colons becomes two,
 /// then four, and twelve keystrokes produce a 200-character string.
 ///
-/// Pair with `FilteringTextInputFormatter.allow(RegExp(r'[a-fA-F0-9:]'))` so
-/// non-hex keys are rejected at the source instead of being silently dropped
-/// here. No length limiter is needed — a MAC is 6 bytes and this caps at 12 hex
+/// No length limiter is needed — a MAC is 6 bytes and this caps at 12 hex
 /// digits.
+///
+/// **Nothing in `lib/` wires this up.** It is kept rather than deleted so the
+/// paragraph above does not have to be rediscovered by the next MAC-only field,
+/// and its tests pin that behaviour. The Instant Privacy add-device field is not
+/// that caller: it doubles as an `AppSelectAutoComplete` query box matching a
+/// device on name and IP as well as MAC, so formatting keystrokes into hex pairs
+/// there disables the search half of the control (#1059).
 class MacAddressFormatter extends TextInputFormatter {
   /// Hex digits in a 6-byte MAC address.
   static const _hexDigits = 12;
