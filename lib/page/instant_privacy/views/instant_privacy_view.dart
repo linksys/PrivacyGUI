@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/composed/input_formatters.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
@@ -582,17 +580,13 @@ class _AddMacDialogState extends State<_AddMacDialog> {
               identifier: 'instant-privacy-add-mac-input',
               controller: _controller,
               focusNode: _focusNode,
-              hintText: 'AA:BB:CC:DD:EE:FF',
-              // Not `text`: keeps the platform from auto-capitalising or
-              // autocorrecting what it reads as a word.
-              keyboardType: TextInputType.visiblePassword,
-              // The field cannot hold anything but a well-formed MAC. Colons
-              // appear as the user types, so the deliberate `:` in the allow
-              // list is for pasted values, not for typing them by hand.
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[a-fA-F0-9:]')),
-                MacAddressFormatter(),
-              ],
+              // Deliberately unrestricted. This field is also the query box of
+              // the [AppSelectAutoComplete] above it, which matches a connected
+              // device on its name as well as its MAC — so a hex-only input
+              // formatter would make the search half of the field unusable.
+              // Free text is validated on unfocus instead, and selecting a
+              // suggestion writes the MAC into the controller.
+              hintText: loc(context).searchByNameMacIp,
               errorText: _localizeError(_errorText),
             ),
           ),
