@@ -4,7 +4,7 @@
 > a failure and see a picture of what broke, read
 > [overflow_gate_usage.md](overflow_gate_usage.md) instead.
 
-**Last Updated: 2026-08-26** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1345, #1351, #1348, #1349 — #1346 left the epic on 2026-08-22, §9.4, and #1361 was opened outside it). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix recorded 2026-08-21 and its consequence narrowed to the scout alone on 2026-08-22 (§8, §9.2, §9.4). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 on 2026-08-21 (§3.5) — on a "cannot be verified on a developer machine" claim §3.5 has since corrected; the split still stands, for sequencing. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1). **#1344 and #1345 then closed R3** — the forced-form and popup sweeps, in one pass over one shared `CardSweepCell`, with `check popup` byte-identical at 347 cells and `check forced_form` 75 cells carrying the six `|locale=en` renames §2's rule forces; all four sweeps are now declared through the runner and every count in §1.2 is re-measured. **R4 then left this epic on 2026-08-22 — see §9.4.** The gate is the guard and golden is the scout (§8), and a scout-side deliverable sitting inside a guard-side epic had put a three-hour CI round-trip in front of the epic's own acceptance: #1346 is now a standalone golden-facing ticket, #1339 stays as a gate-side finishing ticket with an offline verification, and one coupling this document had recorded as harmless — the gate's fixtures living under `test/golden_test/` — is ticketed on its own as #1361.** **`dev-2.7.0` was merged into `fix/1314-1328-chrome-overflow` on 2026-08-24, and the gate grew by 29 cells without anyone editing a sweep**: #1325 gave `dhcp_reservations` a `normalAbove: 369`, which both `CardNormalBandFamily` (one coordinate per threshold per tab × 26 locales, +26) and `ForcedCompactFloorFamily` (`selectableForms` reads that field, +3) enumerate from. Both `expectedCellCount` pins fired, which is what they are required rather than defaulted for (§4 of `sweep.dart`); the four baselines are re-captured at **card 1,943 · popup 347 · forced_form 78 · chrome 1,248 = 3,616 rows**, a purely additive diff of 29 new rows with none removed and none changed, verified `check`-identical on two runs minutes apart to prove #1321's now-relative lease fixture is byte-stable. The card suite's mutation table was re-executed against the merged code and its scope fixed (§9.3), §1.2 and §6 are re-measured against the merged tree (**5,310 in the whole gate, and all 87 above R3's 5,223 accounted for**), the density suite's own ledger is re-measured (row A 66 → 18, all of it R3's regrouping), and **F9 — #1348's one unrunnable mutation — was finally run**: reverting #1321's fixture fix is caught by 2 tests out of 1,362 and by no swept cell at all (§9.5). **#1364 then closed R5's one surviving mutation, and #1366 closed the two further shapes of it that closing turned up** (both 2026-08-24): a premise a family holds in `onCardSettled` is deletable in silence, so all three shapes are now values on `CardSweepCell` — `expectedDensity`, `widgetPremises` and `openWith` — checked by `CardOverflowFamily.onCellSettled` and pinned family-by-family in `families/dashboard_card_gate_test.dart`, whose oracle went 11 cases → 28. F11 is the one worth reading: an emptied hook left the popup sweep 80 of 80 green *and* `check popup` reporting 347 cells identical while 78 of them measured a tree another family already covers, which is the first coverage loss in this epic that the coverage baseline is structurally blind to. All four baselines stay byte-identical at 3,616 across both tickets — they change what the gate asserts, not what it measures (§9.5). **#1361 then removed the last coupling this document had recorded as harmless** (2026-08-24): the shared card fixtures and provider-override builders now live in `test/mocks/`, so no test outside `test/golden_test/` imports anything inside it — 19 real importers rather than the ticket's 15 and 12 files rather than 8, because `dev-2.7.0` added four more importers in the two days the ticket sat open. Suite and gate totals unchanged, all four baselines `check`-identical (§9.4). **#1349 then
+**Last Updated: 2026-09-09** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1345, #1351, #1348, #1349 — #1346 left the epic on 2026-08-22, §9.4, and #1361 was opened outside it). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix recorded 2026-08-21 and its consequence narrowed to the scout alone on 2026-08-22 (§8, §9.2, §9.4). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 on 2026-08-21 (§3.5) — on a "cannot be verified on a developer machine" claim §3.5 has since corrected; the split still stands, for sequencing. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1). **#1344 and #1345 then closed R3** — the forced-form and popup sweeps, in one pass over one shared `CardSweepCell`, with `check popup` byte-identical at 347 cells and `check forced_form` 75 cells carrying the six `|locale=en` renames §2's rule forces; all four sweeps are now declared through the runner and every count in §1.2 is re-measured. **R4 then left this epic on 2026-08-22 — see §9.4.** The gate is the guard and golden is the scout (§8), and a scout-side deliverable sitting inside a guard-side epic had put a three-hour CI round-trip in front of the epic's own acceptance: #1346 is now a standalone golden-facing ticket, #1339 stays as a gate-side finishing ticket with an offline verification, and one coupling this document had recorded as harmless — the gate's fixtures living under `test/golden_test/` — is ticketed on its own as #1361.** **`dev-2.7.0` was merged into `fix/1314-1328-chrome-overflow` on 2026-08-24, and the gate grew by 29 cells without anyone editing a sweep**: #1325 gave `dhcp_reservations` a `normalAbove: 369`, which both `CardNormalBandFamily` (one coordinate per threshold per tab × 26 locales, +26) and `ForcedCompactFloorFamily` (`selectableForms` reads that field, +3) enumerate from. Both `expectedCellCount` pins fired, which is what they are required rather than defaulted for (§4 of `sweep.dart`); the four baselines are re-captured at **card 1,943 · popup 347 · forced_form 78 · chrome 1,248 = 3,616 rows**, a purely additive diff of 29 new rows with none removed and none changed, verified `check`-identical on two runs minutes apart to prove #1321's now-relative lease fixture is byte-stable. The card suite's mutation table was re-executed against the merged code and its scope fixed (§9.3), §1.2 and §6 are re-measured against the merged tree (**5,310 in the whole gate, and all 87 above R3's 5,223 accounted for**), the density suite's own ledger is re-measured (row A 66 → 18, all of it R3's regrouping), and **F9 — #1348's one unrunnable mutation — was finally run**: reverting #1321's fixture fix is caught by 2 tests out of 1,362 and by no swept cell at all (§9.5). **#1364 then closed R5's one surviving mutation, and #1366 closed the two further shapes of it that closing turned up** (both 2026-08-24): a premise a family holds in `onCardSettled` is deletable in silence, so all three shapes are now values on `CardSweepCell` — `expectedDensity`, `widgetPremises` and `openWith` — checked by `CardOverflowFamily.onCellSettled` and pinned family-by-family in `families/dashboard_card_gate_test.dart`, whose oracle went 11 cases → 28. F11 is the one worth reading: an emptied hook left the popup sweep 80 of 80 green *and* `check popup` reporting 347 cells identical while 78 of them measured a tree another family already covers, which is the first coverage loss in this epic that the coverage baseline is structurally blind to. All four baselines stay byte-identical at 3,616 across both tickets — they change what the gate asserts, not what it measures (§9.5). **#1361 then removed the last coupling this document had recorded as harmless** (2026-08-24): the shared card fixtures and provider-override builders now live in `test/mocks/`, so no test outside `test/golden_test/` imports anything inside it — 19 real importers rather than the ticket's 15 and 12 files rather than 8, because `dev-2.7.0` added four more importers in the two days the ticket sat open. Suite and gate totals unchanged, all four baselines `check`-identical (§9.4). **#1349 then
 took the framework's first surface outside the dashboard** (2026-08-24): two whole pages —
 `dhcp` and `wifi_settings` — swept at 8 screen widths × 26 locales through one
 parameterised family, 416 cells, a fifth baseline, and **the runner needed no change at
@@ -72,8 +72,9 @@ indistinguishable from the silent narrowing #1364/#1366 found three times.
 `known_overflows.json` is still empty.
 
 **#1380 then ran the fourth wave and closed the axis** (2026-08-27, §11.12): the
-remaining **twenty-one** pages, so the gate holds **43** pages and **10,062** page cells,
-the committed dataset is **13,677** rows, and with the two unreachable exclusions that is
+remaining **twenty-one** pages, so the gate held **43** pages and **10,062** page cells
+(both moved at #1489, below), the committed dataset was **13,677** rows, and with the two
+unreachable exclusions that is
 **45 of 45 page views under `lib/page/` accounted for**. This wave is where the epic's
 ordering shows up in its numbers. Waves 1–3 were *chosen* — the fixture already existed,
 or a flow, or the entry surfaces — and needed **one** widget fix between the twenty pages
@@ -108,7 +109,43 @@ measurement retired the epic's cost model as an *estimate*: a projection summed 
 per-page figures is a **floor** — 336.1s modelled against 558s measured — because a page
 in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
 #1380 measured and did not explain. `known_overflows.json` is **still** empty — four waves
-and a pilot in, across 10,062 cells, it has never held an entry.
+and a pilot in, across every one of the 11,232 cells the sweep now holds, it has never held
+an entry.
+
+**#1489 then added 1,170 cells of coverage without adding a page** (2026-09-09), which
+is why the two counts above stop being one number. `kStatisticsPageCase` swept tab 0 of a
+three-tab page and its doc gave a reason for stopping there — the other tabs are behind a
+`TabController` and would need a tap per cell — copied from `kWifiSettingsPageCase`, where
+the same sentence sat. It is **false of the statistics page**: `UspStatisticsView` takes an
+`initialTab` the app itself passes from `?tab=N`, so a cell can construct the page on tab 1
+or tab 2 with no interaction at all. Eight of that page's twenty sections had therefore
+never been laid out at any width in any locale, and four legend `Row`s inside them overflowed a
+288px section in up to 26 locales — **35 red cells that appeared the instant two more cases
+existed** (fixed in `lib/` under #1488, which is why this could land green).
+
+**And then it was false where it was written, too.** The follow-up went back to
+`kWifiSettingsPageCase` and `kPortForwardingPageCase` — the two remaining tabbed pages, and
+the source of the pasted claim — expecting to confirm the limit there. Neither view took a
+tab argument; that was the whole blocker, four lines each, not a second test axis. Both now
+take an `initialTab` wired from `?tab=N` exactly as statistics does, which makes it a
+deep-link capability rather than a test hook, and three more cases entered: the Advanced tab
+of `wifi_settings` and the Range and Triggering tabs of `port_forwarding`. **702 cells, zero
+incidents** — no `lib/` change needed, which is the answer to "how much red would this add to
+a blocking gate" and an answer only obtainable by adding the cells.
+
+So the gate now holds **43 pages as 48 cases** and **11,232** page cells, the committed
+dataset is **14,847** rows, and the roster still holds **45** rows of which **43** are swept:
+`page_roster.tsv` keys on the page view *file*, so five more cases add no row, and its
+`# tabs` block is where the five tabs' measured ms/cell figures live, because the register has
+no column for a second case on one path. That block also carries the finding those figures
+made: the inherited number is wrong by **+66% on `wifi_settings`** and by **−7% and +2% on
+`port_forwarding`**, so the error has no fixed direction — it tracks how alike a page's tabs
+are, which is exactly what a register keyed on the file cannot see.
+
+The transferable finding is not about tabs. It is that **a limit inherited from another case
+is a measurement nobody took** — and this one was pasted twice and wrong at both ends before
+anyone tried it. The 234 green cells above it were honest the whole time; what they were
+silent about was everything they did not cover.
 
 **The first cell this gate has ever lost, and it is a correction** (#1367, 2026-08-25).
 `forced_form.skeleton|variant=stats` measured a box production never produced:
@@ -362,10 +399,10 @@ rather than out of §11.12:
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **37** (38 pre-#1367, 37 pre-merge, 80 pre-#1344) | 77 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **448** (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 10,062 + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **724** (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 13,677 rows † | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
-| The same five via `--tags overflow` | **724** | 13,677 rows † | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
-| Whole `layout-gate` family (49 files) | **2,061** (2,041 pre-#1367; 1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,847 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
+| **Page sweep (one file, new at #1349)** | **498** since #1489, **448** when this row's clock was taken (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 11,232 since #1489, 10,062 clocked + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| The five overflow sweeps (5 files, named) | **774** since #1489, **724** clocked (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 14,847 rows † (13,677 clocked) | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
+| The same five via `--tags overflow` | **774** since #1489, **724** clocked | 14,847 rows † (13,677 clocked) | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
+| Whole `layout-gate` family (50 files since #1488; 49 when this row was measured) | **2,061** (2,041 pre-#1367; 1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,847 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
 | Whole PR gate (`./run_tests.sh`) | **6,063** (6,034 pre-#1367; 5,757 pre-#1380; 5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | **9m40s / 9m46s** wall (3m27s / 3m32s pre-#1380, 3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
@@ -391,10 +428,12 @@ than the suite that contains it, on 30s less user CPU. So the rule the usage gui
 states is the one that survives contact — compare user CPU, not wall clock — and a wall
 clock in this table is only comparable to another taken on the same box in the same state.
 
-† **Dataset rows, not sweep cells**, and the two differ by design. The five committed
-baselines hold 1,943 + 347 + 77 + 1,248 + 10,062 = **13,677** rows (13,678 pre-#1367,
-8,764 pre-#1380), of
-which the *sweeps* pump 13,657 and **20 are hand-written guards that pump a real card and
+† **Dataset rows, not sweep cells**, and the two differ by design. The table above quotes
+the dataset as it stood when each clock was taken (13,677, pre-#1489); the totals in this
+footnote are current. The five committed
+baselines hold 1,943 + 347 + 77 + 1,248 + 11,232 = **14,847** rows (13,677 pre-#1489,
+13,678 pre-#1367, 8,764 pre-#1380), of
+which the *sweeps* pump 14,125 and **20 are hand-written guards that pump a real card and
 record their coordinate
 anyway** — `card.tab_registry` (6), `card.single_view` (12), `card.profile_data` (1) and
 `popup.exempt` (1). Each is in the dataset for the same stated reason, and it is the
@@ -1535,7 +1574,7 @@ Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 49 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5; 47 until #1371's `page_sweep_suites_test.dart`, the second such carrier; 48 until the *second* `dev-2.7.0` merge, on 2026-08-27, brought #1367's `usp_stats_panel_test.dart` — the **fourth** file to arrive under the retired name and the fourth to be enrolled by a hand rename, which is the carrier count doing the only job it has) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `layout-gate` | all 50 files (49 before #1488's `stats_legend_rows_test.dart`, the first carrier added because a sweep found something rather than by a tag rename; 39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`; 41 until the `dev-2.7.0` merge on 2026-08-24 brought three files written against the retired `dashboard-card` name, whose tag had to be renamed by hand — the merge is green either way, which is what makes the carrier count in `dart_test.yaml` worth keeping; 44 until #1349 added the page sweep and its oracle the same day; 46 until #1382's roster oracle, the one carrier that measures no cell — §11.5; 47 until #1371's `page_sweep_suites_test.dart`, the second such carrier; 48 until the *second* `dev-2.7.0` merge, on 2026-08-27, brought #1367's `usp_stats_panel_test.dart` — the **fourth** file to arrive under the retired name and the fourth to be enrolled by a hand rename, which is the carrier count doing the only job it has) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
 | `overflow` | the five sweep files only, as `@Tags(['layout-gate', 'overflow'])`. Not `page_sweep_suites_test.dart`, which pumps no cell and therefore stays out of the pre-commit selector — which is why a deleted `runOverflowSweep` call is caught by `./run_tests.sh` and the PR gate and *not* by `--tags overflow` (§11.10) | the fast pre-commit selector |
 
 **The split is checked by arithmetic, not by inspection** (#1342): `--tags overflow`
@@ -3431,7 +3470,11 @@ aggregate.**
 
 - **The other tabs.** `port_forwarding` measures tab 0 only, as `wifi_settings` does —
   a tap per cell is a second axis, and the two sibling tabs are covered by inspection
-  instead (above).
+  instead (above). **This is the bullet #1489 falsified**, and it is left standing because
+  the falsification is the interesting part: there was no second axis. Neither view took a
+  tab argument, four lines each, and once both did the three sibling tabs entered as
+  ordinary cases and swept 702 clean cells (§1.1, §11.13). "Covered by inspection" was the
+  substitute for a measurement that cost less than the sentence explaining its absence.
 - **`node_detail`'s throughput row**, for want of a fixture that carries a rate.
 - **`usp_statistics_view`**, which #1370 moved to #1380: its builder exists and does not
   get the view past its loader, which is exactly the distinction `requires` draws.
@@ -4351,9 +4394,12 @@ a clock instead of in a print.
 
 ### 11.12 Wave 4: the last twenty-one pages, and the epic's final distribution (#1380, landed 2026-08-27)
 
-Everything left. The gate sweeps **43** pages, `page` holds **10,062** cells and the
-committed dataset is **13,677** rows. With the two exclusions that is **45 of 45 page
-views under `lib/page/` accounted for**, which is what #1369 was opened to reach.
+Everything left. On the day it landed the gate swept **43** pages, `page` held **10,062**
+cells and the committed dataset was **13,677** rows. With the two exclusions that is **45 of
+45 page views under `lib/page/` accounted for**, which is what #1369 was opened to reach.
+(Those three numbers moved twice more without a page being added: #1489 re-cut the same 43
+pages as **48 cases**, 11,232 and 14,847 — §11.13, and the last bullet of this section is
+the claim it falsified.)
 (13,677 and not 13,678 because the `dev-2.7.0` merge landed on this branch the same day
 and #1367 retired one forced-form coordinate on the way in — §1.1's note on the first cell
 this gate ever lost. Nothing in this section's page arithmetic moves: the subtraction is
@@ -4370,7 +4416,9 @@ generalisation to carry forward is that **an epic's per-page fix rate is an arte
 its ordering, and the last wave pays what the earlier ones deferred.** §8's graduation
 rule was paid fourteen times over rather than repealed once, and
 `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`: four waves and a
-pilot in, across 10,062 cells, the file has never held an entry.
+pilot in, across 10,062 cells, the file has never held an entry. (#1489 later took it to
+11,232 without an entry either — but only because #1488 fixed 35 red cells in `lib/` first,
+which is §11.13's whole point. Its other three tabs needed no fix at all.)
 
 **Fourteen is a count of *coordinates*, and it is the count worth quoting.** A coordinate
 is a `file:line` the collector reported — the same key `known_overflows.json` would have
@@ -4726,7 +4774,11 @@ suite aside removes **468** tests from `--tags layout-gate` — its own 448, plu
 `page_sweep_suites_test.dart`, whose `setUpAll` throws when nothing under `test/page`
 sweeps a page — and produces exactly **one** red, which is that register's. Every other
 record stays green: `kPageSurfaceCases` still lists 43 pages, the roster still calls them
-`swept`, `page.tsv` still holds their 10,062 rows and nothing in the gate diffs it. That is
+`swept`, `page.tsv` still holds their 10,062 rows and nothing in the gate diffs it. (Every
+number in this paragraph is as of that measurement. #1489 moved three of them, so: the page
+suite now declares **498** of its own, the total removed becomes **518**, and the two records
+read 48 cases and 11,232 rows. The demonstration is unaffected: it is about which records notice, not how many
+rows they hold.) That is
 §11.10's membership claim demonstrated end to end rather than argued, and it is the reason
 this register was kept when the split it was written for was not.
 
@@ -4742,7 +4794,7 @@ numbers, and the divisor is the one that moves. `flutter test` takes its concurr
 `🛡️ Layout Gate` in run 33034114305 is the first measurement of this gate on the machine
 that blocks the PR. Its test step ran **508s** (02:43:34 → 02:52:02). `flutter test`
 switches to the `github` reporter there, which stamps one line per test, so all **2,061**
-tests and all **49** suites can be placed on a clock:
+tests and all **50** suites can be placed on a clock:
 
 | On the runner | |
 |---|--:|
@@ -4862,6 +4914,14 @@ the only reason this epic accepts for an exclusion, and none of the four is unre
   wants the coverage, and #1380 declined to take it silently. `stats_traffic_monitor_legend_test.dart`,
   `stats_wifi_channels_section_test.dart` and `test/util/statistics/stats_section_probe.dart`
   are what cover the rest, and `kStatisticsPageCase` says so.
+  **Half of this bullet was wrong, and it is the half that was not measured** (#1489,
+  §11.13). "Four sections of nine" is right and still is. "On tab 0 of three" was a limit,
+  not a measurement: the reason recorded for it — the other tabs need a tap — was inherited
+  from `kWifiSettingsPageCase`, where it did not hold either, and is false here because
+  `UspStatisticsView` takes an `initialTab`. Two more cases now sweep tabs 1 and 2 with no
+  interaction, and they found 35 red cells; the follow-up then gave `wifi_settings` and
+  `port_forwarding` the same parameter and swept their three sibling tabs clean. The sliver
+  depth limit survives unchanged and is the only limit this case still carries.
 - **One state per page, on all twenty-one.** Same decision `port_forwarding` took on tabs
   (§11.7), the PnP flow took on phases (§11.8) and wave 3 took on branches (§11.11) — and
   now the whole roster carries it. **This is the epic's real remaining coverage gap**, and
@@ -4871,3 +4931,153 @@ the only reason this epic accepts for an exclusion, and none of the four is unre
   prices it.
 - **Dialogs, bottom sheets and ui_kit-internal overflow**, all three out of scope by
   #1380's AC and all three still unmeasured by anything.
+
+### 11.13 Five sibling tabs on three pages, and the limit nobody had measured (#1489, landed 2026-09-09)
+
+**This is the first change to the page sweep's coverage that added no page.** The gate holds
+**43 pages declared as 48 cases**, `page` holds **11,232** cells and the committed dataset is
+**14,847** rows. `page_roster.tsv` still holds its **45** rows, 43 of them swept, because its
+key is the page view *file* and `PageRoster._rejectDuplicates` forbids a second row for one
+path. Those two counts were one number from #1349 to #1380 and are now two, which is the
+change worth carrying forward more than the coverage is.
+
+It landed in two passes and the second one falsified the first's own explanation, so read the
+subsections in order: the statistics tabs first, then "the same hole on two more pages" below.
+
+**What was actually wrong.** `kStatisticsPageCase` swept tab 0 of a three-tab page, and its
+doc gave a reason: the other two tabs live behind a `TabController`, so reaching them needs a
+tap per cell and `pageSurfaceHost` does not model one. That sentence was pasted from
+`kWifiSettingsPageCase`, and the first pass took it on trust as true *there* — the follow-up
+below shows it was not. It is false of this page.
+`UspStatisticsView` takes an `initialTab` (the field at `usp_statistics_view.dart:13`, the
+constructor parameter at :15, clamped into the controller at :31) which the app itself
+supplies from `?tab=N` (`route_usp_dashboard.dart:139`), so a cell can *construct* the page on
+tab 1 or tab 2 and never interact with it. Two cases, `statistics_devices` and
+`statistics_system`, do exactly that. **A limit inherited from another case is a measurement
+nobody took**, and that is the transferable finding — not anything about tabs. The 234 cells
+under the false sentence were honest the whole time; what the sentence hid was the 1,170 that
+did not exist.
+
+**What the two new cases found, and why they could land green.** #1489 laid out **eight** of
+the page's twenty sections for the first time at any width in any locale — the four the sliver
+reaches on tab 1 plus all four of tab 2 — taking the never-built count from **sixteen to
+eight**. Those eight turned up four
+legend `Row`s overflowing a 288px section — `StatsSignalQualitySection`,
+`StatsResourceTrendsSection`, `StatsCpuDistributionSection` and
+`StatsDeviceDistributionSection` — **35 red cells** in up to 26 locales. Those were fixed in
+`lib/` under **#1488** (three `Row`s became `Wrap`s; the CPU one kept its `Row` and took a
+`Flexible` two-line label), guarded by `stats_legend_rows_test.dart`, and #1489 then landed on
+a clean tree. Stated in the order it happened: the cases did not *cause* 35 failures, they
+*revealed* them, and the reveal is the entire value of the two cases.
+
+**The tab is a premise, not a parameter — and that took a second pass.** The first draft of
+these two cases declared the tab and asserted nothing about it, which is the same defect one
+level down from the one being fixed: `initialTab` is an `int` behind a `clamp(0, 2)`, so every
+wrong value is a *legal* one. A `1` copy-pasted twice, or `initialIndex:` quietly dropped from
+`initState`, sweeps one tab three times and still reports 702 green cells. So each case now
+requires the first section of the tab it opens — `StatsTrafficMonitorSection`,
+`StatsDeviceDistributionSection`, `StatsSystemGaugesSection` — which works because
+`TabBarView` builds only the selected page (`app_page_view.dart:671` in `ui_kit_library`,
+`NeverScrollableScrollPhysics` at :672), so an unselected tab has no elements to find. All
+three also require `StatsLegendDot`: a section renders its "waiting for device data"
+placeholder *inside* its own card, so a scene thinned back to `const` defaults would keep the
+top bar, the cards and the section types and change nothing — and the legend row is the exact
+widget #1488's 35 red cells lived in. Measured both ways: mutating the Devices case to
+`initialTab: 0` fails all 26 locales at every width *and* fails
+`page_surface_family_test.dart` with `Actual: [0, 0, 2]`. Before the premise it passed.
+
+**Coverage, measured and not projected.** Per tab, at all nine widths and in `en`/`ru`/`zh`
+alike, since the sliver's extent decides the count and not the text:
+
+| case | tab | sections built | of |
+|---|---|---|---|
+| `page.statistics` | 0 Network | 4 | 9 |
+| `page.statistics_devices` | 1 Devices | 4 | 7 |
+| `page.statistics_system` | 2 System | **4** | **4** |
+
+So `statistics_system` is the family's only page-tab with **no depth limit left**, and the
+`kPageSweepHeight` limit §11.12 recorded survives on the other two exactly as written. **Eight
+sections are still never built by any cell** — tab 0's last five (`HealthScore`, `ErrorRates`,
+`PacketLoss`, `FirewallRules`, `PortMapping`) and tab 1's last three (`WifiSignal`,
+`WifiSpeed`, `WifiChannels`). Two tabs halved that count and then stopped, and a third tab
+could not have done better: the limit is the sliver's extent, and every tab has one.
+`WifiChannels` is the only one of the eight with its own section suite
+(`stats_wifi_channels_section_test.dart`); the other seven have nothing below the sweep.
+
+**Cost, and the figures that are inherited rather than measured.** The two statistics cases
+really cost **13.2s** of pump time, against the ~21s a projection off tab 0's 45.3ms/cell
+predicts — because Devices and System measure **28.2** and **28.0** ms/cell at the same four
+sections built. Anchoring on a sibling tab read ~60% high, in the same direction and for the
+same kind of reason as §11.11's queued-figure rule. All five tab figures live in
+`page_roster.tsv`'s `# tabs` block rather than in a column, and the consequence is written down
+there because two registers now inherit rather than measure:
+`page_sweep_suites_test.dart`'s "no suite weight is guessed" resolves all eight cases through
+the one path and hands every sibling tab its tab 0 figure, so its projection print reads
+~10.5s high net. Neither can fail on it — the budget assertion sums roster *rows*, gains none
+here, and asserts `greaterThan` a floor, so 1,170 uncounted cells can only make it more true.
+**Whether one row per file is still the right key is a real question and #1489 did not answer
+it**: the alternative is a per-case register, which is a redesign of that file and needs its own
+ticket. Measuring and recording was the choice; redesigning was not.
+
+**What else this changed, and nearly all of it is prose.** Five claims across five files stated the tab
+limit as a fact, one of them (`page_surface_family_test.dart`'s wave-4 clause) not listed on
+the ticket, and three files conflated *cases* with *pages* — a conflation that was invisible
+while cases and pages were the same 43, and is easy to re-introduce because the *other* 45 in
+this file is a different quantity: `page_roster.tsv` holds 45 rows because it accounts for
+every page view file, swept or not, and 45 was also the case count for one commit before the
+follow-up moved it to 48 — the coincidence that made the conflation invisible is gone, which is
+the one good thing about a second pass. The
+sweep's `expectedCellCount` literal is now written out 48 times, `tool/overflow_baseline.sh`
+records its eighth move, and `page.tsv` was re-captured twice, not hand-edited: purely additive
+both times, `# cells` 10,062 → 10,530 → **11,232**, five new `# groups`. The non-prose part is
+the premise above and the **four** tests that pin it in `page_surface_family_test.dart` — one
+per statistics case, plus a rewrite of the parity test, which used to assert an *identical*
+`requires` across the three and would therefore have rejected the discriminators that make the
+tab checkable, plus one generic oracle over every per-tab page (below). And `dart_test.yaml`'s
+carrier count moves 49 → **50** for #1488's `stats_legend_rows_test.dart` — a number no test
+asserts, which is why it is in a comment written to be noticed.
+
+#### The same hole on two more pages, and no second axis after all
+
+The paragraphs above say the pasted sentence was true where it was written. **It was not.**
+The follow-up went to `kWifiSettingsPageCase` and `kPortForwardingPageCase` to confirm the
+limit and found there was nothing behind it: `UspWifiSettingsView` and
+`UspPortForwardingDetailView` simply took no tab argument. Adding one is four lines per view —
+a `final int initialTab`, a defaulted constructor parameter, `initialIndex:
+widget.initialTab.clamp(0, N-1)`, and the route reading `?tab=N` — after which their sibling
+tabs are reachable by construction exactly as statistics' are. It is wired through the route
+rather than left as a test-only field so that it is a real deep-link capability; `?tab=` on
+those two pages now works in the app.
+
+`wifi_settings` needed one line more than the mechanical four, and it is the kind of thing a
+per-tab sweep is good at finding: its `initState` also seeds `_previousTabIndex`, which the
+dirty guard compares against the tab being *left*. Seeded with a literal `0` while the
+controller opened on 1, leaving the Advanced tab would have checked the WiFi tab's dirty
+state. It now reads the index back off the controller.
+
+Three cases entered — `wifi_settings_advanced`, `port_range`, `port_triggering` — and swept
+**702 cells with zero incidents**. That is worth stating as a result rather than a non-event:
+the honest answer to "what would sweeping these tabs cost a blocking gate" is *nothing*, and
+it was unobtainable while the cells did not exist. Contrast the statistics tabs in the same
+ticket, which cost 35 red cells and a `lib/` fix first.
+
+Two things the three cases changed in kind rather than in count:
+
+- **The premise cannot be shared here.** The statistics tabs render the same section grammar,
+  so all three of those cases could carry `StatsLegendDot` plus one discriminating section
+  type. `wifi_settings`' two tabs render *unrelated* trees — a list of network cards against a
+  single card holding one switch — so there is no shared premise to assert. The enforceable
+  rule that covers all three pages is therefore weaker and generic: **each per-tab case must
+  require at least one type no sibling case requires.** That is one test over
+  `kPageSurfaceCases`, not three hand-written parity tests, and it is what
+  `page_surface_family_test.dart` now pins. It is deliberately not a `throw` on an unknown
+  tabbed page: a fourth one arriving reads as tab 0 for all its cases, so the distinctness
+  assertion is what fails, naming the page.
+- **The inheritance error has no direction.** Measured on the roster's own basis:
+  `wifi_settings_advanced` **17.6** ms/cell against its row's 29.2, `port_range` **23.3** and
+  `port_triggering` **21.2** against 21.6. So a sibling tab can be 40% cheaper than tab 0 or
+  8% dearer, and which one depends on how alike the trees are — near-identical for
+  `port_forwarding`, unrelated for `wifi_settings`. The ~60% over-read §11.13 recorded for
+  statistics is therefore not a bias to correct for; it is the size of a gap that a register
+  keyed on the file cannot see at all. Same day, the three parent rows re-read within #1377's
+  ±7% floor (45.3 → 47.5, 29.2 → 31.1, 21.6 → 22.1), so no row moved.

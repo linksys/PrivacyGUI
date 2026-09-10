@@ -16,7 +16,26 @@ import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
-  const UspWifiSettingsView({super.key});
+  /// How many tabs this page has. Shared with the `clamp` below so the two
+  /// cannot drift: adding a tab without widening the clamp would pin `?tab=3`
+  /// to tab 2 silently, and `initialTab` is an `int` behind that clamp, so
+  /// every wrong value is a legal one.
+  static const tabCount = 2;
+
+  /// Which tab this page opens on: 0 = WiFi list, 1 = Advanced.
+  ///
+  /// Supplied by the route from `?tab=N` and clamped in [initState], so an
+  /// out-of-range deep link opens the WiFi tab rather than throwing.
+  ///
+  /// Read **once, at mount**. A second navigation to this route with a different
+  /// `?tab=` reuses this `State`, so `initState` does not run again and the tab
+  /// does not move — the URL says one tab and the page shows another. Every
+  /// caller today arrives from outside the page, so it has not bitten; a card
+  /// deep-linking to a tab of the page the user is already on would need a
+  /// `didUpdateWidget`. `usp_statistics_view` has the same shape.
+  final int initialTab;
+
+  const UspWifiSettingsView({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<UspWifiSettingsView> createState() =>
@@ -33,7 +52,16 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: UspWifiSettingsView.tabCount,
+      vsync: this,
+      initialIndex:
+          widget.initialTab.clamp(0, UspWifiSettingsView.tabCount - 1),
+    );
+    // Read the index back off the controller rather than from `initialTab`:
+    // the dirty guard below compares against the tab being *left*, so seeding
+    // this with 0 while the controller opened on 1 would check the WiFi tab's
+    // dirty state on the way out of Advanced.
     _previousTabIndex = _tabController.index;
     _tabController.addListener(_handleTabChange);
   }

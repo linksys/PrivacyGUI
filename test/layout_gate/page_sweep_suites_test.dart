@@ -365,7 +365,10 @@ void main() {
         final needed = (weight / kGateFloorWithoutPagesMs).ceil();
         // ignore: avoid_print
         print('[page sweep] ${suite.label}: '
-            '${suite.caseIdentifiers.length} pages project to '
+            // "cases", not "pages", since #1489: three pages are swept once per tab,
+            // so this count runs five ahead of the page count and five of its terms
+            // repeat a sibling's roster figure. See the trailing note below.
+            '${suite.caseIdentifiers.length} cases project to '
             '${(weight / 1000).toStringAsFixed(1)}s of serial pumping against a '
             '${(kGateFloorWithoutPagesMs / 1000).toStringAsFixed(1)}s floor — '
             '${headroom >= 0 ? '${(headroom / 1000).toStringAsFixed(1)}s of '
@@ -373,7 +376,20 @@ void main() {
                 'which is at least $needed suites of similar weight'}. '
             'A projection is a floor on the cost, not an estimate: it sums measured '
             'per-page figures, and #1380 measured this file at 558s where the sum '
-            'reads 336.1s. Reported only, and no split follows from it: this floor is a '
+            'then read 336.1s. Both of those are 43-case figures: the sum above is 48 '
+            'cases and no wall has been measured against it, so 1.66x is an order of '
+            'magnitude and not a factor to apply here. Five of the terms above are '
+            'also INHERITED rather than '
+            'measured — the register keys on the page view file, so every sibling tab '
+            'resolves to its tab 0 figure: statistics\' Devices and System take 45.3 '
+            'where they measure 28.2 and 28.0, wifi_settings\' Advanced takes 29.2 '
+            'where it measures 17.6, and port_forwarding\'s Range and Triggering take '
+            '21.6 where they measure 23.3 and 21.2 (#1489, and page_roster.tsv\'s '
+            '`# tabs` block). Net ~10.5s high here, but note the last two run the other '
+            'way: the error has no fixed direction, so it cannot be corrected for in '
+            'this arithmetic. It cannot fail anything either, which is why it is '
+            'written down. Reported only, and no '
+            'split follows from it: this floor is a '
             'five-lane laptop figure, and on the 4-vCPU PR runner the whole gate is 508s '
             'with this suite alone for just its last 53s, so sharding buys ~50s and '
             'costs ~87s (§11.12).');

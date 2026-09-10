@@ -33,7 +33,14 @@ tags:
   # as intended: renaming its tag is what enrolled it, making it **49**. It pumps
   # `probeCardOverflow` directly rather than through `runOverflowSweep`, so it owns
   # no baseline and deliberately does not carry `overflow` — the same choice, for
-  # the same reason, as the two detail-view files from #1302. Five of the 49 carry
+  # the same reason, as the two detail-view files from #1302.
+  #
+  # 49 until #1488's `stats_legend_rows_test.dart`, making it **50** — the first
+  # carrier in a while that arrived by being written, not by being renamed, and the
+  # first added *because* a sweep found something: #1489's two statistics tab cases
+  # laid out eight sections nobody had ever pumped and four of them overflowed, so
+  # the fix got a suite of its own at the section level. It pumps four sections
+  # directly, owns no baseline, and does not carry `overflow`. Five of the 50 carry
   # `overflow`, and that is still the whole pre-commit selector.
 
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
@@ -53,9 +60,11 @@ tags:
   # gate redder).
   #
   # Complete, not quick — and since #1380 that means ten minutes, not three:
-  # `@Tags` is read by loading a suite, so the tag compiles all 330 test files to
-  # skip 325 of them. Re-measured 2026-08-27 for #1380's wave 4, the same 724
-  # tests take 9m23s under the tag and 8m17s when the five
+  # `@Tags` is read by loading a suite, so the tag compiles all 400 test files to
+  # skip 395 of them. Re-measured 2026-08-27 for #1380's wave 4 at 724 tests —
+  # 774 since #1489 added five tab cases, a 6.9% change on a clock these same runs
+  # have since shown drifting by 90%, so the count is corrected and the clock kept —
+  # the same tests take 9m23s under the tag and 8m17s when the five
   # files are named (`flutter test`'s own clock both times; the shell adds package
   # resolution and build on top of each — 9m40s and 8m22s). Name the file for a
   # tight loop; use the

@@ -29,13 +29,17 @@ import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2,
-/// #1379's wave 3 and #1380's wave 4.
+/// #1379's wave 3, #1380's wave 4, and #1489's five extra tab cases, which are not a
+/// wave because they added no page.
 ///
-/// **Forty-three whole pages** × 9 screen widths × 26 locales = **10,062 cells**,
+/// **Forty-three whole pages, declared as forty-eight cases** — three pages are swept
+/// once per tab, `statistics` as three cases, `port_forwarding` as three and
+/// `wifi_settings` as two (all #1489), so the two counts are different quantities
+/// rather than one of them being stale — × 9 screen widths × 26 locales = **11,232 cells**,
 /// declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
-/// forty-three pages, and why those, lives in `page_surface_cases.dart`. This file is
-/// the declaration, the forty-three pins, and the readability guards that sit beside
+/// pages, and why those, lives in `page_surface_cases.dart`. This file is
+/// the declaration, the forty-eight pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
 /// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
@@ -69,9 +73,10 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// renders a content box wider than 977px. Fifteen literals moved in one edit,
 /// which is the shape the ticket wanted: a coverage change nobody can make while
 /// looking away. `pnp_setup` brought the sixteenth later the same day, wave 3's six
-/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three —
-/// so the literal is now written out forty-three times, and #1372's argument for the
-/// repetition is the argument that survived the list doubling.
+/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three.
+/// #1489 then added five without adding a page — the sibling tabs of the three tabbed
+/// pages — so the literal is now written out **forty-eight** times, and #1372's argument
+/// for the repetition is the argument that survived the list doubling.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -132,6 +137,15 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // The Advanced tab, entered by `initialTab: 1` rather than by a tap. Both this
+  // and the two `port_*` sweeps below are #1489's follow-up: three tabs that no
+  // cell had ever laid out because their views took no tab argument, not because
+  // the gate could not reach them.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kWifiSettingsAdvancedPageCase),
+    expectedCellCount: 234,
+  );
+
   // Wave 1 (#1377): five pages whose fixture was already written. See
   // `page_surface_cases.dart` for why these five, and `test/fixtures/page_roster.tsv`
   // for what is still queued.
@@ -157,6 +171,19 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPortForwardingPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Tab 1 measures a header fix that had only ever been inspected — see
+  // `kPortRangePageCase`. Tab 2 measures `MapsToRow`, the widest rule row on the
+  // page and the one shape on it no cell had laid out.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortRangePageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortTriggeringPageCase),
     expectedCellCount: 234,
   );
 
@@ -356,14 +383,34 @@ void main() {
     expectedCellCount: 234,
   );
 
-  // `statistics` — tab 0, and of tab 0 only what the viewport lays out;
-  // `kStatisticsPageCase` states both limits and names the suites that cover the rest.
+  // `statistics` — one page, three cases, one per tab (#1489). Each sweeps what its
+  // tab's sliver lays out at `kPageSweepHeight` and no more: 4 of tab 0's 9 sections,
+  // 4 of tab 1's 7, and all 4 of tab 2's. The earlier "tab 0 only" note here repeated
+  // `kStatisticsPageCase`'s reason for stopping at the first tab, which turned out to
+  // be false of this page — `initialTab` is a constructor argument the app supplies
+  // from `?tab=N`, so a cell opens tab 1 or 2 with no tap. That case doc carries the
+  // whole correction, the eight sections that still never build — tab 0's last five
+  // and tab 1's last three — and the section suites that cover what these 702 cells
+  // do not.
   runOverflowSweep(
     family: PageSurfaceFamily(kStatisticsPageCase),
     expectedCellCount: 234,
   );
 
-  // `system_log` — the 45th page, and the last one this epic had to account for.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsDevicesPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsSystemPageCase),
+    expectedCellCount: 234,
+  );
+
+  // `system_log` — the 45th page *view file* under `lib/page/`, and the last one this
+  // epic had to account for. That 45 is the roster's count and has nothing to do with
+  // the 48 cases this file now declares: the roster keys on the view file, so a page
+  // swept per tab adds cases without adding rows.
   runOverflowSweep(
     family: PageSurfaceFamily(kSystemLogPageCase),
     expectedCellCount: 234,
