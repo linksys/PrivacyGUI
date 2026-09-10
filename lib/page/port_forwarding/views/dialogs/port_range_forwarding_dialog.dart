@@ -212,9 +212,14 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           // The start/end pair is one range, so it gets one group label and the
           // ui_kit range control rather than two independently-named fields.
           // `AppRangeInput` renders `startLabel`/`endLabel` as hints and has no
-          // label slot, so the group label sits above it — `bodyMedium` to match
-          // the protocol label below and 1.x's own range headings.
-          AppText.bodyMedium(loc(context).startEndPorts),
+          // label slot, so the group label sits above it — `labelLarge` to match
+          // `triggeredRange`/`forwardedRange` in port_triggering_dialog.dart:228,276.
+          // Both are the group heading above an `AppRangeInput`, reached from
+          // adjacent tabs of one page, so one semantic element gets one type ramp:
+          // a section heading, ranked above the field labels (bodyMedium) below it.
+          // Austin's call (#1081 review) — on an issue about naming consistency,
+          // two ramps for one element worked against the goal.
+          AppText.labelLarge(loc(context).startEndPorts),
           AppGap.sm(),
           // NOTE: `keyboardType` is NOT passed here — `AppRangeInput` (ui_kit
           // v3.2.0) exposes no `keyboardType` parameter and does not hardcode a
