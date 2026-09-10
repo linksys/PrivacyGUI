@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -28,11 +29,20 @@ void main() {
   const typedMac = 'aa:bb:cc:dd:ee:ff';
   const confirmId = 'instant-privacy-add-mac-confirm';
 
+  late _RecordingInstantPrivacyNotifier notifier;
+
   setUpAll(() async {
     // The dialog is laid out for real here, and Ahem's uniform glyph box is
     // 1.8-2.7x wider than the app's font — wide enough to overflow a dialog that
     // is fine in production.
     await loadAppFonts();
+  });
+
+  // Fresh per test: the recorded list is an assertion target, so it must not
+  // carry what an earlier test submitted.
+  setUp(() {
+    notifier =
+        _RecordingInstantPrivacyNotifier(enabledWithConnectedDevicesState);
   });
 
   /// Hosted through the layout gate's [pageSurfaceHost] because `UspTopBar`
@@ -41,7 +51,11 @@ void main() {
   Widget host() => pageSurfaceHost(
         view: const InstantPrivacyView(),
         locale: const Locale('en'),
-        overrides: instantPrivacyOverrides(enabledWithConnectedDevicesState),
+        // The scene [instantPrivacyOverrides] would hand over, but through the
+        // recording notifier — see [_RecordingInstantPrivacyNotifier].
+        overrides: [
+          uspInstantPrivacyProvider.overrideWith(() => notifier),
+        ],
       );
 
   Future<void> settle(WidgetTester tester) async {
@@ -107,7 +121,7 @@ void main() {
     expect(tester.widget<AppButton>(confirmFinder()).onTap, isNotNull);
   });
 
-  testWidgets('tapping Add submits the typed MAC and closes the dialog',
+  testWidgets('tapping Add submits the MAC normalised, and closes the dialog',
       (tester) async {
     await openDialog(tester);
 
@@ -121,7 +135,34 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
 
+    // Upper case out of lower-case keystrokes: deferring normalisation from the
+    // keystroke to the submit *is* #1059's resolution, so the argument is the
+    // assertion and the dismissal below is only half of it. Dropping the
+    // `normalizeMac` call at the submit site would otherwise leave every test in
+    // this file green while breaking duplicate detection, which compares against
+    // MACs that have all been through it. Spelled out rather than
+    // `typedMac.toUpperCase()` — an expectation should not re-implement half of
+    // what it is checking.
+    expect(notifier.addedMacs, ['AA:BB:CC:DD:EE:FF']);
     expect(find.text('Add device manually'), findsNothing,
         reason: 'the dialog accepted the value and popped');
   });
+}
+
+/// [FixedInstantPrivacyNotifier] with the submitted MAC kept instead of dropped.
+///
+/// The shared stub's `addMac` discards its argument, which leaves what the dialog
+/// actually submitted unassertable. Subclassed here rather than recorded in the
+/// shared mock: the golden and layout-gate suites both read that file, and a
+/// growing list on a fixture neither of them asserts on is state they would carry
+/// for nothing.
+class _RecordingInstantPrivacyNotifier extends FixedInstantPrivacyNotifier {
+  _RecordingInstantPrivacyNotifier(super.state);
+
+  final List<String> addedMacs = [];
+
+  @override
+  Future<void> addMac(String mac) async {
+    addedMacs.add(mac);
+  }
 }

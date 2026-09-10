@@ -79,8 +79,28 @@ void main() {
       expect(_type(formatter, 'aabbccddeeff'), 'AA:BB:CC:DD:EE:FF');
     });
 
-    test('caps at 12 hex digits', () {
+    test('caps growth at 12 hex digits', () {
       expect(_type(formatter, 'AABBCCDDEEFFAA'), 'AA:BB:CC:DD:EE:FF');
+    });
+
+    test('a shrinking replacement escapes the cap, as documented', () {
+      // The exception the class DartDoc names. The shrink guard cannot tell a
+      // backspace from a paste over a full selection, and 16 bare hex digits are
+      // shorter than the 17-character address they replace — so they arrive
+      // un-capped and un-upper-cased. Pinned rather than fixed: the guard is
+      // what makes the separator deletable, and nothing in `lib/` wires this
+      // formatter up. Here so the DartDoc cannot quietly become a false claim.
+      final replaced = formatter.formatEditUpdate(
+        const TextEditingValue(
+          text: 'AA:BB:CC:DD:EE:FF',
+          selection: TextSelection.collapsed(offset: 17),
+        ),
+        const TextEditingValue(
+          text: 'aabbccddeeffaabb',
+          selection: TextSelection.collapsed(offset: 16),
+        ),
+      );
+      expect(replaced.text, 'aabbccddeeffaabb');
     });
 
     test('backspace removes characters instead of re-inserting separators', () {

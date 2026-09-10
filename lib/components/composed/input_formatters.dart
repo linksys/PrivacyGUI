@@ -10,8 +10,12 @@ import 'package:flutter/services.dart';
 /// inserted itself feeds on its own output — one pair of colons becomes two,
 /// then four, and twelve keystrokes produce a 200-character string.
 ///
-/// No length limiter is needed — a MAC is 6 bytes and this caps at 12 hex
-/// digits.
+/// No length limiter is needed — a MAC is 6 bytes and this caps *growth* at 12
+/// hex digits. Only growth: a net-shrinking edit is passed through untouched by
+/// the guard below, which cannot tell a backspace from a paste over a full
+/// selection, so replacing a complete address with a longer bare string leaves
+/// it un-capped and un-upper-cased. That is the price of a deletable separator,
+/// and a test pins it.
 ///
 /// **Nothing in `lib/` wires this up.** It is kept rather than deleted so the
 /// paragraph above does not have to be rediscovered by the next MAC-only field,
