@@ -304,6 +304,32 @@ void main() {
       expect(result[0].isPrivateMac, isFalse);
     });
 
+    // The Add-device field searches name, MAC and IP alike, and the IP half of
+    // that only works if the address survives this mapping — `ConnectedDevices`
+    // already carries it, so dropping it here would cost a second fetch to get
+    // back.
+    test('carries the host IP address through', () {
+      final data = ConnectedDevices(items: [
+        _device(ipAddress: '192.168.1.137'),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result[0].ipAddress, '192.168.1.137');
+    });
+
+    test('leaves ipAddress empty when firmware reports no address', () {
+      // A host with a lease that has not been handed out yet. The option's
+      // trailing slot is suppressed on empty rather than rendering a blank one.
+      final data = ConnectedDevices(items: [
+        _device(ipAddress: ''),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result[0].ipAddress, isEmpty);
+    });
+
     // Both role literals live in one boolean expression, so line coverage looks
     // complete with only one of them tested — table-drive instead. 'master' is
     // the gateway the customer is connected through, the worst row of all to

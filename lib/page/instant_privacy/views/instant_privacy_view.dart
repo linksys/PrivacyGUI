@@ -437,11 +437,18 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) async {
-    // Build autocomplete options from connected devices
+    // Build autocomplete options from connected devices.
+    //
+    // `AppSelectAutoComplete` matches a query against label, value and subtitle
+    // alike, so what goes in these three fields is exactly what the field's
+    // "search by name, MAC, or IP" hint promises. `null` rather than an empty
+    // subtitle when firmware reports no address — the option tile renders the
+    // trailing slot whenever the subtitle is non-null.
     final deviceOptions = state.connectedDevices
         .map((d) => AppAutoCompleteOption(
               label: d.displayName,
               value: d.mac,
+              subtitle: d.ipAddress.isNotEmpty ? d.ipAddress : null,
             ))
         .toList();
 

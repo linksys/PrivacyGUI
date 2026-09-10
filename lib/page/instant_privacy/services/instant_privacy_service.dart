@@ -97,6 +97,10 @@ class UspInstantPrivacyService {
         mac: mac,
         displayName: d.hostName.isNotEmpty ? d.hostName : mac,
         isPrivateMac: OuiLookup.isRandomizedMac(mac),
+        // `Device.Hosts.Host.{i}.IPAddress`, already in the paths this fetch
+        // requests — the Add-device search gets the address for free rather than
+        // for a second round trip.
+        ipAddress: d.ipAddress,
       );
     }).toList();
   }
