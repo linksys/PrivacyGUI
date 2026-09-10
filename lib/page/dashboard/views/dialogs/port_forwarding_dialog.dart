@@ -199,32 +199,37 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
         // CrossAxisAlignment.center and sit indented from the fields (#1261).
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTextField(
+          // `AppTextFormField(label:)`, not `AppTextField(hintText:)`: a hint is
+          // the field's only name and it disappears the moment you type, so a
+          // half-filled form stops saying which box is which — and the names it
+          // showed were the TR-181 parameters, not the product's own words
+          // (#1081). The label persists and uses the 1.x vocabulary.
+          AppTextFormField(
             controller: _descController,
             focusNode: _descFocus,
             identifier: 'pf-single-description',
-            hintText: loc(context).description,
-            errorText: _errors['description'],
+            label: loc(context).applicationName,
+            externalErrorText: _errors['description'],
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
-          AppTextField(
+          AppTextFormField(
             controller: _extPortController,
             focusNode: _extPortFocus,
             identifier: 'pf-single-external-port',
-            hintText: loc(context).externalPort,
+            label: loc(context).externalPort,
             keyboardType: TextInputType.number,
-            errorText: _errors['externalPort'],
+            externalErrorText: _errors['externalPort'],
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
-          AppTextField(
+          AppTextFormField(
             controller: _intPortController,
             focusNode: _intPortFocus,
             identifier: 'pf-single-internal-port',
-            hintText: loc(context).internalPort,
+            label: loc(context).internalPort,
             keyboardType: TextInputType.number,
-            errorText: _errors['internalPort'],
+            externalErrorText: _errors['internalPort'],
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
@@ -232,12 +237,16 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             options: widget.deviceOptions,
             controller: _intClientController,
             onSelected: (_) => _validate(context),
-            child: AppTextField(
+            // Label names the field, hint carries the accepted format. 1.x had
+            // no hint here because its IPv4 input was four separate boxes; this
+            // one is free text, so the example is the only syntax guidance.
+            child: AppTextFormField(
               controller: _intClientController,
               focusNode: _intClientFocus,
               identifier: 'pf-single-internal-ip',
-              hintText: loc(context).internalIpHint,
-              errorText: _errors['internalClient'],
+              label: loc(context).ipAddress,
+              hintText: loc(context).ipAddressHint,
+              externalErrorText: _errors['internalClient'],
               onChanged: (_) => _onInputChanged(),
             ),
           ),

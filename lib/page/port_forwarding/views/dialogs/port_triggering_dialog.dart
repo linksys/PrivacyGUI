@@ -88,130 +88,108 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit
+    // `AppDialog`, not the raw Material `AlertDialog` this was still using: #1166
+    // moved the other rule dialogs over and missed this one, so the third tab's
+    // dialog had a different frame, title style and scroll behaviour from the
+    // two next to it.
+    return AppDialog(
+      title: AppText.titleLarge(_isEdit
           ? loc(context).editPortTriggering
           : loc(context).addPortTriggering),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppTextField(
-              controller: _descController,
-              identifier: 'pf-trigger-description',
-              hintText: loc(context).description,
-            ),
-            AppGap.xl(),
-            AppText.labelLarge(loc(context).triggerPorts),
-            AppGap.md(),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _trigPortStartController,
-                    identifier: 'pf-trigger-trigger-port-start',
-                    hintText: loc(context).startPort,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                AppGap.md(),
-                Expanded(
-                  child: AppTextField(
-                    controller: _trigPortEndController,
-                    identifier: 'pf-trigger-trigger-port-end',
-                    hintText: loc(context).endPortOptional,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            AppGap.md(),
-            // Stack the protocol label above the segmented control so a long
-            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
-            // the control and clip its last segment in a narrow AppDialog
-            // (#1261). A Wrap can't be used here because SegmentedButton has no
-            // dry-layout support and Wrap measures its children.
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                AppGap.sm(),
-                SegmentedButton<String>(
-                  segments: [
-                    const ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    const ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(
-                        value: 'Both', label: Text(loc(context).both)),
-                  ],
-                  selected: {_triggerProtocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _triggerProtocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.xl(),
-            AppText.labelLarge(loc(context).forwardedPorts),
-            AppGap.md(),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _fwdPortStartController,
-                    identifier: 'pf-trigger-forward-port-start',
-                    hintText: loc(context).startPort,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                AppGap.md(),
-                Expanded(
-                  child: AppTextField(
-                    controller: _fwdPortEndController,
-                    identifier: 'pf-trigger-forward-port-end',
-                    hintText: loc(context).endPortOptional,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            AppGap.md(),
-            // Stack the protocol label above the segmented control so a long
-            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
-            // the control and clip its last segment in a narrow AppDialog
-            // (#1261). A Wrap can't be used here because SegmentedButton has no
-            // dry-layout support and Wrap measures its children.
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                AppGap.sm(),
-                SegmentedButton<String>(
-                  segments: [
-                    const ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    const ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(
-                        value: 'Both', label: Text(loc(context).both)),
-                  ],
-                  selected: {_forwardProtocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _forwardProtocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.xl(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).enabled),
-                AppSwitch(
-                  identifier: 'pf-trigger-enabled',
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // `AppTextFormField(label:)`, not `AppTextField(hintText:)` — see the
+          // note in `port_forwarding_dialog.dart` (#1081).
+          AppTextFormField(
+            controller: _descController,
+            identifier: 'pf-trigger-description',
+            label: loc(context).applicationName,
+          ),
+          AppGap.xl(),
+          // 1.x's headings for the two halves of a trigger rule. `labelLarge`
+          // because each covers a range *and* a protocol, so it is a section
+          // heading rather than a field label (those are bodyMedium below).
+          AppText.labelLarge(loc(context).triggeredRange),
+          AppGap.md(),
+          AppRangeInput(
+            startController: _trigPortStartController,
+            endController: _trigPortEndController,
+            startLabel: loc(context).startPort,
+            // Keeps "(optional)": unlike port range forwarding, a trigger rule
+            // with no end port is valid and means a single port.
+            endLabel: loc(context).endPortOptional,
+            startIdentifier: 'pf-trigger-trigger-port-start',
+            endIdentifier: 'pf-trigger-trigger-port-end',
+          ),
+          AppGap.md(),
+          // Stack the protocol label above the segmented control so a long
+          // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
+          // the control and clip its last segment in a narrow AppDialog
+          // (#1261). A Wrap can't be used here because SegmentedButton has no
+          // dry-layout support and Wrap measures its children.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              AppGap.sm(),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
+                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
+                ],
+                selected: {_triggerProtocol},
+                onSelectionChanged: (v) =>
+                    setState(() => _triggerProtocol = v.first),
+              ),
+            ],
+          ),
+          AppGap.xl(),
+          AppText.labelLarge(loc(context).forwardedRange),
+          AppGap.md(),
+          AppRangeInput(
+            startController: _fwdPortStartController,
+            endController: _fwdPortEndController,
+            startLabel: loc(context).startPort,
+            endLabel: loc(context).endPortOptional,
+            startIdentifier: 'pf-trigger-forward-port-start',
+            endIdentifier: 'pf-trigger-forward-port-end',
+          ),
+          AppGap.md(),
+          // Same stacking reason as the trigger protocol above (#1261).
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              AppGap.sm(),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
+                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
+                ],
+                selected: {_forwardProtocol},
+                onSelectionChanged: (v) =>
+                    setState(() => _forwardProtocol = v.first),
+              ),
+            ],
+          ),
+          AppGap.xl(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).enabled),
+              AppSwitch(
+                identifier: 'pf-trigger-enabled',
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
         AppButton.text(
@@ -219,7 +197,10 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        AppButton.primary(
+        // `AppButton.text` like the other two rule dialogs' submit. The
+        // identifiers stay `port-triggering-*` rather than being renamed to the
+        // `pf-trigger-*` prefix used inside: they are the E2E suite's contract.
+        AppButton.text(
           identifier: 'port-triggering-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _submit,
