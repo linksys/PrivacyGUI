@@ -105,14 +105,52 @@ class InstantPrivacyView extends ConsumerWidget {
                 ],
               ),
             ),
-            AppSwitch(
-              identifier: 'instant-privacy-enable',
-              value: state.isEnabled,
-              onChanged: state.isToggleDisabled
-                  ? null
-                  : (value) => value
-                      ? _onEnable(context, ref)
-                      : _onDisable(context, ref),
+            // While a write is in flight the switch becomes a loader. Its only
+            // busy signal used to be the dimmed track `AppSwitch` renders for a
+            // null `onChanged`, which reads as "unavailable", not "saving" — and
+            // the enable/disable path holds that state for as long as a USP
+            // mutation takes.
+            //
+            // A `Stack` over a size-maintaining switch rather than a plain
+            // ternary: `AppSwitch` derives its footprint from the theme's
+            // `spacingFactor`, so swapping it out for a fixed-size box would
+            // reflow the row on any theme that does not scale at 1.0.
+            //
+            // `isToggleLocked`, not `isToggleDisabled` — the latter also covers
+            // "no connected devices, so it cannot be enabled", which is a
+            // permanently unavailable switch rather than work in progress.
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Visibility(
+                  visible: !state.isToggleLocked,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: AppSwitch(
+                    identifier: 'instant-privacy-enable',
+                    value: state.isEnabled,
+                    onChanged: state.isToggleDisabled
+                        ? null
+                        : (value) => value
+                            ? _onEnable(context, ref)
+                            : _onDisable(context, ref),
+                  ),
+                ),
+                if (state.isToggleLocked)
+                  // Thumb-sized and with foreground effects off, the way
+                  // `AppButton` renders its own in-place loader. Bounded so a
+                  // theme whose `LoaderStyle.size` exceeds the track cannot
+                  // grow the `Stack` past what the switch reserved.
+                  SizedBox.square(
+                    dimension: 24,
+                    child: AppLoader(
+                      variant: LoaderVariant.circular,
+                      foregroundEffectEnabled: false,
+                      semanticLabel: loc(context).processing,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -399,16 +437,27 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) async {
-    // Build autocomplete options from connected devices
+    // Build autocomplete options from connected devices.
+    //
+    // `AppSelectAutoComplete` matches a query against label, value and subtitle
+    // alike, so what goes in these three fields is exactly what the field's
+    // "search by name, MAC, or IP" hint promises. `null` rather than an empty
+    // subtitle when firmware reports no address — the option tile renders the
+    // trailing slot whenever the subtitle is non-null.
     final deviceOptions = state.connectedDevices
         .map((d) => AppAutoCompleteOption(
               label: d.displayName,
               value: d.mac,
+              subtitle: d.ipAddress.isNotEmpty ? d.ipAddress : null,
             ))
         .toList();
 
     await showAppDialog<void>(
       context: context,
+      // Tapping the scrim used to discard whatever had been typed. The field
+      // only reveals its validation error on unfocus, so the tap that was
+      // meant to trigger validation was closing the dialog instead (#1059).
+      barrierDismissible: false,
       builder: (ctx) => _AddMacDialog(
         existingDevices: state.allowedDevices,
         deviceOptions: deviceOptions,
@@ -476,37 +525,54 @@ class _AddMacDialogState extends State<_AddMacDialog> {
 
   void _validate() {
     setState(() {
-      final value = _controller.text;
-      if (value.isEmpty) {
-        _errorText = null;
-        return;
-      }
-      if (!UspInstantPrivacyService.validateMac(value)) {
-        _errorText = 'invalidMacFormat';
-        return;
-      }
-      final normalized = UspInstantPrivacyService.normalizeMac(value);
-      final isDuplicate =
-          widget.existingDevices.any((d) => d.mac == normalized);
-      _errorText = isDuplicate ? 'deviceAlreadyInAllowedList' : null;
+      _errorText = _errorFor(_controller.text);
     });
   }
 
-  void _onChanged(String value) {
-    // Don't setState here - any state change causes focus loss on Web
-    // Validation happens on unfocus via _onFocusChange
+  /// The error key for [value], or null when there is nothing to complain about.
+  ///
+  /// The single definition of "acceptable", shared by the message and the Add
+  /// button. They used to run this check separately, which let the two disagree
+  /// — and made "the button is enabled exactly when no error is shown" a
+  /// property maintained by hand in two places.
+  ///
+  /// Empty text yields null: nothing typed yet is not an error to display. The
+  /// button's own precondition is in [_canConfirm].
+  String? _errorFor(String value) {
+    if (value.isEmpty) return null;
+    if (!UspInstantPrivacyService.validateMac(value)) return 'invalidMacFormat';
+    final normalized = UspInstantPrivacyService.normalizeMac(value);
+    return widget.existingDevices.any((d) => d.mac == normalized)
+        ? 'deviceAlreadyInAllowedList'
+        : null;
   }
 
-  bool get _canConfirm =>
-      _controller.text.isNotEmpty &&
-      _errorText == null &&
-      UspInstantPrivacyService.validateMac(_controller.text);
+  /// Whether the current text is a MAC that is not already on the list.
+  ///
+  /// Deliberately independent of [_errorText]: that field only exists to render
+  /// the message, and it is populated on unfocus. Gating the button on it as
+  /// well left a valid MAC un-submittable until the user tabbed away.
+  bool get _canConfirm {
+    final value = _controller.text;
+    return value.isNotEmpty && _errorFor(value) == null;
+  }
 
   Future<void> _confirm() async {
     if (!_canConfirm) return;
     setState(() => _isConfirming = true);
-    await widget
-        .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+    try {
+      await widget
+          .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+    } finally {
+      // [_AddMacDialog.onConfirm] pops this dialog before it awaits, so today
+      // the state is already gone when the future completes — hence the
+      // `mounted` guard rather than a bare `setState`. The reset itself is for
+      // the next change that keeps the dialog open on failure: without it the
+      // button would sit on "Adding..." with nothing able to clear it.
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
+    }
   }
 
   String? _localizeError(String? key) {
@@ -536,8 +602,13 @@ class _AddMacDialogState extends State<_AddMacDialog> {
               identifier: 'instant-privacy-add-mac-input',
               controller: _controller,
               focusNode: _focusNode,
-              hintText: 'AA:BB:CC:DD:EE:FF',
-              onChanged: _onChanged,
+              // Deliberately unrestricted. This field is also the query box of
+              // the [AppSelectAutoComplete] above it, which matches a connected
+              // device on its name as well as its MAC — so a hex-only input
+              // formatter would make the search half of the field unusable.
+              // Free text is validated on unfocus instead, and selecting a
+              // suggestion writes the MAC into the controller.
+              hintText: loc(context).searchByNameMacIp,
               errorText: _localizeError(_errorText),
             ),
           ),
@@ -549,10 +620,18 @@ class _AddMacDialogState extends State<_AddMacDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        AppButton.primary(
-          identifier: 'instant-privacy-add-mac-confirm',
-          label: _isConfirming ? loc(context).adding : loc(context).add,
-          onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
+        // Rebuilt from the controller rather than from setState. The whole
+        // reason validation was moved to unfocus is that a setState mid-typing
+        // rebuilds the tree and severs the TextField's TextInputConnection on
+        // Web (#1059). The field is not inside this builder, so enabling the
+        // button as the user types cannot reach it.
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _controller,
+          builder: (context, _, __) => AppButton.primary(
+            identifier: 'instant-privacy-add-mac-confirm',
+            label: _isConfirming ? loc(context).adding : loc(context).add,
+            onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
+          ),
         ),
       ],
     );

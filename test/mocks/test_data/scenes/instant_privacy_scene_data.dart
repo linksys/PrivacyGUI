@@ -12,18 +12,24 @@ import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_u
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 
+/// The addresses are only ever read by the add-device search — no row in this
+/// page renders an IP (`InstantPrivacyDeviceTile` shows name and MAC), so they
+/// change no golden.
 const _testDevices = [
   InstantPrivacyDeviceUIModel(
     mac: 'AA:BB:CC:DD:EE:01',
     displayName: 'iPhone',
+    ipAddress: '192.168.1.101',
   ),
   InstantPrivacyDeviceUIModel(
     mac: 'AA:BB:CC:DD:EE:02',
     displayName: 'MacBook Pro',
+    ipAddress: '192.168.1.102',
   ),
   InstantPrivacyDeviceUIModel(
     mac: 'AA:BB:CC:DD:EE:03',
     displayName: 'iPad',
+    ipAddress: '192.168.1.103',
   ),
 ];
 
@@ -45,6 +51,24 @@ const enabledWithDevicesState = UspInstantPrivacyState(
   isEnabled: true,
   connectedDevices: [],
   allowedDevices: _testDevices,
+  macFilterContext: MacFilterContext.empty,
+);
+
+/// Enabled *and* with connected devices — the only shape in which the add-device
+/// dialog has anything to suggest.
+///
+/// The dialog is reachable only from the allowed list's header, so `isEnabled`
+/// must be true, and its autocomplete options come from `connectedDevices`,
+/// which [enabledWithDevicesState] deliberately leaves empty. That state is
+/// therefore the wrong fixture for anything about the suggestions themselves.
+///
+/// `allowedDevices` is empty so that it stays that way: an allowed row renders
+/// the same device name the suggestion does, and a test asserting a suggestion
+/// appeared would pass on the row behind the dialog instead.
+const enabledWithConnectedDevicesState = UspInstantPrivacyState(
+  isEnabled: true,
+  connectedDevices: _testDevices,
+  allowedDevices: [],
   macFilterContext: MacFilterContext.empty,
 );
 
