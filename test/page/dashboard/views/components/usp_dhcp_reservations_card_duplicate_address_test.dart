@@ -25,28 +25,18 @@ import '../../../../mocks/test_data/scenes/dhcp_scene_data.dart' show dataState;
 /// Duplicate-address validation as reached from the **Dashboard** DHCP card
 /// (#1070).
 ///
-/// ## Why this file exists next to a green dialog suite
+/// The dialog's own suite (`test/page/dhcp/views/dialogs/`) covers the rule and
+/// stayed green throughout the window this bug was reproducible: it constructs
+/// [DhcpReservationEditDialog] itself, so it never sees what a *caller* passes.
+/// `existingReservations` defaulted to `const []` then, so this card omitted it
+/// and validated against nothing — `9028ec6e` repointed the card onto the shared
+/// dialog twelve minutes after `31e4667b` added the check, with no compiler or
+/// test to notice.
 ///
-/// `test/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog_test.dart` already
-/// covers the rule, and it passed throughout the window this bug was reproducible
-/// — because it constructs [DhcpReservationEditDialog] itself and hands it the
-/// `existingReservations` list directly. What it cannot see is whether a *caller*
-/// supplies that list, and `existingReservations` defaults to `const []`, so a
-/// call site that omits it compiles, renders and validates — against nothing.
-///
-/// That is exactly how #1070 came back. The duplicate check landed on
-/// 2026-07-08 (`31e4667b`) and wired the two callers that existed, both on the
-/// DHCP detail page. Twelve minutes later `9028ec6e` repointed this card off its
-/// own unvalidated `DhcpReservationDialog` and onto the shared dialog for #1067,
-/// passing only the autocomplete options. The parameter added minutes earlier was
-/// not part of that PR's diff to copy, and no compiler or test noticed: QA
-/// re-verified via the detail page, and the issue's own repro steps ("Go to
-/// Dashboard > DHCP") walked the one path where the check was a structural no-op.
-///
-/// So this suite pumps the **real card** and drives the **real dialog** through
-/// the button a user taps. The assertion is not about the rule — the dialog suite
-/// owns that — it is about the wiring the rule depends on, which is the only part
-/// a per-call-site default can silently drop.
+/// So this suite pumps the **real card** and taps the **real button**. The
+/// parameter is now `required`, which makes that omission a compile error but
+/// still cannot check *which* list a caller hands over — an empty literal, or a
+/// list the card does not render, compiles just as well. That is what this holds.
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
   seedColor: Colors.blue,
