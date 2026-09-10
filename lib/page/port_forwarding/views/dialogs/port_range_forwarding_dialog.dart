@@ -216,6 +216,13 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           // the protocol label below and 1.x's own range headings.
           AppText.bodyMedium(loc(context).startEndPorts),
           AppGap.sm(),
+          // NOTE: `keyboardType` is NOT passed here — `AppRangeInput` (ui_kit
+          // v3.2.0) exposes no `keyboardType` parameter and does not hardcode a
+          // numeric keyboard internally (its inner TextField/AppTextField leave
+          // keyboardType at the default). The pre-#1081 individual AppTextFields
+          // used `keyboardType: TextInputType.number`; that capability can only
+          // return once ui_kit's AppRangeInput adds the parameter. Range bounds
+          // are still enforced by _validate().
           AppRangeInput(
             startController: _extPortStartController,
             endController: _extPortEndController,
