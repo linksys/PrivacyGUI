@@ -206,22 +206,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
             // gate used to, and the shell holds no condition either way.
             surface.assistanceBanner() ?? const SizedBox.shrink(),
             Expanded(
-              child: NotificationListener<UserScrollNotification>(
-                onNotification: (notification) {
-                  final direction = notification.direction;
-                  if (direction == ScrollDirection.reverse) {
-                    // Scrolling down → hide bars
-                    ref.read(uspBarsVisibleProvider.notifier).state = false;
-                    ref.read(uspMenuController).setMenuVisible(false);
-                  } else if (direction == ScrollDirection.forward) {
-                    // Scrolling up → show bars
-                    ref.read(uspBarsVisibleProvider.notifier).state = true;
-                    ref.read(uspMenuController).setMenuVisible(true);
-                  }
-                  return false;
-                },
-                child: widget.child,
-              ),
+              child: BarsVisibilityScrollListener(child: widget.child),
             ),
           ],
         ),
@@ -299,6 +284,121 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
           type: MenuDisplay.bottom,
           controllerProvider: uspMenuController,
         ),
+      ),
+    );
+  }
+}
+
+/// Hides the top bar and the menu rail while the page scrolls down, and brings
+/// them back when it scrolls up — or when it returns to the top by any other
+/// means (#1032).
+///
+/// A widget of its own, mounted by the shell, so both rules can be driven from a
+/// test: the shell itself needs a dozen providers before it will build, and the
+/// rules are the part that has been wrong.
+///
+/// ## The two rules, and why the second one exists
+///
+/// Direction alone was the whole rule, and it is a *latch*: "hidden" persists
+/// until something scrolls up. Nothing in it relates to where the page actually
+/// is, so any event that returns the page to the top without a scroll gesture
+/// leaves the bars hidden over a page that is already at its first row — and
+/// there is then no way to scroll up out of it, because
+/// `ScrollPositionWithSingleContext.pointerScroll` returns before it updates the
+/// direction when the target offset equals the current one. A wheel at the top
+/// emits nothing at all, which is why #1032's reporter had to scroll down first
+/// and then up.
+///
+/// Two things reset the offset like that. The edit-mode toggle used to, and is
+/// fixed where it happens (`_gridScrollOffset` in
+/// `usp_sliver_dashboard_view.dart`); a window
+/// resize that crosses a breakpoint still does, deliberately — the dashboard
+/// withholds the grid for the frame it is a breakpoint behind, and a frame with
+/// no grid has no scroll extent to hold a position in. So the second rule is here
+/// rather than at either site: *arriving* at the top shows the bars, whatever
+/// moved the page there.
+///
+/// ## Why arriving, and not merely being there
+///
+/// The transition is what is watched, not the offset. A drag that starts at the
+/// top reports `reverse` before the first pixel moves — the bars hide, and the
+/// page is still at 0 for that instant. A rule reading "at the top ⇒ visible"
+/// would undo the hide on the next notification and the bars would never hide on
+/// a touch drag at all. Only a move from somewhere else *to* the top counts.
+class BarsVisibilityScrollListener extends ConsumerStatefulWidget {
+  const BarsVisibilityScrollListener({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<BarsVisibilityScrollListener> createState() =>
+      _BarsVisibilityScrollListenerState();
+}
+
+class _BarsVisibilityScrollListenerState
+    extends ConsumerState<BarsVisibilityScrollListener> {
+  /// Where the page's own viewport last reported itself, so the arrival at the
+  /// top can be told from having been there all along.
+  ///
+  /// Null until the first notification: a page that opens at the top has not
+  /// arrived anywhere, and the bars are visible already.
+  ///
+  /// Not cleared on a route change, and it does not need to be: the shell keeps
+  /// this listener across them, so the first notification from the next page's
+  /// viewport reads as an arrival from wherever the last one had got to — which
+  /// is the answer the route's own reset already gives (`route_usp_dashboard`),
+  /// for every page rather than just the dashboard.
+  double? _lastPixels;
+
+  void _setVisible(bool visible) {
+    ref.read(uspBarsVisibleProvider.notifier).state = visible;
+    ref.read(uspMenuController).setMenuVisible(visible);
+  }
+
+  /// Records the page viewport's position, and shows the bars if it just came
+  /// back to the top.
+  ///
+  /// `depth == 0` keeps this to the page's own viewport: a list inside a card
+  /// reports its own offset, which is nothing to do with where the page is. The
+  /// axis check is the same filter for a horizontal strip at page level.
+  void _observePosition(ScrollMetrics metrics, int depth) {
+    if (depth != 0 || metrics.axis != Axis.vertical) return;
+
+    final previous = _lastPixels;
+    _lastPixels = metrics.pixels;
+    final arrivedAtTop = previous != null &&
+        previous > metrics.minScrollExtent &&
+        metrics.pixels <= metrics.minScrollExtent;
+    if (arrivedAtTop) _setVisible(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Two listeners because the reset does not always come with a scroll:
+    // `ScrollMetricsNotification` is not a `ScrollNotification`, and it is the
+    // only thing dispatched when a viewport loses its extent and the position is
+    // corrected to the top under it.
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) {
+        _observePosition(notification.metrics, notification.depth);
+        return false;
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is UserScrollNotification) {
+            final direction = notification.direction;
+            if (direction == ScrollDirection.reverse) {
+              // Scrolling down → hide bars
+              _setVisible(false);
+            } else if (direction == ScrollDirection.forward) {
+              // Scrolling up → show bars
+              _setVisible(true);
+            }
+          }
+          _observePosition(notification.metrics, notification.depth);
+          return false;
+        },
+        child: widget.child,
       ),
     );
   }

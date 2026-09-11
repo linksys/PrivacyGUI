@@ -99,6 +99,51 @@ class _UspSliverDashboardViewState
   /// Whether a removal confirmation is already on screen — see [_confirmRemoval].
   bool _confirmingRemoval = false;
 
+  /// Where the grid was scrolled to, so the edit-mode toggle can put it back
+  /// (#1032).
+  ///
+  /// Entering or leaving edit mode remounts the scroll view, twice over. The
+  /// overlay is handed a non-null `gridStyle` and answers by inserting a
+  /// grid-background child at the *front* of its own `Stack`, so the content
+  /// child moves from index 0 to index 1 and — nothing there being keyed — is
+  /// matched by index and inflated again one slot down; independently,
+  /// [CardFormToolbarLayer] starts wrapping the grid, which changes the tree
+  /// shape above the same `Scrollable` (the note on the `ScrollController`
+  /// below is about that one). Either is enough on its own: a fresh `Scrollable`
+  /// is a fresh `ScrollPosition` at offset 0, so the grid silently jumped back
+  /// to the top. The top bar stayed hidden with it, because
+  /// `uspBarsVisibleProvider` is a latch fed only by scroll *direction* and a
+  /// remount emits no direction notification for it to read — that half is fixed
+  /// in `BarsVisibilityScrollListener`.
+  ///
+  /// So the position is remembered and handed to the next build's controller as
+  /// its `initialScrollOffset`, which the new `ScrollPosition` starts at. A plain
+  /// rebuild does not consult it — `ScrollableState.didUpdateWidget` re-attaches
+  /// the existing position to the new controller — so this only takes effect on
+  /// the remount it is here for.
+  ///
+  /// ## Why not a `GlobalKey` on the scroll view
+  ///
+  /// It looks like the right tool, and it works: a keyed element is *moved* to
+  /// its new slot instead of rebuilt, so one `ScrollPosition` survives. But
+  /// moving a subtree this size out from under the semantics tree trips a
+  /// framework assert on the next `flushSemantics`:
+  ///
+  /// ```
+  /// 'identical(childRenderObject, parentRenderObject)': is not true.
+  /// _SemanticsGeometry.computeChildGeometry
+  /// _RenderObjectSemantics._updateChildGeometry
+  /// PipelineOwner.flushSemantics
+  /// ```
+  ///
+  /// Found by the dashboard golden test, which pumps with semantics on:
+  /// `edit_mode - phone480` threw where it had passed, and no diff image was
+  /// written because it never got as far as comparing pixels. Debug-only as an
+  /// assert, but the geometry it is asserting about is what a screen reader is
+  /// handed, so it is not test-only. Remembering an offset asks the framework
+  /// for nothing it objects to.
+  double _gridScrollOffset = 0;
+
   @override
   void initState() {
     super.initState();
@@ -373,7 +418,23 @@ class _UspSliverDashboardViewState
     // is left with no positions and collected. What it costs is that nothing may
     // hold one across a build — see the same note on [CardFormToolbarLayer],
     // which is why the toolbar reads the offset from scroll notifications.
-    final scrollController = ScrollController();
+    // `initialScrollOffset` is what carries the position across the remounts
+    // described on [_gridScrollOffset]; the listener is what keeps it current.
+    // Both are safe on a per-build instance: only the controller the newest build
+    // handed the `Scrollable` holds the live position, because `didUpdateWidget`
+    // detaches it from the previous one, and a detached controller never fires
+    // again.
+    final scrollController =
+        ScrollController(initialScrollOffset: _gridScrollOffset);
+    scrollController.addListener(() {
+      // No `setState`: this is a memo for the next build, not something this one
+      // renders. `hasClients` because a controller with no position throws on
+      // `offset`, and during a remount the outgoing one is momentarily in that
+      // state.
+      if (scrollController.hasClients) {
+        _gridScrollOffset = scrollController.offset;
+      }
+    });
 
     final editModeGridStyle = GridStyle(
       lineColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
