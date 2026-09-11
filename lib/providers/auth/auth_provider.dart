@@ -14,6 +14,7 @@ import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/device_token_store.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
@@ -401,8 +402,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pLocalPassword);
       await storage.delete(key: pUsername);
       await storage.delete(key: pUserPassword);
-      await storage.delete(key: pLinksysToken);
-      await storage.delete(key: pLinksysTokenTs);
+      await const DeviceTokenStore().clear();
 
       // RA sessions
       bool raMode = prefs.getBool(pRAMode) ?? false;

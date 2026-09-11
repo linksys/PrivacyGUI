@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/remote_assistance/end_remote_assistance_and_logout.dart';
 import 'package:privacy_gui/page/components/styled/remote_assistance/remote_assistance_dialog.dart';
 import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/brand_asset_provider.dart';
@@ -237,10 +238,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           actions: [
             AppTextButton(
               loc(context).ok,
-              onTap: () {
+              onTap: () async {
                 context.pop();
-                ref.read(remoteClientProvider.notifier).endRemoteAssistance();
-                ref.read(authProvider.notifier).logout();
+                await endRemoteAssistanceAndLogout(ref);
               },
             )
           ],

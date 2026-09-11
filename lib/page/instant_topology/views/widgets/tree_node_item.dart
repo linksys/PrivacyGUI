@@ -344,10 +344,13 @@ class SimpleTreeNodeItem extends StatelessWidget {
           : Theme.of(context).colorScheme.surfaceVariant,
       onTap: onTap,
       child: Container(
+        // With an action menu the card is sized by its content: the menu is a
+        // fixed 72 and the info row's own height depends on the text theme, so
+        // a hard maxHeight here just clipped the row (10px on a 480w screen).
         constraints: BoxConstraints(
             minWidth: 180,
             maxWidth: 300,
-            maxHeight: actions.isEmpty ? 92 : 150),
+            maxHeight: actions.isEmpty ? 92 : double.infinity),
         padding: node.data.isOnline && actions.isNotEmpty
             ? EdgeInsets.only(
                 top: Spacing.medium,
@@ -358,51 +361,49 @@ class SimpleTreeNodeItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    alignment: Alignment.centerRight,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.centerRight,
+                  children: [
+                    SharedWidgets.resolveRouterImage(context, node.data.icon,
+                        size: 64),
+                  ],
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SharedWidgets.resolveRouterImage(context, node.data.icon,
-                          size: 64),
-                    ],
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AppText.titleMedium(
-                          node.data.location,
+                      AppText.titleMedium(
+                        node.data.location,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      AppText.bodySmall(node.data.isOnline
+                          ? loc(context)
+                              .nDevices(node.data.connectedDeviceCount)
+                          : loc(context).offline),
+                      if (extra != null)
+                        AppText.bodySmall(
+                          extra!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        AppText.bodySmall(node.data.isOnline
-                            ? loc(context)
-                                .nDevices(node.data.connectedDeviceCount)
-                            : loc(context).offline),
-                        if (extra != null)
-                          AppText.bodySmall(
-                            extra!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: Spacing.small2),
-                    child: SharedWidgets.resolveSignalStrengthIcon(
-                      context,
-                      node.data.signalStrength,
-                      isOnline: node.data.isOnline,
-                      isWired: node.data.isWiredConnection,
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: Spacing.small2),
+                  child: SharedWidgets.resolveSignalStrengthIcon(
+                    context,
+                    node.data.signalStrength,
+                    isOnline: node.data.isOnline,
+                    isWired: node.data.isWiredConnection,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             if (node.data.isOnline && actions.isNotEmpty) ...[
               const AppGap.medium(),

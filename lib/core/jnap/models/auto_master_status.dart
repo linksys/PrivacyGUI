@@ -21,7 +21,17 @@ enum AutoMasterStatus {
     };
   }
 
-  static AutoMasterStatus? fromValue(String? value) {
+  /// Maps a raw JNAP `autoMasterStatus` payload to a status, or `null` for
+  /// anything unrecognized.
+  ///
+  /// Takes [Object?] rather than [String?] on purpose: callers pass
+  /// `result.output['autoMasterStatus']` straight from a decoded JSON map, and
+  /// an `as String?` cast there would throw a `TypeError` on an unexpected
+  /// payload type. `scheduledCommand` does not catch `TypeError`, so that would
+  /// escape the polling stream and strand the waiting spinner. A non-String
+  /// value simply misses every case below and yields `null`, which the callers
+  /// already handle as "status unavailable".
+  static AutoMasterStatus? fromValue(Object? value) {
     return switch (value) {
       'Idle' => AutoMasterStatus.idle,
       'Running' => AutoMasterStatus.running,
@@ -41,8 +51,7 @@ class GetAutoMasterStatusResponse extends Equatable {
 
   factory GetAutoMasterStatusResponse.fromMap(Map<String, dynamic> map) {
     return GetAutoMasterStatusResponse(
-      autoMasterStatus:
-          AutoMasterStatus.fromValue(map['autoMasterStatus'] as String?),
+      autoMasterStatus: AutoMasterStatus.fromValue(map['autoMasterStatus']),
     );
   }
 
