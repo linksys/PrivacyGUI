@@ -32,7 +32,15 @@ class PortRangeForwardingDialogResult {
 class PortRangeForwardingDialog extends StatefulWidget {
   final PortForwardingRuleUIModel? rule;
 
-  const PortRangeForwardingDialog({super.key, this.rule});
+  /// LAN devices offered by the IP field's autocomplete. Empty is legal — the
+  /// field stays a plain text input, which is what it was before #1081.
+  final List<AppAutoCompleteOption> deviceOptions;
+
+  const PortRangeForwardingDialog({
+    super.key,
+    this.rule,
+    this.deviceOptions = const [],
+  });
 
   @override
   State<PortRangeForwardingDialog> createState() =>
@@ -189,60 +197,78 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
         // CrossAxisAlignment.center and sit indented from the fields (#1261).
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTextField(
+          // `AppTextFormField(label:)`, not `AppTextField(hintText:)` — see the
+          // note in `port_forwarding_dialog.dart`. The name persists while you
+          // type, and it is the 1.x word rather than the TR-181 one (#1081).
+          AppTextFormField(
             controller: _descController,
             focusNode: _descFocus,
             identifier: 'pf-range-description',
-            hintText: loc(context).description,
-            errorText: _localizeError(_errors['description']),
+            label: loc(context).applicationName,
+            externalErrorText: _localizeError(_errors['description']),
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  controller: _extPortStartController,
-                  focusNode: _extPortStartFocus,
-                  identifier: 'pf-range-external-port-start',
-                  hintText: loc(context).externalPortStart,
-                  keyboardType: TextInputType.number,
-                  errorText: _localizeError(_errors['extStart']),
-                  onChanged: (_) => _onInputChanged(),
-                ),
-              ),
-              AppGap.md(),
-              Expanded(
-                child: AppTextField(
-                  controller: _extPortEndController,
-                  focusNode: _extPortEndFocus,
-                  identifier: 'pf-range-external-port-end',
-                  hintText: loc(context).externalPortEnd,
-                  keyboardType: TextInputType.number,
-                  errorText: _localizeError(_errors['extEnd']),
-                  onChanged: (_) => _onInputChanged(),
-                ),
-              ),
-            ],
+          // The start/end pair is one range, so it gets one group label and the
+          // ui_kit range control rather than two independently-named fields.
+          // `AppRangeInput` renders `startLabel`/`endLabel` as hints and has no
+          // label slot, so the group label sits above it — `labelLarge` to match
+          // `triggeredRange`/`forwardedRange` in port_triggering_dialog.dart:228,276.
+          // Both are the group heading above an `AppRangeInput`, reached from
+          // adjacent tabs of one page, so one semantic element gets one type ramp:
+          // a section heading, ranked above the field labels (bodyMedium) below it.
+          // Austin's call (#1081 review) — on an issue about naming consistency,
+          // two ramps for one element worked against the goal.
+          AppText.labelLarge(loc(context).startEndPorts),
+          AppGap.sm(),
+          // NOTE: `keyboardType` is NOT passed here — `AppRangeInput` (ui_kit
+          // v3.2.0) exposes no `keyboardType` parameter and does not hardcode a
+          // numeric keyboard internally (its inner TextField/AppTextField leave
+          // keyboardType at the default). The pre-#1081 individual AppTextFields
+          // used `keyboardType: TextInputType.number`; that capability can only
+          // return once ui_kit's AppRangeInput adds the parameter. Range bounds
+          // are still enforced by _validate().
+          AppRangeInput(
+            startController: _extPortStartController,
+            endController: _extPortEndController,
+            startFocusNode: _extPortStartFocus,
+            endFocusNode: _extPortEndFocus,
+            startLabel: loc(context).startPort,
+            endLabel: loc(context).endPort,
+            startIdentifier: 'pf-range-external-port-start',
+            endIdentifier: 'pf-range-external-port-end',
+            // One error slot for the pair: "end must be greater than start" is a
+            // fact about the range, not about either box on its own.
+            errorText: _localizeError(_errors['extStart'] ?? _errors['extEnd']),
+            onChanged: (_, __) => _onInputChanged(),
           ),
           AppGap.lg(),
-          AppTextField(
+          AppTextFormField(
             controller: _intPortController,
             focusNode: _intPortFocus,
             identifier: 'pf-range-internal-port',
-            hintText: loc(context).internalPort,
+            label: loc(context).internalPort,
             keyboardType: TextInputType.number,
-            errorText: _localizeError(_errors['intPort']),
+            externalErrorText: _localizeError(_errors['intPort']),
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
-          AppTextField(
+          // Same device picker the single-port dialog has had since #1172: the
+          // two dialogs write the same TR-181 field, so typing the IP by hand in
+          // one and picking a device in the other was a gap, not a design.
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
             controller: _intClientController,
-            focusNode: _intClientFocus,
-            identifier: 'pf-range-internal-ip',
-            hintText: loc(context).internalIpHint,
-            errorText: _localizeError(_errors['client']),
-            onChanged: (_) => _onInputChanged(),
+            onSelected: (_) => _validate(),
+            child: AppTextFormField(
+              controller: _intClientController,
+              focusNode: _intClientFocus,
+              identifier: 'pf-range-internal-ip',
+              label: loc(context).ipAddress,
+              hintText: loc(context).ipAddressHint,
+              externalErrorText: _localizeError(_errors['client']),
+              onChanged: (_) => _onInputChanged(),
+            ),
           ),
           AppGap.lg(),
           // Stack the protocol label above the segmented control (Column, not a
@@ -258,8 +284,8 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
               AppGap.sm(),
               SegmentedButton<String>(
                 segments: [
-                  const ButtonSegment(value: 'TCP', label: Text('TCP')),
-                  const ButtonSegment(value: 'UDP', label: Text('UDP')),
+                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
                   ButtonSegment(value: 'Both', label: Text(loc(context).both)),
                 ],
                 selected: {_protocol},
