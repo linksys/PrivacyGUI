@@ -112,6 +112,18 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                 ),
                 const AppGap.small1(),
                 ISPTypeCard(
+                  title: 'IPoE',
+                  description: loc(context).autoIpoePnpDescription,
+                  isCurrentlyApplying: wanType == WanType.ipoe,
+                  tapAction: wanType == WanType.ipoe
+                      ? null
+                      : () {
+                          logger.i('[PnP]: Troubleshooter - Go to IPoE page');
+                          context.goNamed(RouteNamed.pnpIPoE);
+                        },
+                ),
+                const AppGap.small1(),
+                ISPTypeCard(
                   title: loc(context).connectionTypePppoe,
                   description: loc(context).pnpIspTypeSelectionPppoeDesc,
                   isCurrentlyApplying: (wanType == WanType.pppoe && !_hasVLan),

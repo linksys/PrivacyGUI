@@ -106,6 +106,7 @@ class RoutePath {
   static const pnpModemLightsOff = 'pnpModemLightsOff';
   static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
+  static const pnpIPoE = 'pnpIPoE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
@@ -248,6 +249,7 @@ class RouteNamed {
   static const pnpModemLightsOff = 'pnpModemLightsOff';
   static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
+  static const pnpIPoE = 'pnpIPoE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';

@@ -5,6 +5,9 @@ import 'package:privacy_gui/di.dart';
 final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
+  bool isSupportAutoIPoE([List<String>? services]) =>
+      isServiceSupport(JNAPService.autoIPoE, services);
+
   bool isSupportVPN([List<String>? services]) =>
       isServiceSupport(JNAPService.vpn, services);
 

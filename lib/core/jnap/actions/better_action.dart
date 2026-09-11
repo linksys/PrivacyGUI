@@ -43,6 +43,10 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.core7:
       _betterActionMap[JNAPAction.checkAdminPassword] =
           _JNAPActionValue.checkAdminPassword3.value;
+      _betterActionMap[JNAPAction.pnpCheckAdminPassword] =
+          _JNAPActionValue.checkAdminPassword3.value;
+      _betterActionMap[JNAPAction.pnpSetAdminPassword] =
+          _JNAPActionValue.coreSetAdminPassword3.value;
       _betterActionMap[JNAPAction.coreSetAdminPassword] =
           _JNAPActionValue.coreSetAdminPassword3.value;
       break;
@@ -260,6 +264,8 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.routerManagement3:
       break;
     case JNAPService.routerUPnP:
+      break;
+    case JNAPService.autoIPoE:
       break;
     case JNAPService.setup:
       break;
@@ -720,6 +726,20 @@ void initBetterActions() {
       _JNAPActionValue.getUPnPSettings.value;
   _betterActionMap[JNAPAction.setUPnPSettings] =
       _JNAPActionValue.setUPnPSettings.value;
+  _betterActionMap[JNAPAction.getAutoIPoECapabilities] =
+      _JNAPActionValue.getAutoIPoECapabilities.value;
+  _betterActionMap[JNAPAction.getAutoIPoESettings] =
+      _JNAPActionValue.getAutoIPoESettings.value;
+  _betterActionMap[JNAPAction.setAutoIPoESettings] =
+      _JNAPActionValue.setAutoIPoESettings.value;
+  _betterActionMap[JNAPAction.applyAutoIPoE] =
+      _JNAPActionValue.applyAutoIPoE.value;
+  _betterActionMap[JNAPAction.getAutoIPoEStatus] =
+      _JNAPActionValue.getAutoIPoEStatus.value;
+  _betterActionMap[JNAPAction.getAutoIPoELog] =
+      _JNAPActionValue.getAutoIPoELog.value;
+  _betterActionMap[JNAPAction.resetAutoIPoE] =
+      _JNAPActionValue.resetAutoIPoE.value;
   // vpn
   _betterActionMap[JNAPAction.getVPNUser] = _JNAPActionValue.getVPNUser.value;
   _betterActionMap[JNAPAction.setVPNUser] = _JNAPActionValue.setVPNUser.value;

@@ -37,6 +37,62 @@ import 'package:shared_preferences/shared_preferences.dart';
 final pnpProvider =
     NotifierProvider<BasePnpNotifier, PnpState>(() => PnpNotifier());
 
+const pnpReconnectInitialDelay = Duration(seconds: 8);
+const pnpReconnectRetryDelay = Duration(seconds: 3);
+const pnpReconnectMaxAttempts = 14;
+const pnpReconnectDeadline = Duration(seconds: 90);
+
+// Retry only readiness checks after a save has interrupted local networking.
+// The caller keeps the accepted transaction latched; this never saves again.
+Future<bool> waitForPnpPostSaveReconnect({
+  required Future<void> Function() probe,
+  Duration initialDelay = pnpReconnectInitialDelay,
+  Duration retryDelay = pnpReconnectRetryDelay,
+  int maxAttempts = pnpReconnectMaxAttempts,
+  Future<void> Function(Duration)? delay,
+  bool Function()? shouldContinue,
+  bool Function(Object)? shouldRetry,
+}) async {
+  assert(maxAttempts > 0);
+  final wait = delay ?? Future<void>.delayed;
+  if (initialDelay > Duration.zero) await wait(initialDelay);
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (shouldContinue?.call() == false) return false;
+    try {
+      await probe();
+      return shouldContinue?.call() != false;
+    } catch (error) {
+      if (shouldRetry?.call(error) == false) rethrow;
+      if (attempt + 1 == maxAttempts) return false;
+    }
+    await wait(retryDelay);
+  }
+  return false;
+}
+
+bool isExpectedPnpRouter(String? expectedSerial, String? actualSerial) {
+  final expected = expectedSerial?.trim();
+  final actual = actualSerial?.trim();
+  return expected?.isNotEmpty == true && expected == actual;
+}
+
+List<String> pnpPostSaveAdminPasswordCandidates({
+  required String? currentPassword,
+  required String? wifiPassword,
+  required bool didSetAdminPassword,
+}) {
+  final candidates = <String>[];
+  if (currentPassword?.isNotEmpty == true) {
+    candidates.add(currentPassword!);
+  }
+  if (didSetAdminPassword &&
+      wifiPassword?.isNotEmpty == true &&
+      !candidates.contains(wifiPassword)) {
+    candidates.add(wifiPassword!);
+  }
+  return candidates;
+}
+
 abstract class BasePnpNotifier extends Notifier<PnpState> {
   @override
   PnpState build() => const PnpState(
@@ -95,6 +151,8 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future<bool> isRouterPasswordSet();
   Future fetchData();
   Future save();
+  Future<void> acknowledgeAutoConfigurationIfNeeded() => Future<void>.value();
+  bool get didSetAdminPasswordDuringSave => false;
   Future testConnectionReconnected();
   Future fetchDevices();
   void setForceLogin(bool force);
@@ -258,6 +316,14 @@ class MockPnpNotifier extends BasePnpNotifier {
 }
 
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
+  bool _acknowledgementNeededAfterMaster = false;
+  bool _acknowledgementCompleted = false;
+  bool _didSetAdminPasswordDuringSave = false;
+  Future<void>? _acknowledgementOperation;
+
+  @override
+  bool get didSetAdminPasswordDuringSave => _didSetAdminPasswordDuringSave;
+
   @override
   Future fetchDeviceInfo([bool clearCurrentSN = true]) async {
     final deviceInfo = await ref
@@ -529,6 +595,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     // processing data
     final defaultWiFiSettings = getDefaultWiFiSettings();
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
+    // A first-boot hook may already have imported the device passphrase. Do
+    // not replace that user-set password with the WiFi password during PnP.
+    final preserveExistingAdminPassword =
+        state.isRouterUnConfigured && await isRouterPasswordSet();
+    final didSetAdminPassword =
+        state.isRouterUnConfigured && !preserveExistingAdminPassword;
+    _didSetAdminPasswordDuringSave = didSetAdminPassword;
     // if configured call setUserAcknowledgedAutoConfiguration else call setAdminPassword
     final closeCommand = state.isRouterUnConfigured
         ? JNAPAction.pnpSetAdminPassword
@@ -536,6 +609,16 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final closeData = state.isRouterUnConfigured
         ? {'adminPassword': defaultWiFiSettings.primaryRadio?.password ?? ''}
         : <String, dynamic>{};
+    final autoConfigurationData =
+        getData(JNAPAction.getAutoConfigurationSettings);
+    final autoConfiguration = autoConfigurationData == null
+        ? null
+        : AutoConfigurationSettings.fromMap(autoConfigurationData);
+    final acknowledgeAfterMaster = state.isRouterUnConfigured &&
+        autoConfiguration?.isAutoConfigurationSupported == true &&
+        autoConfiguration?.userAcknowledgedAutoConfiguration != true;
+    _acknowledgementNeededAfterMaster = acknowledgeAfterMaster;
+    _acknowledgementCompleted = !acknowledgeAfterMaster;
     // personal wifi
     final wifiStateData = getStepState(PersonalWiFiStep.id).data;
     final isSplitMode = wifiStateData['isSplitMode'] as bool? ?? false;
@@ -659,11 +742,11 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
       if (state.isRouterUnConfigured)
         const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'}),
-      MapEntry(closeCommand, closeData),
+      if (!preserveExistingAdminPassword) MapEntry(closeCommand, closeData),
     ], auth: true);
+    final repo = ref.read(routerRepositoryProvider);
 
-    return ref
-        .read(routerRepositoryProvider)
+    return repo
         .transaction(
           transaction,
           fetchRemote: true,
@@ -673,7 +756,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         )
         .catchError((error) {
           // Connection error,
-          logger.d('[PnP]: Connection changed. Need to reconnect to the WiFi');
+          logger.d('[PnP]: Local connection changed while saving');
           throw ExceptionNeedToReconnect();
         },
             test: (error) =>
@@ -687,10 +770,58 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         })
         .then((_) async => await Future.delayed(const Duration(seconds: 3)))
         .then((_) => testConnectionReconnected())
-        .then((_) =>
-            checkAdminPassword(defaultWiFiSettings.primaryRadio?.password))
+        .then((_) {
+          if (!didSetAdminPassword) {
+            if (preserveExistingAdminPassword) {
+              logger.i(
+                '[PnP]: Preserving the existing user-set admin password',
+              );
+            }
+            return Future<void>.value();
+          }
+          return checkAdminPassword(defaultWiFiSettings.primaryRadio?.password)
+              .onError((error, stackTrace) {
+            if (error is ExceptionInvalidAdminPassword) {
+              throw error;
+            }
+            // GetDeviceInfo can return before authenticated JNAP services are
+            // ready after the LAN restart. Let the reconnect flow retry the
+            // existing save rather than offering to submit it again.
+            throw ExceptionNeedToReconnect();
+          });
+        })
         .whenComplete(() => prefs.remove(pPnpConfiguredSN));
     // return Future.delayed(Duration(seconds: 5));
+  }
+
+  @override
+  Future<void> acknowledgeAutoConfigurationIfNeeded() {
+    if (!_acknowledgementNeededAfterMaster || _acknowledgementCompleted) {
+      return Future<void>.value();
+    }
+
+    return _acknowledgementOperation ??=
+        _performAutoConfigurationAcknowledgement()
+            .whenComplete(() => _acknowledgementOperation = null);
+  }
+
+  Future<void> _performAutoConfigurationAcknowledgement() async {
+    try {
+      // The original SetDeviceMode transaction and its side effects have
+      // completed before this is called. The acknowledgement action is valid
+      // only after the device is Master, so it must remain a separate call.
+      await ref.read(routerRepositoryProvider).send(
+            JNAPAction.setUserAcknowledgedAutoConfiguration,
+            auth: true,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+            retries: 3,
+          );
+      _acknowledgementCompleted = true;
+      _acknowledgementNeededAfterMaster = false;
+    } catch (error) {
+      throw ExceptionSavingChanges(error);
+    }
   }
 
   @override
@@ -701,6 +832,11 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     // exhausts its budget, so it must not hinge on a single packet: retry a
     // couple of times before condemning the connection. A router that is still
     // finishing its restart answers on the second or third try.
+    //
+    // It is also deliberately a LAN reachability check, not a WAN connectivity
+    // check. The PnP flow already confirmed the Internet connection before the
+    // final save restarted local networking.
+    final expectedSerial = state.deviceInfo?.serialNumber;
     final result = await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getDeviceInfo,
@@ -713,9 +849,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       throw ExceptionNeedToReconnect();
     });
     final deviceInfo = NodeDeviceInfo.fromJson(result.output);
-    final isConnected =
-        state.deviceInfo?.serialNumber == deviceInfo.serialNumber;
-    if (!isConnected) {
+    if (!isExpectedPnpRouter(expectedSerial, deviceInfo.serialNumber)) {
       throw ExceptionNeedToReconnect();
     }
     return;

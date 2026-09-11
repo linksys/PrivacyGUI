@@ -19,7 +19,9 @@ Future<T?> doSomethingWithSpinner<T>(
   BuildContext context,
   Future<T> task, {
   Widget? icon,
+  Widget? loadingWidget,
   String? title,
+  TextAlign? titleTextAlign,
   List<String>? messages,
   Duration? period,
 }) async {
@@ -31,7 +33,9 @@ Future<T?> doSomethingWithSpinner<T>(
       showAppSpinnerDialog(
         context,
         title: title,
+        titleTextAlign: titleTextAlign,
         icon: icon,
+        loadingWidget: loadingWidget,
         messages: messages ?? [loc(context).processing],
         period: period,
       );
@@ -61,6 +65,7 @@ Future<T?> showAppSpinnerDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
+  TextAlign? titleTextAlign,
   Widget? loadingWidget,
   double? width,
   List<String> messages = const [],
@@ -73,7 +78,9 @@ Future<T?> showAppSpinnerDialog<T>(
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
         int currentIndex = 0;
-        final stream = Stream.periodic(period ?? const Duration(seconds: 3))
+        final stream = messages.isEmpty
+            ? const Stream<String>.empty()
+            : Stream.periodic(period ?? const Duration(seconds: 3))
             .map((_) => messages[currentIndex++ % messages.length]);
 
         return StreamBuilder<String>(
@@ -85,7 +92,10 @@ Future<T?> showAppSpinnerDialog<T>(
                 title: title != null
                     ? SizedBox(
                         width: width ?? kDefaultDialogWidth,
-                        child: AppText.titleLarge(title))
+                        child: AppText.titleLarge(
+                          title,
+                          textAlign: titleTextAlign,
+                        ))
                     : null,
                 content: SizedBox(
                   width: width ?? kDefaultDialogWidth,

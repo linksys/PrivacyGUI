@@ -27,6 +27,7 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_flow.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
@@ -36,7 +37,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -65,7 +65,10 @@ class PnpSetupView extends ConsumerStatefulWidget {
 
 class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     with PageSnackbarMixin, PnpAutoMasterFlowMixin<PnpSetupView> {
-  late final List<PnpStep> steps;
+  // Defaulted rather than `late final`: `dispose()` iterates this, and the
+  // assignment in initState only happens after fetchData succeeds, so a fetch
+  // error used to make disposal throw a LateInitializationError.
+  List<PnpStep> steps = const [];
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
   String _loadingMessage = '';
   String _loadingMessageSub = '';
@@ -76,7 +79,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _forceLogin = false;
   bool _fetchError = false;
   bool _showAutoMasterConnectionError = false;
-  bool _wifiVerificationRetried = false; // Prevent infinite loop in WiFi verification
+  bool _wifiVerificationRetried =
+      false; // Prevent infinite loop in WiFi verification
+  bool _saveStarted = false;
+  bool _firmwareCheckStarted = false;
+  bool _reconnectChecking = false;
+  bool _reconnectTimedOut = false;
+  bool _reconnectWasUnconfigured = false;
+  bool _reconnectCompleted = false;
+  bool _reconnectProbePending = false;
+  List<String>? _postSavePasswordCandidates;
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -118,10 +130,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
   @override
   void dispose() {
-    super.dispose();
     for (var element in steps) {
       element.onDispose();
     }
+    super.dispose();
   }
 
   @override
@@ -608,124 +620,250 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                LinksysIcons.wifi,
-                semanticLabel: 'wifi icon',
+                LinksysIcons.router,
+                semanticLabel: 'router icon',
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),
               const AppGap.medium(),
-              AppText.headlineSmall(loc(context).pnpReconnectWiFi),
+              AppText.headlineSmall(_reconnectTimedOut
+                  ? loc(context).pnpRouterReconnectTimeoutTitle
+                  : loc(context).pnpRouterReconnectTitle),
+              const AppGap.medium(),
+              AppText.bodyLarge(_reconnectTimedOut
+                  ? (_reconnectProbePending
+                      ? loc(context).pnpRouterReconnectPendingDesc
+                      : loc(context).pnpRouterReconnectTimeoutDesc)
+                  : loc(context).pnpRouterReconnectDesc),
               const AppGap.large5(),
-              AppFilledButtonWithLoading(
-                loc(context).next,
-                onTap: () async {
-                  logger.d('[PnP]: Tap Next to check the WiFi reconnection');
-                  await testConnection(success: () async {
-                    // Use showYourNetwork to handle both Unconfigured and AutoParent
-                    final showYourNetwork = _isUnconfigured || !_isPrePaired;
-                    logger.i(
-                        '[PnP]: The customized WiFi has been reconnected - isUnconfigured=$_isUnconfigured, isPrePaired=$_isPrePaired, showYourNetwork=$showYourNetwork');
-
-                    // Verify WiFi settings were applied correctly (only retry once)
-                    if (!_wifiVerificationRetried) {
-                      final wifiData = ref
-                              .read(pnpProvider)
-                              .stepStateList[PersonalWiFiStep.id]
-                              ?.data ??
-                          {};
-                      final isSplitMode =
-                          wifiData['isSplitMode'] as bool? ?? false;
-
-                      // Collect expected SSIDs (support split mode)
-                      Set<String> expectedSSIDs = {};
-                      if (isSplitMode) {
-                        final perBandSettings = wifiData['perBandSettings']
-                                as Map<String, dynamic>? ??
-                            {};
-                        for (final entry in perBandSettings.entries) {
-                          final value =
-                              entry.value as Map<String, dynamic>? ?? {};
-                          final ssid = value['ssid'] as String?;
-                          if (ssid != null && ssid.isNotEmpty) {
-                            expectedSSIDs.add(ssid);
-                          }
-                        }
-                      } else {
-                        final ssid = wifiData['ssid'] as String?;
-                        if (ssid != null && ssid.isNotEmpty) {
-                          expectedSSIDs.add(ssid);
-                        }
-                      }
-
-                      // Only verify if user has set SSID
-                      if (expectedSSIDs.isNotEmpty) {
-                        try {
-                          // Fetch current WiFi settings from router
-                          final radioInfoResult = await ref
-                              .read(routerRepositoryProvider)
-                              .send(
-                                JNAPAction.getRadioInfo,
-                                auth: true,
-                                fetchRemote: true,
-                                cacheLevel: CacheLevel.noCache,
-                              );
-                          final radioInfo =
-                              GetRadioInfo.fromMap(radioInfoResult.output);
-                          final currentSSIDs = radioInfo.radios
-                              .map((r) => r.settings.ssid)
-                              .toSet();
-
-                          // Check if any expected SSID matches current settings
-                          final hasMatch = expectedSSIDs
-                              .any((ssid) => currentSSIDs.contains(ssid));
-
-                          if (!hasMatch) {
-                            logger.w(
-                                '[PnP]: WiFi settings mismatch - expected: $expectedSSIDs, current: $currentSSIDs. Re-saving...');
-                            _wifiVerificationRetried = true;
-                            if (!mounted) return;
-                            await _saveChanges();
-                            return;
-                          }
-                          logger.d('[PnP]: WiFi settings verified - SSID matches');
-                        } catch (e) {
-                          // API call failed, log warning but continue flow
-                          logger.w(
-                              '[PnP]: Failed to verify WiFi settings: $e. Continuing...');
-                        }
-                      }
-                    }
-
-                    final password = ref
-                        .read(pnpProvider.notifier)
-                        .getDefaultWiFiSettings()
-                        .primaryRadio
-                        ?.password;
-                    await ref
-                        .read(pnpProvider.notifier)
-                        .checkAdminPassword(password)
-                        .then((value) => showYourNetwork
-                            ? _stepController?.stepContinue()
-                            : null);
-                    if (showYourNetwork) {
-                      setState(() {
-                        _setupStep = _PnpSetupStep.config;
-                        logger.d(
-                            '[PnP]: WiFi reconnected, showYourNetwork=true. Setup step = config');
-                      });
-                    } else {
-                      logger.d(
-                          '[PnP]: WiFi reconnected, showYourNetwork=false. Setup step = fwCheck');
-                      _doFwUpdateCheck();
-                    }
-                  });
-                },
-              )
+              // No manual Next button: the check below runs itself and this
+              // screen only surfaces its state. Try Again appears solely on the
+              // timeout, and it re-probes -- it never resends the save.
+              if (_reconnectTimedOut)
+                AppFilledButton(
+                  loc(context).tryAgain,
+                  onTap: _reconnectChecking || _reconnectProbePending
+                      ? null
+                      : () => _checkPostSaveReconnect(waitForRestart: false),
+                )
+              else
+                const AppSpinner(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _checkPostSaveReconnect({required bool waitForRestart}) async {
+    if (_reconnectChecking ||
+        _reconnectProbePending ||
+        _reconnectCompleted ||
+        !mounted) return;
+    setState(() {
+      _reconnectChecking = true;
+      _reconnectTimedOut = false;
+    });
+    var acceptingResult = true;
+    // Set when the SSID check below finds the WiFi settings did not take. The
+    // corrective save re-enters this method, which this very call still holds,
+    // so it has to be started from `finally` instead of inline.
+    var resaveAfterMismatch = false;
+    bool onReconnectPage() =>
+        mounted && _setupStep == _PnpSetupStep.needReconnect;
+    bool active() => acceptingResult && onReconnectPage();
+    try {
+      final operation = waitForPnpPostSaveReconnect(
+        initialDelay: waitForRestart ? pnpReconnectInitialDelay : Duration.zero,
+        shouldContinue: active,
+        shouldRetry: (error) => error is! ExceptionInvalidAdminPassword,
+        probe: () async {
+          await ref.read(pnpProvider.notifier).testConnectionReconnected();
+          if (!active()) throw ExceptionNeedToReconnect();
+          await _checkPostSaveAdminPassword(shouldContinue: active);
+          if (!active()) throw ExceptionNeedToReconnect();
+          if (_reconnectWasUnconfigured) {
+            final pnp = ref.read(pnpProvider.notifier);
+            await pnp.checkRouterConfigured();
+            if (!active() || ref.read(pnpProvider).isRouterUnConfigured) {
+              throw ExceptionNeedToReconnect();
+            }
+          }
+        },
+      );
+      _reconnectProbePending = true;
+      // A timed-out request cannot be cancelled here. Do not overlap it with
+      // a new authentication attempt; release Retry only when it settles.
+      void settled() {
+        if (mounted) setState(() => _reconnectProbePending = false);
+      }
+
+      unawaited(
+          operation.then((_) => settled(), onError: (Object _) => settled()));
+      final ready =
+          await operation.timeout(pnpReconnectDeadline, onTimeout: () {
+        acceptingResult = false;
+        throw TimeoutException('PnP router readiness check timed out');
+      });
+      if (!active()) return;
+      if (!ready) {
+        setState(() => _reconnectTimedOut = true);
+        return;
+      }
+      // The router answers and accepts the post-save credentials, but that only
+      // proves it came back -- not that the WiFi settings landed. Verify the
+      // SSID and correct it with one more save if it did not (issue #1006).
+      // Note this keeps `pnpRouterReconnectTimeoutDesc` ("Your settings will
+      // not be sent again") honest: that string belongs to the timeout view,
+      // and Try Again still only re-probes.
+      if (!_wifiVerificationRetried && !await _verifyWifiSettingsApplied()) {
+        if (!active()) return;
+        _wifiVerificationRetried = true;
+        resaveAfterMismatch = true;
+        return;
+      }
+      if (!active()) return;
+      // Advance once, only after this same router accepts the post-save
+      // credentials. No WiFi association, radio or Internet gate is added.
+      _reconnectCompleted = true;
+      _needToReconnect = false;
+      // showYourNetwork, not `_reconnectWasUnconfigured`: AutoParent
+      // (configured but not pre-paired) also has a YourNetwork step to advance
+      // into, and would otherwise skip straight to the firmware check.
+      final showYourNetwork = _isUnconfigured || !_isPrePaired;
+      logger.i(
+          '[PnP]: The router has come back after the save - isUnconfigured=$_isUnconfigured, isPrePaired=$_isPrePaired, showYourNetwork=$showYourNetwork');
+      if (showYourNetwork) {
+        _stepController?.stepContinue();
+        if (mounted) setState(() => _setupStep = _PnpSetupStep.config);
+      } else {
+        logger.d(
+            '[PnP]: Router reconnected, showYourNetwork=false. Setup step = fwCheck');
+        _doFwUpdateCheck();
+      }
+    } catch (error) {
+      if (!onReconnectPage()) return;
+      setState(() => _reconnectTimedOut = true);
+      if (error is! TimeoutException) {
+        showSimpleSnackBar(
+          context,
+          error is ExceptionInvalidAdminPassword
+              ? loc(context).incorrectPassword
+              : describePnpSaveError(error),
+        );
+      }
+    } finally {
+      acceptingResult = false;
+      if (mounted) setState(() => _reconnectChecking = false);
+      if (resaveAfterMismatch && mounted) {
+        unawaited(_resaveAfterWifiMismatch());
+      }
+    }
+  }
+
+  /// Re-runs the save after the SSID check found the WiFi settings did not take.
+  /// Scheduled rather than awaited by its caller, which still holds the
+  /// re-entrancy guard this re-save needs to pass.
+  Future<void> _resaveAfterWifiMismatch() async {
+    try {
+      await _saveChanges(isRetry: true);
+    } catch (error) {
+      logger.e('[PnP]: Re-save after a WiFi settings mismatch failed: $error');
+    }
+  }
+
+  /// Whether the router is now serving the WiFi settings the user entered.
+  ///
+  /// Returns true when there is nothing to compare or the comparison could not
+  /// be made: this gates a *corrective re-save*, so an inconclusive answer must
+  /// never trigger one.
+  Future<bool> _verifyWifiSettingsApplied() async {
+    final wifiData =
+        ref.read(pnpProvider).stepStateList[PersonalWiFiStep.id]?.data ?? {};
+    final isSplitMode = wifiData['isSplitMode'] as bool? ?? false;
+
+    // Collect expected SSIDs (support split mode)
+    Set<String> expectedSSIDs = {};
+    if (isSplitMode) {
+      final perBandSettings =
+          wifiData['perBandSettings'] as Map<String, dynamic>? ?? {};
+      for (final entry in perBandSettings.entries) {
+        final value = entry.value as Map<String, dynamic>? ?? {};
+        final ssid = value['ssid'] as String?;
+        if (ssid != null && ssid.isNotEmpty) {
+          expectedSSIDs.add(ssid);
+        }
+      }
+    } else {
+      final ssid = wifiData['ssid'] as String?;
+      if (ssid != null && ssid.isNotEmpty) {
+        expectedSSIDs.add(ssid);
+      }
+    }
+
+    // Only verify if user has set SSID
+    if (expectedSSIDs.isEmpty) return true;
+
+    try {
+      // Fetch current WiFi settings from router
+      final radioInfoResult = await ref.read(routerRepositoryProvider).send(
+            JNAPAction.getRadioInfo,
+            auth: true,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          );
+      final radioInfo = GetRadioInfo.fromMap(radioInfoResult.output);
+      final currentSSIDs = radioInfo.radios.map((r) => r.settings.ssid).toSet();
+
+      // Check if any expected SSID matches current settings
+      if (expectedSSIDs.any((ssid) => currentSSIDs.contains(ssid))) {
+        logger.d('[PnP]: WiFi settings verified - SSID matches');
+        return true;
+      }
+      logger.w(
+          '[PnP]: WiFi settings mismatch - expected: $expectedSSIDs, current: $currentSSIDs. Re-saving...');
+      return false;
+    } catch (e) {
+      // API call failed, log warning but continue flow
+      logger.w('[PnP]: Failed to verify WiFi settings: $e. Continuing...');
+      return true;
+    }
+  }
+
+  Future<void> _checkPostSaveAdminPassword({
+    required bool Function() shouldContinue,
+  }) async {
+    final pnp = ref.read(pnpProvider.notifier);
+    final currentPassword = ref.read(authProvider).value?.localPassword;
+    final wifiPassword = pnp.getDefaultWiFiSettings().primaryRadio?.password;
+    // localLogin enters a loading state before sending JNAP. Keep the accepted
+    // save's candidates across transient errors instead of reading that state
+    // again and incorrectly treating the missing value as a bad password.
+    final candidates =
+        _postSavePasswordCandidates ??= pnpPostSaveAdminPasswordCandidates(
+      currentPassword: currentPassword,
+      wifiPassword: wifiPassword,
+      didSetAdminPassword: pnp.didSetAdminPasswordDuringSave,
+    );
+    if (candidates.isEmpty) {
+      throw ExceptionInvalidAdminPassword();
+    }
+
+    for (var index = 0; index < candidates.length; index++) {
+      if (!shouldContinue()) throw ExceptionNeedToReconnect();
+      try {
+        await pnp.checkAdminPassword(candidates[index]);
+        return;
+      } on ExceptionInvalidAdminPassword {
+        if (!shouldContinue()) throw ExceptionNeedToReconnect();
+        if (index + 1 == candidates.length) {
+          rethrow;
+        }
+        logger.i(
+          '[PnP]: Existing admin password was not accepted; trying the WiFi password used by factory-default PnP',
+        );
+      }
+    }
   }
 
   /// How many Auto Master waits one save may spend before giving up.
@@ -735,7 +873,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   /// as a cheap re-check.
   static const int _maxAutoMasterWaits = 2;
 
-  Future _saveChanges({int autoMasterWaitsSpent = 0}) async {
+  /// [isRetry] marks a deliberate re-entry by this view's own recovery paths —
+  /// the Auto Master wait budget, the Auto Master retry button, and the
+  /// corrective re-save after an SSID mismatch. Those legitimately call this
+  /// method a second time, so they are exempt from the [_saveStarted] guard,
+  /// which exists only to swallow *duplicate user input* (a double tap, or two
+  /// steps both wired to `saveChanges`).
+  Future<void> _saveChanges(
+      {int autoMasterWaitsSpent = 0, bool isRetry = false}) async {
+    if (_saveStarted && !isRetry) {
+      logger.i('[PnP]: Save already started; ignoring duplicate request');
+      return;
+    }
+    _saveStarted = true;
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
 
     // Check Auto Master status before save (Second Defense)
@@ -769,7 +919,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           // below already uses. Not `localLoginPassword`: that page belongs to a
           // finished setup (userAcknowledgedAutoConfiguration == true), and this
           // one never got saved.
-          logger.w('[PnP]: Auto Master completed before save - password changed');
+          logger
+              .w('[PnP]: Auto Master completed before save - password changed');
           context.goNamed(RouteNamed.pnp);
           return;
         case AutoMasterFlowResult.proceed:
@@ -796,7 +947,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           setState(() {
             _setupStep = _PnpSetupStep.config;
           });
-          return _saveChanges(autoMasterWaitsSpent: waitsSpent);
+          // isRetry: this is the wait budget re-checking from the top, not
+          // duplicate user input, so it must pass the _saveStarted guard.
+          return _saveChanges(autoMasterWaitsSpent: waitsSpent, isRetry: true);
         case AutoMasterFlowResult.connectionError:
           // The waiting view is showing the error + retry button.
           return;
@@ -830,88 +983,139 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       _setupStep = _PnpSetupStep.saving;
       logger.d('[PnP]: Save changes. Setup step = saving');
     });
-    await ref.read(pnpProvider.notifier).save().catchError((error) {
-      setState(() {
-        _needToReconnect = true;
-      });
-      // if (isUnconfigured) {
-      // if in unconfigured scenario, display the reconnect prompt
+
+    try {
+      await ref.read(pnpProvider.notifier).save();
+    } on ExceptionNeedToReconnect {
+      if (!mounted) {
+        return;
+      }
       _currentStep?.canGoNext(false);
       setState(() {
+        _needToReconnect = true;
+        _reconnectWasUnconfigured = isUnconfigured;
         logger.e(
-            '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
+            '[PnP]: Connection changed while saving. Setup step = needReconnect');
         _setupStep = _PnpSetupStep.needReconnect;
       });
-      // }
-    }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
-      final innerError = error is ExceptionSavingChanges ? error.error : error;
-
-      // Check if this is an Unauthorized error (Auto Master completed during save)
+      unawaited(_checkPostSaveReconnect(waitForRestart: true));
+      return;
+    } on ExceptionInvalidAdminPassword {
+      // The transaction may already have changed the factory-default admin
+      // password. Reconcile credentials against the accepted save; never
+      // offer to submit the transaction a second time.
+      if (!mounted) {
+        return;
+      }
+      _currentStep?.canGoNext(false);
+      setState(() {
+        _needToReconnect = true;
+        _reconnectWasUnconfigured = isUnconfigured;
+        _setupStep = _PnpSetupStep.needReconnect;
+      });
+      unawaited(_checkPostSaveReconnect(waitForRestart: false));
+      return;
+    } on ExceptionSavingChanges catch (error) {
+      final innerError = error.error;
+      // Auto Master rotating the admin password mid-save surfaces as a 401 on
+      // the transaction. Nothing was written, so re-enter PnP and let its
+      // precheck ask for the new password — the same destination the Auto
+      // Master gates above use (#1418, #1419).
       if (innerError is JNAPError &&
           innerError.result == errorJNAPUnauthorized) {
         logger.w(
             '[PnP]: Caught unauthorized error during save - Auto Master may have completed');
+        _saveStarted = false;
         if (mounted) {
           context.goNamed(RouteNamed.pnp);
         }
         return;
       }
-
-      // Original error handling
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+      final errorDetail = describePnpSaveError(innerError);
       setState(() {
-        logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
+        _saveStarted = false;
+        logger.e(
+          '[PnP]: Caught a saving error: $errorDetail. Setup step = config',
+          error: innerError,
+        );
         _setupStep = _PnpSetupStep.config;
       });
-      final errorMsg = innerError?.toString() ?? loc(context).generalError;
-      showSimpleSnackBar(context, 'Unexpected error! <$errorMsg>');
-    }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
-      if (!mounted) return;
-      // Use showYourNetwork logic to handle both Unconfigured and AutoParent scenarios
-      final showYourNetwork = isUnconfigured || !_isPrePaired;
-      logger.d(
-          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, isPrePaired = $_isPrePaired, showYourNetwork = $showYourNetwork, SetupStep = $_setupStep');
-      if (showYourNetwork) {
-        // Unconfigured or AutoParent: continue to YourNetwork step
-        if (_setupStep != _PnpSetupStep.needReconnect) {
-          _stepController?.stepContinue();
-          setState(() {
-            logger.d(
-                '[PnP]: showYourNetwork=true, no need to reconnect. Setup step = config');
-            _setupStep = _PnpSetupStep.config;
-          });
-        }
-      } else {
-        // Configured + PrePaired: go to WiFi ready page
-        if (_setupStep != _PnpSetupStep.needReconnect) {
-          setState(() {
-            logger.d('[PnP]: showYourNetwork=false. Setup step = saved');
-            _setupStep = _PnpSetupStep.saved;
-          });
-          await Future.delayed(const Duration(seconds: 3));
-          logger.d('[PnP]: showYourNetwork=false. Setup step = fwCheck');
-          _doFwUpdateCheck();
-        } else {
-          setState(() {
-            logger.d(
-                '[PnP]: showYourNetwork=false but need to reconnect. Setup step = saved');
-            _setupStep = _PnpSetupStep.saved;
-          });
-          await Future.delayed(const Duration(seconds: 3));
-          setState(() {
-            _setupStep = _PnpSetupStep.needReconnect;
-          });
-        }
+      showSimpleSnackBar(context, 'Unexpected error! <$errorDetail>');
+      return;
+    } catch (error) {
+      if (!mounted) {
+        return;
       }
+      setState(() {
+        _saveStarted = false;
+        logger.e('[PnP]: Unexpected saving error: $error. Setup step = config');
+        _setupStep = _PnpSetupStep.config;
+      });
+      showSimpleSnackBar(context, 'Unexpected error! <$error>');
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    // Use showYourNetwork logic to handle both Unconfigured and AutoParent
+    // scenarios. Every reconnect path above returns, so the step is still
+    // `saving` here: this tail runs only when the transaction went through.
+    final showYourNetwork = isUnconfigured || !_isPrePaired;
+    logger.d(
+        '[PnP]: Save completed. isUnconfigured = $isUnconfigured, isPrePaired = $_isPrePaired, showYourNetwork = $showYourNetwork, SetupStep = $_setupStep');
+    if (showYourNetwork) {
+      // Unconfigured or AutoParent: continue the add-nodes flow, only after the
+      // save transaction succeeds.
+      _stepController?.stepContinue();
+      setState(() {
+        logger.d(
+            '[PnP]: showYourNetwork=true, no need to reconnect. Setup step = config');
+        _setupStep = _PnpSetupStep.config;
+      });
+      return;
+    }
+    // Configured + PrePaired: confirm the save, then go to the WiFi ready page.
+    setState(() {
+      logger.d('[PnP]: showYourNetwork=false. Setup step = saved');
+      _setupStep = _PnpSetupStep.saved;
     });
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) {
+      return;
+    }
+    logger.d('[PnP]: showYourNetwork=false. Setup step = fwCheck');
+    _doFwUpdateCheck();
   }
 
   Future _confirmAddedNodes() async {
+    try {
+      await ref
+          .read(pnpProvider.notifier)
+          .acknowledgeAutoConfigurationIfNeeded();
+    } on ExceptionSavingChanges catch (error) {
+      if (mounted) {
+        showSimpleSnackBar(
+          context,
+          'Unexpected error! <${describePnpSaveError(error.error)}>',
+        );
+      }
+      rethrow;
+    }
     logger.i('[PnP]: Added nodes confirmed. Setup step = fwCheck');
     _doFwUpdateCheck();
   }
 
   void _doFwUpdateCheck() {
+    if (_firmwareCheckStarted) {
+      logger.i(
+          '[PnP]: Firmware update check already started; ignoring duplicate');
+      return;
+    }
+    _firmwareCheckStarted = true;
     if (_setupStep != _PnpSetupStep.fwCheck) {
       setState(() {
         _setupStep = _PnpSetupStep.fwCheck;
@@ -946,24 +1150,34 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     });
   }
 
-  Future<void> testConnection(
-      {required FutureOr<void> Function() success,
-      void Function()? failed}) async {
-    // Check router connected propor, then go to dashboard
+  Future<void> testConnection({
+    required FutureOr<void> Function() success,
+    FutureOr<void> Function()? failed,
+  }) async {
+    // Check router connected proper, then run the caller's reconciliation in
+    // sequence so the button cannot be submitted again while it is pending.
+    // `success` is deliberately outside the try: a failure inside it is the
+    // caller's, and must not be reported as "router not found".
     try {
       await ref.read(pnpProvider.notifier).testConnectionReconnected();
-      await success.call();
     } catch (error) {
-      logger.e('[PnP]: Cannot detect the expected WiFi connected!');
-      showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
-      failed?.call();
+      logger.e('[PnP]: Cannot detect the expected router!');
+      if (mounted) {
+        showSimpleSnackBar(context, loc(context).routerNotFound);
+      }
+      if (failed != null) {
+        await failed();
+      }
+      return;
     }
+    await success();
   }
 
   void _retryAutoMasterSave() {
     setState(() {
       _showAutoMasterConnectionError = false;
     });
-    _saveChanges();
+    // isRetry: this view's own recovery button, not duplicate user input.
+    _saveChanges(isRetry: true);
   }
 }

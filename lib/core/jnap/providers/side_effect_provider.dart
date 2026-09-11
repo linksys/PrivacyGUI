@@ -91,6 +91,8 @@ class JNAPSideEffect extends Equatable {
 }
 
 class SideEffectNotifier extends Notifier<JNAPSideEffect> {
+  int? _activePollStartedAt;
+
   @override
   JNAPSideEffect build() => const JNAPSideEffect(hasSideEffect: false);
 
@@ -212,6 +214,8 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     int timeDelayStartInSec = 3,
     bool Function()? condition,
   }) async {
+    final previousPollStartedAt = _activePollStartedAt;
+    _activePollStartedAt = DateTime.now().millisecondsSinceEpoch;
     // Log poll config
     logger.d('''[SideEffectManager] Start Poll with config:
         retry delay: $retryDelayInSec,
@@ -219,6 +223,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         max poll time: $maxPollTimeInSec,
         start time delay: $timeDelayStartInSec,
         ''');
+    try {
     int retry = 0;
     if (timeDelayStartInSec > 0) {
       await Future.delayed(Duration(seconds: timeDelayStartInSec));
@@ -252,16 +257,20 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
       throw JNAPSideEffectError(null, lastHandledResult);
     }
     return result;
+    } finally {
+      _activePollStartedAt = previousPollStartedAt;
+    }
   }
 
   Future<(bool, JNAPResult?)> testRouterFullyBootedUp() async {
-    final startTime = DateTime.now().millisecondsSinceEpoch;
+    final startTime =
+        _activePollStartedAt ?? DateTime.now().millisecondsSinceEpoch;
 
     return _getWANStatus().then<(bool, JNAPResult?)>((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';
       final isRouterRespondingLongEnough =
-          DateTime.now().millisecondsSinceEpoch > startTime + 60 * 1000;
+          DateTime.now().millisecondsSinceEpoch >= startTime + 60 * 1000;
 
       return (
         wanConnected || isRouterRespondingLongEnough,

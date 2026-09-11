@@ -43,5 +43,9 @@ void main() {
     buildBetterActions(services);
     expect('http://linksys.com/jnap/router/GetWANSettings5',
         JNAPAction.getWANSettings.actionValue);
+    expect(
+      'http://linksys.com/jnap/core/SetAdminPassword3',
+      JNAPAction.pnpSetAdminPassword.actionValue,
+    );
   });
 }

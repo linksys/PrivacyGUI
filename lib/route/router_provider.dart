@@ -41,6 +41,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_ipoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
@@ -136,6 +137,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         // The '/' branch above already owns the pnp-vs-login election; once we
         // have matched localLoginPassword the destination is settled.
         return router._redirectLogic(state);
+      } else if (state.matchedLocation == RoutePath.pnp ||
+          state.matchedLocation.startsWith('${RoutePath.pnp}/')) {
+        return router._goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
       }

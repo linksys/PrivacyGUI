@@ -8,11 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
@@ -29,6 +32,7 @@ import '../../../common/di.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
+import '../../../mocks/router_repository_mocks.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
@@ -662,6 +666,7 @@ void main() async {
     final btnFinder3 = find.byType(FilledButton);
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 1));
+    verify(mockPnpNotifier.save()).called(1);
   });
 
   testLocalizations('Instant Setup - PnP: Auto Master running before save',
@@ -811,13 +816,17 @@ void main() async {
   Future<void> pumpSetup(
     WidgetTester tester, {
     List<RouteBase> extraRoutes = const [],
+    List<Override> extraOverrides = const [],
   }) =>
       tester.pumpWidget(
         testableSingleRoute(
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
           child: const PnpSetupView(),
-          overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+          overrides: [
+            pnpProvider.overrideWith(() => mockPnpNotifier),
+            ...extraOverrides,
+          ],
           extraRoutes: extraRoutes,
         ),
       );
@@ -1132,5 +1141,358 @@ void main() async {
     // One reconnect test per wait; the 2nd wait hits the limit and stops there.
     verify(mockPnpNotifier.testConnectionReconnected()).called(2);
     verifyNever(mockPnpNotifier.save());
+  });
+
+  // ---------------------------------------------------------------------------
+  // `_saveChanges` re-entrancy.
+  //
+  // Three call sites re-enter `_saveChanges` after it has already run once, and
+  // each one is load-bearing for a shipped fix:
+  //
+  //   1. the Auto Master budget-exhausted recursion  (covered by the block above)
+  //   2. the Try Again button on the connection-error view (`_retryAutoMasterSave`)
+  //   3. the SSID mismatch re-save on the reconnect screen (PR #1092 / #1006)
+  //
+  // The tests below pin 2 and 3. They exist because the obvious hardening for
+  // "never send the same save twice" — a one-shot `_saveStarted` latch at the top
+  // of `_saveChanges` — silently disables all three: the user's tap produces a
+  // log line and nothing else. Anything that makes `_saveChanges` one-shot has to
+  // keep these green, which means distinguishing a *deliberate bounded retry*
+  // from a *duplicate submit* rather than counting entries.
+  // ---------------------------------------------------------------------------
+
+  // Drives the last step's Next into an Auto Master wait that spends its whole
+  // budget twice over, which is how the user gets to the connection-error view
+  // with its Try Again button. Leaves the flow parked there.
+  //
+  // Callers stub checkAutoMasterStatus themselves: the first pass consumes three
+  // answers (initState, wait 1, wait 2) and what the retry sees is the point of
+  // each test.
+  Future<void> driveToAutoMasterConnectionError(WidgetTester tester) async {
+    when(mockPnpNotifier.pollAutoMasterStatus())
+        .thenAnswer((_) => Stream.value(AutoMasterStatus.running));
+    when(mockPnpNotifier.testConnectionReconnected()).thenAnswer((_) async {});
+
+    await pumpSetup(tester);
+    await driveToSave(tester);
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 150)));
+    await tester.pump();
+
+    expect(find.byIcon(LinksysIcons.signalWifiOff), findsOneWidget);
+    verifyNever(mockPnpNotifier.save());
+  }
+
+  // Try Again must re-enter `_saveChanges`, not just repaint. Auto Master is
+  // still electing when the user retries, so the flow spends another full budget
+  // and comes back to the same error view — which keeps the whole assertion on
+  // the waiting view and makes the re-entry visible as extra status checks and
+  // polls. A one-shot `_saveChanges` leaves these counts at 3 and 2.
+  testWidgets(
+      'Instant Setup - PnP: Try Again on the Auto Master error view re-enters the save flow',
+      (tester) async {
+    useLargeScreen(tester);
+    // idle on entry, running on every save-time check, so each pass spends its
+    // waits and lands back on the error view.
+    stubCheckAutoMaster(
+        entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.running);
+
+    await driveToAutoMasterConnectionError(tester);
+
+    // The error view is rendered on its own (not stacked over the config view),
+    // so its Try Again is the only AppFilledButton in the tree.
+    await tester.tap(find.byType(AppFilledButton));
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 150)));
+    await tester.pump();
+
+    expect(find.byIcon(LinksysIcons.signalWifiOff), findsOneWidget);
+    // 1 initState + 2 waits (first pass) + 2 waits (the retry) = 5.
+    verify(mockPnpNotifier.checkAutoMasterStatus()).called(5);
+    verify(mockPnpNotifier.pollAutoMasterStatus()).called(4);
+    verify(mockPnpNotifier.testConnectionReconnected()).called(4);
+    verifyNever(mockPnpNotifier.save());
+  });
+
+  // The retry finds Auto Master settled, so it must fall through and write. This
+  // is the payload of the button: the user's tap ends in a save, not a log line.
+  testWidgets(
+      'Instant Setup - PnP: Try Again reaches the write once Auto Master has settled',
+      (tester) async {
+    useLargeScreen(tester);
+    // initState -> idle; the first pass's two checks -> running (both waits
+    // spent, error view); the retry's check -> idle, i.e. Auto Master finished
+    // while the error view was on screen.
+    var callCount = 0;
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      callCount++;
+      if (callCount == 1) return AutoMasterStatus.idle; // initState
+      if (callCount <= 3) return AutoMasterStatus.running; // wait 1, wait 2
+      return AutoMasterStatus.idle; // after Try Again
+    });
+    // Left pending so the whenComplete tail (and its post-save 3s timer) never
+    // runs; we only assert the retry reached save().
+    final saveCompleter = Completer<void>();
+    when(mockPnpNotifier.save()).thenAnswer((_) => saveCompleter.future);
+
+    await driveToAutoMasterConnectionError(tester);
+
+    await tester.tap(find.byType(AppFilledButton));
+    // Deliberately no pump after this: falling through to the write leaves
+    // `waitingAutoMaster` for the stacked config view, and PnpStepper.initState
+    // then calls onInit on the *same* `late final steps` objects, reassigning
+    // `PnpStep.pnp` -> LateInitializationError. That defect is pre-existing on
+    // every path back from the waiting view and unrelated to the retry, but it
+    // arrives as an uncaught async error (PnpStepper.initState fires onInit from
+    // an unawaited Future.doWhile), so takeException() cannot absorb it. Driving
+    // the flow on the real event loop and asserting without rendering keeps this
+    // test about the retry.
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 150)));
+
+    verify(mockPnpNotifier.save()).called(1);
+  });
+
+  // ---------------------------------------------------------------------------
+  // SSID verification on the reconnect screen (PR #1092, QA cases 3/4/6/7/9/10
+  // of issue #1006).
+  //
+  // The save can report success while the radios still carry the old SSID, so
+  // after the user reconnects and taps Next the view reads GetRadioInfo back and
+  // compares it against what the user typed. A mismatch re-saves — exactly once,
+  // bounded by `_wifiVerificationRetried`.
+  //
+  // Reaching that screen: save() throws ExceptionNeedToReconnect, and with
+  // configured + prePaired (showYourNetwork == false) the whenComplete tail parks
+  // on `saved` for 3s before landing on `needReconnect`.
+  // ---------------------------------------------------------------------------
+
+  // The SSID the user is taken to have typed in the Personal WiFi step. The
+  // mock's setStepData is a no-op, so the step data has to be seeded in build().
+  const enteredSSID = 'MyAwesomeWiFiName';
+
+  /// A GetRadioInfo output whose radios advertise [ssids] — the only field the
+  /// verification looks at. Built through the model so it stays in step with
+  /// GetRadioInfo.fromMap's required keys.
+  Map<String, dynamic> radioInfoOutput(List<String> ssids) => GetRadioInfo(
+        isBandSteeringSupported: false,
+        radios: [
+          for (final (i, ssid) in ssids.indexed)
+            RouterRadio(
+              radioID: 'RADIO_2.4GHz',
+              physicalRadioID: 'ath$i',
+              bssid: '00:11:22:33:44:0$i',
+              band: '2.4GHz',
+              supportedModes: const ['802.11n'],
+              supportedChannelsForChannelWidths: const [
+                SupportedChannelsForChannelWidths(
+                    channelWidth: 'Auto', channels: [0]),
+              ],
+              supportedSecurityTypes: const ['WPA2-Personal'],
+              maxRadiusSharedKeyLength: 64,
+              settings: RouterRadioSettings(
+                isEnabled: true,
+                mode: '802.11n',
+                ssid: ssid,
+                broadcastSSID: true,
+                channelWidth: 'Auto',
+                channel: 0,
+                security: 'WPA2-Personal',
+              ),
+            ),
+        ],
+      ).toMap();
+
+  /// Seeds build() so the Personal WiFi step carries [enteredSSID] (non-split
+  /// mode), which is what the verification compares GetRadioInfo against.
+  void stubStateWithEnteredSSID() {
+    when(mockPnpNotifier.build()).thenReturn(PnpState(
+        deviceInfo:
+            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+        isUnconfigured: false,
+        isPrePaired: true,
+        stepStateList: const {
+          0: PnpStepState(
+              status: StepViewStatus.data,
+              data: {'isSplitMode': false, 'ssid': enteredSSID}),
+          1: PnpStepState(status: StepViewStatus.data, data: {}),
+          2: PnpStepState(status: StepViewStatus.data, data: {}),
+        }));
+  }
+
+  /// Drives save -> ExceptionNeedToReconnect -> the reconnect screen. The screen
+  /// then probes for the router by itself, so this returns with the spinner
+  /// showing and the initial delay still pending; callers advance the clock.
+  Future<void> driveToNeedReconnect(WidgetTester tester) async {
+    await driveToSave(tester);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byIcon(LinksysIcons.router), findsOneWidget);
+    // Try Again only exists after the deadline: until then the screen is
+    // self-driving and offers nothing to tap.
+    expect(find.widgetWithText(AppFilledButton, 'Try again'), findsNothing);
+  }
+
+  /// Lets one round of the reconnect probe run: the 8s initial delay
+  /// (`pnpReconnectInitialDelay`), then the probe's own awaits.
+  Future<void> runReconnectProbe(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 9));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump();
+    }
+  }
+
+  /// Makes the probe's credential reconciliation succeed. The candidate list is
+  /// built from the WiFi password only when the save set the admin password, so
+  /// both stubs are needed — otherwise the list is empty and
+  /// `_checkPostSaveAdminPassword` throws ExceptionInvalidAdminPassword.
+  void stubPostSaveCredentials() {
+    when(mockPnpNotifier.didSetAdminPasswordDuringSave).thenReturn(true);
+    when(mockPnpNotifier.checkAdminPassword('Linksys123456@'))
+        .thenAnswer((_) async {});
+  }
+
+  MockRouterRepository stubRadioInfo(List<String> ssids) {
+    final mockRouterRepository = MockRouterRepository();
+    when(mockRouterRepository.send(
+      JNAPAction.getRadioInfo,
+      auth: anyNamed('auth'),
+      fetchRemote: anyNamed('fetchRemote'),
+      cacheLevel: anyNamed('cacheLevel'),
+    )).thenAnswer((_) async => JNAPSuccess(
+          result: 'OK',
+          output: radioInfoOutput(ssids),
+        ));
+    return mockRouterRepository;
+  }
+
+  void verifyRadioInfoReads(MockRouterRepository repository, int times) {
+    verify(repository.send(
+      JNAPAction.getRadioInfo,
+      auth: anyNamed('auth'),
+      fetchRemote: anyNamed('fetchRemote'),
+      cacheLevel: anyNamed('cacheLevel'),
+    )).called(times);
+  }
+
+  // GetRadioInfo still reports the factory SSID, so the save did not take: the
+  // view must re-save rather than walk the user on to the next step.
+  //
+  // The router answering and accepting the post-save credentials only proves it
+  // came back — it says nothing about whether the WiFi settings landed. This is
+  // the check that closes that gap (issue #1006).
+  testWidgets(
+      'Instant Setup - PnP: SSID mismatch after reconnect re-saves once',
+      (tester) async {
+    useLargeScreen(tester);
+    stubStateWithEnteredSSID();
+    stubCheckAutoMaster(
+        entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.idle);
+    stubPostSaveCredentials();
+    // Future<dynamic>, not `(_) async { throw ... }`: the latter infers
+    // Future<Never>, which dart:async rejects where a Future<dynamic> is
+    // expected. `Future save()` really is Future<dynamic>, so match that.
+    when(mockPnpNotifier.save())
+        .thenAnswer((_) => Future<dynamic>.error(ExceptionNeedToReconnect()));
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) => Future<dynamic>.value(true));
+    // Factory SSID, not what the user typed -> mismatch.
+    final mockRouterRepository = stubRadioInfo(const ['Linksys1234567']);
+    // The corrective re-save reconnects again and then advances, which runs the
+    // firmware check; stub it to "nothing to update".
+    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(0);
+
+    await pumpSetup(tester, extraOverrides: [
+      routerRepositoryProvider.overrideWithValue(mockRouterRepository),
+      firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+    ]);
+    await driveToNeedReconnect(tester);
+
+    // Round one: the router comes back, the SSID does not match, so the view
+    // re-saves and lands back on the reconnect screen.
+    await runReconnectProbe(tester);
+    // Round two: the bound is spent, so it advances instead of checking again.
+    await runReconnectProbe(tester);
+
+    verifyRadioInfoReads(mockRouterRepository, 1);
+    // The re-entrant save is the whole point of the fix: once for the original
+    // write, once for the correction.
+    verify(mockPnpNotifier.save()).called(2);
+  });
+
+  // GetRadioInfo reports the SSID the user typed, so the save did take: no
+  // re-save, and the flow moves on (here to the FW check, since
+  // showYourNetwork == false).
+  testWidgets(
+      'Instant Setup - PnP: SSID match after reconnect does not re-save',
+      (tester) async {
+    useLargeScreen(tester);
+    stubStateWithEnteredSSID();
+    stubCheckAutoMaster(
+        entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.idle);
+    stubPostSaveCredentials();
+    when(mockPnpNotifier.save())
+        .thenAnswer((_) => Future<dynamic>.error(ExceptionNeedToReconnect()));
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) => Future<dynamic>.value(true));
+    final mockRouterRepository = stubRadioInfo(const [enteredSSID]);
+    // The match path continues into _doFwUpdateCheck; stub it to "nothing to
+    // update" so the test ends on the WiFi-ready hand-off instead of a real
+    // firmware notifier.
+    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(0);
+
+    await pumpSetup(tester, extraOverrides: [
+      routerRepositoryProvider.overrideWithValue(mockRouterRepository),
+      firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+    ]);
+    await driveToNeedReconnect(tester);
+
+    await runReconnectProbe(tester);
+
+    verifyRadioInfoReads(mockRouterRepository, 1);
+    // Only the original write. This is the control for the mismatch test above:
+    // it shows the re-save there is caused by the SSID comparison, not by the
+    // reconnect screen re-saving unconditionally.
+    verify(mockPnpNotifier.save()).called(1);
+  });
+
+  // The verification is a one-shot. If the re-save still does not take the SSID,
+  // the next reconnect must advance anyway: no third save, no second
+  // GetRadioInfo read. Without the `_wifiVerificationRetried` bound this is a
+  // save/reconnect loop the user cannot leave.
+  testWidgets(
+      'Instant Setup - PnP: SSID verification does not repeat after its one retry',
+      (tester) async {
+    useLargeScreen(tester);
+    stubStateWithEnteredSSID();
+    stubCheckAutoMaster(
+        entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.idle);
+    stubPostSaveCredentials();
+    when(mockPnpNotifier.save())
+        .thenAnswer((_) => Future<dynamic>.error(ExceptionNeedToReconnect()));
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) => Future<dynamic>.value(true));
+    // Mismatching on every read, so only the bound can stop the loop.
+    final mockRouterRepository = stubRadioInfo(const ['Linksys1234567']);
+    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(0);
+
+    await pumpSetup(tester, extraOverrides: [
+      routerRepositoryProvider.overrideWithValue(mockRouterRepository),
+      firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+    ]);
+    await driveToNeedReconnect(tester);
+
+    await runReconnectProbe(tester); // mismatch -> corrective re-save
+    await runReconnectProbe(tester); // bound spent -> advance
+    // A third round would only exist if the flow were still looping.
+    await runReconnectProbe(tester);
+
+    // Off the reconnect screen entirely: the loop terminated.
+    expect(find.byIcon(LinksysIcons.router), findsNothing);
+    verifyRadioInfoReads(mockRouterRepository, 1);
+    verify(mockPnpNotifier.save()).called(2);
   });
 }

@@ -319,15 +319,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final routerRepository = ref.read(routerRepositoryProvider);
+      final loginAction = pnp
+          ? JNAPAction.pnpCheckAdminPassword
+          : JNAPAction.checkAdminPassword;
       final response = await routerRepository.send(
-        pnp ? JNAPAction.pnpCheckAdminPassword : JNAPAction.checkAdminPassword,
-        // extraHeaders: pnp
-        //     ? {
-        //         kJNAPAuthorization:
-        //             'Basic ${Utils.stringBase64Encode('admin:$password')}'
-        //       }
-        //     : {},
-        extraHeaders: {
+        loginAction,
+        extraHeaders: pnp
+            ? {}
+            : {
           kJNAPAuthorization:
               'Basic ${Utils.stringBase64Encode('admin:$password')}'
         },

@@ -8,6 +8,9 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
@@ -34,6 +37,7 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
     with PnpAutoMasterFlowMixin<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
   late final InternetSettingsState newSettings;
+  late final AutoIPoESettings? autoIPoESettings;
   String? _spinnerText; //TODO: all spinner text is not confirmed
   StreamSubscription? subscription;
 
@@ -50,6 +54,7 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
   void initState() {
     super.initState();
     newSettings = widget.args['newSettings'] as InternetSettingsState;
+    autoIPoESettings = widget.args['autoIPoESettings'] as AutoIPoESettings?;
     _saveNewSettings();
   }
 
@@ -130,6 +135,25 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
     return true; // idle/failed → continue save
   }
 
+  Future<void> _handlePnpIpoEPostSave() async {
+    // Apply was accepted, not completed. Return immediately to the existing
+    // stateful IPoE form so its values stay mounted while read-only status/log
+    // reconciliation follows the network and Wi-Fi restart.
+    logger.i(
+      '[PnP]: Troubleshooter - Auto-IPoE Apply accepted; opening correlated progress without resubmitting Apply',
+    );
+    if (mounted) {
+      context.pop(
+        const AutoIPoEIssue(
+          category: AutoIPoEIssueCategory.retryable,
+          code: 'ApplyAccepted',
+          retryable: true,
+          recoveryAction: AutoIPoERecoveryAction.continueChecking,
+        ),
+      );
+    }
+  }
+
   Future<void> _saveNewSettings() async {
     // Check Auto Master status before saving
     final shouldContinue = await _checkAndWaitForAutoMaster();
@@ -138,15 +162,30 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
     final wanType = WanType.resolve(
       newSettings.ipv4Setting.ipv4ConnectionType,
     )!;
-    return ref
-        .read(internetSettingsProvider.notifier)
-        .savePnpIpv4(newSettings)
-        .then((value) {
+    try {
+      if (wanType == WanType.ipoe) {
+        await ref
+            .read(autoIPoEInternetSettingsBridgeProvider)
+            .savePnpIPoE(settings: autoIPoESettings);
+      } else {
+        await ref.read(internetSettingsProvider.notifier).savePnpIpv4(
+              newSettings,
+            );
+      }
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _spinnerText = loc(context).savingChanges;
       });
       logger
           .i('[PnP]: Troubleshooter - The new settings is saved successfully');
+
+      if (wanType == WanType.ipoe) {
+        await _handlePnpIpoEPostSave();
+        return;
+      }
+
       // Saving successfully, check if the new settings valid
       subscription?.cancel();
       subscription = ref
@@ -162,19 +201,21 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
               } else {
                 logger.i(
                     '[PnP]: Troubleshooter - The new router configuration is fine to work now');
-                // New setting check passed, then check real internet connection
-                setState(() {
-                  _spinnerText = loc(context).launchCheckInternet;
-                });
-                ref
-                    .read(pnpProvider.notifier)
-                    .checkInternetConnection(30)
-                    .then((value) async {
+                (() async {
+                  // New setting check passed, then check real internet connection
+                  setState(() {
+                    _spinnerText = loc(context).launchCheckInternet;
+                  });
+                  await ref
+                      .read(pnpProvider.notifier)
+                      .checkInternetConnection(30);
                   logger.i(
-                      '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
+                    '[PnP]: Troubleshooter - Check internet connection with new settings - OK',
+                  );
                   // Internet connection is OK. WAN is now up, so firmware may
                   // start Auto Master ("make Master") shortly. Detect it here
                   // (★) so the user waits once instead of filling WiFi twice.
+                  if (!mounted) return;
                   _autoMasterPostWanUp = true;
                   final result = await runAutoMasterFlow(
                     waitForRunningFirst: true,
@@ -189,21 +230,26 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
                   );
                   if (!mounted) return;
                   if (result != AutoMasterFlowResult.connectionError) {
-                    // completed / proceed / budgetExhausted → go to PnP and let
+                    // completed / proceed / budgetExhausted -> go to PnP and let
                     // its entry precheck decide. Nothing is pending here (the
                     // settings are already saved), so an unknown Auto Master
                     // outcome needs no special handling: PnP re-reads whatever
                     // state the router is actually in.
                     context.goNamed(RouteNamed.pnp);
                   }
-                  // connectionError → waiting view shows error + retry.
-                }).catchError((error) {
+                  // connectionError -> waiting view shows error + retry.
+                })()
+                    .catchError((error) {
                   logger.e(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
                   // Internet connection is Not OK
-                  context.pop(_getErrorMessage(wanType));
-                }, test: (error) => error is ExceptionNoInternetConnection).catchError(
-                    (error) {
+                  if (mounted) {
+                    context.pop(_getErrorMessage(wanType));
+                  }
+                },
+                        test: (error) =>
+                            error is ExceptionNoInternetConnection).catchError(
+                        (error) {
                   // The credential was rotated while we were checking. This
                   // window is 30 retries wide (~90s) and Auto Master runs for
                   // ~115s from WAN-up, so a rotation can land inside it — and
@@ -231,11 +277,37 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
           // Keep the error record until the check loop is fulfilled or runs out of the re-try quota
         }
       });
-    }).onError((error, stackTrace) {
+    } catch (error) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
 
-      if (error is JNAPSideEffectError) {
+      if (wanType == WanType.ipoe && error is AutoIPoEApplyOutcomeUnknown) {
+        logger.w(
+          '[PnP]: Troubleshooter - Apply outcome is unknown; returning to the preserved form for read-only reconciliation without resubmitting Apply: ${error.cause}',
+        );
+        if (mounted) {
+          context.pop(
+            AutoIPoEIssueMapper.from(
+              error: error.cause,
+              mode: autoIPoESettings?.selectedMode,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      if (wanType == WanType.ipoe) {
+        context.pop(
+          AutoIPoEIssueMapper.from(
+            error: error,
+            mode: autoIPoESettings?.selectedMode,
+          ),
+        );
+      } else if (error is JNAPSideEffectError) {
         final lastHandledResult = error.lastHandledResult;
         if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {
           context.pop(_getErrorMessage(wanType));
@@ -253,11 +325,13 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
       } else {
         context.pop(_getErrorMessage(wanType));
       }
-    });
+    }
   }
 
   String _getErrorMessage(WanType wanType) {
-    if (wanType == WanType.static || wanType == WanType.dhcp) {
+    if (wanType == WanType.static ||
+        wanType == WanType.dhcp ||
+        wanType == WanType.ipoe) {
       return loc(context).pnpErrorForStaticIpAndDhcp;
     } else {
       // This case must be PPPOE

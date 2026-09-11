@@ -8,16 +8,16 @@ import 'dart:async' as _i9;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i12;
-import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i14;
+import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i15;
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart'
     as _i11;
-import 'package:privacy_gui/core/jnap/models/auto_master_status.dart' as _i15;
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart' as _i13;
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart' as _i8;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart' as _i3;
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart' as _i5;
 import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart'
     as _i4;
-import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart' as _i13;
+import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart' as _i14;
 import 'package:privacy_gui/providers/connectivity/availability_info.dart'
     as _i7;
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart'
@@ -84,6 +84,13 @@ class _FakeAvailabilityInfo_6 extends _i1.SmartFake
 class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
     with _i1.Mock
     implements _i8.PnpNotifier {
+  @override
+  bool get didSetAdminPasswordDuringSave => (super.noSuchMethod(
+        Invocation.getter(#didSetAdminPasswordDuringSave),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
   @override
   _i2.NotifierProviderRef<_i3.PnpState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
@@ -242,6 +249,14 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       ) as _i9.Future<dynamic>);
 
   @override
+  _i9.Future<void> acknowledgeAutoConfigurationIfNeeded() =>
+      (super.noSuchMethod(
+        Invocation.method(#acknowledgeAutoConfigurationIfNeeded, []),
+        returnValue: _i9.Future<void>.value(),
+        returnValueForMissingStub: _i9.Future<void>.value(),
+      ) as _i9.Future<void>);
+
+  @override
   _i9.Future<dynamic> testConnectionReconnected() => (super.noSuchMethod(
         Invocation.method(#testConnectionReconnected, []),
         returnValue: _i9.Future<dynamic>.value(),
@@ -271,6 +286,37 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
   @override
   void setForceLogin(bool? force) => super.noSuchMethod(
         Invocation.method(#setForceLogin, [force]),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i9.Future<_i13.AutoMasterStatus?> checkAutoMasterStatus() =>
+      (super.noSuchMethod(
+        Invocation.method(#checkAutoMasterStatus, []),
+        returnValue: _i9.Future<_i13.AutoMasterStatus?>.value(),
+        returnValueForMissingStub: _i9.Future<_i13.AutoMasterStatus?>.value(),
+      ) as _i9.Future<_i13.AutoMasterStatus?>);
+
+  @override
+  _i9.Stream<_i13.AutoMasterStatus?> pollAutoMasterStatus() =>
+      (super.noSuchMethod(
+        Invocation.method(#pollAutoMasterStatus, []),
+        returnValue: _i9.Stream<_i13.AutoMasterStatus?>.empty(),
+        returnValueForMissingStub: _i9.Stream<_i13.AutoMasterStatus?>.empty(),
+      ) as _i9.Stream<_i13.AutoMasterStatus?>);
+
+  @override
+  _i9.Stream<_i13.AutoMasterStatus?> pollAutoMasterUntilRunning() =>
+      (super.noSuchMethod(
+        Invocation.method(#pollAutoMasterUntilRunning, []),
+        returnValue: _i9.Stream<_i13.AutoMasterStatus?>.empty(),
+        returnValueForMissingStub: _i9.Stream<_i13.AutoMasterStatus?>.empty(),
+      ) as _i9.Stream<_i13.AutoMasterStatus?>);
+
+  @override
+  void setAutoMasterStatusOnEntry(_i13.AutoMasterStatus? status) =>
+      super.noSuchMethod(
+        Invocation.method(#setAutoMasterStatusOnEntry, [status]),
         returnValueForMissingStub: null,
       );
 
@@ -305,7 +351,7 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       );
 
   @override
-  void setStepStatus(int? index, {required _i13.StepViewStatus? status}) =>
+  void setStepStatus(int? index, {required _i14.StepViewStatus? status}) =>
       super.noSuchMethod(
         Invocation.method(#setStepStatus, [index], {#status: status}),
         returnValueForMissingStub: null,
@@ -325,7 +371,7 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       );
 
   @override
-  Map<String, dynamic>? getData(_i14.JNAPAction? action) => (super.noSuchMethod(
+  Map<String, dynamic>? getData(_i15.JNAPAction? action) => (super.noSuchMethod(
         Invocation.method(#getData, [action]),
         returnValueForMissingStub: null,
       ) as Map<String, dynamic>?);
@@ -384,35 +430,4 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
           ),
         ),
       ) as _i9.Future<_i7.AvailabilityInfo>);
-
-  @override
-  _i9.Future<_i15.AutoMasterStatus?> checkAutoMasterStatus() =>
-      (super.noSuchMethod(
-        Invocation.method(#checkAutoMasterStatus, []),
-        returnValue: _i9.Future<_i15.AutoMasterStatus?>.value(),
-        returnValueForMissingStub: _i9.Future<_i15.AutoMasterStatus?>.value(),
-      ) as _i9.Future<_i15.AutoMasterStatus?>);
-
-  @override
-  _i9.Stream<_i15.AutoMasterStatus?> pollAutoMasterStatus() =>
-      (super.noSuchMethod(
-        Invocation.method(#pollAutoMasterStatus, []),
-        returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-        returnValueForMissingStub: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-      ) as _i9.Stream<_i15.AutoMasterStatus?>);
-
-  @override
-  _i9.Stream<_i15.AutoMasterStatus?> pollAutoMasterUntilRunning() =>
-      (super.noSuchMethod(
-        Invocation.method(#pollAutoMasterUntilRunning, []),
-        returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-        returnValueForMissingStub: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-      ) as _i9.Stream<_i15.AutoMasterStatus?>);
-
-  @override
-  void setAutoMasterStatusOnEntry(_i15.AutoMasterStatus? status) =>
-      super.noSuchMethod(
-        Invocation.method(#setAutoMasterStatusOnEntry, [status]),
-        returnValueForMissingStub: null,
-      );
 }
