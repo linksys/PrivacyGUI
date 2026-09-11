@@ -111,9 +111,12 @@ class UspWifiNetworksCard extends ConsumerWidget {
       isEnabled: network.isEnabled,
       clientCount: network.clientCount,
       isLoading: isLoading,
-      onChanged: isLoading
-          ? null
-          : (value) => _confirmToggleNetwork(context, ref, network, value),
+      // Not `isLoading ? null : …` any more: a busy `AppSwitch` refuses input
+      // itself (`_isInteractive = onChanged != null && !isLoading`) and renders
+      // the same treatment either way, so the ternary was dead weight — and the
+      // one thing it did change is wrong here, since `_isEnabled` is what a null
+      // callback flips and this switch is what a caller *did* wire up.
+      onChanged: (value) => _confirmToggleNetwork(context, ref, network, value),
       onShareTap:
           onShareTap != null ? () => onShareTap!(network.ssidName) : null,
     );

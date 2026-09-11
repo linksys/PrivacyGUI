@@ -164,35 +164,41 @@ void main() {
 Test interactive components such as buttons, cards, and switches:
 
 ```dart
-testWidgets('AppSwitchTriggerTile switch meets target size', (tester) async {
+testWidgets('ToggleRow switch meets target size', (tester) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: AppSwitchTriggerTile(
-          value: false,
-          title: const Text('Feature Toggle'),
-          onChanged: (value) {},
+        // A row in a stretched column, as the cards lay these out — a tight
+        // height would stretch AppListTile's slots and inflate the measurement.
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ToggleRow(value: false, title: 'Feature Toggle', onChanged: (_) {}),
+          ],
         ),
       ),
     ),
   );
   await tester.pumpAndSettle();
 
-  // Measure Switch component
-  final switchFinder = find.byType(Switch);
-  final switchSize = tester.getSize(switchFinder);
+  // Measure the UI Kit switch, not Material's — the app has no `Switch`.
+  final switchSize = tester.getSize(find.byType(AppSwitch));
 
   targetSizeReporter.validateComponent(
-    componentName: 'AppSwitchTriggerTile.switch',
+    componentName: 'ToggleRow.switch',
     actualSize: switchSize,
-    affectedComponents: ['AppSwitchTriggerTile'],
-    widgetPath: 'lib/page/components/composed/app_switch_trigger_tile.dart',
+    affectedComponents: ['ToggleRow'],
+    widgetPath: 'lib/page/_shared/components/layout_blocks/row_blocks.dart',
     severity: Severity.critical,
   );
 
   expect(switchSize.width >= 44 && switchSize.height >= 44, isTrue);
 });
 ```
+
+> `AppSwitchTriggerTile` used to be the example here. It was deleted in #1542
+> along with `AppLoadableWidget`: both hand-rolled a busy spinner the kit now
+> owns (`AppSwitch.isLoading`), and neither had a single call site.
 
 ### Semantics Test Example
 
