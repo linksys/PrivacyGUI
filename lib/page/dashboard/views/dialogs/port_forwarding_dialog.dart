@@ -293,7 +293,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        AppButton.text(
+        AppButton.primary(
           identifier: 'pf-single-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid(context) ? _submit : null,

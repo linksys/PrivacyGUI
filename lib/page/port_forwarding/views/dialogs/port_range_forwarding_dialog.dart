@@ -313,7 +313,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
-        AppButton.text(
+        AppButton.primary(
           identifier: 'pf-range-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,

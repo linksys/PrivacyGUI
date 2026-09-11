@@ -487,7 +487,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             label: loc(context).cancel,
             onTap: () => Navigator.of(ctx).pop(false),
           ),
-          AppButton.text(
+          AppButton.primary(
             identifier: 'network-change-continue',
             label: loc(context).textContinue,
             onTap: () => Navigator.of(ctx).pop(true),

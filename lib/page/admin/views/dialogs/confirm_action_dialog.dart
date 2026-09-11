@@ -24,7 +24,11 @@ Future<bool?> showConfirmActionDialog(
         label: loc(context).cancel,
         onTap: () => context.pop(),
       ),
-      AppButton.text(
+      // `dangerText`, not `primary`: Reboot / Factory Reset are destructive, so
+      // they follow the same pair as `showRebootModal` / `showFactoryResetModal`
+      // (`dialogs.dart:456,494`) rather than the affirmative `primary` used for
+      // save/confirm dialogs (#1224).
+      AppButton.dangerText(
         identifier: 'admin-confirm-action-confirm',
         label: confirmLabel,
         onTap: () => context.pop(true),

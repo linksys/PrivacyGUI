@@ -235,7 +235,7 @@ class WifiNetworkCard extends ConsumerWidget {
       ),
       actions: [
         AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
-        AppButton.text(
+        AppButton.primary(
             label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
@@ -370,7 +370,7 @@ class WifiNetworkCard extends ConsumerWidget {
       ),
       actions: [
         AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
-        AppButton.text(
+        AppButton.primary(
             label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
@@ -430,7 +430,7 @@ class WifiNetworkCard extends ConsumerWidget {
       ),
       actions: [
         AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
-        AppButton.text(
+        AppButton.primary(
             label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
@@ -489,7 +489,7 @@ class WifiNetworkCard extends ConsumerWidget {
       ),
       actions: [
         AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
-        AppButton.text(
+        AppButton.primary(
             label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
