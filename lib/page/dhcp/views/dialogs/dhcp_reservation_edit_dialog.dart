@@ -216,7 +216,7 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
           label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
-        AppButton.text(
+        AppButton.primary(
           identifier: 'dhcp-reservation-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,
