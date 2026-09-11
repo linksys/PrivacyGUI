@@ -9,8 +9,8 @@ import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 
-import 'common/testable_widget.dart';
-import 'common/testable_router.dart';
+import '../../../common/testable_widget.dart';
+import '../../../common/testable_router.dart';
 
 void main() {
   testWidgets('an in-progress recovery offers read-only checking only',

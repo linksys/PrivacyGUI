@@ -15,10 +15,10 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_ipoe_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'common/di.dart';
-import 'common/testable_router.dart';
-import 'mocks/pnp_notifier_mocks.dart' as mocks;
-import 'test_data/device_info_test_data.dart';
+import '../../../../../common/di.dart';
+import '../../../../../common/testable_router.dart';
+import '../../../../../mocks/pnp_notifier_mocks.dart' as mocks;
+import '../../../../../test_data/device_info_test_data.dart';
 
 class _Service extends Fake implements AutoIPoEService {
   @override
