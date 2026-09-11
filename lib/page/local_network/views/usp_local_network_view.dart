@@ -476,24 +476,29 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   }
 
   Future<bool?> _showNetworkChangeConfirmation(BuildContext context) {
-    return showAppDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc(context).changeNetworkSettingsTitle),
-        content: Text(loc(context).changeNetworkSettingsDesc),
-        actions: [
-          AppButton.text(
-            identifier: 'network-change-cancel',
-            label: loc(context).cancel,
-            onTap: () => Navigator.of(ctx).pop(false),
-          ),
-          AppButton.primary(
-            identifier: 'network-change-continue',
-            label: loc(context).textContinue,
-            onTap: () => Navigator.of(ctx).pop(true),
-          ),
-        ],
-      ),
+    // `showSimpleAppDialog`, not the raw Material `AlertDialog` this used to
+    // build: the helper is the app's dialog frame (UI Kit first, constitution
+    // Art. XV). It gives this one the same title ramp, the standard
+    // `kDefaultDialogWidth` content box and the `semanticLabel` every other
+    // dialog gets, which a bare `AlertDialog` skipped. Barrier dismissal stays
+    // on, as before, and returns null — which the caller reads the same as a
+    // cancel (`confirmed != true`).
+    return showSimpleAppDialog<bool>(
+      context,
+      title: loc(context).changeNetworkSettingsTitle,
+      content: AppText.bodyMedium(loc(context).changeNetworkSettingsDesc),
+      actions: [
+        AppButton.text(
+          identifier: 'network-change-cancel',
+          label: loc(context).cancel,
+          onTap: () => context.pop(false),
+        ),
+        AppButton.primary(
+          identifier: 'network-change-continue',
+          label: loc(context).textContinue,
+          onTap: () => context.pop(true),
+        ),
+      ],
     );
   }
 }
