@@ -164,15 +164,18 @@ Generated: 2026-01-26
 **onChanged:** `notifier.setSimpleMode(value)` - updates local UI state only
 **Action:** NO_ACTION
 
-### lib/page/components/composed/app_switch_trigger_tile.dart:100
+### ~~lib/page/components/composed/app_switch_trigger_tile.dart:100~~ — DELETED (#1542)
 **Switch Purpose:** Generic reusable switch component
 **Reason:** This is a composed component that wraps AppSwitch - not a direct usage, serves as a wrapper
-**Action:** NO_ACTION (this is a reusable component wrapper)
+**Action:** DELETED. Its only reason to exist was a hand-rolled busy spinner, which
+ui_kit v3.3.0 made a state of the control itself (`AppSwitch.isLoading`). It had no
+call sites. (Its real path was `lib/components/composed/`, not `lib/page/`.)
 
-### lib/page/components/composed/app_loadable_widget.dart:190
+### ~~lib/page/components/composed/app_loadable_widget.dart:190~~ — DELETED (#1542)
 **Switch Purpose:** Generic loadable switch component
 **Reason:** This is a composed component that wraps AppSwitch - not a direct usage, serves as a wrapper for async operations
-**Action:** NO_ACTION (this is a reusable component wrapper)
+**Action:** DELETED, same reason, also with no call sites — and it hand-rolled the
+same spinner for three `AppButton` variants as well.
 
 ---
 
@@ -205,8 +208,8 @@ Generated: 2026-01-26
 3. **UI_ONLY (4 switches)** - No JNAP operations:
    - dashboard_layout_settings_panel.dart (1)
    - wifi_list_view.dart (1)
-   - app_switch_trigger_tile.dart (1 - wrapper component)
-   - app_loadable_widget.dart (1 - wrapper component)
+   - ~~app_switch_trigger_tile.dart (1 - wrapper component)~~ — deleted in #1542
+   - ~~app_loadable_widget.dart (1 - wrapper component)~~ — deleted in #1542
 
 ### Implementation Priority:
 **High Priority** - Immediate mode switches that trigger JNAP operations:

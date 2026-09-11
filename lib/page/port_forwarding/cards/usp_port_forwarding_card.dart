@@ -80,7 +80,10 @@ class UspPortForwardingCard extends ConsumerWidget {
     return ToggleRow(
       value: rule.enabled,
       isLoading: isLoading,
-      onChanged: isLoading || rule.instancePath == null
+      // `isLoading` is not part of this condition: a busy `AppSwitch` refuses
+      // input on its own. A missing `instancePath` is the one that still means
+      // something — that row cannot be mutated at all.
+      onChanged: rule.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,
@@ -105,7 +108,8 @@ class UspPortForwardingCard extends ConsumerWidget {
     return ToggleRow(
       value: trigger.enabled,
       isLoading: isLoading,
-      onChanged: isLoading || trigger.instancePath == null
+      // As above: busy is the switch's own state now, `instancePath` is not.
+      onChanged: trigger.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'block_constants.dart';
@@ -269,7 +270,8 @@ class MapsToRow extends StatelessWidget {
 /// Uses [AppListTile] from UI Kit for consistent styling.
 /// Use for DHCP reservations, port forwarding rules, etc.
 ///
-/// When [isLoading] is true, displays a spinner in place of the switch.
+/// When [isLoading] is true the switch shows the kit's own busy treatment over
+/// the track it already occupies, and refuses input for the duration.
 class ToggleRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
@@ -307,16 +309,23 @@ class ToggleRow extends StatelessWidget {
       leading: SizedBox(
         width: 44,
         child: Center(
-          child: isLoading
-              ? SizedBox.square(
-                  dimension: 26,
-                  child: AppLoader(strokeWidth: 2),
-                )
-              : AppSwitch(
-                  value: value,
-                  onChanged: onChanged,
-                  scale: 0.8,
-                ),
+          child: AppSwitch(
+            value: value,
+            onChanged: onChanged,
+            scale: 0.8,
+            isLoading: isLoading,
+            // The kit's own fallback is the untranslated `Busy`; this string is
+            // localised in all 26 locales and is what the replaced loader
+            // should have carried.
+            //
+            // Resolved only while busy, which is the state the kit reads it in.
+            // These blocks are shared and had been context-only until now
+            // (`Theme.of` and nothing else), and `loc` is an unwrapped
+            // `AppLocalizations.of(context)!` — so an unconditional lookup would
+            // make a host without the l10n delegates throw on every row rather
+            // than on the one state that needs a string.
+            busySemanticLabel: isLoading ? loc(context).processing : null,
+          ),
         ),
       ),
       title: AppText.bodyMedium(
@@ -347,7 +356,8 @@ class ToggleRow extends StatelessWidget {
 ///
 /// Uses [AppListTile] from UI Kit for consistent styling.
 ///
-/// When [isLoading] is true, displays a spinner in place of the switch.
+/// When [isLoading] is true the switch shows the kit's own busy treatment over
+/// the track it already occupies, and refuses input for the duration.
 class NetworkRow extends StatelessWidget {
   final String ssidName;
   final List<String> bands;
@@ -418,21 +428,13 @@ class NetworkRow extends StatelessWidget {
             _ShareButton(onTap: onShareTap!),
             AppGap.sm(),
           ],
-          isLoading
-              ? SizedBox(
-                  width: 52,
-                  height: 32,
-                  child: Center(
-                    child: SizedBox.square(
-                      dimension: 24,
-                      child: AppLoader(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              : AppSwitch(
-                  value: isEnabled,
-                  onChanged: onChanged,
-                ),
+          AppSwitch(
+            value: isEnabled,
+            onChanged: onChanged,
+            isLoading: isLoading,
+            // Conditional for the reason [ToggleRow] records above.
+            busySemanticLabel: isLoading ? loc(context).processing : null,
+          ),
         ],
       ),
     );
