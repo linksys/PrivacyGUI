@@ -28,6 +28,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import '../../../common/di.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
@@ -667,6 +668,96 @@ void main() async {
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 1));
     verify(mockPnpNotifier.save()).called(1);
+    // The screenshot is taken here, one second into the reconnect step: the
+    // screen probes for the router by itself, so what it captures is the
+    // spinner, before the initial delay has even elapsed.
+  },
+      // Draining is this test's job, not the view's. The probe leaves an 8s
+      // initial-delay timer and a 90s deadline timer in flight, and the default
+      // `onCompleted` only pumps 5s -- not enough, so the framework's
+      // pending-timer invariant fails after the tree is disposed. Pump past the
+      // deadline instead. The probe's first attempt fails fast (nothing here
+      // stubs the reconnect), which settles the deadline early and leaves only
+      // the error snackbar's own timer to run down.
+      onCompleted: (tester) async {
+    await tester.pump(const Duration(seconds: 10));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump();
+    }
+    await tester.pump(const Duration(seconds: 120));
+  });
+
+  // The other half of the reconnect screen, and the only state on it that
+  // offers the user anything to press. Worth its own screenshot because the
+  // copy here makes a promise -- Try Again re-probes, it does not resend the
+  // save -- that the implementation has to keep.
+  testLocalizations(
+      'Instant Setup - PnP: Reconnect to your router wifi timed out',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(PnpState(
+        deviceInfo:
+            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+        isUnconfigured: true,
+        stepStateList: const {
+          0: PnpStepState(status: StepViewStatus.data, data: {}),
+          1: PnpStepState(status: StepViewStatus.data, data: {}),
+          2: PnpStepState(status: StepViewStatus.data, data: {}),
+          3: PnpStepState(status: StepViewStatus.data, data: {}),
+        }));
+    when(mockPnpNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      throw ExceptionNeedToReconnect();
+    });
+    when(mockPnpNotifier.fetchDevices()).thenAnswer((_) async {});
+    // Fail every probe with a retryable error, so the loop spends its whole
+    // budget instead of bailing out early. `Future.error` rather than an async
+    // body that throws: the latter infers Future<Never> and will not stub a
+    // method declared to return Future<dynamic>.
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) => Future<dynamic>.error(ExceptionNeedToReconnect()));
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 1));
+    // Run the probe out: the 8s initial delay plus 13 retries at 3s. That is
+    // 47s, inside the 90s deadline, so the budget is what expires -- which
+    // reaches the timeout view without a snackbar over it.
+    await tester.pump(const Duration(seconds: 60));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump();
+    }
+    // Locale-independent proof that this is the timeout view and not the
+    // self-driving one: the spinner is the `else` of the same conditional that
+    // renders Try Again, so the two can never both be on screen.
+    expect(find.byType(AppSpinner), findsNothing);
+    expect(find.byType(AppFilledButton), findsAtLeastNWidgets(1));
   });
 
   testLocalizations('Instant Setup - PnP: Auto Master running before save',
