@@ -232,7 +232,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        AppButton.text(
+        AppButton.primary(
           identifier: 'ipv6-rule-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,

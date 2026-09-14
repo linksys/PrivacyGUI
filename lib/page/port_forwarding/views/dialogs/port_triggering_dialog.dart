@@ -329,10 +329,10 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
-        // `AppButton.text` like the other two rule dialogs' submit. The
-        // identifiers stay `port-triggering-*` rather than being renamed to the
-        // `pf-trigger-*` prefix used inside: they are the E2E suite's contract.
-        AppButton.text(
+        // The identifiers stay `port-triggering-*` rather than being renamed to
+        // the `pf-trigger-*` prefix used inside: they are the E2E suite's
+        // contract.
+        AppButton.primary(
           identifier: 'port-triggering-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,

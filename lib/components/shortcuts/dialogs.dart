@@ -200,7 +200,12 @@ Future<T?> showSubmitAppDialog<T>(
                       context.pop();
                     },
                   ),
-                  AppButton.text(
+                  // `primary` (filled), not `text`: the confirming action of a
+                  // dialog carries the visual weight, the dismissing one stays
+                  // `text` (#1224, ui_kit_migration.md:44 — the Material
+                  // `FilledButton` this replaced). The Key and identifier are
+                  // the test/E2E contract and must not change with the variant.
+                  AppButton.primary(
                     label: effectivePositiveLabel,
                     identifier: positiveIdentifier,
                     key: const Key('alertPositiveButton'),
@@ -526,7 +531,7 @@ Future<bool?> showInstantPrivacyConfirmDialog(
           context.pop();
         },
       ),
-      AppButton.text(
+      AppButton.primary(
         label: enable ? loc(context).turnOn : loc(context).turnOff,
         onTap: () {
           context.pop(true);
@@ -553,7 +558,7 @@ Future<bool?> showMacFilteringConfirmDialog(BuildContext context, bool enable) {
           context.pop();
         },
       ),
-      AppButton.text(
+      AppButton.primary(
         label: enable ? loc(context).turnOn : loc(context).turnOff,
         onTap: () {
           context.pop(true);
