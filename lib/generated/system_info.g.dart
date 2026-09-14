@@ -119,13 +119,13 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
-      firmwareImageNumberOfEntries: response
-              .containsKey('Device.DeviceInfo.FirmwareImageNumberOfEntries')
-          ? int.tryParse(
-              response['Device.DeviceInfo.FirmwareImageNumberOfEntries']
-                      ?.toString() ??
-                  '')
-          : null,
+      firmwareImageNumberOfEntries:
+          response.containsKey('Device.DeviceInfo.FirmwareImageNumberOfEntries')
+              ? int.tryParse(
+                  response['Device.DeviceInfo.FirmwareImageNumberOfEntries']
+                          ?.toString() ??
+                      '')
+              : null,
       activeFirmwareImage:
           (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
       bootFirmwareImage:

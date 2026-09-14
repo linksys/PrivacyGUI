@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_p
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../golden_test/golden_framework/mocks/mock_firmware_update.dart';
 import '../../golden_test/page/firmware_update/fixtures/firmware_update_test_data.dart';
@@ -113,16 +115,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  /// The three sentences only one of which may ever be on screen at a time.
+  /// The four sentences only one of which may ever be on screen at a time.
   ///
-  /// Asserted as a set rather than one at a time so that adding a fourth verdict
+  /// Asserted as a set rather than one at a time so that adding a fifth verdict
   /// forces a decision here: a state that renders two of these is the defect, and it
   /// is invisible to a test that only looks for the one it expects.
+  ///
+  /// `firmwareStatusUnavailable` is the odd one out and is in the list for exactly
+  /// that reason: #1551 gave it a card of its own, replacing this one rather than
+  /// appearing beside it, because "the router could not be asked" is the absence of
+  /// every answer above. Every state pumped in this file *can* be read, so it must
+  /// be absent from all of them — see
+  /// `firmware_state_unreadable_widget_test.dart` for the state that shows it.
   void expectOnly(String? present) {
     final sentences = <String>[
       loc.updateAvailable,
       loc.firmwareNoUpdateFound,
       loc.otaCheckNotSupported,
+      loc.firmwareStatusUnavailable,
     ];
     for (final sentence in sentences) {
       expect(
@@ -275,6 +285,75 @@ void main() {
       expect(
           find.text(loc.availableVersionLabel('2.0.1.26091009')), findsNothing,
           reason: 'a verdict beside a running spinner reads as the new answer');
+    });
+  });
+
+  /// An update is running that this page did not start (#1551, REQ-A6).
+  ///
+  /// Auto-update flashes on its own, so the page can be *opened* mid-install and the
+  /// observe read promotes the phase — `checkingOta` is the only phase a tap here
+  /// ever sets, and `installing` arrives without one. A live Check button in that
+  /// state cost four things at once, and none of them are hypothetical: the phase
+  /// change to `checkingOta` takes the "do not power off" card off the screen
+  /// (`_buildInstallCard` draws nothing for it), the dispatch is a second
+  /// `Download()` at a router writing NAND, the verdict re-offers "Update Now" on top
+  /// of the running update, and the progress the user was watching is gone until the
+  /// next poll.
+  group('an update is already running', () {
+    testWidgets('the check button is still there, and dead', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        otaInstallProgressState(FirmwareAutoUpdateStatus.downloading,
+            progress: 40),
+        testThreeInstanceBanksData,
+      );
+
+      final hook = find.bySemanticsIdentifier('firmware-check');
+      expect(hook, findsOneWidget,
+          reason: 'not removed: an E2E spec waiting on this control would see '
+              'it vanish for the duration of an update it is watching, and a '
+              'button that comes back is harder to read than one that is off');
+      expect(
+        tester.getSemantics(hook),
+        isSemantics(hasEnabledState: true, isEnabled: false),
+        reason: 'asserted through semantics because that is what a screen '
+            'reader and a Playwright `toBeDisabled()` actually read — a '
+            'greyed-out button that still reports enabled is a live control',
+      );
+
+      final button = tester.widget<AppButton>(find.byWidgetPredicate((widget) =>
+          widget is AppButton && widget.identifier == 'firmware-check'));
+      expect(button.onTap, isNull,
+          reason: 'and through the mechanism: `AppButton._isEnabled` is '
+              '`onTap != null && !isLoading`, so nulling the callback is what '
+              'refuses the tap');
+      expect(button.isLoading, isFalse,
+          reason: 'no spinner on this button — nothing it started is in '
+              'flight, and a busy check button would claim the running '
+              'download was a check');
+
+      handle.dispose();
+    });
+
+    // The other side of the same `&&`, and the reason it is not just
+    // `state.isUpdating`: a check *this* button started is also an update in flight,
+    // and killing the button for it would drop `isLoading` — the one state the
+    // button has that says the tap worked.
+    testWidgets('but a check of its own still spins rather than dying',
+        (tester) async {
+      await pump(
+        tester,
+        checkingOtaState,
+        testThreeInstanceBanksData,
+      );
+
+      final button = tester.widget<AppButton>(find.byWidgetPredicate((widget) =>
+          widget is AppButton && widget.identifier == 'firmware-check'));
+      expect(button.isLoading, isTrue);
+      expect(button.onTap, isNotNull,
+          reason: '`isLoading` already refuses the tap, and nulling it as well '
+              'would re-state that in a second place');
     });
   });
 }

@@ -308,12 +308,18 @@ void main() {
     // version of this phase ship a real regression: at `idle` the manual
     // affordance and the install phase machine are the *same widget*, so "hide
     // the manual card" and "hide the whole machine" are indistinguishable. They
-    // are not the same thing at any later phase. `triggerOtaInstall` walks
+    // are not the same thing at any later phase. `triggerRouterOtaInstall` walks
     // `triggering → installing`, `enterRecoveryWaiting` sets `rebooting`, and
-    // `verify` ends at `done` or `failed` — a cloud OTA install drives every one
-    // of those phases through the machine that was being dropped. So an agent
-    // could start an update and then watch the page show nothing at all, with
-    // the `failed` copy, its message and its retry button among the casualties.
+    // `verify` ends at `done` or `failed` — an OTA install drives every one of
+    // those phases through the machine that was being dropped. So an agent could
+    // start an update and then watch the page show nothing at all, with the
+    // `failed` copy, its message and its retry button among the casualties.
+    //
+    // #1551 renamed the seam that starts it: the cloud-URL `triggerOtaInstall`
+    // this comment was written about has no caller left, and the router-side
+    // install replaced it under the same `transientRestart` class. The phases it
+    // walks are unchanged, which is the point of naming them here rather than the
+    // method.
     //
     // #1549 narrowed the gate to the idle arm alone and moved the phase cards
     // into a shared `FirmwareInstallPhaseCard`, which makes these two cases

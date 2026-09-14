@@ -33,6 +33,7 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
@@ -54,7 +55,7 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   FirmwareUpdateState build() => _fixedState;
 
   @override
-  Future<void> loadBanks() async {}
+  Future<void> loadBanks({bool refresh = false}) async {}
 
   /// Answers with the verdict already in the fixed state instead of asking the
   /// router.
@@ -65,6 +66,30 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   /// hangs, and `pumpAndSettle` times out somewhere unrelated to the tap.
   @override
   Future<FirmwareOtaCheckResult> checkForUpdate() async => _fixedState.otaCheck;
+
+  /// The router-side install watch (#1551), and the one override on this class that
+  /// is not about a tap.
+  ///
+  /// `FirmwareOtaView.initState` calls this on **every** open, because auto-update
+  /// can start a flash with nobody watching (REQ-A6) — so a cell that merely lays
+  /// the page out would start a twenty-minute poll loop against a router that is
+  /// not there. `abandoned` is the verdict `_applyInstallOutcome` deliberately
+  /// writes nothing for, so answering it cannot move the fixed state out from under
+  /// the cell that pinned it.
+  @override
+  Future<FirmwareOtaInstallResult> observeRunningOtaInstall() async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+
+  /// The install dispatch, silenced for the reason [checkForUpdate] gives: a cell
+  /// that taps Update Now would reach `Download(ota,"true")` — a real flash, if the
+  /// bridge in front of it ever answered.
+  @override
+  Future<FirmwareOtaInstallResult> triggerRouterOtaInstall({
+    required int otaInstance,
+  }) async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
 }
 
 class FixedFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
@@ -151,6 +176,15 @@ List<Override> firmwareUpdateOverrides({
 /// lines of file detail and adds a second button to a `Wrap` that already wraps.
 /// Recorded here rather than in the case so the reason sits next to the fixture that
 /// would have to change to cover them.
+///
+/// **The verdict is only a choice for one of the two pages that take this default.**
+/// This is the default `state` of `firmwareUpdateOverrides`, so it also feeds
+/// `page.firmware_update` — and `firmware_update_view.dart` does not read `otaCheck`
+/// at all (measured: zero references), so on that page the verdict above renders
+/// nothing and picking the wider of the two is inert. It decides a row only on
+/// `page.firmware_ota`, whose case doc owns the consequences — including the offer
+/// state this verdict excludes, and why that gap is left open there rather than closed
+/// by editing this line.
 const gateFirmwareNoUpdateFoundState = FirmwareUpdateState(
   otaCheck: FirmwareOtaCheckResult.noUpdateFound(),
 );

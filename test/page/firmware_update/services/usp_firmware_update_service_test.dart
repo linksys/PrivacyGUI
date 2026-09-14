@@ -243,6 +243,80 @@ void main() {
     });
   });
 
+  group('requestOtaInstall', () {
+    test('is requestOtaCheck with AutoActivate flipped, and still no URL',
+        () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args'))).thenAnswer(
+          (_) async =>
+              <String, dynamic>{'commandKey': 'install-1', 'Status': ''});
+
+      final key = await service.requestOtaInstall(otaInstance: 3);
+
+      expect(key, 'install-1');
+      final captured = verify(
+        () => mockUsp.operate(captureAny(), args: captureAny(named: 'args')),
+      ).captured;
+      expect(captured[0], 'Device.DeviceInfo.FirmwareImage.3.Download()');
+      final args = captured[1] as Map<String, String>;
+      // The URL stays absent for the install too. The ota instance ignores it
+      // either way — the router resolves the OTA server itself — so requiring
+      // one, as `triggerOtaDownload` does, would mean inventing a value.
+      expect(args.containsKey('URL'), isFalse);
+      expect(args['AutoActivate'], 'true');
+      expect(args, hasLength(1));
+    });
+
+    test('sends none of the keep-config inputs', () async {
+      // Decided 2026-09-14: `X_LINKSYS_KeepConfig` / `X_LINKSYS_KeepOpConf` /
+      // `X_LINKSYS_ConfigScope` are never passed, so the router applies its own
+      // default. Pinned here because "we did not decide" and "we decided to let
+      // the router decide" look identical in the diff.
+      when(() => mockUsp.operate(any(), args: any(named: 'args'))).thenAnswer(
+          (_) async => <String, dynamic>{'commandKey': 'install-1'});
+
+      await service.requestOtaInstall(otaInstance: 3);
+
+      final args = verify(
+        () => mockUsp.operate(any(), args: captureAny(named: 'args')),
+      ).captured.first as Map<String, String>;
+      expect(args.keys, ['AutoActivate']);
+    });
+
+    test('throws when the response carries no commandKey', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'Status': 'Requested'});
+
+      // Same reasoning as the check, with more at stake: without the key there
+      // is nothing to match an `OperationComplete` against, so a refused flash
+      // would be indistinguishable from one still running and the page would
+      // sit on a progress bar for its whole ceiling.
+      expect(
+        () => service.requestOtaInstall(otaInstance: 3),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('throws when the commandKey is present but empty', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'commandKey': ''});
+
+      expect(
+        () => service.requestOtaInstall(otaInstance: 3),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('maps USP error to ServiceError', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenThrow('Operate failed: Transport error: Request timeout');
+
+      expect(
+        () => service.requestOtaInstall(otaInstance: 3),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
   group('pollStatus', () {
     test('returns the status field of the matching instance', () async {
       when(() => mockUsp.get(any()))

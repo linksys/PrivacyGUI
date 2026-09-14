@@ -138,6 +138,61 @@ class UspFirmwareUpdateService {
     }
   }
 
+  /// Asks the router to fetch and install a newer image, and returns the key that
+  /// names the request.
+  ///
+  /// The same `Download` as [requestOtaCheck] with `AutoActivate` flipped, and the
+  /// URL absent for the same reason: on the virtual `ota` instance the parameter
+  /// is ignored and `fwupd` resolves the OTA server itself.
+  ///
+  /// This exists rather than relaxing [triggerOtaDownload]'s `firmwareUrl`, and
+  /// the reason is the return type. `triggerOtaDownload` answers `void` — it was
+  /// written for a cloud-supplied URL where the response held nothing worth
+  /// keeping — but the `commandKey` is the only part of the operate response that
+  /// carries information, and the install needs it to tell its own
+  /// `OperationComplete` from another command's. A second optional-URL overload of
+  /// the flash verb would also mean two ways to start one, which is the hazard
+  /// [FirmwareRouterOtaCheckService] is arranged to make impossible.
+  ///
+  /// **`AutoActivate="true"` is `fwupd -m 2`, which checks first.** So this
+  /// dispatch is not "install the version we just showed you": `fwup_state` goes
+  /// `1` before `3`, `fwup_progress` runs `0→100` twice, and the router's own
+  /// check may conclude there is nothing to fetch — in which case the flash never
+  /// starts and the state returns to `0`. Callers must be able to say so.
+  ///
+  /// None of the three keep-config inputs (`X_LINKSYS_KeepConfig`,
+  /// `X_LINKSYS_KeepOpConf`, `X_LINKSYS_ConfigScope`) is sent: the router's
+  /// default applies, and the UI does not offer the choice.
+  ///
+  /// **Throws when the response carries no `commandKey`** — same measurement as
+  /// the check (an Operate on a command that does not exist answers success), and
+  /// more consequential here: with no key there is nothing to match a refusal
+  /// against, so a rejected flash would look like one still running.
+  Future<String> requestOtaInstall({required int otaInstance}) async {
+    try {
+      final response = await FirmwareOperations.download(
+        _usp,
+        otaInstance,
+        autoActivate: 'true',
+      );
+      final commandKey = response['commandKey']?.toString();
+      if (commandKey == null || commandKey.isEmpty) {
+        throw UspCompleteFailureError(
+          summary: 'Firmware install was not dispatched: the router answered '
+              'Download() on instance $otaInstance with no commandKey',
+          failures: const [],
+        );
+      }
+      logger.d('[FirmwareUpdate] OTA install dispatched on instance '
+          '$otaInstance (commandKey=$commandKey)');
+      return commandKey;
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);

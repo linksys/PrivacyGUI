@@ -59,12 +59,12 @@ class FirmwareAutoUpdate {
           (response['Device.X_LINKSYS_Sysevent.fwup_state'] ?? '') as String,
       fwupProgress:
           (response['Device.X_LINKSYS_Sysevent.fwup_progress'] ?? '') as String,
-      updateFirmwareNow:
-          response.containsKey('Device.X_LINKSYS_Sysevent.update_firmware_now')
+      updateFirmwareNow: response
+              .containsKey('Device.X_LINKSYS_Sysevent.update_firmware_now')
           ? response['Device.X_LINKSYS_Sysevent.update_firmware_now'] as String
           : null,
-      fwupPeriodicCheck:
-          response.containsKey('Device.X_LINKSYS_Sysevent.fwup_periodic_check')
+      fwupPeriodicCheck: response
+              .containsKey('Device.X_LINKSYS_Sysevent.fwup_periodic_check')
           ? response['Device.X_LINKSYS_Sysevent.fwup_periodic_check'] as String
           : null,
     );

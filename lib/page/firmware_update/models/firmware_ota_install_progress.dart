@@ -1,0 +1,132 @@
+import 'dart:math';
+
+import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+
+/// One reading of where a router-side firmware update has got to.
+///
+/// A thin view over the two parameters the router publishes — `fwup_state` and
+/// `fwup_progress` — and it exists for one reason: **only one of the two is
+/// readable, and only in one of the states.** Everything below is a measurement,
+/// not a policy:
+///
+/// * `fwup_progress` was measured sweeping 0→100 during `fwup_state=1` on one run
+///   and staying at 0 for the whole of the same phase on another. A number with
+///   two behaviours is not a number a bar can render, so [percent] is null there.
+/// * `Download(ota, AutoActivate="true")` is `fwupd -m 2`, whose own usage string
+///   reads `checking / downloading / flashing / rebooting`. So one install
+///   produces `1 → 3 → 4`, and `fwup_progress` runs 0→100 **twice**. One shared
+///   bar would therefore show the same install completing twice.
+/// * `fwup_progress` rests at both `0` and `100` when nothing is running,
+///   depending on which mode last ran, so no value of it means "finished".
+///
+/// It reuses [FirmwareAutoUpdateStatus] rather than declaring a parallel enum: the
+/// raw-to-app mapping has exactly one site (`mapAutoUpdateStatus`), and a second
+/// enum over the same five values would need a second one.
+class FirmwareOtaInstallProgress extends Equatable {
+  /// What the router is doing, as the single mapping site reads it.
+  final FirmwareAutoUpdateStatus status;
+
+  /// `fwup_progress` verbatim, before clamping and regardless of [status].
+  ///
+  /// Kept even where it cannot be rendered, because it is the number a bug report
+  /// needs and dropping it would make "the bar was stuck" unanswerable.
+  final int rawProgress;
+
+  /// `fwup_state` as the router spelled it.
+  ///
+  /// The identity of the phase, and not derived from [status]: two unrecognised
+  /// values both map to [FirmwareAutoUpdateStatus.unknown] while being two
+  /// different phases, and [advancedTo] has to be able to tell them apart.
+  final String rawState;
+
+  const FirmwareOtaInstallProgress({
+    required this.status,
+    required this.rawProgress,
+    required this.rawState,
+  });
+
+  factory FirmwareOtaInstallProgress.from(FirmwareAutoUpdateUIModel reading) =>
+      FirmwareOtaInstallProgress(
+        status: reading.status,
+        rawProgress: reading.progress,
+        rawState: reading.rawState,
+      );
+
+  /// The number a determinate progress bar may show, or null for a spinner.
+  ///
+  /// Non-null for [FirmwareAutoUpdateStatus.downloading] and nothing else — see
+  /// the class comment for why each of the other states is excluded, including
+  /// `installing`, whose progress behaviour has never been observed.
+  int? get percent => status == FirmwareAutoUpdateStatus.downloading
+      ? min(100, max(0, rawProgress))
+      : null;
+
+  /// Whether the router is doing something a user should be shown.
+  bool get isRunning =>
+      status != FirmwareAutoUpdateStatus.idle &&
+      status != FirmwareAutoUpdateStatus.failed;
+
+  /// Whether this reading is an update **in progress**, as opposed to merely
+  /// something happening.
+  ///
+  /// [isRunning] minus `checking`, and the difference between the two is the whole
+  /// reason both exist. `fwup_state=1` is `fwupd` deciding whether an image exists,
+  /// and the auto-update daemon reaches it on its own schedule — so on the observe
+  /// path (REQ-A6, an update this app did not start) a reading of 1 says only that
+  /// a routine check is under way. Treating that as an update in progress moves the
+  /// phase to `installing`, which is `isUpdating`, which `_firmwareExitGuard`
+  /// vetoes the back arrow on: a user who opened the OTA page during a scheduled
+  /// check could not leave it.
+  ///
+  /// `unknown` stays in, deliberately. REQ-A7: an unrecognised `fwup_state` cannot
+  /// be ruled out being a flash, and offering "Update Now" to a router that is
+  /// writing NAND is the worse of the two mistakes — the service's twenty-minute
+  /// ceiling bounds how long it can be wrong.
+  ///
+  /// The install path uses [isRunning] instead, because there the check is mode 2's
+  /// own first step: something *was* started, and "Checking for new firmware" is
+  /// the accurate card for it.
+  bool get isInstalling =>
+      isRunning && status != FirmwareAutoUpdateStatus.checking;
+
+  /// Whether this reading names a phase that could only be an update.
+  ///
+  /// [isInstalling] minus `unknown`, and the pair differ for one purpose: what a
+  /// *later* verdict is allowed to be blamed on. [isInstalling] decides what to
+  /// **draw**, and REQ-A7 is why `unknown` is drawn — a value that cannot be ruled
+  /// out being a flash must not read as "nothing is happening". This decides what
+  /// to **claim**, and there `unknown` is the opposite: an unrecognised value is
+  /// the weakest possible evidence that an update was running, so a watch whose
+  /// only sighting was one must not go on to report "the firmware update failed"
+  /// for an update it never identified.
+  ///
+  /// `checking` is out for the reason [isInstalling] gives — the auto-update daemon
+  /// reaches `fwup_state=1` on its own schedule, so it is not evidence of an
+  /// install either.
+  bool get namesAnUpdatePhase =>
+      status == FirmwareAutoUpdateStatus.downloading ||
+      status == FirmwareAutoUpdateStatus.installing;
+
+  /// This reading updated by the next one, without ever walking backwards.
+  ///
+  /// Within one `fwup_state` the number only rises: the parameter is a sampled
+  /// sysevent read by a poller, so an older sample can arrive after a newer one
+  /// has been shown, and a bar that dropped from 60% to 10% would be reporting the
+  /// sampling rather than the download.
+  ///
+  /// A change of `fwup_state` resets it, because the phases do not share a scale —
+  /// `1` finishing at 100 and `3` starting at 0 is one install, not a regression.
+  FirmwareOtaInstallProgress advancedTo(FirmwareAutoUpdateUIModel reading) {
+    final next = FirmwareOtaInstallProgress.from(reading);
+    if (next.rawState != rawState) return next;
+    return FirmwareOtaInstallProgress(
+      status: next.status,
+      rawProgress: max(rawProgress, next.rawProgress),
+      rawState: next.rawState,
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, rawProgress, rawState];
+}

@@ -3,16 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
+import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -28,8 +35,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// #1550 moved the check itself off the cloud OTA API and onto the router
 /// (`FirmwareImage.{ota}.Download()` with no URL). The install this page used to
 /// start went with it: it needed a `downloadUrl` that only the cloud answer
-/// carried, and the router's own install is #1551. So for now this page checks and
-/// reports; the phase card below still renders an install driven from elsewhere.
+/// carried. #1551 gave it back, dispatched the same way the check is — the same
+/// `Download()` with `AutoActivate` flipped, which on this firmware selects
+/// `fwupd -m 2`: check, download, flash, reboot.
+///
+/// So this page now has three jobs rather than one, and the third is the one that
+/// is easy to miss: it **watches an update it did not start**. Auto-update can
+/// begin a flash on its own, so the page can be opened in the middle of one and
+/// has to show it rather than offer to start a second (REQ-A6).
 ///
 /// The split is why this page exists at all rather than a tab: the two entry
 /// points have different audiences. Manual update is hidden in remote assistance
@@ -47,32 +60,95 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   @override
   void initState() {
     super.initState();
-    // Kept after #1550 took the install off this page, and now for a different
-    // reason than the one it was written for. `state.activeBank`/`targetBank` are
-    // no longer read here, but `loadBanks` is what puts the L1 banks provider into
-    // `AsyncData` — and the tri-state below reads that provider to decide whether
-    // this router can be asked about firmware at all.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // The future is handled rather than dropped. `loadBanks` records the
-      // failure in state *and* rethrows — pinned by
-      // `firmware_update_notifier_test.dart:181` — so a fire-and-forget call
-      // turns a slow or busy router into an uncaught async error on a page that
-      // has already rendered the failure it describes. The state is the channel
-      // this page reads; the log line is so the swallow is not silent.
-      ref
-          .read(firmwareUpdateNotifierProvider.notifier)
-          .loadBanks()
-          .catchError((Object error) {
-        logger.d('[FirmwareOta] loadBanks reported $error, '
-            'already in notifier state');
-      });
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _readRouterState());
   }
 
+  /// The two questions this page opens with, and re-asks when a read failed.
+  ///
+  /// `loadBanks` is what puts the L1 banks provider into `AsyncData` — the
+  /// tri-state below reads that provider to decide whether this router can be asked
+  /// about firmware at all. `observeRunningOtaInstall` is REQ-A6: it looks for an
+  /// update that is already running, and it is called unconditionally rather than
+  /// behind a cheaper pre-read because it *is* the cheap read —
+  /// `FirmwareRouterOtaInstallService.observe` takes no startup grace and does not
+  /// wait before its first `Get`, so an idle router costs one request and answers
+  /// `idle`.
+  ///
+  /// Concurrent rather than sequential: neither answer depends on the other, and
+  /// the bridge throttler already serialises what has to be serialised.
+  ///
+  /// [refresh] is passed by the read-failure card's retry. See
+  /// [FirmwareUpdateNotifier.loadBanks] for why it cannot be left off there.
+  /// Returns the **banks** read's future, and only that one.
+  ///
+  /// The retry button spins on what this returns, so the twenty-minute poll loop
+  /// cannot be part of it: `observe()` keeps reading for as long as the router is
+  /// flashing, and a spinner tied to that would be indistinguishable from a hung
+  /// button. Nothing is dropped by leaving it out — [_swallow] is the handler on
+  /// both futures.
+  Future<void> _readRouterState({bool refresh = false}) {
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+    // The observe path's result is **read**, and this is REQ-A6's headline case
+    // rather than symmetry with the dispatch. An auto-update that started on its own
+    // reaches `flashing` here, and `flashing` is the one verdict with work left for
+    // the view: `enterRecoveryWaiting()`, the recovery dialog, then `verify()`.
+    // Discarded, the page sat at `installing` — which is `isUpdating`, which
+    // `_firmwareExitGuard` **silently** vetoes the back arrow on — for the rest of
+    // the session, watching a router that had already rebooted.
+    _swallow('observeRunningOtaInstall', () async {
+      final result = await notifier.observeRunningOtaInstall();
+      if (!result.isFlashing || !mounted) return;
+      await _awaitRebootAndVerify(context);
+    });
+    return _swallow('loadBanks', () => notifier.loadBanks(refresh: refresh));
+  }
+
+  /// Runs a read whose failure is already in notifier state.
+  ///
+  /// The future is handled rather than dropped: both calls record the failure in
+  /// state *and* rethrow — pinned by `firmware_update_notifier_test.dart:181` — so
+  /// a fire-and-forget call turns a slow or busy router into an uncaught async
+  /// error on a page that has already rendered the failure it describes. The state
+  /// is the channel this page reads; the log line is so the swallow is not silent.
+  ///
+  /// **`try`/`catch` around an `await`, not `.catchError`**, and that is not a style
+  /// choice. `observeRunningOtaInstall` returns a `Future<FirmwareOtaInstallResult>`,
+  /// which satisfies this parameter because a narrower return type is a subtype —
+  /// but `Future<T>.catchError` checks its handler's return value against the
+  /// **runtime** `T`, so a void handler on that future throws `ArgumentError` out of
+  /// the error path. That is precisely the path this method exists for: the swallow
+  /// worked on every success and raised an uncaught async error on the one failure
+  /// the page draws a card for. Pinned by
+  /// `firmware_state_unreadable_widget_test.dart`.
+  Future<void> _swallow(String what, Future<void> Function() read) async {
+    try {
+      await read();
+    } catch (error) {
+      logger.d('[FirmwareOta] $what reported $error, '
+          'already in notifier state');
+    }
+  }
+
+  /// The banks read, and the two things this page derives from it — read **once**,
+  /// here, and passed down.
+  ///
+  /// `child:` below is a builder that `UiKitPageView` hands to a layout widget, so
+  /// anything it calls may run during layout rather than during build. A `ref.watch`
+  /// reached from there registers a dependency whose change calls `markNeedsBuild`
+  /// mid-layout, and — the reason this is worth the parameters rather than left as a
+  /// hazard — it invites exactly the drift that had already happened: the install
+  /// offer read `valueOrNull` with no `hasError` check while [_readOtaSupport] read
+  /// the same provider with one, so two answers about one row were being derived by
+  /// two different rules.
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
-    final support = _readOtaSupport();
+    final banks = ref.watch(firmwareBanksDataProvider);
+    final support = _readOtaSupport(banks);
+    // Null in both non-`present` arms, so the offer cannot be built off a row whose
+    // absence is established *or* unknown.
+    final ota =
+        support == _OtaSupport.present ? banks.requireValue.otaInstance : null;
 
     return UiKitPageView.withSliver(
       identifier: 'firmware-ota',
@@ -87,7 +163,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: _buildBody(childContext, state, support),
+          child: _buildBody(childContext, state, support, ota),
         );
       },
     );
@@ -110,16 +186,64 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   /// previous value to an `AsyncError` whether asked to or not — see
   /// `FirmwareBanksDataNotifier.refresh`. Reading the value first would show the
   /// last good answer for a read that has since failed.
-  _OtaSupport _readOtaSupport() {
-    final banks = ref.watch(firmwareBanksDataProvider);
+  _OtaSupport _readOtaSupport(AsyncValue<FirmwareBanksData> banks) {
     if (banks.hasError) return _OtaSupport.unknown;
     final data = banks.valueOrNull;
     if (data == null) return _OtaSupport.unknown;
     return data.otaInstance == null ? _OtaSupport.absent : _OtaSupport.present;
   }
 
-  Widget _buildBody(
-      BuildContext context, FirmwareUpdateState state, _OtaSupport support) {
+  /// Whether the page has nothing to show because the router did not answer.
+  ///
+  /// **Both halves are required, and that is the point.** `loadBanks()` and
+  /// `observeRunningOtaInstall()` run at the same time and record their failures in
+  /// one [FirmwareUpdateState.stateReadError], so keying on that field alone would
+  /// replace a working Check button whenever the *observe* read failed after the
+  /// banks read had succeeded — taking away a control that works. The conjunction
+  /// covers the case the card is for (nothing could be read), and
+  /// [_OtaSupport.unknown] on its own is not it either: a read still in flight is
+  /// not a read that failed, and the card would flash on every page open.
+  ///
+  /// **And not while there is an install to draw**, which is a third condition
+  /// rather than a fourth reading. `stateReadError` is never cleared by the observe
+  /// path, so a page opened during a flash whose *banks* read failed had both cards
+  /// at once — and the top one read "Firmware status unavailable — nothing on the
+  /// router has been changed" directly above "the router is writing the image, do
+  /// not power it off". The banks read having failed is true and is not the story;
+  /// the card exists to stop someone power-cycling a router mid-flash, so it must
+  /// not be the thing that tells them nothing is happening.
+  bool _stateIsUnreadable(FirmwareUpdateState state, _OtaSupport support) =>
+      support == _OtaSupport.unknown &&
+      state.stateReadError != null &&
+      !FirmwareInstallPhaseCard.handles(state.phase);
+
+  /// The install offer's action, or null when there is nothing to offer.
+  ///
+  /// Three independent facts have to line up, and each is a different failure if
+  /// dropped: without the virtual `ota` row there is nothing to dispatch
+  /// `Download()` on, without a verdict the dispatch is a check the user did not ask
+  /// for, and in any phase but `idle` it starts a second update on top of the first.
+  ///
+  /// Decided here rather than inside the card because the *instance number* is one
+  /// of the three, and it comes from the banks read.
+  ///
+  /// [ota] is passed in rather than watched here: this runs from `build`'s `child:`
+  /// builder, which may execute during layout. See [build].
+  VoidCallback? _installAction(BuildContext context, FirmwareUpdateState state,
+      _OtaSupport support, FirmwareImageUIModel? ota) {
+    if (support != _OtaSupport.present) return null;
+    if (state.otaCheck.verdict != FirmwareOtaCheckVerdict.updateAvailable) {
+      return null;
+    }
+    if (state.phase != FirmwareUpdatePhase.idle) return null;
+    // Non-null whenever `support == present`, since [build] derives the two from one
+    // read — so this is a null check for the compiler rather than a case that happens.
+    if (ota == null) return null;
+    return () => _onConfirmOtaInstall(context, state, ota.instance);
+  }
+
+  Widget _buildBody(BuildContext context, FirmwareUpdateState state,
+      _OtaSupport support, FirmwareImageUIModel? ota) {
     final install = _buildInstallCard(state);
     // One `firmware-phase-*` boundary per page, for the reason the manual page
     // gives: the E2E phase-sequence walk (PrivacyGUI-USP-E2E#114) keys on the
@@ -138,11 +262,17 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _OtaCheckCard(
-            state: state,
-            support: support,
-            onCheck: () => _onCheckForUpdates(context),
-          ),
+          if (_stateIsUnreadable(state, support))
+            FirmwareStateUnreadableCard(
+              onRetry: () => _readRouterState(refresh: true),
+            )
+          else
+            _OtaCheckCard(
+              state: state,
+              support: support,
+              onCheck: () => _onCheckForUpdates(context),
+              onInstall: _installAction(context, state, support, ota),
+            ),
           // The gap belongs to the card, not to the column, for the reason
           // `usp_admin_view.dart` gives about its own gated card: a gap left
           // outside would spend `AppGap.xl` on a card that is not there, and on
@@ -212,6 +342,128 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       }
     }
   }
+
+  /// Ask the router to fetch and install the image its check found.
+  ///
+  /// Deliberately the same shape as `_onConfirmInstall` on the manual page —
+  /// confirm, dispatch, hand off to the recovery framework, verify — because it is
+  /// the same reboot and the same verification, only with the router doing the
+  /// fetching. What differs is that there is no fixed delay before the reboot wait:
+  /// the manual path waits blind because it has no status to read, and this one has
+  /// watched `fwup_state` reach 3 or 4 and stop answering.
+  ///
+  /// [otaInstance] is passed in rather than read here so that the offer and the
+  /// dispatch cannot disagree about which row they mean.
+  Future<void> _onConfirmOtaInstall(
+      BuildContext context, FirmwareUpdateState state, int otaInstance) async {
+    // Before the dialog, not after. The router picks the slot it flashes into, so
+    // the only slot it can boot from is the one that was not active — and that is
+    // what `verify()` checks. Without it a successful update would be reported as
+    // "expected firmware bank not present" *after* the reboot, so refusing while
+    // nothing has happened is the honest ordering.
+    final target = state.targetBank;
+    if (target == null) {
+      showFailedSnackBar(context, loc(context).noTargetBankAvailable);
+      return;
+    }
+    final confirmed = await showConfirmActionDialog(
+      context,
+      title: loc(context).updateFirmware,
+      message: loc(context).firmwareInstallConfirmMessage,
+      confirmLabel: loc(context).update,
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+    final FirmwareOtaInstallResult result;
+    try {
+      result = await notifier.triggerRouterOtaInstall(otaInstance: otaInstance);
+    } on UnauthorizedError catch (e) {
+      // #1496's firmware half, and the reason this arm cannot be folded into the
+      // one below: `OperationGuard.enforce` throws *above* the phase change, on
+      // purpose, so a refusal leaves the page in `idle` with no failure card to
+      // read. Logging alone would make the button appear to do nothing at all.
+      logger.e('[FirmwareOta] router OTA install refused', error: e);
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+      return;
+    } on ServiceError catch (e) {
+      // The notifier has already written the failure into the phase card, so this
+      // snack bar is not the only channel — but it names the operation, which the
+      // card's raw firmware text does not.
+      logger.e('[FirmwareOta] router OTA install failed', error: e);
+      if (context.mounted) {
+        showFailedSnackBar(context, loc(context).failedToStartOtaUpdate);
+      }
+      return;
+    }
+
+    // Every other verdict is already on the card: `idle` means mode 2 checked and
+    // found nothing (it checks before it downloads, so an accepted dispatch can
+    // still come back empty), and `failed`/`timedOut` have failed the phase. Only
+    // `flashing` means the router has committed and stopped answering, which is the
+    // one outcome with something left for the view to do.
+    if (!result.isFlashing || !context.mounted) return;
+    await _awaitRebootAndVerify(context);
+  }
+
+  /// Wait out the reboot, then say whether the router came back on the new image.
+  ///
+  /// Shared by the two things that can reach `flashing`, and sharing it is the
+  /// point: a flash this app dispatched and a flash it merely *found* running end
+  /// identically — the router is committed, it has stopped answering, and the only
+  /// question left is which bank it boots. An update started by auto-update
+  /// therefore gets the same reboot dialog and the same verification as one started
+  /// from this button, rather than a card that says "installing" forever.
+  ///
+  /// The state is re-read rather than passed in. Both callers reach here across an
+  /// `await` that can last minutes, and `targetBank` / `otaCheck` are readings of
+  /// the router that other things refresh in the meantime; the dispatch path's own
+  /// pre-flight `targetBank` check is a refusal before anything happens, not a value
+  /// to carry through a flash.
+  Future<void> _awaitRebootAndVerify(BuildContext context) async {
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+    final state = ref.read(firmwareUpdateNotifierProvider);
+    final target = state.targetBank;
+    // The version the check named, which may be empty — the router publishes
+    // `Available=true` with no `Version`, and an update nobody here started has no
+    // check behind it at all. `verify()` treats a version mismatch as a warning and
+    // the bank flip as the verdict, so an empty one costs nothing.
+    final expectedVersion = state.otaCheck.version;
+
+    notifier.enterRecoveryWaiting();
+    await showFirmwareUpdateRecoveryDialog(context, ref);
+    if (!context.mounted) return;
+
+    if (ref.read(appConnectionStateProvider) !=
+        AppConnectionState.authenticated) {
+      // The user bailed out, or the serial fingerprint did not match. The recovery
+      // framework and the route redirect own the page from here.
+      return;
+    }
+
+    if (target == null) {
+      // Only reachable on the observe path: nothing told this page which slot the
+      // image went into, so there is no bank flip to check. The page goes back to
+      // idle rather than claiming an outcome — and it must go somewhere, because
+      // `rebooting` is `isUpdating` and would leave the back arrow vetoed.
+      logger
+          .w('[FirmwareOta] the router rebooted after an update this page did '
+              'not start, and no target bank is known — nothing to verify');
+      notifier.cancel();
+      return;
+    }
+
+    try {
+      await notifier.verify(
+        expectedVersion: expectedVersion,
+        expectedActiveInstance: target.instance,
+      );
+    } catch (_) {
+      // The notifier has already moved to `failed` and published the message.
+    }
+  }
 }
 
 /// Whether this router has the virtual `ota` instance — with a third answer for
@@ -221,30 +473,45 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
 /// folded into either of the other two.
 enum _OtaSupport { unknown, present, absent }
 
-/// The check button and whatever the last check said.
+/// The check button, whatever the last check said, and the offer to act on it.
 ///
 /// **Four visibly different renderings, and the ticket's requirement is that no
 /// two of them collapse into each other:**
 ///
 /// * no `ota` row → a sentence saying checks are not available here, and **no
 ///   button**. Permanent, so there is nothing to retry.
-/// * checked, found something → "Update available" plus the version.
+/// * checked, found something → "Update available" plus the version, and the
+///   install offer below it. #1550 could report this and not act on it; #1551 is
+///   the button that closes that gap.
 /// * checked, found nothing → a conservative line. Not "you are up to date": that
 ///   verdict is inferred from a timeout, see
 ///   [FirmwareRouterOtaCheckService.defaultDeadline].
 /// * not checked, or a check that failed → the button and nothing else. A failure
 ///   is reported in a snack bar and leaves no line here, because every line here
 ///   is a claim about the firmware and a failed check supports none of them.
+///
+/// A fifth rendering does **not** live here: a router that could not be read at all
+/// gets [FirmwareStateUnreadableCard] in this card's place, because every state
+/// above is an answer and that one is the absence of any.
 class _OtaCheckCard extends StatelessWidget {
   const _OtaCheckCard({
     required this.state,
     required this.support,
     required this.onCheck,
+    required this.onInstall,
   });
 
   final FirmwareUpdateState state;
   final _OtaSupport support;
   final VoidCallback onCheck;
+
+  /// Starts the router-side install, or null when there is nothing to install.
+  ///
+  /// Nullable rather than a bool beside it: the offer needs the virtual `ota` row's
+  /// instance number to dispatch on, so "there is something to offer" and "here is
+  /// what to do about it" are one fact. See
+  /// `_FirmwareOtaViewState._installAction`.
+  final VoidCallback? onInstall;
 
   /// Card-content width below which the button and the status line stack.
   ///
@@ -272,6 +539,17 @@ class _OtaCheckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
+    // Live in `idle`, `done` and `failed` — the three phases where a check is the
+    // reasonable next thing — and dead in the rest.
+    //
+    // Not a nicety. `checkForUpdate` sets `phase: checkingOta` unconditionally, and
+    // this page can be in `installing` without anybody here having started it
+    // (REQ-A6: auto-update flashes on its own and the observe read promotes the
+    // phase). A tap during that took the "do not power off" card off the screen —
+    // `_buildInstallCard` draws nothing for `checkingOta` — dispatched a second
+    // `Download()` at a router writing NAND, and then re-offered "Update Now" on top
+    // of the running update when the check came back.
+    final blocked = state.isUpdating && !isChecking;
     final scheme = Theme.of(context).colorScheme;
 
     // No `ota` row: the sentence replaces the whole button line rather than
@@ -345,41 +623,66 @@ class _OtaCheckCard extends StatelessWidget {
               //     button's own `busyColor`, clipped to its shape, and parks on a
               //     legible rest frame when motion is reduced.
               //
-              // `onTap` stays wired: `AppButton._isEnabled` is
-              // `onTap != null && !isLoading`, so the tap is already ignored, and
-              // passing null as well would only re-state it in a second place.
+              // `onTap` stays wired *for the busy state*: `AppButton._isEnabled` is
+              // `onTap != null && !isLoading`, so a checking button already ignores
+              // the tap, and passing null as well would re-state it in a second
+              // place. `blocked` is a different fact — no spinner belongs on this
+              // button while some other operation owns the router — so that one does
+              // null the callback.
               final button = AppButton.primaryOutline(
                 label: loc(context).checkForUpdates,
                 identifier: 'firmware-check',
-                onTap: onCheck,
+                onTap: blocked ? null : onCheck,
                 size: size,
                 isLoading: isChecking,
               );
               final status = _verdictLine(context, scheme, isChecking);
+              final head = stacked
+                  // `stretch` gives the button the whole line, so its label has the
+                  // card's full width to render in instead of ellipsizing inside
+                  // ui_kit's `Flexible`. The gate pins that it does not ellipsize.
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        button,
+                        if (status != null) ...[
+                          AppGap.md(),
+                          status,
+                        ],
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        button,
+                        if (status != null) ...[
+                          AppGap.md(),
+                          Expanded(child: status),
+                        ],
+                      ],
+                    );
 
-              if (stacked) {
-                // `stretch` gives the button the whole line, so its label has the
-                // card's full width to render in instead of ellipsizing inside
-                // ui_kit's `Flexible`. The gate pins that it does not ellipsize.
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    button,
-                    if (status != null) ...[
-                      AppGap.md(),
-                      status,
-                    ],
-                  ],
-                );
-              }
+              final install = onInstall;
+              if (install == null) return head;
 
-              return Row(
+              // Its own full-width line below the check, in both geometries. Not
+              // beside the check button: the wide row already holds a button and a
+              // sentence that neither shrink nor wrap (#1380, 50 of 234 cells
+              // overflowed), and a third child would put the offer back into the
+              // pair that could not fit 256px in any locale.
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  button,
-                  if (status != null) ...[
-                    AppGap.md(),
-                    Expanded(child: status),
-                  ],
+                  head,
+                  AppGap.lg(),
+                  AppButton.primary(
+                    label: loc(context).updateNow,
+                    // Inline literal, not composed: the E2E harvest reads Dart
+                    // source as text, so an id built at runtime never reaches the
+                    // specs' identifier list — silently, in both directions.
+                    identifier: 'firmware-ota-install',
+                    onTap: install,
+                    size: size,
+                  ),
                 ],
               );
             },

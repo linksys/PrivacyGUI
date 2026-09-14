@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/connection/providers/app_connection_state_provi
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
@@ -17,7 +18,7 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   FirmwareUpdateState build() => _fixedState;
 
   @override
-  Future<void> loadBanks() async {}
+  Future<void> loadBanks({bool refresh = false}) async {}
 
   /// Answers with the verdict already in the fixed state instead of asking the
   /// router.
@@ -28,6 +29,29 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   /// the check button would not fail — it would hang until `pumpAndSettle` gave up.
   @override
   Future<FirmwareOtaCheckResult> checkForUpdate() async => _fixedState.otaCheck;
+
+  /// The two router-side OTA seams (#1551), silenced for the same reason as the
+  /// check above and one stronger one: [observeRunningOtaInstall] is called from
+  /// `FirmwareOtaView.initState`, so **every** pump of that page would start a
+  /// twenty-minute poll loop against a router that is not there. Overridden here
+  /// rather than in each test file because the page starts it whether or not a
+  /// test is about it.
+  ///
+  /// Both answer `abandoned`, which is the one verdict
+  /// `FirmwareUpdateNotifier._applyInstallOutcome` deliberately writes nothing
+  /// for — so a fake that has to return something cannot move a fixed state out
+  /// from under the test that pinned it.
+  @override
+  Future<FirmwareOtaInstallResult> triggerRouterOtaInstall({
+    required int otaInstance,
+  }) async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+
+  @override
+  Future<FirmwareOtaInstallResult> observeRunningOtaInstall() async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
 
   @override
   Future<bool> pickAndValidateFile() async => true;

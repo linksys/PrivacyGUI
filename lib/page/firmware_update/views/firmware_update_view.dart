@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
@@ -22,6 +23,7 @@ import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_p
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -50,23 +52,50 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Handled, for the reason the OTA page's copy of this call spells out:
-      // `loadBanks` records the failure in state and rethrows as well, and the
-      // rethrow lands nowhere from here.
-      ref
-          .read(firmwareUpdateNotifierProvider.notifier)
-          .loadBanks()
-          .catchError((Object error) {
-        logger.d('[FirmwareUpdate] loadBanks reported $error, '
-            'already in notifier state');
-      });
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _readBanks());
   }
 
+  /// The one read this page opens with, and re-runs when it failed.
+  ///
+  /// Handled rather than dropped, for the reason the OTA page's copy of this call
+  /// spells out: `loadBanks` records the failure in state *and* rethrows, and the
+  /// rethrow lands nowhere from a post-frame callback. The state is the channel
+  /// this page reads; the log line is so the swallow is not silent.
+  ///
+  /// `try`/`catch` around an `await` rather than `.catchError`, which is what this
+  /// used to be. That worked here only because `loadBanks` returns
+  /// `Future<void>` — `Future<T>.catchError` validates its handler's return value
+  /// against the runtime `T`, and the OTA page's copy of the same shape threw
+  /// `ArgumentError` on the error path once it was handed a future with a real `T`.
+  /// Same shape, one accident away from the same defect.
+  ///
+  /// [refresh] is passed by the read-failure card's retry — see
+  /// [FirmwareStateUnreadableCard.onRetry] for why it cannot be left off there.
+  Future<void> _readBanks({bool refresh = false}) async {
+    try {
+      await ref
+          .read(firmwareUpdateNotifierProvider.notifier)
+          .loadBanks(refresh: refresh);
+    } catch (error) {
+      logger.d('[FirmwareUpdate] loadBanks reported $error, '
+          'already in notifier state');
+    }
+  }
+
+  /// Everything watched, watched **here**.
+  ///
+  /// `child:` below is a builder that `UiKitPageView` hands to a layout widget, so
+  /// anything it calls may run during layout rather than during build — and a
+  /// `ref.watch` reached from there registers a dependency whose change calls
+  /// `markNeedsBuild` mid-layout. All three reads used to sit further down, one of
+  /// them inside `_buildActionCardBody`; they are parameters now so that the rule
+  /// for this page is checkable by looking at one method.
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
+    final systemInfo = ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    final banks = ref.watch(firmwareBanksDataProvider);
+    final surface = ref.watch(surfaceStrategyProvider);
 
     return UiKitPageView.withSliver(
       identifier: 'firmware-update',
@@ -81,16 +110,19 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: _buildBody(childContext, state),
+          child: _buildBody(childContext, state, systemInfo, banks, surface),
         );
       },
     );
   }
 
-  Widget _buildBody(BuildContext context, FirmwareUpdateState state) {
-    final asyncSystemInfo = ref.watch(systemInfoDataProvider);
-    final systemInfo = asyncSystemInfo.valueOrNull?.model;
-    final asyncBanks = ref.watch(firmwareBanksDataProvider);
+  Widget _buildBody(
+    BuildContext context,
+    FirmwareUpdateState state,
+    SystemInfoUIModel? systemInfo,
+    AsyncValue<FirmwareBanksData> asyncBanks,
+    SurfaceStrategy surface,
+  ) {
     // `physicalBanks`: this card draws one boot slot per row, and the virtual
     // OTA instance is not a slot — rendered here it would claim a third bank
     // and print the downloadable version as if the router already held it.
@@ -109,16 +141,23 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           systemInfo: systemInfo,
           banks: banks,
           isLoadingBanks: isLoadingBanks,
+          // An `AsyncError` leaves `banks` empty and `isLoading` false, which the
+          // card used to read as an answer: "No firmware banks reported" — a claim
+          // about the router's boot slots — directly above the card that says the
+          // router could not be asked anything. Two cards for one fact, and the
+          // upper one was the false and more alarming reading.
+          banksUnreadable: asyncBanks.hasError,
         ),
         AppGap.xl(),
-        _buildActionCard(context, state),
+        _buildActionCard(context, state, asyncBanks.hasError, surface),
         AppGap.xl(),
         const FirmwareUpdateWarningNote(),
       ],
     );
   }
 
-  Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildActionCard(BuildContext context, FirmwareUpdateState state,
+      bool banksUnreadable, SurfaceStrategy surface) {
     // Anchor every phase card by its phase name so the E2E phase-sequence walk
     // (PrivacyGUI-USP-E2E#114) keys on a stable identifier rather than the
     // translatable, live-updating copy inside each card — in particular so the
@@ -126,11 +165,12 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // One boundary here covers all phases via `_buildActionCardBody`.
     return Semantics(
       identifier: 'firmware-phase-${state.phase.name}',
-      child: _buildActionCardBody(context, state),
+      child: _buildActionCardBody(context, state, banksUnreadable, surface),
     );
   }
 
-  Widget _buildActionCardBody(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildActionCardBody(BuildContext context, FirmwareUpdateState state,
+      bool banksUnreadable, SurfaceStrategy surface) {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
       case FirmwareUpdatePhase.checkingOta:
@@ -144,9 +184,29 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
         // release a user while it does, so this page cannot be on screen in that
         // phase. Kept as `idle` because that is what it would have to look like
         // if it ever were — a picker, with no OTA spinner this page could own.
-        return ref.watch(surfaceStrategyProvider).firmwareManualEntry(
-              picker: () => _buildIdleCard(context, state),
-            );
+        //
+        // The read-failure card goes **inside** this closure, not above the
+        // switch: a surface that does not offer manual update has nothing to say
+        // about a read this page only makes in order to offer it. Hoisting the
+        // decision out is how #1497's first attempt lost the phase machine.
+        return surface.firmwareManualEntry(
+          picker: () => banksUnreadable
+              // `asyncBanks.hasError`, and no conjunction — unlike the OTA page,
+              // which needs one. There two reads record into a single
+              // `stateReadError`, so that field alone cannot say *which* failed;
+              // here there is one read, and its own `AsyncError` is the answer.
+              // If a second read is ever added to this page, this is the line to
+              // revisit.
+              //
+              // Not `state.stateReadError`, which would also be the leftover of a
+              // failed `observeRunningOtaInstall` from the OTA page — the same
+              // notifier serves both, and a message about a poll this page never
+              // ran would replace a picker whose banks are perfectly readable.
+              ? FirmwareStateUnreadableCard(
+                  onRetry: () => _readBanks(refresh: true),
+                )
+              : _buildIdleCard(context, state),
+        );
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
         return _buildPickingOrValidatingCard(context, state);
@@ -368,11 +428,16 @@ class _RouterStatusCard extends StatelessWidget {
     required this.systemInfo,
     required this.banks,
     required this.isLoadingBanks,
+    required this.banksUnreadable,
   });
 
   final SystemInfoUIModel? systemInfo;
   final List<FirmwareImageUIModel> banks;
   final bool isLoadingBanks;
+
+  /// The read failed, so an empty [banks] is the absence of an answer rather than
+  /// an answer of "none".
+  final bool banksUnreadable;
 
   @override
   Widget build(BuildContext context) {
@@ -387,6 +452,12 @@ class _RouterStatusCard extends StatelessWidget {
           AppGap.md(),
           if (isLoadingBanks)
             _buildLoadingBanks(context)
+          // Before the empty check, because an unreadable list is also an empty
+          // one. A dash rather than a sentence: the card below this one already
+          // says the router could not be asked, and any sentence here would either
+          // repeat it or make a claim this read did not support.
+          else if (banksUnreadable)
+            AppText.bodyMedium('—', color: scheme.onSurfaceVariant)
           else if (banks.isEmpty)
             AppText.bodyMedium(loc(context).noFirmwareBanksReported)
           else

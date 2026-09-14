@@ -1,7 +1,10 @@
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
@@ -234,4 +237,64 @@ FirmwareUpdateState get failedState => const FirmwareUpdateState(
       activeBank: testActiveBank,
       targetBank: testAvailableBank,
       errorMessage: 'Upload failed: Connection timeout after 30 seconds',
+    );
+
+// -----------------------------------------------------------------------------
+// Router-side OTA install states (#1551)
+// -----------------------------------------------------------------------------
+
+/// Idle, with a check that found an image. The one state that offers the install.
+///
+/// Pair it with [testThreeInstanceBanksData]: the offer needs both the verdict and
+/// the virtual `ota` row, and dropping either is what a test asserting the button's
+/// *absence* has to vary.
+FirmwareUpdateState get otaUpdateAvailableState => const FirmwareUpdateState(
+      phase: FirmwareUpdatePhase.idle,
+      activeBank: testActiveBank,
+      targetBank: testAvailableBank,
+      otaCheck:
+          FirmwareOtaCheckResult.updateAvailable(version: '2.0.1.26091009'),
+    );
+
+/// One `fwup_state` reading, in the `installing` phase the poll loop publishes.
+///
+/// A helper rather than five more top-level finals: what the progress card renders
+/// is decided by the reading's `status`, and every caller varies exactly that plus
+/// the number. `rawState` is the value the firmware actually publishes for each
+/// status, so a card that reads it instead of `status` still gets a real one.
+FirmwareUpdateState otaInstallProgressState(
+  FirmwareAutoUpdateStatus status, {
+  int progress = 0,
+  String? rawState,
+}) =>
+    FirmwareUpdateState(
+      phase: FirmwareUpdatePhase.installing,
+      activeBank: testActiveBank,
+      targetBank: testAvailableBank,
+      otaProgress: FirmwareOtaInstallProgress(
+        status: status,
+        rawProgress: progress,
+        rawState: rawState ?? _rawStateFor(status),
+      ),
+    );
+
+String _rawStateFor(FirmwareAutoUpdateStatus status) => switch (status) {
+      FirmwareAutoUpdateStatus.idle => '0',
+      FirmwareAutoUpdateStatus.checking => '1',
+      FirmwareAutoUpdateStatus.downloading => '3',
+      FirmwareAutoUpdateStatus.installing => '4',
+      FirmwareAutoUpdateStatus.failed => '5',
+      // Not in the domain of `mapAutoUpdateStatus`, which is the point: REQ-A7 is
+      // about a firmware that grows a sixth value.
+      FirmwareAutoUpdateStatus.unknown => '7',
+    };
+
+/// The router could not be asked about its firmware at all.
+///
+/// `phase` stays `idle` on purpose — this is the state whose whole requirement is
+/// that it is not an install failure. See [FirmwareUpdateState.stateReadError].
+FirmwareUpdateState get firmwareStateUnreadableState =>
+    const FirmwareUpdateState(
+      phase: FirmwareUpdatePhase.idle,
+      stateReadError: 'Network error: the router did not respond',
     );

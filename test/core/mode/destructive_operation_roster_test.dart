@@ -117,7 +117,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// be a decision. This list is the mechanism by which a new one gets asked what
 /// it costs — a discovered set would answer the question by not asking it.
 ///
-/// Three of the five are allowed in every mode, and they are the more important
+/// Four of the six are allowed in every mode, and they are the more important
 /// half. With only the two refusals wired, `reboot` and `factoryReset` would
 /// differ by the *presence* of a check and a reader could not tell whether reboot
 /// is permitted or whether somebody forgot — which is the exact confusion that
@@ -146,6 +146,22 @@ const _seams = <({String file, String method, String disruption})>[
   (
     file: 'lib/page/firmware_update/providers/firmware_update_notifier.dart',
     method: 'triggerOtaInstall',
+    disruption: 'transientRestart',
+  ),
+  // #1551. The router-side OTA install, which replaces the one above: same
+  // `Download` on the same virtual `ota` instance, `AutoActivate="true"`, and no
+  // URL — the cloud answer that supplied `firmwareUrl` is what #1550 removed.
+  // Same class as the seam it replaces, for the same reason: the router fetches
+  // over its own uplink, so nothing on the agent's path is destroyed and it is
+  // allowed in remote assistance.
+  //
+  // Both are listed because both exist. `triggerOtaInstall` has no caller in
+  // `lib/` any more and is parked rather than deleted (#1550's decision about the
+  // cloud path), so removing its row here would drop the guard from a method that
+  // is still reachable from a test or a future re-wiring.
+  (
+    file: 'lib/page/firmware_update/providers/firmware_update_notifier.dart',
+    method: 'triggerRouterOtaInstall',
     disruption: 'transientRestart',
   ),
 ];
@@ -195,9 +211,10 @@ const _operationClasses = <String>[
 ///
 /// It then grew exactly that third `download` (#1550), which is the census
 /// working: the count went from two to three, this file went red, and the new
-/// call had to state what it costs before it could be green again. Two of the
-/// three are flashes with a seam each; the third is a look with none, and the
-/// difference is argued at the call site below rather than waived.
+/// call had to state what it costs before it could be green again. Then a fourth
+/// (#1551), the same way. Three of the four are flashes with a seam each; the
+/// remaining one is a look with none, and the difference is argued at the call
+/// site below rather than waived.
 const _commandCallSites = <String, List<String>>{
   'lib/page/admin/services/usp_admin_service.dart': [
     'DeviceOperations.factoryReset',
@@ -207,16 +224,18 @@ const _commandCallSites = <String, List<String>>{
     'FirmwareOperations.chunkedPush',
   ],
   'lib/page/firmware_update/services/usp_firmware_update_service.dart': [
-    // Three calls to one command, and only two of them install anything:
-    // triggerLocalDownload (file:// URL), triggerOtaDownload (cloud URL), and
-    // since #1550 requestOtaCheck — the same `Download` with `AutoActivate=false`
-    // and **no URL at all**. `AutoActivate` is what picks the mode: `"true"` is
-    // `fwupd -m 2`, whose own usage string reads `checking / downloading /
-    // flashing / rebooting`, and `"false"` is `-m 3`, `check for forced update`.
-    // We send `"false"` and nothing else — one argument, asserted in
-    // `usp_firmware_update_service_test.dart` — so the destructive verb is not
-    // one keystroke away from this call, it is a different value of the only
-    // argument there is.
+    // Four calls to one command, and only three of them install anything:
+    // triggerLocalDownload (file:// URL), triggerOtaDownload (cloud URL),
+    // requestOtaCheck (#1550) and requestOtaInstall (#1551). The last two are the
+    // pair worth reading together — the same `Download` on the same virtual `ota`
+    // instance with **no URL at all**, separated by one argument.
+    // `AutoActivate` is what picks the mode: `"true"` is `fwupd -m 2`, whose own
+    // usage string reads `checking / downloading / flashing / rebooting`, and
+    // `"false"` is `-m 3`, `check for forced update`. Each sends that one argument
+    // and nothing else — asserted both ways in
+    // `usp_firmware_update_service_test.dart` — so the difference between looking
+    // and flashing is a value, not a keystroke, and it is the value each method's
+    // name promises.
     //
     // What was measured, on the bench run that found nothing: `fwup_state` went
     // 0→1→0 and never reached 3 (3 is downloading/flashing), `fwup_progress`
@@ -229,18 +248,21 @@ const _commandCallSites = <String, List<String>>{
     // it needs the seam its two neighbours have; it is written down here so the
     // question has somewhere to be asked.
     //
-    // The session it runs over is the one it answers on, so on today's reading
-    // there is no seam above it and no DisruptionClass to choose. The other two
-    // keep theirs (`triggerInstall` / `triggerOtaInstall` in _seams).
+    // The session the *check* runs over is the one it answers on, so on today's
+    // reading it has no seam above it and no DisruptionClass to choose. The other
+    // three keep theirs (`triggerInstall` / `triggerOtaInstall` /
+    // `triggerRouterOtaInstall` in _seams).
     //
     // Deliberately NOT an entry in _notDestructive. That set is keyed on
-    // `(file, command)`, and all three calls here are `FirmwareOperations.download`
-    // — so a waiver naming this one would name the two flashes as well and hand a
-    // reset-the-router-remotely command the exemption a version check earned.
+    // `(file, command)`, and all four calls here are `FirmwareOperations.download`
+    // — so a waiver naming the check would name the three flashes as well and hand
+    // a reset-the-router-remotely command the exemption a version check earned.
     // Left unwaived, it stays in the reachability test, which the file passes on
-    // the two seams its neighbours own. That is a weaker claim than a waiver would
-    // be and it is the honest one: this census cannot tell the three apart, and
-    // the argument for the third is the absent URL, which lives in the code.
+    // the seams its neighbours own. That is a weaker claim than a waiver would be
+    // and it is the honest one: this census cannot tell the four apart, and the
+    // argument for the check is the value of `AutoActivate`, which lives in the
+    // code.
+    'FirmwareOperations.download',
     'FirmwareOperations.download',
     'FirmwareOperations.download',
     'FirmwareOperations.download',

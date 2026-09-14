@@ -1220,6 +1220,35 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 /// [AppButton]` is what makes that a failure rather than 234 green cells: the sibling
 /// case above keeps the default because its banks list is what it measures, so the two
 /// fixtures stay apart and each says why.
+///
+/// **What #1551 added to this page and this case does not sweep: the install button.**
+/// `updateAvailable` renders a second, full-width [AppButton] (`firmware-ota-install`)
+/// under the verdict, and no cell anywhere renders it — the fixture pins
+/// `noUpdateFound`, which is a verdict with no offer attached. Recorded as a gap rather
+/// than closed, and the reason is not cost:
+///
+///   * **swapping this fixture's verdict would break a measured guard.** The
+///     readability group `'readability at the site wave 4 fixed in firmware_ota'`
+///     (`page_surface_overflow_test.dart`) pumps `overrides()` from this case and
+///     hard-requires `loc.firmwareNoUpdateFound` present exactly once, with a
+///     re-derived `kOtaStatusLineCeiling` and its clip, wrap and split-token
+///     assertions all built on that sentence. It is the guard standing over wave 4's
+///     50 red cells; trading it for the offer state is a net loss.
+///   * **adding a tenth case, or a second group, costs the gate bookkeeping** —
+///     `kReadabilityGuardWeightMs` and its prose derivation, the roster row, the
+///     baseline rows — which on this seam has repeatedly dwarfed the change itself.
+///   * **and the risk it would be buying is measured at zero.** A throwaway probe
+///     pumped this page in the `updateAvailable` state at all nine widths in all 26
+///     locales — the same 234 coordinates a cell would add — under real fonts, and
+///     found no overflow exception, no clipped label, and no negative slack on either
+///     button. `updateNow`'s intrinsic width is below `checkForUpdates`'s in **every**
+///     locale (worst `de` 117.2px vs `fr` 177.9px), and the install button is granted
+///     the full content box rather than the check button's share of a `Row` — so the
+///     already-swept button dominates it on both terms of the comparison.
+///
+/// That last bullet is why this stays a note: the gap is in the coverage, not in the
+/// page. What would reopen it is a *third* control in that arm or a label that is no
+/// longer dominated, and either is a reason to pay for the tenth case then.
 final kFirmwareOtaPageCase = PageSurfaceCase(
   id: 'firmware_ota',
   view: () => const FirmwareOtaView(),

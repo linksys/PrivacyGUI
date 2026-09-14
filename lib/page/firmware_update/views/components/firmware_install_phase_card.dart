@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
@@ -80,28 +82,130 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
   }
 
   Widget _triggering(BuildContext context) => _progressCard(
+        context,
         title: loc(context).preparingToInstall,
         body: loc(context).verifyingFirmwareImage,
       );
 
-  Widget _installing(BuildContext context) => _progressCard(
+  /// The install itself, described by the router when the router is describing it.
+  ///
+  /// Two renderings off one phase, because two different things reach it. A manual
+  /// upload pushed the image from this browser and the router publishes nothing
+  /// while it writes, so there is no reading and the copy is the copy this card has
+  /// always had. A router-side OTA runs `fwupd -m 2` — **check, download, flash** —
+  /// and publishes `fwup_state` throughout, so one wording would claim the image
+  /// was being written while the router was still deciding whether one existed.
+  ///
+  /// `otaProgress == null` is therefore the manual path and not a default: see
+  /// [FirmwareUpdateState.otaProgress] for why no value of `fwup_progress` can
+  /// stand in for "nothing known yet".
+  Widget _installing(BuildContext context) {
+    final progress = state.otaProgress;
+    if (progress == null) {
+      return _progressCard(
+        context,
         title: loc(context).installingFirmware,
         body: loc(context).routerWritingImage,
       );
+    }
+    return _progressCard(
+      context,
+      title: _otaTitle(context, progress.status),
+      body: _otaBody(context, progress.status),
+      percent: progress.percent,
+    );
+  }
+
+  /// What the router is doing, per its own `fwup_state`.
+  ///
+  /// Exhaustive rather than defaulted: a seventh [FirmwareAutoUpdateStatus] must
+  /// not silently inherit a sentence that was written for a different phase.
+  ///
+  /// The last arm covers three states for two different reasons, and only one of
+  /// them is a real rendering. `idle` and `failed` are not `isRunning`, so they
+  /// never promote the phase and cannot reach this card — they are in the arm
+  /// because the `switch` is exhaustive, not because they are drawn. `unknown` is
+  /// drawn, on purpose: REQ-A7 keeps an unrecognised `fwup_state` inside
+  /// `isInstalling` because a value that cannot be ruled out being a flash must not
+  /// be shown as "nothing is happening". So the neutral pair is that state's
+  /// requirement rather than a fallback — a firmware that grows a state reads as
+  /// *something happening*, never as the last state this build recognised.
+  String _otaTitle(BuildContext context, FirmwareAutoUpdateStatus status) =>
+      switch (status) {
+        FirmwareAutoUpdateStatus.checking =>
+          loc(context).checkingForNewFirmware,
+        FirmwareAutoUpdateStatus.downloading =>
+          loc(context).downloadingFirmware,
+        FirmwareAutoUpdateStatus.installing => loc(context).installingFirmware,
+        FirmwareAutoUpdateStatus.idle ||
+        FirmwareAutoUpdateStatus.failed ||
+        FirmwareAutoUpdateStatus.unknown =>
+          loc(context).updatingFirmware,
+      };
+
+  /// The sentence under the title, including the one instruction that matters.
+  ///
+  /// `installing` reuses `routerWritingImage`, the manual path's own sentence,
+  /// because `fwup_state=4` *is* the router writing the image — a second wording
+  /// for one fact would be a distinction the firmware does not make.
+  String _otaBody(BuildContext context, FirmwareAutoUpdateStatus status) =>
+      switch (status) {
+        FirmwareAutoUpdateStatus.checking =>
+          loc(context).routerCheckingForImage,
+        FirmwareAutoUpdateStatus.downloading =>
+          loc(context).routerDownloadingImage,
+        FirmwareAutoUpdateStatus.installing => loc(context).routerWritingImage,
+        FirmwareAutoUpdateStatus.idle ||
+        FirmwareAutoUpdateStatus.failed ||
+        FirmwareAutoUpdateStatus.unknown =>
+          loc(context).routerUpdatingFirmware,
+      };
 
   Widget _rebooting(BuildContext context) => _progressCard(
+        context,
         title: loc(context).rebootingRouter,
         body: loc(context).waitingForRouterOnline,
       );
 
   Widget _verifying(BuildContext context) => _progressCard(
+        context,
         title: loc(context).verifyingFirmware,
         body: loc(context).confirmingNewFirmware,
       );
 
   /// The four in-progress phases differ only in their two strings, and saying so
   /// once is what keeps them identical across the two pages.
-  Widget _progressCard({required String title, required String body}) =>
+  ///
+  /// [percent] is null for all of them except a router-side download. The number
+  /// arrives already clamped — see [FirmwareOtaInstallProgress.percent], which is
+  /// non-null in exactly one state because `fwup_progress` has been measured
+  /// behaving three different ways in the others.
+  ///
+  /// **The figure carries the progress, not the bar**, and that is ui_kit's shape
+  /// rather than a choice made here. `AppLoader._buildLinear` passes `value` to one
+  /// of its seven indicators — the unnamed `default:` one — and every shipped style
+  /// builder names a type (`flat` → `gradientChase`, the kit's own default →
+  /// `shimmer`), so under any theme this app ships the linear bar animates
+  /// end-to-end regardless of `value`. `value` is still passed: it costs nothing and
+  /// is correct the day a theme leaves `linearType` unset.
+  ///
+  /// **Not yet filed upstream** — stated so nobody reads this as a tracked gap. It is
+  /// a kit-level defect (`value` accepted and then discarded for six of seven linear
+  /// types), and reimplementing a determinate bar here is exactly what the UI Kit
+  /// First rule forbids, so the only two moves are a ui_kit issue or living with the
+  /// label. This card lives with the label.
+  ///
+  /// So the number goes in `AppLoader`'s own `label`, which is rendered, and which
+  /// keeps it attached to the bar it describes. The manual upload card in
+  /// `firmware_update_view.dart` puts its percentage above the bar instead, and that
+  /// is not an inconsistency to fix — it has no body sentence, so there the
+  /// percentage *is* the body.
+  Widget _progressCard(
+    BuildContext context, {
+    required String title,
+    required String body,
+    int? percent,
+  }) =>
       AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +214,13 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
             AppGap.md(),
             AppText.bodyMedium(body),
             AppGap.xl(),
-            const AppLoader(variant: LoaderVariant.linear),
+            AppLoader(
+              variant: LoaderVariant.linear,
+              value: percent == null ? null : percent / 100,
+              label: percent == null
+                  ? null
+                  : loc(context).percentComplete('$percent'),
+            ),
           ],
         ),
       );

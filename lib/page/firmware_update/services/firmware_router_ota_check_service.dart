@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_operation_watch.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
 /// Dispatches one check and returns the `commandKey` that names it.
@@ -179,34 +180,13 @@ class FirmwareRouterOtaCheckService {
 
   /// Subscribe to `OperationComplete`, or do without.
   ///
-  /// Opening the watch is an HTTP POST to the bridge's subscription endpoint, so
-  /// it can fail on its own — and if it threw out of [check] the caller would be
-  /// left holding a phase it set before calling: the button spins, nothing resets
-  /// it, and the thrown object is not a [ServiceError], so the notifier's
-  /// `on ServiceError` would not catch it either.
-  ///
-  /// Degrading is the same trade [SseOperationAwaiter.watchOperationComplete]
-  /// already makes when SSE is disconnected — it returns a watch nobody can feed.
-  /// The cost is identical and it is real: without this channel a refusal reads as
-  /// "nothing found", which is the answer this file exists to avoid giving
-  /// wrongly. It is accepted here for the same reason it is accepted there. The
-  /// alternative is refusing to check at all on a router whose SSE is merely
-  /// unavailable, and the check is the feature.
-  Future<OperationCompleteWatch?> _openWatch() async {
-    final awaiter = _awaiter;
-    if (awaiter == null) return null;
-    try {
-      return await awaiter.watchOperationComplete(
-        referencePath: _referencePath,
-      );
-    } catch (e) {
-      logger.w(
-          '[FirmwareUpdate] could not watch OperationComplete — the check '
-          'will run without the refusal channel',
-          error: e);
-      return null;
-    }
-  }
+  /// The degrade is [openOperationCompleteWatch]'s, and what it costs *here* is
+  /// the reason this file exists: without the refusal channel a refused check
+  /// reads as "nothing found". Accepted anyway, because the alternative is
+  /// refusing to check at all on a router whose SSE is merely unavailable, and
+  /// the check is the feature.
+  Future<OperationCompleteWatch?> _openWatch() =>
+      openOperationCompleteWatch(_awaiter, referencePath: _referencePath);
 
   /// The virtual instance, picked by alias rather than by position.
   ///

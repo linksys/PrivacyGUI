@@ -92,10 +92,9 @@ class FirmwareImages {
       }
       items.add(FirmwareImage(
         instancePath: p,
-        alias:
-            response.containsKey('${p}Alias')
-                ? response['${p}Alias'] as String
-                : null,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         name: (response['${p}Name'] ?? '') as String,
         version: (response['${p}Version'] ?? '') as String,
         status: (response['${p}Status'] ?? '') as String,
