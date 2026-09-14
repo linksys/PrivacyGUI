@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from FirmwareImages
 class FirmwareImage {
   final String instancePath;
+  final String? alias;
   final String name;
   final String version;
   final String status;
@@ -14,6 +15,7 @@ class FirmwareImage {
 
   const FirmwareImage({
     required this.instancePath,
+    this.alias,
     required this.name,
     required this.version,
     required this.status,
@@ -21,13 +23,15 @@ class FirmwareImage {
   });
 }
 
-/// Firmware image partitions (dual image status)
+/// Firmware image partitions and OTA update state. Instances 1-2 (alias fw1/fw2) are physical NAND banks. Instance 3 (alias ota) is a virtual instance representing OTA server update state.
+
 class FirmwareImages {
   final List<FirmwareImage> items;
 
   const FirmwareImages({required this.items});
 
   static const _paths = [
+    'Device.DeviceInfo.FirmwareImage.*.Alias',
     'Device.DeviceInfo.FirmwareImage.*.Name',
     'Device.DeviceInfo.FirmwareImage.*.Version',
     'Device.DeviceInfo.FirmwareImage.*.Status',
@@ -56,6 +60,7 @@ class FirmwareImages {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}Name'],
         response['${p}Version'],
         response['${p}Status'],
@@ -87,6 +92,10 @@ class FirmwareImages {
       }
       items.add(FirmwareImage(
         instancePath: p,
+        alias:
+            response.containsKey('${p}Alias')
+                ? response['${p}Alias'] as String
+                : null,
         name: (response['${p}Name'] ?? '') as String,
         version: (response['${p}Version'] ?? '') as String,
         status: (response['${p}Status'] ?? '') as String,
