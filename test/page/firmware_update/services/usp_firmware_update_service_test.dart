@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
 import '../../../mocks/test_data/firmware_update_test_data.dart';
@@ -315,6 +316,117 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('mapAutoUpdateStatus', () {
+    // The documented `fwup_state` domain is 0/1/3/4/5 — five values, not six.
+    // (`2` is a mode of `update_firmware_now`, not a state.) Only `0` has been
+    // observed on real hardware, so everything below is fixture-driven.
+    const cases = {
+      '0': FirmwareAutoUpdateStatus.idle,
+      '1': FirmwareAutoUpdateStatus.checking,
+      '3': FirmwareAutoUpdateStatus.downloading,
+      '4': FirmwareAutoUpdateStatus.installing,
+      '5': FirmwareAutoUpdateStatus.failed,
+    };
+
+    cases.forEach((raw, expected) {
+      test('fwup_state "$raw" maps to ${expected.name}', () {
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(fwupState: raw),
+        );
+
+        expect(model.status, expected);
+        expect(model.rawState, raw);
+      });
+    });
+
+    test('an undefined value maps to unknown, does not throw, is not idle', () {
+      // The arm that matters: a firmware that grows a sixth state must show as
+      // unknown, because reporting idle would tell the user nothing is running
+      // while the router is mid-flash.
+      final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+        FirmwareUpdateTestData.autoUpdate(fwupState: '7'),
+      );
+
+      expect(model.status, FirmwareAutoUpdateStatus.unknown);
+      expect(model.status, isNot(FirmwareAutoUpdateStatus.idle));
+    });
+
+    test('an empty fwup_state maps to unknown', () {
+      // codegen substitutes '' for an absent value, so "the router did not
+      // answer" arrives here as an empty string, not as null.
+      final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+        FirmwareUpdateTestData.autoUpdate(fwupState: ''),
+      );
+
+      expect(model.status, FirmwareAutoUpdateStatus.unknown);
+      expect(model.rawState, '');
+    });
+
+    test('the raw fwup_state is retrievable from a failure state', () {
+      // Download failure and flash failure are both `5`. Keeping the raw value
+      // is what lets a later split read the difference off data we already hold.
+      final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+        FirmwareUpdateTestData.autoUpdate(fwupState: '5', fwupProgress: '42'),
+      );
+
+      expect(model.status, FirmwareAutoUpdateStatus.failed);
+      expect(model.rawState, '5');
+    });
+
+    test('progress parses, and a non-numeric progress falls back to 0', () {
+      expect(
+        UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(fwupState: '3', fwupProgress: '57'),
+        ).progress,
+        57,
+      );
+      expect(
+        UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(fwupState: '3', fwupProgress: ''),
+        ).progress,
+        0,
+        reason: 'an unreadable progress must not take the status down with it',
+      );
+    });
+
+    test('progress is carried verbatim, including 100 while idle', () {
+      // Measured: `fwup_progress` rests at 100 after a check that found nothing
+      // (and at 0 after a different mode). The model must not reinterpret that
+      // as "finished" — deciding what it means is the caller's job, and the
+      // status is what says whether anything is running.
+      final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+        FirmwareUpdateTestData.autoUpdate(fwupState: '0', fwupProgress: '100'),
+      );
+
+      expect(model.status, FirmwareAutoUpdateStatus.idle);
+      expect(model.progress, 100);
+      expect(model.isBusy, isFalse);
+    });
+
+    test('isBusy covers exactly the three working states', () {
+      String rawOf(FirmwareAutoUpdateStatus s) => switch (s) {
+            FirmwareAutoUpdateStatus.idle => '0',
+            FirmwareAutoUpdateStatus.checking => '1',
+            FirmwareAutoUpdateStatus.downloading => '3',
+            FirmwareAutoUpdateStatus.installing => '4',
+            FirmwareAutoUpdateStatus.failed => '5',
+            FirmwareAutoUpdateStatus.unknown => '7',
+          };
+
+      final busy = FirmwareAutoUpdateStatus.values
+          .where((s) => UspFirmwareUpdateService.mapAutoUpdateStatus(
+                FirmwareUpdateTestData.autoUpdate(fwupState: rawOf(s)),
+              ).isBusy)
+          .toSet();
+
+      expect(busy, {
+        FirmwareAutoUpdateStatus.checking,
+        FirmwareAutoUpdateStatus.downloading,
+        FirmwareAutoUpdateStatus.installing,
+      });
     });
   });
 }

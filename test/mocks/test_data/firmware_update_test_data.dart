@@ -1,3 +1,4 @@
+import 'package:privacy_gui/generated/firmware_auto_update.g.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 
 /// Test data builder for the manual firmware update flow.
@@ -163,6 +164,24 @@ class FirmwareUpdateTestData {
         version: '',
         status: 'Available',
         available: true,
+      );
+
+  // ---------------------------------------------------------------------------
+  // Auto-update (fwup) status
+  // ---------------------------------------------------------------------------
+
+  /// A `FirmwareAutoUpdate` reading as the codegen layer hands it over. Both
+  /// sysevent values arrive as strings, including the ones that look numeric —
+  /// which is the whole reason the mapping has to be explicit.
+  static FirmwareAutoUpdate autoUpdate({
+    String fwupState = '0',
+    String fwupProgress = '0',
+    String autoupdateFlags = '2',
+  }) =>
+      FirmwareAutoUpdate(
+        autoupdateFlags: autoupdateFlags,
+        fwupState: fwupState,
+        fwupProgress: fwupProgress,
       );
 
   /// Flexible bank builder for verify tests.

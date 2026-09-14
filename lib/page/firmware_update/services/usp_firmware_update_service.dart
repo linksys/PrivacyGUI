@@ -4,8 +4,10 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/firmware_auto_update.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/firmware_operations.g.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 
 final uspFirmwareUpdateServiceProvider = Provider<UspFirmwareUpdateService>(
@@ -158,6 +160,39 @@ class UspFirmwareUpdateService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// The one place `fwup_state` becomes an app-layer status.
+  ///
+  /// Keeping it single-sited is the point: the raw domain is `0/1/3/4/5` (`2` is
+  /// a mode of `update_firmware_now`, not a state), only `0` has ever been seen
+  /// on real hardware, and a firmware that grows a sixth value must cost one
+  /// enum value plus one arm here. Unknown values therefore map to
+  /// [FirmwareAutoUpdateStatus.unknown] — never to `idle`, which would report
+  /// "nothing is running" during an unrecognised flash — and never throw.
+  ///
+  /// [FirmwareAutoUpdateUIModel.rawState] carries the value through unparsed so
+  /// a failure keeps the number the router sent.
+  static FirmwareAutoUpdateUIModel mapAutoUpdateStatus(FirmwareAutoUpdate raw) {
+    final status = switch (raw.fwupState) {
+      '0' => FirmwareAutoUpdateStatus.idle,
+      '1' => FirmwareAutoUpdateStatus.checking,
+      '3' => FirmwareAutoUpdateStatus.downloading,
+      '4' => FirmwareAutoUpdateStatus.installing,
+      '5' => FirmwareAutoUpdateStatus.failed,
+      _ => FirmwareAutoUpdateStatus.unknown,
+    };
+    if (status == FirmwareAutoUpdateStatus.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised fwup_state "${raw.fwupState}"');
+    }
+    return FirmwareAutoUpdateUIModel(
+      status: status,
+      // Carried verbatim. `fwup_progress` rests at both 0 and 100 after a check
+      // depending on the mode used, so no value of it means "done" — reading it
+      // is only valid within the status above.
+      progress: int.tryParse(raw.fwupProgress) ?? 0,
+      rawState: raw.fwupState,
+    );
   }
 
   FirmwareImageUIModel _toUIModel(FirmwareImage image) => FirmwareImageUIModel(
