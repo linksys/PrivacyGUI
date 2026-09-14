@@ -84,7 +84,12 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     return ToggleRow(
       value: reservation.enable,
       isLoading: isLoading,
-      onChanged: isLoading || reservation.instancePath == null
+      // `isLoading` is not part of this condition: a busy `AppSwitch` refuses
+      // input on its own (`_isInteractive = onChanged != null && !isLoading`), so
+      // nulling the callback too would only make the remaining guard ambiguous.
+      // A missing `instancePath` is the one that still means something — that row
+      // cannot be mutated at all.
+      onChanged: reservation.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,
