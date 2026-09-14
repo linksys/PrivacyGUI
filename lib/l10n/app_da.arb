@@ -103,6 +103,8 @@
   "filters": "Filtrer",
   "firewall": "Firewall",
   "firmwareUpdate": "Firmwareopdatering",
+  "manualUpdate": "Manuel opdatering",
+  "manualUpdateDesc": "Installer et firmware-image fra denne enhed.",
   "forgotPassword": "Glemt adgangskode",
   "generalError": "Ups, der er noget galt her! Prøv venligst igen senere",
   "goBack": "Gå tilbage",

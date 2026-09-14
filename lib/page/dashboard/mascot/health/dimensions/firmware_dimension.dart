@@ -88,7 +88,13 @@ class FirmwareHealthDimension extends HealthDimension {
         id: 'firmware_update',
         label: loc(context).firmwareUpdate,
         icon: Icons.system_update,
-        routeName: RouteNamed.uspFirmwareUpdate,
+        // The OTA page, not the manual one, since #1549 put the two flows on
+        // separate pages. This dimension is scored entirely on `otaInstance`, so
+        // the update it offers to act on is the one only that page can check for
+        // and start — the manual page has a file picker and no OTA path at all,
+        // and in remote assistance its picker is gated away too, which would land
+        // this action on a page with nothing on it.
+        routeName: RouteNamed.uspFirmwareOta,
       ),
     ];
   }

@@ -103,6 +103,8 @@
   "filters": "Filtros",
   "firewall": "Firewall",
   "firmwareUpdate": "Actualização do firmware",
+  "manualUpdate": "Atualização manual",
+  "manualUpdateDesc": "Instale uma imagem de firmware a partir deste dispositivo.",
   "forgotPassword": "Esqueceu-se da palavra-passe",
   "generalError": "Ops, há algo errado aqui! Por favor, tente novamente mais tarde.",
   "goBack": "Retroceder",

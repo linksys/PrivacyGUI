@@ -103,6 +103,8 @@
   "filters": "Filtrer",
   "firewall": "Brannmur",
   "firmwareUpdate": "Fastvareoppdatering",
+  "manualUpdate": "Manuell oppdatering",
+  "manualUpdateDesc": "Installer et fastvarebilde fra denne enheten.",
   "forgotPassword": "Glemt passord",
   "generalError": "Oops, noe er galt her! Prøv igjen senere",
   "goBack": "Gå tilbake",

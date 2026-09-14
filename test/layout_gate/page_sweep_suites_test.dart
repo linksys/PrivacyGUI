@@ -226,7 +226,7 @@ void main() {
         reason: 'these guard groups are not in kReadabilityGuardPages: '
             '${faults.unregistered.join(', ')}. Register each with the page it '
             'pumps — a guard whose page is unknown cannot be kept beside that '
-            'page across a split, and its 4.5s is charged to whichever suite '
+            'page across a split, and its 6.9s is charged to whichever suite '
             'happens to hold it.',
       );
     });
@@ -376,7 +376,7 @@ void main() {
                 'which is at least $needed suites of similar weight'}. '
             'A projection is a floor on the cost, not an estimate: it sums measured '
             'per-page figures, and #1380 measured this file at 558s where the sum '
-            'then read 336.1s. Both of those are 43-case figures: the sum above is 48 '
+            'then read 336.1s. Both of those are 43-case figures: the sum above is 49 '
             'cases and no wall has been measured against it, so 1.66x is an order of '
             'magnitude and not a factor to apply here. Five of the terms above are '
             'also INHERITED rather than '

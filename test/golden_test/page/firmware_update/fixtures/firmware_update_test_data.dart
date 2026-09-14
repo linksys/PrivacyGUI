@@ -126,6 +126,18 @@ FirmwareUpdateState get idleFileSelectedState => const FirmwareUpdateState(
       selectedFileMd5: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
     );
 
+/// The OTA page's own busy phase: the cloud check is in flight, so no verdict
+/// has arrived yet and there is nothing to install.
+///
+/// The only phase in the enum that belongs to exactly one page. It has no
+/// `selectedFile*`, because an OTA check has no local file, and no [otaInfo],
+/// because that is what it is waiting for.
+FirmwareUpdateState get checkingOtaState => const FirmwareUpdateState(
+      phase: FirmwareUpdatePhase.checkingOta,
+      activeBank: testActiveBank,
+      targetBank: testAvailableBank,
+    );
+
 FirmwareUpdateState get pickingState => const FirmwareUpdateState(
       phase: FirmwareUpdatePhase.picking,
       activeBank: testActiveBank,

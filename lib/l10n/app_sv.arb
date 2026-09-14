@@ -103,6 +103,8 @@
   "filters": "Filtrera",
   "firewall": "Brandvägg",
   "firmwareUpdate": "Uppdatering av fast programvara",
+  "manualUpdate": "Manuell uppdatering",
+  "manualUpdateDesc": "Installera en programvarubild från den här enheten.",
   "forgotPassword": "Glömt lösenordet",
   "generalError": "Oj, något är fel här! Försök igen senare",
   "goBack": "Gå tillbaka",

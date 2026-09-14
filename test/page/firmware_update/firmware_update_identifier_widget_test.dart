@@ -16,7 +16,17 @@ import '../../mocks/provider_overrides/mock_common.dart';
 /// Verifies the E2E identifier hooks added to uspFirmwareUpdate for
 /// PrivacyGUI#1391 (unblocks PrivacyGUI-USP-E2E#85). This is the highest-value
 /// page: it has an `onExit` route guard that only manifests through real
-/// navigation, so the check/pick/install controls must be addressable.
+/// navigation, so the pick/install controls must be addressable.
+///
+/// **`firmware-check` is no longer on this page as of #1549** — the cloud check
+/// is the OTA page's entry point now, and its hook is pinned in
+/// `firmware_ota_identifier_widget_test.dart`. Asserted absent below rather than
+/// silently dropped: a page carrying both entry points is the regression the
+/// split exists to prevent, and an E2E spec that found `firmware-check` here
+/// would drive a manual upload flow expecting an OTA one.
+///
+/// The guard itself is measured in `test/route/usp_firmware_exit_guard_test.dart`
+/// against the real route object; this file only pins the controls that reach it.
 ///
 /// Not tagged `ui`: gated in `run_tests.sh` (the repo's only CI test job).
 void main() {
@@ -73,8 +83,9 @@ void main() {
       wrapState(withSelectedFile ? idleFileSelectedState : idleNoFileState);
 
   group('uspFirmwareUpdate identifiers', () {
-    testWidgets('anchor + check + pick controls are hooked in idle',
-        (tester) async {
+    testWidgets(
+        'anchor + pick control are hooked in idle, and the OTA check '
+        'is not on this page', (tester) async {
       final handle = tester.ensureSemantics();
       tester.view.physicalSize = const Size(1280, 1600);
       tester.view.devicePixelRatio = 1.0;
@@ -84,14 +95,14 @@ void main() {
       await tester.pumpWidget(wrap(withSelectedFile: false));
       await tester.pumpAndSettle();
 
-      for (final id in const [
-        'firmware-update',
-        'firmware-check',
-        'firmware-pick-file'
-      ]) {
+      for (final id in const ['firmware-update', 'firmware-pick-file']) {
         expect(find.bySemanticsIdentifier(id), findsOneWidget,
             reason: 'firmware control "$id" must be locatable');
       }
+
+      expect(find.bySemanticsIdentifier('firmware-check'), findsNothing,
+          reason: '#1549 moved the cloud check to the OTA page — two entry '
+              'points, one per page');
 
       handle.dispose();
     });

@@ -103,6 +103,8 @@
   "filters": "Suodattimet",
   "firewall": "Palomuuri",
   "firmwareUpdate": "Laiteohjelmiston päivitys",
+  "manualUpdate": "Manuaalinen päivitys",
+  "manualUpdateDesc": "Asenna laiteohjelmistotiedosto tästä laitteesta.",
   "forgotPassword": "Unohtunut salasana",
   "generalError": "Hups, jokin meni pieleen! Yritä myöhemmin uudelleen",
   "goBack": "Takaisin",

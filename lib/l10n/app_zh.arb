@@ -103,6 +103,8 @@
   "filters": "筛选器",
   "firewall": "防火墙",
   "firmwareUpdate": "固件更新",
+  "manualUpdate": "手动更新",
+  "manualUpdateDesc": "从此设备安装固件映像。",
   "forgotPassword": "忘记密码",
   "generalError": "哎呀，出问题了！请稍后再试",
   "goBack": "返回",

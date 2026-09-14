@@ -103,6 +103,8 @@
   "filters": "Filtry",
   "firewall": "Zapora",
   "firmwareUpdate": "Aktualizacja oprogramowania sprzętowego",
+  "manualUpdate": "Aktualizacja ręczna",
+  "manualUpdateDesc": "Zainstaluj obraz oprogramowania z tego urządzenia.",
   "forgotPassword": "Nie pamiętam hasła",
   "generalError": "Ups, coś poszło nie tak! Spróbuj ponownie później",
   "goBack": "Wstecz",

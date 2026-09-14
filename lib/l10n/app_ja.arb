@@ -103,6 +103,8 @@
   "filters": "フィルター",
   "firewall": "ファイアウォール",
   "firmwareUpdate": "ファームウェアの更新",
+  "manualUpdate": "手動更新",
+  "manualUpdateDesc": "このデバイスからファームウェアイメージをインストールします。",
   "forgotPassword": "パスワードをお忘れの場合",
   "generalError": "申し訳ございません。問題が発生しました！後でもう一度お試しください。",
   "goBack": "戻る",

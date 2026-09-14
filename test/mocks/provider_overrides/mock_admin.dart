@@ -62,13 +62,20 @@ List<Override> adminOverrides(UspAdminState state) => [
 
 /// Overrides for the whole page, which is one provider more than [adminOverrides].
 ///
-/// The fourth card is `FirmwareUpdateCard`, and it watches `systemInfoDataProvider`
-/// rather than taking its data from `UspAdminState`. Unoverridden that lands in
-/// `AsyncError`, whose `valueOrNull` is null, so the card takes its
-/// `activeVersion == null` branch and renders the two-word `notAvailable` where the
-/// app renders a version string (`firmware_update_card.dart:50`) — a narrower `Row`
-/// than the page has, measured in all 234 cells with nothing failing. Same class of
-/// under-measurement `mock_menu.dart` documents for its two badges.
+/// The card that needs it is `FirmwareOtaCard`, and it watches
+/// `systemInfoDataProvider` rather than taking its data from `UspAdminState`.
+/// Unoverridden that lands in `AsyncError`, whose `valueOrNull` is null, so the card
+/// takes its `activeVersion == null` branch and renders the two-word `notAvailable`
+/// where the app renders a version string (`firmware_ota_card.dart:60`) — a narrower
+/// `Row` than the page has, measured in all 234 cells with nothing failing. Same
+/// class of under-measurement `mock_menu.dart` documents for its two badges.
+///
+/// It was `FirmwareUpdateCard` that read this provider until #1549 split the entry
+/// point in two and gave "current version" one owner. The manual card is a
+/// `StatelessWidget` now and reads nothing, so this override is what the OTA card
+/// needs and the manual card no longer cares about — which is also why the page has
+/// four cards in RA and five in local, and why `requires:` on the layout-gate case
+/// names both.
 ///
 /// Kept separate from [adminOverrides] rather than folded into it because the golden
 /// suite's four dialog interactions do not need it and pinning a provider they do not
@@ -88,7 +95,7 @@ List<Override> adminPageOverrides({
 /// The one state [FixedSystemInfoDataNotifierForAdmin] cannot hold still: an
 /// `AsyncNotifier`'s `build` is declared `Future`, so even a fixture that resolves
 /// immediately is `AsyncLoading` for exactly one frame and `AsyncData` from the next
-/// — long enough for the sweep's collector to measure `FirmwareUpdateCard`'s
+/// — long enough for the sweep's collector to measure `FirmwareOtaCard`'s
 /// skeleton and far too short for a guard to read it. A `Completer` that is never
 /// completed pins the frame instead of racing it.
 class LoadingSystemInfoDataNotifier extends SystemInfoDataNotifier {
@@ -98,11 +105,16 @@ class LoadingSystemInfoDataNotifier extends SystemInfoDataNotifier {
 
 /// [adminPageOverrides] with the firmware card held in its loading state.
 ///
-/// For the readability guard beside the #1380 fix at `firmware_update_card.dart:77`
-/// only. The card's skeleton row is the thing being measured, so it has to still be
+/// For the readability guard beside the #1380 fix at `firmware_ota_card.dart:79`
+/// only — the `if (!isLoading)` that keeps the check button out of the skeleton's
+/// row. The card's skeleton row is the thing being measured, so it has to still be
 /// on screen when the pumps settle — which is the opposite of what every other
 /// fixture in this directory is for, and the reason this is a second function rather
 /// than a flag on the first.
+///
+/// The skeleton moved from the manual card to the OTA card in #1549, along with the
+/// version block it stands in for. The fix it guards moved with it unchanged, so the
+/// guard's coordinates are the only thing this rename touches.
 List<Override> adminPageLoadingFirmwareOverrides({UspAdminState? state}) => [
       ...adminOverrides(state ?? testAdminState),
       systemInfoDataProvider

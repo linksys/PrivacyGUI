@@ -116,15 +116,15 @@ void main() {
         discovered,
         hasLength(kPageViewCount),
         reason: 'the count is pinned because the rule has three spellings and '
-            'they disagree: `lib/page/*/views/*_view.dart` finds 44 (it misses '
+            'they disagree: `lib/page/*/views/*_view.dart` finds 45 (it misses '
             '`lib/page/login/auto_parent/views/auto_parent_first_login_view.dart`), '
-            'a file directly inside a `views/` dir at any depth finds 45, and '
-            '`find -path \'*/views/*_view.dart\'` finds 49 because `*` crosses '
+            'a file directly inside a `views/` dir at any depth finds 46, and '
+            '`find -path \'*/views/*_view.dart\'` finds 50 because `*` crosses '
             '`/` there. If this moved because the app gained a page, add its row '
             'and move kPageViewCount. If it moved because discoverPageViews '
             'changed, say why here — a wider rule would demand rows for the four '
             'composed widgets in unified_diagnostics/views/widgets/ and make '
-            '"45 of 45" unreachable; a narrower one would let a page escape.',
+            '"46 of 46" unreachable; a narrower one would let a page escape.',
       );
     });
 
@@ -147,15 +147,18 @@ void main() {
       }
     });
 
-    test('the 45th page — the one a one-level glob misses — is discovered', () {
+    test('the page a one-level glob misses is discovered', () {
       expect(
         discovered,
         contains(
           'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
         ),
-        reason: 'this is the file that makes the difference between 44 and 45, '
+        reason: 'this is the file that makes the difference between 45 and 46, '
             'and it sits two levels under lib/page/ rather than one. It is also '
-            'exactly the kind of page a coverage record forgets.',
+            'exactly the kind of page a coverage record forgets. The test used to '
+            'be named after its ordinal ("the 45th page"); #1549 added a page and '
+            'the ordinal was the only thing about it that changed, which is a name '
+            'promising something the assertion never checked.',
       );
     });
 
@@ -526,7 +529,7 @@ void main() {
       );
     });
 
-    test('the register reads 43 swept, 0 queued, 2 excluded', () {
+    test('the register reads 44 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -538,11 +541,18 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 43 + 2 = 45, which is the whole point: the count this epic set out to reach
-      // is not "43 swept" but "45 accounted for", and the two are the same claim
+      // 44 + 2 = 46, which is the whole point: the count this epic set out to reach
+      // is not "44 swept" but "46 accounted for", and the two are the same claim
       // only while `# queued 0` holds.
+      //
+      // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
+      // after the epic closed. It went straight to `swept` with no queued stop, which
+      // is the shape a page split should have: the page exists because a `lib/` change
+      // put it there, so the change and its declaration land together and there is
+      // never a commit where the page is reachable and unmeasured. A wave onboards
+      // pages that were already reachable; this is the other direction.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(43));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(44));
       expect(roster.withDisposition(PageRosterDisposition.queued), isEmpty);
       expect(
         roster
@@ -634,7 +644,7 @@ void main() {
       );
     });
 
-    test('swept is 43 of 45 — every page but the two unreachable ones', () {
+    test('swept is 44 of 46 — every page but the two unreachable ones', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -651,7 +661,14 @@ void main() {
       // start with its own clean-at-zero count and its own declared count, and they
       // will be confusable again.
       //
-      // How the 43 arrived, since the shape of the epic is the reusable part:
+      // How the 43 arrived, since the shape of the epic is the reusable part — and it
+      // is 44 now: #1549 added `firmware_ota_view.dart` after the epic closed, by
+      // splitting one page in two rather than by onboarding one that was already
+      // there. The set below is therefore no longer "what the epic swept", and the
+      // distinction is worth keeping: a page that arrives with a `lib/` change is
+      // held to the same declaration as one the epic queued, which is the only reason
+      // the wave arithmetic below stops adding up to the set's length.
+      //
       // 2 pilot (#1349) + 5 wave 1 (#1377) + 9 wave 2 (#1378) + 6 wave 3 (#1379) +
       // 21 wave 4 (#1380). Waves 1-3 needed **one** widget fix between them, in
       // `usp_port_forwarding_detail_view`, plus one in ui_kit
@@ -673,6 +690,7 @@ void main() {
         'lib/page/dhcp/views/usp_dhcp_detail_view.dart',
         'lib/page/dmz/views/usp_dmz_view.dart',
         'lib/page/firewall/views/usp_firewall_view.dart',
+        'lib/page/firmware_update/views/firmware_ota_view.dart',
         'lib/page/firmware_update/views/firmware_update_view.dart',
         'lib/page/instant_privacy/views/instant_privacy_view.dart',
         'lib/page/instant_safety/views/instant_safety_view.dart',

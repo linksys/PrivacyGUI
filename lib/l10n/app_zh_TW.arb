@@ -103,6 +103,8 @@
   "filters": "篩選器",
   "firewall": "防火牆",
   "firmwareUpdate": "韌體更新",
+  "manualUpdate": "手動更新",
+  "manualUpdateDesc": "從此裝置安裝韌體映像檔。",
   "forgotPassword": "忘記密碼",
   "generalError": "哎呀，出問題了！請稍後再試",
   "goBack": "返回",

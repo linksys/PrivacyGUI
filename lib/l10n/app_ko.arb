@@ -103,6 +103,8 @@
   "filters": "필터",
   "firewall": "방화벽",
   "firmwareUpdate": "펌웨어 업데이트",
+  "manualUpdate": "수동 업데이트",
+  "manualUpdateDesc": "이 기기에서 펌웨어 이미지를 설치합니다.",
   "forgotPassword": "암호 분실",
   "generalError": "죄송합니다. 문제가 발생했습니다! 나중에 다시 시도하십시오",
   "goBack": "돌아가기",

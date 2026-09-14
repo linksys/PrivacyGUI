@@ -1,28 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Admin-view entry card for the manual firmware update flow.
 ///
-/// Shows the current firmware version and a CTA into the dedicated update
-/// page; full bank details live on the update page itself.
-class FirmwareUpdateCard extends ConsumerWidget {
+/// A CTA into the dedicated update page, and nothing else. It used to show the
+/// current firmware version too; #1549 moved that to [FirmwareOtaCard], because
+/// this card is hidden in remote assistance and the version must not be — see
+/// that card for the whole argument.
+///
+/// What is left is genuinely only an entry point, which is what lets the admin
+/// view gate it through `firmwareManualEntry` without gating anything a support
+/// agent still needs to read. Being stateless is the visible half of that: with
+/// the version gone there is no router data on this card to fetch.
+class FirmwareUpdateCard extends StatelessWidget {
   const FirmwareUpdateCard({super.key});
 
+  /// Row width below which the CTA moves onto its own line.
+  ///
+  /// The same trade [FirmwareOtaCard] documents, on the same row shape, reached
+  /// by a different route: what shares this row with an inflexible localized
+  /// button is now a whole sentence rather than a version block, and a sentence
+  /// wraps happily right up to the point where one of its *words* stops fitting.
+  /// Measured at the nine row widths this card is laid out at, the widest word
+  /// did not fit in **11 of 26 locales at 238px** — `de` was granted 55.0px for
+  /// its 105.7px `Firmware-Image`, `fi` 99.2px for a 146.0px
+  /// `laiteohjelmistotiedosto`, and every one of the eleven broke mid-word. No
+  /// other row width was red in any locale.
+  ///
+  /// **None of that is visible to the overflow sweep**, which reports 234 clean
+  /// cells for this page: a `RenderParagraph` handed too little width does not
+  /// overflow, it wraps, and `Expanded` guarantees it is never handed too much.
+  /// So this constant is measured against the words rather than chosen against a
+  /// breakpoint, and its companion guard asserts the words rather than counting
+  /// red cells.
+  ///
+  /// 300 rather than 289: the worst locale needs 288.7px inline (20px icon +
+  /// 16px + its widest word + 16px + its CTA, `de` again), and the tightest
+  /// inline coordinate is 360.5px — the row width at a 480px screen. 300 clears
+  /// the first without reaching the second. Deliberately not [FirmwareOtaCard]'s
+  /// 400: that card's CTA carries `checkForUpdates`, which is 242.5px in `fr`
+  /// against this one's 131px `Aktualisieren`, so copying the number would stack
+  /// this row at four widths that render it perfectly well.
+  static const _stackBelow = 300.0;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final asyncSystemInfo = ref.watch(systemInfoDataProvider);
-    final banks = asyncSystemInfo.valueOrNull?.model.firmwareImages ?? const [];
-    final isLoading = asyncSystemInfo.isLoading && banks.isEmpty;
-    final activeBank = banks.where((b) => b.isActive).firstOrNull;
-    final activeVersion =
-        activeBank?.version ?? (banks.isEmpty ? null : banks.first.version);
     return SizedBox(
       width: double.infinity,
       child: AppCard(
@@ -34,79 +61,63 @@ class FirmwareUpdateCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleMedium(loc(context).firmwareUpdate),
+            AppText.titleMedium(loc(context).manualUpdate),
             AppGap.md(),
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Icon(Icons.system_update,
-                      size: 20, color: colorScheme.onSurfaceVariant),
-                  AppGap.md(),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.labelSmall(loc(context).currentVersionShort,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = constraints.maxWidth < _stackBelow;
+                  final description = Row(
+                    children: [
+                      Icon(Icons.system_update,
+                          size: 20, color: colorScheme.onSurfaceVariant),
+                      AppGap.md(),
+                      // `Expanded` so the sentence wraps instead of pushing the
+                      // row past its box. It is what makes the row *fit*; the
+                      // threshold above is what makes what fits readable.
+                      Expanded(
+                        child: AppText.bodyMedium(loc(context).manualUpdateDesc,
                             color: colorScheme.onSurfaceVariant),
-                        if (isLoading)
-                          const _CardSkeleton()
-                        else if (activeVersion == null)
-                          AppText.bodyMedium(loc(context).notAvailable)
-                        else
-                          // Pin the current-version value so E2E can assert it
-                          // without a localized text match. AppText carries no
-                          // identifier of its own, so the hook goes on a
-                          // wrapping Semantics boundary — the shape
-                          // usp_statistics_view.dart uses for its tab hooks.
-                          Semantics(
-                            identifier: 'firmware-card-version',
-                            child: AppText.bodyMedium(activeVersion),
-                          ),
+                      ),
+                    ],
+                  );
+                  final cta = AppButton.text(
+                    label: loc(context).update,
+                    // The CTA that blocks automation today — the real user
+                    // entry into the manual update page (PrivacyGUI-USP-E2E#85).
+                    identifier: 'firmware-card-update',
+                    onTap: () =>
+                        context.pushNamed(RouteNamed.uspFirmwareUpdate),
+                  );
+
+                  if (stacked) {
+                    // `stretch` so the label gets the whole line rather than
+                    // ellipsizing inside ui_kit's `Flexible`, which is what the
+                    // sibling card stacks for as well.
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        description,
+                        AppGap.md(),
+                        cta,
                       ],
-                    ),
-                  ),
-                  // Hidden while the version is unknown, which is both what the
-                  // button means — there is nothing to compare against yet — and
-                  // what makes the skeleton readable: the button costs this row
-                  // 60–110px depending on locale, and at 320px that is most of what
-                  // the caption beside the spinner has to live in (#1380).
-                  if (!isLoading)
-                    AppButton.text(
-                      label: loc(context).update,
-                      // The CTA that blocks automation today — the real user
-                      // entry into the manual update page (PrivacyGUI-USP-E2E#85).
-                      identifier: 'firmware-card-update',
-                      onTap: () =>
-                          context.pushNamed(RouteNamed.uspFirmwareUpdate),
-                    ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: description),
+                      AppGap.md(),
+                      cta,
+                    ],
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CardSkeleton extends StatelessWidget {
-  const _CardSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: 16, height: 16, child: AppLoader()),
-        AppGap.md(),
-        // Expanded for the reason `usp_timezone_card`'s header gives, with one
-        // difference worth naming: this row is only on screen while the fetch is
-        // in flight, so its overflow — up to +234px at 320px in `de` (#1380) — is
-        // one the gate caught in the first frame of a cell rather than at settle.
-        // A spinner's caption is still a caption, and it wraps. It needs the
-        // `Update` button out of the row to have room to; see there.
-        Expanded(child: AppText.bodyMedium(loc(context).loadingFirmwareInfo)),
-      ],
     );
   }
 }

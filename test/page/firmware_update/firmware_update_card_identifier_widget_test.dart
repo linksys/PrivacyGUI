@@ -7,14 +7,25 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../mocks/provider_overrides/mock_admin.dart';
 
-/// Verifies the E2E identifier hooks added to [FirmwareUpdateCard] for
-/// PrivacyGUI#1447 (unblocks PrivacyGUI-USP-E2E#85): the card arrival anchor,
-/// the manual-update CTA, and the current-version value — each locatable via
+/// Verifies the E2E identifier hooks on [FirmwareUpdateCard] for
+/// PrivacyGUI#1447 (unblocks PrivacyGUI-USP-E2E#85): the card arrival anchor and
+/// the manual-update CTA — each locatable via
 /// [CommonFinders.bySemanticsIdentifier], never positional.
 ///
-/// The card is the Administration-page entry into the manual firmware update
-/// flow; it lives under `firmware_update/views/` while being rendered by the
+/// The card is the Administration-page entry into the MANUAL firmware update
+/// flow. It lives under `firmware_update/views/` while being rendered by the
 /// admin view, which is why #1391's nine-page pass did not reach it.
+///
+/// **`firmware-card-version` is gone as of #1549, and its absence is asserted
+/// rather than merely untested.** That split gave the page two entry cards, and
+/// "current version" has exactly one owner: [FirmwareOtaCard], because the
+/// manual card is the one that disappears in remote assistance — leaving the
+/// version here would have shown a support agent no firmware version at all.
+/// The hook did not move by accident and it did not vanish: it is
+/// `firmware-ota-card-version` now, pinned in
+/// `firmware_ota_card_identifier_widget_test.dart`. The E2E harvest reads Dart
+/// source as text, so a renamed hook is silent in both directions; a failing
+/// assertion here is the only thing that says which name won.
 ///
 /// Deliberately NOT tagged `ui`: this repo's CI runs only `run_tests.sh`
 /// (`--exclude-tags=golden||loc||ui`), and the identifier contract is worth
@@ -23,18 +34,16 @@ import '../../mocks/provider_overrides/mock_admin.dart';
 void main() {
   const cardAnchor = 'firmware-card';
   const updateHook = 'firmware-card-update';
-  const versionHook = 'firmware-card-version';
-
-  // From the shared admin fixture `gateAdminSystemInfo`, whose one active bank
-  // carries this version. The card reads it as `activeVersion`.
-  const activeVersion = '1.0.16.213451';
+  const retiredVersionHook = 'firmware-card-version';
 
   Widget wrap() {
     final themeConfig = ThemeJsonConfig.defaultConfig();
     return ProviderScope(
-      // The card watches only `systemInfoDataProvider`; `adminPageOverrides`
-      // pins it to the fixture with an active firmware bank so the version
-      // value and the CTA both render (the loading branch hides both).
+      // The card reads no provider at all since #1549 — it is a
+      // `StatelessWidget` whose only job is to push the manual page. The scope
+      // stays because the card sits inside one in production, and
+      // `adminPageOverrides` keeps this file's fixture the same as its OTA
+      // sibling's so the two are read side by side.
       overrides: adminPageOverrides(),
       child: MaterialApp(
         locale: const Locale('en'),
@@ -46,51 +55,43 @@ void main() {
     );
   }
 
+  Future<void> pumpCard(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+  }
+
   group('FirmwareUpdateCard identifiers', () {
-    testWidgets('the card anchor, CTA, and version are each locatable',
+    testWidgets('the card anchor and the CTA are each locatable',
         (tester) async {
       final handle = tester.ensureSemantics();
-      tester.view.physicalSize = const Size(1280, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(wrap());
-      await tester.pumpAndSettle();
+      await pumpCard(tester);
 
       final matched = <Element>{};
-      for (final id in <String>[cardAnchor, updateHook, versionHook]) {
+      for (final id in <String>[cardAnchor, updateHook]) {
         final finder = find.bySemanticsIdentifier(id);
         expect(finder, findsOneWidget,
             reason: 'hook "$id" must resolve to exactly one node');
         matched.add(finder.evaluate().single);
       }
-      expect(matched, hasLength(3),
-          reason: 'the three hooks must target distinct widgets');
+      expect(matched, hasLength(2),
+          reason: 'the two hooks must target distinct widgets');
 
       handle.dispose();
     });
 
-    testWidgets('the version hook wraps the active firmware version text',
-        (tester) async {
+    testWidgets('the retired version hook is not on this card', (tester) async {
       final handle = tester.ensureSemantics();
-      tester.view.physicalSize = const Size(1280, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpCard(tester);
 
-      await tester.pumpWidget(wrap());
-      await tester.pumpAndSettle();
-
-      // The pinned node carries the identifier; the version string it wraps is
-      // what E2E asserts against, so prove they are the same subtree.
-      final version = find.descendant(
-        of: find.bySemanticsIdentifier(versionHook),
-        matching: find.text(activeVersion),
-      );
-      expect(version, findsOneWidget,
-          reason:
-              '"$versionHook" must wrap the active version "$activeVersion"');
+      expect(find.bySemanticsIdentifier(retiredVersionHook), findsNothing,
+          reason: '"$retiredVersionHook" moved to the OTA card in #1549. If it '
+              'is back here, one version is being rendered twice and the E2E '
+              'specs cannot tell which card they landed on');
 
       handle.dispose();
     });

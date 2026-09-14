@@ -73,7 +73,10 @@
 /// things" reads as settled — but the two sites in this repo's own committed
 /// capture of such a run (`test/fixtures/golden_overflow_warnings.json`, 16 records
 /// at `screens=1080`) are `firmware_update_card.dart:77`, a **loading** skeleton
-/// reached through `usp_admin_view.dart`, and `usp_sliver_dashboard_view.dart:414`,
+/// reached through `usp_admin_view.dart` — that coordinate is quoted as the capture
+/// recorded it and is deliberately not updated, but the skeleton itself now lives at
+/// `firmware_ota_card.dart:79`, moved by #1549 along with the version block it stands
+/// in for — and `usp_sliver_dashboard_view.dart:414`,
 /// the delete target that exists only in **edit mode**. Neither appears in any of
 /// the five committed baselines, at any width. What those two want is page and
 /// state coverage, which is #1369's and #1380's job; adding a width does not reach

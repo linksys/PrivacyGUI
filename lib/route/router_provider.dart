@@ -46,6 +46,7 @@ import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provide
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart'
     as usp_instant_privacy;
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';

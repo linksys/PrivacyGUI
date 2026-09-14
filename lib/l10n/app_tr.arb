@@ -103,6 +103,8 @@
   "filters": "Filtreler",
   "firewall": "Güvenlik Duvarı",
   "firmwareUpdate": "Bellenim güncellemesi",
+  "manualUpdate": "Manuel güncelleme",
+  "manualUpdateDesc": "Bu cihazdan bir bellenim görüntüsü yükleyin.",
   "forgotPassword": "Parolanızı mı unuttunuz?",
   "generalError": "Hay aksi, burada bir şeyler yanlış! Lütfen daha sonra tekrar deneyin",
   "goBack": "Geri git",

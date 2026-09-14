@@ -101,6 +101,8 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
     show DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
@@ -1136,35 +1138,80 @@ final kUnifiedDiagnosticsPageCase = PageSurfaceCase(
 
 /// `firmware_update_view` — the manual firmware flow's landing phase.
 ///
-/// Three stacked cards and a footnote: a router status card (56px image, model and
-/// serial in an `Expanded` column, then a list of firmware banks), the OTA check card,
-/// the phase-driven action card, and an icon-plus-`Expanded`-text warning note. Every
-/// one of those is a `Row` whose fixed child is an icon or an image and whose flexible
-/// child is a localized string, which is the shape this whole wave has been fixing.
+/// Two stacked cards and a footnote: a router status card (56px image, model and
+/// serial in an `Expanded` column, then a list of firmware banks), the phase-driven
+/// action card, and an icon-plus-`Expanded`-text warning note. Both cards are a `Row`
+/// whose fixed child is an icon or an image and whose flexible child is a localized
+/// string, which is the shape this whole wave has been fixing.
+///
+/// **#1549 took the third card off this page.** `_OtaCheckCard` — and the fix wave 4
+/// landed in it — moved whole to [kFirmwareOtaPageCase], which is why this doc is
+/// shorter than it was and why that case exists rather than this one growing a second
+/// fixture. The two pages are now two surfaces with two card lists, and one case each
+/// is what keeps a cell's coordinates meaning one thing.
 ///
 /// **`forbids: [AppLoader]` earns its keep here**, which is worth saying because on
-/// five of wave 3's six pages it was inert (§11.11). This page has *six* reachable
-/// loaders: `_buildLoadingBanks` renders one whenever the banks list is empty and still
-/// fetching, and five of the nine phases render a linear one. So a fixture that lost
-/// either the banks override or the notifier override would land on a spinner, and the
-/// `forbids` is what turns that into a failure instead of 234 green cells.
+/// five of wave 3's six pages it was inert (§11.11) and because on this page's new
+/// sibling it is inert too. `_buildLoadingBanks` renders one whenever the banks list is
+/// empty and still fetching, and seven of the eleven phases render a linear one. So a
+/// fixture that lost either the banks override or the notifier override would land on a
+/// spinner, and the `forbids` is what turns that into a failure instead of 234 green
+/// cells. That asymmetry with `firmware_ota` is the split showing through: the banks
+/// list stayed here.
 ///
 /// **The fixture pins the notifier, not just the data** — `mock_firmware_update.dart`
 /// says why: `initState` posts a frame callback that calls `loadBanks()`, so without
 /// that override the state a cell measures is decided by which frame the sweep settles
 /// on.
-///
-/// **The fix that landed with it** is `firmware_update_view.dart:546`, the `Row` in
-/// `_OtaCheckCard` and the wave's widest site: **50 of 234 cells**, all 26 locales at
-/// 320px, worst `ru` at +357px and `en` itself at +160px. It is also the one site
-/// where the obvious fix was wrong — the sibling card twenty lines up lays two buttons
-/// out in a `Wrap`, but neither of *these* two children fits a 256px line alone, and
-/// `RenderWrap` reports nothing when a child does not fit. Copying the sibling would
-/// have turned a reported overflow into an unreported one. The view says what landed
-/// instead and why the button changes size when it stacks.
 final kFirmwareUpdatePageCase = PageSurfaceCase(
   id: 'firmware_update',
   view: () => const FirmwareUpdateView(),
+  overrides: () => firmwareUpdateOverrides(),
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `firmware_ota_view` — the cloud firmware flow, split off the page above by #1549.
+///
+/// **The thinnest page in this register**, and that is not a shortcoming: in the state
+/// it is swept in it is one card and a footnote. The check card, then the phase-driven
+/// action card — which is `SizedBox.shrink()` in `idle` and `checkingOta`, because on
+/// this page the entry point *is* the check card — then the shared warning note. The
+/// nine widths are still worth paying, because the one card it does render is the
+/// widest thing wave 4 measured.
+///
+/// **This case inherits a measured site, not an assumption.** `_OtaCheckCard` was
+/// wave 4's widest: **50 of 234 cells**, all 26 locales at 320px, worst `ru` at
+/// +357px and `en` itself at +160px. It is also the one site where the obvious fix was
+/// wrong — the sibling card twenty lines up lays two buttons out in a `Wrap`, but
+/// neither of *these* two children fits a 256px line alone, and `RenderWrap` reports
+/// nothing when a child does not fit. Copying the sibling would have turned a reported
+/// overflow into an unreported one. The card carries its own `_stackBelow = 600.0` and
+/// the measurement behind it, and it moved here unchanged, under the same card padding
+/// at the same breakpoints.
+///
+/// **So the numbers carry, and the cells are still re-measured.** A moved widget under
+/// identical constraints lays out identically — but "identical" is a claim about this
+/// page's card list, not about the widget, and the card list is what changed. The
+/// baseline rows for this group are generated against this page rather than copied
+/// from `firmware_update`'s, for the same reason #1549's roster row forbids inheriting
+/// a sibling's ms/cell: an inherited number has no error bar.
+///
+/// **`forbids: [AppLoader]` is inert on this fixture, and stated rather than implied**
+/// — the same honesty §11.11 owes for five of wave 3's pages. There is no reachable
+/// `AppLoader` in `idle`: this page renders no banks list, and the check card's own
+/// spinner is a bare `CircularProgressIndicator` inside the button rather than an
+/// `AppLoader`. What the clause does buy is a fixture tripwire in one direction: four
+/// of the eleven phases render `FirmwareInstallPhaseCard`'s linear loader, so a fixture
+/// that drifted off the landing state would fail here instead of quietly measuring a
+/// progress card at nine widths.
+///
+/// `gateFirmwareUpToDateState` pins `otaUpToDate: true`, which is the widest reachable
+/// form of the row — `mock_firmware_update.dart` says why that flag is a choice, and it
+/// is now a choice about *this* page.
+final kFirmwareOtaPageCase = PageSurfaceCase(
+  id: 'firmware_ota',
+  view: () => const FirmwareOtaView(),
   overrides: () => firmwareUpdateOverrides(),
   requires: const [AppCard, AppButton],
   forbids: const [AppLoader],
@@ -1376,12 +1423,21 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// `usp_admin_view` — timezone, password, firmware entry and the two destructive
 /// actions, in one column through 905px and two above it.
 ///
-/// **The `AppResponsiveLayout` is why this page is worth nine widths.** Four cards in one
+/// **The `AppResponsiveLayout` is why this page is worth nine widths.** Five cards in one
 /// column become two `SizedBox(width: context.colWidth(6))` columns on desktop
-/// (`usp_admin_view.dart:112`–`:151`), so the widest card is measured at the full page
+/// (`usp_admin_view.dart:145`–`:180`), so the widest card is measured at the full page
 /// width in four of the nine widths (320, 480, 601, 905) and at half of it in five
-/// (1080 up) — a difference no card suite reproduces, because the card in question is
-/// `FirmwareUpdateCard` and it is not a dashboard card.
+/// (1080 up) — a difference no card suite reproduces, because the cards in question are
+/// the two firmware cards and neither is a dashboard card.
+///
+/// **Five, not four, since #1549 split the firmware entry point in two.** The fifth is
+/// `FirmwareUpdateCard`, and it is the one card on this page that is not always here:
+/// `_manualUpdateEntry` routes it through `surfaceStrategyProvider.firmwareManualEntry`,
+/// so local mode gets five cards and remote assistance four. This case measures the
+/// five-card layout, which is the taller of the two and the only one where both firmware
+/// cards share a column — the mode-dependent absence itself is behaviour, pinned in
+/// `test/page/_shared/mode/surface_consumers_test.dart` rather than measured in pixels
+/// here.
 ///
 /// That split is four-and-five rather than two-and-seven because of this wave. The page
 /// left `AppResponsiveLayout.tablet` unset, which falls back to `desktop`, so 601px and
@@ -1391,11 +1447,17 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// name the band. Nothing about the desktop layout moved; four widths changed which
 /// builder they reach.
 ///
-/// All four cards are required. They are four independent presentations of four
+/// All five cards are required. They are five independent presentations of four
 /// different sources — `state.timeSettings`, `state.adminUser`,
-/// `systemInfoDataProvider`, and nothing at all for the actions card — so requiring one
-/// would leave the others free to fall back to a spinner or an `N/A` unnoticed.
-/// `mock_admin.dart`'s [adminPageOverrides] says what the fourth one needed.
+/// `systemInfoDataProvider` for `FirmwareOtaCard`, and nothing at all for the actions
+/// card or the manual card — so requiring one would leave the others free to fall back
+/// to a spinner or an `N/A` unnoticed. `mock_admin.dart`'s [adminPageOverrides] says
+/// what the firmware one needed.
+///
+/// Requiring `FirmwareUpdateCard` is also what makes this case fail if the surface gate
+/// ever hides the manual card in local mode: the gate host does not override
+/// `appModeProfileProvider`, so it renders whatever the default profile is, and a gate
+/// that inverted would silently drop a card from every one of the 234 cells.
 ///
 /// What stays unmeasured is the five dialogs: timezone edit, password change, reboot
 /// and factory-reset confirmations, and the password-invalid state. #1380 puts dialogs
@@ -1407,6 +1469,7 @@ final kAdminPageCase = PageSurfaceCase(
   requires: const [
     UspTimezoneCard,
     UspPasswordCard,
+    FirmwareOtaCard,
     FirmwareUpdateCard,
     UspSystemActionsCard,
   ],
@@ -2020,6 +2083,13 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kSupportPageCase,
   kUnifiedDiagnosticsPageCase,
   kFirmwareUpdatePageCase,
+  // #1549, and not wave 4 — it sits here for the reason the three statistics tabs sit
+  // beside `statistics`: it is the other half of the page above it. The split moved
+  // `_OtaCheckCard` out of `firmware_update_view.dart` whole, which took wave 4's widest
+  // fixed site with it, so this case is where that measurement now lives. Placing it at
+  // the end of the list would have left the wave-4 narrative pointing at a card that is
+  // no longer on the page it names.
+  kFirmwareOtaPageCase,
   kRouterAssistantPageCase,
   kTestConsolePageCase,
   // The two dashboard pages, inner first: `sliver_dashboard` is where the fixture was

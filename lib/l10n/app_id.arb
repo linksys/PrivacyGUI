@@ -103,6 +103,8 @@
   "filters": "Filter",
   "firewall": "Firewall",
   "firmwareUpdate": "Pembaruan firmware",
+  "manualUpdate": "Pembaruan manual",
+  "manualUpdateDesc": "Instal image firmware dari perangkat ini.",
   "forgotPassword": "Lupa kata sandi",
   "generalError": "Ups, ada yang salah di sini! Silakan coba lagi nanti",
   "goBack": "Kembali",

@@ -103,6 +103,8 @@
   "filters": "Filters",
   "firewall": "Firewall",
   "firmwareUpdate": "Firmware-update",
+  "manualUpdate": "Handmatige update",
+  "manualUpdateDesc": "Installeer een firmware-image vanaf dit apparaat.",
   "forgotPassword": "Wachtwoord vergeten",
   "generalError": "Oeps, hier klopt iets niet! Probeer het later opnieuw",
   "goBack": "Terug",

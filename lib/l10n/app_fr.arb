@@ -103,6 +103,8 @@
   "filters": "Filtres",
   "firewall": "Pare-feu",
   "firmwareUpdate": "Mise à jour du microprogramme",
+  "manualUpdate": "Mise à jour manuelle",
+  "manualUpdateDesc": "Installez une image de micrologiciel depuis cet appareil.",
   "forgotPassword": "J'ai oublié mon mot de passe",
   "generalError": "Oups, quelque chose ne va pas ici ! Veuillez réessayer plus tard",
   "goBack": "Retour",
