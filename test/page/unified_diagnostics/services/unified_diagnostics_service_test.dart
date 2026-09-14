@@ -1371,6 +1371,41 @@ void main() {
       );
     });
 
+    test('blank string fields read as absent, not as blank values (#1555)',
+        () async {
+      // A DataElements string leaf that was never set arrives as `""`, not as a
+      // missing key, so the two places this service reads one need the same
+      // guard `MeshTopologyBuilder` uses on the very same field — `nonEmpty`,
+      // shared, because a `parentNodeId` of `''` here and null there is the two
+      // graders disagreeing about whether the node has a parent.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: 'Wi-Fi',
+                rateMbps: 800,
+                signalStrength: -50,
+                backhaulDeviceId: '   ',
+                manufacturerModel: '  '),
+          });
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result, hasLength(1));
+      expect(result.single.parentNodeId, isNull,
+          reason: 'a blank parent is no parent — a `""` here becomes a parent '
+              'lookup that can never resolve');
+      expect(result.single.parentLabel, isNull);
+      expect(result.single.label, 'agent-A',
+          reason: 'a blank model must fall through to the node ID, not become '
+              'a whitespace label');
+    });
+
     test('a response carrying none of the four removed paths still parses',
         () async {
       // The regression #1555 is: pre-fix, `DataElementsNetwork.fetch` declared

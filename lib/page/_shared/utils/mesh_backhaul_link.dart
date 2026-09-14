@@ -64,6 +64,26 @@ String? meshBackhaulLinkType(MeshNode node) {
   return linkType;
 }
 
+/// [value] unless firmware left the field empty, in which case null.
+///
+/// The third of this file's absence sentinels, and the dullest: a DataElements
+/// string leaf that has never been set arrives as `""` or as whitespace, not as
+/// a missing key, so `??` on the raw value hands the empty string straight
+/// through to a caller that asked for a fallback. Trims first because
+/// `ManufacturerModel` and `BackhaulDeviceID` have both been observed padded.
+///
+/// Named for symmetry with [nonEpoch] and read the same way: "the value, unless
+/// it is the sentinel". `MeshNetworkBuilder._nonEmpty`
+/// (`mesh_network_builder.dart:382`) looks like this one and is deliberately
+/// *not* it — that one does not trim, and it sits in the merge chain against
+/// `system_info` where a whitespace-only value from one source has to keep
+/// losing to a real value from another. Unifying them would change which source
+/// wins.
+String? nonEmpty(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 /// Whether [mac] is the all-zero MAC, which prplMesh writes for a backhaul
 /// address that does not exist.
 ///

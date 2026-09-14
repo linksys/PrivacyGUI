@@ -123,8 +123,8 @@ class MeshTopologyBuilder {
             signalStrength: backhaulSignalStrength,
             uplinkRate: backhaulUplinkRate,
             downlinkRate: backhaulDownlinkRate,
-            parentNodeId: _nonEmpty(node.backhaulBackhaulDeviceId),
-            parentBssid: _nonEmpty(node.backhaulMacAddressMultiAp),
+            parentNodeId: nonEmpty(node.backhaulBackhaulDeviceId),
+            parentBssid: nonEmpty(node.backhaulMacAddressMultiAp),
             lastContactTime:
                 nonEpoch(node.multiApLastContactTime)?.toIso8601String(),
             backhaulMacAddress: _backhaulStaMac(node),
@@ -141,19 +141,14 @@ class MeshTopologyBuilder {
     );
   }
 
-  /// A trimmed identity string, or null when firmware reported nothing.
+  /// A trimmed identity string, empty when firmware reported nothing.
   ///
-  /// [NodeEntity]'s identity fields are non-nullable `String`, so absence has to
-  /// arrive as `''`. That distinction matters one layer up: `MeshNetworkBuilder`
-  /// merges these against `system_info` and a `''` is not the same thing as a
-  /// value — see its `_nonEmpty` (`mesh_network_builder.dart:382`) and the
-  /// preference chains that read it.
+  /// The empty string rather than null because [NodeEntity]'s identity fields
+  /// are non-nullable `String`, so absence has to arrive as `''`. That is the
+  /// one reason this exists next to [nonEmpty] instead of using it, and the
+  /// distinction matters one layer up: `MeshNetworkBuilder` merges these against
+  /// `system_info`, where a `''` must not count as a value.
   static String _identity(String? value) => value?.trim() ?? '';
-
-  static String? _nonEmpty(String? value) {
-    final trimmed = value?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
-  }
 
   /// The node's own station-side backhaul MAC.
   ///

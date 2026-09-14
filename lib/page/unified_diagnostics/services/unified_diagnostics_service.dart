@@ -641,7 +641,7 @@ class UnifiedDiagnosticsService {
       final signalDbm = rcpiToRssi(node.backhaulStatsSignalStrengthRcpi) ?? 0;
 
       // Parent node resolution
-      final parentNodeId = _nonEmpty(node.backhaulBackhaulDeviceId);
+      final parentNodeId = nonEmpty(node.backhaulBackhaulDeviceId);
       String? parentLabel;
       if (parentNodeId != null) {
         final normalizedParentId =
@@ -686,13 +686,8 @@ class UnifiedDiagnosticsService {
   /// placeholder on the controller row — which never reaches here, because the
   /// controller is skipped.
   String _nodeLabel(MeshNode node) =>
-      _nonEmpty(node.manufacturerModel) ??
+      nonEmpty(node.manufacturerModel) ??
       (node.id.isNotEmpty ? node.id : node.instancePath);
-
-  static String? _nonEmpty(String? value) {
-    final trimmed = value?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
-  }
 
   /// Threshold for considering a mesh node "stale" (no TR-181 standard).
   /// Mesh nodes typically report every 30s-60s; 10 minutes allows for

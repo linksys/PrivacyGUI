@@ -182,6 +182,38 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // nonEmpty — the empty-string sentinel (#1555)
+  // ---------------------------------------------------------------------------
+  //
+  // Promoted out of two byte-identical private copies (one in
+  // `MeshTopologyBuilder`, one in `UnifiedDiagnosticsService`) that this ticket
+  // had itself just written. Both read `BackhaulDeviceID`, so a divergence
+  // between them would be the exact class of bug this ticket is fixing: the two
+  // graders disagreeing about whether a node has a parent.
+
+  group('nonEmpty', () {
+    test('a value passes through trimmed', () {
+      expect(nonEmpty('MR7500'), 'MR7500');
+      expect(nonEmpty('  AA:BB:CC:DD:EE:01 '), 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('absent, empty and whitespace are all null', () {
+      // The middle one is what a DataElements string leaf reads when firmware
+      // has never set it — not a missing key, which is why `??` on the raw
+      // value is not enough.
+      expect(nonEmpty(null), isNull);
+      expect(nonEmpty(''), isNull);
+      expect(nonEmpty('   '), isNull);
+      expect(nonEmpty('\t\n'), isNull);
+    });
+
+    test('a value that is only partly blank keeps its middle', () {
+      expect(nonEmpty(' Qualcomm Technologies, Inc. IP '),
+          'Qualcomm Technologies, Inc. IP');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // isUnsetMac — the all-zero backhaul-station sentinel (#1555)
   // ---------------------------------------------------------------------------
   //

@@ -300,6 +300,29 @@ void main() {
       expect(slave.backhaul.backhaulMacAddress, isNull);
     });
 
+    test('a blank parent ID is no parent, not an empty one (#1555)', () {
+      // Reachable: the node qualifies as an agent on its `LinkType` alone, so a
+      // `BackhaulDeviceID` firmware left blank still reaches `BackhaulInfo`.
+      // Passing `''` through instead of null gives the node a parent it can
+      // never resolve, which `usp_topology_builder` then renders as an orphan.
+      // `nonEmpty` is what prevents it, shared with `UnifiedDiagnosticsService`
+      // so the two graders cannot disagree about whether this node has a parent.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Wi-Fi',
+          parentDeviceId: '   ',
+          parentBssid: '',
+        ),
+      ]);
+
+      final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
+      expect(slave.backhaul.parentNodeId, isNull);
+      expect(slave.backhaul.parentBssid, isNull);
+      expect(slave.isMaster, isFalse, reason: 'still an agent, by LinkType');
+    });
+
     test('includes backhaulLinkType', () {
       final network = DataElementsNetwork(items: [slaveNode]);
 
