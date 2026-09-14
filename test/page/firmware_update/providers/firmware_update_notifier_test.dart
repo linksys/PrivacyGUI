@@ -524,6 +524,74 @@ void main() {
       expect(state.errorMessage, contains('did not boot the new image'));
     });
 
+    test('verify passes on a three-instance router', () async {
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 1,
+          status: 'Available',
+          alias: 'fw1',
+        ),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 2,
+          status: 'Active',
+          version: '1.0.17.0',
+          alias: 'fw2',
+        ),
+        FirmwareUpdateTestData.otaInstance(instance: 3),
+      ]);
+      final container = createContainer(banksData: AsyncData(banksData));
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await notifier.verify(
+        expectedVersion: '1.0.17.0',
+        expectedActiveInstance: 2,
+      );
+
+      expect(
+        container.read(firmwareUpdateNotifierProvider).phase,
+        FirmwareUpdatePhase.done,
+      );
+    });
+
+    test('verify ignores the ota row in the multi-Active consistency check',
+        () async {
+      // The ota row is virtual — it is not a bank that can be booted, so it
+      // cannot make the physical banks inconsistent. Measured firmware never
+      // reports it Active; this fixture forces the case so the narrowing is
+      // pinned by something other than the happy path.
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 1,
+          status: 'Available',
+          alias: 'fw1',
+        ),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 2,
+          status: 'Active',
+          version: '1.0.17.0',
+          alias: 'fw2',
+        ),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 3,
+          status: 'Active',
+          alias: 'ota',
+        ),
+      ]);
+      final container = createContainer(banksData: AsyncData(banksData));
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await notifier.verify(
+        expectedVersion: '1.0.17.0',
+        expectedActiveInstance: 2,
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.done);
+      expect(state.errorMessage, isNull);
+    });
+
     test('cancel resets to initial state', () {
       final container = createContainer();
       addTearDown(container.dispose);

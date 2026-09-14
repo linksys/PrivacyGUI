@@ -37,8 +37,50 @@ const testUpdatedActiveBank = FirmwareImageUIModel(
   available: true,
 );
 
+/// The measured shape of the spare NAND bank: `Available=1` but no readable
+/// version, because only the running image can report one.
+const testEmptyVersionBank = FirmwareImageUIModel(
+  instance: 2,
+  instancePath: 'Device.DeviceInfo.FirmwareImage.2.',
+  alias: 'fw2',
+  name: '',
+  version: '',
+  status: 'Available',
+  available: true,
+);
+
+/// The virtual third instance. Not a bank — it carries the version the router
+/// could update *to*, so it must never appear where banks are listed.
+const testOtaInstance = FirmwareImageUIModel(
+  instance: 3,
+  instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
+  alias: 'ota',
+  name: '',
+  version: '2.0.1.26091009',
+  status: 'Available',
+  available: true,
+);
+
 FirmwareBanksData get testBanksData => const FirmwareBanksData(
       banks: [testActiveBank, testAvailableBank],
+    );
+
+/// What a 2.0 router with the fwup stack actually reports: two physical banks
+/// plus the virtual ota row.
+FirmwareBanksData get testThreeInstanceBanksData => const FirmwareBanksData(
+      banks: [
+        FirmwareImageUIModel(
+          instance: 1,
+          instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
+          alias: 'fw1',
+          name: 'Bank1',
+          version: '1.0.16.26013014',
+          status: 'Active',
+          available: true,
+        ),
+        testEmptyVersionBank,
+        testOtaInstance,
+      ],
     );
 
 FirmwareBanksData get testEmptyBanksData => const FirmwareBanksData(

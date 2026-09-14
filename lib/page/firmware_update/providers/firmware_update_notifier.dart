@@ -377,9 +377,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
               '[FirmwareUpdate] verify: calling notifier.refresh() (attempt $attempt/$maxAttempts)...');
           banksData =
               await ref.read(firmwareBanksDataProvider.notifier).refresh();
-          logger.d(
-              '[FirmwareUpdate] verify: got ${banksData.banks.length} banks');
-          if (banksData.banks.isNotEmpty) break;
+          logger.d('[FirmwareUpdate] verify: got '
+              '${banksData.physicalBanks.length} banks');
+          // Counted over physical banks: a table holding only the virtual OTA
+          // row is TR-181 still coming up, and treating it as "banks read"
+          // would fail the update with "expected bank not present".
+          if (banksData.physicalBanks.isNotEmpty) break;
           // Empty banks — TR-181 not ready yet, retry
           logger.w('[FirmwareUpdate] verify: empty banks, retrying...');
           if (attempt == maxAttempts) {
@@ -395,7 +398,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           await Future<void>.delayed(const Duration(seconds: 3));
         }
       }
-      final banks = banksData!.banks;
+      // Physical banks only. Every check below is about which slot the router
+      // booted from, and the virtual OTA instance is not a slot: it would be
+      // counted by the multi-Active consistency check and could be matched as
+      // the expected instance if the router renumbers.
+      final banks = banksData!.physicalBanks;
 
       logger.d(
           '[FirmwareUpdate] verify: banks=${banks.map((b) => '${b.instancePath}:${b.status}').join(', ')}'

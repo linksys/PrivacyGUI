@@ -84,7 +84,10 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final asyncSystemInfo = ref.watch(systemInfoDataProvider);
     final systemInfo = asyncSystemInfo.valueOrNull?.model;
     final asyncBanks = ref.watch(firmwareBanksDataProvider);
-    final banks = asyncBanks.valueOrNull?.banks ?? const [];
+    // `physicalBanks`: this card draws one boot slot per row, and the virtual
+    // OTA instance is not a slot — rendered here it would claim a third bank
+    // and print the downloadable version as if the router already held it.
+    final banks = asyncBanks.valueOrNull?.physicalBanks ?? const [];
     final isLoadingBanks = asyncBanks.isLoading && banks.isEmpty;
 
     // Every card on this page exists in every mode. What the mode decides is

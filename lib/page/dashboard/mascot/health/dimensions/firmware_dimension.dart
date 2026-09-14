@@ -8,12 +8,15 @@ import '../health_dimension.dart';
 /// Health dimension for firmware status.
 ///
 /// Evaluates:
-/// - Whether firmware is up to date
-/// - Whether there's an available update bank
+/// - Whether the router reports a newer firmware version it can download
 ///
 /// Score mapping:
 /// - 100: Running latest or no update info available
 /// - 60: Update available (not critical but recommended)
+///
+/// "Update available" is the virtual OTA instance, never a free NAND bank: the
+/// spare bank reports `Available=1` on every healthy router, so reading it here
+/// pinned this dimension at 60 permanently.
 class FirmwareHealthDimension extends HealthDimension {
   @override
   HealthDimensionType get type => HealthDimensionType.firmware;
@@ -32,12 +35,12 @@ class FirmwareHealthDimension extends HealthDimension {
     final firmware = context.firmware;
     if (firmware == null) return 100;
 
-    final available = firmware.availableBank;
-    if (available != null) {
+    final ota = firmware.otaInstance;
+    if (ota != null && ota.available) {
       return 60; // Update available
     }
 
-    return 100; // Up to date
+    return 100; // Up to date, or the router reports no update information
   }
 
   @override
@@ -51,10 +54,11 @@ class FirmwareHealthDimension extends HealthDimension {
     }
 
     final active = firmware.activeBank;
-    final available = firmware.availableBank;
+    final ota = firmware.otaInstance;
+    final hasUpdate = ota != null && ota.available;
 
     String status;
-    if (available != null) {
+    if (hasUpdate) {
       status = 'Update Available';
     } else {
       status = 'Up to Date';
@@ -66,8 +70,8 @@ class FirmwareHealthDimension extends HealthDimension {
       items.add(SummaryItem('Current', active.version));
     }
 
-    if (available != null) {
-      items.add(SummaryItem('Available', available.version));
+    if (hasUpdate) {
+      items.add(SummaryItem('Available', ota.version));
     }
 
     return DimensionSummary(

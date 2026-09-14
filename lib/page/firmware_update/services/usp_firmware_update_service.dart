@@ -163,6 +163,7 @@ class UspFirmwareUpdateService {
   FirmwareImageUIModel _toUIModel(FirmwareImage image) => FirmwareImageUIModel(
         instance: _instanceFromPath(image.instancePath),
         instancePath: image.instancePath,
+        alias: image.alias,
         name: image.name,
         version: image.version,
         status: image.status,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -5,9 +6,18 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/pdf_report_data.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+
+/// One `label: value` line in the report.
+class PdfKeyValue {
+  final String label;
+  final String value;
+
+  const PdfKeyValue(this.label, this.value);
+}
 
 /// Generates a comprehensive multi-page PDF report of router information.
 ///
@@ -132,20 +142,33 @@ class UspPdfService {
       _keyValue('Firmware Version', info.softwareVersion),
       if (info.firmwareImages.isNotEmpty) ...[
         pw.SizedBox(height: 4),
-        ...info.firmwareImages.map((img) {
-          final label = img.name.isNotEmpty ? img.name : img.instancePath;
-          final status = [
-            if (img.isActive) 'Active',
-            if (img.isBootTarget) 'Boot',
-          ].join(', ');
-          return _keyValue(
-            '  $label',
-            '${img.version}${status.isNotEmpty ? ' ($status)' : ''}',
-          );
-        }),
+        ...firmwareImageRows(info.firmwareImages)
+            .map((row) => _keyValue(row.label, row.value)),
       ],
       pw.SizedBox(height: 12),
     ];
+  }
+
+  /// One printed row per firmware image the router holds.
+  ///
+  /// `firmwareImages` is the physical inventory — the virtual OTA instance is
+  /// filtered out upstream in `systemInfoDataProvider`, because a row printed
+  /// here is indistinguishable from a bank and would put the version the router
+  /// could update *to* in a report of what it is running.
+  @visibleForTesting
+  static List<PdfKeyValue> firmwareImageRows(
+      List<FirmwareImageUIModel> images) {
+    return images.map((img) {
+      final label = img.name.isNotEmpty ? img.name : img.instancePath;
+      final status = [
+        if (img.isActive) 'Active',
+        if (img.isBootTarget) 'Boot',
+      ].join(', ');
+      return PdfKeyValue(
+        '  $label',
+        '${img.version}${status.isNotEmpty ? ' ($status)' : ''}',
+      );
+    }).toList();
   }
 
   static List<pw.Widget> _buildSystemStatus(PdfReportData data) {

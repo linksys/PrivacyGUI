@@ -8,17 +8,37 @@ import 'package:privacy_gui/page/firmware_update/services/firmware_banks_data_se
 // ── Data Model ──
 
 class FirmwareBanksData extends Equatable with DiagnosticLoggable {
+  /// Every `FirmwareImage` row the router reported, as reported. Prefer
+  /// [physicalBanks] or [otaInstance]: the raw list mixes the NAND banks with a
+  /// virtual instance that is not a bank, and reading it directly is what makes
+  /// "an update is available" and "a slot is free to flash into" the same
+  /// question when they are not.
   final List<FirmwareImageUIModel> banks;
 
   const FirmwareBanksData({required this.banks});
 
+  /// The NAND banks — everything except the virtual OTA instance. This is the
+  /// inventory of images the router holds, and the only list that may be shown
+  /// as slots.
+  List<FirmwareImageUIModel> get physicalBanks =>
+      banks.where((b) => !b.isOta).toList();
+
+  /// The virtual OTA instance, or null when the router reports none (OEM builds
+  /// without the fwup stack). Null means *no update information*, not
+  /// "up to date" — and never "an update is available".
+  FirmwareImageUIModel? get otaInstance =>
+      banks.where((b) => b.isOta).firstOrNull;
+
   /// Active bank (status == 'Active').
   FirmwareImageUIModel? get activeBank =>
-      banks.where((b) => b.isActive).firstOrNull;
+      physicalBanks.where((b) => b.isActive).firstOrNull;
 
-  /// Available bank for flashing (available && !isActive).
+  /// Physical bank free to flash into (available && !isActive). The OTA instance
+  /// also reports `Available=1` while not being Active, so this must search the
+  /// banks only — otherwise the version the router could download reads as the
+  /// version already sitting in the spare slot.
   FirmwareImageUIModel? get availableBank =>
-      banks.where((b) => b.available && !b.isActive).firstOrNull;
+      physicalBanks.where((b) => b.available && !b.isActive).firstOrNull;
 
   @override
   String get diagnosticName => 'FirmwareBanksData';

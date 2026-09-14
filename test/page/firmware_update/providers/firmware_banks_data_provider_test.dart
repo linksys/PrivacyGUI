@@ -90,6 +90,100 @@ void main() {
     });
   });
 
+  group('FirmwareBanksData ota / physical split', () {
+    /// The measured three-instance shape: fw1 Active, fw2 spare with an empty
+    /// version, ota virtual.
+    FirmwareBanksData threeInstances({
+      bool otaAvailable = false,
+      String otaVersion = '',
+    }) =>
+        FirmwareBanksData(banks: [
+          FirmwareUpdateTestData.activeBank(instance: 1, alias: 'fw1'),
+          FirmwareUpdateTestData.emptyVersionBank(instance: 2),
+          FirmwareUpdateTestData.otaInstance(
+            instance: 3,
+            available: otaAvailable,
+            version: otaVersion,
+          ),
+        ]);
+
+    test('otaInstance resolves the alias == ota row', () {
+      final data = threeInstances(otaAvailable: true, otaVersion: '2.0.2');
+
+      expect(data.otaInstance?.alias, 'ota');
+      expect(data.otaInstance?.version, '2.0.2');
+      expect(data.otaInstance?.available, isTrue);
+    });
+
+    test('otaInstance is null when the router reports no ota row', () {
+      final data = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(instance: 1, alias: 'fw1'),
+        FirmwareUpdateTestData.emptyVersionBank(instance: 2),
+      ]);
+
+      expect(data.otaInstance, isNull);
+    });
+
+    test('physicalBanks excludes the ota row', () {
+      final data = threeInstances();
+
+      expect(data.physicalBanks.map((b) => b.alias), ['fw1', 'fw2']);
+    });
+
+    test('physicalBanks keeps rows whose alias is absent', () {
+      // A build without the Linksys fwup stack reports no Alias at all. Those
+      // rows are still physical banks; a strict fw1/fw2 allow-list would blank
+      // the whole banks card on such a box.
+      final data = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(instance: 1),
+        FirmwareUpdateTestData.availableBank(instance: 2),
+      ]);
+
+      expect(data.physicalBanks, hasLength(2));
+      expect(data.otaInstance, isNull);
+    });
+
+    test('availableBank searches physical banks only', () {
+      // The ota row is available && !isActive, so an unfiltered search would
+      // return it and callers would read the upgradeable version as "the spare
+      // bank we can flash".
+      final data = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(instance: 1, alias: 'fw1'),
+        FirmwareUpdateTestData.otaInstance(
+          instance: 3,
+          available: true,
+          version: '2.0.2',
+        ),
+      ]);
+
+      expect(data.availableBank, isNull);
+    });
+
+    test('availableBank still finds the spare physical bank', () {
+      final data = threeInstances(otaAvailable: true, otaVersion: '2.0.2');
+
+      expect(data.availableBank?.alias, 'fw2');
+    });
+
+    test('instance numbering does not change the resolved rows', () {
+      // Same three rows, renumbered: ota is instance 1 and the banks are 7/9.
+      final renumbered = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.otaInstance(
+          instance: 1,
+          available: true,
+          version: '2.0.2',
+        ),
+        FirmwareUpdateTestData.activeBank(instance: 7, alias: 'fw1'),
+        FirmwareUpdateTestData.emptyVersionBank(instance: 9),
+      ]);
+
+      expect(renumbered.otaInstance?.version, '2.0.2');
+      expect(renumbered.physicalBanks.map((b) => b.alias), ['fw1', 'fw2']);
+      expect(renumbered.availableBank?.instance, 9);
+      expect(renumbered.activeBank?.instance, 7);
+    });
+  });
+
   group('FirmwareBanksDataNotifier', () {
     test('build fetches banks from service', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [

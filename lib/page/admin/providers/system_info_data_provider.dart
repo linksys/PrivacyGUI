@@ -61,8 +61,14 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     // Read from firmwareBanksDataProvider (Single Source of Truth)
     final banksData = ref.read(firmwareBanksDataProvider).valueOrNull;
 
-    // Service fetches SystemInfo; firmwareBanks passed in externally
-    final model = await svc.fetch(firmwareBanks: banksData?.banks);
+    // Service fetches SystemInfo; firmwareBanks passed in externally.
+    //
+    // `physicalBanks`, not `banks`: this is the fan-out point for everything
+    // that consumes SystemInfoUIModel.firmwareImages — the support PDF prints
+    // one row per entry, and the admin card falls back to `.first.version` as
+    // the current version. The virtual OTA instance carries the version the
+    // router could update *to*, so letting it through makes both of those lie.
+    final model = await svc.fetch(firmwareBanks: banksData?.physicalBanks);
 
     return SystemInfoData(model: model);
   }
