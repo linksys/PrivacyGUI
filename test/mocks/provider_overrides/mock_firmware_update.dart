@@ -30,8 +30,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 
@@ -61,6 +63,32 @@ class FixedFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
 
   @override
   Future<FirmwareBanksData> build() async => _fixedData;
+}
+
+/// A [FirmwareAutoUpdateDataNotifier] pinned to one reading.
+///
+/// [setPolicy] is overridden to publish locally without a service call, because the
+/// real one writes to the router: a cell that toggles the switch would otherwise
+/// reach `UspFirmwareUpdateService` and fail, and the sweep would report the
+/// failure as a card that renders nothing.
+class FixedFirmwareAutoUpdateNotifier extends FirmwareAutoUpdateDataNotifier {
+  FixedFirmwareAutoUpdateNotifier(this._fixedData);
+
+  final FirmwareAutoUpdateUIModel _fixedData;
+
+  @override
+  Future<FirmwareAutoUpdateUIModel> build() async => _fixedData;
+
+  @override
+  Future<FirmwareAutoUpdateUIModel> refresh() async {
+    state = AsyncData(_fixedData);
+    return _fixedData;
+  }
+
+  @override
+  Future<void> setPolicy(FirmwareAutoUpdatePolicy policy) async {
+    state = AsyncData((state.valueOrNull ?? _fixedData).withPolicy(policy));
+  }
 }
 
 class FixedSystemInfoDataNotifierForFirmware extends SystemInfoDataNotifier {
@@ -131,6 +159,57 @@ const gateFirmwareBanks = FirmwareBanksData(banks: [
     available: true,
   ),
 ]);
+
+/// The same two banks plus a virtual `ota` row reporting an image is waiting.
+///
+/// The banner half of #1552 needs `otaInstance.available` true, and that flag only
+/// exists on the third row — `physicalBanks` deliberately excludes it, so the two
+/// fixtures cannot be merged: a page that lists banks must not grow a third slot,
+/// and a banner must not appear on a router with nothing to install.
+const gateFirmwareBanksWithOta = FirmwareBanksData(banks: [
+  FirmwareImageUIModel(
+    instance: 1,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
+    alias: 'fw1',
+    name: 'firmware-bank-1',
+    version: '1.0.16.213451',
+    status: 'Active',
+    available: true,
+    isBootTarget: true,
+  ),
+  FirmwareImageUIModel(
+    instance: 2,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.2.',
+    alias: 'fw2',
+    name: 'firmware-bank-2',
+    version: '1.0.15.211003',
+    status: 'Standby',
+    available: true,
+  ),
+  FirmwareImageUIModel(
+    instance: 3,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
+    alias: 'ota',
+    name: '',
+    version: '1.0.17.220118',
+    status: 'Available',
+    available: true,
+  ),
+]);
+
+/// The auto-update reading the OTA card's switch renders in its ON position.
+///
+/// `autoInstall` rather than `notifyOnly` because the two are one pixel apart on
+/// the switch and `autoInstall` is the firmware's own default, so it is the state a
+/// user most often sees. `idle` because a busy daemon locks the switch, and a locked
+/// switch measures the busy figure instead of the control.
+const gateFirmwareAutoUpdateOn = FirmwareAutoUpdateUIModel(
+  status: FirmwareAutoUpdateStatus.idle,
+  progress: 0,
+  rawState: '0',
+  policy: FirmwareAutoUpdatePolicy.autoInstall,
+  rawFlags: '2',
+);
 
 /// The router the status card describes.
 ///

@@ -202,6 +202,38 @@
 # remeasure also worth noting against `# tabs`: admin grew a card and read dearer, firmware_update
 # remeasure lost one and read cheaper, both by ~5% while the guard the same commit added costs 16s.
 # remeasure The column is a per-page rate, so it does not see a readability guard at all.
+# remeasure2 #1552 changed the shape of two more rows and re-measured both on this basis, three runs
+# remeasure2 each, 2026-09-14: usp_admin_view.dart 23.4 -> 27.4 (24.8 / 28.7 / 27.4, +17.1%) after the
+# remeasure2 OTA card gained an auto-update switch row, and usp_dashboard_view.dart 63.5 -> 52.0
+# remeasure2 (50.6 / 52.0 / 52.2, -18.1%) after gaining the firmware banner above the scroll view.
+# remeasure2 The two figures are NOT comparable to each other's confidence. admin's 23.4 was taken
+# remeasure2 the same day by #1549's block above, on the same machine in the same session, so +17.1%
+# remeasure2 is a shape effect and the largest one either firmware ticket has produced — a switch row
+# remeasure2 costs more than the LayoutBuilder card that carries it. usp_dashboard's 63.5 is from
+# remeasure2 2026-08-25/26, twenty days earlier, so -18.1% mixes a shape change with a stale-date
+# remeasure2 comparison and CANNOT be attributed to #1552: the page gained a widget and read cheaper,
+# remeasure2 which is the basis-note's warning about mixing dates rather than bases showing up in a
+# remeasure2 row over 20ms/cell. The committed figure is the fresh reading either way; what is not
+# remeasure2 claimed is a direction for it.
+# remeasure2 Note also what did NOT need re-measuring, so the omissions are not read as oversights:
+# remeasure2 usp_sliver_dashboard_view.dart (58.6) renders no banner — it is the child the frame wraps
+# remeasure2 — and firmware_ota_view.dart (15.3) does not build FirmwareOtaCard; the switch row lands
+# remeasure2 on Administration only. Both share a fixture with a page that changed, and a fixture is
+# remeasure2 not a shape.
+# remeasure3 The sliver_dashboard row (58.6) was NOT re-measured, and the attempt is recorded because
+# remeasure3 the reason is about this column rather than about that page. #1552's review asked for it:
+# remeasure3 usp_dashboard_view.dart now reads 52.0, cheaper than the child it wraps, and the pair is
+# remeasure3 only comparable if both are on today's basis. Three runs of page.sliver_dashboard on the
+# remeasure3 documented basis (--plain-name, --reporter json, coordinate-test durations / 234) read
+# remeasure3 237.1 / 204.6 / 151.6 ms/cell -- a 56% spread against #1377's +/-7% band, so the figures
+# remeasure3 are the machine, not the page. The control settles it: page.admin, whose 27.4 was taken
+# remeasure3 hours earlier the same day on the same command, re-read 68.1 in the same session (load
+# remeasure3 average 11-14, a flutter_tester still at 145% CPU). A box that no longer reproduces its
+# remeasure3 own morning reading cannot certify a new one, so 58.6 stands and the anomaly stays open.
+# remeasure3 What is now known and was not before: this column is not robust to whatever the box is
+# remeasure3 doing, at any figure, and the 2.5x drift on admin is larger than every shape effect this
+# remeasure3 file has ever recorded. Read 52.0 < 58.6 as two readings taken 20 days apart on a rate
+# remeasure3 that moves 2.5x with load -- not as a frame being cheaper than the page inside it.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
@@ -213,11 +245,11 @@
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
-lib/page/admin/views/usp_admin_view.dart	swept	23.4
+lib/page/admin/views/usp_admin_view.dart	swept	27.4
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
 lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
 lib/page/apps/views/usp_apps_view.dart	swept	21.5
-lib/page/dashboard/views/usp_dashboard_view.dart	swept	63.5
+lib/page/dashboard/views/usp_dashboard_view.dart	swept	52.0
 lib/page/dashboard/views/usp_sliver_dashboard_view.dart	swept	58.6
 lib/page/devices/views/usp_device_detail_view.dart	swept	33.4
 lib/page/devices/views/usp_device_list_view.dart	swept	44.0

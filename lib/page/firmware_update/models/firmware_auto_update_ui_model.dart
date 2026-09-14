@@ -38,6 +38,49 @@ enum FirmwareAutoUpdateStatus {
   unknown,
 }
 
+/// What the router is allowed to do by itself when a newer build exists, as read
+/// from `Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags`.
+///
+/// The app's switch is binary over three values, and which two it writes is a
+/// product decision rather than an arithmetic one (Austin, 2026-09-14): **off
+/// writes [notifyOnly], not [off]**. A router that stops checking can never tell
+/// the app an update exists, so writing `0` would silently disable the dashboard
+/// banner as well — and "don't install things behind my back" is not the same
+/// request as "never look".
+enum FirmwareAutoUpdatePolicy {
+  /// `0` — the router neither checks nor installs.
+  ///
+  /// Read, never written: a router can arrive here from the factory, from a
+  /// previous firmware or from the CLI, and the switch has to be able to show it.
+  off('0'),
+
+  /// `1` — keep checking, install nothing. What the switch writes when turned
+  /// off, and the one mode the dashboard banner exists to serve.
+  notifyOnly('1'),
+
+  /// `2` — check and install unattended. The firmware's own default, and what the
+  /// switch writes when turned on.
+  autoInstall('2'),
+
+  /// A value this build does not define. Never silently treated as [off], for the
+  /// same reason [FirmwareAutoUpdateStatus.unknown] is never treated as idle.
+  unknown('');
+
+  const FirmwareAutoUpdatePolicy(this.rawValue);
+
+  /// The string this app writes to `autoupdate_flags` for this policy. Empty for
+  /// [unknown], which is why writing it is rejected rather than sent.
+  final String rawValue;
+
+  /// The policy a raw `autoupdate_flags` reading means.
+  static FirmwareAutoUpdatePolicy fromRaw(String raw) => switch (raw) {
+        '0' => off,
+        '1' => notifyOnly,
+        '2' => autoInstall,
+        _ => unknown,
+      };
+}
+
 /// The router's auto-update progress, mapped once in the service layer.
 class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
   final FirmwareAutoUpdateStatus status;
@@ -53,11 +96,50 @@ class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
   /// have the value itself.
   final String rawState;
 
+  /// What the router may do on its own — the setting the OTA card's switch owns.
+  ///
+  /// On the same model as [status] because it arrives in the same `Get`: one fetch,
+  /// one mapping site. They are not the same kind of value, though — this one is
+  /// written by the user and that one only observed.
+  final FirmwareAutoUpdatePolicy policy;
+
+  /// `autoupdate_flags` exactly as the router reported it, kept for the same
+  /// reason as [rawState] and read by [checksForUpdates].
+  final String rawFlags;
+
   const FirmwareAutoUpdateUIModel({
     required this.status,
     required this.progress,
     required this.rawState,
+    required this.policy,
+    required this.rawFlags,
   });
+
+  /// Whether the router looks for newer builds at all — REQ-C3's `flags > 0`,
+  /// which is half of what puts the dashboard banner on screen.
+  ///
+  /// Read off [rawFlags] rather than off [policy] deliberately. The requirement is
+  /// a numeric comparison, and an unrecognised positive value (say a firmware that
+  /// adds a `3`) is a router that is checking — withholding a banner for an update
+  /// the router has already *found* would hide real information behind a gap in
+  /// this app's enum.
+  bool get checksForUpdates => (int.tryParse(rawFlags) ?? 0) > 0;
+
+  /// The same reading with a different policy — the one field a user can change.
+  ///
+  /// Deliberately narrower than a `copyWith`: [status], [progress] and
+  /// [rawState] describe what the daemon is doing, and a policy write is not an
+  /// observation of that, so no caller should be able to rewrite them from the
+  /// UI side. [rawFlags] moves with [policy] because a confirmed write means the
+  /// router now holds exactly [FirmwareAutoUpdatePolicy.rawValue].
+  FirmwareAutoUpdateUIModel withPolicy(FirmwareAutoUpdatePolicy newPolicy) =>
+      FirmwareAutoUpdateUIModel(
+        status: status,
+        progress: progress,
+        rawState: rawState,
+        policy: newPolicy,
+        rawFlags: newPolicy.rawValue,
+      );
 
   /// True while the router is doing work the user should see a progress view
   /// for. A router with `autoupdate_flags` at its default can enter these states
@@ -75,5 +157,7 @@ class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
         'status': status,
         'progress': progress,
         'rawState': rawState,
+        'policy': policy,
+        'rawFlags': rawFlags,
       };
 }

@@ -103,6 +103,7 @@ import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_available_banner.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
@@ -1412,12 +1413,39 @@ final kSliverDashboardPageCase = PageSurfaceCase(
 /// The second and last [PageSurfaceCase.needsMaterialAncestor] page, for the same reason
 /// as the case above and by the same route: the shell it delegates to is where its
 /// `Material` comes from in the app, and its body is that page's grid of [AppCard]s.
+///
+/// **[FirmwareUpdateAvailableBanner] is #1552's, and it is the third coordinate this
+/// page now has of its own.** It is a full-width strip between the 64px bar and the
+/// grid: one sentence — the widest string #1552 adds, `pl` at 71 characters — over two
+/// localized buttons in a `Wrap`. It stacks unconditionally rather than at a measured
+/// threshold, precisely so the 320px column cannot crush the sentence the way #1549's
+/// version row was crushed, and this cell is what says so in pixels. Requiring it also
+/// pins the fixture: the banner reads two providers `mock_dashboard_page.dart` pins to
+/// a router-has-an-update reading, and unpinned it renders `SizedBox.shrink` in all 234
+/// cells while the case stays green.
+///
+/// The banner is opt-in — `dashboardPageOverrides(firmwareBanner: true)` — and this is
+/// the only caller that opts in. Off, the fixture's banks have no ota row and the real
+/// predicate hides the strip; that is what [kSliverDashboardPageCase] and the seven
+/// `dashboard_page_harness.dart` tests get, so none of them measures a grid this page's
+/// notice has pushed down.
+///
+/// On, that fixture also pins a third provider — the banner's visibility flag — so the
+/// banner has its height on frame one rather than on frame two. That is not a
+/// convenience: unpinned, `screen_px=601` fails in every locale inside ui_kit, on a
+/// defect this repo cannot fix. The fixture's own header is where that is written down,
+/// and it is worth reading before changing either file.
 final kUspDashboardPageCase = PageSurfaceCase(
   id: 'usp_dashboard',
   view: () => const UspDashboardView(),
   needsMaterialAncestor: true,
-  overrides: () => dashboardPageOverrides(),
-  requires: const [UspTopBar, DashboardHeaderBar, SliverDashboard],
+  overrides: () => dashboardPageOverrides(firmwareBanner: true),
+  requires: const [
+    UspTopBar,
+    DashboardHeaderBar,
+    SliverDashboard,
+    FirmwareUpdateAvailableBanner,
+  ],
   forbids: const [AppLoader, ServiceErrorView],
 );
 
@@ -1460,6 +1488,18 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// `appModeProfileProvider`, so it renders whatever the default profile is, and a gate
 /// that inverted would silently drop a card from every one of the 234 cells.
 ///
+/// **[FirmwareAutoUpdateToggleRow] is required for a sharper reason than the cards**, and
+/// it is the one entry here that is not a card at all. #1552 put the auto-update switch
+/// inside `FirmwareOtaCard`, and that row *hides itself* — `SizedBox.shrink` — when its
+/// `autoupdate_flags` read failed, because a switch drawn from a failed read states a
+/// policy nobody knows. [adminPageOverrides] pins the provider so the row renders, and
+/// that pin is only half a guard: a code-side regression (an inverted `hasError`, an
+/// exception moved into the mapping, an early return on a null policy) deletes the row
+/// from all 234 cells in all 26 locales and every one of them still passes, because a
+/// page with one fewer row cannot overflow. Naming the row is what turns the fixture's
+/// intent into something the gate checks. It is also why that widget is public while the
+/// card's other two parts are not.
+///
 /// What stays unmeasured is the five dialogs: timezone edit, password change, reboot
 /// and factory-reset confirmations, and the password-invalid state. #1380 puts dialogs
 /// out of scope for the whole wave, and the golden suite already pumps all five.
@@ -1471,6 +1511,7 @@ final kAdminPageCase = PageSurfaceCase(
     UspTimezoneCard,
     UspPasswordCard,
     FirmwareOtaCard,
+    FirmwareAutoUpdateToggleRow,
     FirmwareUpdateCard,
     UspSystemActionsCard,
   ],

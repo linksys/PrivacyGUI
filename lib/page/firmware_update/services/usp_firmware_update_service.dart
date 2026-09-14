@@ -162,6 +162,73 @@ class UspFirmwareUpdateService {
     }
   }
 
+  /// The router's auto-update setting and progress, in one read.
+  ///
+  /// One `Get` for both because the data plane exposes them side by side, and
+  /// because the two questions a caller asks — "may the router update itself" and
+  /// "is it updating right now" — are answered by the same three parameters.
+  Future<FirmwareAutoUpdateUIModel> fetchAutoUpdate() async {
+    try {
+      return mapAutoUpdateStatus(await FirmwareAutoUpdate.fetch(_usp));
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Writes the auto-update policy, and **only** the policy.
+  ///
+  /// `FirmwareAutoUpdate.update()` also takes `fwupPeriodicCheck` and
+  /// `updateFirmwareNow`; neither is ever passed. Scheduling is decided against
+  /// (REQ-C2) — the data plane can only promise "at the next cron tick", so a UI
+  /// that offered a time would be promising something nobody defined — and
+  /// `update_firmware_now` is a second flash entry point this app does not use.
+  /// Seeing those two parameters unread is the intended state, not an omission.
+  ///
+  /// [FirmwareAutoUpdatePolicy.unknown] is refused rather than sent: its raw value
+  /// is the empty string, which would either clear the parameter or be rejected by
+  /// the router, and both are worse than failing at the call site.
+  Future<void> setAutoUpdatePolicy(FirmwareAutoUpdatePolicy policy) async {
+    if (policy == FirmwareAutoUpdatePolicy.unknown) {
+      throw ArgumentError.value(
+        policy,
+        'policy',
+        'has no value to write — read-only, it means the router reported a flag '
+            'this build does not define',
+      );
+    }
+    try {
+      final result = await FirmwareAutoUpdate.update(
+        _usp,
+        autoupdateFlags: policy.rawValue,
+      );
+      switch (UspResultParser.parseSetResult(result)) {
+        case UspSuccess():
+          break;
+        // One parameter, so a "partial" success cannot mean half of the write
+        // landed — it means the only write failed while the message did not. Both
+        // arms are therefore the same failure to a caller, unlike the
+        // multi-parameter writes in `usp_admin_service.dart` where the split
+        // carries information.
+        case UspPartialSuccess(:final errorSummary, :final failures):
+          throw UspCompleteFailureError(
+            summary: 'Auto-update policy write failed: $errorSummary',
+            failures: failures,
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Auto-update policy write failed: $errorSummary',
+            failures: errors,
+          );
+      }
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   /// The one place `fwup_state` becomes an app-layer status.
   ///
   /// Keeping it single-sited is the point: the raw domain is `0/1/3/4/5` (`2` is
@@ -173,6 +240,10 @@ class UspFirmwareUpdateService {
   ///
   /// [FirmwareAutoUpdateUIModel.rawState] carries the value through unparsed so
   /// a failure keeps the number the router sent.
+  ///
+  /// `autoupdate_flags` is mapped here too rather than in a second method: it
+  /// arrives in the same `Get`, so splitting the mapping would mean two reads of
+  /// one response.
   static FirmwareAutoUpdateUIModel mapAutoUpdateStatus(FirmwareAutoUpdate raw) {
     final status = switch (raw.fwupState) {
       '0' => FirmwareAutoUpdateStatus.idle,
@@ -185,6 +256,11 @@ class UspFirmwareUpdateService {
     if (status == FirmwareAutoUpdateStatus.unknown) {
       logger.w('[FirmwareUpdate] unrecognised fwup_state "${raw.fwupState}"');
     }
+    final policy = FirmwareAutoUpdatePolicy.fromRaw(raw.autoupdateFlags);
+    if (policy == FirmwareAutoUpdatePolicy.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised autoupdate_flags '
+          '"${raw.autoupdateFlags}"');
+    }
     return FirmwareAutoUpdateUIModel(
       status: status,
       // Carried verbatim. `fwup_progress` rests at both 0 and 100 after a check
@@ -192,6 +268,8 @@ class UspFirmwareUpdateService {
       // is only valid within the status above.
       progress: int.tryParse(raw.fwupProgress) ?? 0,
       rawState: raw.fwupState,
+      policy: policy,
+      rawFlags: raw.autoupdateFlags,
     );
   }
 

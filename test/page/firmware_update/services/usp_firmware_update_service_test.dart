@@ -429,4 +429,162 @@ void main() {
       });
     });
   });
+
+  group('auto-update policy — read', () {
+    // The whole documented domain of `autoupdate_flags`, one case each. All three
+    // are readable; only two of them are ever written (see the write group).
+    const cases = {
+      '0': FirmwareAutoUpdatePolicy.off,
+      '1': FirmwareAutoUpdatePolicy.notifyOnly,
+      '2': FirmwareAutoUpdatePolicy.autoInstall,
+    };
+
+    cases.forEach((raw, expected) {
+      test('autoupdate_flags "$raw" maps to ${expected.name}', () {
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(autoupdateFlags: raw),
+        );
+
+        expect(model.policy, expected);
+        expect(model.rawFlags, raw);
+      });
+    });
+
+    test('an undefined flag value maps to unknown and is not off', () {
+      // Same shape as the `fwup_state` arm above and for the same reason: reading
+      // an unrecognised value as `off` would tell the user the router never checks
+      // when it may well be checking.
+      final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+        FirmwareUpdateTestData.autoUpdate(autoupdateFlags: '9'),
+      );
+
+      expect(model.policy, FirmwareAutoUpdatePolicy.unknown);
+      expect(model.policy, isNot(FirmwareAutoUpdatePolicy.off));
+      expect(model.rawFlags, '9',
+          reason: 'the raw value has to survive the gap in this enum');
+    });
+
+    test('checksForUpdates is the numeric comparison, not the enum', () {
+      // REQ-C3 is `flags > 0`. An unrecognised *positive* value is a router that
+      // is checking, so the banner condition must hold for it even though the
+      // policy is unknown — otherwise a firmware that grows a value hides an
+      // update the router has already found.
+      bool checks(String raw) => UspFirmwareUpdateService.mapAutoUpdateStatus(
+            FirmwareUpdateTestData.autoUpdate(autoupdateFlags: raw),
+          ).checksForUpdates;
+
+      expect(checks('0'), isFalse);
+      expect(checks('1'), isTrue);
+      expect(checks('2'), isTrue);
+      expect(checks('9'), isTrue);
+      expect(checks(''), isFalse,
+          reason: 'an unreadable flag is not a claim that the router checks');
+    });
+
+    test('fetchAutoUpdate parses a router reading end to end', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          FirmwareUpdateTestData.autoUpdateResponse(
+              autoupdateFlags: '1', fwupState: '3', fwupProgress: '42'));
+
+      final model = await service.fetchAutoUpdate();
+
+      expect(model.policy, FirmwareAutoUpdatePolicy.notifyOnly);
+      expect(model.status, FirmwareAutoUpdateStatus.downloading);
+      expect(model.progress, 42);
+    });
+
+    test('fetchAutoUpdate maps a USP error to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      expect(() => service.fetchAutoUpdate(), throwsA(isA<NetworkError>()));
+    });
+  });
+
+  group('auto-update policy — write', () {
+    setUp(() {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+    });
+
+    test('writes autoupdate_flags and nothing else (REQ-C2)', () async {
+      // The one assertion this whole package turns on. `FirmwareAutoUpdate.update()`
+      // also accepts `fwupPeriodicCheck` and `updateFirmwareNow`; scheduling is
+      // decided against and the second flash entry point is not ours, so a Set
+      // carrying either would be a promise this app cannot keep.
+      await service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.autoInstall);
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final params = captured.single as Map<String, dynamic>;
+      expect(params, {
+        'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': '2',
+      });
+    });
+
+    test('the switch off position writes 1, never 0', () async {
+      // Austin's ruling (2026-09-14): off means "do not install by yourself", not
+      // "stop looking". A `0` would take the dashboard banner down with it, since a
+      // router that never checks never reports an available image.
+      await service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.notifyOnly);
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final params = captured.single as Map<String, dynamic>;
+      expect(params.values.single, '1');
+      expect(params.values.single, isNot('0'));
+    });
+
+    test('off is writable by the service even though the UI never asks for it',
+        () async {
+      // The enum value exists because a router can *be* at 0. Keeping the service
+      // able to send it is what makes "the UI never writes 0" a property of the
+      // call sites — pinned in the card's own test — rather than of this layer,
+      // which has no business knowing which switch position a caller is in.
+      await service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.off);
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      expect((captured.single as Map<String, dynamic>).values.single, '0');
+    });
+
+    test('unknown is refused before it reaches the router', () async {
+      // `unknown.rawValue` is the empty string. Sent, it would either clear the
+      // parameter or be rejected by the router — both worse than failing here.
+      await expectLater(
+        service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.unknown),
+        throwsA(isA<ArgumentError>()),
+      );
+      verifyNever(() => mockUsp.set(any()));
+    });
+
+    test('a rejected Set becomes a ServiceError', () {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': {
+                  'errorCode': 7004,
+                  'errorMessage': 'Parameter not writable',
+                },
+              },
+            },
+          });
+
+      expect(
+        () => service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.autoInstall),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('a transport failure maps to ServiceError', () {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Authentication error: Permission denied');
+
+      expect(
+        () => service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.notifyOnly),
+        throwsA(isA<UnauthorizedError>()),
+      );
+    });
+  });
 }

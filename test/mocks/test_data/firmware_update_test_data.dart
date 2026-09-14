@@ -1,4 +1,5 @@
 import 'package:privacy_gui/generated/firmware_auto_update.g.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 
 /// Test data builder for the manual firmware update flow.
@@ -182,6 +183,40 @@ class FirmwareUpdateTestData {
         autoupdateFlags: autoupdateFlags,
         fwupState: fwupState,
         fwupProgress: fwupProgress,
+      );
+
+  /// The same reading one layer lower — the raw `Get` map, for stubbing
+  /// `UspClient.get()` where [autoUpdate] would skip the codegen parse.
+  ///
+  /// The two optional sysevent paths are deliberately absent: `optional: true` in
+  /// the definition means a router without the fwup stack answers without them, and
+  /// this app never reads either one (REQ-C2 — `fwup_periodic_check` is not ours to
+  /// write, and `update_firmware_now` is a second flash entry point we do not use).
+  static Map<String, dynamic> autoUpdateResponse({
+    String fwupState = '0',
+    String fwupProgress = '0',
+    String autoupdateFlags = '2',
+  }) =>
+      <String, dynamic>{
+        'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': autoupdateFlags,
+        'Device.X_LINKSYS_Sysevent.fwup_state': fwupState,
+        'Device.X_LINKSYS_Sysevent.fwup_progress': fwupProgress,
+      };
+
+  /// A `FirmwareAutoUpdateUIModel` as the service hands it to a provider.
+  static FirmwareAutoUpdateUIModel autoUpdateModel({
+    FirmwareAutoUpdateStatus status = FirmwareAutoUpdateStatus.idle,
+    int progress = 0,
+    String rawState = '0',
+    FirmwareAutoUpdatePolicy policy = FirmwareAutoUpdatePolicy.autoInstall,
+    String? rawFlags,
+  }) =>
+      FirmwareAutoUpdateUIModel(
+        status: status,
+        progress: progress,
+        rawState: rawState,
+        policy: policy,
+        rawFlags: rawFlags ?? policy.rawValue,
       );
 
   /// Flexible bank builder for verify tests.

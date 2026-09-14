@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -244,6 +246,53 @@ void main() {
           await container.read(firmwareBanksDataProvider.notifier).refresh();
       expect(data2.activeBank?.version, '1.0.17.0');
       verify(() => mockService.fetch()).called(2);
+    });
+
+    test(
+        'a refresh in flight keeps the previous reading, a failed one does not',
+        () async {
+      // Two assertions in one test because they are two halves of one shape, and
+      // the second is only meaningful given the first: the loading state carries
+      // the previous banks so the OTA page keeps showing versions while it
+      // re-reads, and the *error* state carries them too — riverpod attaches them
+      // whether asked to or not — which is why every consumer has to check
+      // `hasError` rather than `valueOrNull` (see the auto-update notifier for the
+      // whole argument).
+      final second = Completer<List<FirmwareImageUIModel>>();
+      var call = 0;
+      when(() => mockService.fetch()).thenAnswer((_) {
+        call++;
+        return call == 1
+            ? Future.value([
+                FirmwareImageUIModel(
+                  instance: 1,
+                  instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
+                  name: 'linux',
+                  version: '1.0.16.0',
+                  status: 'Active',
+                  available: true,
+                ),
+              ])
+            : second.future;
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await container.read(firmwareBanksDataProvider.future);
+
+      final pending =
+          container.read(firmwareBanksDataProvider.notifier).refresh();
+      final inFlight = container.read(firmwareBanksDataProvider);
+      expect(inFlight.isLoading, isTrue);
+      expect(inFlight.valueOrNull?.activeBank?.version, '1.0.16.0');
+
+      second.completeError(Exception('Network error'), StackTrace.empty);
+      await expectLater(pending, throwsA(isA<Exception>()));
+
+      final state = container.read(firmwareBanksDataProvider);
+      expect(state.hasError, isTrue);
+      expect(state.hasValue, isTrue);
+      expect(state.valueOrNull?.activeBank?.version, '1.0.16.0');
     });
 
     test('propagates service errors', () async {

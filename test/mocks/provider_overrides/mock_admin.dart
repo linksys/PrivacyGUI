@@ -13,8 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 
 import '../test_data/scenes/admin_scene_data.dart';
+import 'mock_firmware_update.dart';
 
 class FixedAdminNotifier extends UspAdminNotifier {
   final UspAdminState _fixedState;
@@ -78,16 +81,36 @@ List<Override> adminOverrides(UspAdminState state) => [
 /// names both.
 ///
 /// Kept separate from [adminOverrides] rather than folded into it because the golden
-/// suite's four dialog interactions do not need it and pinning a provider they do not
-/// read would change what those goldens are of.
+/// suite's four dialog *interactions* do not need it and pinning a provider they do not
+/// read would change what those goldens are of. That reason covers exactly those four:
+/// the golden suite's full-page `data` state renders the card and therefore calls this
+/// function, not [adminOverrides] — it did not, until #1552's review found that every
+/// admin golden in all 26 locales was rendering the page without the switch row.
+///
+/// #1552 added the second one, `firmwareAutoUpdateDataProvider`, for the same reason
+/// as the first and with a sharper failure: the OTA card's switch row *hides itself*
+/// on `AsyncError`, so an unoverridden provider would delete the row from all 234
+/// cells and the sweep would report a clean page it never measured.
+/// [autoUpdateNotifier] is an escape hatch for the two states a fixed reading
+/// cannot express — a fetch that failed and one that has not answered — which are
+/// exactly the two the switch row treats specially (it hides on the first and locks
+/// on the second). Taking a factory rather than adding a second `AsyncValue`-shaped
+/// parameter keeps the common call site a model, and keeps the *test* from having to
+/// append a duplicate override for a provider this list already pins: riverpod's
+/// last-writer-wins on duplicates is real but undocumented, and #1512 is a pending
+/// riverpod 3 upgrade.
 List<Override> adminPageOverrides({
   UspAdminState? state,
   SystemInfoData systemInfo = gateAdminSystemInfo,
+  FirmwareAutoUpdateUIModel autoUpdate = gateFirmwareAutoUpdateOn,
+  FirmwareAutoUpdateDataNotifier Function()? autoUpdateNotifier,
 }) =>
     [
       ...adminOverrides(state ?? testAdminState),
       systemInfoDataProvider
           .overrideWith(() => FixedSystemInfoDataNotifierForAdmin(systemInfo)),
+      firmwareAutoUpdateDataProvider.overrideWith(autoUpdateNotifier ??
+          () => FixedFirmwareAutoUpdateNotifier(autoUpdate)),
     ];
 
 /// A `systemInfoDataProvider` whose fetch never returns.
@@ -115,8 +138,14 @@ class LoadingSystemInfoDataNotifier extends SystemInfoDataNotifier {
 /// The skeleton moved from the manual card to the OTA card in #1549, along with the
 /// version block it stands in for. The fix it guards moved with it unchanged, so the
 /// guard's coordinates are the only thing this rename touches.
+/// The auto-update provider is pinned here too, and to a *loaded* reading: the two
+/// are independent reads, so a router whose `FirmwareImage` fetch is slow still has an
+/// answered `autoupdate_flags`. Pinning it also keeps the switch row on screen, which
+/// is what the app renders beside that skeleton.
 List<Override> adminPageLoadingFirmwareOverrides({UspAdminState? state}) => [
       ...adminOverrides(state ?? testAdminState),
       systemInfoDataProvider
           .overrideWith(() => LoadingSystemInfoDataNotifier()),
+      firmwareAutoUpdateDataProvider.overrideWith(
+          () => FixedFirmwareAutoUpdateNotifier(gateFirmwareAutoUpdateOn)),
     ];

@@ -66,14 +66,28 @@ class FirmwareBanksDataNotifier extends AsyncNotifier<FirmwareBanksData> {
   Future<FirmwareBanksData> build() async => _fetch();
 
   /// Force refetch and update state. Returns fresh data.
+  ///
+  /// Keeps the previous reading while loading and publishes `AsyncError` on
+  /// failure, for the reasons spelled out on
+  /// `FirmwareAutoUpdateDataNotifier.refresh` — a provider that is not autoDispose
+  /// and that nothing else invalidates cannot be left in `AsyncLoading` by a fetch
+  /// that threw. Riverpod attaches the previous reading to that error whether or
+  /// not it is asked to, which is why this provider's consumers check `hasError`
+  /// rather than `valueOrNull`; see there.
   Future<FirmwareBanksData> refresh() async {
     logger.d('[FirmwareUpdate] banks: refresh() called, setting AsyncLoading');
-    state = const AsyncLoading();
-    final data = await _fetch();
-    logger.d(
-        '[FirmwareUpdate] banks: refresh() fetch complete, setting AsyncData');
-    state = AsyncData(data);
-    return data;
+    state = const AsyncLoading<FirmwareBanksData>().copyWithPrevious(state);
+    try {
+      final data = await _fetch();
+      logger.d(
+          '[FirmwareUpdate] banks: refresh() fetch complete, setting AsyncData');
+      state = AsyncData(data);
+      return data;
+    } catch (e, stackTrace) {
+      logger.e('[FirmwareUpdate] banks: refresh() failed: $e');
+      state = AsyncError(e, stackTrace);
+      rethrow;
+    }
   }
 
   Future<FirmwareBanksData> _fetch() async {
