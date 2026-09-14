@@ -92,6 +92,52 @@ class UspFirmwareUpdateService {
     }
   }
 
+  /// Asks the router to go and look for a newer image, and returns the key that
+  /// names the request.
+  ///
+  /// The third `Download` on this service and the only one that is not a flash.
+  /// Two things make it a look rather than an install:
+  ///
+  /// * `AutoActivate="false"` — `fwupd -m 3`, which checks and stops. `"true"` is
+  ///   the download-and-reboot mode [triggerOtaDownload] uses.
+  /// * **no `URL` at all.** For the virtual `ota` instance the router ignores the
+  ///   parameter and delegates to `fwupd`, which resolves the OTA server itself.
+  ///   Absent rather than empty, because an empty URL is a value nothing has been
+  ///   asked to interpret.
+  ///
+  /// Nothing is downloaded and nothing reboots, which is why this is the one
+  /// `Download` here with no `DisruptionClass` seam above it.
+  ///
+  /// **Throws when the response carries no `commandKey`.** That key is the whole
+  /// of what the operate response tells us — measured, an Operate for a command
+  /// that does not exist and one with a misspelled argument name both answer
+  /// success — so its absence is the difference between "asked" and "did not
+  /// ask", and it must never reach a caller as a check that found nothing.
+  Future<String> requestOtaCheck({required int otaInstance}) async {
+    try {
+      final response = await FirmwareOperations.download(
+        _usp,
+        otaInstance,
+        autoActivate: 'false',
+      );
+      final commandKey = response['commandKey']?.toString();
+      if (commandKey == null || commandKey.isEmpty) {
+        throw UspCompleteFailureError(
+          summary: 'Firmware check was not dispatched: the router answered '
+              'Download() on instance $otaInstance with no commandKey',
+          failures: const [],
+        );
+      }
+      logger.d('[FirmwareUpdate] OTA check dispatched on instance '
+          '$otaInstance (commandKey=$commandKey)');
+      return commandKey;
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);

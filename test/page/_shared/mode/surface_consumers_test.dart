@@ -150,7 +150,7 @@ void main() {
   //
   // Austin's 2026-09-08 addition to #1497: hide the manual firmware-update
   // affordance in RA. The entry point, not the page and not the install machine —
-  // router status, the cloud OTA check and every phase an install passes through
+  // router status, the OTA check and every phase an install passes through
   // stay, because an OTA upgrade is allowed in every mode.
   //
   // #1549 SPLIT THE PAGE, AND THAT MOVED WHERE THIS IS VISIBLE. The manual flow
@@ -366,22 +366,30 @@ void main() {
   });
 
   group('OTA firmware page', () {
-    // The page that carries the cloud check after #1549. No call site of
+    // The page that carries the update check after #1549 — and since #1550 that
+    // check asks the router rather than the cloud API, which changes nothing about
+    // what is asserted here: it is still allowed in every mode. No call site of
     // `firmwareManualEntry` on it at all — which is the assertion: this page must
     // render identically under both profiles, because an OTA upgrade is allowed
     // in every mode and nothing on it is local-only.
+    // `testThreeInstanceBanksData` — a router that reports the virtual `ota` row.
+    // Since #1550 that is the fixture this test cannot do without: the check
+    // button is hidden entirely on a router with no such row (REQ-A1), so
+    // `testBanksData`'s two physical banks would take `firmware-check` out of the
+    // tree in *both* profiles and the assertion below would fail for a reason
+    // that has nothing to do with mode. Which is what it did.
     Widget otaPage(AppModeProfile profile) => host(
           profile: profile,
           page: const FirmwareOtaView(),
           overrides: firmwareUpdateOverrides(
             updateState: idleNoFileState,
-            banksData: testBanksData,
+            banksData: testThreeInstanceBanksData,
             systemInfoData: testSystemInfoData,
           ),
         );
 
     for (final entry in _profiles.entries) {
-      testWidgets('${entry.key} reaches the cloud OTA check', (tester) async {
+      testWidgets('${entry.key} reaches the OTA check', (tester) async {
         final handle = tester.ensureSemantics();
         useTallSurface(tester);
 

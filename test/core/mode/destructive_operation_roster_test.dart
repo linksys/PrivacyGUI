@@ -191,9 +191,13 @@ const _operationClasses = <String>[
 /// changed nothing in the census, so `usp_firmware_update_service.dart` could
 /// grow a third unguarded `FirmwareOperations.download` and stay green. Counting
 /// makes that a red diff. The cost is that splitting or merging a call needs an
-/// edit here, which is the intended price — the two `download` calls below are
-/// `triggerLocalDownload` and `triggerOtaDownload`, and they are two entries
-/// because they are two seams with two different reasons to exist.
+/// edit here, which is the intended price.
+///
+/// It then grew exactly that third `download` (#1550), which is the census
+/// working: the count went from two to three, this file went red, and the new
+/// call had to state what it costs before it could be green again. Two of the
+/// three are flashes with a seam each; the third is a look with none, and the
+/// difference is argued at the call site below rather than waived.
 const _commandCallSites = <String, List<String>>{
   'lib/page/admin/services/usp_admin_service.dart': [
     'DeviceOperations.factoryReset',
@@ -203,7 +207,41 @@ const _commandCallSites = <String, List<String>>{
     'FirmwareOperations.chunkedPush',
   ],
   'lib/page/firmware_update/services/usp_firmware_update_service.dart': [
-    // triggerLocalDownload (file:// URL) and triggerOtaDownload (cloud URL).
+    // Three calls to one command, and only two of them install anything:
+    // triggerLocalDownload (file:// URL), triggerOtaDownload (cloud URL), and
+    // since #1550 requestOtaCheck — the same `Download` with `AutoActivate=false`
+    // and **no URL at all**. `AutoActivate` is what picks the mode: `"true"` is
+    // `fwupd -m 2`, whose own usage string reads `checking / downloading /
+    // flashing / rebooting`, and `"false"` is `-m 3`, `check for forced update`.
+    // We send `"false"` and nothing else — one argument, asserted in
+    // `usp_firmware_update_service_test.dart` — so the destructive verb is not
+    // one keystroke away from this call, it is a different value of the only
+    // argument there is.
+    //
+    // What was measured, on the bench run that found nothing: `fwup_state` went
+    // 0→1→0 and never reached 3 (3 is downloading/flashing), `fwup_progress`
+    // stayed at 0 throughout, and sysmngr logged `FirmwareImage OTA: check only
+    // (fwupd -m 3)`. What was *not* measured: the bench could never be made to
+    // find a new image, so mode 3's behaviour after it finds one is inferred —
+    // from `-m 4` existing separately as `check for forced update and install`,
+    // which is the firmware's own vocabulary rather than an observation of ours.
+    // If that inference is ever wrong this call downloads and flashes, and then
+    // it needs the seam its two neighbours have; it is written down here so the
+    // question has somewhere to be asked.
+    //
+    // The session it runs over is the one it answers on, so on today's reading
+    // there is no seam above it and no DisruptionClass to choose. The other two
+    // keep theirs (`triggerInstall` / `triggerOtaInstall` in _seams).
+    //
+    // Deliberately NOT an entry in _notDestructive. That set is keyed on
+    // `(file, command)`, and all three calls here are `FirmwareOperations.download`
+    // — so a waiver naming this one would name the two flashes as well and hand a
+    // reset-the-router-remotely command the exemption a version check earned.
+    // Left unwaived, it stays in the reachability test, which the file passes on
+    // the two seams its neighbours own. That is a weaker claim than a waiver would
+    // be and it is the honest one: this census cannot tell the three apart, and
+    // the argument for the third is the absent URL, which lives in the code.
+    'FirmwareOperations.download',
     'FirmwareOperations.download',
     'FirmwareOperations.download',
   ],

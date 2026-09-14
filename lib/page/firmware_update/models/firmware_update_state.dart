@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
@@ -20,11 +20,14 @@ class FirmwareUpdateState extends Equatable {
   /// The upload method used for the current/last upload (null if not started).
   final UploadMethod? uploadMethod;
 
-  /// OTA check result: available update info, or null if up to date / not checked.
-  final FirmwareOtaInfo? otaInfo;
-
-  /// Whether OTA check has been performed and no update was found.
-  final bool otaUpToDate;
+  /// What the last OTA check found, if one has run.
+  ///
+  /// One field where there used to be two (`otaInfo` + `otaUpToDate`), because a
+  /// pair of independent flags could express "no info and not up to date", which
+  /// is both the resting state and the state after a check that failed — and the
+  /// card had no way to tell those from each other. See
+  /// [FirmwareOtaCheckVerdict].
+  final FirmwareOtaCheckResult otaCheck;
 
   const FirmwareUpdateState({
     this.phase = FirmwareUpdatePhase.idle,
@@ -39,8 +42,7 @@ class FirmwareUpdateState extends Equatable {
     this.rebootRemaining,
     this.errorMessage,
     this.uploadMethod,
-    this.otaInfo,
-    this.otaUpToDate = false,
+    this.otaCheck = const FirmwareOtaCheckResult.notChecked(),
   });
 
   double get uploadProgress =>
@@ -65,9 +67,7 @@ class FirmwareUpdateState extends Equatable {
     Duration? rebootRemaining,
     String? errorMessage,
     UploadMethod? uploadMethod,
-    FirmwareOtaInfo? otaInfo,
-    bool clearOtaInfo = false,
-    bool? otaUpToDate,
+    FirmwareOtaCheckResult? otaCheck,
   }) {
     return FirmwareUpdateState(
       phase: phase ?? this.phase,
@@ -82,8 +82,7 @@ class FirmwareUpdateState extends Equatable {
       rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       errorMessage: errorMessage ?? this.errorMessage,
       uploadMethod: uploadMethod ?? this.uploadMethod,
-      otaInfo: clearOtaInfo ? null : (otaInfo ?? this.otaInfo),
-      otaUpToDate: otaUpToDate ?? this.otaUpToDate,
+      otaCheck: otaCheck ?? this.otaCheck,
     );
   }
 
@@ -101,7 +100,6 @@ class FirmwareUpdateState extends Equatable {
         rebootRemaining,
         errorMessage,
         uploadMethod,
-        otaInfo,
-        otaUpToDate,
+        otaCheck,
       ];
 }

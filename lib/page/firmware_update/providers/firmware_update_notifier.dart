@@ -8,19 +8,16 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
-import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_validation_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
-import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 
 final firmwareUpdateNotifierProvider =
     AutoDisposeNotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(
@@ -45,8 +42,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       ref.read(firmwareValidationServiceProvider);
   FirmwareLocalUploadService get _uploader =>
       ref.read(firmwareLocalUploadServiceProvider);
-  FirmwareOtaCheckService get _otaChecker =>
-      ref.read(firmwareOtaCheckServiceProvider);
+  FirmwareRouterOtaCheckService get _otaChecker =>
+      ref.read(firmwareRouterOtaCheckServiceProvider);
 
   /// Holds the picked image bytes off-state. Kept off [FirmwareUpdateState]
   /// because a 70 MB Uint8List does not belong in an equatable comparison
@@ -88,81 +85,75 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
-  /// Build OTA check parameters from device data providers.
+  /// Ask the router whether a newer firmware exists.
   ///
-  /// Returns `null` if required data is unavailable.
-  Future<FirmwareOtaCheckParams?> buildOtaCheckParams() async {
-    try {
-      final devicesData = await ref.read(devicesDataProvider.future);
-      final master = devicesData.master;
-
-      final systemInfoData = await ref.read(systemInfoDataProvider.future);
-      final hardwareVersion =
-          _parseHardwareVersion(systemInfoData.model.hardwareVersion);
-
-      final wanData = await ref.read(wanDataProvider.future);
-      final ipAddress = wanData.model.ipAddress;
-
-      return FirmwareOtaCheckParams(
-        macAddress: _formatMacAddress(master.deviceId),
-        installedVersion: master.softwareVersion,
-        modelNumber: master.model,
-        hardwareVersion: hardwareVersion,
-        ipAddress: ipAddress,
-      );
-    } catch (e) {
-      logger.e('[FirmwareUpdate] Failed to build OTA check params', error: e);
-      return null;
-    }
-  }
-
-  String _formatMacAddress(String mac) {
-    return mac.toUpperCase().replaceAll(':', '-');
-  }
-
-  String _parseHardwareVersion(String hwVersion) {
-    var version = hwVersion;
-    if (version.toUpperCase().startsWith('V')) {
-      version = version.substring(1);
-    }
-    final parsed = int.tryParse(version);
-    return parsed?.toString() ?? version;
-  }
-
-  /// Check for OTA firmware updates from the cloud.
+  /// The cloud OTA API used to answer this, which meant assembling a MAC, a model
+  /// number and a hardware revision from three other providers and asking a server
+  /// about a router it could not see. The router knows, so it is asked directly —
+  /// see [FirmwareRouterOtaCheckService]. `firmware_ota_check_service.dart` and its
+  /// `FirmwareOtaInfo` are still in the tree with no caller anywhere in `lib`:
+  /// #1550 says the cloud path is parked, not deleted, and when it goes is a
+  /// separate decision. There is no coexistence — nothing selects between them.
   ///
-  /// Returns the [FirmwareOtaInfo] if an update is available, or `null` if
-  /// the device is already on the latest version.
-  /// Throws [FirmwareOtaCheckException] on API errors.
-  Future<FirmwareOtaInfo?> checkForOtaUpdate(
-      FirmwareOtaCheckParams params) async {
+  /// Returns [FirmwareOtaCheckVerdict.notChecked] — never an error — when the
+  /// router has no `ota` row. That is REQ-A1: OEM and rebadged builds never ship
+  /// the row, so it is a permanent property of the device rather than a fault, and
+  /// it is logged at warning, not error. The caller reads
+  /// `FirmwareBanksData.otaInstance` for the same fact to decide whether to offer
+  /// the button at all; this arm exists for the race where the row disappears
+  /// between the two reads.
+  ///
+  /// Rethrows [ServiceError] so the view can say the check failed. It must not be
+  /// swallowed into `noUpdateFound`: "we could not ask" and "we asked and there is
+  /// nothing" are the same sentence to a user and only one of them is true.
+  Future<FirmwareOtaCheckResult> checkForUpdate() async {
+    final otaInstance =
+        (await ref.read(firmwareBanksDataProvider.future)).otaInstance;
+    if (otaInstance == null) {
+      logger.w('[FirmwareUpdate] no ota instance — this router cannot be asked '
+          'for firmware updates');
+      return const FirmwareOtaCheckResult.notChecked();
+    }
+
     _setState(state.copyWith(
       phase: FirmwareUpdatePhase.checkingOta,
-      clearOtaInfo: true,
-      otaUpToDate: false,
+      otaCheck: const FirmwareOtaCheckResult.notChecked(),
       errorMessage: null,
     ));
 
     try {
-      final info = await _otaChecker.checkForUpdate(params);
-      if (info != null) {
-        _setState(state.copyWith(
-          phase: FirmwareUpdatePhase.idle,
-          otaInfo: info,
-          otaUpToDate: false,
-        ));
-      } else {
-        _setState(state.copyWith(
-          phase: FirmwareUpdatePhase.idle,
-          clearOtaInfo: true,
-          otaUpToDate: true,
-        ));
+      final result = await _otaChecker.check(otaInstance: otaInstance.instance);
+      _setState(state.copyWith(
+        phase: FirmwareUpdatePhase.idle,
+        otaCheck: result,
+      ));
+      // The check writes `Available`/`Version` on the router, so the L1 cache the
+      // dashboard banner and the mascot read from is now stale. Refreshed after
+      // the state is published, and guarded: a failed re-read is a stale banner,
+      // not a failed check, and turning it into one would report an error for a
+      // check the user just watched succeed.
+      try {
+        await ref.read(firmwareBanksDataProvider.notifier).refresh();
+      } on ServiceError catch (e) {
+        logger.w('[FirmwareUpdate] post-check banks refresh failed', error: e);
       }
-      return info;
-    } on FirmwareOtaCheckException catch (e) {
+      return result;
+    } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] OTA check failed', error: e);
       _setState(state.copyWith(phase: FirmwareUpdatePhase.idle));
       rethrow;
+    } finally {
+      // Belt to the `on ServiceError` braces above, and the only thing standing
+      // between an unforeseen throw and a button that spins for the rest of the
+      // session. `checkingOta` is what makes `AppButton.isLoading` true, and the
+      // ticket's own words are that the checking state is driven by this call's
+      // lifecycle — so it must not outlive the call, whatever ends it. A no-op on
+      // both paths that get here normally: each has already set `idle`.
+      if (state.phase == FirmwareUpdatePhase.checkingOta) {
+        logger.w('[FirmwareUpdate] OTA check left the phase set — restoring '
+            'idle');
+        _setState(state.copyWith(phase: FirmwareUpdatePhase.idle));
+      }
     }
   }
 

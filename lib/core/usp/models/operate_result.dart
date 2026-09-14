@@ -16,19 +16,46 @@ class OperateResult {
   /// Full output arguments from the Operate response.
   final Map<String, String> outputArgs;
 
+  /// The router's own error code, when this notification carried `cmd_failure`
+  /// instead of output arguments.
+  ///
+  /// This is the **only** channel a refusal arrives on. An Operate *response* is
+  /// not one: measured, a command that does not exist and a misspelled argument
+  /// name both answer `UspSuccess`, so a caller that reads its result out of the
+  /// data model — a firmware check re-reading `FirmwareImage.{ota}.Available`,
+  /// say — has to watch here to tell "the router looked and found nothing" from
+  /// "the router would not look".
+  ///
+  /// Null on every ordinary completion, including a failed *diagnostic*: those
+  /// report their failure in [status] because the command itself ran.
+  final String? errorCode;
+
+  /// The router's message for [errorCode], empty-string-normalised away to null.
+  final String? errorMessage;
+
   const OperateResult({
     required this.commandName,
     required this.commandKey,
     required this.status,
     required this.outputArgs,
+    this.errorCode,
+    this.errorMessage,
   });
 
   bool get isComplete => status == 'Complete';
   bool get isError => status == 'Error';
 
+  /// Whether the router refused the command outright.
+  ///
+  /// Keyed on [errorCode] rather than on [status], because the two answer
+  /// different questions: `status == 'Error'` is a diagnostic that ran and
+  /// failed, which is a *result*. This is the absence of a result.
+  bool get isFailure => errorCode != null;
+
   @override
   String toString() => 'OperateResult($commandName, status=$status, '
-      'args=${outputArgs.length} params)';
+      'args=${outputArgs.length} params'
+      '${errorCode != null ? ', failure=$errorCode $errorMessage' : ''})';
 }
 
 /// Parsed Ping result from [OperateResult.outputArgs].

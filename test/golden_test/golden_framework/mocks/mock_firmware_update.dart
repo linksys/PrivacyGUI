@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
@@ -17,6 +18,16 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
 
   @override
   Future<void> loadBanks() async {}
+
+  /// Answers with the verdict already in the fixed state instead of asking the
+  /// router.
+  ///
+  /// Every other override here silences a service call; this one also silences a
+  /// clock. The real method dispatches `Download()` on the virtual `ota` instance
+  /// and then polls `FirmwareImage.` for up to ten seconds, so a golden that taps
+  /// the check button would not fail — it would hang until `pumpAndSettle` gave up.
+  @override
+  Future<FirmwareOtaCheckResult> checkForUpdate() async => _fixedState.otaCheck;
 
   @override
   Future<bool> pickAndValidateFile() async => true;

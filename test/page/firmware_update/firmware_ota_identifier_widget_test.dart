@@ -20,7 +20,7 @@ import '../../mocks/provider_overrides/mock_common.dart';
 /// see when everything else reads identically. What differs is which controls
 /// each page owns —
 ///
-///   - this page owns `firmware-check`, the cloud check, which #1549 moved off
+///   - this page owns `firmware-check`, the OTA check, which #1549 moved off
 ///     the manual page (asserted absent there), and `firmware-phase-checkingOta`,
 ///     the only phase anchor the manual page can never emit;
 ///   - the manual page owns `firmware-pick-file`, `firmware-install-confirm` and
@@ -67,9 +67,16 @@ void main() {
     return ProviderScope(
       overrides: [
         ...commonOverrides(),
+        // `testThreeInstanceBanksData`, not `testBanksData`, and since #1550 that
+        // is load-bearing rather than incidental: the check button is only
+        // rendered on a router that reports the virtual `ota` row, so the
+        // two-physical-bank fixture would take `firmware-check` out of the tree
+        // and every assertion about it below would pass or fail for the wrong
+        // reason. `firmware_ota_card_widget_test.dart` pumps the other fixture on
+        // purpose and pins what that state renders instead.
         ...firmwareUpdateOverrides(
           updateState: state,
-          banksData: testBanksData,
+          banksData: testThreeInstanceBanksData,
           systemInfoData: testSystemInfoData,
         ),
       ],
@@ -97,7 +104,7 @@ void main() {
   }
 
   group('uspFirmwareOta identifiers', () {
-    testWidgets('the page anchor and the cloud check are hooked in idle',
+    testWidgets('the page anchor and the OTA check are hooked in idle',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pumpPage(tester, idleNoFileState);
@@ -122,7 +129,7 @@ void main() {
     // `enabled: false` is asserted alongside it because "still locatable" is only
     // half the requirement: a hook that stays clickable while the check runs lets
     // a spec fire a second check into the first one's response.
-    testWidgets('the cloud check stays hooked, and disabled, while checking',
+    testWidgets('the OTA check stays hooked, and disabled, while checking',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pumpPage(tester, checkingOtaState);
@@ -168,7 +175,7 @@ void main() {
         expect(find.bySemanticsIdentifier(id), findsNothing,
             reason:
                 '"$id" belongs to the manual page — this page installs what '
-                'the cloud offers, so it never picks a file. Pumped with a file '
+                'the router fetches, so it never picks a file. Pumped with a file '
                 'selected, the state that renders both on that page');
       }
 

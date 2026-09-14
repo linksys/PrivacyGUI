@@ -987,11 +987,19 @@ void main() {
     //    of two syllables, which is the trade rule 4 exists to keep honest.
     testWidgets('the OTA check card stacks below 600px with both strings whole',
         (tester) async {
-      // Three, because two is what the deepest locales measure at 320px: nine of
-      // them — `de`, `el`, `fi`, `id`, `pl`, `ru`, `sv`, `th`, `vi` — take two lines
-      // in the 204px the stacked card grants, every other locale takes one, and no
-      // coordinate above 320px wraps at all. A sentence on two lines is still a
+      // Three, because two is what the deepest locales measure at 320px. Re-measured
+      // for #1550's sentence, which is a different string from `firmwareUpToDate` and
+      // wraps a different set: ten locales — `da`, `fi`, `fr`, `fr_CA`, `ja`, `nl`,
+      // `pl`, `pt`, `pt_PT`, `sv` — take two lines in the 204px the stacked card
+      // grants, every other locale takes one, and `ru`, the locale carried through the
+      // other eight widths, wraps at none of them. A sentence on two lines is still a
       // sentence; the ceiling is here to catch the sixth line, not the second.
+      //
+      // The nine named here before #1550 (`de`, `el`, `fi`, `id`, `pl`, `ru`, `sv`,
+      // `th`, `vi`) were the old string's set and only `fi`, `pl` and `sv` are in both,
+      // which is the reason this number is re-derived on a copy change rather than
+      // inherited: `ru` went from wrapping to fitting and `ja` from fitting to a
+      // 292.5px unbroken run in a 204px line.
       const kOtaStatusLineCeiling = 3;
       final failures = <String>[];
       final wrapped = <String>[];
@@ -1032,13 +1040,17 @@ void main() {
             of: button,
             matching: find.text(loc.checkForUpdates),
           );
-          final status = find.text(loc.firmwareUpToDate);
+          // #1550 replaced `firmwareUpToDate` with a verdict the check can
+          // actually establish. Same line in the same slot, and still the wider of
+          // the two verdicts this row renders — see
+          // `gateFirmwareNoUpdateFoundState`.
+          final status = find.text(loc.firmwareNoUpdateFound);
           if (button.evaluate().length != 1 || status.evaluate().length != 1) {
             failures.add('$tag @${width.toInt()}px: found '
                 '${button.evaluate().length} check button(s) and '
-                '${status.evaluate().length} up-to-date line(s) — the fixture '
-                'pins otaUpToDate: true, so both must be present or nothing '
-                'here was measured');
+                '${status.evaluate().length} verdict line(s) — the fixture pins '
+                'a noUpdateFound verdict and an ota row, so both must be present '
+                'or nothing here was measured');
             continue;
           }
 
@@ -1046,7 +1058,7 @@ void main() {
           final statusRect = tester.getRect(status);
           final stacked = statusRect.top >= buttonRect.bottom;
           if (stacked != stackExpected) {
-            failures.add('$tag @${width.toInt()}px: expected the up-to-date '
+            failures.add('$tag @${width.toInt()}px: expected the verdict '
                 'line ${stackExpected ? 'below' : 'beside'} the button but it '
                 'was ${stacked ? 'below' : 'beside'} it');
           }
@@ -1071,24 +1083,25 @@ void main() {
               '${tester.paragraphOf(status).size.width.toStringAsFixed(1)}px on '
               '$statusLines line(s), widest token '
               '${tester.widestTokenWidth(status).toStringAsFixed(1)}px — '
-              '"${loc.firmwareUpToDate}"';
+              '"${loc.firmwareNoUpdateFound}"';
           if (statusLines > kOtaStatusLineCeiling) {
-            failures.add(
-                '$tag @${width.toInt()}px: the up-to-date line wrapped '
+            failures.add('$tag @${width.toInt()}px: the verdict line wrapped '
                 'onto $statusLines lines, past the $kOtaStatusLineCeiling-line '
                 'ceiling — $numbers');
           }
           if (tester.isTextClipped(status)) {
-            failures.add('$tag @${width.toInt()}px: the up-to-date line '
+            failures.add('$tag @${width.toInt()}px: the verdict line '
                 'ellipsized — $numbers');
           } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
               tester.hasSplitToken(status)) {
             // The four space-less scripts are excluded from this one assertion and
             // from nothing else — see `kLocalesWithoutWordSpaces` for why a whole
             // Thai sentence is one token and therefore trips the check by
-            // construction. `th` is the locale that made it matter here: 211px of
-            // unbroken run in a 204px line.
-            failures.add('$tag @${width.toInt()}px: the up-to-date line broke '
+            // construction. `th` is the locale that made it matter for the old
+            // string; on #1550's it is `ja`, with 292.5px of unbroken run in a
+            // 204px line. Which of the four it is does not change the exclusion,
+            // and that is the point: the wide one moves with the copy.
+            failures.add('$tag @${width.toInt()}px: the verdict line broke '
                 'mid-word — $numbers');
           }
         }
@@ -1100,8 +1113,7 @@ void main() {
       expect(
         wrapped,
         isNotEmpty,
-        reason:
-            'no locale wrapped the up-to-date line at any width, so nothing '
+        reason: 'no locale wrapped the verdict line at any width, so nothing '
             'here measured the wrap the #1380 fix introduced:\n'
             '${wrapped.join(', ')}',
       );

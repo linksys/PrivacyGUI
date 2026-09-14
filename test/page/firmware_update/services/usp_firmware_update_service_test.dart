@@ -186,6 +186,63 @@ void main() {
     });
   });
 
+  group('requestOtaCheck', () {
+    test('sends AutoActivate=false and no URL at all', () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args'))).thenAnswer(
+          (_) async =>
+              <String, dynamic>{'commandKey': 'check-1', 'Status': ''});
+
+      final key = await service.requestOtaCheck(otaInstance: 3);
+
+      expect(key, 'check-1');
+      final captured = verify(
+        () => mockUsp.operate(captureAny(), args: captureAny(named: 'args')),
+      ).captured;
+      expect(captured[0], 'Device.DeviceInfo.FirmwareImage.3.Download()');
+      final args = captured[1] as Map<String, String>;
+      // Not "URL is empty" — absent. The virtual ota instance ignores the
+      // parameter, and sending an empty one is a value the firmware has never
+      // been asked to interpret.
+      expect(args.containsKey('URL'), isFalse);
+      expect(args['AutoActivate'], 'false');
+      expect(args, hasLength(1));
+    });
+
+    test('throws when the response carries no commandKey', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'Status': 'Requested'});
+
+      // The whole of the dispatch signal. An operate for a command that does
+      // not exist still answers success, so a missing key is the only thing
+      // that distinguishes "asked" from "did not ask" — and it must not reach
+      // the caller as a check that found nothing.
+      expect(
+        () => service.requestOtaCheck(otaInstance: 3),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('throws when the commandKey is present but empty', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'commandKey': ''});
+
+      expect(
+        () => service.requestOtaCheck(otaInstance: 3),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('maps USP error to ServiceError', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenThrow('Operate failed: Transport error: Request timeout');
+
+      expect(
+        () => service.requestOtaCheck(otaInstance: 3),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
   group('pollStatus', () {
     test('returns the status field of the matching instance', () async {
       when(() => mockUsp.get(any()))

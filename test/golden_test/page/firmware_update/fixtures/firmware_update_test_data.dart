@@ -61,8 +61,35 @@ const testOtaInstance = FirmwareImageUIModel(
   available: true,
 );
 
+/// The same virtual row on a router that is holding nothing.
+///
+/// `Status=NoImage`, `Available=0`, no version — measured, and the reason #1550's
+/// "found nothing" verdict comes from a deadline rather than from a reading: this is
+/// also exactly what the row looks like when the router has *never* been asked. What
+/// it is not is a router that cannot be asked; that one has no `ota` row at all, and
+/// [testBanksData] is it.
+const testIdleOtaInstance = FirmwareImageUIModel(
+  instance: 3,
+  instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
+  alias: 'ota',
+  name: '',
+  version: '',
+  status: 'NoImage',
+  available: false,
+);
+
 FirmwareBanksData get testBanksData => const FirmwareBanksData(
       banks: [testActiveBank, testAvailableBank],
+    );
+
+/// A router with the fwup stack that is holding nothing to install.
+///
+/// The pair to [testThreeInstanceBanksData]: same two physical banks, same virtual
+/// row, and the row says no. Pumped where a page must offer the check and report
+/// nothing found.
+FirmwareBanksData get testThreeInstanceBanksDataNoImage =>
+    const FirmwareBanksData(
+      banks: [testActiveBank, testEmptyVersionBank, testIdleOtaInstance],
     );
 
 /// What a 2.0 router with the fwup stack actually reports: two physical banks
@@ -126,12 +153,14 @@ FirmwareUpdateState get idleFileSelectedState => const FirmwareUpdateState(
       selectedFileMd5: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
     );
 
-/// The OTA page's own busy phase: the cloud check is in flight, so no verdict
-/// has arrived yet and there is nothing to install.
+/// The OTA page's own busy phase: the check is in flight, so no verdict has
+/// arrived yet and there is nothing to install.
 ///
 /// The only phase in the enum that belongs to exactly one page. It has no
-/// `selectedFile*`, because an OTA check has no local file, and no [otaInfo],
-/// because that is what it is waiting for.
+/// `selectedFile*`, because an OTA check has no local file, and leaves `otaCheck`
+/// at `notChecked`, because that is what it is waiting for — #1550 moved the check
+/// from the cloud API to the router and replaced the old `otaInfo`/`otaUpToDate`
+/// pair with that one field.
 FirmwareUpdateState get checkingOtaState => const FirmwareUpdateState(
       phase: FirmwareUpdatePhase.checkingOta,
       activeBank: testActiveBank,

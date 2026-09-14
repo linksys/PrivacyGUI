@@ -15,20 +15,20 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
-class MockFirmwareOtaCheckService extends Mock
-    implements FirmwareOtaCheckService {}
+class MockFirmwareRouterOtaCheckService extends Mock
+    implements FirmwareRouterOtaCheckService {}
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -78,28 +78,48 @@ class _FakeBanksNotifier extends FirmwareBanksDataNotifier {
   }
 }
 
+/// Counts refreshes, so "the L1 cache was invalidated" is measurable rather than
+/// assumed. The count is an instance field: a static would leak across tests in a
+/// file this long and make the first failure look like the third one's fault.
+class _CountingBanksNotifier extends _FakeBanksNotifier {
+  _CountingBanksNotifier(super.value);
+
+  int refreshes = 0;
+
+  @override
+  Future<FirmwareBanksData> refresh() {
+    refreshes++;
+    return super.refresh();
+  }
+}
+
+/// A router that answers the first read and then stops answering.
+///
+/// The shape that matters after a check: the check itself succeeded, and the
+/// bookkeeping behind it did not.
+class _FailingRefreshBanksNotifier extends _FakeBanksNotifier {
+  _FailingRefreshBanksNotifier(super.value);
+
+  @override
+  Future<FirmwareBanksData> refresh() async =>
+      throw const NetworkError(detail: 'bridge busy');
+}
+
 void main() {
   late MockUspClient mockUsp;
   late MockUspFirmwareUpdateService mockService;
   late MockFirmwareLocalUploadService mockUploader;
-  late MockFirmwareOtaCheckService mockOtaChecker;
+  late MockFirmwareRouterOtaCheckService mockOtaChecker;
 
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
-    registerFallbackValue(const FirmwareOtaCheckParams(
-      macAddress: '',
-      installedVersion: '',
-      modelNumber: '',
-      hardwareVersion: '',
-      ipAddress: '',
-    ));
   });
 
   setUp(() {
     mockUsp = MockUspClient();
     mockService = MockUspFirmwareUpdateService();
     mockUploader = MockFirmwareLocalUploadService();
-    mockOtaChecker = MockFirmwareOtaCheckService();
+    mockOtaChecker = MockFirmwareRouterOtaCheckService();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
     when(() => mockUploader.totalFragmentsFor(any())).thenReturn(32);
   });
@@ -107,7 +127,7 @@ void main() {
   ProviderContainer createContainer({
     FirmwareFilePickerService? picker,
     FirmwareLocalUploadService? uploader,
-    FirmwareOtaCheckService? otaChecker,
+    FirmwareRouterOtaCheckService? otaChecker,
     AsyncValue<FirmwareBanksData>? banksData,
     List<Override> extra = const [],
   }) {
@@ -118,7 +138,7 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         firmwareLocalUploadServiceProvider
             .overrideWithValue(uploader ?? mockUploader),
-        firmwareOtaCheckServiceProvider
+        firmwareRouterOtaCheckServiceProvider
             .overrideWithValue(otaChecker ?? mockOtaChecker),
         if (picker != null)
           firmwareFilePickerServiceProvider.overrideWithValue(picker),
@@ -651,101 +671,242 @@ void main() {
     // OTA Check Tests
     // ════════════════════════════════════════════════════════════════════════
 
-    group('checkForOtaUpdate', () {
-      const testParams = FirmwareOtaCheckParams(
-        macAddress: '74-12-13-21-56-3A',
-        installedVersion: '1.2.1',
-        modelNumber: 'M60-US',
-        hardwareVersion: '1',
-        ipAddress: '192.168.1.1',
-      );
+    /// #1550 moved the check off the cloud OTA API and onto the router, and the
+    /// notifier's share of that is three decisions:
+    ///
+    ///   * which instance to ask about — the virtual `ota` row, read out of the L1
+    ///     banks cache, never a NAND bank;
+    ///   * what to do when there is no such row — answer `notChecked` without
+    ///     asking anything and without failing (REQ-A1);
+    ///   * what a failure must **not** turn into — `noUpdateFound`. "We could not
+    ///     ask" and "we asked and there is nothing" are the same sentence to a user
+    ///     and only one of them is true, so the failing arm is asserted on the
+    ///     verdict as well as on the throw.
+    group('checkForUpdate', () {
+      /// Two physical banks and a virtual row the router can be asked about.
+      AsyncValue<FirmwareBanksData> banksWithOta({bool available = false}) =>
+          AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(alias: 'fw1'),
+            FirmwareUpdateTestData.emptyVersionBank(),
+            FirmwareUpdateTestData.otaInstance(available: available),
+          ]));
 
-      test(
-          'transitions idle → checkingOta → idle with otaInfo when update available',
-          () async {
-        final otaInfo = FirmwareOtaInfo(
-          version: '1.0.10.25092307',
-          releaseDate: DateTime.utc(2025, 9, 23),
-          downloadUrl: 'http://download.linksys.com/updates/firmware.img',
-          checksum: '1022217387',
-          checkInterval: 'daily',
-          checkTime: '06:00:00Z',
+      /// The same router without the fwup stack: nothing to ask.
+      final banksWithoutOta = AsyncData(FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(alias: 'fw1'),
+        FirmwareUpdateTestData.emptyVersionBank(),
+      ]));
+
+      test('asks about the ota row, not about a bank', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async =>
+                const FirmwareOtaCheckResult.updateAvailable(version: '2.0.1'));
+
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        final result = await notifier.checkForUpdate();
+
+        // Instance 3, which is the ota row; instance 1 is the running bank and
+        // instance 2 the spare, and both also report `Available=1`.
+        verify(() => mockOtaChecker.check(otaInstance: 3)).called(1);
+        expect(
+          result,
+          const FirmwareOtaCheckResult.updateAvailable(version: '2.0.1'),
         );
-        when(() => mockOtaChecker.checkForUpdate(any()))
-            .thenAnswer((_) async => otaInfo);
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.otaCheck, result);
+      });
 
-        final container = createContainer();
+      test('publishes a "found nothing" verdict as itself', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer(
+                (_) async => const FirmwareOtaCheckResult.noUpdateFound());
+
+        final container = createContainer(banksData: banksWithOta());
         addTearDown(container.dispose);
         final notifier =
             container.read(firmwareUpdateNotifierProvider.notifier);
 
-        final result = await notifier.checkForOtaUpdate(testParams);
+        final result = await notifier.checkForUpdate();
 
-        expect(result, equals(otaInfo));
+        expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.otaInfo, equals(otaInfo));
-        expect(state.otaUpToDate, isFalse);
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+        expect(state.otaCheck.isUpdateAvailable, isFalse);
       });
 
-      test(
-          'transitions idle → checkingOta → idle with otaUpToDate when no update',
-          () async {
-        when(() => mockOtaChecker.checkForUpdate(any()))
-            .thenAnswer((_) async => null);
-
-        final container = createContainer();
+      // REQ-A1, the notifier's half. The view decides whether to draw the button
+      // from the same fact; this arm is the race where the row disappears between
+      // that read and this one — and it must not look like a fault, because on OEM
+      // and rebadged builds it is permanent.
+      test('answers notChecked, and asks nothing, with no ota row', () async {
+        final container = createContainer(banksData: banksWithoutOta);
         addTearDown(container.dispose);
         final notifier =
             container.read(firmwareUpdateNotifierProvider.notifier);
 
-        final result = await notifier.checkForOtaUpdate(testParams);
+        final result = await notifier.checkForUpdate();
 
-        expect(result, isNull);
+        expect(result.verdict, FirmwareOtaCheckVerdict.notChecked);
+        verifyNever(
+            () => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')));
         final state = container.read(firmwareUpdateNotifierProvider);
-        expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.otaInfo, isNull);
-        expect(state.otaUpToDate, isTrue);
+        expect(state.phase, FirmwareUpdatePhase.idle,
+            reason: 'the phase never left idle, so no busy state was shown for '
+                'a check that was never dispatched');
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked);
+        expect(state.errorMessage, isNull,
+            reason: 'a router built without the fwup stack has not failed');
       });
 
-      test('rethrows FirmwareOtaCheckException and returns to idle', () async {
-        when(() => mockOtaChecker.checkForUpdate(any()))
-            .thenThrow(FirmwareOtaCheckException('API error'));
+      // The single failure this whole work package is arranged to prevent.
+      test('rethrows, and leaves no verdict behind', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenThrow(const UspCompleteFailureError(
+                summary: 'the router refused the firmware check',
+                failures: []));
 
-        final container = createContainer();
+        final container = createContainer(banksData: banksWithOta());
         addTearDown(container.dispose);
         final notifier =
             container.read(firmwareUpdateNotifierProvider.notifier);
 
         await expectLater(
-          notifier.checkForOtaUpdate(testParams),
-          throwsA(isA<FirmwareOtaCheckException>()),
+          notifier.checkForUpdate(),
+          throwsA(isA<ServiceError>()),
         );
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.otaInfo, isNull);
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked,
+            reason: 'a failed check must not publish noUpdateFound — that is '
+                'the substitution that turns a broken check into reassurance');
       });
 
-      test('clears previous otaInfo and error on new check', () async {
-        when(() => mockOtaChecker.checkForUpdate(any()))
-            .thenAnswer((_) async => null);
+      // The same assertion for the exception this notifier is not written to
+      // expect. `on ServiceError` is the right catch — Article XIII says the
+      // provider layer sees nothing else — but it is not a guarantee, and the one
+      // thing that must not depend on the service keeping its promise is whether
+      // the button ever stops spinning. `checkingOta` is what makes
+      // `AppButton.isLoading` true and it has no other way back to idle: no
+      // timeout, no navigation, nothing else clears it for the rest of the
+      // session. Found by review on the real path — opening the SSE subscription
+      // is an HTTP POST that threw past the phase — which is fixed in the service;
+      // this pins the floor under it.
+      test('an exception it does not expect still frees the button', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenThrow(StateError('not a ServiceError'));
 
-        final container = createContainer();
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container
+              .read(firmwareUpdateNotifierProvider.notifier)
+              .checkForUpdate(),
+          throwsA(isA<StateError>()),
+        );
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle,
+            reason: 'a phase that outlives the call it belongs to is a button '
+                'that spins until the session ends');
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked);
+      });
+
+      // Two checks, because the state under test is what the *second* one starts
+      // from. Seeding the verdict through a test-only setter would prove the
+      // clearing works on a state no check produced; running one check for real
+      // and inspecting from inside the next is the same assertion against the
+      // sequence a user actually performs.
+      test('clears the previous verdict before the next check runs', () async {
+        late final ProviderContainer container;
+        var calls = 0;
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async {
+          calls++;
+          if (calls == 2) {
+            // Read mid-flight: the stale verdict has to be gone *while* the
+            // second check runs, not merely replaced when it returns. A card
+            // still showing "update available" beside a running spinner is
+            // reporting the previous check's answer as this one's.
+            final inFlight = container.read(firmwareUpdateNotifierProvider);
+            expect(inFlight.phase, FirmwareUpdatePhase.checkingOta);
+            expect(
+                inFlight.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked);
+          }
+          return const FirmwareOtaCheckResult.updateAvailable(version: '2.0.1');
+        });
+
+        container = createContainer(banksData: banksWithOta(available: true));
         addTearDown(container.dispose);
         final notifier =
             container.read(firmwareUpdateNotifierProvider.notifier);
 
-        // Simulate previous state with otaInfo
-        notifier.debugSeedBanks(
-          active: FirmwareUpdateTestData.activeBank(),
+        await notifier.checkForUpdate();
+        expect(
+          container
+              .read(firmwareUpdateNotifierProvider)
+              .otaCheck
+              .isUpdateAvailable,
+          isTrue,
+          reason:
+              'the first check has to leave a verdict behind, or the second '
+              'one has nothing to clear and this test measures nothing',
         );
 
-        await notifier.checkForOtaUpdate(testParams);
+        await notifier.checkForUpdate();
 
-        final state = container.read(firmwareUpdateNotifierProvider);
-        expect(state.otaInfo, isNull);
-        expect(state.errorMessage, isNull);
+        expect(calls, 2);
+        expect(container.read(firmwareUpdateNotifierProvider).errorMessage,
+            isNull);
+      });
+
+      // The check writes `Available`/`Version` on the router, so the L1 cache the
+      // dashboard banner and the mascot read is stale the moment it returns.
+      test('refreshes the banks cache after a successful check', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async =>
+                const FirmwareOtaCheckResult.updateAvailable(version: '2.0.1'));
+        final banks = _CountingBanksNotifier(banksWithOta());
+        final container = createContainer(extra: [
+          firmwareBanksDataProvider.overrideWith(() => banks),
+        ]);
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .checkForUpdate();
+
+        expect(banks.refreshes, 1);
+      });
+
+      // ...and a refresh that fails is a stale banner, not a failed check. The
+      // user watched this check succeed; reporting an error for the bookkeeping
+      // behind it would contradict what they just saw.
+      test('survives a banks refresh that fails', () async {
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async =>
+                const FirmwareOtaCheckResult.updateAvailable(version: '2.0.1'));
+
+        final container = createContainer(extra: [
+          firmwareBanksDataProvider
+              .overrideWith(() => _FailingRefreshBanksNotifier(banksWithOta())),
+        ]);
+        addTearDown(container.dispose);
+
+        final result = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .checkForUpdate();
+
+        expect(result.verdict, FirmwareOtaCheckVerdict.updateAvailable);
+        expect(container.read(firmwareUpdateNotifierProvider).phase,
+            FirmwareUpdatePhase.idle);
       });
     });
 

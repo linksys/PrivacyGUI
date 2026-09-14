@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
-import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
-import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -22,10 +20,16 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Over-the-air firmware update: ask the router to fetch an image itself.
 ///
 /// #1549 split the single firmware page in two along the line the two flows
-/// actually differ on — where the image comes from. This page owns the check
-/// against the cloud OTA API and the install it can start; the manual page owns
-/// picking a file out of this browser and pushing it. What they share, once an
-/// install is running, is [FirmwareInstallPhaseCard].
+/// actually differ on — where the image comes from. This page owns the check for a
+/// newer image; the manual page owns picking a file out of this browser and
+/// pushing it. What they share, once an install is running, is
+/// [FirmwareInstallPhaseCard].
+///
+/// #1550 moved the check itself off the cloud OTA API and onto the router
+/// (`FirmwareImage.{ota}.Download()` with no URL). The install this page used to
+/// start went with it: it needed a `downloadUrl` that only the cloud answer
+/// carried, and the router's own install is #1551. So for now this page checks and
+/// reports; the phase card below still renders an install driven from elsewhere.
 ///
 /// The split is why this page exists at all rather than a tab: the two entry
 /// points have different audiences. Manual update is hidden in remote assistance
@@ -40,18 +44,14 @@ class FirmwareOtaView extends ConsumerStatefulWidget {
 }
 
 class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
-  /// Delay after triggering OTA install before showing recovery dialog.
-  /// Router needs to download (~50-100MB) + flash, typically ~120 seconds.
-  static const _otaInstallDelayBeforeReboot = Duration(seconds: 120);
-
   @override
   void initState() {
     super.initState();
-    // Not optional here, and not merely a mirror of the manual page: the install
-    // this page starts reads `state.targetBank` for the instance to download
-    // into, and `state.activeBank` for the "current version" line in the confirm
-    // dialog. Both are populated only by `loadBanks`, and the notifier is shared
-    // session state that this page may well be the first to mount.
+    // Kept after #1550 took the install off this page, and now for a different
+    // reason than the one it was written for. `state.activeBank`/`targetBank` are
+    // no longer read here, but `loadBanks` is what puts the L1 banks provider into
+    // `AsyncData` — and the tri-state below reads that provider to decide whether
+    // this router can be asked about firmware at all.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // The future is handled rather than dropped. `loadBanks` records the
       // failure in state *and* rethrows — pinned by
@@ -72,6 +72,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
+    final support = _readOtaSupport();
 
     return UiKitPageView.withSliver(
       identifier: 'firmware-ota',
@@ -86,13 +87,39 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: _buildBody(childContext, state),
+          child: _buildBody(childContext, state, support),
         );
       },
     );
   }
 
-  Widget _buildBody(BuildContext context, FirmwareUpdateState state) {
+  /// Whether this router has the virtual `ota` row, as three answers rather than
+  /// two.
+  ///
+  /// REQ-A1: a router with no `ota` row can never be asked about firmware, and
+  /// that is permanent — OEM and rebadged builds do not ship the fwup stack. So
+  /// the button is not shown at all, rather than shown and then failing.
+  ///
+  /// [_OtaSupport.unknown] is the third answer and the one worth having: while the
+  /// banks read is in flight, or after it failed, the row's absence is not
+  /// established. Collapsing that into `absent` would tell a user with a perfectly
+  /// capable router that their router cannot do this, off a read that was merely
+  /// slow.
+  ///
+  /// `hasError` is checked before `valueOrNull` because Riverpod attaches the
+  /// previous value to an `AsyncError` whether asked to or not — see
+  /// `FirmwareBanksDataNotifier.refresh`. Reading the value first would show the
+  /// last good answer for a read that has since failed.
+  _OtaSupport _readOtaSupport() {
+    final banks = ref.watch(firmwareBanksDataProvider);
+    if (banks.hasError) return _OtaSupport.unknown;
+    final data = banks.valueOrNull;
+    if (data == null) return _OtaSupport.unknown;
+    return data.otaInstance == null ? _OtaSupport.absent : _OtaSupport.present;
+  }
+
+  Widget _buildBody(
+      BuildContext context, FirmwareUpdateState state, _OtaSupport support) {
     final install = _buildInstallCard(state);
     // One `firmware-phase-*` boundary per page, for the reason the manual page
     // gives: the E2E phase-sequence walk (PrivacyGUI-USP-E2E#114) keys on the
@@ -113,6 +140,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
         children: [
           _OtaCheckCard(
             state: state,
+            support: support,
             onCheck: () => _onCheckForUpdates(context),
           ),
           // The gap belongs to the card, not to the column, for the reason
@@ -159,106 +187,63 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
     }
   }
 
+  /// Run a check and let the card render the verdict.
+  ///
+  /// No dialog on success, which is the visible change from the cloud path. That
+  /// path opened a confirm dialog offering to install the version it had just been
+  /// told about, because it *had* a `downloadUrl` to install from; the router
+  /// answers with `Available`/`Version` and nothing to fetch, so the offer belongs
+  /// to #1551 and the result stays on the card where the button is.
+  ///
+  /// The verdict is not read here at all — [FirmwareUpdateNotifier.checkForUpdate]
+  /// publishes it into state and this widget is watching. Reading the return value
+  /// as well would give the card two sources for one fact.
   Future<void> _onCheckForUpdates(BuildContext context) async {
-    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
-
     try {
-      final params = await notifier.buildOtaCheckParams();
-      if (params == null) {
-        if (context.mounted) {
-          showFailedSnackBar(context, loc(context).unableToGatherDeviceInfo);
-        }
-        return;
-      }
-
-      final info = await notifier.checkForOtaUpdate(params);
-
-      if (!context.mounted) return;
-
-      if (info != null) {
-        await _showOtaUpdateDialog(context, info);
-      }
-    } on FirmwareOtaCheckException catch (e) {
+      await ref.read(firmwareUpdateNotifierProvider.notifier).checkForUpdate();
+    } on ServiceError catch (e) {
+      // The snack bar, not the card. A check that failed leaves the card in
+      // `notChecked` — deliberately saying nothing rather than "up to date" — so
+      // the transient channel is the one that can say what went wrong without the
+      // page carrying a stale error after the next successful check.
+      logger.e('[FirmwareOta] check failed', error: e);
       if (context.mounted) {
-        showFailedSnackBar(context, e.message);
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
-    }
-  }
-
-  Future<void> _showOtaUpdateDialog(
-      BuildContext context, FirmwareOtaInfo info) async {
-    final state = ref.read(firmwareUpdateNotifierProvider);
-    final currentVersion = state.activeBank?.version ?? '—';
-    final target = state.targetBank;
-
-    if (target == null) {
-      showFailedSnackBar(context, loc(context).noTargetBankAvailable);
-      return;
-    }
-
-    final confirmed = await showConfirmActionDialog(
-      context,
-      title: loc(context).updateAvailable,
-      message: '${loc(context).currentVersion(currentVersion)}\n'
-          '${loc(context).availableVersionLabel(info.version)}\n\n'
-          '${loc(context).doYouWantToUpdateNow}',
-      confirmLabel: loc(context).update,
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
-
-    try {
-      await notifier.triggerOtaInstall(
-        targetInstance: target.instance,
-        firmwareUrl: info.downloadUrl,
-      );
-    } catch (e, st) {
-      logger.e('[FirmwareUpdate] triggerOtaInstall error: $e',
-          error: e, stackTrace: st);
-      if (context.mounted) {
-        showFailedSnackBar(context, loc(context).failedToStartOtaUpdate);
-      }
-      return;
-    }
-
-    if (!context.mounted) return;
-
-    // Wait for OTA download + flash before entering recovery
-    await Future<void>.delayed(_otaInstallDelayBeforeReboot);
-    if (!context.mounted) return;
-
-    // Hand off to the shared recovery framework
-    final expectedVersion = info.version;
-    notifier.enterRecoveryWaiting();
-    await showFirmwareUpdateRecoveryDialog(context, ref);
-    if (!context.mounted) return;
-
-    final connState = ref.read(appConnectionStateProvider);
-    if (connState != AppConnectionState.authenticated) {
-      return;
-    }
-
-    try {
-      await notifier.verify(
-        expectedVersion: expectedVersion,
-        expectedActiveInstance: target.instance,
-      );
-    } catch (_) {
-      // Notifier already transitioned to `failed` and surfaced the message.
     }
   }
 }
 
-/// Card for checking OTA firmware updates.
+/// Whether this router has the virtual `ota` instance — with a third answer for
+/// "nobody knows yet".
+///
+/// See `_FirmwareOtaViewState._readOtaSupport` for why the unknown arm is not
+/// folded into either of the other two.
+enum _OtaSupport { unknown, present, absent }
+
+/// The check button and whatever the last check said.
+///
+/// **Four visibly different renderings, and the ticket's requirement is that no
+/// two of them collapse into each other:**
+///
+/// * no `ota` row → a sentence saying checks are not available here, and **no
+///   button**. Permanent, so there is nothing to retry.
+/// * checked, found something → "Update available" plus the version.
+/// * checked, found nothing → a conservative line. Not "you are up to date": that
+///   verdict is inferred from a timeout, see
+///   [FirmwareRouterOtaCheckService.defaultDeadline].
+/// * not checked, or a check that failed → the button and nothing else. A failure
+///   is reported in a snack bar and leaves no line here, because every line here
+///   is a claim about the firmware and a failed check supports none of them.
 class _OtaCheckCard extends StatelessWidget {
   const _OtaCheckCard({
     required this.state,
+    required this.support,
     required this.onCheck,
   });
 
   final FirmwareUpdateState state;
+  final _OtaSupport support;
   final VoidCallback onCheck;
 
   /// Card-content width below which the button and the status line stack.
@@ -288,6 +273,32 @@ class _OtaCheckCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
     final scheme = Theme.of(context).colorScheme;
+
+    // No `ota` row: the sentence replaces the whole button line rather than
+    // sitting under a disabled button. REQ-A1 — there is nothing to retry, so a
+    // control that can only ever fail is worse than no control, and this arm skips
+    // the `LayoutBuilder` because a wrapping sentence has nothing to stack against.
+    if (support == _OtaSupport.absent) {
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.titleMedium(loc(context).otaUpdate),
+            AppGap.md(),
+            _statusLine(
+              icon: Icons.info_outline,
+              // `outline`, not `error`: this is a property of the router, and the
+              // copy must not read as a failure the user could do something about.
+              color: scheme.outline,
+              child: AppText.bodyMedium(
+                loc(context).otaCheckNotSupported,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return AppCard(
       child: Column(
@@ -344,29 +355,7 @@ class _OtaCheckCard extends StatelessWidget {
                 size: size,
                 isLoading: isChecking,
               );
-              // `Expanded` on the label rather than `MainAxisSize.min` on the row:
-              // the sentence is what made this line unshrinkable, and letting it wrap
-              // is the only way the line fits 256px in any locale. Alignment moves to
-              // `start` because it now has more than one line to align to.
-              final upToDate = state.otaUpToDate && !isChecking
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          size: 18,
-                          color: scheme.primary,
-                        ),
-                        AppGap.sm(),
-                        Expanded(
-                          child: AppText.bodyMedium(
-                            loc(context).firmwareUpToDate,
-                            color: scheme.primary,
-                          ),
-                        ),
-                      ],
-                    )
-                  : null;
+              final status = _verdictLine(context, scheme, isChecking);
 
               if (stacked) {
                 // `stretch` gives the button the whole line, so its label has the
@@ -376,9 +365,9 @@ class _OtaCheckCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     button,
-                    if (upToDate != null) ...[
+                    if (status != null) ...[
                       AppGap.md(),
-                      upToDate,
+                      status,
                     ],
                   ],
                 );
@@ -387,9 +376,9 @@ class _OtaCheckCard extends StatelessWidget {
               return Row(
                 children: [
                   button,
-                  if (upToDate != null) ...[
+                  if (status != null) ...[
                     AppGap.md(),
-                    Expanded(child: upToDate),
+                    Expanded(child: status),
                   ],
                 ],
               );
@@ -397,6 +386,83 @@ class _OtaCheckCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// What the last check found, or `null` when there is nothing to say.
+  ///
+  /// `null` in two cases that must not be confused with each other elsewhere but
+  /// look the same here: a check that has not run, and a check that failed. Both
+  /// leave the card showing only the button, because every sentence this method can
+  /// return is a claim about the firmware on the router and neither state supports
+  /// one. The failure is reported in a snack bar instead — see
+  /// `_FirmwareOtaViewState._onCheckForUpdates`.
+  ///
+  /// Also `null` while checking: the in-flight state belongs to the button's own
+  /// `isLoading`, and leaving the previous verdict up next to a running spinner
+  /// would show the old answer as if it were the new one.
+  Widget? _verdictLine(
+      BuildContext context, ColorScheme scheme, bool isChecking) {
+    if (isChecking) return null;
+    switch (state.otaCheck.verdict) {
+      case FirmwareOtaCheckVerdict.notChecked:
+        return null;
+      case FirmwareOtaCheckVerdict.updateAvailable:
+        final version = state.otaCheck.version;
+        return _statusLine(
+          // The same icon `FirmwareUpdateAvailableBanner` uses for the same fact,
+          // so the dashboard banner and this line are recognisably one offer.
+          icon: Icons.system_update_outlined,
+          color: scheme.primary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(
+                loc(context).updateAvailable,
+                color: scheme.primary,
+              ),
+              // The version is a detail, and it can be absent: the router
+              // publishes `Available=true` with an empty `Version` — see
+              // `FirmwareRouterOtaCheckService`. An offer with no name is still an
+              // offer, so the headline above never depends on this line.
+              if (version.isNotEmpty)
+                AppText.bodySmall(loc(context).availableVersionLabel(version)),
+            ],
+          ),
+        );
+      case FirmwareOtaCheckVerdict.noUpdateFound:
+        return _statusLine(
+          icon: Icons.check_circle,
+          color: scheme.primary,
+          child: AppText.bodyMedium(
+            // Deliberately not "your firmware is up to date". This verdict is
+            // reached by a deadline expiring, not by the router saying so, and the
+            // copy is held to what was observed.
+            loc(context).firmwareNoUpdateFound,
+            color: scheme.primary,
+          ),
+        );
+    }
+  }
+
+  /// An icon and a sentence that is allowed to wrap.
+  ///
+  /// `Expanded` on the text rather than `MainAxisSize.min` on the row: the sentence
+  /// is what made the button line unshrinkable in the first place (#1380), and
+  /// letting it wrap is the only way the line fits 256px in every locale. Alignment
+  /// is `start` because there is more than one line to align to.
+  Widget _statusLine({
+    required IconData icon,
+    required Color color,
+    required Widget child,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: color),
+        AppGap.sm(),
+        Expanded(child: child),
+      ],
     );
   }
 }

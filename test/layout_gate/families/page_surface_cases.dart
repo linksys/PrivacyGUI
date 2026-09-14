@@ -1208,13 +1208,22 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 /// that drifted off the landing state would fail here instead of quietly measuring a
 /// progress card at nine widths.
 ///
-/// `gateFirmwareUpToDateState` pins `otaUpToDate: true`, which is the widest reachable
-/// form of the row — `mock_firmware_update.dart` says why that flag is a choice, and it
-/// is now a choice about *this* page.
+/// `gateFirmwareNoUpdateFoundState` pins a returned verdict, which is the widest
+/// reachable form of the row — `mock_firmware_update.dart` says why that verdict is a
+/// choice, and it is now a choice about *this* page.
+///
+/// **The banks fixture is the one this case cannot take the default of.** #1550 hides
+/// the check button entirely on a router with no virtual `ota` row (REQ-A1), and
+/// `gateFirmwareBanks` is exactly that router — two NAND banks and nothing else. The
+/// default would therefore sweep a card holding one wrapping sentence, which is the
+/// one state on this page that *cannot* overflow, at nine widths. `requires:
+/// [AppButton]` is what makes that a failure rather than 234 green cells: the sibling
+/// case above keeps the default because its banks list is what it measures, so the two
+/// fixtures stay apart and each says why.
 final kFirmwareOtaPageCase = PageSurfaceCase(
   id: 'firmware_ota',
   view: () => const FirmwareOtaView(),
-  overrides: () => firmwareUpdateOverrides(),
+  overrides: () => firmwareUpdateOverrides(banks: gateFirmwareBanksWithOta),
   requires: const [AppCard, AppButton],
   forbids: const [AppLoader],
 );
