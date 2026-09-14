@@ -546,9 +546,7 @@ final meshBackhaulResultsState = UnifiedDiagnosticsState(
         MeshNodeBackhaulUIModel(
           nodeId: 'AA:BB:CC:DD:EE:01',
           label: 'Living Room Node',
-          mediaType: 'Wi-Fi',
           linkType: 'Wi-Fi',
-          phyRateMbps: 450,
           lastUplinkRateKbps: 380,
           lastDownlinkRateKbps: 400,
           signalStrengthDbm: -55,
@@ -558,9 +556,7 @@ final meshBackhaulResultsState = UnifiedDiagnosticsState(
         MeshNodeBackhaulUIModel(
           nodeId: 'AA:BB:CC:DD:EE:02',
           label: 'Bedroom Node',
-          mediaType: 'Wi-Fi',
           linkType: 'Wi-Fi',
-          phyRateMbps: 120,
           lastUplinkRateKbps: 85,
           lastDownlinkRateKbps: 90,
           signalStrengthDbm: -78,
@@ -570,9 +566,7 @@ final meshBackhaulResultsState = UnifiedDiagnosticsState(
         MeshNodeBackhaulUIModel(
           nodeId: 'AA:BB:CC:DD:EE:03',
           label: 'Office Node',
-          mediaType: 'Ethernet',
           linkType: 'Ethernet',
-          phyRateMbps: 1000,
           lastUplinkRateKbps: 940,
           lastDownlinkRateKbps: 950,
           signalStrengthDbm: 0,

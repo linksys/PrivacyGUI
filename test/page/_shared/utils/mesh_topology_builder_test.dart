@@ -3,111 +3,154 @@ import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 
+/// One radio, optionally carrying the bSTA MAC and a fronthaul BSS.
+///
+/// [backhaulStaMac] is where the node's own backhaul MAC lives since #1555. It
+/// used to be the node-level `BackhaulMACAddress`, which FL-WRT 2.0 does not
+/// define at all.
+MeshRadio _radio(
+  String nodeInstance, {
+  String? backhaulStaMac,
+  List<MeshBss> bssList = const [],
+}) =>
+    MeshRadio(
+      instancePath: '${nodeInstance}Radio.1.',
+      backhaulStaMacAddress: backhaulStaMac,
+      currentOperatingClassProfiles: const [],
+      bssList: bssList,
+    );
+
+/// One fronthaul BSS with [stations] attached, keyed off the node's path.
+MeshBss _bss(
+  String nodeInstance, {
+  required String bssid,
+  required String ssid,
+  List<({String mac, int rcpi})> stations = const [],
+}) =>
+    MeshBss(
+      instancePath: '${nodeInstance}Radio.1.BSS.1.',
+      bssid: bssid,
+      ssid: ssid,
+      stations: [
+        for (var i = 0; i < stations.length; i++)
+          MeshStation(
+            instancePath: '${nodeInstance}Radio.1.BSS.1.STA.${i + 1}.',
+            macAddress: stations[i].mac,
+            signalStrengthRcpi: stations[i].rcpi,
+          ),
+      ],
+    );
+
+/// A [MeshNode] with only the fields a test actually names.
+///
+/// This file used to spell the whole field list out five times. #1555 removed
+/// five of those fields and renamed a sixth, which turned a one-line behaviour
+/// change into 42 compile errors here — so the schema is tracked in one place
+/// now, and a test that does not care about backhaul says so by omission.
+///
+/// **File-local on purpose, for now.** Constitution Article I §1.6.2 wants
+/// codegen fixtures centralised in `test/mocks/test_data/`, and there has never
+/// been a DataElements builder there to import. Two other files carry their own
+/// copy of this helper — `usp_instant_privacy_service_test.dart` (`_meshNode`)
+/// and `mesh_backhaul_link_test.dart` (`_node`) — each trimmed to the fields its
+/// own subject reads. Promote the three into one
+/// `test/mocks/test_data/data_elements_test_data.dart` when a **fourth** file
+/// needs a `MeshNode`, not before: a shared builder written for three known
+/// callers is guesswork about the fourth, and the version that survives is the
+/// one an actual fourth caller shapes.
+MeshNode _node({
+  required String instance,
+  required String id,
+  String? model,
+  String? manufacturer,
+  String? serialNumber,
+  String? softwareVersion,
+  String? linkType,
+  String? parentDeviceId,
+  String? parentBssid,
+  String? backhaulStaMac,
+  int? rcpi,
+  int? uplinkRate,
+  int? downlinkRate,
+  DateTime? lastContactTime,
+  DateTime? statsTimeStamp,
+  List<MeshBss> bssList = const [],
+}) {
+  final path = 'Device.WiFi.DataElements.Network.Device.$instance.';
+  return MeshNode(
+    instancePath: path,
+    id: id,
+    manufacturerModel: model,
+    manufacturer: manufacturer,
+    serialNumber: serialNumber,
+    softwareVersion: softwareVersion,
+    multiApLastContactTime: lastContactTime,
+    multiApEasyMeshAgentOperationMode: '',
+    backhaulLinkType: linkType,
+    backhaulBackhaulDeviceId: parentDeviceId,
+    backhaulBackhaulMacAddress: backhaulStaMac,
+    backhaulMacAddressMultiAp: parentBssid,
+    backhaulStatsLastDataDownlinkRate: downlinkRate,
+    backhaulStatsLastDataUplinkRate: uplinkRate,
+    backhaulStatsSignalStrengthRcpi: rcpi,
+    backhaulStatsPacketsSent: 0,
+    backhaulStatsPacketsReceived: 0,
+    backhaulStatsErrorsSent: 0,
+    backhaulStatsErrorsReceived: 0,
+    backhaulStatsTimeStamp: statsTimeStamp,
+    radios: [_radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
+  );
+}
+
 void main() {
   // ---------------------------------------------------------------------------
   // Test data
   // ---------------------------------------------------------------------------
 
-  final masterNode = MeshNode(
-    instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
+  // No `linkType` and no parent — which is how the builder now recognises the
+  // controller (`hasMeshBackhaulLink`). It used to be an empty `BackhaulALID`, a
+  // field prplMesh does not have (#1555).
+  final masterNode = _node(
+    instance: '1',
     id: 'AA:BB:CC:DD:EE:01',
-    manufacturerModel: 'MR7500',
+    model: 'MR7500',
     manufacturer: 'Linksys',
     serialNumber: 'SN12345',
     softwareVersion: '2.0.0',
-    backhaulAlId: '', // Empty = master node
-    backhaulMacAddress: '',
-    backhaulMediaType: '',
-    backhaulPhyRate: 0,
-    multiApLastContactTime: null,
-    multiApAssocIEEE1905DeviceRef: '',
-    multiApEasyMeshAgentOperationMode: '',
-    backhaulBackhaulDeviceId: '',
-    backhaulBackhaulMacAddress: '',
-    backhaulLinkType: '',
-    backhaulMacAddressMultiAp: '',
-    backhaulStatsLastDataDownlinkRate: 0,
-    backhaulStatsPacketsSent: 0,
-    backhaulStatsPacketsReceived: 0,
-    backhaulStatsErrorsSent: 0,
-    backhaulStatsErrorsReceived: 0,
-    backhaulStatsTimeStamp: null,
-    backhaulStatsLastDataUplinkRate: 0,
-    backhaulStatsSignalStrength: 0,
-    radios: [
-      MeshRadio(
-        instancePath: 'Device.WiFi.DataElements.Network.Device.1.Radio.1.',
-        bssList: [
-          MeshBss(
-            instancePath:
-                'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.',
-            bssid: 'AA:BB:CC:DD:EE:01',
-            ssid: 'HomeNetwork',
-            stations: [
-              MeshStation(
-                instancePath:
-                    'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.STA.1.',
-                macAddress: '11:22:33:44:55:01',
-                signalStrength: 180,
-              ),
-              MeshStation(
-                instancePath:
-                    'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.STA.2.',
-                macAddress: '11:22:33:44:55:02',
-                signalStrength: 160,
-              ),
-            ],
-          ),
+    bssList: [
+      _bss(
+        'Device.WiFi.DataElements.Network.Device.1.',
+        bssid: 'AA:BB:CC:DD:EE:01',
+        ssid: 'HomeNetwork',
+        stations: const [
+          (mac: '11:22:33:44:55:01', rcpi: 180),
+          (mac: '11:22:33:44:55:02', rcpi: 160),
         ],
       ),
     ],
   );
 
-  final slaveNode = MeshNode(
-    instancePath: 'Device.WiFi.DataElements.Network.Device.2.',
+  final slaveNode = _node(
+    instance: '2',
     id: 'AA:BB:CC:DD:EE:02',
-    manufacturerModel: 'MX5500',
+    model: 'MX5500',
     manufacturer: 'Linksys',
     serialNumber: 'SN67890',
     softwareVersion: '2.0.0',
-    backhaulAlId: 'AA:BB:CC:DD:EE:01', // Has parent = slave node
-    backhaulMacAddress: 'AA:BB:CC:DD:EE:02',
-    backhaulMediaType: 'IEEE 802.11ax',
-    backhaulPhyRate: 1200,
-    multiApLastContactTime: null,
-    multiApAssocIEEE1905DeviceRef: '',
-    multiApEasyMeshAgentOperationMode: '',
-    backhaulBackhaulDeviceId: 'AA:BB:CC:DD:EE:01',
-    backhaulBackhaulMacAddress: 'AA:BB:CC:DD:EE:02',
-    backhaulLinkType: 'Wi-Fi',
-    backhaulMacAddressMultiAp: 'AA:BB:CC:DD:EE:01',
-    backhaulStatsLastDataDownlinkRate: 600000,
-    backhaulStatsPacketsSent: 1000,
-    backhaulStatsPacketsReceived: 2000,
-    backhaulStatsErrorsSent: 0,
-    backhaulStatsErrorsReceived: 0,
-    backhaulStatsTimeStamp: DateTime.parse('2026-05-18T10:00:00Z'),
-    backhaulStatsLastDataUplinkRate: 500000,
-    backhaulStatsSignalStrength: 180, // RCPI = 180 → RSSI = (180/2) - 110 = -20
-    radios: [
-      MeshRadio(
-        instancePath: 'Device.WiFi.DataElements.Network.Device.2.Radio.1.',
-        bssList: [
-          MeshBss(
-            instancePath:
-                'Device.WiFi.DataElements.Network.Device.2.Radio.1.BSS.1.',
-            bssid: 'AA:BB:CC:DD:EE:02',
-            ssid: 'HomeNetwork',
-            stations: [
-              MeshStation(
-                instancePath:
-                    'Device.WiFi.DataElements.Network.Device.2.Radio.1.BSS.1.STA.1.',
-                macAddress: '11:22:33:44:55:03',
-                signalStrength: 140,
-              ),
-            ],
-          ),
-        ],
+    linkType: 'Wi-Fi',
+    parentDeviceId: 'AA:BB:CC:DD:EE:01',
+    parentBssid: 'AA:BB:CC:DD:EE:01',
+    backhaulStaMac: 'AA:BB:CC:DD:EE:02',
+    rcpi: 180, // RCPI = 180 → RSSI = (180/2) - 110 = -20
+    uplinkRate: 500000,
+    downlinkRate: 600000,
+    statsTimeStamp: DateTime.parse('2026-05-18T10:00:00Z'),
+    bssList: [
+      _bss(
+        'Device.WiFi.DataElements.Network.Device.2.',
+        bssid: 'AA:BB:CC:DD:EE:02',
+        ssid: 'HomeNetwork',
+        stations: const [(mac: '11:22:33:44:55:03', rcpi: 140)],
       ),
     ],
   );
@@ -171,55 +214,21 @@ void main() {
       expect(slave.backhaul.signalStrength, isNull);
       expect(slave.backhaul.uplinkRate, isNull);
       // Other backhaul fields are still included
-      expect(slave.backhaul.mediaType, 'IEEE 802.11ax');
-      expect(slave.backhaul.phyRate, 1200);
+      expect(slave.backhaul.linkType, 'Wi-Fi');
+      expect(slave.backhaul.backhaulMacAddress, 'AA:BB:CC:DD:EE:02');
     });
 
     test('normalizes MAC addresses to uppercase', () {
-      final nodeWithLowercase = MeshNode(
-        instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
+      final nodeWithLowercase = _node(
+        instance: '1',
         id: 'aa:bb:cc:dd:ee:ff',
-        manufacturerModel: 'MR7500',
-        manufacturer: '',
-        serialNumber: '',
-        softwareVersion: '',
-        backhaulAlId: '',
-        backhaulMacAddress: '',
-        backhaulMediaType: '',
-        backhaulPhyRate: 0,
-        multiApLastContactTime: null,
-        multiApAssocIEEE1905DeviceRef: '',
-        multiApEasyMeshAgentOperationMode: '',
-        backhaulBackhaulDeviceId: '',
-        backhaulBackhaulMacAddress: '',
-        backhaulLinkType: '',
-        backhaulMacAddressMultiAp: '',
-        backhaulStatsLastDataDownlinkRate: 0,
-        backhaulStatsPacketsSent: 0,
-        backhaulStatsPacketsReceived: 0,
-        backhaulStatsErrorsSent: 0,
-        backhaulStatsErrorsReceived: 0,
-        backhaulStatsTimeStamp: null,
-        backhaulStatsLastDataUplinkRate: 0,
-        backhaulStatsSignalStrength: 0,
-        radios: [
-          MeshRadio(
-            instancePath: 'Device.WiFi.DataElements.Network.Device.1.Radio.1.',
-            bssList: [
-              MeshBss(
-                instancePath:
-                    'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.',
-                bssid: 'aa:bb:cc:dd:ee:ff',
-                ssid: 'Test',
-                stations: [
-                  MeshStation(
-                    instancePath: 'sta.1.',
-                    macAddress: 'aa:bb:cc:11:22:33',
-                    signalStrength: 0,
-                  ),
-                ],
-              ),
-            ],
+        model: 'MR7500',
+        bssList: [
+          _bss(
+            'Device.WiFi.DataElements.Network.Device.1.',
+            bssid: 'aa:bb:cc:dd:ee:ff',
+            ssid: 'Test',
+            stations: const [(mac: 'aa:bb:cc:11:22:33', rcpi: 0)],
           ),
         ],
       );
@@ -232,33 +241,10 @@ void main() {
     });
 
     test('uses instancePath as deviceId when id is empty', () {
-      final nodeWithEmptyId = MeshNode(
-        instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
+      final nodeWithEmptyId = _node(
+        instance: '1',
         id: '',
-        manufacturerModel: 'MR7500',
-        manufacturer: '',
-        serialNumber: '',
-        softwareVersion: '',
-        backhaulAlId: '',
-        backhaulMacAddress: '',
-        backhaulMediaType: '',
-        backhaulPhyRate: 0,
-        multiApLastContactTime: null,
-        multiApAssocIEEE1905DeviceRef: '',
-        multiApEasyMeshAgentOperationMode: '',
-        backhaulBackhaulDeviceId: '',
-        backhaulBackhaulMacAddress: '',
-        backhaulLinkType: '',
-        backhaulMacAddressMultiAp: '',
-        backhaulStatsLastDataDownlinkRate: 0,
-        backhaulStatsPacketsSent: 0,
-        backhaulStatsPacketsReceived: 0,
-        backhaulStatsErrorsSent: 0,
-        backhaulStatsErrorsReceived: 0,
-        backhaulStatsTimeStamp: null,
-        backhaulStatsLastDataUplinkRate: 0,
-        backhaulStatsSignalStrength: 0,
-        radios: [],
+        model: 'MR7500',
       );
 
       final network = DataElementsNetwork(items: [nodeWithEmptyId]);
@@ -285,8 +271,33 @@ void main() {
 
       final slave = result.nodes[0] as SlaveNode;
       expect(slave.instancePath, 'Device.WiFi.DataElements.Network.Device.2.');
-      expect(slave.backhaul.backhaulAlId, 'AA:BB:CC:DD:EE:01');
+      // `backhaulMacAddress` is the bSTA's own MAC, read off
+      // `Radio.{i}.BackhaulSta.MACAddress` since #1555 — the node-level
+      // `BackhaulMACAddress` and `BackhaulALID` it used to come from are not in
+      // the prplMesh schema. The Wi-Fi performance card filters mesh bSTAs out
+      // of the client list with this, and the field surviving its source is what
+      // made that a silent break rather than a compile error.
       expect(slave.backhaul.backhaulMacAddress, 'AA:BB:CC:DD:EE:02');
+    });
+
+    test('an all-zero bSTA MAC is no MAC, not an address (#1555)', () {
+      // What a radio with no backhaul station reports — measured, and the state
+      // every radio of an Ethernet-backhauled node is in. Taking it at face value
+      // hands the Wi-Fi performance card a filter MAC that matches nothing, and
+      // `UspInstantPrivacyService` an allow-list entry that matches nothing; both
+      // call `isUnsetMac` so they cannot diverge on it.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Ethernet',
+          parentDeviceId: 'AA:BB:CC:DD:EE:01',
+          backhaulStaMac: '00:00:00:00:00:00',
+        ),
+      ]);
+
+      final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
+      expect(slave.backhaul.backhaulMacAddress, isNull);
     });
 
     test('includes backhaulLinkType', () {
@@ -349,51 +360,19 @@ void main() {
     });
 
     test('populates clientBandSsidMap when bssidToBandMap is provided', () {
-      final nodeWithClient = MeshNode(
-        instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
+      final nodeWithClient = _node(
+        instance: '1',
         id: 'AA:BB:CC:DD:EE:01',
-        manufacturerModel: 'TestRouter',
+        model: 'TestRouter',
         manufacturer: 'Test',
         serialNumber: 'SN123',
         softwareVersion: '1.0.0',
-        backhaulAlId: '',
-        backhaulMacAddress: '',
-        backhaulMediaType: '',
-        backhaulPhyRate: 0,
-        multiApLastContactTime: null,
-        multiApAssocIEEE1905DeviceRef: '',
-        multiApEasyMeshAgentOperationMode: '',
-        backhaulBackhaulDeviceId: '',
-        backhaulBackhaulMacAddress: '',
-        backhaulLinkType: '',
-        backhaulMacAddressMultiAp: '',
-        backhaulStatsLastDataDownlinkRate: 0,
-        backhaulStatsPacketsSent: 0,
-        backhaulStatsPacketsReceived: 0,
-        backhaulStatsErrorsSent: 0,
-        backhaulStatsErrorsReceived: 0,
-        backhaulStatsTimeStamp: null,
-        backhaulStatsLastDataUplinkRate: 0,
-        backhaulStatsSignalStrength: 0,
-        radios: [
-          MeshRadio(
-            instancePath: 'Device.WiFi.DataElements.Network.Device.1.Radio.1.',
-            bssList: [
-              MeshBss(
-                instancePath:
-                    'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.',
-                bssid: '11:22:33:44:55:01',
-                ssid: 'TestNetwork',
-                stations: [
-                  MeshStation(
-                    instancePath:
-                        'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.STA.1.',
-                    macAddress: 'aa:bb:cc:dd:ee:ff',
-                    signalStrength: 140,
-                  ),
-                ],
-              ),
-            ],
+        bssList: [
+          _bss(
+            'Device.WiFi.DataElements.Network.Device.1.',
+            bssid: '11:22:33:44:55:01',
+            ssid: 'TestNetwork',
+            stations: const [(mac: 'aa:bb:cc:dd:ee:ff', rcpi: 140)],
           ),
         ],
       );

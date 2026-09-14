@@ -463,13 +463,31 @@ class MeshNetworkBuilder {
       dataElementsId: masterMeshInfo?.deviceId,
       friendlyName: masterDevice?.friendlyName,
       hostName: masterDevice?.hostName ?? gatewayName,
-      model: masterMeshInfo?.model ?? systemInfo?.modelName ?? '',
-      manufacturer:
-          masterMeshInfo?.manufacturer ?? systemInfo?.manufacturer ?? '',
-      serialNumber:
-          masterMeshInfo?.serialNumber ?? systemInfo?.serialNumber ?? '',
-      softwareVersion:
-          masterMeshInfo?.softwareVersion ?? systemInfo?.softwareVersion ?? '',
+      // `system_info` first, DataElements second — and the order is the fix,
+      // not a preference. The controller row's identity fields are prplMesh
+      // describing *itself*, not the product: measured on the bench they read
+      // `Manufacturer=qcom`, `ManufacturerModel=Qualcomm Technologies, Inc. IP`,
+      // `SerialNumber=prplmesh12345`, `SoftwareVersion=2026.6.4` (the prplMesh
+      // version, not the firmware build). With DataElements first, node detail
+      // showed all four of those to the user. `system_info` is the router
+      // talking about itself over the same session, so it always wins here.
+      //
+      // Latent until #1555: `DataElementsNetwork.fetch()` threw on this
+      // firmware, so `masterMeshInfo` was always null and the fallback was all
+      // anyone ever saw. Regenerating the definition is what would have made
+      // this visible — which is why it is fixed in the same change.
+      model: _nonEmpty(systemInfo?.modelName) ??
+          _nonEmpty(masterMeshInfo?.model) ??
+          '',
+      manufacturer: _nonEmpty(systemInfo?.manufacturer) ??
+          _nonEmpty(masterMeshInfo?.manufacturer) ??
+          '',
+      serialNumber: _nonEmpty(systemInfo?.serialNumber) ??
+          _nonEmpty(masterMeshInfo?.serialNumber) ??
+          '',
+      softwareVersion: _nonEmpty(systemInfo?.softwareVersion) ??
+          _nonEmpty(masterMeshInfo?.softwareVersion) ??
+          '',
       ipAddress: masterDevice?.ipAddress,
       ipv6Addresses: masterDevice?.ipv6Addresses
               .map((e) => e.address)
@@ -494,19 +512,26 @@ class MeshNetworkBuilder {
   }) {
     final deviceId = slaveDevice.macAddress.trim().toUpperCase();
 
-    final backhaul =
-        slaveMeshInfo?.backhaul ?? const BackhaulInfo(mediaType: '');
+    final backhaul = slaveMeshInfo?.backhaul ?? BackhaulInfo.none;
 
     return SlaveNode(
       deviceId: deviceId,
       dataElementsId: slaveMeshInfo?.deviceId,
       friendlyName: slaveDevice.friendlyName,
       hostName: slaveDevice.hostName,
-      model: slaveMeshInfo?.model ?? slaveDevice.modelName ?? '',
-      manufacturer:
-          slaveMeshInfo?.manufacturer ?? slaveDevice.manufacturer ?? '',
-      serialNumber: slaveMeshInfo?.serialNumber ?? '',
-      softwareVersion: slaveMeshInfo?.softwareVersion ?? '',
+      // DataElements first here, unlike the master: for a slave these fields are
+      // prplMesh reporting the *agent*, and there is no `system_info` for a
+      // remote node to check them against. `_nonEmpty` rather than a bare `??`
+      // because `MeshTopologyBuilder` reports an absent field as `''`, which
+      // `??` would accept as an answer.
+      model: _nonEmpty(slaveMeshInfo?.model) ??
+          _nonEmpty(slaveDevice.modelName) ??
+          '',
+      manufacturer: _nonEmpty(slaveMeshInfo?.manufacturer) ??
+          _nonEmpty(slaveDevice.manufacturer) ??
+          '',
+      serialNumber: _nonEmpty(slaveMeshInfo?.serialNumber) ?? '',
+      softwareVersion: _nonEmpty(slaveMeshInfo?.softwareVersion) ?? '',
       ipAddress:
           slaveDevice.ipAddress.isNotEmpty ? slaveDevice.ipAddress : null,
       ipv6Addresses: slaveDevice.ipv6Addresses

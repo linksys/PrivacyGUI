@@ -16,14 +16,26 @@ const signalThresholdRSSI = [rssiExcellent, rssiGood, rssiFair];
 
 // ─── RCPI / RSSI Conversion ─────────────────────────────────────────────────
 
+/// Highest RCPI value that carries a power reading.
+///
+/// IEEE 802.11k defines 0–220 as the measurement range and reserves 221–254;
+/// 255 means "measurement not available". A DataElements field declared
+/// `check_maximum 255` can therefore hand us a reserved value, and the formula
+/// below happily turns one into a *positive* dBm figure (222 → `+1 dBm`) that
+/// downstream code reads as an unusually strong signal.
+const int rcpiMax = 220;
+
 /// Convert RCPI (Received Channel Power Indicator) to RSSI (dBm).
 ///
 /// RCPI is defined in IEEE 802.11k and ranges from 0–220.
 /// Formula: RSSI (dBm) = (RCPI / 2) - 110
 ///
-/// Returns null if [rcpi] is null or <= 0.
+/// Returns null if [rcpi] is null, <= 0, or above [rcpiMax] — all three mean
+/// "no reading", not "a reading of zero/huge". Callers must treat null as
+/// absence rather than substituting a default, or an unavailable measurement
+/// becomes a fabricated one.
 int? rcpiToRssi(int? rcpi) {
-  if (rcpi == null || rcpi <= 0) return null;
+  if (rcpi == null || rcpi <= 0 || rcpi > rcpiMax) return null;
   return (rcpi ~/ 2) - 110;
 }
 

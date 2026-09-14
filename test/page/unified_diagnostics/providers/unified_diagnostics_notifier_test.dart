@@ -466,9 +466,7 @@ void main() {
               const MeshBackhaulNodeRecord(
                 nodeId: 'agent-A',
                 label: 'Linksys M60TB',
-                mediaType: 'IEEE_802_3ab_Ethernet',
                 linkType: 'Ethernet',
-                phyRateMbps: 1000,
                 lastUplinkRateKbps: 1000,
                 lastDownlinkRateKbps: 1000,
                 signalStrengthDbm: 0,
@@ -499,9 +497,7 @@ void main() {
               const MeshBackhaulNodeRecord(
                 nodeId: 'agent-A',
                 label: 'Linksys M60TB',
-                mediaType: 'IEEE_802_11ax',
                 linkType: 'Wi-Fi',
-                phyRateMbps: 200,
                 lastUplinkRateKbps: 200,
                 lastDownlinkRateKbps: 200,
                 signalStrengthDbm: -70,
@@ -533,9 +529,7 @@ void main() {
               const MeshBackhaulNodeRecord(
                 nodeId: 'agent-A',
                 label: 'Linksys M60TB',
-                mediaType: 'IEEE_802_11ax',
                 linkType: 'Wi-Fi',
-                phyRateMbps: 50,
                 lastUplinkRateKbps: 50,
                 lastDownlinkRateKbps: 50,
                 signalStrengthDbm: -80,
@@ -545,9 +539,7 @@ void main() {
               const MeshBackhaulNodeRecord(
                 nodeId: 'agent-B',
                 label: 'Linksys M60TB',
-                mediaType: 'IEEE_802_11ax',
                 linkType: 'Wi-Fi',
-                phyRateMbps: 200,
                 lastUplinkRateKbps: 200,
                 lastDownlinkRateKbps: 200,
                 signalStrengthDbm: -70,

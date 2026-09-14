@@ -188,7 +188,7 @@ final meshNetworkDevicesData = DevicesData(
         serialNumber: 'DEF789012',
         softwareVersion: '1.0.10.200000',
         connectedClients: _meshSlaveClients,
-        backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+        backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
       ),
     ],
   ),
@@ -242,7 +242,7 @@ final slaveNodeOffline = UspNodeDetailState(
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
     connectedClients: const [],
-    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
   connectedClients: const [],
 );
@@ -274,16 +274,19 @@ final slaveNodeOnlineWithDevices = UspNodeDetailState(
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
     connectedClients: _meshSlaveClients,
-    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
   connectedClients: _meshSlaveClients,
 );
 
-/// Slave node whose backhaul reports both a PHY rate and a last-contact time, so
-/// the card's bottom row renders (`usp_node_detail_view.dart:429`). Both fields
-/// matter: with `phyRate` at 0 the last-contact tile becomes the row's only
-/// child and takes the full width, which is not the half-width geometry the
-/// #1302 fix was measured against.
+/// Slave node whose backhaul reports a last-contact time, so the card's bottom
+/// block renders (`usp_node_detail_view.dart:527`).
+///
+/// It used to carry a `phyRate` too, because that tile shared the row and the
+/// #1302 fix was measured against the resulting half width. `BackhaulPHYRate` is
+/// not in the prplMesh schema (#1555), so the tile is gone and this block is now
+/// full-width — which is the geometry the caption's ellipsis guard has to hold
+/// at, and the only one reachable on 2.0 firmware.
 ///
 /// A getter rather than a `final`, and deliberately not a fixed date. The tile
 /// renders the timestamp through `DateFormatUtils.formatRelativeTime`, which
@@ -310,9 +313,8 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
         softwareVersion: '1.0.10.200000',
         connectedClients: _meshSlaveClients,
         backhaul: BackhaulInfo(
-          mediaType: 'Wi-Fi',
+          linkType: 'Wi-Fi',
           signalStrength: -50,
-          phyRate: 1200,
           lastContactTime: DateTime.now().toUtc().toIso8601String(),
         ),
       ),
@@ -323,8 +325,8 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
 /// it is neither Wi-Fi nor Ethernet.
 ///
 /// The fixture for `_buildBackhaulCard`'s third arm
-/// (`usp_node_detail_view.dart:403`). Every other block in that card is gated on
-/// data this state does not have — no parent node, no rates, `phyRate` 0, no
+/// (`usp_node_detail_view.dart:455`). Every other block in that card is gated on
+/// data this state does not have — no parent node, no rates, no
 /// `lastContactTime` — so before the arm existed the card rendered as a bare
 /// header. `parentNode` is left unset on purpose: the connected-to row comes from
 /// the topology, which is the thing that is missing here.
@@ -341,7 +343,7 @@ final slaveNodeNoBackhaul = UspNodeDetailState(
     serialNumber: 'DEF789015',
     softwareVersion: '1.0.10.200000',
     connectedClients: _meshSlaveClients,
-    backhaul: const BackhaulInfo(mediaType: ''),
+    backhaul: BackhaulInfo.none,
     livenessKnown: false,
   ),
   connectedClients: _meshSlaveClients,
@@ -374,7 +376,7 @@ final slaveNodeGlobalIpv6 = UspNodeDetailState(
     softwareVersion: '1.0.10.200000',
     ipv6Addresses: const ['2401:e180:8801:d79d::5'],
     connectedClients: _meshSlaveClients,
-    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
   connectedClients: _meshSlaveClients,
 );
@@ -393,7 +395,7 @@ final slaveNodeLinkLocalIpv6 = UspNodeDetailState(
     softwareVersion: '1.0.10.200000',
     ipv6Addresses: const ['fe80::7612:13ff:fe21:5503'],
     connectedClients: _meshSlaveClients,
-    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
   connectedClients: _meshSlaveClients,
 );

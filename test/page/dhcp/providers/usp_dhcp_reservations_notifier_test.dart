@@ -443,7 +443,7 @@ void main() {
           SlaveNode(
             deviceId: slaveNodeMac,
             model: 'TestExtender',
-            backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
             // A client connected TO the slave — this IS a client and must surface.
             connectedClients: [
               _device(mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.20'),

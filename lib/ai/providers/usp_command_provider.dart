@@ -373,7 +373,7 @@ class UspCommandProvider implements IRouterCommandProvider {
               'name': node.displayName,
               'mac': node.deviceId,
               'model': node.model,
-              'backhaulMediaType': node.backhaul.mediaType,
+              'backhaulLinkType': node.backhaul.linkType,
               'backhaulSignalStrength': node.backhaul.signalStrength,
               'backhaulUplinkRate': node.backhaul.uplinkRate,
             })
@@ -919,7 +919,7 @@ String buildRouterContext(ProviderReader read) {
           .join('\n'));
       for (final ext in extenders) {
         buffer.writeln(
-            '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaul.mediaType}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
+            '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaul.linkType ?? "unknown"}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
       }
       buffer.writeln();
     }

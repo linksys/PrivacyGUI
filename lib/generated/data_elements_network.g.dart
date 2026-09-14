@@ -5,15 +5,48 @@
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Nested instance from parent multi-instance table
+class MeshRadioOperatingClass {
+  final String instancePath;
+  final int operatingClass;
+  final int channel;
+  final int? txPower;
+  final DateTime? timeStamp;
+
+  const MeshRadioOperatingClass({
+    required this.instancePath,
+    required this.operatingClass,
+    required this.channel,
+    this.txPower,
+    this.timeStamp,
+  });
+}
+
+/// Nested instance from parent multi-instance table
 class MeshStation {
   final String instancePath;
   final String macAddress;
-  final int signalStrength;
+  final int? signalStrengthRcpi;
+  final int? lastConnectTime;
+  final int? lastDataDownlinkRate;
+  final int? lastDataUplinkRate;
+  final int? estMacDataRateDownlink;
+  final int? estMacDataRateUplink;
+  final int? utilizationReceive;
+  final int? utilizationTransmit;
+  final DateTime? timeStamp;
 
   const MeshStation({
     required this.instancePath,
     required this.macAddress,
-    required this.signalStrength,
+    this.signalStrengthRcpi,
+    this.lastConnectTime,
+    this.lastDataDownlinkRate,
+    this.lastDataUplinkRate,
+    this.estMacDataRateDownlink,
+    this.estMacDataRateUplink,
+    this.utilizationReceive,
+    this.utilizationTransmit,
+    this.timeStamp,
   });
 }
 
@@ -22,12 +55,22 @@ class MeshBss {
   final String instancePath;
   final String bssid;
   final String ssid;
+  final bool? enabled;
+  final bool? fronthaulUse;
+  final bool? backhaulUse;
+  final int? lastChange;
+  final DateTime? timeStamp;
   final List<MeshStation> stations;
 
   const MeshBss({
     required this.instancePath,
     required this.bssid,
     required this.ssid,
+    this.enabled,
+    this.fronthaulUse,
+    this.backhaulUse,
+    this.lastChange,
+    this.timeStamp,
     required this.stations,
   });
 }
@@ -35,10 +78,28 @@ class MeshBss {
 /// Nested instance from parent multi-instance table
 class MeshRadio {
   final String instancePath;
+  final String? id;
+  final bool? enabled;
+  final String? backhaulStaMacAddress;
+  final int? noiseAnpi;
+  final int? utilization;
+  final int? transmitUtilization;
+  final int? receiveSelfUtilization;
+  final int? receiveOtherUtilization;
+  final List<MeshRadioOperatingClass> currentOperatingClassProfiles;
   final List<MeshBss> bssList;
 
   const MeshRadio({
     required this.instancePath,
+    this.id,
+    this.enabled,
+    this.backhaulStaMacAddress,
+    this.noiseAnpi,
+    this.utilization,
+    this.transmitUtilization,
+    this.receiveSelfUtilization,
+    this.receiveOtherUtilization,
+    required this.currentOperatingClassProfiles,
     required this.bssList,
   });
 }
@@ -47,57 +108,53 @@ class MeshRadio {
 class MeshNode {
   final String instancePath;
   final String id;
-  final String manufacturerModel;
-  final String manufacturer;
-  final String serialNumber;
-  final String softwareVersion;
-  final String backhaulAlId;
-  final String backhaulMacAddress;
-  final String backhaulMediaType;
-  final int backhaulPhyRate;
+  final String? manufacturerModel;
+  final String? manufacturer;
+  final String? serialNumber;
+  final String? softwareVersion;
+  final int? collectionInterval;
   final DateTime? multiApLastContactTime;
-  final String multiApAssocIEEE1905DeviceRef;
-  final String multiApEasyMeshAgentOperationMode;
-  final String backhaulBackhaulDeviceId;
-  final String backhaulBackhaulMacAddress;
-  final String backhaulLinkType;
-  final String backhaulMacAddressMultiAp;
-  final int backhaulStatsLastDataDownlinkRate;
-  final int backhaulStatsPacketsSent;
-  final int backhaulStatsPacketsReceived;
-  final int backhaulStatsErrorsSent;
-  final int backhaulStatsErrorsReceived;
+  final String? multiApEasyMeshAgentOperationMode;
+  final String? backhaulLinkType;
+  final String? backhaulBackhaulDeviceId;
+  final String? backhaulBackhaulMacAddress;
+  final String? backhaulMacAddressMultiAp;
+  final String? prplServingBssid;
+  final String? prplBackhaulRadioUid;
+  final int? backhaulStatsLastDataDownlinkRate;
+  final int? backhaulStatsLastDataUplinkRate;
+  final int? backhaulStatsSignalStrengthRcpi;
+  final int? backhaulStatsPacketsSent;
+  final int? backhaulStatsPacketsReceived;
+  final int? backhaulStatsErrorsSent;
+  final int? backhaulStatsErrorsReceived;
   final DateTime? backhaulStatsTimeStamp;
-  final int backhaulStatsLastDataUplinkRate;
-  final int backhaulStatsSignalStrength;
   final List<MeshRadio> radios;
 
   const MeshNode({
     required this.instancePath,
     required this.id,
-    required this.manufacturerModel,
-    required this.manufacturer,
-    required this.serialNumber,
-    required this.softwareVersion,
-    required this.backhaulAlId,
-    required this.backhaulMacAddress,
-    required this.backhaulMediaType,
-    required this.backhaulPhyRate,
+    this.manufacturerModel,
+    this.manufacturer,
+    this.serialNumber,
+    this.softwareVersion,
+    this.collectionInterval,
     this.multiApLastContactTime,
-    required this.multiApAssocIEEE1905DeviceRef,
-    required this.multiApEasyMeshAgentOperationMode,
-    required this.backhaulBackhaulDeviceId,
-    required this.backhaulBackhaulMacAddress,
-    required this.backhaulLinkType,
-    required this.backhaulMacAddressMultiAp,
-    required this.backhaulStatsLastDataDownlinkRate,
-    required this.backhaulStatsPacketsSent,
-    required this.backhaulStatsPacketsReceived,
-    required this.backhaulStatsErrorsSent,
-    required this.backhaulStatsErrorsReceived,
+    this.multiApEasyMeshAgentOperationMode,
+    this.backhaulLinkType,
+    this.backhaulBackhaulDeviceId,
+    this.backhaulBackhaulMacAddress,
+    this.backhaulMacAddressMultiAp,
+    this.prplServingBssid,
+    this.prplBackhaulRadioUid,
+    this.backhaulStatsLastDataDownlinkRate,
+    this.backhaulStatsLastDataUplinkRate,
+    this.backhaulStatsSignalStrengthRcpi,
+    this.backhaulStatsPacketsSent,
+    this.backhaulStatsPacketsReceived,
+    this.backhaulStatsErrorsSent,
+    this.backhaulStatsErrorsReceived,
     this.backhaulStatsTimeStamp,
-    required this.backhaulStatsLastDataUplinkRate,
-    required this.backhaulStatsSignalStrength,
     required this.radios,
   });
 }
@@ -114,29 +171,52 @@ class DataElementsNetwork {
     'Device.WiFi.DataElements.Network.Device.*.Manufacturer',
     'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
     'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
-    'Device.WiFi.DataElements.Network.Device.*.BackhaulALID',
-    'Device.WiFi.DataElements.Network.Device.*.BackhaulMACAddress',
-    'Device.WiFi.DataElements.Network.Device.*.BackhaulMediaType',
-    'Device.WiFi.DataElements.Network.Device.*.BackhaulPHYRate',
+    'Device.WiFi.DataElements.Network.Device.*.CollectionInterval',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.LastContactTime',
-    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.AssocIEEE1905DeviceRef',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.EasyMeshAgentOperationMode',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.LinkType',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.BackhaulDeviceID',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.BackhaulMACAddress',
-    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.LinkType',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.MACAddress',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.ServingBSSID',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.BackhaulRadioUID',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.LastDataUplinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.SignalStrength',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.PacketsSent',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.PacketsReceived',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.ErrorsSent',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.ErrorsReceived',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.TimeStamp',
-    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.LastDataUplinkRate',
-    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.SignalStrength',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.ID',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.Enabled',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BackhaulSta.MACAddress',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.Noise',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.Utilization',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.Transmit',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.ReceiveSelf',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.ReceiveOther',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.CurrentOperatingClassProfile.*.Class',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.CurrentOperatingClassProfile.*.Channel',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.CurrentOperatingClassProfile.*.TxPower',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.CurrentOperatingClassProfile.*.TimeStamp',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.BSSID',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.SSID',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.Enabled',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.FronthaulUse',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.BackhaulUse',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.LastChange',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.TimeStamp',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.MACAddress',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.SignalStrength',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.LastConnectTime',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.LastDataDownlinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.LastDataUplinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.EstMACDataRateDownlink',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.EstMACDataRateUplink',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.UtilizationReceive',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.UtilizationTransmit',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.TimeStamp',
   ];
 
   /// Fetch all instances via USP Get message
@@ -166,25 +246,23 @@ class DataElementsNetwork {
         response['${p}Manufacturer'],
         response['${p}SerialNumber'],
         response['${p}SoftwareVersion'],
-        response['${p}BackhaulALID'],
-        response['${p}BackhaulMACAddress'],
-        response['${p}BackhaulMediaType'],
-        response['${p}BackhaulPHYRate'],
+        response['${p}CollectionInterval'],
         response['${p}MultiAPDevice.LastContactTime'],
-        response['${p}MultiAPDevice.AssocIEEE1905DeviceRef'],
         response['${p}MultiAPDevice.EasyMeshAgentOperationMode'],
+        response['${p}MultiAPDevice.Backhaul.LinkType'],
         response['${p}MultiAPDevice.Backhaul.BackhaulDeviceID'],
         response['${p}MultiAPDevice.Backhaul.BackhaulMACAddress'],
-        response['${p}MultiAPDevice.Backhaul.LinkType'],
         response['${p}MultiAPDevice.Backhaul.MACAddress'],
+        response['${p}MultiAPDevice.Backhaul.ServingBSSID'],
+        response['${p}MultiAPDevice.Backhaul.BackhaulRadioUID'],
         response['${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate'],
+        response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'],
+        response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength'],
         response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent'],
         response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived'],
         response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent'],
         response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived'],
-        response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp'],
-        response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'],
-        response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength']
+        response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -209,7 +287,7 @@ class DataElementsNetwork {
       final radios = <MeshRadio>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
-        final childBase_1 = '${cp_0}BSS.';
+        final childBase_1 = '${cp_0}CurrentOperatingClassProfile.';
         final childIds_1 = <String>{};
         for (final key in response.keys) {
           if (key.startsWith(childBase_1)) {
@@ -221,41 +299,155 @@ class DataElementsNetwork {
         final childSorted_1 = childIds_1.toList()
           ..sort(
               (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-        final bssList = <MeshBss>[];
+        final currentOperatingClassProfiles = <MeshRadioOperatingClass>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
-          final childBase_2 = '${cp_1}STA.';
-          final childIds_2 = <String>{};
+          currentOperatingClassProfiles.add(MeshRadioOperatingClass(
+            instancePath: cp_1,
+            operatingClass:
+                int.tryParse(response['${cp_1}Class']?.toString() ?? '') ?? 0,
+            channel:
+                int.tryParse(response['${cp_1}Channel']?.toString() ?? '') ?? 0,
+            txPower: response.containsKey('${cp_1}TxPower')
+                ? int.tryParse(response['${cp_1}TxPower']?.toString() ?? '')
+                : null,
+            timeStamp: DateTime.tryParse(
+                response['${cp_1}TimeStamp']?.toString() ?? ''),
+          ));
+        }
+        final childBase_2 = '${cp_0}BSS.';
+        final childIds_2 = <String>{};
+        for (final key in response.keys) {
+          if (key.startsWith(childBase_2)) {
+            final rest = key.substring(childBase_2.length);
+            final dot = rest.indexOf('.');
+            if (dot > 0) childIds_2.add(rest.substring(0, dot));
+          }
+        }
+        final childSorted_2 = childIds_2.toList()
+          ..sort(
+              (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+        final bssList = <MeshBss>[];
+        for (final cid_2 in childSorted_2) {
+          final cp_2 = '$childBase_2$cid_2.';
+          final childBase_3 = '${cp_2}STA.';
+          final childIds_3 = <String>{};
           for (final key in response.keys) {
-            if (key.startsWith(childBase_2)) {
-              final rest = key.substring(childBase_2.length);
+            if (key.startsWith(childBase_3)) {
+              final rest = key.substring(childBase_3.length);
               final dot = rest.indexOf('.');
-              if (dot > 0) childIds_2.add(rest.substring(0, dot));
+              if (dot > 0) childIds_3.add(rest.substring(0, dot));
             }
           }
-          final childSorted_2 = childIds_2.toList()
+          final childSorted_3 = childIds_3.toList()
             ..sort((a, b) =>
                 (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
           final stations = <MeshStation>[];
-          for (final cid_2 in childSorted_2) {
-            final cp_2 = '$childBase_2$cid_2.';
+          for (final cid_3 in childSorted_3) {
+            final cp_3 = '$childBase_3$cid_3.';
             stations.add(MeshStation(
-              instancePath: cp_2,
-              macAddress: (response['${cp_2}MACAddress'] ?? '') as String,
-              signalStrength: int.tryParse(
-                      response['${cp_2}SignalStrength']?.toString() ?? '') ??
-                  0,
+              instancePath: cp_3,
+              macAddress: (response['${cp_3}MACAddress'] ?? '') as String,
+              signalStrengthRcpi: response.containsKey('${cp_3}SignalStrength')
+                  ? int.tryParse(
+                      response['${cp_3}SignalStrength']?.toString() ?? '')
+                  : null,
+              lastConnectTime: response.containsKey('${cp_3}LastConnectTime')
+                  ? int.tryParse(
+                      response['${cp_3}LastConnectTime']?.toString() ?? '')
+                  : null,
+              lastDataDownlinkRate: response
+                      .containsKey('${cp_3}LastDataDownlinkRate')
+                  ? int.tryParse(
+                      response['${cp_3}LastDataDownlinkRate']?.toString() ?? '')
+                  : null,
+              lastDataUplinkRate: response
+                      .containsKey('${cp_3}LastDataUplinkRate')
+                  ? int.tryParse(
+                      response['${cp_3}LastDataUplinkRate']?.toString() ?? '')
+                  : null,
+              estMacDataRateDownlink: response
+                      .containsKey('${cp_3}EstMACDataRateDownlink')
+                  ? int.tryParse(
+                      response['${cp_3}EstMACDataRateDownlink']?.toString() ??
+                          '')
+                  : null,
+              estMacDataRateUplink: response
+                      .containsKey('${cp_3}EstMACDataRateUplink')
+                  ? int.tryParse(
+                      response['${cp_3}EstMACDataRateUplink']?.toString() ?? '')
+                  : null,
+              utilizationReceive: response
+                      .containsKey('${cp_3}UtilizationReceive')
+                  ? int.tryParse(
+                      response['${cp_3}UtilizationReceive']?.toString() ?? '')
+                  : null,
+              utilizationTransmit: response
+                      .containsKey('${cp_3}UtilizationTransmit')
+                  ? int.tryParse(
+                      response['${cp_3}UtilizationTransmit']?.toString() ?? '')
+                  : null,
+              timeStamp: DateTime.tryParse(
+                  response['${cp_3}TimeStamp']?.toString() ?? ''),
             ));
           }
           bssList.add(MeshBss(
-            instancePath: cp_1,
-            bssid: (response['${cp_1}BSSID'] ?? '') as String,
-            ssid: (response['${cp_1}SSID'] ?? '') as String,
+            instancePath: cp_2,
+            bssid: (response['${cp_2}BSSID'] ?? '') as String,
+            ssid: (response['${cp_2}SSID'] ?? '') as String,
+            enabled: response.containsKey('${cp_2}Enabled')
+                ? (response['${cp_2}Enabled'] == true ||
+                    response['${cp_2}Enabled'] == 'true' ||
+                    response['${cp_2}Enabled'] == '1')
+                : null,
+            fronthaulUse: response.containsKey('${cp_2}FronthaulUse')
+                ? (response['${cp_2}FronthaulUse'] == true ||
+                    response['${cp_2}FronthaulUse'] == 'true' ||
+                    response['${cp_2}FronthaulUse'] == '1')
+                : null,
+            backhaulUse: response.containsKey('${cp_2}BackhaulUse')
+                ? (response['${cp_2}BackhaulUse'] == true ||
+                    response['${cp_2}BackhaulUse'] == 'true' ||
+                    response['${cp_2}BackhaulUse'] == '1')
+                : null,
+            lastChange: response.containsKey('${cp_2}LastChange')
+                ? int.tryParse(response['${cp_2}LastChange']?.toString() ?? '')
+                : null,
+            timeStamp: DateTime.tryParse(
+                response['${cp_2}TimeStamp']?.toString() ?? ''),
             stations: stations,
           ));
         }
         radios.add(MeshRadio(
           instancePath: cp_0,
+          id: response.containsKey('${cp_0}ID')
+              ? response['${cp_0}ID'] as String
+              : null,
+          enabled: response.containsKey('${cp_0}Enabled')
+              ? (response['${cp_0}Enabled'] == true ||
+                  response['${cp_0}Enabled'] == 'true' ||
+                  response['${cp_0}Enabled'] == '1')
+              : null,
+          backhaulStaMacAddress:
+              response.containsKey('${cp_0}BackhaulSta.MACAddress')
+                  ? response['${cp_0}BackhaulSta.MACAddress'] as String
+                  : null,
+          noiseAnpi: response.containsKey('${cp_0}Noise')
+              ? int.tryParse(response['${cp_0}Noise']?.toString() ?? '')
+              : null,
+          utilization: response.containsKey('${cp_0}Utilization')
+              ? int.tryParse(response['${cp_0}Utilization']?.toString() ?? '')
+              : null,
+          transmitUtilization: response.containsKey('${cp_0}Transmit')
+              ? int.tryParse(response['${cp_0}Transmit']?.toString() ?? '')
+              : null,
+          receiveSelfUtilization: response.containsKey('${cp_0}ReceiveSelf')
+              ? int.tryParse(response['${cp_0}ReceiveSelf']?.toString() ?? '')
+              : null,
+          receiveOtherUtilization: response.containsKey('${cp_0}ReceiveOther')
+              ? int.tryParse(response['${cp_0}ReceiveOther']?.toString() ?? '')
+              : null,
+          currentOperatingClassProfiles: currentOperatingClassProfiles,
           bssList: bssList,
         ));
       }
@@ -263,153 +455,111 @@ class DataElementsNetwork {
       if (!response.containsKey('${p}ID')) {
         missing.add('${p}ID');
       }
-      if (!response.containsKey('${p}ManufacturerModel')) {
-        missing.add('${p}ManufacturerModel');
-      }
-      if (!response.containsKey('${p}Manufacturer')) {
-        missing.add('${p}Manufacturer');
-      }
-      if (!response.containsKey('${p}SerialNumber')) {
-        missing.add('${p}SerialNumber');
-      }
-      if (!response.containsKey('${p}SoftwareVersion')) {
-        missing.add('${p}SoftwareVersion');
-      }
-      if (!response.containsKey('${p}BackhaulALID')) {
-        missing.add('${p}BackhaulALID');
-      }
-      if (!response.containsKey('${p}BackhaulMACAddress')) {
-        missing.add('${p}BackhaulMACAddress');
-      }
-      if (!response.containsKey('${p}BackhaulMediaType')) {
-        missing.add('${p}BackhaulMediaType');
-      }
-      if (!response.containsKey('${p}BackhaulPHYRate')) {
-        missing.add('${p}BackhaulPHYRate');
-      }
-      if (!response.containsKey('${p}MultiAPDevice.AssocIEEE1905DeviceRef')) {
-        missing.add('${p}MultiAPDevice.AssocIEEE1905DeviceRef');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.EasyMeshAgentOperationMode')) {
-        missing.add('${p}MultiAPDevice.EasyMeshAgentOperationMode');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.BackhaulDeviceID')) {
-        missing.add('${p}MultiAPDevice.Backhaul.BackhaulDeviceID');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.BackhaulMACAddress')) {
-        missing.add('${p}MultiAPDevice.Backhaul.BackhaulMACAddress');
-      }
-      if (!response.containsKey('${p}MultiAPDevice.Backhaul.LinkType')) {
-        missing.add('${p}MultiAPDevice.Backhaul.LinkType');
-      }
-      if (!response.containsKey('${p}MultiAPDevice.Backhaul.MACAddress')) {
-        missing.add('${p}MultiAPDevice.Backhaul.MACAddress');
-      }
-      if (!response.containsKey(
-          '${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsSent')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.PacketsSent');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsReceived')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.PacketsReceived');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsSent')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.ErrorsSent');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate');
-      }
-      if (!response
-          .containsKey('${p}MultiAPDevice.Backhaul.Stats.SignalStrength')) {
-        missing.add('${p}MultiAPDevice.Backhaul.Stats.SignalStrength');
-      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(MeshNode(
         instancePath: p,
         id: (response['${p}ID'] ?? '') as String,
-        manufacturerModel: (response['${p}ManufacturerModel'] ?? '') as String,
-        manufacturer: (response['${p}Manufacturer'] ?? '') as String,
-        serialNumber: (response['${p}SerialNumber'] ?? '') as String,
-        softwareVersion: (response['${p}SoftwareVersion'] ?? '') as String,
-        backhaulAlId: (response['${p}BackhaulALID'] ?? '') as String,
-        backhaulMacAddress:
-            (response['${p}BackhaulMACAddress'] ?? '') as String,
-        backhaulMediaType: (response['${p}BackhaulMediaType'] ?? '') as String,
-        backhaulPhyRate:
-            int.tryParse(response['${p}BackhaulPHYRate']?.toString() ?? '') ??
-                0,
+        manufacturerModel: response.containsKey('${p}ManufacturerModel')
+            ? response['${p}ManufacturerModel'] as String
+            : null,
+        manufacturer: response.containsKey('${p}Manufacturer')
+            ? response['${p}Manufacturer'] as String
+            : null,
+        serialNumber: response.containsKey('${p}SerialNumber')
+            ? response['${p}SerialNumber'] as String
+            : null,
+        softwareVersion: response.containsKey('${p}SoftwareVersion')
+            ? response['${p}SoftwareVersion'] as String
+            : null,
+        collectionInterval: response.containsKey('${p}CollectionInterval')
+            ? int.tryParse(response['${p}CollectionInterval']?.toString() ?? '')
+            : null,
         multiApLastContactTime: DateTime.tryParse(
             response['${p}MultiAPDevice.LastContactTime']?.toString() ?? ''),
-        multiApAssocIEEE1905DeviceRef:
-            (response['${p}MultiAPDevice.AssocIEEE1905DeviceRef'] ?? '')
-                as String,
-        multiApEasyMeshAgentOperationMode:
-            (response['${p}MultiAPDevice.EasyMeshAgentOperationMode'] ?? '')
-                as String,
-        backhaulBackhaulDeviceId:
-            (response['${p}MultiAPDevice.Backhaul.BackhaulDeviceID'] ?? '')
-                as String,
-        backhaulBackhaulMacAddress:
-            (response['${p}MultiAPDevice.Backhaul.BackhaulMACAddress'] ?? '')
-                as String,
+        multiApEasyMeshAgentOperationMode: response
+                .containsKey('${p}MultiAPDevice.EasyMeshAgentOperationMode')
+            ? response['${p}MultiAPDevice.EasyMeshAgentOperationMode'] as String
+            : null,
         backhaulLinkType:
-            (response['${p}MultiAPDevice.Backhaul.LinkType'] ?? '') as String,
+            response.containsKey('${p}MultiAPDevice.Backhaul.LinkType')
+                ? response['${p}MultiAPDevice.Backhaul.LinkType'] as String
+                : null,
+        backhaulBackhaulDeviceId: response
+                .containsKey('${p}MultiAPDevice.Backhaul.BackhaulDeviceID')
+            ? response['${p}MultiAPDevice.Backhaul.BackhaulDeviceID'] as String
+            : null,
+        backhaulBackhaulMacAddress: response
+                .containsKey('${p}MultiAPDevice.Backhaul.BackhaulMACAddress')
+            ? response['${p}MultiAPDevice.Backhaul.BackhaulMACAddress']
+                as String
+            : null,
         backhaulMacAddressMultiAp:
-            (response['${p}MultiAPDevice.Backhaul.MACAddress'] ?? '') as String,
-        backhaulStatsLastDataDownlinkRate: int.tryParse(response[
+            response.containsKey('${p}MultiAPDevice.Backhaul.MACAddress')
+                ? response['${p}MultiAPDevice.Backhaul.MACAddress'] as String
+                : null,
+        prplServingBssid:
+            response.containsKey('${p}MultiAPDevice.Backhaul.ServingBSSID')
+                ? response['${p}MultiAPDevice.Backhaul.ServingBSSID'] as String
+                : null,
+        prplBackhaulRadioUid: response
+                .containsKey('${p}MultiAPDevice.Backhaul.BackhaulRadioUID')
+            ? response['${p}MultiAPDevice.Backhaul.BackhaulRadioUID'] as String
+            : null,
+        backhaulStatsLastDataDownlinkRate: response.containsKey(
+                '${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate')
+            ? int.tryParse(response[
                         '${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate']
                     ?.toString() ??
-                '') ??
-            0,
-        backhaulStatsPacketsSent: int.tryParse(
-                response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent']
+                '')
+            : null,
+        backhaulStatsLastDataUplinkRate: response.containsKey(
+                '${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate')
+            ? int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate']
                         ?.toString() ??
-                    '') ??
-            0,
-        backhaulStatsPacketsReceived: int.tryParse(
+                    '')
+            : null,
+        backhaulStatsSignalStrengthRcpi: response
+                .containsKey('${p}MultiAPDevice.Backhaul.Stats.SignalStrength')
+            ? int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength']
+                        ?.toString() ??
+                    '')
+            : null,
+        backhaulStatsPacketsSent:
+            response.containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsSent')
+                ? int.tryParse(
+                    response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent']
+                            ?.toString() ??
+                        '')
+                : null,
+        backhaulStatsPacketsReceived: response
+                .containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsReceived')
+            ? int.tryParse(
                 response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived']
                         ?.toString() ??
-                    '') ??
-            0,
-        backhaulStatsErrorsSent: int.tryParse(
-                response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent']
-                        ?.toString() ??
-                    '') ??
-            0,
-        backhaulStatsErrorsReceived: int.tryParse(
+                    '')
+            : null,
+        backhaulStatsErrorsSent:
+            response.containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsSent')
+                ? int.tryParse(
+                    response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent']
+                            ?.toString() ??
+                        '')
+                : null,
+        backhaulStatsErrorsReceived: response
+                .containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived')
+            ? int.tryParse(
                 response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived']
                         ?.toString() ??
-                    '') ??
-            0,
+                    '')
+            : null,
         backhaulStatsTimeStamp: DateTime.tryParse(
             response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp']
                     ?.toString() ??
                 ''),
-        backhaulStatsLastDataUplinkRate: int.tryParse(
-                response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate']
-                        ?.toString() ??
-                    '') ??
-            0,
-        backhaulStatsSignalStrength: int.tryParse(
-                response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength']
-                        ?.toString() ??
-                    '') ??
-            0,
         radios: radios,
       ));
     }
