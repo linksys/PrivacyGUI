@@ -138,9 +138,9 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       case FirmwareUpdatePhase.idle:
       case FirmwareUpdatePhase.checkingOta:
         // The entry point for this page is the check card above — it holds
-        // `firmware-check` and, while checking, its own spinner. Nothing extra
-        // belongs here, and unlike the manual page's matching arm this one is not
-        // mode-gated: an OTA check is offered on every surface.
+        // `firmware-check`, and while checking that button carries its own busy
+        // state. Nothing extra belongs here, and unlike the manual page's matching
+        // arm this one is not mode-gated: an OTA check is offered on every surface.
         return null;
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
@@ -307,23 +307,43 @@ class _OtaCheckCard extends StatelessWidget {
               // own compact size, no new API — five other call sites in `lib/` already
               // pass this.
               final size = stacked ? AppButtonSize.small : AppButtonSize.medium;
-              final button = isChecking
-                  ? AppButton.primaryOutline(
-                      label: loc(context).checking,
-                      onTap: null,
-                      size: size,
-                      icon: const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : AppButton.primaryOutline(
-                      label: loc(context).checkForUpdates,
-                      identifier: 'firmware-check',
-                      onTap: onCheck,
-                      size: size,
-                    );
+              // ONE button in both states, busy expressed as `isLoading`.
+              //
+              // This used to be two buttons chosen by `isChecking`: a second
+              // `AppButton` labelled "Checking..." with `onTap: null` and a bare
+              // `CircularProgressIndicator` in its icon slot. That predates #1549
+              // and moved here with the card; adopting the kit's own state costs
+              // four defects that the swap had:
+              //
+              //   - **`firmware-check` disappeared while checking.** The busy copy
+              //     carried no `identifier`, so the one control an E2E spec clicks
+              //     left the semantics tree for the duration of the very operation
+              //     the spec is waiting on. `AppButton` publishes `identifier`
+              //     regardless of `isLoading`.
+              //   - **The label stopped naming what was in flight.** "Checking..."
+              //     is a state, not an action; ui_kit removed exactly this shape
+              //     because a busy frame must not cost the user the name of the
+              //     thing they started. Busy is now a layer over this button, so
+              //     "Check for Updates" stays readable underneath it.
+              //   - **A screen reader heard `enabled: false` and nothing else**,
+              //     which cannot tell "working" from "not available". `isLoading`
+              //     adds the `Busy` hint on a live region.
+              //   - **The spinner ignored the theme and reduce-motion.** A raw
+              //     `CircularProgressIndicator` spins forever in one style;
+              //     `BusyFigureLayer` draws the active language's figure in the
+              //     button's own `busyColor`, clipped to its shape, and parks on a
+              //     legible rest frame when motion is reduced.
+              //
+              // `onTap` stays wired: `AppButton._isEnabled` is
+              // `onTap != null && !isLoading`, so the tap is already ignored, and
+              // passing null as well would only re-state it in a second place.
+              final button = AppButton.primaryOutline(
+                label: loc(context).checkForUpdates,
+                identifier: 'firmware-check',
+                onTap: onCheck,
+                size: size,
+                isLoading: isChecking,
+              );
               // `Expanded` on the label rather than `MainAxisSize.min` on the row:
               // the sentence is what made this line unshrinkable, and letting it wrap
               // is the only way the line fits 256px in any locale. Alignment moves to

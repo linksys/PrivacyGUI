@@ -110,6 +110,39 @@ void main() {
       handle.dispose();
     });
 
+    // THE SAME CONTROL, STILL THERE, WHILE IT IS WORKING.
+    //
+    // `firmware-check` used to be published by only one of two buttons chosen on
+    // `isChecking`: the busy copy carried no `identifier`, so the hook left the
+    // tree for exactly the span an E2E spec spends waiting on the operation it
+    // just started. The test above could not see that — it pumps `idle`, which is
+    // the state that did publish it. Pinning the id in the busy phase is what
+    // makes the absence impossible to reintroduce.
+    //
+    // `enabled: false` is asserted alongside it because "still locatable" is only
+    // half the requirement: a hook that stays clickable while the check runs lets
+    // a spec fire a second check into the first one's response.
+    testWidgets('the cloud check stays hooked, and disabled, while checking',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpPage(tester, checkingOtaState);
+
+      final finder = find.bySemanticsIdentifier('firmware-check');
+      expect(finder, findsOneWidget,
+          reason: '"firmware-check" must stay locatable while the check is in '
+              'flight — a spec that clicks it then waits on its busy state has '
+              'nothing to wait on otherwise');
+
+      expect(tester.getSemantics(finder),
+          isSemantics(hasEnabledState: true, isEnabled: false),
+          reason: 'the check must not be re-triggerable while one is running. '
+              '`hasEnabledState` is asserted too, because `isEnabled: false` on '
+              'a node that carries no enabled state at all is a pass that means '
+              'nothing');
+
+      handle.dispose();
+    });
+
     // The mirror of the absence asserted on the manual page. Both directions are
     // pinned because the E2E harvest reads Dart source as text: a control that
     // reappears on the wrong page is silent there, and only a failing

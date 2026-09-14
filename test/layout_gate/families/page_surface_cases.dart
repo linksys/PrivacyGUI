@@ -1199,9 +1199,10 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 ///
 /// **`forbids: [AppLoader]` is inert on this fixture, and stated rather than implied**
 /// — the same honesty §11.11 owes for five of wave 3's pages. There is no reachable
-/// `AppLoader` in `idle`: this page renders no banks list, and the check card's own
-/// spinner is a bare `CircularProgressIndicator` inside the button rather than an
-/// `AppLoader`. What the clause does buy is a fixture tripwire in one direction: four
+/// `AppLoader` in `idle`: this page renders no banks list, and the check card expresses
+/// its own busy state through `AppButton.isLoading` — a figure layer over the button,
+/// not a loader widget beside it. What the clause does buy is a fixture tripwire in one
+/// direction: four
 /// of the eleven phases render `FirmwareInstallPhaseCard`'s linear loader, so a fixture
 /// that drifted off the landing state would fail here instead of quietly measuring a
 /// progress card at nine widths.
