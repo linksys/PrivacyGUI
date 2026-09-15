@@ -135,10 +135,30 @@ class FirmwareRouterOtaCheckService {
       // is not a read — the poll loop below is `Get`s, which nothing in this
       // codebase locks. Holding it across the loop would block every other
       // mutation for the whole deadline and would sit under the lock's own 30 s
-      // timeout, which throws a `TimeoutException` rather than a `ServiceError`.
-      final commandKey = await _lock.withLock(
-        () => _dispatchCheck(otaInstance: otaInstance),
-      );
+      // timeout.
+      final String commandKey;
+      try {
+        commandKey = await _lock.withLock(
+          () => _dispatchCheck(otaInstance: otaInstance),
+        );
+      } on TimeoutException catch (e) {
+        // Mapped here because here is the layer that is allowed to (constitution
+        // Article XIII §13.3), and because nothing above can see it coming:
+        // `UspMutationLock` throws a bare `TimeoutException`, deliberately not a
+        // `ServiceError`, so every `on ServiceError` between this line and the
+        // button was blind to it. The check would appear to do nothing for 30 s,
+        // leave no failure card, and then escape an unawaited `onTap` as an
+        // uncaught async error.
+        //
+        // The same four lines the install service carries, and deliberately not
+        // hoisted into a shared helper: what differs is the sentence, and a
+        // helper taking the sentence as a parameter would be a wrapper around
+        // `throw` whose only reader is this comment.
+        throw TimeoutError(
+          detail: 'another router mutation was still running when the firmware '
+              'check was dispatched (${e.message ?? '30s'})',
+        );
+      }
 
       // Raced, not awaited. A refusal may never come — the ordinary case is that
       // it does not — so this future is allowed to stay pending for the life of

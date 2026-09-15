@@ -12,6 +12,8 @@
 /// the only evidence for it is a timeout.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -164,6 +166,37 @@ void main() {
       expect(lockedDuringDispatch, isTrue);
       expect(lockedDuringPoll, isFalse);
       expect(lock.isLocked, isFalse);
+    });
+
+    test('a mutation timeout leaves as a ServiceError, not a TimeoutException',
+        () async {
+      // The half of this the install service fixed at its own dispatch and this
+      // one did not. `UspMutationLock.withLock` throws a bare `TimeoutException`
+      // on purpose — it is core, not a feature service, and constitution Article
+      // XIII §13.3 makes the mapping this layer's job. Nothing above this line
+      // could do it: every `on ServiceError` between here and the button was blind
+      // to it, so the check appeared to do nothing for 30s, left no failure card,
+      // and then escaped an unawaited `onTap` as an uncaught async error.
+      //
+      // Thrown from the dispatcher rather than by letting the lock time out for
+      // real: the lock's timeout is 30s and is not injectable from here, and a
+      // suite that waits it out is a suite nobody runs. What is under test is the
+      // `catch`, and the exception reaching it is the same object either way.
+      when(() =>
+              firmware.requestOtaCheck(otaInstance: any(named: 'otaInstance')))
+          .thenThrow(TimeoutException(
+              'USP mutation timed out after 30s', const Duration(seconds: 30)));
+
+      await expectLater(
+        buildService().check(otaInstance: 3),
+        throwsA(isA<TimeoutError>()),
+      );
+      // And it aborts before the poll loop. This is the assertion that separates
+      // the fix from the bug it replaces: an unmapped throw also leaves the
+      // method, but a check that reached the loop would spend its whole deadline
+      // reading banks and could still return `noUpdateFound` — the one answer
+      // this service exists never to invent.
+      verifyNever(() => firmware.fetchAllBanks());
     });
 
     test('runs without an awaiter at all', () async {
