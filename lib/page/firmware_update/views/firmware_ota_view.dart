@@ -8,6 +8,9 @@ import 'package:privacy_gui/core/connection/providers/app_connection_state_provi
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
+    hide FirmwareImageUIModel;
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
@@ -17,6 +20,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_router_status_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
@@ -129,7 +133,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
     }
   }
 
-  /// The banks read, and the two things this page derives from it — read **once**,
+  /// Every read this page makes, and everything derived from them — read **once**,
   /// here, and passed down.
   ///
   /// `child:` below is a builder that `UiKitPageView` hands to a layout widget, so
@@ -140,10 +144,17 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   /// offer read `valueOrNull` with no `hasError` check while [_readOtaSupport] read
   /// the same provider with one, so two answers about one row were being derived by
   /// two different rules.
+  ///
+  /// `systemInfoDataProvider` is watched for the router header only, and it is
+  /// deliberately **not** folded into [_stateIsUnreadable]: that decision is about
+  /// the two reads the *notifier* makes and records in one `stateReadError`, and a
+  /// missing model name is not a reason to replace a working Check button. The card
+  /// draws no header when this is null and keeps the banks half.
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
     final banks = ref.watch(firmwareBanksDataProvider);
+    final systemInfo = ref.watch(systemInfoDataProvider).valueOrNull?.model;
     final support = _readOtaSupport(banks);
     // Null in both non-`present` arms, so the offer cannot be built off a row whose
     // absence is established *or* unknown.
@@ -163,7 +174,8 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: _buildBody(childContext, state, support, ota),
+          child:
+              _buildBody(childContext, state, banks, systemInfo, support, ota),
         );
       },
     );
@@ -242,9 +254,20 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
     return () => _onConfirmOtaInstall(context, state, ota.instance);
   }
 
-  Widget _buildBody(BuildContext context, FirmwareUpdateState state,
-      _OtaSupport support, FirmwareImageUIModel? ota) {
+  Widget _buildBody(
+    BuildContext context,
+    FirmwareUpdateState state,
+    AsyncValue<FirmwareBanksData> asyncBanks,
+    SystemInfoUIModel? systemInfo,
+    _OtaSupport support,
+    FirmwareImageUIModel? ota,
+  ) {
     final install = _buildInstallCard(state);
+    // `physicalBanks`: one row per boot slot. The virtual OTA instance is not a
+    // slot, and on this page in particular it would print the version being
+    // offered as a bank the router already holds — beside a card offering to go
+    // and fetch it.
+    final banks = asyncBanks.valueOrNull?.physicalBanks ?? const [];
     // One `firmware-phase-*` boundary per page, for the reason the manual page
     // gives: the E2E phase-sequence walk (PrivacyGUI-USP-E2E#114) keys on the
     // phase name rather than the translatable copy inside each card, and
@@ -262,6 +285,25 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Same card, same position as the manual page — the two pages differ in
+          // where the image comes from, not in which router they are about, and a
+          // router-side install lands in the standby slot this draws. Without it
+          // the page never said what firmware the router was currently running.
+          //
+          // Above the action rather than below it, matching the manual page. The
+          // check card is the entry point, but the version it is offering is only
+          // meaningful next to the version already installed.
+          FirmwareRouterStatusCard(
+            systemInfo: systemInfo,
+            banks: banks,
+            isLoadingBanks: asyncBanks.isLoading && banks.isEmpty,
+            // An `AsyncError` leaves `banks` empty and `isLoading` false, which
+            // reads as "No firmware banks reported" — a claim about the router's
+            // slots — directly above a card saying the router could not be asked
+            // anything.
+            banksUnreadable: asyncBanks.hasError,
+          ),
+          AppGap.xl(),
           if (_stateIsUnreadable(state, support))
             FirmwareStateUnreadableCard(
               onRetry: () => _readRouterState(refresh: true),

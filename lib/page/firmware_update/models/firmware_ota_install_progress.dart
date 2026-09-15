@@ -108,6 +108,22 @@ class FirmwareOtaInstallProgress extends Equatable {
       status == FirmwareAutoUpdateStatus.downloading ||
       status == FirmwareAutoUpdateStatus.installing;
 
+  /// Whether this reading names something `fwupd` was actually doing.
+  ///
+  /// [namesAnUpdatePhase] plus `checking`, and the third predicate exists for the
+  /// one verdict that needs the *check* to count as work. `Download(ota,"true")` is
+  /// `fwupd -m 2`, which checks before it downloads, so a dispatched install can
+  /// legitimately end at `fwup_state=0` — but only a run that was seen reaching 1
+  /// has concluded anything. A dispatch that never moved `fwup_state` at all has
+  /// concluded nothing, which is the shape of the firmware defect measured on
+  /// `2.0.1.26091319`: the trigger is accepted and never consumed.
+  ///
+  /// `unknown` stays out, for the reason [namesAnUpdatePhase] gives — an
+  /// unrecognised value is the weakest possible evidence of anything — and here the
+  /// cost of excluding it is only that a verdict is withheld.
+  bool get namesRouterWork =>
+      namesAnUpdatePhase || status == FirmwareAutoUpdateStatus.checking;
+
   /// This reading updated by the next one, without ever walking backwards.
   ///
   /// Within one `fwup_state` the number only rises: the parameter is a sampled

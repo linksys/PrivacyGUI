@@ -80,6 +80,57 @@ void main() {
     });
   });
 
+  /// The three sighting predicates, and the two places they deliberately differ.
+  ///
+  /// Each one licenses a different claim about a *later* verdict, so a state that
+  /// slid from one into another would let the page say something the router never
+  /// supported: `isInstalling` decides what to **draw**, `namesAnUpdatePhase`
+  /// decides what a failure may be **blamed** on, and `namesRouterWork` decides
+  /// whether an idle router has **concluded** anything.
+  group('what a reading is evidence of', () {
+    test('a check is the router working, but not an update running', () {
+      // The install path's `idle` verdict turns on exactly this: mode 2 checks
+      // before it downloads, so `1 → 0` is the router disagreeing about the
+      // version — a real answer — while a dispatch that never left 0 has answered
+      // nothing.
+      final checking = FirmwareOtaInstallProgress.from(_reading('1', 0));
+
+      expect(checking.namesRouterWork, isTrue);
+      expect(checking.namesAnUpdatePhase, isFalse);
+      expect(checking.isInstalling, isFalse);
+      expect(checking.isRunning, isTrue);
+    });
+
+    test('an unrecognised state is drawn, and claimed for nothing', () {
+      // REQ-A7 in one line. A value that cannot be ruled out being a flash must
+      // keep the progress UI up (`isInstalling`), and is simultaneously the weakest
+      // evidence there is — so neither a failure nor a "nothing was found" may be
+      // built on it.
+      final unknown = FirmwareOtaInstallProgress.from(_reading('9', 0));
+
+      expect(unknown.isInstalling, isTrue);
+      expect(unknown.namesRouterWork, isFalse);
+      expect(unknown.namesAnUpdatePhase, isFalse);
+    });
+
+    test('downloading and installing are evidence of everything', () {
+      for (final state in ['3', '4']) {
+        final progress = FirmwareOtaInstallProgress.from(_reading(state, 20));
+        expect(progress.namesAnUpdatePhase, isTrue,
+            reason: 'fwup_state=$state');
+        expect(progress.namesRouterWork, isTrue, reason: 'fwup_state=$state');
+      }
+    });
+
+    test('idle and failed are evidence of nothing', () {
+      for (final state in ['0', '5']) {
+        final progress = FirmwareOtaInstallProgress.from(_reading(state, 100));
+        expect(progress.isRunning, isFalse, reason: 'fwup_state=$state');
+        expect(progress.namesRouterWork, isFalse, reason: 'fwup_state=$state');
+      }
+    });
+  });
+
   group('advancing', () {
     test('within one state the number only rises', () {
       final at40 = FirmwareOtaInstallProgress.from(_reading('3', 40));

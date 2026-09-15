@@ -7,8 +7,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/utils/device_image_helper.dart';
-import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
@@ -17,13 +15,13 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_router_status_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
@@ -138,7 +136,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _RouterStatusCard(
+        FirmwareRouterStatusCard(
           systemInfo: systemInfo,
           banks: banks,
           isLoadingBanks: isLoadingBanks,
@@ -424,219 +422,5 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     } catch (_) {
       // Notifier already transitioned to `failed` and surfaced the message.
     }
-  }
-}
-
-/// Combined router info + firmware banks card.
-class _RouterStatusCard extends StatelessWidget {
-  const _RouterStatusCard({
-    required this.systemInfo,
-    required this.banks,
-    required this.isLoadingBanks,
-    required this.banksUnreadable,
-  });
-
-  final SystemInfoUIModel? systemInfo;
-  final List<FirmwareImageUIModel> banks;
-  final bool isLoadingBanks;
-
-  /// The read failed, so an empty [banks] is the absence of an answer rather than
-  /// an answer of "none".
-  final bool banksUnreadable;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildRouterHeader(context),
-          Divider(height: AppSpacing.xl * 2, color: scheme.outlineVariant),
-          AppText.labelLarge(loc(context).firmwareBanks),
-          AppGap.md(),
-          if (isLoadingBanks)
-            _buildLoadingBanks(context)
-          // Before the empty check, because an unreadable list is also an empty
-          // one. A dash rather than a sentence: the card below this one already
-          // says the router could not be asked, and any sentence here would either
-          // repeat it or make a claim this read did not support.
-          else if (banksUnreadable)
-            AppText.bodyMedium('—', color: scheme.onSurfaceVariant)
-          else if (banks.isEmpty)
-            AppText.bodyMedium(loc(context).noFirmwareBanksReported)
-          else
-            _buildBanksList(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRouterHeader(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (systemInfo == null) {
-      return const SizedBox.shrink();
-    }
-    final iconName = routerIconTestByModel(
-      modelNumber: systemInfo!.modelName,
-      hardwareVersion: systemInfo!.hardwareVersion,
-    );
-    return Row(
-      children: [
-        Image(
-          image: DeviceImageHelper.getRouterImage(iconName, xl: false),
-          width: 56,
-          height: 56,
-        ),
-        AppGap.md(),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.titleMedium(systemInfo!.modelName),
-              AppGap.xs(),
-              AppText.bodySmall(
-                systemInfo!.serialNumber,
-                color: scheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingBanks(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: 16, height: 16, child: AppLoader()),
-        AppGap.md(),
-        AppText.bodyMedium(loc(context).loading),
-      ],
-    );
-  }
-
-  Widget _buildBanksList(BuildContext context) {
-    return Column(
-      children: [
-        for (var i = 0; i < banks.length; i++) ...[
-          _BankRow(bank: banks[i]),
-          if (i < banks.length - 1) AppGap.sm(),
-        ],
-      ],
-    );
-  }
-}
-
-/// Single bank row with left accent bar indicating active status.
-class _BankRow extends StatelessWidget {
-  const _BankRow({required this.bank});
-
-  final FirmwareImageUIModel bank;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isActive = bank.isActive;
-    final accentColor = isActive ? scheme.primary : scheme.outlineVariant;
-    final bgColor = isActive
-        ? scheme.primaryContainer.withValues(alpha: 0.15)
-        : scheme.surfaceContainerLowest;
-    final version = bank.version.isEmpty ? '(empty)' : bank.version;
-    final slot = bank.instance;
-
-    return Semantics(
-      // Per-row E2E anchor so "slot N became Active" is expressible instead of
-      // the whole banks card flattening to one string (PrivacyGUI-USP-E2E#114).
-      // Matches the dynamic-hook convention (`pf-rule-enable-${...}`,
-      // `admin-timezone-item-${...}`). The version/status/label inside stay
-      // text-asserted: lint:ids exempts assertions once the row is anchorable.
-      identifier: 'firmware-bank-${bank.instance}',
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left accent bar
-              Container(width: 4, color: accentColor),
-              AppGap.md(),
-              // Slot badge
-              _SlotBadge(number: slot, isActive: isActive),
-              AppGap.md(),
-              // Version + status
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppText.bodyMedium(version),
-                      AppGap.xs(),
-                      _StatusLabel(isActive: isActive),
-                    ],
-                  ),
-                ),
-              ),
-              AppGap.md(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SlotBadge extends StatelessWidget {
-  const _SlotBadge({required this.number, required this.isActive});
-
-  final int number;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final bg = isActive ? scheme.primary : scheme.surfaceContainerHighest;
-    final fg = isActive ? scheme.onPrimary : scheme.onSurfaceVariant;
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      alignment: Alignment.center,
-      child: AppText.labelLarge(
-        number.toString(),
-        color: fg,
-      ),
-    );
-  }
-}
-
-class _StatusLabel extends StatelessWidget {
-  const _StatusLabel({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final icon = isActive ? Icons.check_circle : Icons.circle_outlined;
-    final color = isActive ? scheme.primary : scheme.outline;
-    final label = isActive ? loc(context).active : loc(context).standby;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        AppText.labelSmall(label, color: color),
-      ],
-    );
   }
 }

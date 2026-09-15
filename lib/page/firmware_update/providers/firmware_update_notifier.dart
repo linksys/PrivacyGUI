@@ -68,6 +68,18 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// `unknown` do not set it. Reset by whichever watch starts, and by [cancel].
   bool _sawUpdateRunning = false;
 
+  /// Whether a reading of the router *working* has been seen — the check included.
+  ///
+  /// [_sawUpdateRunning]'s weaker sibling, and they are two flags because they
+  /// license two different claims. That one is evidence an update was in flight, so
+  /// a later failure may be attributed to it; this one is evidence `fwupd` ran at
+  /// all, which is what the `idle` verdict needs — see
+  /// [FirmwareOtaInstallProgress.namesRouterWork] and [_applyInstallOutcome]'s
+  /// `idle` arm. Reset at the same three sites as its sibling, for the same reason:
+  /// a sighting inherited from the previous watch is a claim about a run that is
+  /// over.
+  bool _sawRouterWorking = false;
+
   /// Whether an observe watch is already polling.
   ///
   /// One watch at a time, and this is the only entry point that needs saying so.
@@ -127,6 +139,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
   /// Read the router's firmware banks into state.
   ///
+  /// Three fields, and the third is not a bank: the same read carries the virtual
+  /// `ota` row, so an offer the router is already making becomes this page's opening
+  /// verdict without anybody pressing Check. See [_offerAlreadyOnTheRouter] for what
+  /// it will and will not overwrite. Inert on the manual page, which reads no
+  /// verdict.
+  ///
   /// A failure here is [FirmwareUpdateState.stateReadError] and **not** `_fail`.
   /// It used to be `_fail`, which both pages render as "Update failed" with a
   /// `firmware-retry` button wired to `cancel()` — so a router that was merely
@@ -156,6 +174,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _setState(state.copyWith(
         activeBank: banksData.activeBank,
         targetBank: banksData.availableBank,
+        otaCheck: _offerAlreadyOnTheRouter(banksData),
         clearStateReadError: true,
       ));
     } catch (e) {
@@ -163,6 +182,44 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _setState(state.copyWith(stateReadError: e.toString()));
       rethrow;
     }
+  }
+
+  /// The offer the router is **already** making, as the page's opening verdict —
+  /// or null to leave the verdict alone.
+  ///
+  /// The OTA page used to open in `notChecked` however much the router had to say,
+  /// so a user who arrived from the dashboard banner met a page with a Check button
+  /// and no offer, and had to ask a question that had already been answered. The
+  /// banner is built from this same `ota` row.
+  ///
+  /// Not a claim of our own: `Available` on the virtual `ota` row is the router's
+  /// record of its last completed check, by the auto-update daemon or by this app,
+  /// and `Available=false` is reported both for "checked, nothing new" and for
+  /// "never checked" — so the false case seeds nothing and `notChecked` stands. The
+  /// predicate is [FirmwareRouterOtaCheckService]'s own, off the L1 cache instead of
+  /// a fresh poll, so the seeded verdict and a checked one cannot disagree.
+  ///
+  /// **Only `notChecked` is replaced**, and null is how `copyWith` is told to leave
+  /// the rest. A check that ran in this session is a later answer than the row, and
+  /// [loadBanks] is called again by the read-error card's retry — so overwriting
+  /// would resurrect the offer a `noUpdateFound` had just ruled out.
+  ///
+  /// Deliberately **not** gated on `autoupdate_flags`, which is where this parts
+  /// company with `firmwareUpdateOfferedVersionProvider`. That gate is there because
+  /// the dashboard banner is unsolicited — announcing an update to someone who
+  /// turned checking off answers a question they withdrew. This page *is* the
+  /// question, and a user who turned auto-update off and then walked to it is asking.
+  FirmwareOtaCheckResult? _offerAlreadyOnTheRouter(
+      FirmwareBanksData banksData) {
+    if (state.otaCheck.verdict != FirmwareOtaCheckVerdict.notChecked) {
+      return null;
+    }
+    final ota = banksData.otaInstance;
+    if (ota == null || !ota.available) return null;
+    logger.i('[FirmwareUpdate] the router is already offering '
+        '${ota.version.isEmpty ? 'an unnamed image' : ota.version} — showing it '
+        'rather than waiting to be asked to check');
+    return FirmwareOtaCheckResult.updateAvailable(version: ota.version);
   }
 
   /// Ask the router whether a newer firmware exists.
@@ -318,6 +375,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     // the previous one's sighting and be entitled to report a failure it never saw
     // running.
     _sawUpdateRunning = false;
+    _sawRouterWorking = false;
     _setState(FirmwareUpdateState(
       activeBank: state.activeBank,
       targetBank: state.targetBank,
@@ -471,6 +529,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         operation: 'router OTA firmware install');
     _cancelRequested = false;
     _sawUpdateRunning = false;
+    _sawRouterWorking = false;
     _dispatching = true;
     _setState(state.copyWith(
       // Not `installing`: mode 2 checks before it downloads, and the router can
@@ -542,6 +601,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     _observing = true;
     _cancelRequested = false;
     _sawUpdateRunning = false;
+    _sawRouterWorking = false;
     try {
       final result = await _otaInstaller.observe(
         // `isInstalling`, not `isRunning`: nothing was dispatched from here, so a
@@ -587,11 +647,14 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     required bool dispatched,
   }) {
     if (_disposed) return;
-    // What was *seen*, recorded separately from what is *drawn*. The two differ on
-    // `unknown` — see [FirmwareOtaInstallProgress.namesAnUpdatePhase] — and this is
-    // the half [_applyInstallOutcome] is allowed to attribute a failure to.
-    // Recorded before the guard below, because it is a sighting either way.
+    // What was *seen*, recorded separately from what is *drawn*, and in two
+    // strengths because [_applyInstallOutcome] makes two different claims off it: a
+    // failure may only be attributed to a phase that could only be an update, while
+    // "the router checked and found nothing" needs no more than a check. See
+    // [FirmwareOtaInstallProgress.namesAnUpdatePhase] and `namesRouterWork`.
+    // Recorded before the guard below, because both are sightings either way.
     if (progress.namesAnUpdatePhase) _sawUpdateRunning = true;
+    if (progress.namesRouterWork) _sawRouterWorking = true;
     // The two watches run concurrently and write one `otaProgress`, so the loser of
     // that race has to be named. It is the observe one: an install dispatched from
     // here has a percentage and a phase the user is watching, and the observe watch
@@ -614,7 +677,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   ///
   /// **Whether an idle router is an *answer*.** On the install path mode 2 ran its
   /// own check and concluded there was nothing to fetch, which is a verdict worth
-  /// showing. On the observe path nobody asked the router anything, so publishing
+  /// showing — but only if that check was actually seen running, see the arm itself.
+  /// On the observe path nobody asked the router anything, so publishing
   /// `noUpdateFound` would answer a question that was never put.
   ///
   /// **Whether a failure is *this* update's.** `fwup_state` is a persistent
@@ -660,10 +724,30 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
               'install to report itself');
           return;
         }
+        // And `noUpdateFound` only for a check that was **seen**, which is the same
+        // rule the two failure arms below follow. The service returns `idle` on the
+        // install path for two different reasons: `fwup_state` reached 1 and came
+        // back to 0 — mode 2's own check disagreeing with the version we offered,
+        // which is a verdict worth showing — or the 15 s startup grace expired with
+        // the value never moving at all, which says only that nothing happened.
+        //
+        // The second is not hypothetical: on `2.0.1.26091319` the install trigger is
+        // accepted and never consumed (Architecture#194), so every Update Now ends
+        // here. Unsplit, the page answered it with "No new firmware was found" —
+        // fabricated out of a timeout, about a router that was still offering the
+        // very update the user had just pressed Update on, and it overwrote the
+        // offer with its own denial. Leaving the previous verdict alone keeps the
+        // offer on the card, which is both true and re-tappable.
+        final concluded = dispatched && _sawRouterWorking;
+        if (dispatched && !concluded) {
+          logger.w('[FirmwareUpdate] the install was dispatched and the router '
+              'was never seen working — leaving the last verdict alone rather '
+              'than reporting that no update was found');
+        }
         _setState(state.copyWith(
           phase: FirmwareUpdatePhase.idle,
           otaCheck:
-              dispatched ? const FirmwareOtaCheckResult.noUpdateFound() : null,
+              concluded ? const FirmwareOtaCheckResult.noUpdateFound() : null,
           clearOtaProgress: true,
         ));
 

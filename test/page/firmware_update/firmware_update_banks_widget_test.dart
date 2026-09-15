@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
@@ -18,6 +20,10 @@ import '../../mocks/provider_overrides/mock_common.dart';
 /// slot badge. Both ACs here are only reachable at the widget layer — the filter
 /// lives in the provider, but "how many rows did the card draw" and "what does
 /// an empty version look like" are properties of the card.
+///
+/// The card is shared by both firmware pages, so the second group pumps the OTA one
+/// through the same fixture. Same widget, and the filter matters more there: the
+/// version being *offered* is on that page, one card below the slots.
 void main() {
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -37,7 +43,11 @@ void main() {
     );
   });
 
-  Widget wrapBanks(FirmwareBanksData banksData) {
+  Widget wrapBanks(
+    FirmwareBanksData banksData, {
+    Widget page = const FirmwareUpdateView(),
+    FirmwareUpdateState? updateState,
+  }) {
     final themeConfig = ThemeJsonConfig.defaultConfig();
     final router = GoRouter(
       initialLocation: '/',
@@ -45,7 +55,7 @@ void main() {
         LinksysRoute(
           path: '/',
           name: 'test_root',
-          builder: (context, state) => const FirmwareUpdateView(),
+          builder: (context, state) => page,
         ),
       ],
     );
@@ -53,7 +63,7 @@ void main() {
       overrides: [
         ...commonOverrides(),
         ...firmwareUpdateOverrides(
-          updateState: idleNoFileState,
+          updateState: updateState ?? idleNoFileState,
           banksData: banksData,
           systemInfoData: testSystemInfoData,
         ),
@@ -69,13 +79,18 @@ void main() {
   }
 
   Future<void> pumpPage(
-      WidgetTester tester, FirmwareBanksData banksData) async {
+    WidgetTester tester,
+    FirmwareBanksData banksData, {
+    Widget page = const FirmwareUpdateView(),
+    FirmwareUpdateState? updateState,
+  }) async {
     tester.view.physicalSize = const Size(1280, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(wrapBanks(banksData));
+    await tester
+        .pumpWidget(wrapBanks(banksData, page: page, updateState: updateState));
     await tester.pumpAndSettle();
   }
 
@@ -137,6 +152,70 @@ void main() {
 
       expect(find.bySemanticsIdentifier('firmware-bank-3'), findsNothing);
       expect(find.text('No firmware banks reported by router'), findsOneWidget);
+    });
+  });
+
+  /// The same card, on the OTA page (#1551).
+  ///
+  /// Worth pumping twice rather than trusting the extraction, because the card takes
+  /// plain values and the two pages compute them differently: this page passes
+  /// `physicalBanks` and a `banksUnreadable` of its own, so a page wired to `banks`
+  /// instead would draw a third slot here and nowhere else. The last test is the one
+  /// that could only fail here — it is this page that knows the incoming version.
+  group('the same banks card on the ota page', () {
+    testWidgets('draws the router the page is about', (tester) async {
+      await pumpPage(tester, testThreeInstanceBanksData,
+          page: const FirmwareOtaView());
+
+      // Before this card the OTA page named no firmware at all — you pressed
+      // Update Now without being told what was running.
+      expect(find.text(testSystemInfoModel.modelName), findsOneWidget);
+      expect(find.text(testSystemInfoModel.serialNumber), findsOneWidget);
+    });
+
+    testWidgets('draws 2 rows here too, not 3', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpPage(tester, testThreeInstanceBanksData,
+          page: const FirmwareOtaView());
+
+      expect(find.bySemanticsIdentifier('firmware-bank-1'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('firmware-bank-2'), findsOneWidget);
+      expect(
+        find.bySemanticsIdentifier('firmware-bank-3'),
+        findsNothing,
+        reason:
+            'the ota row is the version being offered one card below — drawing '
+            'it as a slot claims the router already holds it',
+      );
+
+      handle.dispose();
+    });
+
+    testWidgets('the offered version never lands on the standby slot',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      // The state that offers the install, so the same version string is on screen
+      // twice over: once as the offer, and never as a slot's contents. A router-side
+      // install does land in this slot, but not until the flash completes.
+      await pumpPage(
+        tester,
+        testThreeInstanceBanksData,
+        page: const FirmwareOtaView(),
+        updateState: otaUpdateAvailableState,
+      );
+
+      final standby = find.bySemanticsIdentifier('firmware-bank-2');
+      expect(
+        find.descendant(
+            of: standby, matching: find.text(testOtaInstance.version)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: standby, matching: find.text('(empty)')),
+        findsOneWidget,
+      );
+
+      handle.dispose();
     });
   });
 }

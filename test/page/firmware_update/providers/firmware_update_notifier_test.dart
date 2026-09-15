@@ -260,6 +260,108 @@ void main() {
       expect(state.targetBank?.instance, 2);
     });
 
+    /// #1551 — the page opens knowing what the router is already offering.
+    ///
+    /// The same `ota` row the dashboard banner is built from arrives in the banks
+    /// read, so a user who taps that banner must not land on a page that asks them
+    /// to check for the update it just told them about. `Available` on that row is
+    /// the router's own record of its last completed check, so showing it is not a
+    /// claim of ours — and `Available=false` is reported both for "checked, nothing
+    /// new" and for "never checked", which is why the false case seeds nothing at
+    /// all rather than "up to date".
+    group('the verdict the banks read already answers', () {
+      test('an available ota row opens the page as an offer', () async {
+        final container = createContainer(
+          banksData: AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(),
+            FirmwareUpdateTestData.availableBank(),
+            FirmwareUpdateTestData.otaInstance(
+                available: true, version: '2.0.1.26091321'),
+          ])),
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .loadBanks();
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.updateAvailable);
+        // The version carries too — the card prints it, and the install offer is
+        // what `verify()` compares the rebooted router against.
+        expect(state.otaCheck.version, '2.0.1.26091321');
+        // A read, not an operation: nothing about the phase moves.
+        expect(state.phase, FirmwareUpdatePhase.idle);
+      });
+
+      test('a router with no ota row claims nothing', () async {
+        // REQ-A1: OEM and rebadged builds never ship the row. The absence is
+        // permanent and says nothing about firmware, so the page stays in
+        // `notChecked` and the card renders the not-supported sentence instead.
+        final container = createContainer(
+          banksData: AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(),
+            FirmwareUpdateTestData.availableBank(),
+          ])),
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .loadBanks();
+
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.notChecked);
+      });
+
+      test('an ota row with nothing on offer is not "up to date"', () async {
+        // The row reads `Available=false` / `NoImage` both after a check that found
+        // nothing and before any check has ever run, so it cannot be turned into
+        // `noUpdateFound` — that is the substitution this whole work package exists
+        // to prevent.
+        final container = createContainer(
+          banksData: AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(),
+            FirmwareUpdateTestData.otaInstance(available: false),
+          ])),
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .loadBanks();
+
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.notChecked);
+      });
+
+      test('a check that has run outranks the row', () async {
+        // `loadBanks` runs again on the read-error card's retry, so the seed has to
+        // be one-way. The check is the later answer — the row it read is the one the
+        // check has since superseded — and re-seeding would put the offer back on a
+        // page whose check had just ruled it out.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer(
+                (_) async => const FirmwareOtaCheckResult.noUpdateFound());
+        final container = createContainer(
+          banksData: AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(),
+            FirmwareUpdateTestData.otaInstance(
+                available: true, version: '2.0.1.26091321'),
+          ])),
+        );
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.checkForUpdate();
+        await notifier.loadBanks(refresh: true);
+
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.noUpdateFound);
+      });
+    });
+
     /// #1551: a read that failed is not an update that failed.
     ///
     /// This used to assert `failed` + `errorMessage` (now `failure`), which is what
@@ -1346,6 +1448,68 @@ void main() {
         expect(state.failure, isNull);
         // No progress card left behind for an install that is not running.
         expect(state.otaProgress, isNull);
+      });
+
+      test('an install the router never acted on claims nothing', () async {
+        // The measured firmware defect (Architecture#194): on `2.0.1.26091319` the
+        // install trigger is accepted and never consumed, so `fwup_state` never
+        // leaves 0 and the service's 15 s startup grace expires on an unchanged
+        // value — the *other* way to reach an `idle` verdict. There is no check to
+        // report the result of, and the page used to answer it with "No new firmware
+        // was found" about a router that was, at that moment, still offering the
+        // update the user had just pressed Update on.
+        stubInstall(
+          verdict: FirmwareOtaInstallVerdict.idle,
+          readings: [at('0')],
+        );
+        final container = createContainer(
+          banksData: AsyncData(FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.activeBank(),
+            FirmwareUpdateTestData.availableBank(),
+            FirmwareUpdateTestData.otaInstance(
+                available: true, version: '2.0.1.26091321'),
+          ])),
+        );
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+        // Through the page's own opening read, so the verdict being protected is
+        // the one a real user would be looking at when they tapped.
+        await notifier.loadBanks();
+
+        await notifier.triggerRouterOtaInstall(otaInstance: 3);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.updateAvailable,
+            reason: 'the offer is still true — the router did not deny it, it '
+                'did not answer at all');
+        expect(state.otaCheck.version, '2.0.1.26091321');
+        // The page has to be usable again: idle phase, no failure card, no stale
+        // progress, so the button the user pressed can be pressed again.
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.failure, isNull);
+        expect(state.otaProgress, isNull);
+      });
+
+      test('an unrecognised state is not a check either', () async {
+        // The asymmetry `namesRouterWork` is drawn for. An unknown `fwup_state` is
+        // drawn as an update in progress (REQ-A7) because it cannot be ruled out
+        // being a flash — and for exactly that reason it is no evidence that a check
+        // ran, so the idle that follows it concludes nothing.
+        stubInstall(
+          verdict: FirmwareOtaInstallVerdict.idle,
+          readings: [at('9'), at('0')],
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked);
+        expect(state.phase, FirmwareUpdatePhase.idle);
       });
 
       test('a failed ending keeps the reading that failed', () async {

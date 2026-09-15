@@ -1152,13 +1152,17 @@ final kUnifiedDiagnosticsPageCase = PageSurfaceCase(
 /// is what keeps a cell's coordinates meaning one thing.
 ///
 /// **`forbids: [AppLoader]` earns its keep here**, which is worth saying because on
-/// five of wave 3's six pages it was inert (§11.11) and because on this page's new
-/// sibling it is inert too. `_buildLoadingBanks` renders one whenever the banks list is
-/// empty and still fetching, and seven of the eleven phases render a linear one. So a
-/// fixture that lost either the banks override or the notifier override would land on a
-/// spinner, and the `forbids` is what turns that into a failure instead of 234 green
-/// cells. That asymmetry with `firmware_ota` is the split showing through: the banks
-/// list stayed here.
+/// five of wave 3's six pages it was inert (§11.11). `_buildLoadingBanks` renders one
+/// whenever the banks list is empty and still fetching, and seven of the eleven phases
+/// render a linear one. So a fixture that lost either the banks override or the notifier
+/// override would land on a spinner, and the `forbids` is what turns that into a failure
+/// instead of 234 green cells.
+///
+/// #1549's split briefly made that an asymmetry with `firmware_ota` — the banks list
+/// stayed here — and #1551 ended it: the status card is now
+/// [FirmwareRouterStatusCard], shared by both pages, so both carry the same tripwire.
+/// What is still asymmetric is the fixture, and deliberately: this case keeps the
+/// default banks because its banks list is what it measures.
 ///
 /// **The fixture pins the notifier, not just the data** — `mock_firmware_update.dart`
 /// says why: `initState` posts a frame callback that calls `loadBanks()`, so without
@@ -1174,12 +1178,19 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 
 /// `firmware_ota_view` — the cloud firmware flow, split off the page above by #1549.
 ///
-/// **The thinnest page in this register**, and that is not a shortcoming: in the state
-/// it is swept in it is one card and a footnote. The check card, then the phase-driven
-/// action card — which is `SizedBox.shrink()` in `idle` and `checkingOta`, because on
-/// this page the entry point *is* the check card — then the shared warning note. The
-/// nine widths are still worth paying, because the one card it does render is the
+/// **Two cards and a footnote in the state it is swept in**, and it used to be one:
+/// the shared router status card (#1551) above, then the check card, then the
+/// phase-driven action card — which is `SizedBox.shrink()` in `idle` and `checkingOta`,
+/// because on this page the entry point *is* the check card — then the warning note.
+/// The nine widths were already worth paying for the check card alone, which is the
 /// widest thing wave 4 measured.
+///
+/// **The status card arrives here already swept, and is re-measured anyway.** It is
+/// [FirmwareRouterStatusCard], the same widget and the same 56px-image-plus-`Expanded`
+/// row [kFirmwareUpdatePageCase] has always measured — but the banks fixture differs
+/// (`gateFirmwareBanksWithOta`, whose two rows carry versions and whose third row must
+/// not become a slot) and so does everything laid out beside it. A shared widget under
+/// a different card list is a different measurement.
 ///
 /// **This case inherits a measured site, not an assumption.** `_OtaCheckCard` was
 /// wave 4's widest: **50 of 234 cells**, all 26 locales at 320px, worst `ru` at
@@ -1198,15 +1209,17 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 /// from `firmware_update`'s, for the same reason #1549's roster row forbids inheriting
 /// a sibling's ms/cell: an inherited number has no error bar.
 ///
-/// **`forbids: [AppLoader]` is inert on this fixture, and stated rather than implied**
-/// — the same honesty §11.11 owes for five of wave 3's pages. There is no reachable
-/// `AppLoader` in `idle`: this page renders no banks list, and the check card expresses
-/// its own busy state through `AppButton.isLoading` — a figure layer over the button,
-/// not a loader widget beside it. What the clause does buy is a fixture tripwire in one
-/// direction: four
-/// of the eleven phases render `FirmwareInstallPhaseCard`'s linear loader, so a fixture
-/// that drifted off the landing state would fail here instead of quietly measuring a
-/// progress card at nine widths.
+/// **`forbids: [AppLoader]` stopped being inert here when the status card arrived.**
+/// It was, and was stated to be — the same honesty §11.11 owes for five of wave 3's
+/// pages — because the check card expresses its busy state through
+/// `AppButton.isLoading`, a figure layer over the button rather than a loader beside
+/// it. The status card brought `_buildLoadingBanks` with it, which renders one whenever
+/// the banks list is empty and still fetching, so this page now has the same tripwire
+/// its sibling has always had: a fixture that lost the banks override or the notifier
+/// override lands on a spinner and fails, instead of measuring 234 green cells of
+/// placeholder. The tripwire that was already here is unchanged — four of the eleven
+/// phases render `FirmwareInstallPhaseCard`'s linear loader, so a fixture that drifted
+/// off the landing state fails rather than sweeping a progress card.
 ///
 /// `gateFirmwareNoUpdateFoundState` pins a returned verdict, which is the widest
 /// reachable form of the row — `mock_firmware_update.dart` says why that verdict is a
