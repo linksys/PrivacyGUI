@@ -227,13 +227,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           // heading rather than a field label (those are bodyMedium below).
           AppText.labelLarge(loc(context).triggeredRange),
           AppGap.md(),
-          // NOTE: `keyboardType` is NOT passed here — `AppRangeInput` (ui_kit
-          // v3.2.0) exposes no `keyboardType` parameter and does not hardcode a
-          // numeric keyboard internally (its inner TextField/AppTextField leave
-          // keyboardType at the default). The pre-#1081 individual AppTextFields
-          // used `keyboardType: TextInputType.number`; that capability can only
-          // return once ui_kit's AppRangeInput adds the parameter. Range
-          // bounds are still enforced by _validate() below.
           AppRangeInput(
             startController: _trigPortStartController,
             endController: _trigPortEndController,
@@ -245,6 +238,9 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             endLabel: loc(context).endPortOptional,
             startIdentifier: 'pf-trigger-trigger-port-start',
             endIdentifier: 'pf-trigger-trigger-port-end',
+            // Raises the numeric keyboard only; it does not restrict input, so
+            // the 1..65535 bounds still come from _validate() below (#1537).
+            keyboardType: TextInputType.number,
             errorText:
                 _localizeError(_errors['trigStart'] ?? _errors['trigEnd']),
             onChanged: (_, __) => _onInputChanged(),
@@ -275,9 +271,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           AppGap.xl(),
           AppText.labelLarge(loc(context).forwardedRange),
           AppGap.md(),
-          // NOTE: `keyboardType` intentionally omitted — see the same note on
-          // the trigger AppRangeInput above (ui_kit v3.2.0 AppRangeInput has no
-          // keyboardType parameter).
           AppRangeInput(
             startController: _fwdPortStartController,
             endController: _fwdPortEndController,
@@ -287,6 +280,8 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             endLabel: loc(context).endPortOptional,
             startIdentifier: 'pf-trigger-forward-port-start',
             endIdentifier: 'pf-trigger-forward-port-end',
+            // Same reason as the trigger range above (#1537).
+            keyboardType: TextInputType.number,
             errorText: _localizeError(_errors['fwdStart'] ?? _errors['fwdEnd']),
             onChanged: (_, __) => _onInputChanged(),
           ),

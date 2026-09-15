@@ -221,13 +221,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           // two ramps for one element worked against the goal.
           AppText.labelLarge(loc(context).startEndPorts),
           AppGap.sm(),
-          // NOTE: `keyboardType` is NOT passed here — `AppRangeInput` (ui_kit
-          // v3.2.0) exposes no `keyboardType` parameter and does not hardcode a
-          // numeric keyboard internally (its inner TextField/AppTextField leave
-          // keyboardType at the default). The pre-#1081 individual AppTextFields
-          // used `keyboardType: TextInputType.number`; that capability can only
-          // return once ui_kit's AppRangeInput adds the parameter. Range bounds
-          // are still enforced by _validate().
           AppRangeInput(
             startController: _extPortStartController,
             endController: _extPortEndController,
@@ -237,6 +230,9 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
             endLabel: loc(context).endPort,
             startIdentifier: 'pf-range-external-port-start',
             endIdentifier: 'pf-range-external-port-end',
+            // Raises the numeric keyboard only; it does not restrict input, so
+            // the 1..65535 bounds still come from _validate() (#1537).
+            keyboardType: TextInputType.number,
             // One error slot for the pair: "end must be greater than start" is a
             // fact about the range, not about either box on its own.
             errorText: _localizeError(_errors['extStart'] ?? _errors['extEnd']),

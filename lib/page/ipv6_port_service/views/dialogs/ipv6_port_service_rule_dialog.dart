@@ -209,6 +209,10 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             endLabel: loc(context).endPort,
             startIdentifier: 'ipv6-rule-start-port',
             endIdentifier: 'ipv6-rule-end-port',
+            // Raises the numeric keyboard only; it does not restrict input, so
+            // the 1..65535 bounds still come from UspIpv6PortServiceService
+            // .validateRule, which owns this dialog's whole rule check (#1537).
+            keyboardType: TextInputType.number,
             errorText: _errors['startPort'] ?? _errors['endPort'],
             onChanged: (_, __) => _onInputChanged(),
           ),
