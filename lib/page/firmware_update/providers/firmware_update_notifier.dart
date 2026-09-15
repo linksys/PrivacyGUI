@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
@@ -208,7 +209,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     _setState(state.copyWith(
       phase: FirmwareUpdatePhase.checkingOta,
       otaCheck: const FirmwareOtaCheckResult.notChecked(),
-      clearErrorMessage: true,
+      clearFailure: true,
     ));
 
     try {
@@ -254,7 +255,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   Future<bool> pickAndValidateFile() async {
     _setState(state.copyWith(
       phase: FirmwareUpdatePhase.picking,
-      clearErrorMessage: true,
+      clearFailure: true,
     ));
     final picked = await _picker.pickFirmwareImage();
     if (picked == null) {
@@ -273,12 +274,24 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         selectedFileName: result.filename,
         selectedFileSize: result.size,
         selectedFileMd5: result.md5,
-        clearErrorMessage: true,
+        clearFailure: true,
       ));
       return true;
     } on FirmwareValidationFailure catch (e) {
       logger.w('[FirmwareUpdate] validation failed', error: e);
-      _fail(e.message);
+      // Mapped by `kind`, not by `message`. `message` is the log line — it is
+      // English, and it is the field that made twenty-five locales read English
+      // when it was copied straight into the state.
+      _fail(switch (e.kind) {
+        FirmwareValidationFailureKind.empty =>
+          const FirmwareFailure.fileEmpty(),
+        FirmwareValidationFailureKind.tooSmall =>
+          FirmwareFailure.fileTooSmall(sizeBytes: picked.bytes.length),
+        FirmwareValidationFailureKind.tooLarge =>
+          FirmwareFailure.fileTooLarge(sizeBytes: picked.bytes.length),
+        FirmwareValidationFailureKind.unsupportedExtension =>
+          const FirmwareFailure.fileTypeUnsupported(),
+      });
       return false;
     }
   }
@@ -338,7 +351,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     final bytes = _pickedBytes;
     final md5 = state.selectedFileMd5;
     if (bytes == null || md5 == null) {
-      _fail('No firmware image selected');
+      _fail(const FirmwareFailure.noImageSelected());
       return;
     }
     _cancelRequested = false;
@@ -347,7 +360,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       phase: FirmwareUpdatePhase.uploading,
       uploadedChunks: 0,
       totalChunks: total,
-      clearErrorMessage: true,
+      clearFailure: true,
     ));
     try {
       await _uploader.uploadFile(
@@ -372,7 +385,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       rethrow;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] upload failed', error: e);
-      _fail(e.toString());
+      _fail(FirmwareFailure.serviceError(e));
       rethrow;
     }
   }
@@ -396,7 +409,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] triggerInstall failed', error: e);
-      _fail(e.toString());
+      _fail(FirmwareFailure.serviceError(e));
       rethrow;
     }
   }
@@ -427,7 +440,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] triggerOtaInstall failed', error: e);
-      _fail(e.toString());
+      _fail(FirmwareFailure.serviceError(e));
       rethrow;
     }
   }
@@ -464,7 +477,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       // take a few seconds to start. `triggering` is the phase whose card says
       // "preparing", and the first busy reading moves it on.
       phase: FirmwareUpdatePhase.triggering,
-      clearErrorMessage: true,
+      clearFailure: true,
       clearOtaProgress: true,
     ));
     try {
@@ -481,7 +494,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       return result;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] router OTA install failed', error: e);
-      _fail(e.toString());
+      _fail(FirmwareFailure.serviceError(e));
       rethrow;
     } finally {
       _dispatching = false;
@@ -659,11 +672,13 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           _discardStaleOutcome(result, 'a failure', 'nothing was attempted');
           return;
         }
-        // The raw state is carried into the message on purpose: `5` is the only
+        // The raw state is carried into the sentence on purpose: `5` is the only
         // failure value this firmware publishes and it says nothing about why, so
-        // the number is the whole diagnostic a support call has to work from.
-        _fail('The router reported the firmware update failed '
-            '(fwup_state=${result.rawState})');
+        // the number is the whole diagnostic a support call has to work from. It
+        // rides as a placeholder, so all 26 locales get a translated sentence
+        // around the same digit.
+        _fail(
+            FirmwareFailure.routerReportedFailure(fwupState: result.rawState));
 
       case FirmwareOtaInstallVerdict.timedOut:
         if (!dispatched && !_sawUpdateRunning) {
@@ -674,9 +689,14 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         // Never `noUpdateFound`. The router stopped reporting; that is not the
         // same as the router having nothing to report, and substituting one for
         // the other is the failure this work package is arranged to prevent.
-        _fail('The router stopped reporting firmware update progress '
-            '(fwup_state=${result.rawState.isEmpty ? 'unread' : //
-                result.rawState})');
+        // Two reasons, because "the last state was 3" and "there was never a
+        // state" are different sentences. The first version of this passed the
+        // literal `unread` into the placeholder, which is an English word in
+        // twenty-five translated sentences — a placeholder can only carry a token
+        // that reads the same in every language, and `5` is one while a word is not.
+        _fail(result.rawState.isEmpty
+            ? const FirmwareFailure.progressStalledNoReading()
+            : FirmwareFailure.progressStalled(fwupState: result.rawState));
 
       case FirmwareOtaInstallVerdict.abandoned:
         // Deliberately nothing. The user cancelled or the page went away, and
@@ -772,7 +792,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           // Empty banks — TR-181 not ready yet, retry
           logger.w('[FirmwareUpdate] verify: empty banks, retrying...');
           if (attempt == maxAttempts) {
-            _fail('Unable to read firmware banks after reboot');
+            _fail(const FirmwareFailure.banksUnreadableAfterReboot());
             return;
           }
           await Future<void>.delayed(const Duration(seconds: 3));
@@ -797,8 +817,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       // Verify: check for inconsistent multi-Active state
       final activeBanks = banks.where((b) => b.isActive).toList();
       if (activeBanks.length > 1) {
-        _fail(
-            'Inconsistent firmware state: ${activeBanks.length} banks reported Active');
+        _fail(FirmwareFailure.multipleActiveBanks(count: activeBanks.length));
         return;
       }
 
@@ -806,15 +825,15 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       final match =
           banks.where((b) => b.instance == expectedActiveInstance).firstOrNull;
       if (match == null) {
-        _fail(
-            'Expected firmware bank instance $expectedActiveInstance not present after reboot');
+        _fail(FirmwareFailure.expectedBankMissing(
+            instance: expectedActiveInstance));
         return;
       }
 
       // Verify bank flip: expected instance should now be Active
       if (!match.isActive) {
-        _fail(
-            'Router restarted but did not boot the new image (instance $expectedActiveInstance status=${match.status})');
+        _fail(FirmwareFailure.bootedOldImage(
+            instance: expectedActiveInstance, status: match.status));
         return;
       }
 
@@ -832,7 +851,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       ));
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] verify failed', error: e);
-      _fail(e.toString());
+      _fail(FirmwareFailure.serviceError(e));
       rethrow;
     }
   }
@@ -853,10 +872,23 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     state = state.copyWith(rebootRemaining: remaining);
   }
 
-  void _fail(String message) {
+  /// Move to [FirmwareUpdatePhase.failed] carrying a reason the view can translate.
+  ///
+  /// Took a `String` until this was localized, and that signature was the defect:
+  /// this class has no `BuildContext`, so every sentence the thirteen callers passed
+  /// was English in all 26 locales. The type is now the guard — there is no
+  /// fourteenth caller that can pass copy.
+  ///
+  /// **And it logs here, once**, which is what the move to a value would otherwise
+  /// have cost. The old English string was at least readable in the console; a
+  /// reason carrying a count or a bank status is not, unless something writes it
+  /// down. Six of the callers log nothing of their own, so without this line the
+  /// only record of "three banks claimed to be active" would be a screenshot.
+  void _fail(FirmwareFailure failure) {
+    logger.w('[FirmwareUpdate] failed: $failure');
     _setState(state.copyWith(
       phase: FirmwareUpdatePhase.failed,
-      errorMessage: message,
+      failure: failure,
     ));
   }
 

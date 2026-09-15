@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
@@ -260,7 +261,10 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
             ],
           ),
           AppGap.md(),
-          AppText.bodyMedium(state.errorMessage ?? loc(context).unknownError),
+          // The one place the failure becomes words. The notifier chose a
+          // [FirmwareFailure]; nothing before this line has a `BuildContext`, which
+          // is why it used to be able to hand over nothing but English.
+          AppText.bodyMedium(localizeFirmwareFailure(context, state.failure)),
           AppGap.xl(),
           AppButton(
             label: loc(context).tryAgain,

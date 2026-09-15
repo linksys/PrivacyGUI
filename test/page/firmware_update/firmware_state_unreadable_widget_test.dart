@@ -27,7 +27,8 @@ import '../../mocks/provider_overrides/mock_common.dart';
 ///
 /// This is W3's handover, and the one requirement in the work package that is about
 /// two states **not** sharing a widget. `loadBanks()` used to write its read failure
-/// into `errorMessage`, and `errorMessage` is what the failure card renders — so a
+/// into the state's `errorMessage` (now `failure`), which is what the failure card
+/// renders — so a
 /// router that was merely slow, busy or behind a dropped bridge got
 /// "Update failed / Try again" painted over it, on a page where nothing had been
 /// attempted. Its Try Again called `cancel()`, which clears state rather than
@@ -305,8 +306,9 @@ void main() {
 
   /// The page W3 took the surface away from.
   ///
-  /// Before this work package `loadBanks()` wrote its read failure into
-  /// `errorMessage`, and **both** pages render that field as "Update failed". Moving
+  /// Before this work package `loadBanks()` wrote its read failure into the state's
+  /// `errorMessage` (now `failure`), and **both** pages render that field as
+  /// "Update failed". Moving
   /// it to `stateReadError` fixed the OTA page and left the manual one with nothing
   /// at all: its only reader of the old field was `FirmwareInstallPhaseCard`'s
   /// failure arm, which `idle` does not reach. So a manual page whose banks could

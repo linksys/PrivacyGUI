@@ -2,7 +2,8 @@
 ///
 /// `FirmwareUpdateState.copyWith` was written with `?? this.x` for every field,
 /// which makes it structurally incapable of setting one back to null: passing
-/// `errorMessage: null` reads as "clear the error" at four call sites and does
+/// `errorMessage: null` (the field is now `failure`) reads as "clear the error" at
+/// four call sites and does
 /// nothing at all. That was invisible while the only way out of a failure was
 /// `cancel()`, which replaces the whole state — W5 adds two fields that have to be
 /// cleared *without* resetting anything else, so the hole is closed here and the
@@ -11,6 +12,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
@@ -22,27 +24,29 @@ const _downloading = FirmwareOtaInstallProgress(
   rawState: '3',
 );
 
+const _refused = FirmwareFailure.routerReportedFailure(fwupState: '5');
+const _stalled = FirmwareFailure.progressStalled(fwupState: 'unread');
+
 void main() {
   group('clearing a field', () {
-    test('an error message can be cleared, and not by passing null', () {
+    test('a failure can be cleared, and not by passing null', () {
       const failed = FirmwareUpdateState(
         phase: FirmwareUpdatePhase.failed,
-        errorMessage: 'the router refused it',
+        failure: _refused,
       );
 
       // The shape every field here has, and the reason the flag exists: a named
       // argument that is absent and one that is explicitly null are the same
       // value in Dart, so `?? this.x` cannot tell "leave it" from "clear it".
-      expect(failed.copyWith(errorMessage: null).errorMessage,
-          'the router refused it');
-      expect(failed.copyWith(clearErrorMessage: true).errorMessage, isNull);
+      expect(failed.copyWith(failure: null).failure, _refused);
+      expect(failed.copyWith(clearFailure: true).failure, isNull);
     });
 
     test('ota progress can be cleared without disturbing the rest', () {
       const installing = FirmwareUpdateState(
         phase: FirmwareUpdatePhase.installing,
         otaProgress: _downloading,
-        errorMessage: 'stale',
+        failure: _stalled,
       );
 
       final cleared = installing.copyWith(
@@ -51,7 +55,7 @@ void main() {
       );
 
       expect(cleared.otaProgress, isNull);
-      expect(cleared.errorMessage, 'stale');
+      expect(cleared.failure, _stalled);
     });
 
     test('a state read error can be cleared', () {
@@ -66,12 +70,10 @@ void main() {
       // Not a case any caller should write, but it has to have one answer rather
       // than depending on argument order. Clear wins: it is the more explicit of
       // the two, since a value can also arrive from an unrelated `??`.
-      const failed = FirmwareUpdateState(errorMessage: 'old');
+      const failed = FirmwareUpdateState(failure: _stalled);
 
       expect(
-        failed
-            .copyWith(errorMessage: 'new', clearErrorMessage: true)
-            .errorMessage,
+        failed.copyWith(failure: _refused, clearFailure: true).failure,
         isNull,
       );
     });
@@ -88,7 +90,7 @@ void main() {
 
       final failed = state.copyWith(
         phase: FirmwareUpdatePhase.failed,
-        errorMessage: 'fwup_state=5',
+        failure: _refused,
       );
 
       expect(failed.otaProgress?.rawState, '3');
@@ -104,7 +106,7 @@ void main() {
       // other starts over.
       //
       // Asserted against the two consumers rather than against the constructor:
-      // "phase is idle and errorMessage is null" restates the defaults and could
+      // "phase is idle and failure is null" restates the defaults and could
       // not fail. What can fail is either consumer starting to key on the wrong
       // field — `handles` would draw the failure card this field exists to avoid,
       // and `isUpdating` would hand `_firmwareExitGuard` a veto on a page where

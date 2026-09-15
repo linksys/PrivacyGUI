@@ -6,8 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final firmwareValidationServiceProvider =
     Provider<FirmwareValidationService>((_) => FirmwareValidationService());
 
+/// Why a picked file was rejected before any of it was pushed to the router.
+///
+/// [tooSmall] and [tooLarge] were one value until the provider layer started
+/// localizing these — `size < minBytes` threw `tooLarge`, so the two opposite
+/// conditions were indistinguishable to any caller reading [kind]. That was
+/// invisible while the only consumer was a `String` the notifier copied verbatim;
+/// once the sentence is chosen by [kind], the two collapse into one wording and a
+/// 4 KB file is reported as being too big.
 enum FirmwareValidationFailureKind {
   empty,
+  tooSmall,
   tooLarge,
   unsupportedExtension,
 }
@@ -67,7 +76,7 @@ class FirmwareValidationService {
     }
     if (size < minBytes) {
       throw FirmwareValidationFailure(
-        FirmwareValidationFailureKind.tooLarge,
+        FirmwareValidationFailureKind.tooSmall,
         'Firmware file is unexpectedly small ($size bytes)',
       );
     }

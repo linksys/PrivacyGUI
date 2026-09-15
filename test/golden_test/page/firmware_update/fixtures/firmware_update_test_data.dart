@@ -1,7 +1,9 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
@@ -232,11 +234,19 @@ FirmwareUpdateState get doneState => const FirmwareUpdateState(
       targetBank: testActiveBank,
     );
 
+/// A failed manual upload.
+///
+/// The failure is a `ServiceError` rather than one of the firmware-specific
+/// reasons because that is the shape a dropped upload actually takes, and it is
+/// the one that renders through `localizeServiceError` — so a locale sweep over
+/// this state exercises both mappers, not just the new one.
 FirmwareUpdateState get failedState => const FirmwareUpdateState(
       phase: FirmwareUpdatePhase.failed,
       activeBank: testActiveBank,
       targetBank: testAvailableBank,
-      errorMessage: 'Upload failed: Connection timeout after 30 seconds',
+      failure: FirmwareFailure.serviceError(
+        TimeoutError(detail: 'upload timed out after 30 seconds'),
+      ),
     );
 
 // -----------------------------------------------------------------------------

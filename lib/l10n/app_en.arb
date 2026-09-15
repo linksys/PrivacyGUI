@@ -784,6 +784,77 @@
     }
   },
   "updateFailed": "Update failed",
+  "firmwareFileEmpty": "The selected file is empty.",
+  "firmwareFileTooSmall": "That file is only {size}, too small to be a firmware image.",
+  "@firmwareFileTooSmall": {
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "4.0 KB"
+      }
+    }
+  },
+  "firmwareFileTooLarge": "That file is {size}, too large to be a firmware image.",
+  "@firmwareFileTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "300 MB"
+      }
+    }
+  },
+  "firmwareFileTypeUnsupported": "Only .img and .bin firmware files can be installed.",
+  "firmwareRouterReportedFailure": "The router reported that the firmware update failed (fwup_state={state}).",
+  "@firmwareRouterReportedFailure": {
+    "placeholders": {
+      "state": {
+        "type": "String",
+        "example": "5"
+      }
+    }
+  },
+  "firmwareProgressStalled": "The router stopped reporting update progress (fwup_state={state}).",
+  "@firmwareProgressStalled": {
+    "placeholders": {
+      "state": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "firmwareProgressStalledNoReading": "The router stopped reporting update progress before it reported any stage.",
+  "firmwareBanksUnreadableAfterReboot": "The router restarted, but its firmware information could not be read.",
+  "firmwareMultipleActiveBanks": "The router reported {count} active firmware images, but only one can be active.",
+  "@firmwareMultipleActiveBanks": {
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "2"
+      }
+    }
+  },
+  "firmwareExpectedBankMissing": "Firmware image {instance} was not reported after the router restarted.",
+  "@firmwareExpectedBankMissing": {
+    "placeholders": {
+      "instance": {
+        "type": "String",
+        "example": "2"
+      }
+    }
+  },
+  "firmwareBootedOldImage": "The router restarted but did not start the new firmware (image {instance} reported \"{status}\").",
+  "@firmwareBootedOldImage": {
+    "placeholders": {
+      "instance": {
+        "type": "String",
+        "example": "2"
+      },
+      "status": {
+        "type": "String",
+        "example": "Standby"
+      }
+    }
+  },
   "firmwareUpdateWarning": "The update will take approximately 5–8 minutes. Do not power off or disconnect the router during the process.",
   "noTargetBankAvailable": "No target bank available",
   "availableVersionLabel": "Available: {version}",

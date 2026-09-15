@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
@@ -332,9 +333,13 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final ok = await notifier.pickAndValidateFile();
     if (!context.mounted) return;
     if (!ok) {
-      final err = ref.read(firmwareUpdateNotifierProvider).errorMessage;
-      if (err != null && err.isNotEmpty) {
-        showFailedSnackBar(context, err);
+      // The second of the two places a firmware failure becomes words — the first
+      // being `FirmwareInstallPhaseCard`. A cancelled picker is not a failure and
+      // leaves the field null, so the null check is what tells the two apart; it is
+      // not a guard against blank copy.
+      final failure = ref.read(firmwareUpdateNotifierProvider).failure;
+      if (failure != null) {
+        showFailedSnackBar(context, localizeFirmwareFailure(context, failure));
       }
     }
   }
@@ -367,7 +372,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       // throws above `_setState`, on purpose, so no upload screen appears for an
       // upload that will not happen. The generic arm below only logs, which for a
       // refusal means the Update button does nothing at all: the failed-phase UI
-      // that renders `errorMessage` is never reached because the phase never
+      // that renders `failure` is never reached because the phase never
       // moved. The admin view's factory-reset arm already surfaces this the same
       // way; this is the firmware half of it.
       if (context.mounted) {

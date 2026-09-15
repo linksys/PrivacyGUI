@@ -16,6 +16,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
@@ -261,7 +262,8 @@ void main() {
 
     /// #1551: a read that failed is not an update that failed.
     ///
-    /// This used to assert `failed` + `errorMessage`, which is what the code did
+    /// This used to assert `failed` + `errorMessage` (now `failure`), which is what
+    /// the code did
     /// and what #1549's handover called out as wrong. Both pages render that pair
     /// as "Update failed" with a `firmware-retry` button whose `onTap` is
     /// `cancel()` — so an unreachable router painted a failed *update* over a page
@@ -282,7 +284,7 @@ void main() {
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.stateReadError, isNotNull);
       expect(state.phase, FirmwareUpdatePhase.idle);
-      expect(state.errorMessage, isNull);
+      expect(state.failure, isNull);
       // Still rethrown: `firmware_ota_view.dart` and `firmware_update_view.dart`
       // both `catchError` this call, and a swallowed failure would make the
       // post-frame callback drop the only signal it has.
@@ -362,7 +364,7 @@ void main() {
           reason: 'the card is keyed on this field, and the failure is no less '
               'unreadable for having an unexpected type');
       expect(state.phase, FirmwareUpdatePhase.idle);
-      expect(state.errorMessage, isNull);
+      expect(state.failure, isNull);
     });
 
     test('pickAndValidateFile cancellation returns to idle without error', () {
@@ -374,7 +376,7 @@ void main() {
         expect(ok, isFalse);
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.errorMessage, isNull);
+        expect(state.failure, isNull);
       });
     });
 
@@ -416,7 +418,10 @@ void main() {
       expect(ok, isFalse);
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
-      expect(state.errorMessage, contains('Unsupported file extension'));
+      // The reason, not a sentence: the sentence now lives in twenty-six ARBs and
+      // asserting the English one here would pass while the other twenty-five
+      // were wrong — which is the defect this field was introduced to fix.
+      expect(state.failure?.reason, FirmwareFailureReason.fileTypeUnsupported);
     });
 
     test('pickAndValidateFile rejects too-small files', () async {
@@ -435,6 +440,14 @@ void main() {
       expect(ok, isFalse);
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
+      // Too small, and the size that says so. The validator threw `tooLarge` for
+      // this case until the sentence started being chosen by `kind` — harmless
+      // while the notifier copied the English `message` verbatim, and a 1 KB file
+      // reported as too big the moment it wasn't.
+      expect(
+        state.failure,
+        FirmwareFailure.fileTooSmall(sizeBytes: tinyBytes.length),
+      );
     });
 
     test('runUpload fails fast when no image was picked', () async {
@@ -446,7 +459,7 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
-      expect(state.errorMessage, 'No firmware image selected');
+      expect(state.failure, const FirmwareFailure.noImageSelected());
       verifyNever(() => mockUploader.uploadFile(
             bytes: any(named: 'bytes'),
             md5: any(named: 'md5'),
@@ -543,7 +556,10 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
-      expect(state.errorMessage, contains('Network error'));
+      // The transport failure travels as a `ServiceError`, so its copy stays with
+      // `localizeServiceError` — this layer only has to carry it, not word it.
+      expect(state.failure?.reason, FirmwareFailureReason.serviceError);
+      expect(state.failure?.error, isA<NetworkError>());
     });
 
     test('triggerInstall succeeds, moves through triggering→installing',
@@ -691,7 +707,13 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
-      expect(state.errorMessage, contains('did not boot the new image'));
+      // Both halves of the diagnostic: which image was expected, and what the
+      // router says that image is instead. `Available` stays untranslated on
+      // purpose — it is a TR-181 token, so it has to match the router's own output.
+      expect(
+        state.failure,
+        FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
+      );
     });
 
     test('verify passes on a three-instance router', () async {
@@ -759,7 +781,7 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.done);
-      expect(state.errorMessage, isNull);
+      expect(state.failure, isNull);
     });
 
     test('cancel resets to initial state', () {
@@ -799,7 +821,7 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.idle);
-      expect(state.errorMessage, isNull);
+      expect(state.failure, isNull);
       expect(state.activeBank?.instance, 1,
           reason: 'the router still has the firmware it had a moment ago');
       expect(state.targetBank?.instance, 2,
@@ -945,7 +967,7 @@ void main() {
             reason: 'the phase never left idle, so no busy state was shown for '
                 'a check that was never dispatched');
         expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.notChecked);
-        expect(state.errorMessage, isNull,
+        expect(state.failure, isNull,
             reason: 'a router built without the fwup stack has not failed');
       });
 
@@ -1086,8 +1108,7 @@ void main() {
         await notifier.checkForUpdate();
 
         expect(calls, 2);
-        expect(container.read(firmwareUpdateNotifierProvider).errorMessage,
-            isNull);
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull);
       });
 
       // The check writes `Available`/`Version` on the router, so the L1 cache the
@@ -1181,7 +1202,10 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.failed);
-        expect(state.errorMessage, contains('Network error'));
+        // The transport failure travels as a `ServiceError`, so its copy stays with
+        // `localizeServiceError` — this layer only has to carry it, not word it.
+        expect(state.failure?.reason, FirmwareFailureReason.serviceError);
+        expect(state.failure?.error, isA<NetworkError>());
       });
     });
 
@@ -1319,7 +1343,7 @@ void main() {
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
         expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
-        expect(state.errorMessage, isNull);
+        expect(state.failure, isNull);
         // No progress card left behind for an install that is not running.
         expect(state.otaProgress, isNull);
       });
@@ -1338,7 +1362,11 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.failed);
-        expect(state.errorMessage, contains('5'));
+        // The raw `fwup_state` reaches the failure, and from there the sentence. It
+        // is the only thing the firmware says about *why*, so it is the one part of
+        // this copy that is deliberately not translated.
+        expect(state.failure,
+            const FirmwareFailure.routerReportedFailure(fwupState: '5'));
         // Retained on purpose: the failure card can say where it stopped, which is
         // the difference between "the update failed" and a bug report.
         expect(state.otaProgress?.rawState, '5');
@@ -1362,6 +1390,33 @@ void main() {
         // stopped reporting is not a router with nothing to report.
         expect(state.otaCheck.verdict,
             isNot(FirmwareOtaCheckVerdict.noUpdateFound));
+        expect(state.failure,
+            const FirmwareFailure.progressStalled(fwupState: '1'));
+      });
+
+      test('a timeout with no reading at all names no reading', () async {
+        // The other stall, and the reason it is a second reason rather than a
+        // sentinel. Passing a stand-in token here — the first version used the
+        // literal `unread` — puts an English word inside the twenty-five
+        // translated sentences, through the very placeholder that exists so the
+        // sentence *around* `fwup_state` can be translated.
+        stubInstall(
+          verdict: FirmwareOtaInstallVerdict.timedOut,
+          readings: const [],
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(state.failure, const FirmwareFailure.progressStalledNoReading());
+        expect(state.failure?.detail, isNull,
+            reason: 'nothing was read, so there is no token to carry — and a '
+                'token invented here would be untranslated in 25 locales');
       });
 
       test('an abandoned watch leaves the state alone', () async {
@@ -1376,8 +1431,7 @@ void main() {
         // The user cancelled, or the page went away. `cancel()` has already
         // replaced the whole state, so writing a verdict over it here would put a
         // failure card back on a page the user just left.
-        expect(container.read(firmwareUpdateNotifierProvider).errorMessage,
-            isNull);
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull);
       });
 
       test('a service error fails the phase and is rethrown', () async {
@@ -1398,7 +1452,10 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.failed);
-        expect(state.errorMessage, contains('Network error'));
+        // The transport failure travels as a `ServiceError`, so its copy stays with
+        // `localizeServiceError` — this layer only has to carry it, not word it.
+        expect(state.failure?.reason, FirmwareFailureReason.serviceError);
+        expect(state.failure?.error, isA<NetworkError>());
       });
 
       test('an unforeseen throw does not leave the page mid-update', () async {
@@ -1487,7 +1544,7 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.failed);
-        expect(state.errorMessage, isNotNull);
+        expect(state.failure, isNotNull);
         expect(state.isUpdating, isFalse,
             reason:
                 'a dispatch that never happened must not hold the exit guard');
@@ -1574,7 +1631,7 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.errorMessage, isNull);
+        expect(state.failure, isNull);
       });
 
       test('stops polling once the notifier is disposed', () async {
@@ -1795,7 +1852,7 @@ void main() {
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.stateReadError, isNotNull);
         expect(state.phase, FirmwareUpdatePhase.idle);
-        expect(state.errorMessage, isNull);
+        expect(state.failure, isNull);
       });
 
       test('a read failure that is not a ServiceError is still a read error',
@@ -1821,7 +1878,7 @@ void main() {
 
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.stateReadError, isNotNull);
-        expect(state.errorMessage, isNull);
+        expect(state.failure, isNull);
       });
 
       /// Opening a page is not starting an update, and the state this page reads is
@@ -1857,7 +1914,7 @@ void main() {
           expect(state.phase, FirmwareUpdatePhase.idle,
               reason: 'nothing was attempted from here, so there is nothing to '
                   'report as failed');
-          expect(state.errorMessage, isNull,
+          expect(state.failure, isNull,
               reason: '"Update failed" over a page the user just opened is the '
                   'sentence that makes someone power-cycle a healthy router');
           expect(state.otaProgress, isNull,
@@ -1883,7 +1940,11 @@ void main() {
 
           final state = container.read(firmwareUpdateNotifierProvider);
           expect(state.phase, FirmwareUpdatePhase.failed);
-          expect(state.errorMessage, contains('5'));
+          // The raw `fwup_state` reaches the failure, and from there the sentence. It
+          // is the only thing the firmware says about *why*, so it is the one part of
+          // this copy that is deliberately not translated.
+          expect(state.failure,
+              const FirmwareFailure.routerReportedFailure(fwupState: '5'));
         });
 
         test('one unrecognised reading is not enough to blame for a failure',
@@ -1912,7 +1973,7 @@ void main() {
               .observeRunningOtaInstall();
 
           final state = container.read(firmwareUpdateNotifierProvider);
-          expect(state.errorMessage, isNull);
+          expect(state.failure, isNull);
           // And the phase goes back, which is the half that is not tidiness: the
           // `unknown` reading promoted it to `installing`, `installing` is
           // `isUpdating`, and `_firmwareExitGuard` vetoes the Navigator pop
@@ -1943,7 +2004,7 @@ void main() {
           final state = container.read(firmwareUpdateNotifierProvider);
           expect(state.phase, FirmwareUpdatePhase.idle);
           expect(state.isUpdating, isFalse);
-          expect(state.errorMessage, isNull);
+          expect(state.failure, isNull);
         });
 
         test('a ceiling reached without ever seeing it run reports nothing',
@@ -1964,7 +2025,7 @@ void main() {
 
           final state = container.read(firmwareUpdateNotifierProvider);
           expect(state.phase, FirmwareUpdatePhase.idle);
-          expect(state.errorMessage, isNull);
+          expect(state.failure, isNull);
         });
       });
 

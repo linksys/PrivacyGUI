@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
@@ -305,16 +306,12 @@ void main() {
         tester,
         otaInstallProgressState(FirmwareAutoUpdateStatus.failed).copyWith(
           phase: FirmwareUpdatePhase.failed,
-          errorMessage: 'The router reported the firmware update failed '
-              '(fwup_state=5)',
+          failure: const FirmwareFailure.routerReportedFailure(fwupState: '5'),
         ),
       );
 
       expect(find.text(loc.updateFailed), findsOneWidget);
-      expect(
-          find.text('The router reported the firmware update failed '
-              '(fwup_state=5)'),
-          findsOneWidget,
+      expect(find.text(loc.firmwareRouterReportedFailure('5')), findsOneWidget,
           reason: '`5` says nothing about why, so the number is the whole '
               'diagnostic a support call has to work from');
       expect(find.byType(AppLoader), findsNothing,

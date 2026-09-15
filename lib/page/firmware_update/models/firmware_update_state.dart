@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
@@ -16,7 +17,14 @@ class FirmwareUpdateState extends Equatable {
   final int totalChunks;
   final String? targetStatus;
   final Duration? rebootRemaining;
-  final String? errorMessage;
+
+  /// Why the update failed, as a value the view localizes.
+  ///
+  /// A `String? errorMessage` until this was localized, and that is the whole
+  /// reason it is a value now: the notifier writes this field and the notifier has
+  /// no `BuildContext`, so any sentence it could put here would be English in all
+  /// 26 locales. See [FirmwareFailure] and `localizeFirmwareFailure`.
+  final FirmwareFailure? failure;
 
   /// The upload method used for the current/last upload (null if not started).
   final UploadMethod? uploadMethod;
@@ -40,7 +48,7 @@ class FirmwareUpdateState extends Equatable {
   /// Retained when the phase becomes [FirmwareUpdatePhase.failed] rather than
   /// cleared, and deliberately **not rendered there**. It is the record of how far
   /// the attempt got, including a `rawState` this build does not recognise; what
-  /// the user is shown is [errorMessage], which already carries that number. A
+  /// the user is shown is [failure], which already carries that number. A
   /// percentage cannot be shown on a failure card in any case — the last reading
   /// before a failure *is* the failing one, and
   /// [FirmwareOtaInstallProgress.percent] is null for every status except
@@ -50,8 +58,8 @@ class FirmwareUpdateState extends Equatable {
 
   /// Why the router's firmware state could not be read.
   ///
-  /// Separate from [errorMessage] because the two are different events with
-  /// different copy and different retries: [errorMessage] is an update that was
+  /// Separate from [failure] because the two are different events with
+  /// different copy and different retries: [failure] is an update that was
   /// attempted and went wrong, this is a page that has nothing to show. Reporting
   /// a failed read as an update failure — which is what `loadBanks()` used to do —
   /// paints "Update Failed / Try Again" over a router nobody has touched, and its
@@ -69,7 +77,7 @@ class FirmwareUpdateState extends Equatable {
     this.totalChunks = 0,
     this.targetStatus,
     this.rebootRemaining,
-    this.errorMessage,
+    this.failure,
     this.uploadMethod,
     this.otaCheck = const FirmwareOtaCheckResult.notChecked(),
     this.otaProgress,
@@ -90,7 +98,7 @@ class FirmwareUpdateState extends Equatable {
   /// Every field here is `?? this.x`, which cannot express "set this back to
   /// null": an absent named argument and an explicit `null` are the same value in
   /// Dart. So the three fields that genuinely need clearing get a flag each rather
-  /// than a sentinel, and passing `errorMessage: null` is a no-op — it used to
+  /// than a sentinel, and passing `failure: null` is a no-op — it used to
   /// read like a clear at four call sites and do nothing.
   ///
   /// A flag beats making these fields nullable-with-sentinel because the compiler
@@ -107,12 +115,12 @@ class FirmwareUpdateState extends Equatable {
     int? totalChunks,
     String? targetStatus,
     Duration? rebootRemaining,
-    String? errorMessage,
+    FirmwareFailure? failure,
     UploadMethod? uploadMethod,
     FirmwareOtaCheckResult? otaCheck,
     FirmwareOtaInstallProgress? otaProgress,
     String? stateReadError,
-    bool clearErrorMessage = false,
+    bool clearFailure = false,
     bool clearOtaProgress = false,
     bool clearStateReadError = false,
   }) {
@@ -129,8 +137,7 @@ class FirmwareUpdateState extends Equatable {
       rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       // The clear wins when both are given: it is the more explicit of the two,
       // where a value can also arrive from an unrelated `??` further up.
-      errorMessage:
-          clearErrorMessage ? null : errorMessage ?? this.errorMessage,
+      failure: clearFailure ? null : failure ?? this.failure,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       otaCheck: otaCheck ?? this.otaCheck,
       otaProgress: clearOtaProgress ? null : otaProgress ?? this.otaProgress,
@@ -151,7 +158,7 @@ class FirmwareUpdateState extends Equatable {
         totalChunks,
         targetStatus,
         rebootRemaining,
-        errorMessage,
+        failure,
         uploadMethod,
         otaCheck,
         otaProgress,

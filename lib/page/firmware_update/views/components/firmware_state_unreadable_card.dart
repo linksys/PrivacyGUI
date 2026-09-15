@@ -5,8 +5,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// The router could not be asked, and **that is not an update that failed**.
 ///
 /// The one requirement in #1551 that is about two states not sharing a widget.
-/// `loadBanks()` used to record its read failure in
-/// `FirmwareUpdateState.errorMessage`, which is what `FirmwareInstallPhaseCard`'s
+/// `loadBanks()` used to record its read failure in the state's `errorMessage`
+/// (now `failure`), which is what `FirmwareInstallPhaseCard`'s
 /// failure arm renders — so a router that was merely slow, busy, or behind a
 /// dropped bridge got "Update failed / Try again" painted over it on a page where
 /// nothing had been attempted. That is worse than unhelpful: a user told an update
