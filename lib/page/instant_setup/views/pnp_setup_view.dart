@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
@@ -175,6 +177,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
+      // Unreachable, and not this work's to remove: `_buildAppBarConfig()` returns
+      // null for `UiKitAppBarStyle.none` (line above) before it reaches the only
+      // line that consumes `onBackTap`, so nothing in this closure runs. REQ-B2's
+      // lock is therefore the route's `onExit` in `route_pnp.dart` plus a firmware
+      // phase that renders no button — a phase check added here would have looked
+      // like a second guard and been dead code.
       onBackTap: () {
         if (phase is WizardConfiguring && _currentStep > 0) {
           setState(() => _currentStep = 0);
@@ -200,6 +208,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             ) =>
               _buildTestingReconnect(context, count, max),
             WizardCheckingFirmware() => _buildSavingOverlay(context),
+            WizardUpdatingFirmware() => _buildFirmwareUpdate(context, phase),
             WizardWifiReady() => _buildComplete(context, phase),
             WizardError(message: final msg) => _buildError(context, msg),
             _ => const Center(child: AppLoader()),
@@ -683,15 +692,81 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     );
   }
 
+  // ── Firmware Update ───────────────────────────────────────
+
+  /// The first-connection firmware update: the version, the progress, and no way
+  /// out (REQ-B2).
+  ///
+  /// **W5's card, not a copy of it.** `FirmwareInstallPhaseCard` already renders the
+  /// six install phases — including the two-pass `fwup_state` progress that mode 2
+  /// produces — off `firmwareUpdateNotifierProvider`, which is the same notifier the
+  /// PnP stage drives. Anything drawn here instead would be a second phase machine
+  /// reading the same fields, and #1497 already recorded what that costs.
+  ///
+  /// **No Skip, and nothing else to press.** The card's only control is the retry on
+  /// its failure card, and a failure does not reach this screen: the notifier catches
+  /// it and finishes setup. So this phase has zero affordances by construction rather
+  /// than by hiding buttons — first connection's only two ways past a firmware update
+  /// are "there is none" and "there is no internet", and both are decided before the
+  /// phase is published. That is half of REQ-B2's lock and the load-bearing half:
+  /// this page has no app bar, so the other half is the route's `onExit` guard rather
+  /// than anything in this file.
+  Widget _buildFirmwareUpdate(
+      BuildContext context, WizardUpdatingFirmware phase) {
+    final firmwareState = ref.watch(firmwareUpdateNotifierProvider);
+
+    return Semantics(
+      // One anchor per page, the same shape the two firmware pages emit and for the
+      // same reason (the E2E phase-sequence walk keys on the phase name rather than
+      // on translated copy). Prefixed, because this is a different page: the walk
+      // must be able to tell an update during setup from one on the admin page.
+      identifier: 'pnp-firmware-phase-${firmwareState.phase.name}',
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppText.headlineSmall(
+                loc(context).updatingFirmware,
+                textAlign: TextAlign.center,
+              ),
+              // Omitted rather than blank when the router published `Available=true`
+              // with no `Version`, which it does on some builds.
+              if (phase.version.isNotEmpty) ...[
+                AppGap.sm(),
+                AppText.bodyMedium(
+                  loc(context).availableVersionLabel(phase.version),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              AppGap.xl(),
+              FirmwareInstallPhaseCard(state: firmwareState),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Complete ──────────────────────────────────────────────
 
   Widget _buildComplete(BuildContext context, WizardWifiReady phase) {
-    final isSplitMode = phase.isSplitMode;
-
-    if (isSplitMode && phase.wifiConfig != null) {
-      return _buildCompleteSplitMode(context, phase.wifiConfig!);
+    if (phase.isSplitMode) {
+      return _buildCompleteSplitMode(context, phase);
     }
     return _buildCompleteUnifiedMode(context, phase.ssid, phase.password);
+  }
+
+  /// Leaves the wizard for the dashboard, and forgets the credentials on the way.
+  ///
+  /// They are persisted so that a firmware reboot cannot lose this screen (REQ-B4);
+  /// once the screen has been dismissed there is nothing left to restore, and a
+  /// passphrase in the keystore with no reader is just a passphrase in the keystore.
+  void _onDone(BuildContext context) {
+    ref.read(pnpProvider.notifier).completeSetup();
+    context.go(RoutePath.uspDashboard);
   }
 
   Widget _buildCompleteUnifiedMode(
@@ -764,7 +839,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                     AppGap.lg(),
                     AppButton(
                       label: loc(context).done,
-                      onTap: () => context.go(RoutePath.uspDashboard),
+                      onTap: () => _onDone(context),
                     ),
                   ],
                 ),
@@ -776,15 +851,21 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     );
   }
 
-  Widget _buildCompleteSplitMode(BuildContext context, PnpWifiConfig config) {
-    // Guard: fall back to unified mode if mainBands is unexpectedly empty
-    if (config.mainBands.isEmpty) {
-      logger.w(
-          '[PnP] mainBands unexpectedly empty — falling back to unified mode');
-      return _buildCompleteUnifiedMode(context, config.ssid, config.password);
+  Widget _buildCompleteSplitMode(BuildContext context, WizardWifiReady phase) {
+    final bands = phase.bands;
+    // Unreachable: `WizardWifiReady.isSplitMode` is `bands.length > 1`, so an empty
+    // list never gets here. Kept because the old signature took the whole config and
+    // this guard was load-bearing then — and because falling back is what the caller
+    // would want if the invariant ever moved. It takes the **phase** rather than the
+    // band list so that the fallback has the real credentials to fall back to: a
+    // placeholder chosen to satisfy a signature would be drawn on the one screen
+    // where these two strings exist nowhere else.
+    if (bands.isEmpty) {
+      logger.w('[PnP] split mode with no bands — falling back to unified mode');
+      return _buildCompleteUnifiedMode(context, phase.ssid, phase.password);
     }
     // Use first band for title display
-    final firstBand = config.mainBands.first;
+    final firstBand = bands.first;
 
     return Center(
       child: ConstrainedBox(
@@ -802,7 +883,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 AppGap.xl(),
 
                 // Per-band credentials
-                ...config.mainBands.map((band) => Padding(
+                ...bands.map((band) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: LayoutBlock(
                         child: Column(
@@ -831,7 +912,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 // Actions
                 AppButton(
                   label: loc(context).done,
-                  onTap: () => context.go(RoutePath.uspDashboard),
+                  onTap: () => _onDone(context),
                 ),
               ],
             ),

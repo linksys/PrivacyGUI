@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'pnp_wifi_config.dart';
+import 'pnp_wifi_ready_band.dart';
 
 /// Whether this is a factory-default first-time setup or a reconfigure.
 enum PnpFlowMode { unconfigured, configured }
@@ -207,25 +208,103 @@ class WizardCheckingFirmware extends PnpPhase {
   List<Object?> get props => [];
 }
 
+/// The router is fetching and installing a newer firmware, mid-setup.
+///
+/// REQ-B2: a first-connection update is **locked** — there is no Skip and no way
+/// back to the form or forward to the dashboard while it runs. The design reason
+/// is that first connection has exactly two ways past this phase, and both are
+/// facts about the router rather than choices: there is no update, or there is no
+/// internet to fetch one over.
+///
+/// [version] is what the check named, and it may be empty: the router publishes
+/// `Available=true` with no `Version` on some builds. The screen omits the line
+/// rather than showing a blank one.
+///
+/// The progress itself is **not** here. It lives in `FirmwareUpdateState`, which
+/// the view reads directly so that PnP renders W5's `FirmwareInstallPhaseCard`
+/// rather than a second copy of its phase machine (REQ-B2). Mirroring the phase
+/// into this object would give one install two sources of truth.
+class WizardUpdatingFirmware extends PnpPhase {
+  final String version;
+
+  const WizardUpdatingFirmware({this.version = ''});
+
+  @override
+  List<Object?> get props => [version];
+}
+
 /// Setup complete — show new WiFi credentials and proceed to dashboard.
 ///
-/// For unified mode: [ssid] and [password] are set.
-/// For split mode: [wifiConfig] contains per-band credentials.
+/// For unified mode: [ssid] and [password] are what is shown, and [bands] is
+/// empty. For split mode: [bands] holds one entry per band.
+///
+/// **It carries credentials rather than the configuration they came from, and
+/// that is REQ-B4.** A firmware update sits between [WizardSaved] and this phase
+/// and reboots the router once, so these three-or-more strings are the one part of
+/// the wizard that has to be restorable afterwards — see [PnpWifiReadyBand] for
+/// why a persisted [PnpWifiConfig] would be a worse answer, and
+/// `PnpWifiReadyStore` for where the durable copy goes.
 class WizardWifiReady extends PnpPhase {
   final String ssid;
   final String password;
-  final PnpWifiConfig? wifiConfig;
+  final List<PnpWifiReadyBand> bands;
 
   const WizardWifiReady({
     required this.ssid,
     required this.password,
-    this.wifiConfig,
+    this.bands = const [],
   });
 
-  bool get isSplitMode => wifiConfig?.isSplitMode ?? false;
+  /// The phase for a wizard that has just written [wifiConfig].
+  ///
+  /// The split-mode decision is made **here, once**, off the real configuration:
+  /// [PnpWifiConfig.isSplitMode] compares the bands' `originalSsid` values, which
+  /// only the configuration knows. Leaving it to the view would mean re-deciding
+  /// it from a restored snapshot that no longer has those values.
+  factory WizardWifiReady.fromWifiConfig({
+    required String ssid,
+    required String password,
+    PnpWifiConfig? wifiConfig,
+  }) {
+    final split = wifiConfig?.isSplitMode ?? false;
+    return WizardWifiReady(
+      ssid: ssid,
+      password: password,
+      bands: split
+          ? wifiConfig!.mainBands
+              .map((b) => PnpWifiReadyBand(
+                    bandName: b.bandName,
+                    ssid: b.ssid,
+                    password: b.password,
+                  ))
+              .toList()
+          : const [],
+    );
+  }
+
+  /// Two or more bands to show. Not a stored flag: one band is a unified network
+  /// whichever way it was reached, and [ssid]/[password] already describe it.
+  bool get isSplitMode => bands.length > 1;
+
+  /// Persisted, and only for the reason Article XI allows it: the firmware stage
+  /// reboots the router between this phase being decided and being shown.
+  Map<String, dynamic> toJson() => {
+        'ssid': ssid,
+        'password': password,
+        'bands': bands.map((b) => b.toJson()).toList(),
+      };
+
+  factory WizardWifiReady.fromJson(Map<String, dynamic> json) =>
+      WizardWifiReady(
+        ssid: json['ssid'] as String,
+        password: json['password'] as String,
+        bands: ((json['bands'] as List?) ?? const [])
+            .map((b) => PnpWifiReadyBand.fromJson(b as Map<String, dynamic>))
+            .toList(),
+      );
 
   @override
-  List<Object?> get props => [ssid, password, wifiConfig];
+  List<Object?> get props => [ssid, password, bands];
 }
 
 /// Recoverable error during wizard phase.
