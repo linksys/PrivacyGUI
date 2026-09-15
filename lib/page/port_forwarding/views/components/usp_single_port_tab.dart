@@ -75,6 +75,15 @@ class UspSinglePortTab extends ConsumerWidget {
               identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
+              // Nulling `onChanged` alone dimmed the track, which is also how the
+              // kit draws a switch you may simply never use — so a write in
+              // flight and an unavailable control were the same picture, and
+              // silence to a screen reader. `isLoading` draws the busy figure
+              // over the track without moving it, and the label is the app's
+              // localised string rather than the kit's English-only `Busy`
+              // fallback (#1542). Same idiom as `ToggleRow`.
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
               onChanged: isSaving
                   ? null
                   : (value) => ref
