@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,9 +13,11 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_wifi_ready_store.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
@@ -52,6 +56,20 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   bool _initialized = false;
   int _currentStep = 0;
+
+  /// The credentials store, captured rather than read in [dispose].
+  ///
+  /// Nothing in `lib/` uses `ref` inside a `dispose()`, and this is not the place to
+  /// start: the element is unmounting by then. The store is a plain object off a
+  /// `Provider` that is not `autoDispose`, so the reference taken once here is the
+  /// same instance for this widget's whole life.
+  late final PnpWifiReadyStore _wifiReadyStore;
+
+  @override
+  void initState() {
+    super.initState();
+    _wifiReadyStore = ref.read(pnpWifiReadyStoreProvider);
+  }
 
   /// Password validation rules for display
   List<AppPasswordRule> _buildPasswordRules(TextEditingController controller) =>
@@ -135,6 +153,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     for (final c in _guestBandPasswordControllers.values) {
       c.dispose();
     }
+    // REQ-B4's other half. The credentials are persisted to survive one reboot, and
+    // the wizard unmounting is the end of every exit that has no handler: a pop off
+    // the completion screen, a redirect, a save that ended in `WizardError`. `_onDone`
+    // clears too, and a delete of a key that is not there costs nothing — what this
+    // adds is the exits nobody presses a button for. A page *reload* does not run
+    // `dispose`, which is the one case the stored copy exists for, so this does not
+    // close the door on a restore.
+    unawaited(_wifiReadyStore.clear());
     super.dispose();
   }
 
@@ -743,6 +769,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               ],
               AppGap.xl(),
               FirmwareInstallPhaseCard(state: firmwareState),
+              AppGap.lg(),
+              // The bound this phase otherwise does not have: it can sit on
+              // `rebooting` for up to `pnpFirmwareRebootDeadlineProvider` (six
+              // minutes) with no Skip and no way back, and a spinner with no stated
+              // duration is what makes a user power-cycle a router mid-flash. The
+              // existing note is reused rather than a new string written — it
+              // already says both halves ("approximately 5–8 minutes", "do not power
+              // off"), in 26 locales, and it is shared for exactly this reason.
+              const FirmwareUpdateWarningNote(),
             ],
           ),
         ),
@@ -764,8 +799,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   /// They are persisted so that a firmware reboot cannot lose this screen (REQ-B4);
   /// once the screen has been dismissed there is nothing left to restore, and a
   /// passphrase in the keystore with no reader is just a passphrase in the keystore.
-  void _onDone(BuildContext context) {
-    ref.read(pnpProvider.notifier).completeSetup();
+  ///
+  /// Awaited, so that the delete has happened by the time the screen it belonged to
+  /// is gone rather than at some point after. The failure is still swallowed —
+  /// `PnpWifiReadyStore` swallows all three verbs by design — so what the `await`
+  /// buys is ordering and a test that can observe it without pumping timers.
+  Future<void> _onDone(BuildContext context) async {
+    await ref.read(pnpProvider.notifier).completeSetup();
+    if (!context.mounted) return;
     context.go(RoutePath.uspDashboard);
   }
 

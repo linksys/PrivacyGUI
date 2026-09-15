@@ -29,9 +29,23 @@ int _uspTabQueryParam(GoRouterState state) =>
 /// and vetoes the Navigator pop on `false`), which is the back arrow and the
 /// browser's Back button. A `pushNamed` over the top does not — the pushed-over
 /// match stays in the list, so the guard is deferred rather than skipped.
+///
+/// **A session that is over is not a navigation to argue with.** `go` consults
+/// `onExit` for every match that is leaving, and the sign-out path is a `go`: the
+/// router's `redirect` sends a signed-out user to the login page and the leaving
+/// match is this one. Vetoing that leaves the app on a firmware page it has no
+/// session to talk to, until the install phase happens to end. So
+/// [AppConnectionState.loggedOut] releases the guard — it covers every sign-out,
+/// the core-reported ones and auth's own (an idle timeout, a 401, the account
+/// menu), which is the same reason `session_exit_sink.dart` keys on the cause
+/// rather than on this state.
 Future<bool> _firmwareExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
+  if (container.read(appConnectionStateProvider) ==
+      AppConnectionState.loggedOut) {
+    return true;
+  }
   return !container.read(firmwareUpdateNotifierProvider).isUpdating;
 }
 

@@ -26,6 +26,16 @@ final _pnpRouteConfig = LinksysRouteConfig(
 /// the phase renders a spinner with nothing to press, so what is being refused is
 /// a Back press during a wait the user cannot shorten either way.
 ///
+/// **No `loggedOut` escape, unlike `_firmwareExitGuard`.** That guard releases on
+/// a sign-out because the router's `redirect` `go`es a signed-out user to the login
+/// page and the leaving match is a `/usp*` one. Nothing does that here, measured
+/// twice: `redirect` returns `state.uri.toString()` for every `/pnp*` location — the
+/// wizard is not auth-gated — and the only wiring of `listenForCoreSessionExit` is
+/// in `usp_dashboard_shell.dart`, so while the wizard is on screen a
+/// core-reported session exit is not even carried out. The same condition written
+/// here would be a check that never fires, which is the mistake this file's
+/// `onBackTap` note already records once.
+///
 /// Keyed on the **PnP phase**, not on `firmwareUpdateNotifierProvider.isUpdating`
 /// like `_firmwareExitGuard` is. The two answer different questions: the firmware
 /// pages ask "is an install running", whereas this asks "is this wizard the thing

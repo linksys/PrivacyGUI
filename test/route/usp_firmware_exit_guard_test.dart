@@ -34,12 +34,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
 import '../mocks/provider_overrides/mock_firmware_update.dart';
+
+/// The connection state, pinned, without the real notifier's `build`.
+///
+/// [AppConnectionStateNotifier.build] wires an SSE manager and two listeners. It
+/// happens to survive being mounted in a widget test — the cases that do not pass
+/// a state below rely on that, and get `authenticated` from the real thing — but
+/// nothing here wants to depend on it staying true for the two cases that are
+/// *about* a particular state.
+class _PinnedConnectionNotifier extends Notifier<AppConnectionState>
+    implements AppConnectionStateNotifier {
+  _PinnedConnectionNotifier(this._value);
+
+  final AppConnectionState _value;
+
+  @override
+  AppConnectionState build() => _value;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// The real `GoRoute` declared for [name], found by walking the real tree.
 GoRoute _realRoute(String name) {
@@ -77,10 +99,15 @@ void main() {
   /// really entered (`firmware-card-update` and `firmware-ota-card-check` both
   /// `pushNamed`), and a pop is the only exit a user can reach from the back
   /// arrow or the browser's Back button.
+  ///
+  /// [connection] pins `appConnectionStateProvider`. Left unset, the real
+  /// notifier runs and reports `authenticated`, which is what every phase case
+  /// wants — so those cases stay a measurement of the phase alone.
   Future<GoRouter> pushOnto(
     WidgetTester tester,
     String routeName, {
     required FirmwareUpdateState state,
+    AppConnectionState? connection,
   }) async {
     final router = GoRouter(
       initialLocation: '/',
@@ -98,7 +125,12 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: firmwareUpdateOverrides(state: state),
+        overrides: [
+          ...firmwareUpdateOverrides(state: state),
+          if (connection != null)
+            appConnectionStateProvider
+                .overrideWith(() => _PinnedConnectionNotifier(connection)),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -213,6 +245,52 @@ void main() {
             expect(await popLeavesPage(tester, router, routeName), !blocks);
           });
         }
+      }
+    });
+
+    // A sign-out is not a navigation to argue with: the router `go`es a
+    // signed-out user to the login page, `go` consults `onExit` for every
+    // leaving match, and a veto strands the app on a firmware page it has no
+    // session to talk to until the install phase happens to end. The 22 cases
+    // above are the control group for these two — they pass no `connection`, so
+    // the real notifier answers `authenticated` and the phase alone decides.
+    group('a session that has ended', () {
+      for (final routeName in guardedRoutes) {
+        testWidgets('$routeName lets go mid-install once signed out',
+            (tester) async {
+          final router = await pushOnto(
+            tester,
+            routeName,
+            state: const FirmwareUpdateState(
+              phase: FirmwareUpdatePhase.installing,
+            ),
+            connection: AppConnectionState.loggedOut,
+          );
+
+          expect(await popLeavesPage(tester, router, routeName), isTrue,
+              reason: 'the install is still running, but there is no session '
+                  'left to keep the user on this page for');
+        });
+
+        // The discriminator against writing `!= authenticated`. Recovery is the
+        // state the app reaches *because* the router went away mid-flash, so
+        // releasing on it would unlock the guard in exactly the situation it
+        // exists for.
+        testWidgets('$routeName still blocks while waiting for recovery',
+            (tester) async {
+          final router = await pushOnto(
+            tester,
+            routeName,
+            state: const FirmwareUpdateState(
+              phase: FirmwareUpdatePhase.installing,
+            ),
+            connection: AppConnectionState.waitingForRecovery,
+          );
+
+          expect(await popLeavesPage(tester, router, routeName), isFalse,
+              reason: 'only a sign-out releases the guard, not any non-'
+                  'authenticated state');
+        });
       }
     });
   });

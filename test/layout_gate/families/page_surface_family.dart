@@ -370,10 +370,16 @@ class PageSurfaceFamily extends OverflowSurfaceFamily {
 /// The surface is **not** set here — [runOverflowSweep] owns that through
 /// `setLayoutSurface` (invariant 2), which is also why this returns a widget
 /// rather than pumping one.
+/// [extraRoutes] are declared alongside the page, for a caller that **taps** a
+/// button which navigates. `go_router` renders its own error screen for a location
+/// no route matches, so without a destination such a tap looks like it worked. Every
+/// swept cell passes none: the sweep pumps and measures, it does not press anything,
+/// and a route list that differed per cell would be a second axis.
 Widget pageSurfaceHost({
   required Widget view,
   required Locale locale,
   List<Override> overrides = const [],
+  List<RouteBase> extraRoutes = const [],
 }) {
   // Same call as `lib/app.dart`, not a copy of its body — see #1285.
   final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
@@ -400,6 +406,7 @@ Widget pageSurfaceHost({
             name: 'test_root',
             builder: (context, state) => view,
           ),
+          ...extraRoutes,
         ],
       ),
     ),
