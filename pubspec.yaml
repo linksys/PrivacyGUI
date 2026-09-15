@@ -41,6 +41,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Pinned to 9.6.0 deliberately. objective_c 9.6.1 (published 2026-09-15
+  # 00:38Z) references `Architecture.arm64e`, but its own constraint is
+  # `code_assets: ^2.0.0` and code_assets 2.0.0 declares no such member
+  # (arm / arm64 / ia32 / riscv32 / riscv64 / x64 only). Its native-assets
+  # build hook therefore fails to compile — "Member not found: 'arm64e'" —
+  # and that takes `flutter build web` down with it, so CI dies before a
+  # single test runs. Transitive via path_provider_foundation; nothing here
+  # imports it directly. pubspec.lock is not committed, so every CI run
+  # re-resolves and picks the bad version up immediately.
+  # Verified locally on 3.47.2: with this pin `pub get` resolves 9.6.0 with no
+  # solving conflict and `flutter build web --release` succeeds.
+  # Drop the pin once a fixed objective_c ships (9.6.1 is not retracted).
+  objective_c: 9.6.0
   flutter_localizations:
     sdk: flutter
   flutter_web_plugins:
