@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -18,39 +19,29 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// goes here because the *other* card disappears in remote assistance. Were the
 /// manual card the owner, a support agent would open Administration and be told
 /// no firmware version at all, which is the one audience most likely to need it.
-/// The check this card starts also compares against that version, so the value
-/// and the button that acts on it stay in one place.
+///
+/// **The block navigates; it does not check.** This card used to carry a
+/// `checkForUpdates` button that only pushed the OTA page — a label that promised
+/// a check and delivered a route change (Austin, 2026-09-15). The version block
+/// itself is now the affordance, with the chevron every other navigation row in
+/// this app uses, and the fact the button promised is displayed here instead: the
+/// offered version comes off the same `ota` row the OTA page seeds its own verdict
+/// from, so the card and the page cannot disagree about whether there is an update.
+///
+/// **No localized button belongs back in this row.** Whatever replaces it has to
+/// fit beside a 20px icon and a version block whose label is a localized noun
+/// phrase (widest `da`, 112.2px) over a fixed-width version string (80.5px), in
+/// the **238px** a 320px screen grants this row. `checkForUpdates` at `medium`
+/// asked 242.5px of that on its own (`fr`), which handed `Expanded` a *negative*
+/// remainder: clamped to zero, the label wrapped one character per line and `el`
+/// rendered this row **484px tall** inside a 571px card. The overflow sweep saw
+/// only the other half of that (9 of 234 cells, the button hanging past the right
+/// edge) because a `RenderParagraph` given 0px does not overflow, it wraps — so a
+/// `Flexible` on the button would have traded 9 reported cells for 26 unreported
+/// ones. The chevron costs a fixed 20px plus a gap, in every locale, which is why
+/// it needs no threshold where the button needed one.
 class FirmwareOtaCard extends ConsumerWidget {
   const FirmwareOtaCard({super.key});
-
-  /// Row width below which the CTA moves to its own line under the version.
-  ///
-  /// Measured, not inherited from the sibling card and not taken from a
-  /// breakpoint. The row holds three things that cannot give: a 20px icon, a
-  /// version block whose label is a localized noun phrase (widest `da`, 112.2px)
-  /// over a fixed-width version string (80.5px), and a button whose width is the
-  /// localized `checkForUpdates` (widest `fr`, 242.5px at `medium`). That is
-  /// **371.8px** in the worst locale, against the **238px** a 320px screen grants
-  /// this row — so `Expanded` was being handed a *negative* remainder, clamped to
-  /// zero, and the version label wrapped one character per line: `el` rendered
-  /// this row **484px tall** inside a 571px card, and `fr` 500px inside 586px.
-  ///
-  /// **That is the half of the bug the overflow sweep could not see**, and the
-  /// reason this constant exists rather than a `Flexible` on the button. The sweep
-  /// reported 9 of 234 cells (all at 320px, `fr`/`fr_CA` worst at +37px) — the
-  /// button hanging past the row's right edge. The crushed text beside it reported
-  /// nothing at all, because a `RenderParagraph` given 0px does not overflow; it
-  /// wraps. Anything that made the button shrink instead would have traded the 9
-  /// reported cells for 26 unreported ones, which is exactly the trap
-  /// `_OtaCheckCard` documents about `Wrap` on the page this card links to.
-  ///
-  /// 400 rather than 372: the tightest *inline* coordinate this card is laid out
-  /// at is 404.5px (a `colWidth(6)` column at a 1441px screen), so the threshold
-  /// has to clear 371.8 without reaching 404.5. It is deliberately not 600 like
-  /// the page's card — that card is full page width, this one is half of it above
-  /// the desktop breakpoint, and copying the number would stack this row at every
-  /// width there is.
-  static const _stackBelow = 400.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,6 +52,27 @@ class FirmwareOtaCard extends ConsumerWidget {
     final activeBank = banks.where((b) => b.isActive).firstOrNull;
     final activeVersion =
         activeBank?.version ?? (banks.isEmpty ? null : banks.first.version);
+
+    // The version being *offered*, which is only reachable from the banks
+    // provider: `systemInfoDataProvider` is handed `physicalBanks`, so the
+    // virtual ota row never reaches `firmwareImages` — and the model it converts
+    // to carries no ota marker to find it by anyway.
+    //
+    // `hasError` before `valueOrNull`, because riverpod attaches the previous
+    // reading to an error whether or not it is asked to: a router that answered
+    // once and then went away would keep offering a version nobody can confirm.
+    //
+    // Deliberately *not* gated on `autoupdate_flags` the way
+    // `firmwareUpdateOfferedVersionProvider` is. That gate exists because the
+    // dashboard banner is unsolicited; this is the firmware card on the firmware
+    // page, and withholding what the router just said would be the defect.
+    final asyncBanks = ref.watch(firmwareBanksDataProvider);
+    final ota =
+        asyncBanks.hasError ? null : asyncBanks.valueOrNull?.otaInstance;
+    // `Available=false` is not "no update": the same value also means "nobody has
+    // asked yet". Either way there is nothing to announce, so both are absent.
+    final offeredVersion = ota != null && ota.available ? ota.version : null;
+
     return SizedBox(
       width: double.infinity,
       child: AppCard(
@@ -74,90 +86,109 @@ class FirmwareOtaCard extends ConsumerWidget {
           children: [
             AppText.titleMedium(loc(context).otaUpdate),
             AppGap.md(),
+            // Whole-block tap, the shape Advanced Settings / Local Network /
+            // Support use for every row that opens a page. `LayoutBlock` supplies
+            // the ink and marks itself `button` to assistive tech, so the chevron
+            // is the only thing this call site adds.
+            //
+            // Both the hook and the affordance are withheld while the router info
+            // is in flight, which is where the deleted button was hidden too: an
+            // entry point that appears one frame before it means anything is the
+            // flake E2E cannot diagnose, and the chevron would take 32px off the
+            // spinner's caption at exactly the width the caption has least (#1380).
             LayoutBlock(
+              identifier: isLoading ? null : 'firmware-ota-card-open',
+              onTap: isLoading
+                  ? null
+                  : () => context.pushNamed(RouteNamed.uspFirmwareOta),
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final stacked = constraints.maxWidth < _stackBelow;
-                  final version = Row(
-                    children: [
-                      Icon(Icons.cloud_download_outlined,
-                          size: 20, color: colorScheme.onSurfaceVariant),
-                      AppGap.md(),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            AppText.labelSmall(loc(context).currentVersionShort,
-                                color: colorScheme.onSurfaceVariant),
-                            if (isLoading)
-                              const _CardSkeleton()
-                            else if (activeVersion == null)
-                              AppText.bodyMedium(loc(context).notAvailable)
-                            else
-                              // Pin the current-version value so E2E can assert
-                              // it without a localized text match. AppText
-                              // carries no identifier of its own, so the hook
-                              // goes on a wrapping Semantics boundary — the
-                              // shape usp_statistics_view.dart uses for its tab
-                              // hooks.
-                              Semantics(
-                                identifier: 'firmware-ota-card-version',
-                                child: AppText.bodyMedium(activeVersion),
+                            Icon(Icons.cloud_download_outlined,
+                                size: 20, color: colorScheme.onSurfaceVariant),
+                            AppGap.md(),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText.labelSmall(
+                                      loc(context).currentVersionShort,
+                                      color: colorScheme.onSurfaceVariant),
+                                  if (isLoading)
+                                    const _CardSkeleton()
+                                  else if (activeVersion == null)
+                                    AppText.bodyMedium(
+                                        loc(context).notAvailable)
+                                  else
+                                    // Pin the current-version value so E2E can
+                                    // assert it without a localized text match.
+                                    // AppText carries no identifier of its own,
+                                    // so the hook goes on a wrapping Semantics
+                                    // boundary — the shape
+                                    // usp_statistics_view.dart uses for its tab
+                                    // hooks.
+                                    Semantics(
+                                      identifier: 'firmware-ota-card-version',
+                                      child: AppText.bodyMedium(activeVersion),
+                                    ),
+                                ],
                               ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
-                  );
-                  // Hidden while the version is unknown, which is both what the
-                  // button means — there is nothing to compare against yet — and
-                  // what makes the skeleton readable: the button costs this row
-                  // 84–243px depending on locale, and at 320px that is more than
-                  // the caption beside the spinner has to live in at all (#1380).
-                  final cta = isLoading
-                      ? null
-                      : AppButton.text(
-                          label: loc(context).checkForUpdates,
-                          // `small` when stacked for the reason the page's own
-                          // check card gives: a stretched `medium` spends 24px of
-                          // padding a side, and `fr` then asks 242.5px of a 238px
-                          // line and is silently ellipsized by ui_kit. `small`
-                          // asks 211.4px and fits.
-                          size: stacked
-                              ? AppButtonSize.small
-                              : AppButtonSize.medium,
-                          // The user entry into the OTA page. Distinct from
-                          // `firmware-check` on the page itself, which is the
-                          // button that actually runs a check.
-                          identifier: 'firmware-ota-card-check',
-                          onTap: () =>
-                              context.pushNamed(RouteNamed.uspFirmwareOta),
-                        );
-
-                  if (stacked) {
-                    // Version first, then the action on it — and `stretch` so the
-                    // button's label gets the whole line rather than ellipsizing
-                    // inside ui_kit's `Flexible`.
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        version,
-                        if (cta != null) ...[
+                        if (offeredVersion != null) ...[
                           AppGap.md(),
-                          cta,
+                          // The same icon, colour and copy as the OTA page's own
+                          // verdict line and the dashboard banner, because it is
+                          // the same offer read from the same row. `start`
+                          // alignment and `Expanded` because both strings are
+                          // localized and allowed to wrap.
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.system_update_outlined,
+                                  size: 18, color: colorScheme.primary),
+                              AppGap.sm(),
+                              Expanded(
+                                child: Semantics(
+                                  identifier: 'firmware-ota-card-offer',
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      AppText.bodyMedium(
+                                          loc(context).updateAvailable,
+                                          color: colorScheme.primary),
+                                      // The version is a detail and it can be
+                                      // absent: the router publishes
+                                      // `Available=true` with an empty `Version`.
+                                      // An offer with no name is still an offer,
+                                      // so the headline never depends on it.
+                                      if (offeredVersion.isNotEmpty)
+                                        AppText.bodySmall(loc(context)
+                                            .availableVersionLabel(
+                                                offeredVersion)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(child: version),
-                      if (cta != null) cta,
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                  if (!isLoading) ...[
+                    AppGap.md(),
+                    AppIcon.font(AppFontIcons.chevronRight, size: 20),
+                  ],
+                ],
               ),
             ),
             AppGap.md(),
@@ -306,8 +337,9 @@ class _CardSkeleton extends StatelessWidget {
         // difference worth naming: this row is only on screen while the fetch is
         // in flight, so its overflow — up to +234px at 320px in `de` (#1380) — is
         // one the gate caught in the first frame of a cell rather than at settle.
-        // A spinner's caption is still a caption, and it wraps. It needs the
-        // check button out of the row to have room to; see there.
+        // A spinner's caption is still a caption, and it wraps. It has room to
+        // because nothing else is in its row while it is on screen — neither the
+        // chevron nor, before it, the check button; see [FirmwareOtaCard].
         Expanded(child: AppText.bodyMedium(loc(context).loadingFirmwareInfo)),
       ],
     );

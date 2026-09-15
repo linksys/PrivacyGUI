@@ -1541,6 +1541,18 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// to a spinner or an `N/A` unnoticed. `mock_admin.dart`'s [adminPageOverrides] says
 /// what the firmware one needed.
 ///
+/// **The OTA card is now the tallest thing in its column, and by choice** (2026-09-15).
+/// Its `checkForUpdates` button is gone — the label promised a check and only navigated
+/// — so the whole version block is the tappable row and ends in a 20px chevron, and the
+/// width pressure that made this the wave's hardest card went with it. What replaced it
+/// is height: when the router offers an image, a second two-line block appears under the
+/// version, from a *third* provider (`firmwareBanksDataProvider`, pinned by
+/// [adminPageOverrides] to the offering shape). Both of those strings are localized and
+/// absent unless that provider is pinned, which is the same half-a-guard problem
+/// [FirmwareAutoUpdateToggleRow] has below — the difference is that this one is measured
+/// by name in `page_surface_overflow_test.dart` rather than by `requires:` here, because
+/// what matters about it is the width its column grants, not its presence.
+///
 /// Requiring `FirmwareUpdateCard` is also what makes this case fail if the surface gate
 /// ever hides the manual card in local mode: the gate host does not override
 /// `appModeProfileProvider`, so it renders whatever the default profile is, and a gate

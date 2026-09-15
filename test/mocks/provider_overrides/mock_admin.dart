@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 
 import '../test_data/scenes/admin_scene_data.dart';
 import 'mock_firmware_update.dart';
@@ -99,11 +100,24 @@ List<Override> adminOverrides(UspAdminState state) => [
 /// append a duplicate override for a provider this list already pins: riverpod's
 /// last-writer-wins on duplicates is real but undocumented, and #1512 is a pending
 /// riverpod 3 upgrade.
+///
+/// The third, `firmwareBanksDataProvider`, arrived with the card's offer line
+/// (2026-09-15) and repeats the pattern a third time: the line is *absent* unless
+/// the router reports an `ota` row offering an image, so an unoverridden provider —
+/// which reaches a real `UspClient` and errors — would delete two localized strings
+/// from all 234 cells while the sweep reported a clean page. It defaults to
+/// [gateFirmwareBanksWithOta], the *wider* of the two shapes, for the same reason
+/// [gateFirmwareNoUpdateFoundState] picks the wider verdict; pass
+/// [gateFirmwareBanks] for the no-offer rendering, or [banksNotifier] for the
+/// reading that failed after answering once — the state a fixed value cannot hold,
+/// and the one the offer line treats specially.
 List<Override> adminPageOverrides({
   UspAdminState? state,
   SystemInfoData systemInfo = gateAdminSystemInfo,
   FirmwareAutoUpdateUIModel autoUpdate = gateFirmwareAutoUpdateOn,
   FirmwareAutoUpdateDataNotifier Function()? autoUpdateNotifier,
+  FirmwareBanksData banks = gateFirmwareBanksWithOta,
+  FirmwareBanksDataNotifier Function()? banksNotifier,
 }) =>
     [
       ...adminOverrides(state ?? testAdminState),
@@ -111,6 +125,8 @@ List<Override> adminPageOverrides({
           .overrideWith(() => FixedSystemInfoDataNotifierForAdmin(systemInfo)),
       firmwareAutoUpdateDataProvider.overrideWith(autoUpdateNotifier ??
           () => FixedFirmwareAutoUpdateNotifier(autoUpdate)),
+      firmwareBanksDataProvider.overrideWith(
+          banksNotifier ?? () => FixedFirmwareBanksDataNotifier(banks)),
     ];
 
 /// A `systemInfoDataProvider` whose fetch never returns.
@@ -142,10 +158,21 @@ class LoadingSystemInfoDataNotifier extends SystemInfoDataNotifier {
 /// are independent reads, so a router whose `FirmwareImage` fetch is slow still has an
 /// answered `autoupdate_flags`. Pinning it also keeps the switch row on screen, which
 /// is what the app renders beside that skeleton.
+///
+/// The banks provider is pinned to [gateFirmwareBanks] — the shape with **no** `ota`
+/// row — and that is the one departure from "same reading, independent read". The
+/// offer line sits below the skeleton in the same column, so it takes no width from
+/// the caption being measured; what it would take is the guard's subject. Leaving the
+/// no-offer shape here keeps this fixture about the one row it exists for, and pays
+/// for it with a gap named rather than discovered: "loading a version while an update
+/// is offered" is measured nowhere. A pin of some kind is not optional, though —
+/// unoverridden, this provider reaches a real `UspClient` from every skeleton cell.
 List<Override> adminPageLoadingFirmwareOverrides({UspAdminState? state}) => [
       ...adminOverrides(state ?? testAdminState),
       systemInfoDataProvider
           .overrideWith(() => LoadingSystemInfoDataNotifier()),
       firmwareAutoUpdateDataProvider.overrideWith(
           () => FixedFirmwareAutoUpdateNotifier(gateFirmwareAutoUpdateOn)),
+      firmwareBanksDataProvider.overrideWith(
+          () => FixedFirmwareBanksDataNotifier(gateFirmwareBanks)),
     ];

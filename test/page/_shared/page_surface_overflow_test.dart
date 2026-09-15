@@ -23,6 +23,7 @@ import '../../layout_gate/locale_tag.dart';
 import '../../layout_gate/surface.dart';
 import '../../layout_gate/sweep.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
+import '../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../mocks/test_data/scenes/admin_scene_data.dart';
 import '../../mocks/test_data/scenes/apps_scene_data.dart';
 import '../../mocks/test_data/scenes/instant_privacy_scene_data.dart';
@@ -1664,19 +1665,26 @@ void main() {
     // that resolves is `AsyncLoading` for exactly one frame, which is enough for the
     // collector and not enough for a guard to read.
     //
-    // The remaining wide widths are why the caption also needed the `Update` button
-    // out of the row. This row sits inside the card's `Expanded` column beside a
-    // fixed icon *and* that button, so its box is a fraction of a `colWidth(6)`
-    // column and grows far more slowly than the screen does — 1681px is in the loop
-    // below for that reason alone, and it is the width that would go red first if
-    // the button came back.
+    // The remaining wide widths are why the caption also needed the *trailing*
+    // affordance out of the row. This row sits inside the card's `Expanded` column
+    // beside a fixed icon, so its box is a fraction of a `colWidth(6)` column and
+    // grows far more slowly than the screen does — 1681px is in the loop below for
+    // that reason alone, and it is the width that would go red first if the
+    // affordance came back.
+    //
+    // What is withheld changed on 2026-09-15 and the guard did not: #1380 hid a
+    // localized `checkForUpdates` button, and the same `if (!isLoading)` now holds
+    // back the 20px chevron that replaced it (`firmware_ota_card.dart:185`). The
+    // chevron is the cheaper of the two, so the coordinates below are no longer the
+    // tightest this row has ever been — they are the ones the numbers in this comment
+    // were measured at, which is what makes a regression here legible.
     testWidgets('the firmware skeleton caption stays whole while it loads',
         (tester) async {
       /// The caption is a full sentence rather than a heading, so it sits one line
       /// above [kCardHeadingLineCeiling] — and, by the same rule, one over its own
       /// deepest coordinate: `fr`, `fr_CA` and `pl` take three lines of the 178.0px
       /// this row grants at 320px. Nineteen of the 78 coordinates wrap, every one of
-      /// them at 320px, which is the width the `Update` button was hidden for.
+      /// them at 320px, which is the width the trailing affordance was hidden for.
       const kSkeletonCaptionLineCeiling = 4;
 
       final failures = <String>[];
@@ -1754,13 +1762,13 @@ void main() {
         isNotEmpty,
         reason: 'no locale used a second caption line at any of the three '
             'widths, so nothing here measured the wrap the #1380 fix at '
-            'firmware_ota_card.dart:79 introduced:\n${wrapped.join(', ')}',
+            'firmware_ota_card.dart:185 introduced:\n${wrapped.join(', ')}',
       );
 
       expect(
         failures,
         isEmpty,
-        reason: 'the #1380 fix at firmware_ota_card.dart:79 expands the '
+        reason: 'the #1380 fix at firmware_ota_card.dart:185 expands the '
             "skeleton's caption so a spinner's own label stops pushing the row "
             'past its box; a caption that fits by ellipsis has lost what the '
             'wrap was for, and a caption that is absent means this guard stopped '
@@ -1768,25 +1776,36 @@ void main() {
       );
     });
 
-    // Part 4's companion. A reflow, so the shape is asserted in both directions like
-    // part 1 — but unlike part 1 the interesting half is not the shape, it is the
-    // version block's width on the inline side. The threshold exists because that
-    // block was being handed 0px; a threshold set too low would satisfy a
-    // "no overflow" assertion and put the bug straight back, silently, because
-    // crushed text does not overflow.
+    // Part 4's companion, **rewritten on 2026-09-15** when the reflow it guarded was
+    // deleted. The `checkForUpdates` button whose localized width could not fit is
+    // gone — it promised a check and only navigated — and the row now ends in a
+    // fixed 20px chevron with the whole block tappable. A threshold is no longer
+    // needed, so the two-directional shape premise this guard used to carry is gone
+    // with it.
     //
-    // Read against the *rendered* boxes rather than against `_stackBelow`, so what is
-    // pinned is the geometry and not the constant. Both the version string and the
-    // button label are then checked for the two silent failures ui_kit can produce:
-    // an ellipsis, and a wrap that shreds.
-    testWidgets(
-        'the OTA card stacks its CTA below 400px of row, both strings whole',
+    // What survives is the half of #1549's bug the sweep could not see, and it
+    // survives for a new reason: the same version block is now squeezed by a chevron
+    // instead of a button, and the offer line put **two more localized strings** in
+    // the same column. Crushed text does not overflow — a `RenderParagraph` given
+    // too little width wraps — so the only way any of this fails visibly is if a
+    // guard measures the boxes. That is this test.
+    testWidgets('the OTA card version block and offer stay readable',
         (tester) async {
       // The version block holds a label over a build number. The number is a fixed
-      // 80.5px string in every locale, so it is the label that can wrap, and two
-      // lines of a two-word noun phrase is fine; three means the block is being
-      // squeezed again rather than merely translated.
+      // 80.5px string in every locale, so it is the label that can wrap — and with
+      // the chevron in the row where the button used to be, measured across all 234
+      // cells, it no longer does: one line in every locale at every width, widest
+      // `da` at 112.2px inside the 178.0px this column grants at 320px. The ceiling
+      // stays at 2 rather than tightening to 1, which is one line of slack over the
+      // deepest coordinate, the rule `kSkeletonCaptionLineCeiling` uses.
       const kVersionLabelLineCeiling = 2;
+
+      // The offer line's two strings are prose, so they wrap and that is intended;
+      // what is not intended is a column narrow enough to turn either into a
+      // paragraph. Measured across all 234 cells the deepest is 2 lines —
+      // `updateAvailable` in `el`, `ja` and `nb` at 320px, and nothing else anywhere
+      // — so 3 by the same one-line-of-slack rule.
+      const kOfferLineCeiling = 3;
 
       // The build number the fixture's active bank carries, read from the fixture
       // rather than spelled again here: it is this string's own width that decides
@@ -1794,24 +1813,28 @@ void main() {
       // fixture would move the floor without anyone noticing.
       final versionString =
           gateAdminSystemInfo.model.firmwareImages.first.version;
+      // The *offered* version, from the other fixture the admin case pins. Two
+      // different strings on purpose: a card that printed the current version in
+      // the offer line would satisfy every readability assertion below while
+      // telling the user the update is the firmware they already run.
+      final offeredVersion = gateFirmwareBanksWithOta.otaInstance!.version;
 
       final failures = <String>[];
-      final stackedCells = <String>[];
-      final inlineCells = <String>[];
+      final wrapped = <String>[];
 
       // All nine widths in all 26 locales, which is more than the usual guard pays
-      // for and is what this site is worth: the two sides of the threshold are
-      // reached by *different* widths in different locales, and the card is laid out
-      // at nine distinct row widths (238, 360.5, 380, 398, 404.5, 428.5, 454, 487,
-      // 791) that do not sort the same way the screen widths do. A two-width guard
-      // would have to name which of those it believed was tightest, which is the
-      // arithmetic this test exists to stop trusting.
+      // for and is what this site is worth: the card is laid out at nine distinct
+      // row widths (238, 360.5, 380, 398, 404.5, 428.5, 454, 487, 791) that do not
+      // sort the same way the screen widths do, and four localized strings now share
+      // the narrowest of them. A two-width guard would have to name which of those
+      // it believed was tightest, which is the arithmetic this test exists to stop
+      // trusting.
       for (final width in kPageSweepWidths) {
         for (final locale in AppLocalizations.supportedLocales) {
           final tag = localeTag(locale);
           await setLayoutSurface(tester, Size(width, kPageSweepHeight));
           await tester.pumpWidget(KeyedSubtree(
-            key: ValueKey('admin-ota-cta-$tag-${width.toInt()}'),
+            key: ValueKey('admin-ota-version-$tag-${width.toInt()}'),
             child: pageSurfaceHost(
               view: kAdminPageCase.view(),
               locale: locale,
@@ -1823,10 +1846,6 @@ void main() {
           final cell = '$tag @${width.toInt()}px';
           final loc = localizationsByTag[tag]!;
           final card = find.byType(FirmwareOtaCard);
-          final button = find.descendant(
-            of: card,
-            matching: find.widgetWithText(AppButton, loc.checkForUpdates),
-          );
           final versionLabel = find.descendant(
             of: card,
             matching: find.text(loc.currentVersionShort),
@@ -1839,52 +1858,88 @@ void main() {
             of: card,
             matching: find.byIcon(Icons.cloud_download_outlined),
           );
+          // The affordance that replaced the button. Counted like every other
+          // element here, because it is the one thing on this row that is *not*
+          // localized: if it went missing the row would get wider and every
+          // readability assertion below would pass more easily.
+          final chevron = find.descendant(
+            of: card,
+            matching: find.byIcon(AppFontIcons.chevronRight),
+          );
+          final offerHeadline = find.descendant(
+            of: card,
+            matching: find.text(loc.updateAvailable),
+          );
+          final offerVersion = find.descendant(
+            of: card,
+            matching: find.text(loc.availableVersionLabel(offeredVersion)),
+          );
           if (card.evaluate().length != 1 ||
-              button.evaluate().length != 1 ||
               versionLabel.evaluate().length != 1 ||
               versionValue.evaluate().length != 1 ||
-              icon.evaluate().length != 1) {
+              icon.evaluate().length != 1 ||
+              chevron.evaluate().length != 1 ||
+              offerHeadline.evaluate().length != 1 ||
+              offerVersion.evaluate().length != 1) {
             failures.add('$cell: found ${card.evaluate().length} card(s), '
-                '${button.evaluate().length} CTA(s), '
                 '${versionLabel.evaluate().length} version label(s), '
-                '${versionValue.evaluate().length} build number(s) and '
-                '${icon.evaluate().length} icon(s) — nothing here was measured');
+                '${versionValue.evaluate().length} build number(s), '
+                '${icon.evaluate().length} icon(s), '
+                '${chevron.evaluate().length} chevron(s), '
+                '${offerHeadline.evaluate().length} offer headline(s) and '
+                '${offerVersion.evaluate().length} offered version(s) — nothing '
+                'here was measured');
             continue;
           }
 
-          // Read the shape off the CTA's *left* edge against the icon's, not off
-          // the two boxes' vertical order. Stacked, the CTA is a `stretch` child of
-          // the same column the version row is in, so the two share a left edge;
-          // inline, it sits to the right of a block that starts with the icon. The
-          // vertical test looks equivalent and is not: both children of the inline
-          // `Row` are centre-aligned, so a version label that wraps to two lines
-          // grows the row and can push the centred CTA's top below the label's
-          // bottom while it is still very much inline.
-          final buttonRect = tester.getRect(button);
+          // The chevron is a *trailing* affordance, and that is a claim about
+          // geometry rather than about source order: a chevron that ended up above
+          // or inside the text column is still one chevron, and would still be
+          // found.
+          //
+          // Trailing, not "right": `ar` mirrors the whole row, so an LTR-only
+          // comparison fails in exactly one of the 26 locales — measured, which is
+          // why this reads `Directionality` off the card instead of the axis off the
+          // screen.
+          final rtl =
+              Directionality.of(tester.element(card)) == TextDirection.rtl;
+          final chevronRect = tester.getRect(chevron);
+          final labelRect = tester.getRect(versionLabel);
           final iconRect = tester.getRect(icon);
-          final stacked = buttonRect.left <= iconRect.left + 0.5;
-          (stacked ? stackedCells : inlineCells).add(cell);
+          final trailingOk = rtl
+              ? chevronRect.right - 0.5 <= labelRect.left &&
+                  chevronRect.right < iconRect.right
+              : chevronRect.left + 0.5 >= labelRect.right &&
+                  chevronRect.left > iconRect.left;
+          if (!trailingOk) {
+            failures.add('$cell: the chevron occupies '
+                '${chevronRect.left.toStringAsFixed(1)}–'
+                '${chevronRect.right.toStringAsFixed(1)}px, which is not the '
+                '${rtl ? 'leading (RTL)' : 'trailing'} side of the version block '
+                '(label ${labelRect.left.toStringAsFixed(1)}–'
+                '${labelRect.right.toStringAsFixed(1)}px, leading icon '
+                '${iconRect.left.toStringAsFixed(1)}–'
+                '${iconRect.right.toStringAsFixed(1)}px)');
+          }
 
           for (final probe in <(String, Finder)>[
-            (
-              'the CTA label',
-              find.descendant(
-                of: button,
-                matching: find.text(loc.checkForUpdates),
-              )
-            ),
             ('the version label', versionLabel),
             ('the build number', versionValue),
+            ('the offer headline', offerHeadline),
+            ('the offered version', offerVersion),
           ]) {
             final (what, finder) = probe;
             final paragraph = tester.paragraphOf(finder);
             final lines = tester.textLineCount(finder);
+            final widest = tester.widestTokenWidth(finder);
             final numbers = 'granted '
                 '${paragraph.size.width.toStringAsFixed(1)}px on $lines line(s), '
-                'widest token '
-                '${tester.widestTokenWidth(finder).toStringAsFixed(1)}px, whole '
+                'widest token ${widest.toStringAsFixed(1)}px, whole '
                 'string '
                 '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px';
+            if (lines > 1) {
+              wrapped.add('$tag@${width.toInt()}px:$what:${lines}L');
+            }
             if (tester.isTextClipped(finder)) {
               failures.add('$cell: $what ellipsized — $numbers');
             } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
@@ -1896,16 +1951,23 @@ void main() {
               failures.add('$cell: $what wrapped onto $lines lines, past the '
                   '$kVersionLabelLineCeiling-line ceiling — $numbers');
             }
+            if ((what == 'the offer headline' ||
+                    what == 'the offered version') &&
+                lines > kOfferLineCeiling) {
+              failures.add('$cell: $what wrapped onto $lines lines, past the '
+                  '$kOfferLineCeiling-line ceiling — $numbers');
+            }
             if (what == 'the build number') {
-              // This is the crush the threshold exists to prevent, and the whole
-              // reason this test measures boxes instead of counting red cells:
-              // `1.0.16.213451` is one unbreakable 80.5px token in all 26 locales,
-              // so if the block was handed less than that the number wraps — and a
-              // `RenderParagraph` given too little width does not overflow, it
-              // wraps. Compared against its own intrinsic width rather than against
-              // a literal 80.5, so a fixture with a longer build number stays
-              // honest. Not asserted on the *label*: that string is localized, and
-              // `ko` painting 45.6px is a short noun phrase, not a squeeze.
+              // This is the crush the deleted threshold existed to prevent, and
+              // the whole reason this test measures boxes instead of counting red
+              // cells: `1.0.16.213451` is one unbreakable 80.5px token in all 26
+              // locales, so if the block was handed less than that the number
+              // wraps — and a `RenderParagraph` given too little width does not
+              // overflow, it wraps. Compared against its own intrinsic width
+              // rather than against a literal 80.5, so a fixture with a longer
+              // build number stays honest. Not asserted on the *label*: that
+              // string is localized, and `ko` painting 45.6px is a short noun
+              // phrase, not a squeeze.
               final whole = paragraph.getMaxIntrinsicWidth(double.infinity);
               if (lines > 1 || paragraph.size.width + 0.5 < whole) {
                 failures.add('$cell: $what was granted '
@@ -1915,46 +1977,50 @@ void main() {
                     'squeezed and reports no overflow');
               }
             }
-            if (what == 'the CTA label' && lines > 1) {
-              // The CTA is a button, not prose. `small` and `stretch` were chosen
-              // precisely so its label gets a whole line at 238px; a second line
-              // means one of those two stopped being true.
-              failures.add('$cell: $what wrapped onto $lines lines — a button '
-                  'label is one line or the size is wrong — $numbers');
+            if (what == 'the offered version' &&
+                !kLocalesWithoutWordSpaces.contains(tag) &&
+                paragraph.size.width + 0.5 < widest) {
+              // The same crush, one string further along, and the token oracle
+              // rather than the whole-string one because this sentence *is*
+              // allowed to wrap: "Available:" plus an unbreakable build number
+              // means its widest token is the number, in every locale.
+              failures.add('$cell: $what was granted '
+                  '${paragraph.size.width.toStringAsFixed(1)}px for a '
+                  '${widest.toStringAsFixed(1)}px token it cannot break — '
+                  '$numbers');
             }
           }
         }
       }
 
-      // The floor premise, in both directions this time, because a reflow guard that
-      // only ever sees one side of its own threshold is asserting nothing about the
-      // reflow. 400px sits between 398 (a 480px screen, one column) and 404.5 (a
-      // 1441px screen, half of two), so both lists must be non-empty — and the fact
-      // that a *narrower* screen than 1441px lands on the inline side is the whole
-      // reason the threshold is on the row and not on the breakpoint.
+      // The floor premise, and it replaces the reflow's two-directional one: with no
+      // threshold left to straddle, what has to be true for the assertions above to
+      // mean anything is that some coordinate actually squeezed one of the four
+      // strings. If nothing ever wrapped, this guard is 234 cells of a card with
+      // room to spare and would go on passing after the column was handed to
+      // something else.
+      //
+      // It clears the floor by **3 cells of 234** — `el`, `ja` and `nb` at 320px,
+      // all of them the offer headline — so this is a thin premise and it is thin on
+      // purpose: the whole point of deleting the localized button was that the column
+      // stopped being tight. The number is here so that a future change which makes
+      // it 0 is read as "the squeeze is gone, re-measure the ceilings" rather than as
+      // a flake.
       expect(
-        stackedCells,
+        wrapped,
         isNotEmpty,
-        reason:
-            'no cell stacked, so nothing here measured the reflow the #1549 '
-            'fix at firmware_ota_card.dart:49 introduced',
-      );
-      expect(
-        inlineCells,
-        isNotEmpty,
-        reason: 'every cell stacked, so the threshold is above every row width '
-            'this card is ever laid out at and the inline form is unreachable',
+        reason: 'no locale wrapped any of the four strings at any of the nine '
+            'widths, so nothing here measured a squeeze:\n${wrapped.join(', ')}',
       );
 
       expect(
         failures,
         isEmpty,
-        reason:
-            'the #1549 fix at firmware_ota_card.dart:49 moves the OTA card CTA '
-            'onto its own line below 400px of row width, so that the version block '
-            'beside it stops being handed a negative remainder; a crushed version '
-            'label reports no overflow at all, which is why this guard measures its '
-            'width rather than counting red cells:\n${failures.join('\n')}',
+        reason: 'the OTA card shares one column between a version block and an '
+            'offer line, with a 20px chevron beside them; a string granted less '
+            'than its own unbreakable token wraps and reports no overflow at all, '
+            'which is why this guard measures widths rather than counting red '
+            'cells:\n${failures.join('\n')}',
       );
     });
 

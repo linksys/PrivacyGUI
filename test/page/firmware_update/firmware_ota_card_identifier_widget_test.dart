@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -16,11 +21,18 @@ import '../../mocks/provider_overrides/mock_firmware_update.dart';
 
 /// Verifies the E2E identifier hooks on [FirmwareOtaCard], added by #1549.
 ///
-/// Three hooks, named for symmetry with the manual card's `firmware-card-*`
-/// family: the card arrival anchor, the check CTA, and the current-version
-/// value. `firmware-ota-card-check` is deliberately distinct from the OTA
-/// *page*'s own `firmware-check` — the card opens the page, so a spec that
-/// confused them would tap the wrong surface and still pass on the way in.
+/// Four hooks, named for symmetry with the manual card's `firmware-card-*`
+/// family: the card arrival anchor, the block that opens the OTA page, the
+/// current-version value, and the offer line. `firmware-ota-card-open` is
+/// deliberately distinct from the OTA *page*'s own `firmware-check` — the card
+/// navigates and nothing more, so a spec that confused them would tap the wrong
+/// surface and still pass on the way in.
+///
+/// **`-open` replaced `-check` on 2026-09-15**, when the button whose label
+/// promised a check became a whole-block tap that admits it only opens a page.
+/// The rename is asserted here only in the sense that the old id is gone; what
+/// this file adds is the tap itself, hosted in a real `GoRouter` so "the hook is
+/// on the thing that navigates" is one assertion rather than two hopeful ones.
 ///
 /// **This card owns "current version" for the whole Administration page.** It
 /// took the hook over from [FirmwareUpdateCard] because the manual card is the
@@ -33,29 +45,62 @@ import '../../mocks/provider_overrides/mock_firmware_update.dart';
 /// contract is worth gating there.
 void main() {
   const cardAnchor = 'firmware-ota-card';
-  const checkHook = 'firmware-ota-card-check';
+  const openHook = 'firmware-ota-card-open';
   const versionHook = 'firmware-ota-card-version';
+  const offerHook = 'firmware-ota-card-offer';
   const autoUpdateHook = 'firmware-ota-card-auto-update';
 
   // From the shared admin fixture `gateAdminSystemInfo`, whose one active bank
   // carries this version. The card reads it as `activeVersion`.
   const activeVersion = '1.0.16.213451';
 
+  // From `gateFirmwareBanksWithOta`'s third row — the virtual `ota` instance,
+  // which is the only place the version being *offered* exists.
+  const offeredVersion = '1.0.17.220118';
+
+  /// Where a tap on the block landed, or null if nothing navigated.
+  String? navigatedTo;
+
+  setUp(() => navigatedTo = null);
+
   Widget wrap({List<Override>? overrides}) {
     final themeConfig = ThemeJsonConfig.defaultConfig();
+    // A router rather than `home:`, because the card's one action is
+    // `pushNamed` — under a plain `MaterialApp` a tap throws instead of
+    // navigating, which is a pass nobody asked for.
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          name: 'test_root',
+          builder: (context, state) => const Scaffold(body: FirmwareOtaCard()),
+        ),
+        GoRoute(
+          path: '/ota',
+          name: RouteNamed.uspFirmwareOta,
+          builder: (context, state) {
+            navigatedTo = RouteNamed.uspFirmwareOta;
+            return const Scaffold(body: Text('ota page'));
+          },
+        ),
+      ],
+    );
     return ProviderScope(
-      // The card watches `systemInfoDataProvider` and, since #1552,
-      // `firmwareAutoUpdateDataProvider`; `adminPageOverrides` pins both — the
-      // first to a fixture with an active firmware bank so the version value and
-      // the CTA render (the loading branch hides both), the second to a reading
-      // whose policy is `autoInstall`, so the switch arrives ON.
+      // The card watches `systemInfoDataProvider`, `firmwareAutoUpdateDataProvider`
+      // (#1552) and `firmwareBanksDataProvider` (the offer line);
+      // `adminPageOverrides` pins all three — the first to a fixture with an
+      // active firmware bank so the version value and the chevron render (the
+      // loading branch hides both), the second to a reading whose policy is
+      // `autoInstall`, so the switch arrives ON, and the third to a router
+      // reporting an `ota` image, so the offer line is on screen.
       overrides: overrides ?? adminPageOverrides(),
-      child: MaterialApp(
+      child: MaterialApp.router(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: themeConfig.createLightTheme(),
-        home: const Scaffold(body: FirmwareOtaCard()),
+        routerConfig: router,
       ),
     );
   }
@@ -97,7 +142,7 @@ void main() {
           .requireValue;
 
   group('FirmwareOtaCard identifiers', () {
-    testWidgets('the card anchor, CTA, and version are each locatable',
+    testWidgets('the card anchor, entry, version and offer are each locatable',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pumpCard(tester);
@@ -105,8 +150,9 @@ void main() {
       final matched = <Element>{};
       for (final id in <String>[
         cardAnchor,
-        checkHook,
+        openHook,
         versionHook,
+        offerHook,
         autoUpdateHook,
       ]) {
         final finder = find.bySemanticsIdentifier(id);
@@ -114,8 +160,27 @@ void main() {
             reason: 'hook "$id" must resolve to exactly one node');
         matched.add(finder.evaluate().single);
       }
-      expect(matched, hasLength(4),
-          reason: 'the four hooks must target distinct widgets');
+      expect(matched, hasLength(5),
+          reason: 'the five hooks must target distinct widgets');
+
+      handle.dispose();
+    });
+
+    testWidgets('the retired check hook is gone, not renamed onto the block',
+        (tester) async {
+      // The id a spec would have used to press "Check for Updates" from here.
+      // Keeping it alive on a block that only navigates is worse than removing
+      // it: the spec would keep passing while asserting a check that never runs.
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester);
+
+      expect(
+          find.bySemanticsIdentifier('firmware-ota-card-check'), findsNothing);
+      expect(
+          find.text(loc(tester.element(find.byType(FirmwareOtaCard)))
+              .checkForUpdates),
+          findsNothing,
+          reason: 'the label promised a check this card never performed');
 
       handle.dispose();
     });
@@ -138,13 +203,14 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('the CTA is hidden while the router info is still loading',
+    testWidgets('the entry is hidden while the router info is still loading',
         (tester) async {
       // The loading branch renders a skeleton in place of the version and drops
-      // the button entirely, so a spec cannot tap "check for updates" before
-      // there is a version to compare against. Pinned because the skeleton
-      // moved to this card with the version block, and a hook that appears one
-      // frame early is exactly the flake E2E cannot diagnose.
+      // both the hook and the chevron, so a spec cannot tap its way into the OTA
+      // page before this card has said anything. Pinned because a hook that
+      // appears one frame early is exactly the flake E2E cannot diagnose — and
+      // because the chevron would take 32px off the skeleton's caption at the
+      // width the caption has least of it (#1380).
       final handle = tester.ensureSemantics();
       tester.view.physicalSize = const Size(1280, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -169,8 +235,151 @@ void main() {
       expect(find.bySemanticsIdentifier(cardAnchor), findsOneWidget,
           reason: 'the card itself is on screen either way — only its contents '
               'change');
-      expect(find.bySemanticsIdentifier(checkHook), findsNothing);
+      expect(find.bySemanticsIdentifier(openHook), findsNothing);
       expect(find.bySemanticsIdentifier(versionHook), findsNothing);
+      expect(find.byIcon(AppFontIcons.chevronRight), findsNothing,
+          reason: 'a chevron on a block that does not respond is an affordance '
+              'that lies, and it costs the caption beside it 32px');
+
+      handle.dispose();
+    });
+  });
+
+  group('FirmwareOtaCard entry', () {
+    testWidgets('tapping the block opens the OTA page', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester);
+
+      await tester.tap(find.bySemanticsIdentifier(openHook));
+      await tester.pumpAndSettle();
+
+      expect(navigatedTo, RouteNamed.uspFirmwareOta,
+          reason: 'the whole block is the entry point now, so the hook and the '
+              'navigation have to be the same node');
+      handle.dispose();
+    });
+
+    testWidgets('the block announces itself as a button', (tester) async {
+      // The reason this design is honest rather than merely tidier: a tappable
+      // area that assistive tech reads as loose text is a worse affordance than
+      // the mislabelled button it replaced. `LayoutBlock` sets the flag from
+      // `onTap`, so this asserts the wiring, not the kit.
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester);
+
+      expect(tester.getSemantics(find.bySemanticsIdentifier(openHook)),
+          isSemantics(isButton: true, hasTapAction: true));
+
+      handle.dispose();
+    });
+  });
+
+  group('FirmwareOtaCard offered version', () {
+    testWidgets('states the offer and names the version', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester);
+
+      final l10n = loc(tester.element(find.byType(FirmwareOtaCard)));
+      final offer = find.bySemanticsIdentifier(offerHook);
+      expect(
+          find.descendant(of: offer, matching: find.text(l10n.updateAvailable)),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: offer,
+              matching: find.text(l10n.availableVersionLabel(offeredVersion))),
+          findsOneWidget,
+          reason: 'the version the router is offering is the thing the deleted '
+              'button used to promise to find out');
+      // The same string is not also drawn as the current version.
+      expect(
+          find.descendant(
+              of: find.bySemanticsIdentifier(versionHook),
+              matching: find.text(offeredVersion)),
+          findsNothing);
+
+      handle.dispose();
+    });
+
+    testWidgets('says nothing when the router reports no ota row',
+        (tester) async {
+      // `gateFirmwareBanks` is a router with two NAND banks and no `ota`
+      // instance — an OEM build without the fwup stack. Absent is the only
+      // honest rendering: null means *no update information*, and printing "up
+      // to date" here would be a claim nobody made.
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester,
+          overrides: adminPageOverrides(banks: gateFirmwareBanks));
+
+      expect(find.bySemanticsIdentifier(offerHook), findsNothing);
+      final l10n = loc(tester.element(find.byType(FirmwareOtaCard)));
+      expect(find.text(l10n.updateAvailable), findsNothing);
+      // The rest of the card is unaffected: two independent reads.
+      expect(find.bySemanticsIdentifier(versionHook), findsOneWidget);
+
+      handle.dispose();
+    });
+
+    testWidgets('says nothing when the ota row is not offering an image',
+        (tester) async {
+      // `Available=false` on the ota row. Two different facts arrive as that one
+      // value — "checked, nothing new" and "nobody has asked yet" — so it
+      // supports neither sentence.
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester,
+          overrides:
+              adminPageOverrides(banks: _banksWithOta(available: false)));
+
+      expect(find.bySemanticsIdentifier(offerHook), findsNothing);
+
+      handle.dispose();
+    });
+
+    testWidgets('keeps the headline when the offered version is empty',
+        (tester) async {
+      // The router does publish `Available=true` with an empty `Version`. An
+      // offer with no name is still an offer, so only the second line goes.
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester,
+          overrides: adminPageOverrides(banks: _banksWithOta(version: '')));
+
+      final l10n = loc(tester.element(find.byType(FirmwareOtaCard)));
+      expect(find.bySemanticsIdentifier(offerHook), findsOneWidget);
+      expect(find.text(l10n.updateAvailable), findsOneWidget);
+      expect(find.text(l10n.availableVersionLabel('')), findsNothing,
+          reason: '"Available: " with nothing after it names no version');
+
+      handle.dispose();
+    });
+
+    testWidgets('withdraws the offer when the banks read fails afterwards',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCard(tester,
+          overrides: adminPageOverrides(
+              banksNotifier: _FailAfterFirstReadBanksNotifier.new));
+      expect(find.bySemanticsIdentifier(offerHook), findsOneWidget);
+
+      final container = ProviderScope.containerOf(
+          tester.element(find.byType(FirmwareOtaCard)));
+      (container.read(firmwareBanksDataProvider.notifier)
+              as _FailAfterFirstReadBanksNotifier)
+          .failNow();
+      await tester.pumpAndSettle();
+
+      // The trap this asserts against, stated so a later simplification cannot
+      // walk into it: riverpod attaches the previous reading to the error, so
+      // `valueOrNull` still answers with the offer. Only `hasError` sees it.
+      final published = container.read(firmwareBanksDataProvider);
+      expect(published.hasError, isTrue);
+      expect(published.hasValue, isTrue,
+          reason: 'the stale reading rides along on the error — that is the '
+              'whole reason the card checks hasError first');
+
+      expect(find.bySemanticsIdentifier(offerHook), findsNothing,
+          reason: 'an offer nobody can confirm any more is not an offer');
+      expect(find.bySemanticsIdentifier(versionHook), findsOneWidget,
+          reason: 'the current version comes from another read and survives');
 
       handle.dispose();
     });
@@ -330,6 +539,42 @@ void main() {
       handle.dispose();
     });
   });
+}
+
+/// [gateFirmwareBanksWithOta] with the ota row's two decisive fields open.
+///
+/// Local to this file rather than a shared fixture: `available: false` and
+/// `version: ''` are shapes only this card's offer line branches on, and the gate
+/// fixtures are shared by pages that would gain nothing from either.
+FirmwareBanksData _banksWithOta(
+        {bool available = true, String version = '1.0.17.220118'}) =>
+    FirmwareBanksData(banks: [
+      ...gateFirmwareBanks.banks,
+      FirmwareImageUIModel(
+        instance: 3,
+        instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
+        alias: 'ota',
+        name: '',
+        version: version,
+        status: available ? 'Available' : 'None',
+        available: available,
+      ),
+    ]);
+
+/// A banks read that succeeds and is then lost — the shape a router going away
+/// mid-session produces, and the only one that tells `hasError` apart from
+/// `valueOrNull == null`.
+///
+/// [failNow] assigns `AsyncError` through the notifier's own setter on purpose:
+/// that is where riverpod's `asyncTransition` re-attaches the previous reading, so
+/// the state the card sees is the real one rather than one this class composed.
+class _FailAfterFirstReadBanksNotifier extends FirmwareBanksDataNotifier {
+  @override
+  Future<FirmwareBanksData> build() async => gateFirmwareBanksWithOta;
+
+  void failNow() => state = AsyncError(
+      const NetworkError(detail: 'FirmwareImage read failed'),
+      StackTrace.empty);
 }
 
 /// A reading that failed, which [FixedFirmwareAutoUpdateNotifier] cannot hold.
