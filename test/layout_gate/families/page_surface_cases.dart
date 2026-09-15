@@ -1453,11 +1453,18 @@ final kSliverDashboardPageCase = PageSurfaceCase(
 /// `Material` comes from in the app, and its body is that page's grid of [AppCard]s.
 ///
 /// **[FirmwareUpdateAvailableBanner] is #1552's, and it is the third coordinate this
-/// page now has of its own.** It is a full-width strip between the 64px bar and the
-/// grid: one sentence — the widest string #1552 adds, `pl` at 71 characters — over two
-/// localized buttons in a `Wrap`. It stacks unconditionally rather than at a measured
-/// threshold, precisely so the 320px column cannot crush the sentence the way #1549's
-/// version row was crushed, and this cell is what says so in pixels. Requiring it also
+/// page now has of its own.** It is an `AppCard` between the 64px bar and the grid,
+/// inset to `context.pageMargin` so it lines up with the grid under it: one sentence —
+/// widest in `fr`/`fr_ca`, 72 characters and 455.9px unwrapped — beside or above two
+/// localized buttons in a `Wrap`.
+///
+/// **Both of its arms are in this sweep, which is the point of requiring it here.** It
+/// stacks below 780px of content width (the widget's `_stackBelow`, measured), and the
+/// nine widths land on both sides: 320/480/601 stack, 905 and up are a single row. The
+/// stacked arm is the one that matters — it exists so the 320px column cannot crush the
+/// sentence the way #1549's version row was crushed, and a `RenderParagraph` handed too
+/// little width wraps rather than overflowing, so this cell is the only thing that says
+/// in pixels which arm each width actually got. Requiring it also
 /// pins the fixture: the banner reads two providers `mock_dashboard_page.dart` pins to
 /// a router-has-an-update reading, and unpinned it renders `SizedBox.shrink` in all 234
 /// cells while the case stays green.
