@@ -20,6 +20,7 @@ import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
@@ -594,50 +595,62 @@ class UnifiedDiagnosticsService {
     final nodeLabels = <String, String>{};
     for (final node in network.items) {
       final normalizedId = node.id.toUpperCase().replaceAll(':', '');
-      final label = node.manufacturerModel.isNotEmpty
-          ? node.manufacturerModel
-          : (node.id.isNotEmpty ? node.id : node.instancePath);
-      nodeLabels[normalizedId] = label;
+      nodeLabels[normalizedId] = _nodeLabel(node);
     }
 
     final results = <MeshBackhaulNodeRecord>[];
     for (final node in network.items) {
-      // Controller is the node WITHOUT its own backhaul. Detect by absence of
-      // backhaul-link evidence — BackhaulMediaType / BackhaulALID /
-      // BackhaulPHYRate are all the controller's own uplink to its parent
-      // (agents only). MultiAPDevice.AssocIEEE1905DeviceRef and
-      // EasyMeshAgentOperationMode are unreliable: some firmware (verified on
-      // M60TB-EU 1.0.18) leaves both empty on connected agents.
-      final hasBackhaulLink = node.backhaulMediaType.isNotEmpty ||
-          node.backhaulAlId.isNotEmpty ||
-          node.backhaulPhyRate > 0;
-      final isController = !hasBackhaulLink;
+      // Controller is the node WITHOUT its own backhaul. The evidence used to be
+      // BackhaulMediaType / BackhaulALID / BackhaulPHYRate; none of those exist
+      // in the prplMesh schema (#1555), so the question is now answered by
+      // `hasMeshBackhaulLink`, which shares its definition with
+      // `MeshTopologyBuilder` — the two disagreeing is how a node ends up an
+      // extender on the topology and the controller in diagnostics.
+      final isController = !hasMeshBackhaulLink(node);
       if (isController) {
         // Controller doesn't have its own backhaul — skip.
         continue;
       }
 
-      // Use backhaulLinkType if available, fallback to mediaType parsing
-      final linkType = node.backhaulLinkType.isNotEmpty
-          ? node.backhaulLinkType
-          : (node.backhaulMediaType.contains('Ethernet')
-              ? 'Ethernet'
-              : 'Wi-Fi');
-      final wired = linkType == 'Ethernet';
+      // `LinkType` is the only medium field firmware produces, and it stays
+      // nullable all the way to the two tiles that render it. There is no longer
+      // a `mediaType` string to fall back to, and the previous revision of this
+      // line defaulted to `'Wi-Fi'` instead: that value went onto the record
+      // (`:667`), through the UI model, and into `step_result_tile` and
+      // `diagnostic_result_card` verbatim — while node detail, reading the same
+      // firmware state through `BackhaulInfo`, printed `unknown`. Same node,
+      // same session, two mediums, one of them measured by nothing.
+      //
+      // `wired` is false for an unknown medium either way, so the grading arm is
+      // unchanged by carrying the null; what changes is that the user is not
+      // told a medium the app never read.
+      final linkType = meshBackhaulLinkType(node);
+      final wired = isMeshBackhaulEthernet(linkType);
 
-      final phyRateMbps = node.backhaulPhyRate > 0 ? node.backhaulPhyRate : -1;
-      final lastUplinkRateKbps = node.backhaulStatsLastDataUplinkRate > 0
-          ? node.backhaulStatsLastDataUplinkRate
+      final lastUplinkRateKbps = (node.backhaulStatsLastDataUplinkRate ?? 0) > 0
+          ? node.backhaulStatsLastDataUplinkRate!
           : -1;
-      final lastDownlinkRateKbps = node.backhaulStatsLastDataDownlinkRate > 0
-          ? node.backhaulStatsLastDataDownlinkRate
-          : -1;
-      final signalDbm = rcpiToRssi(node.backhaulStatsSignalStrength) ?? 0;
+      final lastDownlinkRateKbps =
+          (node.backhaulStatsLastDataDownlinkRate ?? 0) > 0
+              ? node.backhaulStatsLastDataDownlinkRate!
+              : -1;
+      // RCPI → dBm (#1555, AC5). The backhaul field is `check_range [0, 220]`
+      // firmware-side (`device.odl:168`), so the controller rejects the 221-255
+      // "not available" band before it reaches us and the null this can return is
+      // the `0` case: `BackhaulStats` never populated. The STA field beside it is
+      // `check_maximum 255` (`sta.odl:55`) and *can* deliver a reserved value —
+      // the asymmetry is deliberate on the firmware's side, and `rcpiToRssi`
+      // guards both because it is the single place either is read.
+      //
+      // `?? 0` rather than a nullable: the record's `signalStrengthDbm` is a
+      // non-nullable int and `0` is the sentinel `_gradeMeshBackhaul` tests for
+      // (`signalDbm != 0`), so a missing reading grades as unknown rather than as
+      // an extremely strong signal.
+      final signalDbm = rcpiToRssi(node.backhaulStatsSignalStrengthRcpi) ?? 0;
 
-      // Parent node resolution
-      final parentNodeId = node.backhaulBackhaulDeviceId.isNotEmpty
-          ? node.backhaulBackhaulDeviceId
-          : null;
+      // Parent node resolution. Same reader as the discriminator above, so a
+      // parent ID this rejects cannot still arrive on the record.
+      final parentNodeId = meshBackhaulParentId(node);
       String? parentLabel;
       if (parentNodeId != null) {
         final normalizedParentId =
@@ -646,28 +659,21 @@ class UnifiedDiagnosticsService {
       }
 
       // Last contact time and stale detection
-      final lastContactTime = node.multiApLastContactTime?.toIso8601String();
+      final lastContactTime =
+          nonEpoch(node.multiApLastContactTime)?.toIso8601String();
       final isStale = _isNodeStale(lastContactTime);
 
       final severity = _gradeMeshBackhaul(
         wired: wired,
-        phyRateMbps: phyRateMbps,
         signalDbm: signalDbm,
         lastDownlinkRateKbps: lastDownlinkRateKbps,
         isStale: isStale,
       );
 
-      final label = node.manufacturerModel.isNotEmpty
-          ? node.manufacturerModel
-          : (node.id.isNotEmpty ? node.id : node.instancePath);
-
       results.add(MeshBackhaulNodeRecord(
         nodeId: node.id,
-        label: label,
-        mediaType:
-            node.backhaulMediaType.isEmpty ? 'Unknown' : node.backhaulMediaType,
+        label: _nodeLabel(node),
         linkType: linkType,
-        phyRateMbps: phyRateMbps,
         lastUplinkRateKbps: lastUplinkRateKbps,
         lastDownlinkRateKbps: lastDownlinkRateKbps,
         signalStrengthDbm: signalDbm,
@@ -682,6 +688,15 @@ class UnifiedDiagnosticsService {
 
     return results;
   }
+
+  /// A node's display label: model name, else its ID, else its instance path.
+  ///
+  /// `ManufacturerModel` is nullable since #1555 and reads as a prplMesh
+  /// placeholder on the controller row — which never reaches here, because the
+  /// controller is skipped.
+  String _nodeLabel(MeshNode node) =>
+      nonEmpty(node.manufacturerModel) ??
+      (node.id.isNotEmpty ? node.id : node.instancePath);
 
   /// Threshold for considering a mesh node "stale" (no TR-181 standard).
   /// Mesh nodes typically report every 30s-60s; 10 minutes allows for
@@ -700,9 +715,15 @@ class UnifiedDiagnosticsService {
     }
   }
 
+  /// Grades a wireless backhaul from RSSI and observed downlink rate.
+  ///
+  /// PHY rate used to be a third input, on the same "positive value or ignore"
+  /// footing as the other two. `BackhaulPHYRate` is not in the prplMesh schema
+  /// and has no replacement anywhere in it (#1555), so those arms could only
+  /// ever have been skipped — dropping them changes no verdict this firmware can
+  /// produce, and keeping them would have implied a signal we cannot read.
   MeshBackhaulSeverity _gradeMeshBackhaul({
     required bool wired,
-    required int phyRateMbps,
     required int signalDbm,
     required int lastDownlinkRateKbps,
     required bool isStale,
@@ -713,21 +734,18 @@ class UnifiedDiagnosticsService {
     if (wired) return MeshBackhaulSeverity.healthy;
 
     // Wireless backhaul thresholds (RSSI from wifi.dart):
-    //   poor   — PHY < 100 Mbps OR RSSI < rssiFair (-78) OR very low downlink
-    //   weak   — PHY 100-400 Mbps OR RSSI < rssiExcellent (-65) OR low downlink
-    //   healthy— PHY >= 400 Mbps AND RSSI >= rssiExcellent (-65)
-    final lowPhy = phyRateMbps > 0 && phyRateMbps < 100;
+    //   poor   — RSSI < rssiFair (-78) OR very low downlink
+    //   weak   — RSSI < rssiExcellent (-65) OR low downlink
+    //   healthy— RSSI >= rssiExcellent (-65)
     final lowRssi = signalDbm != 0 && signalDbm < rssiFair;
     final veryLowDownlink =
         lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 50000; // < 50 Mbps
-    if (lowPhy || lowRssi || veryLowDownlink) return MeshBackhaulSeverity.poor;
+    if (lowRssi || veryLowDownlink) return MeshBackhaulSeverity.poor;
 
-    final marginalPhy = phyRateMbps > 0 && phyRateMbps < 400;
     final marginalRssi = signalDbm != 0 && signalDbm < rssiExcellent;
     final lowDownlink =
         lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 200000; // < 200 Mbps
-    if (marginalPhy || marginalRssi || lowDownlink)
-      return MeshBackhaulSeverity.weak;
+    if (marginalRssi || lowDownlink) return MeshBackhaulSeverity.weak;
 
     return MeshBackhaulSeverity.healthy;
   }
@@ -977,9 +995,20 @@ class _RadioBucket {
 class MeshBackhaulNodeRecord {
   final String nodeId;
   final String label;
-  final String mediaType;
-  final String linkType; // "Wi-Fi" or "Ethernet" from codegen
-  final int phyRateMbps;
+
+  /// "Wi-Fi" or "Ethernet" from `MultiAPDevice.Backhaul.LinkType`, or null when
+  /// firmware named no medium for a link it did report.
+  ///
+  /// **Nullable on purpose (#1555).** The two views that render this record
+  /// print it verbatim, so a placeholder here is a claim on screen; a link known
+  /// only by its parent ID is a real state on this firmware, and `unknown` is
+  /// what `BackhaulInfo` already shows for it.
+  ///
+  /// The only medium field. `mediaType` and `phyRateMbps` used to travel
+  /// alongside it all the way to `MeshNodeBackhaulUIModel`; both were sourced
+  /// from `Device.{i}.Backhaul*` paths the prplMesh schema does not define, and
+  /// neither was ever displayed.
+  final String? linkType;
   final int lastUplinkRateKbps;
   final int lastDownlinkRateKbps;
   final int signalStrengthDbm;
@@ -997,9 +1026,7 @@ class MeshBackhaulNodeRecord {
   const MeshBackhaulNodeRecord({
     required this.nodeId,
     required this.label,
-    required this.mediaType,
     required this.linkType,
-    required this.phyRateMbps,
     required this.lastUplinkRateKbps,
     required this.lastDownlinkRateKbps,
     required this.signalStrengthDbm,

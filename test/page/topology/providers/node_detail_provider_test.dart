@@ -23,7 +23,7 @@ void main() {
     deviceId: 'AA:BB:CC:DD:EE:02',
     model: 'MX5500',
     connectedClients: [],
-    backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+    backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
   );
 
   final device1 = ClientDevice(

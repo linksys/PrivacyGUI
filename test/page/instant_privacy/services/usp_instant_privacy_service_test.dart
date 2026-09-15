@@ -31,12 +31,22 @@ ConnectedDevice _device({
       ipv6Addresses: const [],
     );
 
-/// Only the three fields [UspInstantPrivacyService.meshBackhaulMacs] reads are
+/// Only the fields [UspInstantPrivacyService.meshBackhaulMacs] reads are
 /// parameterised; the rest of [MeshNode] is irrelevant to the allow-list.
+///
+/// [radioBackhaulStaMac] is the second of the two sources. It used to be the
+/// node-level `BackhaulMACAddress`, which FL-WRT 2.0 does not define (#1555); the
+/// bSTA's own `Radio.{i}.BackhaulSta.MACAddress` is the address that survived, so
+/// the union still reads two independent fields rather than one.
+///
+/// One of three file-local copies of this helper. When a fourth test file needs a
+/// `MeshNode`, promote all of them into `test/mocks/test_data/` per constitution
+/// Article I §1.6.2 — the argument for waiting is written out at
+/// `mesh_topology_builder_test.dart`'s `_node`.
 MeshNode _meshNode({
   String instancePath = 'Device.WiFi.DataElements.Network.Device.1.',
   String id = 'AA:BB:CC:DD:EE:00',
-  String backhaulMacAddress = '',
+  String radioBackhaulStaMac = '',
   String backhaulBackhaulMacAddress = '',
 }) =>
     MeshNode(
@@ -46,11 +56,6 @@ MeshNode _meshNode({
       manufacturer: 'Linksys',
       serialNumber: 'SN0',
       softwareVersion: '2.0.0',
-      backhaulAlId: '',
-      backhaulMacAddress: backhaulMacAddress,
-      backhaulMediaType: '',
-      backhaulPhyRate: 0,
-      multiApAssocIEEE1905DeviceRef: '',
       multiApEasyMeshAgentOperationMode: '',
       backhaulBackhaulDeviceId: '',
       backhaulBackhaulMacAddress: backhaulBackhaulMacAddress,
@@ -62,8 +67,15 @@ MeshNode _meshNode({
       backhaulStatsErrorsSent: 0,
       backhaulStatsErrorsReceived: 0,
       backhaulStatsLastDataUplinkRate: 0,
-      backhaulStatsSignalStrength: 0,
-      radios: const [],
+      backhaulStatsSignalStrengthRcpi: 0,
+      radios: [
+        MeshRadio(
+          instancePath: '${instancePath}Radio.1.',
+          backhaulStaMacAddress: radioBackhaulStaMac,
+          currentOperatingClassProfiles: const [],
+          bssList: const [],
+        ),
+      ],
     );
 
 MacFilterAccessPoint _ap({
@@ -101,14 +113,19 @@ const _devicesResponseWithSlaveNode = {
 
 /// One complete `DataElements.Network.Device.{i}` response block.
 ///
-/// Every path must be spelled out: [DataElementsNetwork.fetch] validates that
-/// the response carries all of them and throws otherwise. That matches the real
-/// device, which returns empty strings for fields it has no value for rather
-/// than omitting the keys. Only the fields this feature reads are parameterised.
+/// Every path the schema still declares is spelled out, matching the real device,
+/// which returns empty strings for fields it has no value for rather than omitting
+/// the keys. Only the fields this feature reads are parameterised.
+///
+/// Since #1555 it writes **no** `BackhaulALID`, `BackhaulMACAddress`,
+/// `BackhaulMediaType`, `BackhaulPHYRate` or `MultiAPDevice.AssocIEEE1905DeviceRef`
+/// — prplMesh defines none of the five. `fetch` used to require the first four, so
+/// a fixture that supplies them is the one shape of response that cannot reproduce
+/// the throw the field saw.
 Map<String, dynamic> _networkDeviceResponse(
   int instance, {
   required String id,
-  String backhaulMacAddress = '',
+  String radioBackhaulStaMac = '',
   String backhaulBackhaulMacAddress = '',
   String linkType = '',
 }) {
@@ -119,11 +136,7 @@ Map<String, dynamic> _networkDeviceResponse(
     '${p}Manufacturer': 'Linksys',
     '${p}SerialNumber': 'SN$instance',
     '${p}SoftwareVersion': '2.0.0',
-    '${p}BackhaulALID': '',
-    '${p}BackhaulMACAddress': backhaulMacAddress,
-    '${p}BackhaulMediaType': '',
-    '${p}BackhaulPHYRate': '0',
-    '${p}MultiAPDevice.AssocIEEE1905DeviceRef': '',
+    '${p}Radio.1.BackhaulSta.MACAddress': radioBackhaulStaMac,
     '${p}MultiAPDevice.EasyMeshAgentOperationMode': '',
     '${p}MultiAPDevice.Backhaul.BackhaulDeviceID': '',
     '${p}MultiAPDevice.Backhaul.BackhaulMACAddress': backhaulBackhaulMacAddress,
@@ -147,14 +160,14 @@ Map<String, dynamic> _networkDeviceResponse(
 /// three distinct MACs per node, exactly as firmware reports them.
 ///
 /// The two backhaul fields differ in case here for the same reason firmware
-/// does: the top-level one came back lower-cased and the `MultiAPDevice` one
+/// does: the bSTA one came back lower-cased and the `MultiAPDevice` one
 /// upper-cased on the real device.
 final _networkResponseWithBackhaul = {
   ..._networkDeviceResponse(1, id: 'AA:BB:CC:DD:EE:00'),
   ..._networkDeviceResponse(
     2,
     id: 'AA:BB:CC:DD:EE:98',
-    backhaulMacAddress: 'aa:bb:cc:dd:ee:9b',
+    radioBackhaulStaMac: 'aa:bb:cc:dd:ee:9b',
     backhaulBackhaulMacAddress: 'AA:BB:CC:DD:EE:9B',
     linkType: 'Wi-Fi',
   ),
@@ -468,7 +481,7 @@ void main() {
 
     test('reads both fields firmware exposes the address in', () {
       final data = DataElementsNetwork(items: [
-        _meshNode(backhaulMacAddress: 'AA:BB:CC:DD:EE:9B'),
+        _meshNode(radioBackhaulStaMac: 'AA:BB:CC:DD:EE:9B'),
         _meshNode(
           instancePath: 'Device.WiFi.DataElements.Network.Device.2.',
           backhaulBackhaulMacAddress: 'AA:BB:CC:DD:EE:AB',
@@ -481,16 +494,39 @@ void main() {
 
     test('de-duplicates the two fields after normalizing case and separator',
         () {
-      // The real device returned the top-level field lower-cased and the
+      // The real device returned the bSTA field lower-cased and the
       // MultiAPDevice one upper-cased for the same node.
       final data = DataElementsNetwork(items: [
         _meshNode(
-          backhaulMacAddress: 'aa-bb-cc-dd-ee-9b',
+          radioBackhaulStaMac: 'aa-bb-cc-dd-ee-9b',
           backhaulBackhaulMacAddress: 'AA:BB:CC:DD:EE:9B',
         ),
       ]);
 
       expect(service.meshBackhaulMacs(data), ['AA:BB:CC:DD:EE:9B']);
+    });
+
+    test('the all-zero MAC is dropped, in either spelling (#1555)', () {
+      // `Radio.{i}.BackhaulSta.MACAddress` reads all-zero on a radio with no
+      // backhaul station — measured, and the state of every radio on an
+      // Ethernet-backhauled node. An allow-list entry for it matches nothing,
+      // which is harmless but makes the list a misleading thing to read back.
+      // `isUnsetMac` is separator-insensitive because firmware has been seen
+      // writing both spellings, and `MeshTopologyBuilder` rejects the same value
+      // through the same function.
+      final data = DataElementsNetwork(items: [
+        _meshNode(
+          radioBackhaulStaMac: '00:00:00:00:00:00',
+          backhaulBackhaulMacAddress: '00-00-00-00-00-00',
+        ),
+        _meshNode(
+          instancePath: 'Device.WiFi.DataElements.Network.Device.2.',
+          radioBackhaulStaMac: 'AA:BB:CC:DD:EE:9B',
+        ),
+      ]);
+
+      expect(service.meshBackhaulMacs(data), ['AA:BB:CC:DD:EE:9B'],
+          reason: 'the real address still gets through');
     });
 
     test('the gateway contributes nothing — it has no upstream backhaul', () {

@@ -826,9 +826,7 @@ class UnifiedDiagnosticsNotifier
         .map((r) => MeshNodeBackhaulUIModel(
               nodeId: r.nodeId,
               label: r.label,
-              mediaType: r.mediaType,
               linkType: r.linkType,
-              phyRateMbps: r.phyRateMbps,
               lastUplinkRateKbps: r.lastUplinkRateKbps,
               lastDownlinkRateKbps: r.lastDownlinkRateKbps,
               signalStrengthDbm: r.signalStrengthDbm,

@@ -411,7 +411,9 @@ class _MeshNodeRow extends StatelessWidget {
                     child: AppText.labelMedium(node.label),
                   ),
                   AppText.bodySmall(
-                    node.linkType,
+                    // See `step_result_tile.dart`: the medium is nullable and
+                    // the honest word for absent is `unknown` (#1555).
+                    node.linkType ?? loc(context).unknown,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],

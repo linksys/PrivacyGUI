@@ -3,6 +3,7 @@ import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
@@ -49,8 +50,11 @@ class MeshTopologyBuilder {
             if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
               final upperMac = mac.toUpperCase();
               clientToNodeMap[upperMac] = nodeDeviceId;
-              // DataElements STA.SignalStrength is RCPI (0-220), convert to RSSI
-              final rssi = rcpiToRssi(sta.signalStrength);
+              // DataElements STA.SignalStrength is RCPI (0-220), convert to
+              // RSSI. This field is declared `check_maximum 255` upstream, so
+              // it can carry the 221-255 "not available" band; `rcpiToRssi`
+              // returns null for those and the entry is simply not written.
+              final rssi = rcpiToRssi(sta.signalStrengthRcpi);
               if (rssi != null) {
                 clientSignalMap[upperMac] = rssi;
               }
@@ -67,17 +71,27 @@ class MeshTopologyBuilder {
       int? backhaulUplinkRate;
       int? backhaulDownlinkRate;
       if (includeBackhaulStats) {
-        backhaulSignalStrength = rcpiToRssi(node.backhaulStatsSignalStrength);
-        if (node.backhaulStatsLastDataUplinkRate > 0) {
+        // Same conversion as the STA field above, but for the opposite reason
+        // (#1555, AC5). This one is declared `check_range [0, 220]` upstream
+        // (`device.odl:168`), so the controller rejects a reserved value before
+        // it can reach us and `rcpiToRssi` is here for the `0` case —
+        // `BackhaulStats` not populated yet — not for the 221-255 band. The
+        // asymmetry with the STA field is the firmware's, deliberate, and not an
+        // inconsistency to unify: `rcpiToRssi` covers both because it is the one
+        // place either can be read, and dropping the range check because *this*
+        // path cannot trigger it would re-open the STA path.
+        backhaulSignalStrength =
+            rcpiToRssi(node.backhaulStatsSignalStrengthRcpi);
+        if ((node.backhaulStatsLastDataUplinkRate ?? 0) > 0) {
           backhaulUplinkRate = node.backhaulStatsLastDataUplinkRate;
         }
-        if (node.backhaulStatsLastDataDownlinkRate > 0) {
+        if ((node.backhaulStatsLastDataDownlinkRate ?? 0) > 0) {
           backhaulDownlinkRate = node.backhaulStatsLastDataDownlinkRate;
         }
       }
 
-      // Master node = no backhaul parent (backhaulAlId is empty)
-      final isMaster = node.backhaulAlId.trim().isEmpty;
+      // Master node = the controller, the one node with no backhaul of its own.
+      final isMaster = !hasMeshBackhaulLink(node);
 
       // These nodes are built from DataElements, so `deviceId` *is* the
       // DataElements identifier; carry it in `dataElementsId` too so a
@@ -89,39 +103,36 @@ class MeshTopologyBuilder {
         nodes.add(MasterNode(
           deviceId: nodeDeviceId,
           dataElementsId: nodeDeviceId,
-          model: node.manufacturerModel.trim(),
-          manufacturer: node.manufacturer.trim(),
-          serialNumber: node.serialNumber.trim(),
-          softwareVersion: node.softwareVersion.trim(),
+          model: _identity(node.manufacturerModel),
+          manufacturer: _identity(node.manufacturer),
+          serialNumber: _identity(node.serialNumber),
+          softwareVersion: _identity(node.softwareVersion),
           instancePath: node.instancePath,
         ));
       } else {
         nodes.add(SlaveNode(
           deviceId: nodeDeviceId,
           dataElementsId: nodeDeviceId,
-          model: node.manufacturerModel.trim(),
-          manufacturer: node.manufacturer.trim(),
-          serialNumber: node.serialNumber.trim(),
-          softwareVersion: node.softwareVersion.trim(),
+          model: _identity(node.manufacturerModel),
+          manufacturer: _identity(node.manufacturer),
+          serialNumber: _identity(node.serialNumber),
+          softwareVersion: _identity(node.softwareVersion),
           instancePath: node.instancePath,
           backhaul: BackhaulInfo(
-            mediaType: node.backhaulMediaType.trim(),
-            linkType: node.backhaulLinkType.trim().isNotEmpty
-                ? node.backhaulLinkType.trim()
-                : null,
-            phyRate: node.backhaulPhyRate,
+            linkType: meshBackhaulLinkType(node),
             signalStrength: backhaulSignalStrength,
             uplinkRate: backhaulUplinkRate,
             downlinkRate: backhaulDownlinkRate,
-            parentNodeId: node.backhaulBackhaulDeviceId.trim().isNotEmpty
-                ? node.backhaulBackhaulDeviceId.trim()
-                : null,
-            parentBssid: node.backhaulMacAddressMultiAp.trim().isNotEmpty
-                ? node.backhaulMacAddressMultiAp.trim()
-                : null,
-            lastContactTime: node.multiApLastContactTime?.toIso8601String(),
-            backhaulAlId: node.backhaulAlId.trim(),
-            backhaulMacAddress: node.backhaulMacAddress.trim(),
+            // Both read through the all-zero guard: they are MACs from the same
+            // `MultiAPDevice.Backhaul` object as the bench-measured sentinel, and
+            // `parentNodeId` is the field the master/slave discriminator keys on,
+            // so an unguarded `00:00:00:00:00:00` would build the controller as a
+            // slave whose parent nothing can resolve (#1555).
+            parentNodeId: meshBackhaulParentId(node),
+            parentBssid: nonUnsetMac(node.backhaulMacAddressMultiAp),
+            lastContactTime:
+                nonEpoch(node.multiApLastContactTime)?.toIso8601String(),
+            backhaulMacAddress: _backhaulStaMac(node),
           ),
         ));
       }
@@ -133,5 +144,33 @@ class MeshTopologyBuilder {
       clientSignalMap: clientSignalMap,
       clientBandSsidMap: clientBandSsidMap,
     );
+  }
+
+  /// A trimmed identity string, empty when firmware reported nothing.
+  ///
+  /// The empty string rather than null because [NodeEntity]'s identity fields
+  /// are non-nullable `String`, so absence has to arrive as `''`. That is the
+  /// only reason this exists beside [nonEmpty] rather than being it, and the
+  /// distinction matters one layer up: `MeshNetworkBuilder` merges these against
+  /// `system_info`, where a `''` must not count as a value.
+  ///
+  /// Defined in terms of [nonEmpty] so the two cannot drift on what "reported
+  /// nothing" means — the `?? ''` is the whole difference.
+  static String _identity(String? value) => nonEmpty(value) ?? '';
+
+  /// The node's own station-side backhaul MAC.
+  ///
+  /// `Radio.{i}.BackhaulSta.MACAddress` is per-radio and only one radio carries
+  /// the backhaul, so this takes the first radio that reports a real address.
+  /// It replaces `Device.{i}.BackhaulMACAddress`, which the prplMesh schema does
+  /// not define (#1555). The all-zero sentinel that the other radios report is
+  /// recognised by [isUnsetMac], shared with `UspInstantPrivacyService` — the two
+  /// read the same field and must agree on what "no station" looks like.
+  static String? _backhaulStaMac(MeshNode node) {
+    for (final radio in node.radios) {
+      final mac = nonUnsetMac(radio.backhaulStaMacAddress);
+      if (mac != null) return mac;
+    }
+    return null;
   }
 }
