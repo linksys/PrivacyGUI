@@ -612,12 +612,20 @@ class UnifiedDiagnosticsService {
         continue;
       }
 
-      // `LinkType` is the only medium field firmware produces. There is no
-      // longer a `mediaType` string to parse a medium out of when it is absent,
-      // so an agent that reports no medium is reported as Wi-Fi — the same
-      // assumption the old fallback made, now stated instead of derived.
-      final linkType = meshBackhaulLinkType(node) ?? 'Wi-Fi';
-      final wired = linkType == 'Ethernet';
+      // `LinkType` is the only medium field firmware produces, and it stays
+      // nullable all the way to the two tiles that render it. There is no longer
+      // a `mediaType` string to fall back to, and the previous revision of this
+      // line defaulted to `'Wi-Fi'` instead: that value went onto the record
+      // (`:667`), through the UI model, and into `step_result_tile` and
+      // `diagnostic_result_card` verbatim — while node detail, reading the same
+      // firmware state through `BackhaulInfo`, printed `unknown`. Same node,
+      // same session, two mediums, one of them measured by nothing.
+      //
+      // `wired` is false for an unknown medium either way, so the grading arm is
+      // unchanged by carrying the null; what changes is that the user is not
+      // told a medium the app never read.
+      final linkType = meshBackhaulLinkType(node);
+      final wired = isMeshBackhaulEthernet(linkType);
 
       final lastUplinkRateKbps = (node.backhaulStatsLastDataUplinkRate ?? 0) > 0
           ? node.backhaulStatsLastDataUplinkRate!
@@ -640,8 +648,9 @@ class UnifiedDiagnosticsService {
       // an extremely strong signal.
       final signalDbm = rcpiToRssi(node.backhaulStatsSignalStrengthRcpi) ?? 0;
 
-      // Parent node resolution
-      final parentNodeId = nonEmpty(node.backhaulBackhaulDeviceId);
+      // Parent node resolution. Same reader as the discriminator above, so a
+      // parent ID this rejects cannot still arrive on the record.
+      final parentNodeId = meshBackhaulParentId(node);
       String? parentLabel;
       if (parentNodeId != null) {
         final normalizedParentId =
@@ -987,14 +996,19 @@ class MeshBackhaulNodeRecord {
   final String nodeId;
   final String label;
 
-  /// "Wi-Fi" or "Ethernet", from `MultiAPDevice.Backhaul.LinkType`.
+  /// "Wi-Fi" or "Ethernet" from `MultiAPDevice.Backhaul.LinkType`, or null when
+  /// firmware named no medium for a link it did report.
+  ///
+  /// **Nullable on purpose (#1555).** The two views that render this record
+  /// print it verbatim, so a placeholder here is a claim on screen; a link known
+  /// only by its parent ID is a real state on this firmware, and `unknown` is
+  /// what `BackhaulInfo` already shows for it.
   ///
   /// The only medium field. `mediaType` and `phyRateMbps` used to travel
   /// alongside it all the way to `MeshNodeBackhaulUIModel`; both were sourced
-  /// from `Device.{i}.Backhaul*` paths the prplMesh schema does not define
-  /// (#1555), and neither was ever displayed — the two views that render this
-  /// record read `linkType`.
-  final String linkType;
+  /// from `Device.{i}.Backhaul*` paths the prplMesh schema does not define, and
+  /// neither was ever displayed.
+  final String? linkType;
   final int lastUplinkRateKbps;
   final int lastDownlinkRateKbps;
   final int signalStrengthDbm;

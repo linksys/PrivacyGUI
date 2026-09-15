@@ -1190,6 +1190,36 @@ void main() {
       expect(node.linkType, 'Ethernet');
     });
 
+    test('the wired test is case-insensitive, and keeps firmware spelling',
+        () async {
+      // Since #1555 the four medium tests in the app share one predicate
+      // (`isMeshBackhaulEthernet`), which case-folds. The RSSI below is what makes
+      // this row worth having: a wired link is healthy whatever it reads, but a
+      // node misread as wireless is graded on it — and −85 dBm grades **poor**. So
+      // a build spelling the value `ethernet` would report a failing extender on a
+      // healthy cable, and recommend moving it.
+      //
+      // Only the classification folds case: the record keeps what firmware sent,
+      // because that string is what the tile prints.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: 'ethernet',
+                rateMbps: 1000,
+                signalStrength: -85),
+          });
+
+      final node = (await service.checkMeshBackhaul()).single;
+      expect(node.severity, MeshBackhaulSeverity.healthy);
+      expect(node.linkType, 'ethernet');
+    });
+
     test('classifies low-PHY wireless backhaul as poor', () async {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
@@ -1337,9 +1367,12 @@ void main() {
 
       final result = await service.checkMeshBackhaul();
       expect(result.map((n) => n.nodeId), ['agent-A']);
-      expect(result.single.linkType, 'Wi-Fi',
-          reason: 'with no medium reported the record says Wi-Fi — the only '
-              'assumption left once BackhaulMediaType is gone');
+      expect(result.single.linkType, isNull,
+          reason: 'the link is real but its medium is not reported, and the '
+              'record must not name one: an earlier revision defaulted this to '
+              '"Wi-Fi", which both diagnostics surfaces then printed as fact for '
+              'a node whose medium firmware never sent. Null is what lets the '
+              'views render `unknown`');
       expect(result.single.parentLabel, isNotNull,
           reason:
               'the parent it was identified by must also resolve to a label');

@@ -81,6 +81,122 @@ void main() {
       expect(hasMeshBackhaulLink(_node(parentDeviceId: '')), isFalse);
       expect(hasMeshBackhaulLink(_node(parentDeviceId: '  ')), isFalse);
     });
+
+    // The all-zero MAC is the same sentinel `isUnsetMac` was written for, on a
+    // sibling field of the same `MultiAPDevice.Backhaul` object. Taken at face
+    // value here it makes the *controller* an agent — the one node in the
+    // topology that must not have a parent gets one nothing can resolve, and the
+    // tree ends up with no root.
+    test('the all-zero parent ID is not evidence of a parent', () {
+      for (final spelling in [
+        '00:00:00:00:00:00',
+        '00-00-00-00-00-00',
+        '000000000000',
+        ' 00:00:00:00:00:00 ',
+      ]) {
+        expect(hasMeshBackhaulLink(_node(parentDeviceId: spelling)), isFalse,
+            reason: 'unset parent written $spelling read as a real parent');
+      }
+    });
+
+    // ...and it must not shadow the other field either: a node that reports the
+    // sentinel parent *and* a medium is still an agent, decided by the medium.
+    test('the all-zero parent ID leaves the LinkType to decide', () {
+      expect(
+          hasMeshBackhaulLink(
+              _node(linkType: 'Wi-Fi', parentDeviceId: '00:00:00:00:00:00')),
+          isTrue);
+      expect(
+          hasMeshBackhaulLink(
+              _node(linkType: 'None', parentDeviceId: '00:00:00:00:00:00')),
+          isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // meshBackhaulParentId — the parent MAC, or null (#1555)
+  // ---------------------------------------------------------------------------
+  //
+  // One reader for the field the controller/agent discriminator keys on, so the
+  // record a builder writes and the decision it made cannot disagree about
+  // whether the node has a parent.
+
+  group('meshBackhaulParentId', () {
+    test('a real parent passes through trimmed', () {
+      expect(meshBackhaulParentId(_node(parentDeviceId: ' AA:BB:CC:DD:EE:00 ')),
+          'AA:BB:CC:DD:EE:00');
+    });
+
+    test('absent, blank and the all-zero sentinel are all null', () {
+      expect(meshBackhaulParentId(_node()), isNull);
+      expect(meshBackhaulParentId(_node(parentDeviceId: '')), isNull);
+      expect(meshBackhaulParentId(_node(parentDeviceId: '  ')), isNull);
+      expect(meshBackhaulParentId(_node(parentDeviceId: '00:00:00:00:00:00')),
+          isNull);
+    });
+
+    // The invariant that made this a shared function rather than two readers:
+    // "has a link" and "has a parent" are answered from the same value.
+    test('a parent implies a link', () {
+      for (final parent in [
+        'AA:BB:CC:DD:EE:00',
+        '00:00:00:00:00:00',
+        '',
+        null,
+      ]) {
+        final node = _node(parentDeviceId: parent);
+        if (meshBackhaulParentId(node) != null) {
+          expect(hasMeshBackhaulLink(node), isTrue,
+              reason: '"$parent" yielded a parent but no link');
+        }
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // isMeshBackhaulEthernet — the single medium test (#1555)
+  // ---------------------------------------------------------------------------
+  //
+  // Four sites spelled this `linkType == 'Ethernet'` by hand
+  // (`BackhaulInfo.isEthernet`, `MeshNodeBackhaulUIModel.isWired`,
+  // `UnifiedDiagnosticsService`'s `wired`, `node_detail_popup`). All four would
+  // have misread the same alternative spelling in the same direction at the same
+  // moment — a wired node graded on an RSSI it does not have.
+
+  group('isMeshBackhaulEthernet', () {
+    test('firmware spelling is wired', () {
+      expect(isMeshBackhaulEthernet('Ethernet'), isTrue);
+    });
+
+    test('case and padding do not change the answer', () {
+      for (final spelling in [
+        'ethernet',
+        'ETHERNET',
+        'EtHeRnEt',
+        '  Ethernet ',
+        '\tethernet\n',
+      ]) {
+        expect(isMeshBackhaulEthernet(spelling), isTrue,
+            reason: '"$spelling" must read as wired');
+      }
+    });
+
+    test('every other medium, and absence, is not wired', () {
+      for (final spelling in [
+        'Wi-Fi',
+        'WiFi',
+        'None',
+        '',
+        '   ',
+        null,
+        // Not a prefix match: a longer value containing the word is a different
+        // medium, not this one.
+        'Ethernet over Coax',
+      ]) {
+        expect(isMeshBackhaulEthernet(spelling), isFalse,
+            reason: '"$spelling" must not read as wired');
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -253,6 +369,42 @@ void main() {
       expect(isUnsetMac(''), isFalse);
       expect(isUnsetMac('   '), isFalse);
       expect(isUnsetMac('::::'), isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // nonUnsetMac — both MAC absences at once (#1555)
+  // ---------------------------------------------------------------------------
+  //
+  // [nonEmpty] and [isUnsetMac] composed. Three sites read a MAC off this
+  // subtree — the parent device ID, the parent BSSID, the bSTA MAC — and each had
+  // its own hand-rolled pair of checks, in different orders. Consumers do not
+  // care which kind of absence they got, only that they got one.
+
+  group('nonUnsetMac', () {
+    test('a real address passes through trimmed', () {
+      expect(nonUnsetMac('AA:BB:CC:DD:EE:01'), 'AA:BB:CC:DD:EE:01');
+      expect(nonUnsetMac(' AA:BB:CC:DD:EE:01 '), 'AA:BB:CC:DD:EE:01');
+      // A genuine address that is mostly zeros still survives.
+      expect(nonUnsetMac('00:00:00:00:00:01'), '00:00:00:00:00:01');
+    });
+
+    test('both kinds of absence collapse to null', () {
+      expect(nonUnsetMac(null), isNull);
+      expect(nonUnsetMac(''), isNull);
+      expect(nonUnsetMac('   '), isNull);
+      expect(nonUnsetMac('00:00:00:00:00:00'), isNull);
+      expect(nonUnsetMac('000000000000'), isNull);
+      expect(nonUnsetMac(' 00-00-00-00-00-00 '), isNull);
+    });
+
+    // The two halves answer differently about whitespace — `isUnsetMac('  ')` is
+    // false, because whitespace is absence rather than the sentinel — and this
+    // function has to return null for it either way. That is the whole reason
+    // callers get one helper instead of two checks to remember the polarity of.
+    test('whitespace is absence, whichever half catches it', () {
+      expect(nonUnsetMac('\t\n'), isNull);
+      expect(isUnsetMac('\t\n'), isFalse);
     });
   });
 }

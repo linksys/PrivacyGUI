@@ -404,6 +404,87 @@ void main() {
       expect(client.wifi?.ssidName, 'ResolvedSSID'); // Fell back
     });
 
+    test('a padded SSID keeps its spaces and does not fall back (#1555)', () {
+      // Why this one chain keeps a non-trimming guard while the four identity
+      // chains moved to the shared, trimming `nonEmpty`. An SSID may legitimately
+      // begin or end with a space — trimming would both change what is displayed
+      // and let a real single-space SSID lose the `??` to another source.
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'MasterClient',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {
+          '11:22:33:44:55:01':
+              ClientConnectionDetail(band: '5GHz', ssidName: ' Home Wi-Fi '),
+        },
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: {
+            '11:22:33:44:55:01': (band: '2.4GHz', ssid: 'OtherSSID'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.wifi?.ssidName, ' Home Wi-Fi ',
+          reason: 'the spaces are part of the SSID, not padding to strip');
+    });
+
+    test('an all-whitespace SSID is a value, not absence (#1555)', () {
+      // The single-space SSID the chain must not trim away. A trimming guard
+      // would read it as absent and substitute the DataElements value, showing
+      // the client on an SSID it is not associated with.
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'MasterClient',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {
+          '11:22:33:44:55:01':
+              ClientConnectionDetail(band: '5GHz', ssidName: ' '),
+        },
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: {
+            '11:22:33:44:55:01': (band: '2.4GHz', ssid: 'OtherSSID'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.master.connectedClients.first.wifi?.ssidName, ' ');
+    });
+
     test('merges multi-interface devices by hostname', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
@@ -1341,9 +1422,9 @@ void main() {
         }
       });
 
-      // The reason the chain is `_nonEmpty(...) ?? _nonEmpty(...)` and not a
-      // bare `??`. `system_info` fields are non-nullable Strings that are '' on
-      // a router that did not answer them, and '' is a perfectly good value to
+      // The reason the chain is `nonEmpty(...) ?? nonEmpty(...)` and not a bare
+      // `??`. `system_info` fields are non-nullable Strings that are '' on a
+      // router that did not answer them, and '' is a perfectly good value to
       // `??`, so a bare chain would show an empty model instead of falling
       // through — and an empty string is indistinguishable from "no data" on
       // screen, which is how this would ship unnoticed.
@@ -1369,6 +1450,48 @@ void main() {
         expect(result.master.manufacturer, prplManufacturer);
         expect(result.master.serialNumber, prplSerial);
         expect(result.master.softwareVersion, prplSoftware);
+      });
+
+      // And the reason the shared `nonEmpty` trims. A whitespace-only value is
+      // non-empty, so it *wins* the `??` and lands a blank-looking model on the
+      // master while the real value from DataElements is never consulted — the
+      // same silent failure as the row above, one space further along. The
+      // builder's own non-trimming copy of this guard let it through until #1555
+      // replaced it with the shared one.
+      test('a whitespace-only system_info field falls through too', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(
+            modelName: ' ',
+            manufacturer: '\t',
+            serialNumber: '   ',
+            softwareVersion: '\n',
+          ),
+        );
+
+        expect(result.master.model, prplModel);
+        expect(result.master.manufacturer, prplManufacturer);
+        expect(result.master.serialNumber, prplSerial);
+        expect(result.master.softwareVersion, prplSoftware);
+      });
+
+      // A real value keeps winning, padding and all — trimming is what the chain
+      // decides on, not what it stores.
+      test('a padded system_info field still wins, trimmed', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(modelName: '  MR7500 '),
+        );
+
+        expect(result.master.model, 'MR7500');
       });
 
       test('with neither source the fields are empty, never null', () {

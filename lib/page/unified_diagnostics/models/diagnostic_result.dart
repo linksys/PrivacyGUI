@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'diagnostic_state.dart';
@@ -403,12 +404,17 @@ class MeshNodeBackhaulUIModel extends Equatable {
   /// Human-friendly label (manufacturer model, falls back to nodeId).
   final String label;
 
-  /// Backhaul link type from codegen ("Wi-Fi" or "Ethernet").
+  /// Backhaul link type from codegen ("Wi-Fi" or "Ethernet"), or null when
+  /// firmware named no medium for a link it did report.
+  ///
+  /// Nullable so the two tiles that render it can say `unknown` instead of
+  /// naming a medium nothing measured — see `MeshBackhaulNodeRecord.linkType`,
+  /// which this mirrors field for field.
   ///
   /// The only medium field. A `mediaType` string and a `phyRateMbps` used to sit
   /// beside it, both sourced from `Device.{i}.Backhaul*` paths absent from the
   /// prplMesh schema and both unread by every view (#1555).
-  final String linkType;
+  final String? linkType;
 
   /// Last data uplink rate observed in kbps (-1 if unknown).
   final int lastUplinkRateKbps;
@@ -452,7 +458,12 @@ class MeshNodeBackhaulUIModel extends Equatable {
     this.isStale = false,
   });
 
-  bool get isWired => linkType == 'Ethernet';
+  /// Whether this node's backhaul is wired.
+  ///
+  /// Routed through the shared predicate so this and the three other medium
+  /// tests in the app cannot disagree about a spelling; null (unknown medium) is
+  /// correctly not wired.
+  bool get isWired => isMeshBackhaulEthernet(linkType);
 
   @override
   List<Object?> get props => [

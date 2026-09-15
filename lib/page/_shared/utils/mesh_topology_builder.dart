@@ -123,8 +123,13 @@ class MeshTopologyBuilder {
             signalStrength: backhaulSignalStrength,
             uplinkRate: backhaulUplinkRate,
             downlinkRate: backhaulDownlinkRate,
-            parentNodeId: nonEmpty(node.backhaulBackhaulDeviceId),
-            parentBssid: nonEmpty(node.backhaulMacAddressMultiAp),
+            // Both read through the all-zero guard: they are MACs from the same
+            // `MultiAPDevice.Backhaul` object as the bench-measured sentinel, and
+            // `parentNodeId` is the field the master/slave discriminator keys on,
+            // so an unguarded `00:00:00:00:00:00` would build the controller as a
+            // slave whose parent nothing can resolve (#1555).
+            parentNodeId: meshBackhaulParentId(node),
+            parentBssid: nonUnsetMac(node.backhaulMacAddressMultiAp),
             lastContactTime:
                 nonEpoch(node.multiApLastContactTime)?.toIso8601String(),
             backhaulMacAddress: _backhaulStaMac(node),
@@ -145,10 +150,13 @@ class MeshTopologyBuilder {
   ///
   /// The empty string rather than null because [NodeEntity]'s identity fields
   /// are non-nullable `String`, so absence has to arrive as `''`. That is the
-  /// one reason this exists next to [nonEmpty] instead of using it, and the
+  /// only reason this exists beside [nonEmpty] rather than being it, and the
   /// distinction matters one layer up: `MeshNetworkBuilder` merges these against
   /// `system_info`, where a `''` must not count as a value.
-  static String _identity(String? value) => value?.trim() ?? '';
+  ///
+  /// Defined in terms of [nonEmpty] so the two cannot drift on what "reported
+  /// nothing" means — the `?? ''` is the whole difference.
+  static String _identity(String? value) => nonEmpty(value) ?? '';
 
   /// The node's own station-side backhaul MAC.
   ///
@@ -160,9 +168,8 @@ class MeshTopologyBuilder {
   /// read the same field and must agree on what "no station" looks like.
   static String? _backhaulStaMac(MeshNode node) {
     for (final radio in node.radios) {
-      final mac = radio.backhaulStaMacAddress?.trim() ?? '';
-      if (mac.isEmpty || isUnsetMac(mac)) continue;
-      return mac;
+      final mac = nonUnsetMac(radio.backhaulStaMacAddress);
+      if (mac != null) return mac;
     }
     return null;
   }

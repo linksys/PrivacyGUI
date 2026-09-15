@@ -488,6 +488,39 @@ void main() {
         container.dispose();
       });
 
+      // The seam between the service and the two tiles that print the medium.
+      // The service leaves `linkType` null for a link whose medium firmware never
+      // reported (#1555); if this mapping substituted anything the views would
+      // print it as fact, which is what an earlier revision of that change did
+      // with `'Wi-Fi'`.
+      test('an unreported medium stays null through the mapping', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul()).thenAnswer((_) async => [
+              const MeshBackhaulNodeRecord(
+                nodeId: 'agent-A',
+                label: 'Linksys M60TB',
+                linkType: null,
+                lastUplinkRateKbps: 800,
+                lastDownlinkRateKbps: 800,
+                signalStrengthDbm: -50,
+                isController: false,
+                severity: MeshBackhaulSeverity.healthy,
+              ),
+            ]);
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final result = container.read(unifiedDiagnosticsProvider).results.single
+            as MeshBackhaulCheckUIModel;
+        expect(result.nodes.single.linkType, isNull);
+        expect(result.nodes.single.isWired, isFalse,
+            reason: 'an unknown medium is not a claim of a cable');
+        container.dispose();
+      });
+
       test('emits warning + reposition recommendation when any node is weak',
           () async {
         final container = createContainer();

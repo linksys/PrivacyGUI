@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 /// Builds [MeshNetwork] from raw data sources.
 ///
@@ -341,8 +342,8 @@ class MeshNetworkBuilder {
       final bandSsid = meshTopology.clientBandSsidMap[mac];
       wifi = WifiConnectionInfo(
         signalStrength: signalStrength,
-        band: _nonEmpty(detail?.band) ?? bandSsid?.band,
-        ssidName: _nonEmpty(detail?.ssidName) ?? bandSsid?.ssid,
+        band: _nonEmptyRaw(detail?.band) ?? bandSsid?.band,
+        ssidName: _nonEmptyRaw(detail?.ssidName) ?? bandSsid?.ssid,
         downlinkRate:
             device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate,
         uplinkRate: device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate,
@@ -376,10 +377,17 @@ class MeshNetworkBuilder {
   // Private: Hostname grouping
   // ---------------------------------------------------------------------------
 
-  /// Returns [s] if it is non-null and non-empty, otherwise null.
-  /// Used so an empty String from a non-nullable source doesn't mask a `??`
-  /// fallback to another source.
-  static String? _nonEmpty(String? s) => (s != null && s.isNotEmpty) ? s : null;
+  /// Returns [s] if it is non-null and non-empty **without trimming**, otherwise
+  /// null.
+  ///
+  /// The SSID chain only. An SSID may legitimately begin or end with a space, so
+  /// trimming would both alter what is displayed and let a real single-space SSID
+  /// fall through to another source. Every other chain in this file uses the
+  /// shared [nonEmpty], which trims — see its doc for why that is what a `??`
+  /// chain wants: an untrimmed `' '` is non-empty and therefore *wins* the
+  /// chain, which is the opposite of the fallback this helper was written for.
+  static String? _nonEmptyRaw(String? s) =>
+      (s != null && s.isNotEmpty) ? s : null;
 
   static String _normalizeHostname(String hostname) {
     var normalized = hostname.trim().toLowerCase();
@@ -476,17 +484,17 @@ class MeshNetworkBuilder {
       // firmware, so `masterMeshInfo` was always null and the fallback was all
       // anyone ever saw. Regenerating the definition is what would have made
       // this visible — which is why it is fixed in the same change.
-      model: _nonEmpty(systemInfo?.modelName) ??
-          _nonEmpty(masterMeshInfo?.model) ??
+      model: nonEmpty(systemInfo?.modelName) ??
+          nonEmpty(masterMeshInfo?.model) ??
           '',
-      manufacturer: _nonEmpty(systemInfo?.manufacturer) ??
-          _nonEmpty(masterMeshInfo?.manufacturer) ??
+      manufacturer: nonEmpty(systemInfo?.manufacturer) ??
+          nonEmpty(masterMeshInfo?.manufacturer) ??
           '',
-      serialNumber: _nonEmpty(systemInfo?.serialNumber) ??
-          _nonEmpty(masterMeshInfo?.serialNumber) ??
+      serialNumber: nonEmpty(systemInfo?.serialNumber) ??
+          nonEmpty(masterMeshInfo?.serialNumber) ??
           '',
-      softwareVersion: _nonEmpty(systemInfo?.softwareVersion) ??
-          _nonEmpty(masterMeshInfo?.softwareVersion) ??
+      softwareVersion: nonEmpty(systemInfo?.softwareVersion) ??
+          nonEmpty(masterMeshInfo?.softwareVersion) ??
           '',
       ipAddress: masterDevice?.ipAddress,
       ipv6Addresses: masterDevice?.ipv6Addresses
@@ -521,17 +529,18 @@ class MeshNetworkBuilder {
       hostName: slaveDevice.hostName,
       // DataElements first here, unlike the master: for a slave these fields are
       // prplMesh reporting the *agent*, and there is no `system_info` for a
-      // remote node to check them against. `_nonEmpty` rather than a bare `??`
+      // remote node to check them against. `nonEmpty` rather than a bare `??`
       // because `MeshTopologyBuilder` reports an absent field as `''`, which
-      // `??` would accept as an answer.
-      model: _nonEmpty(slaveMeshInfo?.model) ??
-          _nonEmpty(slaveDevice.modelName) ??
+      // `??` would accept as an answer — and because it trims, so a
+      // whitespace-only field cannot win the chain either (#1555).
+      model: nonEmpty(slaveMeshInfo?.model) ??
+          nonEmpty(slaveDevice.modelName) ??
           '',
-      manufacturer: _nonEmpty(slaveMeshInfo?.manufacturer) ??
-          _nonEmpty(slaveDevice.manufacturer) ??
+      manufacturer: nonEmpty(slaveMeshInfo?.manufacturer) ??
+          nonEmpty(slaveDevice.manufacturer) ??
           '',
-      serialNumber: _nonEmpty(slaveMeshInfo?.serialNumber) ?? '',
-      softwareVersion: _nonEmpty(slaveMeshInfo?.softwareVersion) ?? '',
+      serialNumber: nonEmpty(slaveMeshInfo?.serialNumber) ?? '',
+      softwareVersion: nonEmpty(slaveMeshInfo?.softwareVersion) ?? '',
       ipAddress:
           slaveDevice.ipAddress.isNotEmpty ? slaveDevice.ipAddress : null,
       ipv6Addresses: slaveDevice.ipv6Addresses

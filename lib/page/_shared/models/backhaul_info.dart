@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 /// Backhaul connection info for slave mesh nodes.
 ///
@@ -60,7 +61,12 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
   static const none = BackhaulInfo();
 
   /// Whether the backhaul is Ethernet (wired).
-  bool get isEthernet => linkType == 'Ethernet';
+  ///
+  /// Routed through the shared predicate so this, `MeshNodeBackhaulUIModel`'s
+  /// `isWired`, the diagnostics grader and the topology popup all read the field
+  /// the same way — four hand-written `== 'Ethernet'` comparisons would misread
+  /// the same spelling in the same direction at the same time.
+  bool get isEthernet => isMeshBackhaulEthernet(linkType);
 
   /// Whether the backhaul is WiFi (wireless).
   ///

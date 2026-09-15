@@ -323,6 +323,74 @@ void main() {
       expect(slave.isMaster, isFalse, reason: 'still an agent, by LinkType');
     });
 
+    test(
+        'an all-zero parent ID does not turn the controller into an agent '
+        '(#1555)', () {
+      // The same sentinel as the bSTA MAC above, on a sibling field of the same
+      // `MultiAPDevice.Backhaul` object — and this one is the field the
+      // controller/agent decision keys on. Read raw it builds the gateway as a
+      // `SlaveNode` whose parent is an address nothing resolves, leaving the
+      // topology with no root at all.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '1',
+          id: 'AA:BB:CC:DD:EE:01',
+          model: 'MR7500',
+          parentDeviceId: '00:00:00:00:00:00',
+        ),
+      ]);
+
+      final node = MeshTopologyBuilder.build(network).nodes[0];
+      expect(node, isA<MasterNode>());
+      expect(node.isMaster, isTrue);
+    });
+
+    test('an all-zero parent BSSID is no BSSID (#1555)', () {
+      // A genuine agent whose parent fields firmware filled with the sentinel.
+      // It stays an agent — `LinkType` decides that — but neither MAC may reach
+      // the model, or the backhaul card prints `00:00:00:00:00:00` as the AP it
+      // is attached to.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Wi-Fi',
+          parentDeviceId: '00:00:00:00:00:00',
+          parentBssid: '00:00:00:00:00:00',
+        ),
+      ]);
+
+      final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
+      expect(slave.backhaul.parentNodeId, isNull);
+      expect(slave.backhaul.parentBssid, isNull);
+      expect(slave.isMaster, isFalse, reason: 'still an agent, by LinkType');
+    });
+
+    test('padded identity fields arrive trimmed (#1555)', () {
+      // `_identity` is `nonEmpty(...) ?? ''` since #1555, and `nonEmpty` trims.
+      // That matters one layer up: `MeshNetworkBuilder` merges these against
+      // `system_info` with `??`, where a whitespace-only value is non-empty and
+      // would *win* over the real one from the other source.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '1',
+          id: 'AA:BB:CC:DD:EE:01',
+          model: '  MR7500 ',
+          manufacturer: ' Linksys',
+          serialNumber: '   ',
+          softwareVersion: '\t2.0.0\n',
+        ),
+      ]);
+
+      final node = MeshTopologyBuilder.build(network).nodes[0];
+      expect(node.model, 'MR7500');
+      expect(node.manufacturer, 'Linksys');
+      expect(node.softwareVersion, '2.0.0');
+      expect(node.serialNumber, isEmpty,
+          reason: 'whitespace is absence, and absence has to arrive as `` '
+              'because the identity fields are non-nullable');
+    });
+
     test('includes backhaulLinkType', () {
       final network = DataElementsNetwork(items: [slaveNode]);
 

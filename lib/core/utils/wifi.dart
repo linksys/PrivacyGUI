@@ -41,10 +41,15 @@ int? rcpiToRssi(int? rcpi) {
 
 /// Convert RSSI (dBm) to RCPI (Received Channel Power Indicator).
 ///
-/// Inverse of [rcpiToRssi].
+/// Inverse of [rcpiToRssi] **over the measured domain only** — negative dBm.
 /// Formula: RCPI = (RSSI + 110) * 2
 ///
-/// Returns 0 if [rssiDbm] is null or 0.
+/// Returns 0 if [rssiDbm] is null or 0. Above 0 dBm the result lands in the
+/// 221-254 band [rcpiToRssi] rejects (`+1 dBm → 222 → null`), so the round trip
+/// does not close there. Left unclamped rather than pinned to [rcpiMax]: no
+/// caller in `lib/` uses this function at all, and clamping would turn an
+/// impossible reading into a plausible one instead of leaving it visibly out of
+/// range.
 int rssiToRcpi(int? rssiDbm) {
   if (rssiDbm == null || rssiDbm == 0) return 0;
   return (rssiDbm + 110) * 2;
