@@ -114,18 +114,25 @@ class SettledDashboardOrchestrator extends DashboardOrchestrator {
 /// the width at which ui_kit narrows the content box (see
 /// `page_surface_family_test.dart`'s step-up derivation), so a relayout there
 /// re-flows the grid, `SliverDashboard` builds a card and drops it inside the same
-/// pass, and `AppInteractionSensor.initState` — which posts
+/// pass, and `AppInteractionSensor.initState` — which posted
 /// `onInteractionStateChanged` through `addPostFrameCallback` with **no `mounted`
-/// guard** — reaches `AppCard`'s `setState` after that card is defunct. Checked
-/// against every cached ui_kit from 2.10.0 through 3.3.0 (47 revisions): the guard is
-/// absent in all of them, so it is upstream's to fix and cannot be fixed from here —
-/// filed as `linksys/privacyGUI-UI-kit#91`.
+/// guard** — reached `AppCard`'s `setState` after that card was defunct. Checked
+/// against every cached ui_kit from 2.10.0 through 3.3.0 (47 revisions): the guard
+/// was absent in all of them, and it was filed as `linksys/privacyGUI-UI-kit#91`.
 ///
-/// So what the pin hides is a real ui_kit defect that a late layout change on this
-/// page can trigger, and it is recorded here rather than worked around silently. What
-/// it buys is the banner measured at all nine widths in 26 locales, which is what the
-/// case was extended for. A fixture cannot do both: leave it unpinned and the 601px
-/// cell reports an upstream exception forever while measuring nothing new.
+/// **Fixed upstream in ui_kit 3.3.1, which this repo now pins past** (3.3.2, bumped
+/// for `#92`). So the half of the justification that said "cannot be fixed from
+/// here" has expired, and the pin is no longer load-bearing for that reason. It is
+/// left in place because **nobody has measured the other half**: the frame argument
+/// above is untouched by the sensor fix, and whether the 601px cell settles without
+/// the pin is a question for the fixture's own ticket rather than a bump's. Recorded
+/// here so the next person removing it knows there is one thing to measure and not
+/// two.
+///
+/// So what the pin hides is the predicate below, and — until 3.3.1 — a real ui_kit
+/// defect that a late layout change on this page can trigger. What it buys is the
+/// banner measured at all nine widths in 26 locales, which is what the case was
+/// extended for.
 ///
 /// The second thing the pin hides is the predicate: with the flag overridden, no cell
 /// of the sweep and no harness test evaluates

@@ -182,24 +182,21 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
   /// non-null in exactly one state because `fwup_progress` has been measured
   /// behaving three different ways in the others.
   ///
-  /// **The figure carries the progress, not the bar**, and that is ui_kit's shape
-  /// rather than a choice made here. `AppLoader._buildLinear` passes `value` to one
-  /// of its seven indicators — the unnamed `default:` one — and every shipped style
-  /// builder names a type (`flat` → `gradientChase`, the kit's own default →
-  /// `shimmer`), so under any theme this app ships the linear bar animates
-  /// end-to-end regardless of `value`. `value` is still passed: it costs nothing and
-  /// is correct the day a theme leaves `linearType` unset.
+  /// **The bar draws the progress as of ui_kit 3.3.2, and it did not before.** Until
+  /// then `AppLoader` accepted `value` on a linear loader and discarded it: the only
+  /// `_buildLinear` branch that rendered a progress input was an unnamed `default:`
+  /// that was unreachable by construction, since the six linear `LoaderType` values
+  /// are exactly the six cases the `switch` names and `LoaderStyle`'s own default
+  /// sets one of them. So under every theme this app ships, the bar animated
+  /// end-to-end regardless of `value`. Fixed upstream in
+  /// `linksys/privacyGUI-UI-kit#92`; this file passed `value` throughout, so the bump
+  /// is what made it render.
   ///
-  /// **Not yet filed upstream** — stated so nobody reads this as a tracked gap. It is
-  /// a kit-level defect (`value` accepted and then discarded for six of seven linear
-  /// types), and reimplementing a determinate bar here is exactly what the UI Kit
-  /// First rule forbids, so the only two moves are a ui_kit issue or living with the
-  /// label. This card lives with the label.
-  ///
-  /// So the number goes in `AppLoader`'s own `label`, which is rendered, and which
-  /// keeps it attached to the bar it describes. The manual upload card in
-  /// `firmware_update_view.dart` puts its percentage above the bar instead, and that
-  /// is not an inconsistency to fix — it has no body sentence, so there the
+  /// **The `label` stays, and not as a leftover.** It is the only textual reading of
+  /// the number — a bar at 42% is a length, and a length is not something a screen
+  /// reader announces or a support call can be told over the phone. The manual upload
+  /// card in `firmware_update_view.dart` puts its percentage above the bar instead,
+  /// and that is not an inconsistency to fix: it has no body sentence, so there the
   /// percentage *is* the body.
   Widget _progressCard(
     BuildContext context, {

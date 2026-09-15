@@ -117,6 +117,28 @@ void main() {
     return tester.widget<AppLoader>(finder);
   }
 
+  /// What the bar actually draws, as opposed to what it was handed.
+  ///
+  /// [loader] returns the `AppLoader` **widget**, so `loader(tester).value` is the
+  /// argument this file passed in one line earlier — and every assertion on it was
+  /// green throughout `linksys/privacyGUI-UI-kit#92`, where a linear `AppLoader`
+  /// accepted `value` and rendered an indeterminate animation instead. An input
+  /// asserted against itself cannot fail. This reads the `LinearProgressIndicator`
+  /// the kit builds, which is the first point in the tree where the number is
+  /// either present or gone.
+  ///
+  /// **Present only when there is a number.** ui_kit 3.3.2 routes the determinate
+  /// and timer modes to this shared bar and leaves the indeterminate mode on each
+  /// visual language's own authored animation, which is not a
+  /// `LinearProgressIndicator` at all. So "no bar in the tree" is the assertion for
+  /// a null `value`, and it is a stronger one than a null-valued bar would be: it
+  /// says the null did not fall through into the determinate path.
+  LinearProgressIndicator renderedBar(WidgetTester tester) {
+    final finder = find.byType(LinearProgressIndicator);
+    expect(finder, findsOneWidget);
+    return tester.widget<LinearProgressIndicator>(finder);
+  }
+
   /// The three copy pairs that must never appear together.
   ///
   /// Asserted as a set rather than one at a time, for the reason the check card's
@@ -151,6 +173,10 @@ void main() {
       expect(loader(tester).value, isNull,
           reason: '`fwup_progress` has been measured both sweeping and frozen '
               'during `fwup_state=1`, so no bar can render it');
+      expect(find.byType(LinearProgressIndicator), findsNothing,
+          reason: 'and it stays on the per-language indeterminate animation — '
+              'this is the direction the #92 fix must not break, and the shared '
+              'determinate bar appearing here would mean a null read as 0%');
     });
 
     testWidgets('downloading shows the number the router published',
@@ -167,6 +193,10 @@ void main() {
       expect(loader(tester).value, closeTo(0.42, 0.0001),
           reason: 'the one state where the parameter has been observed to mean '
               'what it says');
+      expect(renderedBar(tester).value, closeTo(0.42, 0.0001),
+          reason: 'and it reaches the bar. Requires ui_kit >= 3.3.2 — before '
+              'that the number was accepted here and thrown away, so the card '
+              'showed a sweeping bar while claiming 42%');
     });
 
     // 0 is a reading, not a missing one. This is the case the nullable
@@ -181,6 +211,7 @@ void main() {
 
       expect(find.text(loc.percentComplete('0')), findsOneWidget);
       expect(loader(tester).value, 0.0);
+      expect(renderedBar(tester).value, 0.0);
     });
 
     // The router has published `fwup_progress` above 100 on a spare-bank read, and
@@ -195,6 +226,7 @@ void main() {
 
       expect(find.text(loc.percentComplete('100')), findsOneWidget);
       expect(loader(tester).value, 1.0);
+      expect(renderedBar(tester).value, 1.0);
     });
 
     testWidgets('flashing says the image is being written, with no number',
