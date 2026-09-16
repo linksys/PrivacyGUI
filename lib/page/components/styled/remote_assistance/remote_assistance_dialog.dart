@@ -113,13 +113,25 @@ Widget _buildInitiateWidget(BuildContext context) {
 Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
   final initialSeconds =
       (kPendingSessionDurationSec + (state.sessionInfo?.expiredIn ?? 0)).abs();
+  final pin = state.pinSessionId == state.sessionInfo?.id ? state.pin : null;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       AppText.labelLarge(loc(context).remoteAssistancePinCode),
       AppGap.large1(),
-      Center(child: AppText.displayLarge(state.pin ?? '')),
+      // Only this session's PIN. Rendering `state.pin` unconditionally showed
+      // one minted for a previous session, which no Guardian can use, and the
+      // `?? ''` fallback made a missing PIN look like a rendering fault rather
+      // than something still in flight (#1560).
+      Center(
+        child: pin != null
+            ? AppText.displayLarge(pin)
+            : const SizedBox.square(
+                dimension: 48,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+      ),
       AppGap.large2(),
       TimerCountdownWidget(
         initialSeconds: initialSeconds,
