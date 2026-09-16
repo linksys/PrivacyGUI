@@ -18,9 +18,15 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   Timer? _expiredCountdownTimer;
   Timer? _activePollTimer;
   bool _activePolling = false;
+  bool _initiatingCA = false;
 
   static const int kActivePollIntervalSec = 5;
   static const int kActiveSessionPollIntervalSec = 60;
+
+  // Cadence for the passive (client-side) session info stream. Was an
+  // unexplained default of 3 on the private method; named here so the two
+  // stream cadences sit next to each other.
+  static const int kPassiveSessionPollIntervalSec = 3;
 
   @override
   RemoteClientState build() => RemoteClientState();
@@ -102,10 +108,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     }
   }
 
-  void startSessionInfoStream() {
+  void startSessionInfoStream({int interval = kPassiveSessionPollIntervalSec}) {
     final sessionId = state.sessionInfo?.id;
     if (sessionId != null) {
-      _startSessionInfoStream(sessionId);
+      _startSessionInfoStream(sessionId, interval: interval);
     }
   }
 
@@ -122,25 +128,35 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   }
 
   Future<void> initiateRemoteAssistanceCA() async {
-    // if the stream is already started, do nothing
-    if (_sessionInfoStreamSubscription != null) {
+    // The subscription check alone cannot guard this: it is only assigned two
+    // awaits later, so concurrent callers all get past it. TopBar.build() calls
+    // this on every rebuild, and the CG#209 log shows five calls slipping
+    // through within 1.2 s that way. [_initiatingCA] is set before the first
+    // await, so it closes that window.
+    if (_initiatingCA || _sessionInfoStreamSubscription != null) {
       return;
     }
-    logger.i('[RemoteAssistance]: initiateRemoteAssistanceCA');
-    final sessions = await fetchSessions();
-    if (sessions.isEmpty) {
-      state = RemoteClientState();
-      return;
+    _initiatingCA = true;
+    try {
+      logger.i('[RemoteAssistance]: initiateRemoteAssistanceCA');
+      final sessions = await fetchSessions();
+      if (sessions.isEmpty) {
+        state = RemoteClientState();
+        return;
+      }
+      logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
+      final sessionInfo =
+          await fetchSessionInfo(sessions.first.id, startCountdown: true);
+      if (sessionInfo == null) {
+        state = RemoteClientState();
+        return;
+      }
+      // start a stream to fetch session info
+      _startSessionInfoStream(sessionInfo.id,
+          interval: kActiveSessionPollIntervalSec);
+    } finally {
+      _initiatingCA = false;
     }
-    logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
-    final sessionInfo =
-        await fetchSessionInfo(sessions.first.id, startCountdown: true);
-    if (sessionInfo == null) {
-      state = RemoteClientState();
-      return;
-    }
-    // start a stream to fetch session info
-    _startSessionInfoStream(sessionInfo.id, interval: 60);
   }
 
   /// Marks whether a remote assistance dialog is currently shown so the
@@ -177,27 +193,56 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
 
   // start a stream to fetch session info
   Future<void> _startSessionInfoStream(String sessionId,
-      {int interval = 3}) async {
+      {int interval = kPassiveSessionPollIntervalSec}) async {
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription =
-        _fetchSessionInfoStream(sessionId, interval: interval)
-            .listen((sessionInfo) {
-      state = state.copyWith(sessionInfo: () => sessionInfo);
-    });
+        _fetchSessionInfoStream(sessionId, interval: interval).listen(
+      (sessionInfo) {
+        state = state.copyWith(sessionInfo: () => sessionInfo);
+      },
+      // Without this, a `getSessionInfo` that fails - a 404 once the session is
+      // deleted, most obviously - escapes as an unhandled async error and the
+      // subscription dies with no trace in the log.
+      onError: (Object e) {
+        logger.e('[RemoteAssistance]: session info stream error: $e');
+        _sessionInfoStreamSubscription = null;
+      },
+      // A finished stream has to release the field, or the guard in
+      // [initiateRemoteAssistanceCA] treats a dead subscription as a live one
+      // and refuses every later session for the rest of the app's life.
+      onDone: () {
+        _sessionInfoStreamSubscription = null;
+      },
+    );
   }
 
-  // yield synchronously triggers the listener in _startSessionInfoStream,
-  // which updates state before the next loop iteration checks expiredIn.
+  // Polls while the session is still alive. Two things this deliberately does
+  // not do:
+  //
+  // It does not key on the sign of `expiredIn`. That field is seconds
+  // *remaining* against the session's TTL, so it is positive for the whole life
+  // of a session - the previous `< 0` condition was never true and the body
+  // never ran (#1558).
+  //
+  // It does not read `state` back to decide whether to continue. The listener
+  // in [_startSessionInfoStream] writes `state` in a later microtask, not
+  // synchronously on `yield`, so reading it here would test the previous
+  // iteration's value. The loop carries the value it fetched instead.
+  //
+  // The delay comes before the fetch on purpose: every caller has just read the
+  // session to seed `state`, so fetching immediately would only repeat it.
   Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
-      {int interval = 3}) async* {
-    while (state.sessionInfo?.expiredIn != null &&
-        state.sessionInfo!.expiredIn < 0) {
+      {int interval = kPassiveSessionPollIntervalSec}) async* {
+    var sessionInfo = state.sessionInfo;
+    while (sessionInfo != null &&
+        sessionInfo.status != GRASessionStatus.invalid &&
+        sessionInfo.expiredIn > 0) {
+      await Future.delayed(Duration(seconds: interval));
       final master = ref.read(deviceManagerProvider).masterDevice;
-      final sessionInfo = await ref
+      sessionInfo = await ref
           .read(deviceCloudServiceProvider)
           .getSessionInfo(master: master, sessionId: sessionId);
       yield sessionInfo;
-      await Future.delayed(Duration(seconds: interval));
     }
   }
 
@@ -215,7 +260,12 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _expiredCountdownTimer =
         Timer.periodic(const Duration(seconds: 1), (timer) {
       var expiredCountdown = state.expiredCountdown;
-      expiredCountdown ??= sessionInfo.expiredIn.abs();
+      // `expiredIn` is seconds remaining, so it is already the countdown's
+      // starting value. The `.abs()` this replaces came from the inverted sign
+      // assumption in #1558 and would have turned an expired session's negative
+      // remainder into time still to run.
+      expiredCountdown ??=
+          sessionInfo.expiredIn > 0 ? sessionInfo.expiredIn : 0;
       expiredCountdown--;
       state = state.copyWith(expiredCountdown: () => expiredCountdown);
       if (expiredCountdown < 0) {

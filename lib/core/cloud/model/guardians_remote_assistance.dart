@@ -48,11 +48,17 @@ enum GRASessionStatus {
 /// "serialNumber":"65G10M27E03053",
 /// "modelNumber":"LN16-EU",
 /// "status":"ACTIVE",
-/// "expiredIn":-748,
+/// "expiredIn":2547,
 /// "createdAt":1748315872000,
 /// "statusChangedAt":1748315989000,
 /// "currentTime":1748316924838
 /// }
+///
+/// [expiredIn] is seconds **remaining** against the session's one-hour TTL, not
+/// seconds elapsed. Across 271 payloads in the logs attached to #1558 it always
+/// satisfied `expiredIn + (currentTime - createdAt) / 1000 == 3600`, and was
+/// never negative in any status. The negative sample this comment used to show
+/// is what led the polling loop to guard on `expiredIn < 0` and never run.
 class GRASessionInfo extends Equatable {
   final String id;
   final String serialNumber;

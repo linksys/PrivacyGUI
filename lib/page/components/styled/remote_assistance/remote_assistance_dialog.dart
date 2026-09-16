@@ -93,6 +93,16 @@ Widget _buildRemoteAssistanceDialog(WidgetRef ref, BuildContext context) {
   };
 }
 
+/// Seconds still to run on the current session, floored at zero.
+///
+/// `expiredIn` is seconds remaining against the session TTL, so it is already
+/// the number to count down from. Both countdowns used `.abs()` before, which
+/// silently turned an expired session into one with time left.
+int _remainingSeconds(RemoteClientState state) {
+  final expiredIn = state.sessionInfo?.expiredIn ?? 0;
+  return expiredIn > 0 ? expiredIn : 0;
+}
+
 Widget _buildInitiateWidget(BuildContext context) {
   return AppStyledText.link(
     loc(context).remoteAssistanceInitiateMessage,
@@ -111,8 +121,11 @@ Widget _buildInitiateWidget(BuildContext context) {
 }
 
 Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds =
-      (kPendingSessionDurationSec + (state.sessionInfo?.expiredIn ?? 0)).abs();
+  // The remaining time simply is `expiredIn` (#1558). Adding
+  // kPendingSessionDurationSec to it only made sense while `expiredIn` was read
+  // as elapsed-and-negative; with a real PENDING sample it roughly doubled the
+  // figure shown - 2700 + 2664 = 5364 s displayed where 2664 s remained.
+  final initialSeconds = _remainingSeconds(state);
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +152,7 @@ Widget _buildInvalidWidget(BuildContext context) {
 }
 
 Widget _buildCountingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds = (state.sessionInfo?.expiredIn ?? 0).abs();
+  final initialSeconds = _remainingSeconds(state);
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
