@@ -23,7 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_ready_band.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_wifi_ready_store.dart';
+import 'package:privacy_gui/page/instant_setup/helpers/pnp_wifi_ready_store.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 

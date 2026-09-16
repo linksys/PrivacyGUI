@@ -17,7 +17,7 @@ import 'package:privacy_gui/page/firmware_update/views/components/firmware_updat
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_wifi_ready_store.dart';
+import 'package:privacy_gui/page/instant_setup/helpers/pnp_wifi_ready_store.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';

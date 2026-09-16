@@ -24,7 +24,7 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_wifi_ready_store.dart';
+import 'package:privacy_gui/page/instant_setup/helpers/pnp_wifi_ready_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';

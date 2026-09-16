@@ -8,7 +8,7 @@ import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_operation_watch.dart';
+import 'package:privacy_gui/page/firmware_update/helpers/firmware_operation_watch.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
 /// Dispatches one check and returns the `commandKey` that names it.
