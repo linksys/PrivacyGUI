@@ -158,6 +158,31 @@ void main() {
           testSessionInfo.expiredIn - 1);
     });
 
+    test('ending the session stops the countdown instead of re-seeding it',
+        () async {
+      // The timer was never cancelled on teardown. Because the ACTIVE path of
+      // endRemoteAssistance resets state, the next tick found a null countdown
+      // and re-seeded it from the captured sessionInfo, counting down again for a
+      // session that had just been deleted.
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => testSessionInfo);
+      when(mockCloudService.deleteSession(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+        serialNumber: anyNamed('serialNumber'),
+      )).thenAnswer((_) async {});
+
+      final notifier = container.read(remoteClientProvider.notifier);
+      await notifier.fetchSessionInfo('session-1', startCountdown: true);
+      await notifier.endRemoteAssistance();
+
+      // Long enough for two ticks, had any been left running.
+      await Future.delayed(const Duration(milliseconds: 2200));
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull);
+    });
+
     test('a non-positive expiredIn floors at zero instead of inverting',
         () async {
       // The old code used `.abs()`, which read an already-expired session as

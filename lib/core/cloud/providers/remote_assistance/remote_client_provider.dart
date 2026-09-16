@@ -110,9 +110,14 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
 
   void startSessionInfoStream({int interval = kPassiveSessionPollIntervalSec}) {
     final sessionId = state.sessionInfo?.id;
-    if (sessionId != null) {
-      _startSessionInfoStream(sessionId, interval: interval);
+    if (sessionId == null) {
+      // Silently doing nothing here is how a caller that streams before reading
+      // the session looks identical to one whose session simply ended.
+      logger.w(
+          '[RemoteAssistance]: startSessionInfoStream with no session to stream');
+      return;
     }
+    _startSessionInfoStream(sessionId, interval: interval);
   }
 
   Future<void> initiateRemoteAssistance() async {
@@ -170,6 +175,13 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _stopActivePolling();
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription = null;
+    // Pre-existing leak, fixed here because this is the session teardown and the
+    // countdown is part of the session: nothing used to cancel this 1 Hz timer.
+    // On the ACTIVE path below, `state = RemoteClientState()` nulls
+    // `expiredCountdown`, so the next tick's `??=` re-seeded from the captured
+    // sessionInfo and started a fresh countdown for a session that no longer
+    // exists - rebuilding the top bar every second, indefinitely.
+    _stopExpiredCountdownTimer();
     // The dialog is closing in every path below; clear the flag up front so
     // the early returns do not leave it stuck true.
     state = state.copyWith(isDialogShown: () => false);
@@ -191,9 +203,12 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     state = RemoteClientState();
   }
 
-  // start a stream to fetch session info
-  Future<void> _startSessionInfoStream(String sessionId,
-      {int interval = kPassiveSessionPollIntervalSec}) async {
+  // Synchronous on purpose. There is nothing to await here, and the re-entrancy
+  // guard in [initiateRemoteAssistanceCA] holds only while no await runs before
+  // the subscription is assigned - `void` makes that structural instead of an
+  // invariant a later edit could break.
+  void _startSessionInfoStream(String sessionId,
+      {int interval = kPassiveSessionPollIntervalSec}) {
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription =
         _fetchSessionInfoStream(sessionId, interval: interval).listen(
@@ -206,12 +221,17 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       onError: (Object e) {
         logger.e('[RemoteAssistance]: session info stream error: $e');
         _sessionInfoStreamSubscription = null;
+        // `state.sessionInfo` is deliberately left alone: a single failed read
+        // may be a blip, and clearing it would tear down a live session. The
+        // countdown, though, has nothing left feeding it.
+        _stopExpiredCountdownTimer();
       },
       // A finished stream has to release the field, or the guard in
       // [initiateRemoteAssistanceCA] treats a dead subscription as a live one
       // and refuses every later session for the rest of the app's life.
       onDone: () {
         _sessionInfoStreamSubscription = null;
+        _stopExpiredCountdownTimer();
       },
     );
   }
@@ -253,6 +273,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         .createPin(master: master, sessionId: sessionId);
     state = state.copyWith(pin: () => pin);
     return pin;
+  }
+
+  void _stopExpiredCountdownTimer() {
+    _expiredCountdownTimer?.cancel();
+    _expiredCountdownTimer = null;
   }
 
   void _startExpiredCountdownTimer(GRASessionInfo sessionInfo) {
