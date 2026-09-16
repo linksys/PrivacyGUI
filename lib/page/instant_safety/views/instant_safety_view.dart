@@ -116,6 +116,11 @@ class UspInstantSafetyView extends ConsumerWidget {
                 AppSwitch(
                   identifier: 'instant-safety-enable',
                   value: isEnabled,
+                  // Same busy treatment the rule rows carry — see
+                  // `usp_single_port_tab.dart` for why a null `onChanged` was not
+                  // one (#1542).
+                  isLoading: isSaving,
+                  busySemanticLabel: isSaving ? loc(context).processing : null,
                   onChanged:
                       isSaving ? null : (value) => notifier.setEnabled(value),
                 ),
