@@ -208,21 +208,52 @@ void main() {
       expect(args, hasLength(1));
     });
 
-    test('throws when the response carries no commandKey', () {
+    test('an empty first answer is dispatched again, and the second key stands',
+        () async {
+      // Measured on a real router (2026-09-16): the first `Download(ota,"false")`
+      // after login answered `{}` in 813 ms with no key, and the identical call
+      // 14 s later returned one. Without the retry the user's first tap reports a
+      // check that never started.
+      var calls = 0;
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenAnswer((_) async => <String, dynamic>{'Status': 'Requested'});
+          .thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? <String, dynamic>{'Status': 'Requested'}
+            : <String, dynamic>{'commandKey': 'check-2'};
+      });
+
+      final key = await service.requestOtaCheck(otaInstance: 3);
+
+      expect(key, 'check-2');
+      expect(calls, 2, reason: 'the first empty answer must be retried once');
+    });
+
+    test('two empty answers throw, and do not become a third attempt',
+        () async {
+      // The bound. A loop here would turn a genuinely broken router into a
+      // spinner, so the second empty answer is reported with the same sentence
+      // the single attempt used to carry.
+      var calls = 0;
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async {
+        calls++;
+        return <String, dynamic>{'Status': 'Requested'};
+      });
 
       // The whole of the dispatch signal. An operate for a command that does
       // not exist still answers success, so a missing key is the only thing
       // that distinguishes "asked" from "did not ask" — and it must not reach
       // the caller as a check that found nothing.
-      expect(
-        () => service.requestOtaCheck(otaInstance: 3),
+      await expectLater(
+        service.requestOtaCheck(otaInstance: 3),
         throwsA(isA<UspCompleteFailureError>()),
       );
+      expect(calls, 2,
+          reason: 'exactly two attempts — the retry is one, not a loop');
     });
 
-    test('throws when the commandKey is present but empty', () {
+    test('an empty commandKey counts as no commandKey, both times', () {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
           .thenAnswer((_) async => <String, dynamic>{'commandKey': ''});
 
@@ -230,6 +261,24 @@ void main() {
         () => service.requestOtaCheck(otaInstance: 3),
         throwsA(isA<UspCompleteFailureError>()),
       );
+    });
+
+    test('the install dispatch does not retry', () async {
+      // The asymmetry, asserted rather than left to the comment: `AutoActivate=
+      // "true"` downloads, flashes and reboots, so a second dispatch is not free
+      // even when the first response was merely lost.
+      var calls = 0;
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async {
+        calls++;
+        return <String, dynamic>{'Status': 'Requested'};
+      });
+
+      await expectLater(
+        service.requestOtaInstall(otaInstance: 3),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      expect(calls, 1);
     });
 
     test('maps USP error to ServiceError', () {

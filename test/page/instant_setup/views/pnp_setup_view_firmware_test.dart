@@ -30,7 +30,6 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';

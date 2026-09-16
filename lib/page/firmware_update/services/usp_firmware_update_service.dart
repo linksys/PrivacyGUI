@@ -108,23 +108,42 @@ class UspFirmwareUpdateService {
   /// Nothing is downloaded and nothing reboots, which is why this is the one
   /// `Download` here with no `DisruptionClass` seam above it.
   ///
-  /// **Throws when the response carries no `commandKey`.** That key is the whole
-  /// of what the operate response tells us — measured, an Operate for a command
-  /// that does not exist and one with a misspelled argument name both answer
-  /// success — so its absence is the difference between "asked" and "did not
-  /// ask", and it must never reach a caller as a check that found nothing.
+  /// **Throws when the response carries no `commandKey`, but not on the first
+  /// one.** That key is the whole of what the operate response tells us —
+  /// measured, an Operate for a command that does not exist and one with a
+  /// misspelled argument name both answer success — so its absence is the
+  /// difference between "asked" and "did not ask", and it must never reach a
+  /// caller as a check that found nothing.
+  ///
+  /// **One retry, measured into existence** (2026-09-16). On a real router the
+  /// first `Download(ota, "false")` after login answered `{}` in 813 ms with no
+  /// key; the identical call 14 s later returned one and the check completed. So
+  /// the empty answer is transient at least sometimes, and the cost of finding out
+  /// is one more Operate against a command that only checks. Without the retry the
+  /// user's first tap reports a check that never started and they have to tap
+  /// again — which is what happened.
+  ///
+  /// **Exactly one, and only here.** A loop would turn a genuinely broken router
+  /// into a spinner; the second empty answer still throws, with the same sentence.
+  /// And [requestOtaInstall] deliberately does **not** retry: `AutoActivate="true"`
+  /// downloads, flashes and reboots, so a lost response is not the only thing a
+  /// second dispatch could cost. The asymmetry is the point — a repeated check is
+  /// free, a repeated flash is not.
+  ///
+  /// Both attempts run inside whatever lock the caller holds, which is correct: two
+  /// dispatches are two mutations, and neither may interleave with another.
   Future<String> requestOtaCheck({required int otaInstance}) async {
     try {
-      final response = await FirmwareOperations.download(
-        _usp,
-        otaInstance,
-        autoActivate: 'false',
-      );
-      final commandKey = response['commandKey']?.toString();
-      if (commandKey == null || commandKey.isEmpty) {
+      var commandKey = await _dispatchOtaCheck(otaInstance);
+      if (commandKey == null) {
+        logger.w('[FirmwareUpdate] the router answered Download() on instance '
+            '$otaInstance with no commandKey — dispatching the check once more');
+        commandKey = await _dispatchOtaCheck(otaInstance);
+      }
+      if (commandKey == null) {
         throw UspCompleteFailureError(
           summary: 'Firmware check was not dispatched: the router answered '
-              'Download() on instance $otaInstance with no commandKey',
+              'Download() on instance $otaInstance with no commandKey, twice',
           failures: const [],
         );
       }
@@ -136,6 +155,22 @@ class UspFirmwareUpdateService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// One check dispatch: the `commandKey` it answered, or null if it answered none.
+  ///
+  /// Null rather than a throw so [requestOtaCheck] owns the retry decision in one
+  /// place — a helper that threw would have to be caught to be retried, and the
+  /// catch would be indistinguishable from the transport errors this must not
+  /// swallow.
+  Future<String?> _dispatchOtaCheck(int otaInstance) async {
+    final response = await FirmwareOperations.download(
+      _usp,
+      otaInstance,
+      autoActivate: 'false',
+    );
+    final commandKey = response['commandKey']?.toString();
+    return (commandKey == null || commandKey.isEmpty) ? null : commandKey;
   }
 
   /// Asks the router to fetch and install a newer image, and returns the key that
@@ -168,6 +203,12 @@ class UspFirmwareUpdateService {
   /// the check (an Operate on a command that does not exist answers success), and
   /// more consequential here: with no key there is nothing to match a refusal
   /// against, so a rejected flash would look like one still running.
+  ///
+  /// **And unlike the check, it does not retry.** [requestOtaCheck] dispatches a
+  /// second time when the first answer carries no key, because a repeated check
+  /// costs one Operate. This mode downloads, flashes and reboots, so a second
+  /// dispatch is not free even if the first response was merely lost — the router
+  /// may already be acting on it. One empty answer here is reported, not retried.
   Future<String> requestOtaInstall({required int otaInstance}) async {
     try {
       final response = await FirmwareOperations.download(
