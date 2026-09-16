@@ -241,9 +241,24 @@ class WizardUpdatingFirmware extends PnpPhase {
 /// **It carries credentials rather than the configuration they came from, and
 /// that is REQ-B4.** A firmware update sits between [WizardSaved] and this phase
 /// and reboots the router once, so these three-or-more strings are the one part of
-/// the wizard that has to be restorable afterwards — see [PnpWifiReadyBand] for
-/// why a persisted [PnpWifiConfig] would be a worse answer, and
-/// `PnpWifiReadyStore` for where the durable copy goes.
+/// the wizard that has to outlive it — see [PnpWifiReadyBand] for why carrying a
+/// [PnpWifiConfig] would be a worse answer.
+///
+/// **They are not persisted, and that is the decision rather than an omission**
+/// (Austin, 2026-09-16). REQ-B4's implementation note used to require a durable
+/// copy — "not only in the in-memory phase object" — and W6 wrote one to
+/// `FlutterSecureStorage`. Two measurements retired it. The reboot is the
+/// *router's*, so the SPA is not reloaded and this object survives it: verified on
+/// hardware (`..15 → ..16` through PnP, completion screen showed the configured
+/// SSID and passphrase). And on web, `flutter_secure_storage` is `localStorage`
+/// with the AES-GCM key kept in the same `localStorage` — so the durable copy was
+/// a passphrase readable by any same-origin script, with no reader of its own:
+/// `read()` had zero production callers for the life of the feature.
+///
+/// The case the copy would have covered is a **page** reload during the firmware
+/// stage, which REQ-B4 never named and which cannot be recovered from by a read
+/// alone — PnP re-entry is gated on `acknowledge()`, so it needs #1511's re-entry
+/// semantics. Restoring persistence therefore means designing that first.
 class WizardWifiReady extends PnpPhase {
   final String ssid;
   final String password;
@@ -285,23 +300,6 @@ class WizardWifiReady extends PnpPhase {
   /// Two or more bands to show. Not a stored flag: one band is a unified network
   /// whichever way it was reached, and [ssid]/[password] already describe it.
   bool get isSplitMode => bands.length > 1;
-
-  /// Persisted, and only for the reason Article XI allows it: the firmware stage
-  /// reboots the router between this phase being decided and being shown.
-  Map<String, dynamic> toJson() => {
-        'ssid': ssid,
-        'password': password,
-        'bands': bands.map((b) => b.toJson()).toList(),
-      };
-
-  factory WizardWifiReady.fromJson(Map<String, dynamic> json) =>
-      WizardWifiReady(
-        ssid: json['ssid'] as String,
-        password: json['password'] as String,
-        bands: ((json['bands'] as List?) ?? const [])
-            .map((b) => PnpWifiReadyBand.fromJson(b as Map<String, dynamic>))
-            .toList(),
-      );
 
   @override
   List<Object?> get props => [ssid, password, bands];

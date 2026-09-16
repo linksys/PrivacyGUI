@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -24,14 +21,11 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
-import 'package:privacy_gui/page/instant_setup/helpers/pnp_wifi_ready_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';
 
 class MockUspClient extends Mock implements UspClient {}
-
-class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class MockPnpService extends Mock implements PnpService {}
 
@@ -84,7 +78,6 @@ class SpyFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
     this.cancelError,
     this.readsBanksOnCheck = true,
     this.onEnterRecovery,
-    this.probeStorage,
   });
 
   final FirmwareOtaCheckResult checkResult;
@@ -102,15 +95,10 @@ class SpyFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   final bool readsBanksOnCheck;
   final void Function()? onEnterRecovery;
 
-  /// Read at dispatch time so REQ-B4's *ordering* is observable and not just its
-  /// end state: the credentials have to be durable before anything can reboot.
-  final bool Function()? probeStorage;
-
   int checkCalls = 0;
   int recoveryCalls = 0;
   int cancelCalls = 0;
   final List<int> installedOtaInstances = [];
-  bool? credentialsWereStoredAtDispatch;
 
   @override
   FirmwareUpdateState build() => const FirmwareUpdateState();
@@ -136,7 +124,6 @@ class SpyFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
     required int otaInstance,
   }) async {
     installedOtaInstances.add(otaInstance);
-    credentialsWereStoredAtDispatch = probeStorage?.call();
     // The real one leaves the phase set, which is what the stage's `finally` has
     // to undo — pinned by [cancelCalls].
     state = state.copyWith(phase: installLeavesPhase);
@@ -652,8 +639,6 @@ void main() {
   /// that reached the right verdict and then stranded the wizard would be a
   /// regression this feature exists to prevent.
   group('PnpNotifier — firmware stage (#1553)', () {
-    late MockFlutterSecureStorage mockStorage;
-    late Map<String, String> keystore;
     late SpyAppConnectionStateNotifier connection;
 
     /// Saved with the main WiFi untouched, so `saveChanges()` takes the arm that
@@ -670,31 +655,7 @@ void main() {
     );
 
     setUp(() {
-      keystore = {};
-      mockStorage = MockFlutterSecureStorage();
       connection = SpyAppConnectionStateNotifier();
-
-      // An in-memory keystore behind the *real* `PnpWifiReadyStore`, so the JSON
-      // round-trip REQ-B4 depends on is exercised rather than stubbed away.
-      when(() => mockStorage.write(
-            key: any(named: 'key'),
-            value: any(named: 'value'),
-          )).thenAnswer((inv) async {
-        final key = inv.namedArguments[const Symbol('key')] as String;
-        final value = inv.namedArguments[const Symbol('value')] as String?;
-        if (value == null) {
-          keystore.remove(key);
-        } else {
-          keystore[key] = value;
-        }
-      });
-      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer(
-          (inv) async =>
-              keystore[inv.namedArguments[const Symbol('key')] as String]);
-      when(() => mockStorage.delete(key: any(named: 'key')))
-          .thenAnswer((inv) async {
-        keystore.remove(inv.namedArguments[const Symbol('key')] as String);
-      });
 
       when(() => mockPnpService.saveWifi(any())).thenAnswer((_) async {});
     });
@@ -716,8 +677,6 @@ void main() {
           pnpStatusServiceProvider.overrideWithValue(mockPnpStatusService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           sessionProvider.overrideWith(() => mockSessionNotifier),
-          pnpWifiReadyStoreProvider
-              .overrideWithValue(PnpWifiReadyStore(mockStorage)),
           firmwareUpdateNotifierProvider.overrideWith(() => firmware),
           appConnectionStateProvider.overrideWith(() => connection),
           banks ??
@@ -1040,38 +999,6 @@ void main() {
       container.dispose();
     });
 
-    test('a stale stored copy is not what the completion screen shows (REQ-B4)',
-        () async {
-      // The discriminator for landing on the value just computed rather than on a
-      // read-back of the store. Both writes here fail — `store()` swallows by
-      // design — so the keystore still holds the *previous* setup run's snapshot,
-      // which a read-back would find, find non-null, and render into this screen's
-      // QR code: a stranger's SSID and passphrase on a screen that is the only
-      // place this network's were ever shown.
-      keystore['pnp_wifi_ready_credentials'] = jsonEncode(const WizardWifiReady(
-        ssid: 'SomeOtherNetwork',
-        password: 'StalePass0000',
-      ).toJson());
-      when(() => mockStorage.write(
-            key: any(named: 'key'),
-            value: any(named: 'value'),
-          )).thenThrow(Exception('keystore is unavailable'));
-
-      final firmware = SpyFirmwareUpdateNotifier(
-        checkResult: const FirmwareOtaCheckResult.updateAvailable(),
-        onEnterRecovery: comesBack(),
-      );
-      final container = createFirmwareContainer(firmware);
-
-      await runStage(container);
-
-      final phase = container.read(pnpProvider).phase;
-      expect(phase, isA<WizardWifiReady>());
-      expect((phase as WizardWifiReady).ssid, 'ConfiguredSSID');
-      expect(phase.password, 'ConfiguredPass123');
-      container.dispose();
-    });
-
     test('exactly one reconnect is in flight for the firmware reboot (REQ-B5)',
         () async {
       // The recovery framework owns this reboot. PnP's own reconnect —
@@ -1111,49 +1038,30 @@ void main() {
       container.dispose();
     });
 
-    test(
-        'the credentials are durable before the flash, and are what the '
-        'completion screen shows (REQ-B4)', () async {
+    test('the completion screen shows what was just configured (REQ-B4)',
+        () async {
+      // REQ-B4's acceptance criterion, and the whole of it since 2026-09-16: the
+      // credentials survive the firmware stage — including the router reboot inside
+      // it — and are the ones the user just set.
+      //
+      // They survive because `WizardWifiReady` is built before the stage runs and
+      // the reboot is the *router's*: the SPA is not reloaded, `pnpProvider` is not
+      // `autoDispose`, and there is one container. This used to also assert a
+      // `FlutterSecureStorage` copy read back through a fresh store; that copy is
+      // deleted — see `WizardWifiReady`'s doc for the two measurements that retired
+      // it, one of which is that `read()` never had a production caller.
       final firmware = SpyFirmwareUpdateNotifier(
         checkResult: const FirmwareOtaCheckResult.updateAvailable(),
         onEnterRecovery: comesBack(),
-        probeStorage: () => keystore.isNotEmpty,
       );
       final container = createFirmwareContainer(firmware);
 
       await runStage(container);
-
-      // Written before anything could reboot: after the dispatch there may be no
-      // session left to write from.
-      expect(firmware.credentialsWereStoredAtDispatch, isTrue);
 
       final phase = container.read(pnpProvider).phase;
       expect(phase, isA<WizardWifiReady>());
       expect((phase as WizardWifiReady).ssid, 'ConfiguredSSID');
       expect(phase.password, 'ConfiguredPass123');
-
-      // And not only in memory — a store built fresh over the same keystore reads
-      // them back, which is the case REQ-B4 is actually about.
-      final restored = await PnpWifiReadyStore(mockStorage).read();
-      expect(restored?.ssid, 'ConfiguredSSID');
-      expect(restored?.password, 'ConfiguredPass123');
-      container.dispose();
-    });
-
-    test('completeSetup forgets the credentials (REQ-B4)', () async {
-      final firmware = SpyFirmwareUpdateNotifier(
-        checkResult: const FirmwareOtaCheckResult.noUpdateFound(),
-      );
-      final container = createFirmwareContainer(firmware);
-
-      await runStage(container);
-      expect(keystore, isNotEmpty);
-
-      await container.read(pnpProvider.notifier).completeSetup();
-
-      // A passphrase in the keystore with no reader is just a passphrase in the
-      // keystore.
-      expect(keystore, isEmpty);
       container.dispose();
     });
   });

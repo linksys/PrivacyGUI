@@ -18,7 +18,6 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
-import 'package:privacy_gui/page/instant_setup/helpers/pnp_wifi_ready_store.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
@@ -427,11 +426,14 @@ class PnpNotifier extends Notifier<PnpState> {
       password: password,
       wifiConfig: wifiConfig,
     );
-    // REQ-B4, and *before* the stage rather than after it: once the flash is
-    // dispatched there may be no session left to write from, and these strings are
-    // the only record of a passphrase the user has not seen yet.
-    await ref.read(pnpWifiReadyStoreProvider).store(ready);
-
+    // REQ-B4 is satisfied by `ready` itself outliving the reboot, and it is built
+    // here — before the stage — for the reason a persisted copy used to be written
+    // here: after the flash is dispatched there may be no session left to build it
+    // from. What the router reboot cannot touch is this object: it is a router
+    // restart, not a page reload, so the container and `pnpProvider` (not
+    // `autoDispose`) are still the same ones. Verified on hardware 2026-09-16 —
+    // `..15 → ..16` from PnP, and the completion screen showed the SSID and
+    // passphrase that had just been configured.
     state = state.copyWith(phase: const WizardCheckingFirmware());
 
     // Everything from here to the `finally` is inside the try, not just
@@ -614,13 +616,6 @@ class PnpNotifier extends Notifier<PnpState> {
       sub.close();
     }
   }
-
-  /// Forget the credentials the completion screen was showing.
-  ///
-  /// Called when the flow leaves [WizardWifiReady] for the dashboard. They are
-  /// persisted to survive one reboot, not to sit in the keystore afterwards — the
-  /// screen that needed them is gone, and a re-run of setup writes its own.
-  Future<void> completeSetup() => ref.read(pnpWifiReadyStoreProvider).clear();
 
   // ─── No Internet Flow ───────────────────────────────────
 

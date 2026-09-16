@@ -63,14 +63,6 @@ class FixedPnpNotifier extends PnpNotifier {
 
   @override
   Future<void> testReconnect() async {}
-
-  /// The Done button on the completion screen (`PnpSetupView._onDone`).
-  ///
-  /// The real one clears the stored `WizardWifiReady` credentials through
-  /// `pnpWifiReadyStoreProvider`, which reaches `FlutterSecureStorage` — a channel
-  /// that has no in-memory default in a widget test.
-  @override
-  Future<void> completeSetup() async {}
 }
 
 /// Returns provider overrides pinning the PnP state machine to [state].
