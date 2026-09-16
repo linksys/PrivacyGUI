@@ -131,8 +131,8 @@ void main() {
 
   /// The banks read failed — an `AsyncError`, which is what leaves the page unable
   /// to say whether this router even has the fwup stack.
-  final failingBanks =
-      firmwareBanksDataProvider.overrideWith(() => _FailingBanksNotifier());
+  final failingBanks = firmwareBanksDataProvider
+      .overrideWith(() => FailingFirmwareBanksDataNotifier());
 
   final readableBanks = firmwareBanksDataProvider
       .overrideWith(() => FixedFirmwareBanksDataNotifier(
@@ -515,17 +515,6 @@ class _RecordingReadNotifier extends FixedFirmwareUpdateNotifier {
     return const FirmwareOtaInstallResult(
         verdict: FirmwareOtaInstallVerdict.abandoned);
   }
-}
-
-/// A banks provider whose read failed, i.e. `AsyncError`.
-class _FailingBanksNotifier extends FirmwareBanksDataNotifier {
-  @override
-  Future<FirmwareBanksData> build() async =>
-      throw const NetworkError(detail: 'bridge closed');
-
-  @override
-  Future<FirmwareBanksData> refresh() async =>
-      throw const NetworkError(detail: 'bridge closed');
 }
 
 /// A banks provider that never answers, i.e. `AsyncLoading` forever.

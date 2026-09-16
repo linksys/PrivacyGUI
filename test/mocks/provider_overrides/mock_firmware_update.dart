@@ -24,6 +24,18 @@
 /// the wrong one fails to compile rather than rendering the wrong page — but it is
 /// still duplication #1361 owes, and merging the two is the right fix whenever
 /// someone can run the golden suite to prove it.
+///
+/// **That condition is now met, and the merge is still not done** (#1554 §1/§4,
+/// 2026-09-16). Two golden suites were added and generated in that work, so "nobody can
+/// run the golden suite" has stopped being the blocker; what is left is scope — merging
+/// two fixture philosophies and editing every golden call site is not a test ticket's
+/// change. Two things did get reconciled rather than forked further: the failing-banks
+/// notifier is now one public class in the golden mock, shared with
+/// `test/page/firmware_update/`, and `gatePnpFirmwareInstallingState` below is one
+/// fixture read by three carriers instead of three copies of a phase. The *named
+/// parameters* still differ between the two builders (`state:`/`banks:`/`systemInfo:`
+/// here, `updateState:`/`banksData:`/`systemInfoData:` there), which is the part a
+/// reader trips over: a file needing both cannot import them unprefixed.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +45,9 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
@@ -225,6 +239,43 @@ const gateFirmwareLastCheckFailed = FirmwareAutoUpdateUIModel(
 /// by editing this line.
 const gateFirmwareNoUpdateFoundState = FirmwareUpdateState(
   otaCheck: FirmwareOtaCheckResult.noUpdateFound(),
+);
+
+/// The router mid-flash, with a reading on the wire — what the **PnP wizard's**
+/// firmware stage renders (#1553 REQ-B2, #1554 §4).
+///
+/// One fixture read by three carriers, which is why it is here rather than in any of
+/// them: the wizard's golden state, its layout-gate cell, and the screen-shape tests
+/// in `pnp_setup_view_firmware_test.dart`. Three copies of a phase-plus-progress pair
+/// is three chances for one of them to drift onto a phase the others do not render.
+///
+/// **`installing` is a choice, and the only safe one for the tests that assert
+/// absence.** `FirmwareInstallPhaseCard` draws a retry button on `failed`, and a retry
+/// *is* an affordance — so pinning `failed` would fail REQ-B2's "no button on this
+/// screen" for a reason that is not a defect. `failed` never reaches this screen
+/// anyway: `_runFirmwareStage` catches it and finishes setup, which is REQ-B3.
+///
+/// **A non-zero, non-round percentage.** The card feeds `rawProgress` to a linear
+/// `AppLoader`, which since ui_kit 3.3.2 is a real `LinearProgressIndicator` — so the
+/// number decides a *width* on screen. `0` would draw an empty bar indistinguishable
+/// from the indeterminate one, and `50` is the value a real install was observed
+/// holding for ~40 seconds, which makes it the one number a reader would mistake for
+/// the stall rather than for the fixture.
+///
+/// **`rawState` is `'3'`, not `'downloading'`**, because the field's contract is
+/// "`fwup_state` as the router spelled it" and the router spells it as a digit. The
+/// first draft of this fixture put the enum's English name there, which is the same
+/// defect the l10n work removed from `errorMessage`: a diagnostic string no router
+/// ever emits, reachable by a consumer —
+/// `FirmwareFailure.progressStalled(fwupState: result.rawState)` and the
+/// `(fwup_state=...)` log line both print it verbatim.
+const gatePnpFirmwareInstallingState = FirmwareUpdateState(
+  phase: FirmwareUpdatePhase.installing,
+  otaProgress: FirmwareOtaInstallProgress(
+    status: FirmwareAutoUpdateStatus.downloading,
+    rawProgress: 42,
+    rawState: '3',
+  ),
 );
 
 /// Two banks, one active, which is what an M60TB-class router reports.

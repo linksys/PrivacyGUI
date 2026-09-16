@@ -18,12 +18,15 @@ import '../fixtures/firmware_update_test_data.dart';
 // here rather than moved because this page is still one of the two places a user
 // reaches them from: a golden of a shared card is a golden of that page's use of it.
 //
-// The OTA page has no config of its own yet, deliberately. Goldens are not a
-// verification tier in this repo (they run in the private golden-ci repo, and their
-// baselines are gitignored), so a new suite added here could not be verified by
-// anything in this PR — and #1549's own bookkeeping row calls this item bookkeeping
-// rather than acceptance. What covers that page in *this* PR is its layout-gate case
-// (`page.firmware_ota`, 234 cells) and its identifier widget test.
+// The OTA page now has its own suite, `firmware_ota_view_test.dart` (#1554 §1).
+// It did not when #1549 split the pages, and the reason was not oversight: goldens
+// are not a verification tier in this repo (they run in the private golden-ci repo,
+// and their baselines are gitignored), so a suite added in that PR could not have
+// been verified by anything in it, and #1549's own bookkeeping row called the item
+// bookkeeping rather than acceptance. What covered the page until then, and still
+// does, is its layout-gate case (`page.firmware_ota`, 234 cells) and its identifier
+// widget test — the sibling file says which of its six states those two cannot
+// reach, which is what a golden was eventually needed for.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
