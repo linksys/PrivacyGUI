@@ -443,7 +443,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
 
     // Every other verdict is already on the card: `idle` means mode 2 checked and
     // found nothing (it checks before it downloads, so an accepted dispatch can
-    // still come back empty), and `failed`/`timedOut` have failed the phase. Only
+    // still come back empty), and `timedOut` has failed the phase. Only
     // `flashing` means the router has committed and stopped answering, which is the
     // one outcome with something left for the view to do.
     if (!result.isFlashing || !context.mounted) return;
