@@ -17,6 +17,8 @@ import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/change_password_dialog.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -95,7 +97,8 @@ class UspAdminView extends ConsumerWidget {
           onChangePassword: () => _changePassword(context, ref),
         ),
         AppGap.xl(),
-        const FirmwareUpdateCard(),
+        const FirmwareOtaCard(),
+        _manualUpdateEntry(ref),
         AppGap.xl(),
         UspSystemActionsCard(
           onReboot: () => _reboot(context, ref),
@@ -103,6 +106,33 @@ class UspAdminView extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// The manual-update card **and the gap above it**, or nothing at all.
+  ///
+  /// Both layouts go through here so the two cannot disagree about which modes
+  /// offer a manual update — the failure #1549 is most likely to ship is a card
+  /// hidden on mobile and still visible on desktop, and a single owner is what
+  /// rules it out.
+  ///
+  /// The gap lives *inside* the closure because `firmwareManualEntry` returns
+  /// `SizedBox.shrink()` on a surface without manual update: a gap left outside
+  /// would spend `AppGap.xl` of vertical space on a card that is not there, and a
+  /// zero-height widget between two real gaps is invisible in review and obvious
+  /// on screen. It stays an `AppGap` rather than becoming an `EdgeInsets` for the
+  /// same reason — `AppGap.xl()` is `AppSpacing.xl * theme.spacingFactor`, so a
+  /// hardcoded padding would be pixel-neutral only in themes whose factor is 1.
+  Widget _manualUpdateEntry(WidgetRef ref) {
+    return ref.watch(surfaceStrategyProvider).firmwareManualEntry(
+          picker: () => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppGap.xl(),
+              const FirmwareUpdateCard(),
+            ],
+          ),
+        );
   }
 
   // ---------------------------------------------------------------------------
@@ -142,7 +172,8 @@ class UspAdminView extends ConsumerWidget {
                 onChangePassword: () => _changePassword(context, ref),
               ),
               AppGap.xl(),
-              const FirmwareUpdateCard(),
+              const FirmwareOtaCard(),
+              _manualUpdateEntry(ref),
             ],
           ),
         ),

@@ -31,6 +31,7 @@ class FirmwareBanksDataService {
   FirmwareImageUIModel _toUIModel(FirmwareImage img) => FirmwareImageUIModel(
         instance: _instanceFromPath(img.instancePath),
         instancePath: img.instancePath,
+        alias: img.alias,
         name: img.name,
         version: img.version,
         status: img.status,

@@ -7,32 +7,35 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/utils/device_image_helper.dart';
-import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
+import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_router_status_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Full-screen firmware update flow.
+/// Manual firmware update: push an image from this browser to the router.
 ///
-/// PR-1 ships a skeleton: phase-driven body switcher and a load-banks call so
-/// the page renders meaningful copy from real router data. File-picker,
-/// chunked push, install polling, and reboot detection land in PR-2 → PR-4.
+/// #1549 split the OTA check out to [FirmwareOtaView], leaving this page the
+/// half that needs a file — pick, validate, chunked push, install, reboot,
+/// verify. The install phases from `triggering` onwards are not this page's:
+/// both entry points drive the same ones, so they live in
+/// [FirmwareInstallPhaseCard].
 class FirmwareUpdateView extends ConsumerStatefulWidget {
   const FirmwareUpdateView({super.key});
 
@@ -45,21 +48,53 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   /// Router typically takes ~60-90 seconds to write firmware before reboot.
   static const _localInstallDelayBeforeReboot = Duration(seconds: 60);
 
-  /// Delay after triggering OTA install before showing recovery dialog.
-  /// Router needs to download (~50-100MB) + flash, typically ~120 seconds.
-  static const _otaInstallDelayBeforeReboot = Duration(seconds: 120);
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(firmwareUpdateNotifierProvider.notifier).loadBanks();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _readBanks());
   }
 
+  /// The one read this page opens with, and re-runs when it failed.
+  ///
+  /// Handled rather than dropped, for the reason the OTA page's copy of this call
+  /// spells out: `loadBanks` records the failure in state *and* rethrows, and the
+  /// rethrow lands nowhere from a post-frame callback. The state is the channel
+  /// this page reads; the log line is so the swallow is not silent.
+  ///
+  /// `try`/`catch` around an `await` rather than `.catchError`, which is what this
+  /// used to be. That worked here only because `loadBanks` returns
+  /// `Future<void>` — `Future<T>.catchError` validates its handler's return value
+  /// against the runtime `T`, and the OTA page's copy of the same shape threw
+  /// `ArgumentError` on the error path once it was handed a future with a real `T`.
+  /// Same shape, one accident away from the same defect.
+  ///
+  /// [refresh] is passed by the read-failure card's retry — see
+  /// [FirmwareStateUnreadableCard.onRetry] for why it cannot be left off there.
+  Future<void> _readBanks({bool refresh = false}) async {
+    try {
+      await ref
+          .read(firmwareUpdateNotifierProvider.notifier)
+          .loadBanks(refresh: refresh);
+    } catch (error) {
+      logger.d('[FirmwareUpdate] loadBanks reported $error, '
+          'already in notifier state');
+    }
+  }
+
+  /// Everything watched, watched **here**.
+  ///
+  /// `child:` below is a builder that `UiKitPageView` hands to a layout widget, so
+  /// anything it calls may run during layout rather than during build — and a
+  /// `ref.watch` reached from there registers a dependency whose change calls
+  /// `markNeedsBuild` mid-layout. All three reads used to sit further down, one of
+  /// them inside `_buildActionCardBody`; they are parameters now so that the rule
+  /// for this page is checkable by looking at one method.
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
+    final systemInfo = ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    final banks = ref.watch(firmwareBanksDataProvider);
+    final surface = ref.watch(surfaceStrategyProvider);
 
     return UiKitPageView.withSliver(
       identifier: 'firmware-update',
@@ -74,17 +109,23 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: _buildBody(childContext, state),
+          child: _buildBody(childContext, state, systemInfo, banks, surface),
         );
       },
     );
   }
 
-  Widget _buildBody(BuildContext context, FirmwareUpdateState state) {
-    final asyncSystemInfo = ref.watch(systemInfoDataProvider);
-    final systemInfo = asyncSystemInfo.valueOrNull?.model;
-    final asyncBanks = ref.watch(firmwareBanksDataProvider);
-    final banks = asyncBanks.valueOrNull?.banks ?? const [];
+  Widget _buildBody(
+    BuildContext context,
+    FirmwareUpdateState state,
+    SystemInfoUIModel? systemInfo,
+    AsyncValue<FirmwareBanksData> asyncBanks,
+    SurfaceStrategy surface,
+  ) {
+    // `physicalBanks`: this card draws one boot slot per row, and the virtual
+    // OTA instance is not a slot — rendered here it would claim a third bank
+    // and print the downloadable version as if the router already held it.
+    final banks = asyncBanks.valueOrNull?.physicalBanks ?? const [];
     final isLoadingBanks = asyncBanks.isLoading && banks.isEmpty;
 
     // Every card on this page exists in every mode. What the mode decides is
@@ -95,25 +136,27 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _RouterStatusCard(
+        FirmwareRouterStatusCard(
           systemInfo: systemInfo,
           banks: banks,
           isLoadingBanks: isLoadingBanks,
+          // An `AsyncError` leaves `banks` empty and `isLoading` false, which the
+          // card used to read as an answer: "No firmware banks reported" — a claim
+          // about the router's boot slots — directly above the card that says the
+          // router could not be asked anything. Two cards for one fact, and the
+          // upper one was the false and more alarming reading.
+          banksUnreadable: asyncBanks.hasError,
         ),
         AppGap.xl(),
-        _OtaCheckCard(
-          state: state,
-          onCheck: () => _onCheckForUpdates(context),
-        ),
+        _buildActionCard(context, state, asyncBanks.hasError, surface),
         AppGap.xl(),
-        _buildActionCard(context, state),
-        AppGap.xl(),
-        _buildWarningNote(context),
+        const FirmwareUpdateWarningNote(),
       ],
     );
   }
 
-  Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildActionCard(BuildContext context, FirmwareUpdateState state,
+      bool banksUnreadable, SurfaceStrategy surface) {
     // Anchor every phase card by its phase name so the E2E phase-sequence walk
     // (PrivacyGUI-USP-E2E#114) keys on a stable identifier rather than the
     // translatable, live-updating copy inside each card — in particular so the
@@ -121,58 +164,63 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // One boundary here covers all phases via `_buildActionCardBody`.
     return Semantics(
       identifier: 'firmware-phase-${state.phase.name}',
-      child: _buildActionCardBody(context, state),
+      child: _buildActionCardBody(context, state, banksUnreadable, surface),
     );
   }
 
-  Widget _buildActionCardBody(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildActionCardBody(BuildContext context, FirmwareUpdateState state,
+      bool banksUnreadable, SurfaceStrategy surface) {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
       case FirmwareUpdatePhase.checkingOta:
         // The only mode-dependent arm, because it is the only one that is an
         // *entry point* rather than the state of an install already running: it
         // holds `firmware-pick-file` and `firmware-install-confirm` and nothing
-        // else. A surface without manual update renders nothing here — including
-        // during `checkingOta`, which loses no feedback because the spinner for
-        // that lives in `_OtaCheckCard`, the card that started it.
-        return ref.watch(surfaceStrategyProvider).firmwareManualEntry(
-              picker: () => _buildIdleCard(context, state),
-            );
+        // else. A surface without manual update renders nothing here.
+        //
+        // `checkingOta` is grouped in for shape rather than for reachability:
+        // since #1549 the check runs on the OTA page, whose `onExit` refuses to
+        // release a user while it does, so this page cannot be on screen in that
+        // phase. Kept as `idle` because that is what it would have to look like
+        // if it ever were — a picker, with no OTA spinner this page could own.
+        //
+        // The read-failure card goes **inside** this closure, not above the
+        // switch: a surface that does not offer manual update has nothing to say
+        // about a read this page only makes in order to offer it. Hoisting the
+        // decision out is how #1497's first attempt lost the phase machine.
+        return surface.firmwareManualEntry(
+          picker: () => banksUnreadable
+              // `asyncBanks.hasError`, and no conjunction — unlike the OTA page,
+              // which needs one. There two reads record into a single
+              // `stateReadError`, so that field alone cannot say *which* failed;
+              // here there is one read, and its own `AsyncError` is the answer.
+              // If a second read is ever added to this page, this is the line to
+              // revisit.
+              //
+              // Not `state.stateReadError`, which would also be the leftover of a
+              // failed `observeRunningOtaInstall` from the OTA page — the same
+              // notifier serves both, and a message about a poll this page never
+              // ran would replace a picker whose banks are perfectly readable.
+              ? FirmwareStateUnreadableCard(
+                  onRetry: () => _readBanks(refresh: true),
+                )
+              : _buildIdleCard(context, state),
+        );
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
         return _buildPickingOrValidatingCard(context, state);
       case FirmwareUpdatePhase.uploading:
         return _buildUploadingCard(context, state);
       case FirmwareUpdatePhase.triggering:
-        return _buildTriggeringCard(context);
       case FirmwareUpdatePhase.installing:
-        return _buildInstallingCard(context);
       case FirmwareUpdatePhase.rebooting:
-        return _buildRebootingCard(context, state);
       case FirmwareUpdatePhase.verifying:
-        return _buildVerifyingCard(context);
       case FirmwareUpdatePhase.done:
-        return _buildDoneCard(context, state);
       case FirmwareUpdatePhase.failed:
-        return _buildFailedCard(context, state);
+        // An install already running looks the same whichever page started it,
+        // so from here on this page has nothing of its own to draw.
+        return FirmwareInstallPhaseCard(state: state);
     }
-  }
-
-  Widget _buildWarningNote(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.info_outline, size: 18, color: scheme.outline),
-        AppGap.sm(),
-        Expanded(
-          child: AppText.bodySmall(
-            loc(context).firmwareUpdateWarning,
-            color: scheme.outline,
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildIdleCard(BuildContext context, FirmwareUpdateState state) {
@@ -278,213 +326,18 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
-  Widget _buildTriggeringCard(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium(loc(context).preparingToInstall),
-          AppGap.md(),
-          AppText.bodyMedium(loc(context).verifyingFirmwareImage),
-          AppGap.xl(),
-          const AppLoader(variant: LoaderVariant.linear),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstallingCard(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium(loc(context).installingFirmware),
-          AppGap.md(),
-          AppText.bodyMedium(loc(context).routerWritingImage),
-          AppGap.xl(),
-          const AppLoader(variant: LoaderVariant.linear),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRebootingCard(BuildContext context, FirmwareUpdateState state) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium(loc(context).rebootingRouter),
-          AppGap.md(),
-          AppText.bodyMedium(loc(context).waitingForRouterOnline),
-          AppGap.xl(),
-          const AppLoader(variant: LoaderVariant.linear),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVerifyingCard(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium(loc(context).verifyingFirmware),
-          AppGap.md(),
-          AppText.bodyMedium(loc(context).confirmingNewFirmware),
-          AppGap.xl(),
-          const AppLoader(variant: LoaderVariant.linear),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoneCard(BuildContext context, FirmwareUpdateState state) {
-    final scheme = Theme.of(context).colorScheme;
-    final newVersion = state.activeBank?.version ?? '—';
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.check_circle, color: scheme.primary, size: 24),
-              AppGap.sm(),
-              AppText.titleMedium(loc(context).updateComplete),
-            ],
-          ),
-          AppGap.md(),
-          AppText.bodyMedium(loc(context).nowRunningVersion(newVersion)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFailedCard(BuildContext context, FirmwareUpdateState state) {
-    final scheme = Theme.of(context).colorScheme;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.error_outline, color: scheme.error, size: 24),
-              AppGap.sm(),
-              AppText.titleMedium(loc(context).updateFailed),
-            ],
-          ),
-          AppGap.md(),
-          AppText.bodyMedium(state.errorMessage ?? loc(context).unknownError),
-          AppGap.xl(),
-          AppButton(
-            label: loc(context).tryAgain,
-            identifier: 'firmware-retry',
-            onTap: () =>
-                ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _onCheckForUpdates(BuildContext context) async {
-    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
-
-    try {
-      final params = await notifier.buildOtaCheckParams();
-      if (params == null) {
-        if (context.mounted) {
-          showFailedSnackBar(context, loc(context).unableToGatherDeviceInfo);
-        }
-        return;
-      }
-
-      final info = await notifier.checkForOtaUpdate(params);
-
-      if (!context.mounted) return;
-
-      if (info != null) {
-        await _showOtaUpdateDialog(context, info);
-      }
-    } on FirmwareOtaCheckException catch (e) {
-      if (context.mounted) {
-        showFailedSnackBar(context, e.message);
-      }
-    }
-  }
-
-  Future<void> _showOtaUpdateDialog(
-      BuildContext context, FirmwareOtaInfo info) async {
-    final state = ref.read(firmwareUpdateNotifierProvider);
-    final currentVersion = state.activeBank?.version ?? '—';
-    final target = state.targetBank;
-
-    if (target == null) {
-      showFailedSnackBar(context, loc(context).noTargetBankAvailable);
-      return;
-    }
-
-    final confirmed = await showConfirmActionDialog(
-      context,
-      title: loc(context).updateAvailable,
-      message: '${loc(context).currentVersion(currentVersion)}\n'
-          '${loc(context).availableVersionLabel(info.version)}\n\n'
-          '${loc(context).doYouWantToUpdateNow}',
-      confirmLabel: loc(context).update,
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
-
-    try {
-      await notifier.triggerOtaInstall(
-        targetInstance: target.instance,
-        firmwareUrl: info.downloadUrl,
-      );
-    } catch (e, st) {
-      logger.e('[FirmwareUpdate] triggerOtaInstall error: $e',
-          error: e, stackTrace: st);
-      if (context.mounted) {
-        showFailedSnackBar(context, loc(context).failedToStartOtaUpdate);
-      }
-      return;
-    }
-
-    if (!context.mounted) return;
-
-    // Wait for OTA download + flash before entering recovery
-    await Future<void>.delayed(_otaInstallDelayBeforeReboot);
-    if (!context.mounted) return;
-
-    // Hand off to the shared recovery framework
-    final expectedVersion = info.version;
-    notifier.enterRecoveryWaiting();
-    await showFirmwareUpdateRecoveryDialog(context, ref);
-    if (!context.mounted) return;
-
-    final connState = ref.read(appConnectionStateProvider);
-    if (connState != AppConnectionState.authenticated) {
-      return;
-    }
-
-    try {
-      await notifier.verify(
-        expectedVersion: expectedVersion,
-        expectedActiveInstance: target.instance,
-      );
-    } catch (_) {
-      // Notifier already transitioned to `failed` and surfaced the message.
-    }
-  }
-
   Future<void> _onPickFile(BuildContext context) async {
     final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
     final ok = await notifier.pickAndValidateFile();
     if (!context.mounted) return;
     if (!ok) {
-      final err = ref.read(firmwareUpdateNotifierProvider).errorMessage;
-      if (err != null && err.isNotEmpty) {
-        showFailedSnackBar(context, err);
+      // The second of the two places a firmware failure becomes words — the first
+      // being `FirmwareInstallPhaseCard`. A cancelled picker is not a failure and
+      // leaves the field null, so the null check is what tells the two apart; it is
+      // not a guard against blank copy.
+      final failure = ref.read(firmwareUpdateNotifierProvider).failure;
+      if (failure != null) {
+        showFailedSnackBar(context, localizeFirmwareFailure(context, failure));
       }
     }
   }
@@ -517,7 +370,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       // throws above `_setState`, on purpose, so no upload screen appears for an
       // upload that will not happen. The generic arm below only logs, which for a
       // refusal means the Update button does nothing at all: the failed-phase UI
-      // that renders `errorMessage` is never reached because the phase never
+      // that renders `failure` is never reached because the phase never
       // moved. The admin view's factory-reset arm already surfaces this the same
       // way; this is the firmware half of it.
       if (context.mounted) {
@@ -569,332 +422,5 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     } catch (_) {
       // Notifier already transitioned to `failed` and surfaced the message.
     }
-  }
-}
-
-/// Card for checking OTA firmware updates.
-class _OtaCheckCard extends StatelessWidget {
-  const _OtaCheckCard({
-    required this.state,
-    required this.onCheck,
-  });
-
-  final FirmwareUpdateState state;
-  final VoidCallback onCheck;
-
-  /// Card-content width below which the button and the status line stack.
-  ///
-  /// The row held two children that could neither shrink nor wrap: a button whose
-  /// width is a localized label plus padding, and an up-to-date line whose
-  /// `MainAxisSize.min` made it as wide as its own localized sentence. It overflowed
-  /// in **all 26 locales** at 320px, 19 at 480px and 5 at 601px — worst `ru` at
-  /// +357px, and +160px in `en` (#1380, 50 of 234 cells). The sibling card twenty
-  /// lines up lays its two buttons out in a `Wrap` for the same reason; a `Wrap`
-  /// cannot carry this pair because neither of *these* children fits a 256px line on
-  /// its own, and a `RenderWrap` reports no overflow when one doesn't — it just paints
-  /// past the card, which is worse than the bug it replaced.
-  ///
-  /// 600 is picked against measurement, not against the mobile breakpoint it
-  /// coincides with: the widest locale needs ~580px for the pair, and the card grants
-  /// ~473px at a 601px screen (which overflowed) and ~809px at 905px (which did not).
-  static const _stackBelow = 600.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
-    final scheme = Theme.of(context).colorScheme;
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium(loc(context).otaUpdate),
-          AppGap.md(),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stacked = constraints.maxWidth < _stackBelow;
-              // `small` when stacked, and this is a readability fix rather than a
-              // taste one. A medium button spends `buttonHeight * 0.5` — 24px — of
-              // padding on each side, so a full-width button on a 230px card line
-              // grants its label 182px; `fr`'s "Rechercher des mises à jour" needs
-              // 194.5px and ui_kit ellipsizes the remainder silently. `small` spends
-              // 16px a side and draws `labelMedium`, which fits. Same component, its
-              // own compact size, no new API — five other call sites in `lib/` already
-              // pass this.
-              final size = stacked ? AppButtonSize.small : AppButtonSize.medium;
-              final button = isChecking
-                  ? AppButton.primaryOutline(
-                      label: loc(context).checking,
-                      onTap: null,
-                      size: size,
-                      icon: const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : AppButton.primaryOutline(
-                      label: loc(context).checkForUpdates,
-                      identifier: 'firmware-check',
-                      onTap: onCheck,
-                      size: size,
-                    );
-              // `Expanded` on the label rather than `MainAxisSize.min` on the row:
-              // the sentence is what made this line unshrinkable, and letting it wrap
-              // is the only way the line fits 256px in any locale. Alignment moves to
-              // `start` because it now has more than one line to align to.
-              final upToDate = state.otaUpToDate && !isChecking
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          size: 18,
-                          color: scheme.primary,
-                        ),
-                        AppGap.sm(),
-                        Expanded(
-                          child: AppText.bodyMedium(
-                            loc(context).firmwareUpToDate,
-                            color: scheme.primary,
-                          ),
-                        ),
-                      ],
-                    )
-                  : null;
-
-              if (stacked) {
-                // `stretch` gives the button the whole line, so its label has the
-                // card's full width to render in instead of ellipsizing inside
-                // ui_kit's `Flexible`. The gate pins that it does not ellipsize.
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    button,
-                    if (upToDate != null) ...[
-                      AppGap.md(),
-                      upToDate,
-                    ],
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  button,
-                  if (upToDate != null) ...[
-                    AppGap.md(),
-                    Expanded(child: upToDate),
-                  ],
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Combined router info + firmware banks card.
-class _RouterStatusCard extends StatelessWidget {
-  const _RouterStatusCard({
-    required this.systemInfo,
-    required this.banks,
-    required this.isLoadingBanks,
-  });
-
-  final SystemInfoUIModel? systemInfo;
-  final List<FirmwareImageUIModel> banks;
-  final bool isLoadingBanks;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildRouterHeader(context),
-          Divider(height: AppSpacing.xl * 2, color: scheme.outlineVariant),
-          AppText.labelLarge(loc(context).firmwareBanks),
-          AppGap.md(),
-          if (isLoadingBanks)
-            _buildLoadingBanks(context)
-          else if (banks.isEmpty)
-            AppText.bodyMedium(loc(context).noFirmwareBanksReported)
-          else
-            _buildBanksList(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRouterHeader(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (systemInfo == null) {
-      return const SizedBox.shrink();
-    }
-    final iconName = routerIconTestByModel(
-      modelNumber: systemInfo!.modelName,
-      hardwareVersion: systemInfo!.hardwareVersion,
-    );
-    return Row(
-      children: [
-        Image(
-          image: DeviceImageHelper.getRouterImage(iconName, xl: false),
-          width: 56,
-          height: 56,
-        ),
-        AppGap.md(),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.titleMedium(systemInfo!.modelName),
-              AppGap.xs(),
-              AppText.bodySmall(
-                systemInfo!.serialNumber,
-                color: scheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingBanks(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: 16, height: 16, child: AppLoader()),
-        AppGap.md(),
-        AppText.bodyMedium(loc(context).loading),
-      ],
-    );
-  }
-
-  Widget _buildBanksList(BuildContext context) {
-    return Column(
-      children: [
-        for (var i = 0; i < banks.length; i++) ...[
-          _BankRow(bank: banks[i]),
-          if (i < banks.length - 1) AppGap.sm(),
-        ],
-      ],
-    );
-  }
-}
-
-/// Single bank row with left accent bar indicating active status.
-class _BankRow extends StatelessWidget {
-  const _BankRow({required this.bank});
-
-  final FirmwareImageUIModel bank;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isActive = bank.isActive;
-    final accentColor = isActive ? scheme.primary : scheme.outlineVariant;
-    final bgColor = isActive
-        ? scheme.primaryContainer.withValues(alpha: 0.15)
-        : scheme.surfaceContainerLowest;
-    final version = bank.version.isEmpty ? '(empty)' : bank.version;
-    final slot = bank.instance;
-
-    return Semantics(
-      // Per-row E2E anchor so "slot N became Active" is expressible instead of
-      // the whole banks card flattening to one string (PrivacyGUI-USP-E2E#114).
-      // Matches the dynamic-hook convention (`pf-rule-enable-${...}`,
-      // `admin-timezone-item-${...}`). The version/status/label inside stay
-      // text-asserted: lint:ids exempts assertions once the row is anchorable.
-      identifier: 'firmware-bank-${bank.instance}',
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left accent bar
-              Container(width: 4, color: accentColor),
-              AppGap.md(),
-              // Slot badge
-              _SlotBadge(number: slot, isActive: isActive),
-              AppGap.md(),
-              // Version + status
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppText.bodyMedium(version),
-                      AppGap.xs(),
-                      _StatusLabel(isActive: isActive),
-                    ],
-                  ),
-                ),
-              ),
-              AppGap.md(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SlotBadge extends StatelessWidget {
-  const _SlotBadge({required this.number, required this.isActive});
-
-  final int number;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final bg = isActive ? scheme.primary : scheme.surfaceContainerHighest;
-    final fg = isActive ? scheme.onPrimary : scheme.onSurfaceVariant;
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      alignment: Alignment.center,
-      child: AppText.labelLarge(
-        number.toString(),
-        color: fg,
-      ),
-    );
-  }
-}
-
-class _StatusLabel extends StatelessWidget {
-  const _StatusLabel({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final icon = isActive ? Icons.check_circle : Icons.circle_outlined;
-    final color = isActive ? scheme.primary : scheme.outline;
-    final label = isActive ? loc(context).active : loc(context).standby;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        AppText.labelSmall(label, color: color),
-      ],
-    );
   }
 }

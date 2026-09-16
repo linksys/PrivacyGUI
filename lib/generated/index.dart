@@ -12,6 +12,7 @@ export 'system_info.g.dart';
 export 'setup_operations.g.dart';
 export 'vendor_log_files.g.dart';
 export 'device_operations.g.dart';
+export 'firmware_auto_update.g.dart';
 export 'firmware_images.g.dart';
 export 'firmware_operations.g.dart';
 export 'time_settings.g.dart';

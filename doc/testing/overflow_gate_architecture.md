@@ -4143,6 +4143,21 @@ A suite's weight is the sum of its pages' **measured** `ms_per_cell` from
 > figure was 25% low, and at four suites that difference is which shard 58.0s lands in
 > rather than a decimal on a printed total.
 
+> **Amended 2026-09-14 (#1549): the guard term is now 6.939s**, re-derived twice in one
+> ticket — 4,465 → 5,702 when the OTA card's reflow gained a guard, then 5,702 → 6,939
+> when the manual card's did. Same unit, same rule, and the group count did not move:
+> **13 groups, 20 tests, 1,313 pumps**, ÷ 13 = 101 pumps a group × 68.7ms. Two things this
+> pair of steps settles about the term itself. First, a guard is not a fixed cost: each of
+> these two tests watches a reflow reached by different widths in different *locales*, so
+> neither can be a 320px column and both sweep the full 9 × 26 = 234, moving the mean by
+> 1,237ms where a 34-pump guard would move it by 180. Second, the mean is now visibly not
+> a bound — `admin` holds five guards and **601 of the 1,313 pumps**, so a shard taking
+> that page would take 41.3s of real work while being billed 6.9s. That gap is the price
+> of a mean with no per-group verifier, and §11.12's reason for choosing one stands: a
+> hand-copied pump count per group drifts, arithmetic anyone can redo from the loops does
+> not. The live figure is `kReadabilityGuardWeightMs`; the two paragraphs above are the
+> record of how it got there, not the current value.
+
 - **No page is ever weighed by a guess.** `page_roster.dart` rejects a `swept` row with
   no figure, so a page is measured before it can be declared, and it carries its own
   measurement from its first green run. `pageSweepSuiteWeightMs` throws rather than

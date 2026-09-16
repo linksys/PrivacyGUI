@@ -195,6 +195,13 @@
   "firewallRulesSubtitle": "Rule target distribution and security overview",
   "fwRules": "FW Rules",
   "firmwareUpdate": "Firmware Update",
+  "manualUpdate": "Manual Update",
+  "manualUpdateDesc": "Install a firmware image from this device.",
+  "automaticUpdates": "Automatic Updates",
+  "automaticUpdatesDesc": "Install new firmware automatically. When off, you'll be notified instead.",
+  "firmwareUpdateAvailable": "A new firmware version is available for your router.",
+  "updateNow": "Update Now",
+  "dismiss": "Dismiss",
   "forgotPassword": "Forgot password",
   "generalError": "Oops, something wrong here! Please try again later",
   "goBack": "Go back",
@@ -754,6 +761,14 @@
   "verifyingFirmwareImage": "Verifying firmware image and preparing flash…",
   "installingFirmware": "Installing firmware",
   "routerWritingImage": "The router is writing the new image. Do not power off.",
+  "checkingForNewFirmware": "Checking for new firmware",
+  "routerCheckingForImage": "The router is asking whether a newer image is available…",
+  "downloadingFirmware": "Downloading firmware",
+  "routerDownloadingImage": "The router is downloading the new image. Do not power off.",
+  "updatingFirmware": "Updating firmware",
+  "routerUpdatingFirmware": "The router is updating its firmware. Do not power off.",
+  "firmwareStatusUnavailable": "Firmware status unavailable",
+  "firmwareStatusUnavailableDesc": "The router did not answer when asked about its firmware. Nothing has been changed.",
   "rebootingRouter": "Rebooting router",
   "waitingForRouterOnline": "Waiting for the router to come back online…",
   "verifyingFirmware": "Verifying firmware",
@@ -769,6 +784,68 @@
     }
   },
   "updateFailed": "Update failed",
+  "firmwareFileEmpty": "The selected file is empty.",
+  "firmwareFileTooSmall": "That file is only {size}, too small to be a firmware image.",
+  "@firmwareFileTooSmall": {
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "4.0 KB"
+      }
+    }
+  },
+  "firmwareFileTooLarge": "That file is {size}, too large to be a firmware image.",
+  "@firmwareFileTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "300 MB"
+      }
+    }
+  },
+  "firmwareFileTypeUnsupported": "Only .img and .bin firmware files can be installed.",
+  "firmwareProgressStalled": "The router stopped reporting update progress (fwup_state={state}).",
+  "@firmwareProgressStalled": {
+    "placeholders": {
+      "state": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "firmwareProgressStalledNoReading": "The router stopped reporting update progress before it reported any stage.",
+  "firmwareBanksUnreadableAfterReboot": "The router restarted, but its firmware information could not be read.",
+  "firmwareMultipleActiveBanks": "The router reported {count} active firmware images, but only one can be active.",
+  "@firmwareMultipleActiveBanks": {
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "2"
+      }
+    }
+  },
+  "firmwareExpectedBankMissing": "Firmware image {instance} was not reported after the router restarted.",
+  "@firmwareExpectedBankMissing": {
+    "placeholders": {
+      "instance": {
+        "type": "String",
+        "example": "2"
+      }
+    }
+  },
+  "firmwareBootedOldImage": "The router restarted but did not start the new firmware (image {instance} reported \"{status}\").",
+  "@firmwareBootedOldImage": {
+    "placeholders": {
+      "instance": {
+        "type": "String",
+        "example": "2"
+      },
+      "status": {
+        "type": "String",
+        "example": "Standby"
+      }
+    }
+  },
   "firmwareUpdateWarning": "The update will take approximately 5–8 minutes. Do not power off or disconnect the router during the process.",
   "noTargetBankAvailable": "No target bank available",
   "availableVersionLabel": "Available: {version}",
@@ -786,7 +863,8 @@
   "otaUpdate": "OTA Update",
   "checking": "Checking...",
   "checkForUpdates": "Check for Updates",
-  "firmwareUpToDate": "Your firmware is up to date",
+  "firmwareNoUpdateFound": "No new firmware was found",
+  "otaCheckNotSupported": "Firmware update checks are not available on this router",
   "firmwareBanks": "Firmware Banks",
   "noFirmwareBanksReported": "No firmware banks reported by router",
   "loading": "Loading…",

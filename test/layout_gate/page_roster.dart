@@ -71,10 +71,14 @@ const String kPageViewRoot = 'lib/page';
 /// How many page views the rule finds today.
 ///
 /// Pinned rather than derived so a change to [discoverPageViews] fails loudly
-/// instead of quietly redefining what "45 of 45" means. Moving this number is a
+/// instead of quietly redefining what "46 of 46" means. Moving this number is a
 /// deliberate act: either the app gained a page (add its roster row) or the rule
 /// changed (say why, in the oracle's reason string).
-const int kPageViewCount = 45;
+///
+/// 45 → 46 at #1549, which is the first move of the first kind: the app gained
+/// `firmware_ota_view.dart` by splitting one firmware entry point into two pages, so
+/// the walk is unchanged and one row was added beside it.
+const int kPageViewCount = 46;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

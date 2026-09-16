@@ -43,7 +43,9 @@ import 'package:privacy_gui/core/mode/local_mode_profile.dart';
 import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
+import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
@@ -53,6 +55,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../golden_test/golden_framework/mocks/mock_firmware_update.dart';
 import '../../../golden_test/page/firmware_update/fixtures/firmware_update_test_data.dart';
+import '../../../mocks/provider_overrides/mock_admin.dart';
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
@@ -142,22 +145,111 @@ void main() {
   }
 
   // ===========================================================================
-  // firmwareManualEntry — the one page whose *content* this phase changed
+  // firmwareManualEntry — two call sites since #1549, one lever
   // ===========================================================================
   //
   // Austin's 2026-09-08 addition to #1497: hide the manual firmware-update
   // affordance in RA. The entry point, not the page and not the install machine —
-  // router status, the cloud OTA check and every phase an install passes through
+  // router status, the OTA check and every phase an install passes through
   // stay, because an OTA upgrade is allowed in every mode.
   //
-  // Asserted on the page rather than only on the strategy because both failures
+  // #1549 SPLIT THE PAGE, AND THAT MOVED WHERE THIS IS VISIBLE. The manual flow
+  // and the OTA flow are now two cards on Administration and two pages behind
+  // them, so `firmwareManualEntry` has two call sites:
+  //
+  //   1. the Administration card gate (`usp_admin_view.dart:_manualUpdateEntry`),
+  //      which is what an agent actually sees — in RA the manual card is not on
+  //      the page at all, while the OTA card is;
+  //   2. the manual page's own idle arm, unchanged, which still defends a DEEP
+  //      LINK to `/uspFirmwareUpdate` in RA. Hiding a card does not delete a
+  //      route, so without this the control is one URL away.
+  //
+  // Both are pumped below, because either one alone is a hole with no symptom:
+  // drop the card gate and the agent is offered an upload that #1496 refuses
+  // underneath; drop the page gate and the same is true for anyone who kept the
+  // link.
+  //
+  // Asserted on the pages rather than only on the strategy because both failures
   // this group guards are rendering ones, in opposite directions. Too much: a page
   // that kept building the picker directly, alongside the strategy call, would
   // satisfy every strategy assertion while still offering the upload. Too little:
   // dropping a widget one level too high takes the OTA install's progress and
   // failure UI with it, which is what the last two tests exist to catch and what
   // the strategy's own sentinels could not see.
-  group('firmware update page', () {
+  group('administration page cards', () {
+    // Call site 1: the entry points, where a user meets them. This is the test
+    // #1549's own acceptance criteria asks for — "in RA the admin page shows the
+    // OTA card only" — and the reason the version line moved to the OTA card:
+    // the manual card is the one that goes away, so the card that survives has
+    // to be the one carrying the firmware version.
+    Widget adminPage(AppModeProfile profile) => host(
+          profile: profile,
+          page: const UspAdminView(),
+          overrides: adminPageOverrides(),
+        );
+
+    testWidgets('local shows both the OTA and the manual card', (tester) async {
+      final handle = tester.ensureSemantics();
+      useTallSurface(tester);
+
+      await tester.pumpWidget(adminPage(const LocalModeProfile()));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsIdentifier('firmware-ota-card'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('firmware-card'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('remote assistance shows the OTA card only', (tester) async {
+      final handle = tester.ensureSemantics();
+      useTallSurface(tester);
+
+      await tester.pumpWidget(adminPage(const RemoteModeProfile()));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsIdentifier('firmware-card'), findsNothing,
+          reason: 'pushing an image from the agent\'s browser is a local-only '
+              'feature. #1496 refuses the operation underneath; this is the same '
+              'decision at the top, where it is offered — so the agent is not '
+              'shown a control that would be rejected.');
+      expect(find.bySemanticsIdentifier('firmware-ota-card'), findsOneWidget,
+          reason: 'and the other half: checking for and applying a cloud OTA '
+              'image is allowed in every mode, and it is the affordance an agent '
+              'on a support call actually needs. This assertion is also what '
+              'keeps the one above from passing because the page failed to '
+              'render.');
+      handle.dispose();
+    });
+
+    testWidgets('the firmware version is shown by exactly one card',
+        (tester) async {
+      // #1549 item 5. Two cards side by side, one of which used to own the
+      // version and one of which does now — the failure this rules out is both
+      // of them rendering it, which looks harmless on screen and makes the E2E
+      // version assertion ambiguous. Pumped in LOCAL mode on purpose: that is
+      // the only mode where both cards are present and the duplication is
+      // possible at all.
+      final handle = tester.ensureSemantics();
+      useTallSurface(tester);
+
+      await tester.pumpWidget(adminPage(const LocalModeProfile()));
+      await tester.pumpAndSettle();
+
+      // From `gateAdminSystemInfo`'s active bank.
+      expect(find.text('1.0.16.213451'), findsOneWidget,
+          reason: 'the firmware version must appear once on the page, not once '
+              'per firmware card');
+      expect(find.bySemanticsIdentifier('firmware-ota-card-version'),
+          findsOneWidget);
+      expect(find.bySemanticsIdentifier('firmware-card-version'), findsNothing,
+          reason: 'the retired hook — see '
+              'firmware_update_card_identifier_widget_test.dart');
+      handle.dispose();
+    });
+  });
+
+  group('manual firmware page', () {
+    // Call site 2: the page itself, reachable by URL whatever the card does.
     Widget firmwarePage(AppModeProfile profile, [FirmwareUpdateState? state]) =>
         host(
           profile: profile,
@@ -180,7 +272,8 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('remote assistance does not', (tester) async {
+    testWidgets('remote assistance does not, even on a deep link',
+        (tester) async {
       final handle = tester.ensureSemantics();
       useTallSurface(tester);
 
@@ -188,32 +281,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.bySemanticsIdentifier('firmware-pick-file'), findsNothing,
-          reason: 'pushing an image from the agent\'s browser is a local-only '
-              'feature. #1496 refuses the operation underneath; this is the same '
-              'decision one layer up, where it is offered — so the agent is not '
-              'shown a control that would be rejected.');
-      handle.dispose();
-    });
-
-    testWidgets('remote assistance keeps the cloud OTA check', (tester) async {
-      final handle = tester.ensureSemantics();
-      useTallSurface(tester);
-
-      await tester.pumpWidget(firmwarePage(const RemoteModeProfile()));
-      await tester.pumpAndSettle();
-
-      expect(find.bySemanticsIdentifier('firmware-check'), findsOneWidget,
-          reason: 'the whole point of hiding the CARD rather than the PAGE. '
-              'Checking for and applying a cloud OTA image is allowed in every '
-              'mode, and it is the affordance an agent on a support call actually '
-              'needs; removing the route would have taken it away too.');
+          reason:
+              'hiding the card on Administration does not remove the route, '
+              'so this gate is what makes the decision hold for a bookmark, a '
+              'shared link or an F5 on this location.');
       handle.dispose();
     });
 
     testWidgets('and the page still says what it is', (tester) async {
-      // A guard against the cheap way to pass the two tests above: an empty card
-      // list, or a page that failed to build at all, satisfies both `findsNothing`
-      // assertions.
+      // A guard against the cheap way to pass the test above: an empty card
+      // list, or a page that failed to build at all, satisfies `findsNothing`.
       final handle = tester.ensureSemantics();
       useTallSurface(tester);
 
@@ -223,24 +300,37 @@ void main() {
       expect(find.bySemanticsIdentifier('firmware-update'), findsOneWidget,
           reason:
               'the page anchor is gone, so this page did not render and the '
-              '"remote hides the upload" assertions above are vacuous');
+              '"remote hides the upload" assertion above is vacuous');
       handle.dispose();
     });
 
-    // The four cases above all pump `idleNoFileState`, and that is what let the
-    // first version of this phase ship a real regression: at `idle` the manual
+    // The cases above all pump `idleNoFileState`, and that is what let the first
+    // version of this phase ship a real regression: at `idle` the manual
     // affordance and the install phase machine are the *same widget*, so "hide
     // the manual card" and "hide the whole machine" are indistinguishable. They
-    // are not the same thing at any later phase. `triggerOtaInstall` walks
+    // are not the same thing at any later phase. `triggerRouterOtaInstall` walks
     // `triggering → installing`, `enterRecoveryWaiting` sets `rebooting`, and
-    // `verify` ends at `done` or `failed` — the cloud OTA install the mode is
-    // supposed to keep drives every one of those phases through the machine that
-    // was being dropped. So an agent could start an OTA update and then watch the
-    // page show nothing at all, with the `failed` copy, its message and its retry
-    // button among the casualties.
+    // `verify` ends at `done` or `failed` — an OTA install drives every one of
+    // those phases through the machine that was being dropped. So an agent could
+    // start an update and then watch the page show nothing at all, with the
+    // `failed` copy, its message and its retry button among the casualties.
     //
-    // The two tests below pump the phases that only the OTA path can reach in RA.
-    testWidgets('remote assistance shows a cloud OTA install in progress',
+    // #1551 renamed the seam that starts it: the cloud-URL `triggerOtaInstall`
+    // this comment was written about was replaced by the router-side install under
+    // the same `transientRestart` class, and deleted with the rest of the cloud path
+    // on 2026-09-16. The phases it walks are unchanged, which is the point of naming
+    // them here rather than the method — this comment survived the rename and the
+    // deletion because it names phases.
+    //
+    // #1549 narrowed the gate to the idle arm alone and moved the phase cards
+    // into a shared `FirmwareInstallPhaseCard`, which makes these two cases
+    // cheaper to break, not safer: the gate and the phases are now different
+    // lines of the same `switch`, so widening it by one arm is a one-line edit
+    // with no other symptom. Kept on this page for exactly that reason. What
+    // they no longer claim is that RA *reaches* these phases here — since the
+    // split the OTA install runs on the OTA page, and the same phases are pinned
+    // there in `firmware_ota_identifier_widget_test.dart`.
+    testWidgets('remote assistance shows an install in progress',
         (tester) async {
       final handle = tester.ensureSemantics();
       useTallSurface(tester);
@@ -280,6 +370,51 @@ void main() {
               'for the rest of the session with no way back to `idle`.');
       handle.dispose();
     });
+  });
+
+  group('OTA firmware page', () {
+    // The page that carries the update check after #1549 — and since #1550 that
+    // check asks the router rather than the cloud API, which changes nothing about
+    // what is asserted here: it is still allowed in every mode. No call site of
+    // `firmwareManualEntry` on it at all — which is the assertion: this page must
+    // render identically under both profiles, because an OTA upgrade is allowed
+    // in every mode and nothing on it is local-only.
+    // `testThreeInstanceBanksData` — a router that reports the virtual `ota` row.
+    // Since #1550 that is the fixture this test cannot do without: the check
+    // button is hidden entirely on a router with no such row (REQ-A1), so
+    // `testBanksData`'s two physical banks would take `firmware-check` out of the
+    // tree in *both* profiles and the assertion below would fail for a reason
+    // that has nothing to do with mode. Which is what it did.
+    Widget otaPage(AppModeProfile profile) => host(
+          profile: profile,
+          page: const FirmwareOtaView(),
+          overrides: firmwareUpdateOverrides(
+            updateState: idleNoFileState,
+            banksData: testThreeInstanceBanksData,
+            systemInfoData: testSystemInfoData,
+          ),
+        );
+
+    for (final entry in _profiles.entries) {
+      testWidgets('${entry.key} reaches the OTA check', (tester) async {
+        final handle = tester.ensureSemantics();
+        useTallSurface(tester);
+
+        await tester.pumpWidget(otaPage(entry.value));
+        await tester.pumpAndSettle();
+
+        expect(find.bySemanticsIdentifier('firmware-ota'), findsOneWidget,
+            reason: 'the page anchor, so a `findsOneWidget` below cannot pass '
+                'on a page that did not build');
+        expect(find.bySemanticsIdentifier('firmware-check'), findsOneWidget,
+            reason: 'the whole point of splitting the pages rather than gating '
+                'inside one. Removing the manual card must not cost an agent the '
+                'affordance they actually need on a support call — and a mode '
+                'that reached this page and found no check would be #1497\'s '
+                'regression in its new location.');
+        handle.dispose();
+      });
+    }
   });
 
   // ===========================================================================

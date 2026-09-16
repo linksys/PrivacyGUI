@@ -19,8 +19,16 @@ void main() {
       shell: ShellType.custom,
       height: 1200,
       states: {
+        // `adminPageOverrides`, not `adminOverrides`: this is the whole page, and
+        // the whole page includes `FirmwareOtaCard`, which reads two providers of
+        // its own. Left unpinned the card renders `notAvailable` where the app
+        // renders a version, and #1552's auto-update row deletes itself on the
+        // failed read — so this golden would show the page as it looked before
+        // #1552 and tell its reviewer nothing changed. The four dialog
+        // interactions below stay on the narrow list: they are of the modal, not
+        // of the card behind it.
         'data': (overrides) => overrides.addAll(
-              adminOverrides(testAdminState),
+              adminPageOverrides(state: testAdminState),
             ),
       },
       interactions: {

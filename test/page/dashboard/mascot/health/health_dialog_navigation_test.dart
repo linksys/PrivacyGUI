@@ -66,7 +66,12 @@ const _targets = <String, String>{
   RouteNamed.uspDeviceList: '/uspDeviceList',
   RouteNamed.uspTopology: '/uspTopology',
   RouteNamed.uspAdmin: '/uspAdmin',
-  RouteNamed.uspFirmwareUpdate: '/uspFirmwareUpdate',
+  // The OTA page rather than the manual one since #1549 split the two flows: the
+  // firmware dimension scores on the virtual OTA instance, so its action has to
+  // land on the page that can act on it. This map is compared against the
+  // registry by identity below, so the swap is not a rename here — it fails until
+  // `firmware_dimension.dart` agrees.
+  RouteNamed.uspFirmwareOta: '/uspFirmwareOta',
 };
 
 /// The four targets whose location is nested, i.e. the ones `push` cannot reach.
@@ -113,7 +118,7 @@ GoRouter _buildRouter(void Function(BuildContext) onShellContext) {
           route(RouteNamed.uspDeviceList, RoutePath.uspDeviceList),
           route(RouteNamed.uspTopology, RoutePath.uspTopology),
           route(RouteNamed.uspAdmin, RoutePath.uspAdmin),
-          route(RouteNamed.uspFirmwareUpdate, RoutePath.uspFirmwareUpdate),
+          route(RouteNamed.uspFirmwareOta, RoutePath.uspFirmwareOta),
           route(RouteNamed.uspWifiSettings, RoutePath.uspWifiSettings),
           route(RouteNamed.uspAdvancedSettings, RoutePath.uspAdvancedSettings,
               routes: [

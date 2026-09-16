@@ -15,6 +15,8 @@ import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart'
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
@@ -73,6 +75,15 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// All dashboard domain providers subject to retry and pull-to-refresh.
   /// Cards trigger these lazily — if any fail during bridge startup burst,
   /// the retry mechanism will invalidate them on a backoff schedule.
+  ///
+  /// The last two are the firmware banner's (#1552), and they are here because
+  /// nothing else would ever re-read them: both are L1 caches that are not
+  /// autoDispose, neither has an SSE subscription, and `FirmwareImage.` /
+  /// `fwup_state` change on the router's own cron schedule rather than in response
+  /// to anything this app does. Left out of this list, a tab left open all day
+  /// would keep answering "no update" from the reading it took at login, and pull
+  /// to refresh would not fix it — which is the one gesture a user makes when they
+  /// think the page is stale.
   static final _allDomainProviders = [
     ('systemInfo', systemInfoDataProvider),
     ('devices', devicesDataProvider),
@@ -85,6 +96,8 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ('portForwarding', portForwardingDataProvider),
     ('portTriggering', portTriggeringDataProvider),
     ('time', timeDataProvider),
+    ('firmwareBanks', firmwareBanksDataProvider),
+    ('firmwareAutoUpdate', firmwareAutoUpdateDataProvider),
   ];
 
   @override

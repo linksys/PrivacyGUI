@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Firmware image operations (chunked upload, URL download, activate)
+/// Firmware image operations (chunked upload, URL download, OTA update, activate)
 class FirmwareOperations {
   /// Method 1 (HTTP/UDS) chunked firmware upload — each call delivers one base64-encoded chunk; router reassembles into /tmp/obuspa/firmware.img
   static Future<Map<String, dynamic>> chunkedPush(
@@ -29,11 +29,12 @@ class FirmwareOperations {
         args: inputs);
   }
 
-  /// TR-181 firmware download/flash — targets a specific FirmwareImage row (typically Available bank); AutoActivate=true reboots into the new bank after flashing
+  /// TR-181 firmware download/flash — targets a specific FirmwareImage row. For fw1/fw2 (physical banks): requires URL, downloads and flashes to that bank. For ota (virtual instance): URL is ignored, delegates to fwupd via OTA server.
+
   static Future<Map<String, dynamic>> download(
     UspClient client,
     int instance, {
-    required String url,
+    String? url,
     String? autoActivate,
     String? username,
     String? password,
@@ -41,7 +42,9 @@ class FirmwareOperations {
     String? checksum,
   }) async {
     final inputs = <String, String>{};
-    inputs['URL'] = url;
+    if (url != null) {
+      inputs['URL'] = url;
+    }
     if (autoActivate != null) {
       inputs['AutoActivate'] = autoActivate;
     }

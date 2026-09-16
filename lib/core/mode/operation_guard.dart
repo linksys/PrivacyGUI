@@ -20,7 +20,7 @@ import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 /// `test/core/mode/operation_guard_test.dart` asserts the delegation rather than
 /// the answers, so this file can never start disagreeing with cause 4.
 ///
-/// **The roster of seams.** Five operations name a [DisruptionClass] and call
+/// **The roster of seams.** Six operations name a [DisruptionClass] and call
 /// [enforce]. `test/core/mode/destructive_operation_roster_test.dart` pins the
 /// list, because "adding a destructive operation without a class does not
 /// compile" — acceptance 6's wording — is not a property Dart can give us:
@@ -33,9 +33,13 @@ import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 /// | `UspAdminNotifier.factoryReset` | `credentialLoss` | ok | **refused** |
 /// | `FirmwareUpdateNotifier.runUpload` | `transportLoss` | ok | **refused** |
 /// | `FirmwareUpdateNotifier.triggerInstall` | `transientRestart` | ok | ok |
-/// | `FirmwareUpdateNotifier.triggerOtaInstall` | `transientRestart` | ok | ok |
+/// | `FirmwareUpdateNotifier.triggerRouterOtaInstall` | `transientRestart` | ok | ok |
 ///
-/// The three allowed seams call [enforce] too, and they are the more important
+/// The last one is the router-side OTA install. A cloud-URL `triggerOtaInstall` was
+/// listed beside it until the cloud path was deleted (2026-09-16); there is one OTA
+/// install now, not a pair.
+///
+/// The four allowed seams call [enforce] too, and they are the more important
 /// half of the roster. With only the refused ones wired, the code reads "factory
 /// reset asks, reboot does not" and a reader cannot tell whether reboot is
 /// allowed or whether somebody forgot — which is precisely the ambiguity that put
