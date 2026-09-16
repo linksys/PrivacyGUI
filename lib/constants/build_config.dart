@@ -51,6 +51,27 @@ class BuildConfig {
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
 
+  static const String unknownSourceRevision = 'unknown';
+
+  // Identifies the source a build came from, independently of its version
+  // number: local and remote are built from the same commit but numbered by
+  // separate pipelines, so the version alone cannot tell "same source,
+  // different build" from "different source". Set by build_web.sh; stays
+  // [unknownSourceRevision] for a build that did not go through it.
+  static const String sourceRevision = String.fromEnvironment('source_revision',
+      defaultValue: unknownSourceRevision);
+
+  // Empty when the revision is unknown, so a plain `flutter run` does not
+  // render "(unknown)" beside the version.
+  static String get sourceRevisionSuffix =>
+      sourceRevision == unknownSourceRevision ? '' : ' ($sourceRevision)';
+
+  // Gates the client-side remote assistance entry points. Kept `const` so
+  // dart2js tree-shakes the guarded code out of a default build, which is the
+  // property the commented-out entry points used to provide.
+  static const bool enableRemoteAssistance =
+      bool.fromEnvironment('enable_remote_assistance', defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

@@ -103,6 +103,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   if (kIsWeb) {
                     version = '$version - ${BuildConfig.forceCommandType.name}';
                   }
+                  version = '$version${BuildConfig.sourceRevisionSuffix}';
                   return AppText.bodySmall(
                     version,
                   );
