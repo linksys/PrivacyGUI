@@ -162,9 +162,12 @@ class UspFirmwareUpdateService {
   /// is ignored and `fwupd` resolves the OTA server itself.
   ///
   /// **There is no cloud-URL sibling any more.** A `triggerOtaDownload` used to sit
-  /// above, taking a URL the cloud OTA API supplied and answering `void`; the cloud
-  /// path was deleted on 2026-09-16 — #1550's "separate decision", decided, because
-  /// the feature is not coming. The return type is why this was never folded into it
+  /// above, taking a URL the Linksys cloud OTA API supplied and answering `void`; it
+  /// was deleted on 2026-09-16 (#1550's "separate decision", decided). Note what did
+  /// *not* change: the image still comes from the OTA server. `fwupd` resolves it,
+  /// two paragraphs up — so this is the app ceasing to be a client of that API, not
+  /// the product losing cloud-delivered firmware. The return type is why this was
+  /// never folded into it
   /// anyway: the `commandKey` is the only part of the operate response that carries
   /// information, and the install needs it to tell its own `OperationComplete` from
   /// another command's. A second optional-URL overload of the flash verb would also

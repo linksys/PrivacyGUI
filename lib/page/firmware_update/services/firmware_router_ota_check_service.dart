@@ -29,7 +29,13 @@ final firmwareRouterOtaCheckServiceProvider =
   );
 });
 
-/// Asks the router whether a newer firmware exists, replacing the cloud OTA API.
+/// Asks the router whether a newer firmware exists.
+///
+/// **This replaced a direct call to the Linksys cloud OTA API — the app's call, not
+/// the cloud.** The router's `fwupd` is the client of that server now, which is why
+/// the `Download()` below carries no URL: on the virtual `ota` instance the router
+/// ignores it and resolves the OTA server itself. Read "off the cloud" anywhere in
+/// this feature as "off *our* call to the cloud"; a new image still arrives from it.
 ///
 /// The router answers in the data model rather than in the response: `Download()`
 /// on the virtual `ota` instance returns as soon as it has been accepted, and the

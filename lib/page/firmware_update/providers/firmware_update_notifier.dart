@@ -224,14 +224,21 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
   /// Ask the router whether a newer firmware exists.
   ///
-  /// The cloud OTA API used to answer this, which meant assembling a MAC, a model
-  /// number and a hardware revision from three other providers and asking a server
-  /// about a router it could not see. The router knows, so it is asked directly —
-  /// see [FirmwareRouterOtaCheckService]. #1550 parked the cloud path rather than
-  /// deleting it and left when it went as a separate decision; that decision was
-  /// made on 2026-09-16 — the feature is not coming — so
-  /// `firmware_ota_check_service.dart`, its `FirmwareOtaInfo` and the
-  /// cloud-URL install are gone. There is one path, not a selected one.
+  /// **This app used to be a client of the Linksys cloud OTA API, and no longer
+  /// is. That is a change of client, not the removal of a cloud.** The OTA server
+  /// is still what a new image comes from — `fwupd` on the router resolves and
+  /// fetches it, which is why `Download()` on the virtual `ota` instance needs no
+  /// URL (see [UspFirmwareUpdateService.requestOtaCheck]). What went away is the app
+  /// asking that server *itself*: doing so meant assembling a MAC, a model number
+  /// and a hardware revision from three other providers to ask a server about a
+  /// router it could not see, while the router already knew. So the question goes to
+  /// the router — see [FirmwareRouterOtaCheckService] — and the router's firmware
+  /// goes to the cloud.
+  ///
+  /// #1550 parked the direct path rather than deleting it and left when it went as a
+  /// separate decision; that decision was made on 2026-09-16, so
+  /// `firmware_ota_check_service.dart`, its `FirmwareOtaInfo` and the cloud-URL
+  /// install are gone. There is one path from here, not a selected one.
   ///
   /// Returns [FirmwareOtaCheckVerdict.notChecked] — never an error — when the
   /// router has no `ota` row. That is REQ-A1: OEM and rebadged builds never ship
