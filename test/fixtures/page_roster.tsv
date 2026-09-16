@@ -234,6 +234,24 @@
 # remeasure3 doing, at any figure, and the 2.5x drift on admin is larger than every shape effect this
 # remeasure3 file has ever recorded. Read 52.0 < 58.6 as two readings taken 20 days apart on a rate
 # remeasure3 that moves 2.5x with load -- not as a frame being cheaper than the page inside it.
+# remeasure4 usp_admin_view.dart 27.4 -> 21.9 (22.89 / 21.94 / 21.30, -19.9%), three runs on the
+# remeasure4 documented basis, 2026-09-16. This closes TWO shape changes, not one: the row was
+# remeasure4 inherited across 92bf02a9, which deleted the OTA card's check button and the
+# remeasure4 LayoutBuilder that reflowed it, and today's commit deleted the manual card's button and
+# remeasure4 its LayoutBuilder as well. So the page now lays out five cards with no LayoutBuilder in
+# remeasure4 either firmware card, where 27.4 was measured with two.
+# remeasure4 Read against remeasure2 and remeasure3 together, because those two are what make this
+# remeasure4 reading interpretable at all. remeasure2 attributed +17.1% to a switch row costing more
+# remeasure4 than "the LayoutBuilder card that carries it"; -19.9% on removing both LayoutBuilders is
+# remeasure4 the same effect with its sign the other way and of the same size, and the switch row is
+# remeasure4 still there. remeasure3 is the reason that is worth stating rather than assuming: this
+# remeasure4 column moved 2.5x on admin under load (27.4 -> 68.1 in one day), so a figure that drops
+# remeasure4 has to be shown not to be the box being quiet. Two things say it is not. The spread is
+# remeasure4 7.5%, inside #1377's band and nothing like remeasure3's 56%; and load drives this column
+# remeasure4 UP, so a quiet box cannot manufacture a decrease against a reading taken on a loaded one
+# remeasure4 - if anything 27.4 was already inflated, which would make the shape effect smaller than
+# remeasure4 -19.9% rather than larger. What is claimed: 21.9 is a fresh reading on a page whose shape
+# remeasure4 changed twice. What is not: that -19.9% is all shape.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
@@ -245,7 +263,7 @@
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
-lib/page/admin/views/usp_admin_view.dart	swept	27.4
+lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
 lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
 lib/page/apps/views/usp_apps_view.dart	swept	21.5

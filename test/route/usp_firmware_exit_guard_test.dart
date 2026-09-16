@@ -96,9 +96,10 @@ void main() {
   /// [state], and returns the router.
   ///
   /// A push, so that there is something to pop: this is how both pages are
-  /// really entered (`firmware-card-update` and `firmware-ota-card-check` both
-  /// `pushNamed`), and a pop is the only exit a user can reach from the back
-  /// arrow or the browser's Back button.
+  /// really entered (`firmware-card-update` and `firmware-ota-card-open` both
+  /// `pushNamed`, each now from a whole-block tap rather than a button), and a
+  /// pop is the only exit a user can reach from the back arrow or the browser's
+  /// Back button.
   ///
   /// [connection] pins `appConnectionStateProvider`. Left unset, the real
   /// notifier runs and reports `authenticated`, which is what every phase case

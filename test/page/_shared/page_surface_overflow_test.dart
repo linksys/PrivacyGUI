@@ -1435,21 +1435,30 @@ void main() {
     //    still needed at 320px, where 4 locales were over by up to +19px and the
     //    tablet band is not involved. That turns an overflow into a wrap, so its
     //    companion is rule 4's usual text pair.
-    // 3. **The skeleton's caption is expanded and the `Update` button leaves the
-    //    row while the version is unknown** (`firmware_ota_card.dart:79`, which was
+    // 3. **The skeleton's caption is expanded, and nothing else shares its row while
+    //    the version is unknown** (`firmware_ota_card.dart:343`, which was
     //    `firmware_update_card.dart:77` until #1549 moved the version block — and the
-    //    skeleton that stands in for it — to the OTA card).
+    //    skeleton that stands in for it — to the OTA card). The "nothing else" used
+    //    to be "the `Update` button leaves the row"; since 2026-09-16 the trailing
+    //    affordance is gated on `isLoading` instead, which is the same trade bought
+    //    with a chevron rather than a threshold.
     //
-    // 4. **The OTA card's version row stacks its CTA below 400px of row width**
-    //    (`firmware_ota_card.dart:49`). #1549's own fix, on #1549's own new widget,
-    //    and the one part of this group the epic never saw. It is here rather than in
-    //    a group of its own for the billing reason above.
-    // 5. **The manual card's row stacks its CTA below 300px** — a different
-    //    threshold on the same row shape, because a different pair of strings shares
-    //    it (`firmware_update_card.dart:22`). #1549 emptied that card down to a
-    //    sentence and a button, and a sentence beside an inflexible button is the
-    //    shape part 4 was about; the difference is that this one was never reported,
-    //    by the sweep or by anything else.
+    // 4. **The OTA card's version row is the entry, and carries no CTA at all**
+    //    (`firmware_ota_card.dart:99`). This was #1549's own reflow fix — stack the
+    //    check button below 400px of row width — on #1549's own new widget, and the
+    //    one part of this group the epic never saw. The button and the threshold were
+    //    both deleted on 2026-09-16; the guard for it stayed, for the reason given
+    //    above part 5's test. It is here rather than in a group of its own for the
+    //    billing reason above.
+    // 5. **The manual card's row is a whole-block tap too, and its CTA is gone with
+    //    the reflow that carried it** (`firmware_update_card.dart:77`). This started
+    //    as a second threshold — 300px rather than 400px, because a different pair of
+    //    strings shared the row — and both are deleted now: the two cards were
+    //    aligned on the same day for the same reason, that `checkForUpdates` promised
+    //    a read and `Update` promised a flash while each only pushed a page. What is
+    //    left of part 5 is the half that was never reported by anything: a sentence
+    //    handed less than its own longest word, which is now the *only* localized
+    //    thing in the row.
     //
     // Part 4 is also the clearest case in the file of a fix whose *reported* half was
     // the small half. The sweep saw 9 of 234 cells — the check button hanging past
@@ -1458,9 +1467,10 @@ void main() {
     // remainder, clamped to zero, and wrapping the version label one character per
     // line: `el` rendered that row 484px tall inside a 571px card. A
     // `RenderParagraph` given 0px does not overflow, it wraps, so 26 locales were
-    // silently unreadable behind 9 red cells. The fourth test below is what holds the
-    // trade the threshold made, and it asserts the crushed half as well as the
-    // reported one — a line count on the version, not just an overflow count.
+    // silently unreadable behind 9 red cells. The fourth test below is what keeps that
+    // half measured now that the button which caused it is gone: it asserts the
+    // crushed half rather than the reported one — a line count and a token width on
+    // the version, not an overflow count.
     //
     // Part 3 is the one the sweep found by luck: an `AsyncNotifier`'s `build` is a
     // `Future` even when the fixture already holds the value, so every cell renders
@@ -2032,6 +2042,18 @@ void main() {
     // middle. That is unreadable and green, which is the whole failure mode this
     // group exists to disbelieve.
     //
+    // The button is gone as of 2026-09-16 and the guard did **not** go with it. What
+    // it asserts is unchanged — the sentence must keep its widest token whole — and
+    // what changed is the reason it can: the row's other occupant is now a 20px
+    // chevron in every locale instead of a CTA that wanted 105.7px in `de` and
+    // 146.0px in `fi`. So the guard's job flipped from holding a threshold to
+    // holding the *absence* of one, and it keeps measuring the sentence because a
+    // future card that puts anything localized back in this row reintroduces the
+    // defect without reintroducing the reflow. The chevron is counted and located
+    // for the same reason: it is the only thing here that cannot grow, and losing
+    // it would hand the sentence more width and make every assertion pass more
+    // easily.
+    //
     // The oracle is therefore the widest *token*, not the whole string: prose is
     // allowed to wrap, and asserting otherwise would demand a card wide enough for
     // a sentence in every locale. `getMinIntrinsicWidth` would give the same
@@ -2046,9 +2068,23 @@ void main() {
     // for `hasSplitToken` above.
     testWidgets('the manual card description keeps its widest word whole',
         (tester) async {
+      // Measured, not chosen. The description wraps in **79 of 234 cells** and
+      // the deepest is **3 lines** — 13 locales at 320px, `de`/`el`/`es`/`es_AR`/
+      // `fi`/`fr`/`fr_CA`/`it`/`ja`/`pl`/`pt_PT`/`ru`/`sv`. The ceiling is that
+      // plus one line of headroom, so ordinary l10n churn does not red the gate
+      // while the crush this guard exists for — a sentence broken to a word or
+      // two per line — does.
+      //
+      // The distribution is worth reading before changing a breakpoint: 320px is
+      // the deep end, 601px and 905px wrap almost nothing, and 1241px–1441px wrap
+      // *more* than 601px does. That is not a paradox, it is this group's part 1 —
+      // the page holds one column through the tablet band and splits into columns
+      // at the desktop breakpoint, so a 1241px screen hands this card a narrower
+      // box than a 601px one.
+      const kDescriptionLineCeiling = 4;
+
       final failures = <String>[];
-      final stackedCells = <String>[];
-      final inlineCells = <String>[];
+      final wrapped = <String>[];
 
       for (final width in kPageSweepWidths) {
         for (final locale in AppLocalizations.supportedLocales) {
@@ -2071,94 +2107,106 @@ void main() {
             of: card,
             matching: find.text(loc.manualUpdateDesc),
           );
-          final button = find.descendant(
-            of: card,
-            matching: find.widgetWithText(AppButton, loc.update),
-          );
           final icon = find.descendant(
             of: card,
             matching: find.byIcon(Icons.system_update),
           );
+          // The affordance that replaced the button, counted for the same reason
+          // its sibling on the OTA card is: it is the one thing left on this row
+          // that is not localized, so if it went missing the sentence would be
+          // handed *more* width and every assertion below would pass more easily.
+          final chevron = find.descendant(
+            of: card,
+            matching: find.byIcon(AppFontIcons.chevronRight),
+          );
           if (card.evaluate().length != 1 ||
               description.evaluate().length != 1 ||
-              button.evaluate().length != 1 ||
-              icon.evaluate().length != 1) {
+              icon.evaluate().length != 1 ||
+              chevron.evaluate().length != 1) {
             failures.add('$cell: found ${card.evaluate().length} card(s), '
                 '${description.evaluate().length} description(s), '
-                '${button.evaluate().length} CTA(s) and '
-                '${icon.evaluate().length} icon(s) — nothing here was measured');
+                '${icon.evaluate().length} icon(s) and '
+                '${chevron.evaluate().length} chevron(s) — nothing here was '
+                'measured');
             continue;
           }
 
-          final buttonRect = tester.getRect(button);
+          // Trailing, and read off `Directionality` rather than off the screen
+          // axis: `ar` mirrors the row, and an LTR-only comparison fails in
+          // exactly that one locale at all nine widths. That is a measurement
+          // from the OTA card's guard, paid for once.
+          final rtl =
+              Directionality.of(tester.element(card)) == TextDirection.rtl;
+          final chevronRect = tester.getRect(chevron);
+          final descRect = tester.getRect(description);
           final iconRect = tester.getRect(icon);
-          final stacked = buttonRect.left <= iconRect.left + 0.5;
-          (stacked ? stackedCells : inlineCells).add(cell);
+          final trailingOk = rtl
+              ? chevronRect.right - 0.5 <= descRect.left &&
+                  chevronRect.right < iconRect.right
+              : chevronRect.left + 0.5 >= descRect.right &&
+                  chevronRect.left > iconRect.left;
+          if (!trailingOk) {
+            failures.add('$cell: the chevron occupies '
+                '${chevronRect.left.toStringAsFixed(1)}–'
+                '${chevronRect.right.toStringAsFixed(1)}px, which is not the '
+                '${rtl ? 'leading (RTL)' : 'trailing'} side of the description '
+                '(${descRect.left.toStringAsFixed(1)}–'
+                '${descRect.right.toStringAsFixed(1)}px, leading icon '
+                '${iconRect.left.toStringAsFixed(1)}–'
+                '${iconRect.right.toStringAsFixed(1)}px)');
+          }
 
-          for (final probe in <(String, Finder)>[
-            ('the description', description),
-            (
-              'the CTA label',
-              find.descendant(
-                of: button,
-                matching: find.text(loc.update),
-              )
-            ),
-          ]) {
-            final (what, finder) = probe;
-            final paragraph = tester.paragraphOf(finder);
-            final lines = tester.textLineCount(finder);
-            final widest = tester.widestTokenWidth(finder);
-            final numbers = 'granted '
-                '${paragraph.size.width.toStringAsFixed(1)}px on $lines line(s), '
-                'widest token ${widest.toStringAsFixed(1)}px, whole string '
-                '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px';
-            if (tester.isTextClipped(finder)) {
-              failures.add('$cell: $what ellipsized — $numbers');
-            } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
-                tester.hasSplitToken(finder)) {
-              failures.add('$cell: $what broke mid-word — $numbers');
-            }
-            if (!kLocalesWithoutWordSpaces.contains(tag) &&
-                paragraph.size.width + 0.5 < widest) {
-              failures.add('$cell: $what was granted '
-                  '${paragraph.size.width.toStringAsFixed(1)}px for a '
-                  '${widest.toStringAsFixed(1)}px word it cannot break — '
-                  '$numbers');
-            }
-            if (what == 'the CTA label' && lines > 1) {
-              failures.add('$cell: $what wrapped onto $lines lines — $numbers');
-            }
+          const what = 'the description';
+          final paragraph = tester.paragraphOf(description);
+          final lines = tester.textLineCount(description);
+          final widest = tester.widestTokenWidth(description);
+          final numbers = 'granted '
+              '${paragraph.size.width.toStringAsFixed(1)}px on $lines line(s), '
+              'widest token ${widest.toStringAsFixed(1)}px, whole string '
+              '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px';
+          if (lines > 1) {
+            wrapped.add('$tag@${width.toInt()}px:${lines}L');
+          }
+          if (tester.isTextClipped(description)) {
+            failures.add('$cell: $what ellipsized — $numbers');
+          } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
+              tester.hasSplitToken(description)) {
+            failures.add('$cell: $what broke mid-word — $numbers');
+          }
+          if (!kLocalesWithoutWordSpaces.contains(tag) &&
+              paragraph.size.width + 0.5 < widest) {
+            failures.add('$cell: $what was granted '
+                '${paragraph.size.width.toStringAsFixed(1)}px for a '
+                '${widest.toStringAsFixed(1)}px word it cannot break — '
+                '$numbers');
+          }
+          if (lines > kDescriptionLineCeiling) {
+            failures.add('$cell: $what wrapped onto $lines lines, past the '
+                '$kDescriptionLineCeiling-line ceiling — $numbers');
           }
         }
       }
 
-      // Both directions, as for part 4 and for the same reason: 300 sits between
-      // 238 (a 320px screen) and 360.5 (a 480px one), so a threshold that drifted
-      // past either end would make one of the two forms unreachable while every
-      // readability assertion above still passed.
+      // The floor premise, replacing the reflow's two-directional one: with the
+      // threshold deleted there is nothing left to straddle, so what has to be
+      // true for the assertions above to mean anything is that some coordinate
+      // actually squeezed the sentence. Unlike its sibling on the OTA card this
+      // one is not thin — 79 of 234 — because a sentence in a shared column wraps
+      // long before an unbreakable build number does.
       expect(
-        stackedCells,
+        wrapped,
         isNotEmpty,
-        reason: 'no cell stacked, so nothing here measured the reflow the '
-            'firmware_update_card.dart:22 threshold introduced',
-      );
-      expect(
-        inlineCells,
-        isNotEmpty,
-        reason: 'every cell stacked, so the threshold is above every row width '
-            'this card is laid out at and the inline form is unreachable',
+        reason: 'no locale wrapped the description at any of the nine widths, '
+            'so nothing here measured a squeeze',
       );
 
       expect(
         failures,
         isEmpty,
-        reason:
-            'the manual card shares its row between a localized sentence and '
-            'an inflexible localized CTA, so below 300px of row the CTA takes a '
-            'line of its own; a description granted less than its own longest '
-            'word breaks mid-word and reports no overflow, which is why this '
-            'guard measures tokens rather than counting red '
+        reason: 'the manual card shares its row between a localized sentence '
+            'and a 20px chevron; a description granted less than its own '
+            'longest word breaks mid-word and reports no overflow at all, '
+            'which is why this guard measures tokens rather than counting red '
             'cells:\n${failures.join('\n')}',
       );
     });

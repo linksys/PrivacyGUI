@@ -1553,6 +1553,14 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// by name in `page_surface_overflow_test.dart` rather than by `requires:` here, because
 /// what matters about it is the width its column grants, not its presence.
 ///
+/// **The manual card followed a day later** (2026-09-16), for the sharper version of the
+/// same reason: `Update` promised a flash and a reboot where `checkForUpdates` only
+/// over-promised a read. So neither firmware card holds a localized button any more, and
+/// this column's width pressure is now entirely prose — the manual card's one sentence
+/// wraps in 79 of the 234 cells, three lines deep at 320px. That is measured in
+/// `page_surface_overflow_test.dart` rather than here for the same reason the OTA card's
+/// is: what matters is the width the column grants it, not its presence.
+///
 /// Requiring `FirmwareUpdateCard` is also what makes this case fail if the surface gate
 /// ever hides the manual card in local mode: the gate host does not override
 /// `appModeProfileProvider`, so it renders whatever the default profile is, and a gate
