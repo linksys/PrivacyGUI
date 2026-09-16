@@ -40,6 +40,46 @@ class FirmwareBanksData extends Equatable with DiagnosticLoggable {
   FirmwareImageUIModel? get availableBank =>
       physicalBanks.where((b) => b.available && !b.isActive).firstOrNull;
 
+  /// Whether the router is offering an image worth telling the user about.
+  ///
+  /// [otaInstance] with `available` is not enough on its own, and the missing
+  /// comparison was visible on screen (measured from a recording of a full install,
+  /// 2026-09-16): seconds after "Update complete — now running 2.0.1.26091516", the
+  /// same page still read "Update available — Available: 2.0.1.26091516". The `ota`
+  /// row keeps the last offer until `fwupd` next checks, so right after a reboot it
+  /// names the build that just went in. The card announced it, and the dashboard
+  /// banner would have too.
+  ///
+  /// So an offer whose version equals the running one is not an offer. Compared
+  /// against [activeBank] rather than against anything the install flow remembers,
+  /// because this has to be right for a router that updated itself while nobody was
+  /// looking as well as for one this app just flashed.
+  ///
+  /// **An offer with no version stays an offer.** The router does publish
+  /// `Available=true` with an empty `Version`, and an unnamed build cannot be
+  /// compared to anything — withholding it would turn "we cannot tell" into "there
+  /// is nothing", which is the substitution this whole feature is arranged to
+  /// avoid. The card already renders that case as a headline with no version line.
+  bool get hasOtaOffer {
+    final ota = otaInstance;
+    if (ota == null || !ota.available) return false;
+    final offered = ota.version;
+    if (offered.isEmpty) return true;
+    return offered != activeBank?.version;
+  }
+
+  /// The version [hasOtaOffer] is about, or null when there is no offer — and also
+  /// null for an offer the router did not name.
+  ///
+  /// Two nulls with one meaning for a caller ("nothing to print here") and two
+  /// meanings for a reader, which is why [hasOtaOffer] is the predicate: a card that
+  /// keyed its headline off this getter would go silent on the unnamed offer.
+  String? get otaOfferedVersion {
+    if (!hasOtaOffer) return null;
+    final offered = otaInstance?.version ?? '';
+    return offered.isEmpty ? null : offered;
+  }
+
   @override
   String get diagnosticName => 'FirmwareBanksData';
 

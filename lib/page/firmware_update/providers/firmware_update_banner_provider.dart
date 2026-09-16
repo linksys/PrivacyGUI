@@ -37,14 +37,22 @@ final firmwareUpdateOfferedVersionProvider = Provider<String?>((ref) {
   if (autoUpdate == null || !autoUpdate.checksForUpdates) return null;
   if (autoUpdate.isBusy) return null;
 
-  // `otaInstance`, never `availableBank`: the spare NAND bank is also
-  // available-and-not-active, so reading the banks would raise this banner on
-  // every router with a free slot.
+  // `hasOtaOffer`, never `availableBank` and no longer `otaInstance.available`
+  // either. The spare NAND bank is also available-and-not-active, so reading the
+  // banks would raise this banner on every router with a free slot — and the `ota`
+  // row alone would raise it on a router that has just finished installing, because
+  // the row keeps the last offer until `fwupd` next checks. Both readings are on
+  // the model so this banner and the OTA card cannot disagree; see
+  // `FirmwareBanksData.hasOtaOffer` for the recording that found the second one.
   final asyncBanks = ref.watch(firmwareBanksDataProvider);
   if (asyncBanks.hasError) return null;
-  final ota = asyncBanks.valueOrNull?.otaInstance;
-  if (ota == null || !ota.available) return null;
-  return ota.version;
+  final banks = asyncBanks.valueOrNull;
+  if (banks == null || !banks.hasOtaOffer) return null;
+  // The empty string rather than null for an unnamed offer: this provider's own
+  // contract is "the version whose banner to show", and the dismissal key keys on
+  // it — `firmwareUpdateBannerDismissedVersionProvider` documents the empty string
+  // as the unknown build. Returning null here would read as "no offer".
+  return banks.otaOfferedVersion ?? '';
 });
 
 /// The version whose banner the user waved away, or null for none.

@@ -126,6 +126,69 @@ void main() {
       expect(data.otaInstance, isNull);
     });
 
+    test('an offer naming the version already running is not an offer', () {
+      // Measured from a recording of a full install (2026-09-16): seconds after
+      // "Update complete — now running 2.0.1.26091516" the same page still read
+      // "Update available — Available: 2.0.1.26091516". The `ota` row keeps the last
+      // offer until `fwupd` next checks, so straight after a reboot it names the
+      // build that just went in — and both the OTA card and the dashboard banner
+      // announced it.
+      final data = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(
+            instance: 1, alias: 'fw1', version: '2.0.1.26091516'),
+        FirmwareUpdateTestData.emptyVersionBank(instance: 2),
+        FirmwareUpdateTestData.otaInstance(
+          instance: 3,
+          available: true,
+          version: '2.0.1.26091516',
+        ),
+      ]);
+
+      expect(data.hasOtaOffer, isFalse);
+      expect(data.otaOfferedVersion, isNull);
+      // The row itself is untouched — this is a reading of it, not a filter on it.
+      // A diagnostic still needs to be able to say what the router reported.
+      expect(data.otaInstance?.available, isTrue);
+      expect(data.otaInstance?.version, '2.0.1.26091516');
+    });
+
+    test('an offer naming a different version is an offer', () {
+      final data = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(
+            instance: 1, alias: 'fw1', version: '2.0.1.26091515'),
+        FirmwareUpdateTestData.emptyVersionBank(instance: 2),
+        FirmwareUpdateTestData.otaInstance(
+          instance: 3,
+          available: true,
+          version: '2.0.1.26091516',
+        ),
+      ]);
+
+      expect(data.hasOtaOffer, isTrue);
+      expect(data.otaOfferedVersion, '2.0.1.26091516');
+    });
+
+    test('an offer with no version stays an offer', () {
+      // The router does publish `Available=true` with an empty `Version`, and an
+      // unnamed build cannot be compared to the running one. Withholding it would
+      // turn "we cannot tell" into "there is nothing" — the substitution this
+      // feature exists to prevent. `hasOtaOffer` is therefore the predicate and
+      // `otaOfferedVersion` only the label.
+      final data = threeInstances(otaAvailable: true);
+
+      expect(data.hasOtaOffer, isTrue);
+      expect(data.otaOfferedVersion, isNull);
+    });
+
+    test('Available=false is never an offer, whatever the version says', () {
+      // `Available=false` carries two meanings — checked and found nothing, and
+      // nobody has asked yet — and neither is an offer.
+      final data = threeInstances(otaVersion: '2.0.9');
+
+      expect(data.hasOtaOffer, isFalse);
+      expect(data.otaOfferedVersion, isNull);
+    });
+
     test('physicalBanks excludes the ota row', () {
       final data = threeInstances();
 

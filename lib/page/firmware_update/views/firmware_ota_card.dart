@@ -67,11 +67,18 @@ class FirmwareOtaCard extends ConsumerWidget {
     // dashboard banner is unsolicited; this is the firmware card on the firmware
     // page, and withholding what the router just said would be the defect.
     final asyncBanks = ref.watch(firmwareBanksDataProvider);
-    final ota =
-        asyncBanks.hasError ? null : asyncBanks.valueOrNull?.otaInstance;
-    // `Available=false` is not "no update": the same value also means "nobody has
-    // asked yet". Either way there is nothing to announce, so both are absent.
-    final offeredVersion = ota != null && ota.available ? ota.version : null;
+    // Named `banksData`, not `banks`: line 50's `banks` is the *physical* image
+    // inventory off `systemInfoDataProvider`, and this is the full instance model
+    // off `firmwareBanksDataProvider` — two channels for overlapping data, which is
+    // exactly why the offer reading lives on the model and not here.
+    final banksData = asyncBanks.hasError ? null : asyncBanks.valueOrNull;
+    // `FirmwareBanksData.hasOtaOffer`, not `otaInstance.available`. `Available=
+    // false` is not "no update" (the same value also means "nobody has asked yet"),
+    // and `Available=true` is not always one either — right after a reboot the row
+    // still names the build that just went in. Both readings live on the model so
+    // the dashboard banner cannot disagree with this card.
+    final hasOffer = banksData?.hasOtaOffer ?? false;
+    final offeredVersion = banksData?.otaOfferedVersion;
 
     return SizedBox(
       width: double.infinity,
@@ -142,7 +149,7 @@ class FirmwareOtaCard extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        if (offeredVersion != null) ...[
+                        if (hasOffer) ...[
                           AppGap.md(),
                           // The same icon, colour and copy as the OTA page's own
                           // verdict line and the dashboard banner, because it is
@@ -170,7 +177,7 @@ class FirmwareOtaCard extends ConsumerWidget {
                                       // `Available=true` with an empty `Version`.
                                       // An offer with no name is still an offer,
                                       // so the headline never depends on it.
-                                      if (offeredVersion.isNotEmpty)
+                                      if (offeredVersion != null)
                                         AppText.bodySmall(loc(context)
                                             .availableVersionLabel(
                                                 offeredVersion)),
