@@ -87,9 +87,9 @@ class FirmwareAutoUpdateDataNotifier
   /// it, and this was the one firmware write that did not — the `Set` reached the
   /// WASM client unserialised, so flipping the switch during a check could put two
   /// messages in a client that cannot hold two. Pushing the lock down into the
-  /// service instead would close this hole and open four: `triggerLocalDownload`,
-  /// `triggerOtaDownload`, `requestOtaCheck` and `requestOtaInstall` are already
-  /// wrapped by their callers, and [UspMutationLock] is not re-entrant — its
+  /// service instead would close this hole and open three: `triggerLocalDownload`,
+  /// `requestOtaCheck` and `requestOtaInstall` are already wrapped by their callers,
+  /// and [UspMutationLock] is not re-entrant — its
   /// `withLock` waits on `isLocked` before claiming the lock, so a second
   /// acquisition from inside the first blocks until the 30 s force-release. So the
   /// rule is the service's mutations are locked by whoever calls them, and this

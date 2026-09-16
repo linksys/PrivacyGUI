@@ -33,11 +33,11 @@ import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 /// | `UspAdminNotifier.factoryReset` | `credentialLoss` | ok | **refused** |
 /// | `FirmwareUpdateNotifier.runUpload` | `transportLoss` | ok | **refused** |
 /// | `FirmwareUpdateNotifier.triggerInstall` | `transientRestart` | ok | ok |
-/// | `FirmwareUpdateNotifier.triggerOtaInstall` | `transientRestart` | ok | ok |
 /// | `FirmwareUpdateNotifier.triggerRouterOtaInstall` | `transientRestart` | ok | ok |
 ///
-/// The last two are the cloud-URL install and the router-side one that replaced it
-/// (#1551); both are listed because both still exist.
+/// The last one is the router-side OTA install. A cloud-URL `triggerOtaInstall` was
+/// listed beside it until the cloud path was deleted (2026-09-16); there is one OTA
+/// install now, not a pair.
 ///
 /// The four allowed seams call [enforce] too, and they are the more important
 /// half of the roster. With only the refused ones wired, the code reads "factory

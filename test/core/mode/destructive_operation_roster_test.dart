@@ -143,22 +143,17 @@ const _seams = <({String file, String method, String disruption})>[
     method: 'triggerInstall',
     disruption: 'transientRestart',
   ),
-  (
-    file: 'lib/page/firmware_update/providers/firmware_update_notifier.dart',
-    method: 'triggerOtaInstall',
-    disruption: 'transientRestart',
-  ),
-  // #1551. The router-side OTA install, which replaces the one above: same
-  // `Download` on the same virtual `ota` instance, `AutoActivate="true"`, and no
-  // URL — the cloud answer that supplied `firmwareUrl` is what #1550 removed.
-  // Same class as the seam it replaces, for the same reason: the router fetches
-  // over its own uplink, so nothing on the agent's path is destroyed and it is
-  // allowed in remote assistance.
+  // #1551. The router-side OTA install: `Download` on the virtual `ota` instance,
+  // `AutoActivate="true"`, and no URL. Same class as the cloud-URL
+  // `triggerOtaInstall` it replaced, for the same reason — the router fetches over
+  // its own uplink, so nothing on the agent's path is destroyed and it is allowed in
+  // remote assistance.
   //
-  // Both are listed because both exist. `triggerOtaInstall` has no caller in
-  // `lib/` any more and is parked rather than deleted (#1550's decision about the
-  // cloud path), so removing its row here would drop the guard from a method that
-  // is still reachable from a test or a future re-wiring.
+  // **The pair is now a single row.** `triggerOtaInstall` had a row here while it sat
+  // in the tree with no caller, because a guard on a parked method costs nothing and
+  // its absence would have been indistinguishable from an oversight. The cloud path
+  // was deleted on 2026-09-16 — #1550's "separate decision", decided, the feature is
+  // not coming — so there is one OTA install to guard.
   (
     file: 'lib/page/firmware_update/providers/firmware_update_notifier.dart',
     method: 'triggerRouterOtaInstall',
@@ -212,9 +207,12 @@ const _operationClasses = <String>[
 /// It then grew exactly that third `download` (#1550), which is the census
 /// working: the count went from two to three, this file went red, and the new
 /// call had to state what it costs before it could be green again. Then a fourth
-/// (#1551), the same way. Three of the four are flashes with a seam each; the
-/// remaining one is a look with none, and the difference is argued at the call
-/// site below rather than waived.
+/// (#1551), the same way — and then back to three, when the cloud-URL
+/// `triggerOtaDownload` was deleted on 2026-09-16 and this file went red in the
+/// other direction. **The count moving down is the census working too**: a deleted
+/// flash has to be accounted for, or the number stops meaning anything. Two of the
+/// three are flashes with a seam each; the remaining one is a look with none, and
+/// the difference is argued at the call site below rather than waived.
 const _commandCallSites = <String, List<String>>{
   'lib/page/admin/services/usp_admin_service.dart': [
     'DeviceOperations.factoryReset',
@@ -224,11 +222,12 @@ const _commandCallSites = <String, List<String>>{
     'FirmwareOperations.chunkedPush',
   ],
   'lib/page/firmware_update/services/usp_firmware_update_service.dart': [
-    // Four calls to one command, and only three of them install anything:
-    // triggerLocalDownload (file:// URL), triggerOtaDownload (cloud URL),
-    // requestOtaCheck (#1550) and requestOtaInstall (#1551). The last two are the
-    // pair worth reading together — the same `Download` on the same virtual `ota`
-    // instance with **no URL at all**, separated by one argument.
+    // Three calls to one command, and only two of them install anything:
+    // triggerLocalDownload (file:// URL), requestOtaCheck (#1550) and
+    // requestOtaInstall (#1551). A fourth, triggerOtaDownload (cloud URL), was
+    // deleted with the cloud path on 2026-09-16. The last two are the pair worth
+    // reading together — the same `Download` on the same virtual `ota` instance with
+    // **no URL at all**, separated by one argument.
     // `AutoActivate` is what picks the mode: `"true"` is `fwupd -m 2`, whose own
     // usage string reads `checking / downloading / flashing / rebooting`, and
     // `"false"` is `-m 3`, `check for forced update`. Each sends that one argument
@@ -250,19 +249,17 @@ const _commandCallSites = <String, List<String>>{
     //
     // The session the *check* runs over is the one it answers on, so on today's
     // reading it has no seam above it and no DisruptionClass to choose. The other
-    // three keep theirs (`triggerInstall` / `triggerOtaInstall` /
-    // `triggerRouterOtaInstall` in _seams).
+    // two keep theirs (`triggerInstall` / `triggerRouterOtaInstall` in _seams).
     //
     // Deliberately NOT an entry in _notDestructive. That set is keyed on
-    // `(file, command)`, and all four calls here are `FirmwareOperations.download`
-    // — so a waiver naming the check would name the three flashes as well and hand
+    // `(file, command)`, and all three calls here are `FirmwareOperations.download`
+    // — so a waiver naming the check would name the two flashes as well and hand
     // a reset-the-router-remotely command the exemption a version check earned.
     // Left unwaived, it stays in the reachability test, which the file passes on
     // the seams its neighbours own. That is a weaker claim than a waiver would be
-    // and it is the honest one: this census cannot tell the four apart, and the
+    // and it is the honest one: this census cannot tell the three apart, and the
     // argument for the check is the value of `AutoActivate`, which lives in the
     // code.
-    'FirmwareOperations.download',
     'FirmwareOperations.download',
     'FirmwareOperations.download',
     'FirmwareOperations.download',

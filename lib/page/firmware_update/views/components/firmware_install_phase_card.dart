@@ -15,7 +15,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// #1549 split one firmware page into two — a manual page that uploads an image
 /// from this browser, and an OTA page that asks the router to fetch one — and
 /// these six phases are the part the split does **not** divide. `triggerInstall`
-/// and `triggerOtaInstall` walk the same notifier through `triggering →
+/// and `triggerRouterOtaInstall` walk the same notifier through `triggering →
 /// installing`, `enterRecoveryWaiting` sets `rebooting`, and `verify` ends at
 /// `done` or `failed`. A user who starts an OTA update needs the same progress,
 /// the same failure copy and the same retry button as one who uploaded a file,

@@ -73,25 +73,6 @@ class UspFirmwareUpdateService {
     }
   }
 
-  Future<void> triggerOtaDownload({
-    required int targetInstance,
-    required String firmwareUrl,
-    bool autoActivate = true,
-  }) async {
-    try {
-      await FirmwareOperations.download(
-        _usp,
-        targetInstance,
-        url: firmwareUrl,
-        autoActivate: autoActivate ? 'true' : 'false',
-      );
-    } on ServiceError {
-      rethrow;
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
   /// Asks the router to go and look for a newer image, and returns the key that
   /// names the request.
   ///
@@ -99,7 +80,7 @@ class UspFirmwareUpdateService {
   /// Two things make it a look rather than an install:
   ///
   /// * `AutoActivate="false"` — `fwupd -m 3`, which checks and stops. `"true"` is
-  ///   the download-and-reboot mode [triggerOtaDownload] uses.
+  ///   the download-and-reboot mode [requestOtaInstall] uses.
   /// * **no `URL` at all.** For the virtual `ota` instance the router ignores the
   ///   parameter and delegates to `fwupd`, which resolves the OTA server itself.
   ///   Absent rather than empty, because an empty URL is a value nothing has been
@@ -180,13 +161,14 @@ class UspFirmwareUpdateService {
   /// URL absent for the same reason: on the virtual `ota` instance the parameter
   /// is ignored and `fwupd` resolves the OTA server itself.
   ///
-  /// This exists rather than relaxing [triggerOtaDownload]'s `firmwareUrl`, and
-  /// the reason is the return type. `triggerOtaDownload` answers `void` — it was
-  /// written for a cloud-supplied URL where the response held nothing worth
-  /// keeping — but the `commandKey` is the only part of the operate response that
-  /// carries information, and the install needs it to tell its own
-  /// `OperationComplete` from another command's. A second optional-URL overload of
-  /// the flash verb would also mean two ways to start one, which is the hazard
+  /// **There is no cloud-URL sibling any more.** A `triggerOtaDownload` used to sit
+  /// above, taking a URL the cloud OTA API supplied and answering `void`; the cloud
+  /// path was deleted on 2026-09-16 — #1550's "separate decision", decided, because
+  /// the feature is not coming. The return type is why this was never folded into it
+  /// anyway: the `commandKey` is the only part of the operate response that carries
+  /// information, and the install needs it to tell its own `OperationComplete` from
+  /// another command's. A second optional-URL overload of the flash verb would also
+  /// mean two ways to start one, which is the hazard
   /// [FirmwareRouterOtaCheckService] is arranged to make impossible.
   ///
   /// **`AutoActivate="true"` is `fwupd -m 2`, which checks first.** So this

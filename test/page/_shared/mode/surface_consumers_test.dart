@@ -316,10 +316,11 @@ void main() {
     // `failed` copy, its message and its retry button among the casualties.
     //
     // #1551 renamed the seam that starts it: the cloud-URL `triggerOtaInstall`
-    // this comment was written about has no caller left, and the router-side
-    // install replaced it under the same `transientRestart` class. The phases it
-    // walks are unchanged, which is the point of naming them here rather than the
-    // method.
+    // this comment was written about was replaced by the router-side install under
+    // the same `transientRestart` class, and deleted with the rest of the cloud path
+    // on 2026-09-16. The phases it walks are unchanged, which is the point of naming
+    // them here rather than the method — this comment survived the rename and the
+    // deletion because it names phases.
     //
     // #1549 narrowed the gate to the idle arm alone and moved the phase cards
     // into a shared `FirmwareInstallPhaseCard`, which makes these two cases

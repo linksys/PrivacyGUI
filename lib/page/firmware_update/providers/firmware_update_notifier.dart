@@ -227,10 +227,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// The cloud OTA API used to answer this, which meant assembling a MAC, a model
   /// number and a hardware revision from three other providers and asking a server
   /// about a router it could not see. The router knows, so it is asked directly —
-  /// see [FirmwareRouterOtaCheckService]. `firmware_ota_check_service.dart` and its
-  /// `FirmwareOtaInfo` are still in the tree with no caller anywhere in `lib`:
-  /// #1550 says the cloud path is parked, not deleted, and when it goes is a
-  /// separate decision. There is no coexistence — nothing selects between them.
+  /// see [FirmwareRouterOtaCheckService]. #1550 parked the cloud path rather than
+  /// deleting it and left when it went as a separate decision; that decision was
+  /// made on 2026-09-16 — the feature is not coming — so
+  /// `firmware_ota_check_service.dart`, its `FirmwareOtaInfo` and the
+  /// cloud-URL install are gone. There is one path, not a selected one.
   ///
   /// Returns [FirmwareOtaCheckVerdict.notChecked] — never an error — when the
   /// router has no `ota` row. That is REQ-A1: OEM and rebadged builds never ship
@@ -390,9 +391,9 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   ///
   /// `transportLoss` — **manual firmware update is a local-only feature**, and
   /// the class doc is worth reading before touching this: the upload is not
-  /// broken under Remote Assistance, it is simply not offered there. Cloud OTA is
-  /// the remote answer for the same need, and [triggerOtaInstall] below is
-  /// allowed in every mode.
+  /// broken under Remote Assistance, it is simply not offered there. The router-side
+  /// OTA is the remote answer for the same need, and [triggerRouterOtaInstall] below
+  /// is allowed in every mode.
   ///
   /// Refused before the state moves, so the view never shows an upload screen for
   /// an upload that will not happen — and refused by throwing, because
@@ -472,45 +473,16 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
-  /// Tells the router to fetch and install an image from the cloud.
-  ///
-  /// `transientRestart`, allowed everywhere — and it is the half of the firmware
-  /// pair that is easy to get wrong. An OTA is the *more* alarming of the two to
-  /// watch: the router downloads, flashes and reboots. It is also the one that
-  /// works remotely, because the router does the fetching over its own uplink and
-  /// nothing on the agent's path is destroyed. Together with [runUpload] above,
-  /// the two lines are the whole argument for naming consequences instead of
-  /// operations.
-  Future<void> triggerOtaInstall({
-    required int targetInstance,
-    required String firmwareUrl,
-  }) async {
-    ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
-        operation: 'cloud OTA firmware install');
-    _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.triggerOtaDownload(
-          targetInstance: targetInstance,
-          firmwareUrl: firmwareUrl,
-        );
-      });
-      _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
-    } on ServiceError catch (e) {
-      logger.e('[FirmwareUpdate] triggerOtaInstall failed', error: e);
-      _fail(FirmwareFailure.serviceError(e));
-      rethrow;
-    }
-  }
-
   /// Tells the router to fetch and install a newer firmware over its own uplink.
   ///
-  /// The replacement for [triggerOtaInstall] above, which needs a `firmwareUrl`
-  /// only the cloud OTA API could supply. This one asks the router the same way
-  /// #1550's check does — `FirmwareImage.{ota}.Download()` with no URL — with
+  /// **The only OTA install.** Until 2026-09-16 a `triggerOtaInstall` sat here too,
+  /// taking a `firmwareUrl` that only the cloud OTA API could supply; #1550
+  /// replaced the cloud check with the router's own and left that method parked
+  /// with no caller, and it is now deleted along with the rest of the cloud path —
+  /// there will be no cloud-supplied-URL install. This asks the router the same way
+  /// the check does — `FirmwareImage.{ota}.Download()` with no URL — with
   /// `AutoActivate` flipped, which on this firmware selects `fwupd -m 2`: check,
-  /// download, flash, reboot. A separate method rather than a relaxed argument,
-  /// because the two answer to different servers and only one of them survives.
+  /// download, flash, reboot.
   ///
   /// Returns the watch's verdict; **`flashing` is not success.** It means the
   /// router is committed and has stopped answering, which is what a reboot looks
@@ -518,10 +490,13 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// recovery dialog, then [verify] — exactly as `_onConfirmInstall` does for the
   /// manual path, because only the view can put a blocking dialog around it.
   ///
-  /// `transientRestart`, allowed on every surface. Same argument as
-  /// [triggerOtaInstall]: the router does the fetching, so nothing on the agent's
-  /// path is destroyed, and this is the half of the firmware pair that works
-  /// remotely.
+  /// `transientRestart`, allowed on every surface, and it is the half of the
+  /// firmware pair that is easy to get wrong. An OTA is the *more* alarming of the
+  /// two to watch — the router downloads, flashes and reboots — and it is also the
+  /// one that works remotely, because the router fetches over its own uplink and
+  /// nothing on the agent's path is destroyed. Together with [runUpload], which is
+  /// refused there, the two are the whole argument for naming consequences instead
+  /// of operations.
   Future<FirmwareOtaInstallResult> triggerRouterOtaInstall({
     required int otaInstance,
   }) async {

@@ -55,9 +55,10 @@ final firmwareRouterOtaCheckServiceProvider =
 /// above tears `requestOtaCheck` and `fetchAllBanks` off
 /// [UspFirmwareUpdateService] and passes only those, and the reason is the one
 /// sentence this whole file is arranged around: a check must never install. That
-/// same service exposes `triggerOtaDownload` — the identical `Download` with
-/// `AutoActivate="true"`, which on this router means download, flash and reboot —
-/// so holding the object would leave the install verb one dot away from this code,
+/// same service exposes `requestOtaInstall` — the identical `Download` on the
+/// identical virtual instance with `AutoActivate="true"`, which on this router means
+/// download, flash and reboot — so holding the object would leave the install verb
+/// one dot away from this code,
 /// separated from it by nothing but the comments saying not to. Two function
 /// fields put the compiler there instead: from inside this class the install verb
 /// does not exist, so it cannot be reached by accident, by a merge, or by someone

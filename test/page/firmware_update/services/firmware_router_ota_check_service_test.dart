@@ -69,7 +69,7 @@ void main() {
   }) =>
       FirmwareRouterOtaCheckService(
         // Two methods, not the object — the service under test cannot reach
-        // `triggerOtaDownload`, and neither can this test hand it one.
+        // `requestOtaInstall`, and neither can this test hand it one.
         dispatchCheck: firmware.requestOtaCheck,
         readImages: firmware.fetchAllBanks,
         awaiter: withAwaiter ? awaiter : null,

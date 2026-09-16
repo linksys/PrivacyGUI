@@ -1296,61 +1296,6 @@ void main() {
       });
     });
 
-    group('triggerOtaInstall', () {
-      test('transitions triggering → installing on success', () async {
-        when(() => mockService.triggerOtaDownload(
-              targetInstance: any(named: 'targetInstance'),
-              firmwareUrl: any(named: 'firmwareUrl'),
-            )).thenAnswer((_) async {});
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-        final notifier =
-            container.read(firmwareUpdateNotifierProvider.notifier);
-
-        await notifier.triggerOtaInstall(
-          targetInstance: 2,
-          firmwareUrl: 'http://example.com/fw.img',
-        );
-
-        expect(
-          container.read(firmwareUpdateNotifierProvider).phase,
-          FirmwareUpdatePhase.installing,
-        );
-        verify(() => mockService.triggerOtaDownload(
-              targetInstance: 2,
-              firmwareUrl: 'http://example.com/fw.img',
-            )).called(1);
-      });
-
-      test('transitions to failed on ServiceError', () async {
-        when(() => mockService.triggerOtaDownload(
-              targetInstance: any(named: 'targetInstance'),
-              firmwareUrl: any(named: 'firmwareUrl'),
-            )).thenThrow(const NetworkError(detail: 'Download failed'));
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-        final notifier =
-            container.read(firmwareUpdateNotifierProvider.notifier);
-
-        await expectLater(
-          notifier.triggerOtaInstall(
-            targetInstance: 2,
-            firmwareUrl: 'http://example.com/fw.img',
-          ),
-          throwsA(isA<NetworkError>()),
-        );
-
-        final state = container.read(firmwareUpdateNotifierProvider);
-        expect(state.phase, FirmwareUpdatePhase.failed);
-        // The transport failure travels as a `ServiceError`, so its copy stays with
-        // `localizeServiceError` — this layer only has to carry it, not word it.
-        expect(state.failure?.reason, FirmwareFailureReason.serviceError);
-        expect(state.failure?.error, isA<NetworkError>());
-      });
-    });
-
     /// #1551 (W5) — the router-side install, and what each of its five endings
     /// does to the page.
     ///
@@ -2334,9 +2279,11 @@ void main() {
     });
 
     // #1496 phase 6, acceptance 6. This class holds the pair that made phase 6
-    // necessary: `runUpload` and `triggerOtaInstall` both mean "update the
-    // firmware", they are 60 lines apart, and one of them cannot work in Remote
-    // Assistance at all.
+    // necessary: `runUpload` and `triggerRouterOtaInstall` both mean "update the
+    // firmware", they are a screen apart, and one of them cannot work in Remote
+    // Assistance at all. (The pair was `runUpload` and the cloud-URL
+    // `triggerOtaInstall` when phase 6 was written; that half was replaced by the
+    // router-side install and then deleted with the cloud path.)
     //
     // Not a policy choice for the upload — a measurement.
     // `firmware_local_upload_service.dart` derives the router host from
@@ -2402,31 +2349,6 @@ void main() {
         final state = container.read(firmwareUpdateNotifierProvider);
         expect(state.phase, FirmwareUpdatePhase.idle);
         expect(state.totalChunks, 0);
-      });
-
-      test('cloud OTA install is not refused', () async {
-        when(() => mockService.triggerOtaDownload(
-              targetInstance: any(named: 'targetInstance'),
-              firmwareUrl: any(named: 'firmwareUrl'),
-            )).thenAnswer((_) async {});
-        final container = remoteContainer();
-        addTearDown(container.dispose);
-
-        await container
-            .read(firmwareUpdateNotifierProvider.notifier)
-            .triggerOtaInstall(
-              targetInstance: 2,
-              firmwareUrl: 'http://example.com/fw.img',
-            );
-
-        verify(() => mockService.triggerOtaDownload(
-              targetInstance: 2,
-              firmwareUrl: 'http://example.com/fw.img',
-            )).called(1);
-        // The pair's other half, and the reason `DisruptionClass` is named for
-        // consequences: an OTA is *more* disruptive to look at than a local
-        // upload — the router downloads, flashes and reboots — and it is the one
-        // that works remotely, because nothing it destroys is on the agent's path.
       });
 
       test('the router OTA install is not refused', () async {

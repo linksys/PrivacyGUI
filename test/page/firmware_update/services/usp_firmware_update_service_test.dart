@@ -137,55 +137,6 @@ void main() {
     });
   });
 
-  group('triggerOtaDownload', () {
-    test('invokes FirmwareImage.{i}.Download() with https:// URL', () async {
-      when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenAnswer((_) async => <String, dynamic>{'success': true});
-
-      await service.triggerOtaDownload(
-        targetInstance: 2,
-        firmwareUrl: 'https://download.linksys.com/updates/firmware.img',
-      );
-
-      final captured = verify(
-        () => mockUsp.operate(captureAny(), args: captureAny(named: 'args')),
-      ).captured;
-      expect(captured[0], 'Device.DeviceInfo.FirmwareImage.2.Download()');
-      final args = captured[1] as Map<String, String>;
-      expect(args['URL'], 'https://download.linksys.com/updates/firmware.img');
-      expect(args['AutoActivate'], 'true');
-    });
-
-    test('passes AutoActivate=false when requested', () async {
-      when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenAnswer((_) async => <String, dynamic>{'success': true});
-
-      await service.triggerOtaDownload(
-        targetInstance: 2,
-        firmwareUrl: 'https://example.com/fw.img',
-        autoActivate: false,
-      );
-
-      final captured = verify(
-        () => mockUsp.operate(any(), args: captureAny(named: 'args')),
-      ).captured;
-      expect((captured.first as Map<String, String>)['AutoActivate'], 'false');
-    });
-
-    test('maps USP error to ServiceError', () {
-      when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenThrow('Operate failed: Transport error: Request timeout');
-
-      expect(
-        () => service.triggerOtaDownload(
-          targetInstance: 2,
-          firmwareUrl: 'https://example.com/fw.img',
-        ),
-        throwsA(isA<NetworkError>()),
-      );
-    });
-  });
-
   group('requestOtaCheck', () {
     test('sends AutoActivate=false and no URL at all', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args'))).thenAnswer(
@@ -308,8 +259,10 @@ void main() {
       expect(captured[0], 'Device.DeviceInfo.FirmwareImage.3.Download()');
       final args = captured[1] as Map<String, String>;
       // The URL stays absent for the install too. The ota instance ignores it
-      // either way — the router resolves the OTA server itself — so requiring
-      // one, as `triggerOtaDownload` does, would mean inventing a value.
+      // either way — the router resolves the OTA server itself — so requiring one,
+      // as the deleted cloud-URL `triggerOtaDownload` did, would mean inventing a
+      // value. `triggerLocalDownload` still requires one and should: a `file://`
+      // path is the whole point of the manual upload.
       expect(args.containsKey('URL'), isFalse);
       expect(args['AutoActivate'], 'true');
       expect(args, hasLength(1));
