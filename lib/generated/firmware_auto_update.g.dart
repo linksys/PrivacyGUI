@@ -37,9 +37,8 @@ class FirmwareAutoUpdate {
 
   factory FirmwareAutoUpdate._fromResponse(Map<String, dynamic> response) {
     final missing = <String>[];
-    if (!response.containsKey(
-      'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags',
-    )) {
+    if (!response
+        .containsKey('Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags')) {
       missing.add('Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags');
     }
     if (!response.containsKey('Device.X_LINKSYS_Sysevent.fwup_state')) {
@@ -94,7 +93,7 @@ class FirmwareAutoUpdate {
     if (params.isEmpty) {
       return {
         'success': true,
-        'result': {'data': <String, dynamic>{}},
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);
