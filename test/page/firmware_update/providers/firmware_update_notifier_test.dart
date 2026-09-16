@@ -148,6 +148,12 @@ class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
   @override
   Future<FirmwareBanksData> build() async =>
       throw TimeoutException('mutation lock', const Duration(seconds: 30));
+
+  /// The same failure on the path `verify()` takes. `refresh()` rethrows raw, so
+  /// this is what actually arrives at the notifier's own catch.
+  @override
+  Future<FirmwareBanksData> refresh() async =>
+      throw TimeoutException('mutation lock', const Duration(seconds: 30));
 }
 
 /// A router that answers the first read and then stops answering.
@@ -884,6 +890,40 @@ void main() {
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.done);
       expect(state.failure, isNull);
+    });
+
+    test(
+        'a verify failure that is not a ServiceError still reports, and still '
+        'lets the user leave', () async {
+      // The trap this closes: `verify()` used to catch `on ServiceError` only,
+      // while `firmwareBanksDataProvider.refresh()` rethrows whatever it got. A
+      // `TimeoutException` — which `UspMutationLock` raises on purpose — therefore
+      // went straight past `_fail()`, the phase stayed `verifying`, and
+      // `verifying` is `isUpdating`: `_firmwareExitGuard` in
+      // `route_usp_dashboard.dart` returns `!isUpdating`, so the back arrow was
+      // *silently* vetoed on a page showing no failure card. Both halves are
+      // asserted, because the failure card and the working back arrow are two
+      // different bugs.
+      final container = createContainer(
+        extra: [
+          firmwareBanksDataProvider.overrideWith(_TimingOutBanksNotifier.new),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await expectLater(
+        notifier.verify(expectedVersion: '1.0.17.0', expectedActiveInstance: 2),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.failed);
+      // The honest sentence for every way out of here: the reboot happened and
+      // the firmware information did not get read.
+      expect(state.failure, const FirmwareFailure.banksUnreadableAfterReboot());
+      // And the guard lets go.
+      expect(state.isUpdating, isFalse);
     });
 
     test('cancel resets to initial state', () {

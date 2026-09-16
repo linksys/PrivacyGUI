@@ -535,6 +535,11 @@ class SseOperationAwaiter {
     // (`command_name`, `output_args`) so `err_code` is the expected shape, but
     // the bridge hands some payloads through with protobuf's camelCase intact
     // and a refusal read as a success is the one misparse that matters here.
+    //
+    // Which is why the *presence* of `cmd_failure` is what marks the refusal, and
+    // the code inside it is only detail: hedging two spellings still left a third,
+    // and a router that named its refusal with a message and no code, reading as
+    // success. See [OperateResult.refused].
     final failure = operComplete['cmd_failure'] as Map<String, dynamic>?;
     final errorCode = _nonEmpty(failure?['err_code'] ?? failure?['errCode']);
     final errorMessage = _nonEmpty(failure?['err_msg'] ?? failure?['errMsg']);
@@ -547,10 +552,11 @@ class SseOperationAwaiter {
       // `isError` was being told nothing. `isFailure` is the finer question.
       status: outputArgs['Status'] ??
           outputArgs['status'] ??
-          (errorCode != null ? 'Error' : 'Unknown'),
+          (failure != null ? 'Error' : 'Unknown'),
       outputArgs: outputArgs,
       errorCode: errorCode,
       errorMessage: errorMessage,
+      refused: failure != null,
     );
   }
 

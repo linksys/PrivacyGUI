@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
@@ -24,10 +25,11 @@ void main() {
     mockService = MockUspFirmwareUpdateService();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({UspMutationLock? lock}) {
     final container = ProviderContainer(
       overrides: [
         uspFirmwareUpdateServiceProvider.overrideWithValue(mockService),
+        if (lock != null) uspMutationLockProvider.overrideWithValue(lock),
       ],
     );
     addTearDown(container.dispose);
@@ -281,6 +283,82 @@ void main() {
       final after = container.read(firmwareAutoUpdateDataProvider).requireValue;
       expect(after.policy, FirmwareAutoUpdatePolicy.autoInstall);
       expect(after.status, FirmwareAutoUpdateStatus.checking);
+    });
+
+    test('setPolicy holds the mutation lock — Art. IV Rule 3', () async {
+      // The write this guards is a real `Set` on a WASM client that cannot hold
+      // two messages, and the switch shares its page with the locked check and
+      // install buttons — so "flip the switch during a check" is one tap apart.
+      // Asserted behaviourally rather than by inspecting the notifier: what has
+      // to hold is that the `Set` does not reach the service while another
+      // mutation is in flight, wherever the lock is taken.
+      when(() => mockService.fetchAutoUpdate()).thenAnswer(
+        (_) async => FirmwareUpdateTestData.autoUpdateModel(
+          policy: FirmwareAutoUpdatePolicy.notifyOnly,
+        ),
+      );
+      when(() => mockService.setAutoUpdatePolicy(any()))
+          .thenAnswer((_) async {});
+
+      final lock = UspMutationLock();
+      final container = createContainer(lock: lock);
+      await container.read(firmwareAutoUpdateDataProvider.future);
+
+      // Another feature's mutation, holding the lock.
+      final otherMutation = Completer<void>();
+      final held = lock.withLock(() => otherMutation.future);
+
+      final write = container
+          .read(firmwareAutoUpdateDataProvider.notifier)
+          .setPolicy(FirmwareAutoUpdatePolicy.autoInstall);
+
+      await pumpEventQueue();
+      verifyNever(() => mockService.setAutoUpdatePolicy(any()));
+
+      otherMutation.complete();
+      await held;
+      await write;
+
+      verify(() => mockService
+          .setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.autoInstall)).called(1);
+      expect(
+        container.read(firmwareAutoUpdateDataProvider).requireValue.policy,
+        FirmwareAutoUpdatePolicy.autoInstall,
+      );
+    });
+
+    test(
+        'a mutation timeout reaches the switch as a timeout, not as '
+        '"something went wrong"', () async {
+      // `UspMutationLock` throws a bare `TimeoutException`, deliberately not a
+      // `ServiceError` — and `localizeServiceError` renders anything that is not
+      // one as `errorUnexpected`. Mapping it in the notifier is what makes the
+      // snackbar say what actually happened. Fed in at the service the way
+      // `firmware_router_ota_install_service_test` feeds its own, rather than by
+      // starving a real lock for 30 s.
+      when(() => mockService.fetchAutoUpdate()).thenAnswer(
+        (_) async => FirmwareUpdateTestData.autoUpdateModel(
+          policy: FirmwareAutoUpdatePolicy.notifyOnly,
+        ),
+      );
+      when(() => mockService.setAutoUpdatePolicy(any())).thenThrow(
+          TimeoutException(
+              'USP mutation timed out after 30s', const Duration(seconds: 30)));
+
+      final container = createContainer(lock: UspMutationLock());
+      await container.read(firmwareAutoUpdateDataProvider.future);
+
+      await expectLater(
+        container
+            .read(firmwareAutoUpdateDataProvider.notifier)
+            .setPolicy(FirmwareAutoUpdatePolicy.autoInstall),
+        throwsA(isA<TimeoutError>()),
+      );
+
+      // And the switch still snaps back to what the router holds.
+      final after = container.read(firmwareAutoUpdateDataProvider);
+      expect(after.hasError, isFalse);
+      expect(after.requireValue.policy, FirmwareAutoUpdatePolicy.notifyOnly);
     });
   });
 }

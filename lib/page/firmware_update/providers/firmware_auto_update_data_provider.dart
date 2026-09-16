@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
@@ -77,6 +81,24 @@ class FirmwareAutoUpdateDataNotifier
   /// `AsyncError`. The card's switch has to be able to snap back to the value the
   /// router still holds, and an error state would blank the card that switch
   /// lives on instead of just refusing the change.
+  ///
+  /// **The mutation lock is held here, and it has to be here rather than inside
+  /// [UspFirmwareUpdateService].** Article IV Rule 3 requires every write to take
+  /// it, and this was the one firmware write that did not — the `Set` reached the
+  /// WASM client unserialised, so flipping the switch during a check could put two
+  /// messages in a client that cannot hold two. Pushing the lock down into the
+  /// service instead would close this hole and open four: `triggerLocalDownload`,
+  /// `triggerOtaDownload`, `requestOtaCheck` and `requestOtaInstall` are already
+  /// wrapped by their callers, and [UspMutationLock] is not re-entrant — its
+  /// `withLock` waits on `isLocked` before claiming the lock, so a second
+  /// acquisition from inside the first blocks until the 30 s force-release. So the
+  /// rule is the service's mutations are locked by whoever calls them, and this
+  /// method is the caller.
+  ///
+  /// `TimeoutException` is mapped here for the reason
+  /// `FirmwareRouterOtaInstallService.install` gives at its own `withLock`: the
+  /// lock throws a bare one, deliberately not a [ServiceError], so it would reach
+  /// the switch as `errorUnexpected` instead of as the timeout it is.
   Future<void> setPolicy(FirmwareAutoUpdatePolicy policy) async {
     // `await future` rather than a fabricated default: a write racing the first
     // read has no status or progress to keep, and inventing them would publish a
@@ -84,9 +106,18 @@ class FirmwareAutoUpdateDataNotifier
     final current = state.valueOrNull ?? await future;
     logger.d('[FirmwareUpdate] autoUpdate: setPolicy '
         '${current.policy.name} → ${policy.name}');
-    await ref
-        .read(uspFirmwareUpdateServiceProvider)
-        .setAutoUpdatePolicy(policy);
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await ref
+            .read(uspFirmwareUpdateServiceProvider)
+            .setAutoUpdatePolicy(policy);
+      });
+    } on TimeoutException catch (e) {
+      throw TimeoutError(
+        detail: 'another router mutation was still running when the '
+            'auto-update setting was written (${e.message ?? '30s'})',
+      );
+    }
     state = AsyncData(current.withPolicy(policy));
   }
 

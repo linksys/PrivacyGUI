@@ -33,6 +33,22 @@ class OperateResult {
   /// The router's message for [errorCode], empty-string-normalised away to null.
   final String? errorMessage;
 
+  /// Whether the notification carried a `cmd_failure` member **at all**.
+  ///
+  /// Deliberately not the same question as [errorCode] being non-null, and the
+  /// difference is the one misparse that matters here. A refusal is identified by
+  /// the presence of `cmd_failure`; [errorCode] is only what the router chose to
+  /// put *inside* it, read under two spellings because the bridge hands some
+  /// payloads through with protobuf's camelCase intact. Keying "was this refused"
+  /// off a successful read of one optional member meant a third spelling — or a
+  /// refusal the router named with a message and no code — read as a **success**,
+  /// on the one channel a refusal ever arrives on.
+  ///
+  /// Defaults to inferring from [errorCode] so that a hand-built result (a test,
+  /// a fake) still reads as a refusal when it names a code. Only the SSE parser
+  /// passes it explicitly, because only the parser saw the member.
+  final bool refused;
+
   const OperateResult({
     required this.commandName,
     required this.commandKey,
@@ -40,17 +56,18 @@ class OperateResult {
     required this.outputArgs,
     this.errorCode,
     this.errorMessage,
-  });
+    bool? refused,
+  }) : refused = refused ?? errorCode != null;
 
   bool get isComplete => status == 'Complete';
   bool get isError => status == 'Error';
 
   /// Whether the router refused the command outright.
   ///
-  /// Keyed on [errorCode] rather than on [status], because the two answer
+  /// Keyed on [refused] rather than on [status], because the two answer
   /// different questions: `status == 'Error'` is a diagnostic that ran and
   /// failed, which is a *result*. This is the absence of a result.
-  bool get isFailure => errorCode != null;
+  bool get isFailure => refused;
 
   @override
   String toString() => 'OperateResult($commandName, status=$status, '

@@ -402,6 +402,72 @@ void main() {
 
       expect(() => future, throwsA(isA<TimeoutException>()));
     });
+
+    test('a cmd_failure is a refusal', () async {
+      await connectManager();
+
+      final future = awaiter.execute(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        referencePath: 'Device.IP.Diagnostics.IPPing()',
+        timeout: const Duration(seconds: 5),
+      );
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-1',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'cmd_failure': {'err_code': '7004', 'err_msg': 'refused'},
+        },
+      ));
+
+      final result = await future;
+      expect(result.isFailure, isTrue);
+      expect(result.errorCode, '7004');
+      expect(result.errorMessage, 'refused');
+      // `cmd_failure` carries no `Status` of its own, so a caller checking
+      // `isError` has to be told something.
+      expect(result.status, 'Error');
+    });
+
+    test('a cmd_failure the router did not put a code in is still a refusal',
+        () async {
+      // The one misparse that matters on this channel. `cmd_failure` is the only
+      // way a refusal ever arrives, and keying "was this refused" off having
+      // successfully read `err_code` out of it meant a refusal named with a
+      // message and no code — or with a third spelling of the code, after the two
+      // this already hedges — read as a **success**. For a firmware check that is
+      // "you are up to date"; for an install it is "still installing" for the full
+      // twenty-minute ceiling.
+      await connectManager();
+
+      final future = awaiter.execute(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        referencePath: 'Device.IP.Diagnostics.IPPing()',
+        timeout: const Duration(seconds: 5),
+      );
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-1',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'cmd_failure': {'err_msg': 'not permitted'},
+        },
+      ));
+
+      final result = await future;
+      expect(result.isFailure, isTrue);
+      expect(result.status, 'Error');
+      // Still null, deliberately: the router named no code and inventing one
+      // would put a fabricated value in the message the user reads.
+      expect(result.errorCode, isNull);
+      expect(result.errorMessage, 'not permitted');
+    });
   });
 
   // ---------------------------------------------------------------------------

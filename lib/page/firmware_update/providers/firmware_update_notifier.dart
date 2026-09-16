@@ -846,8 +846,20 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       await Future<void>.delayed(const Duration(seconds: 3));
 
       // Wait for throttler to be idle (SSE reconnect may trigger other requests)
+      //
+      // **Bounded, and it has to be.** This runs immediately after a firmware
+      // reboot — exactly when in-flight bridge requests were cut off mid-flight —
+      // and `whenIdle()` is a bare completer with no timeout of its own, so an
+      // `_active` count that never returns to 0 would park the whole verify here
+      // with the phase already set to `verifying`. Fifteen seconds and then
+      // continue rather than fail: the settle is best-effort, the retry below is
+      // what actually copes with TR-181 still coming up, and a settle that timed
+      // out is not evidence about the flash.
       logger.d('[FirmwareUpdate] verify: waiting for throttler idle...');
-      await ref.read(bridgeRequestThrottlerProvider).whenIdle();
+      await ref
+          .read(bridgeRequestThrottlerProvider)
+          .whenIdle()
+          .timeout(const Duration(seconds: 15), onTimeout: () {});
 
       // Fetch banks with retry (also retry if banks empty — TR-181 may not be ready)
       FirmwareBanksData? banksData;
@@ -879,11 +891,20 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           await Future<void>.delayed(const Duration(seconds: 3));
         }
       }
+      // Structural, not by argument. The loop's three exits all leave this
+      // non-null today — break on a non-empty read, return after `_fail`, rethrow
+      // on the last attempt — but a fourth exit added later would have turned the
+      // `!` this replaces into a `TypeError` thrown inside `verifying`, i.e. into
+      // the trap the `finally` below exists to close.
+      if (banksData == null) {
+        _fail(const FirmwareFailure.banksUnreadableAfterReboot());
+        return;
+      }
       // Physical banks only. Every check below is about which slot the router
       // booted from, and the virtual OTA instance is not a slot: it would be
       // counted by the multi-Active consistency check and could be matched as
       // the expected instance if the router renumbers.
-      final banks = banksData!.physicalBanks;
+      final banks = banksData.physicalBanks;
 
       logger.d(
           '[FirmwareUpdate] verify: banks=${banks.map((b) => '${b.instancePath}:${b.status}').join(', ')}'
@@ -924,10 +945,43 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         phase: FirmwareUpdatePhase.done,
         activeBank: match,
       ));
-    } on ServiceError catch (e) {
+    } catch (e) {
+      // `catch`, not the `on ServiceError` this replaces — same argument as
+      // [loadBanks] and the running-install observer, and here it was load-bearing:
+      // `firmwareBanksDataProvider.refresh()` rethrows whatever it got, so a raw
+      // USP error or a bare `TimeoutException` arrived unchanged, missed the arm
+      // entirely, and never reached `_fail()`. The call sites' own `catch (_)` then
+      // swallowed it on the premise that a failure card had already been
+      // published — which for that path was false.
       logger.e('[FirmwareUpdate] verify failed', error: e);
-      _fail(FirmwareFailure.serviceError(e));
+      _fail(e is ServiceError
+          ? FirmwareFailure.serviceError(e)
+          : const FirmwareFailure.banksUnreadableAfterReboot());
       rethrow;
+    } finally {
+      // The belt [triggerRouterOtaInstall] carries, for the reason written there:
+      // `verifying` is `isUpdating`, and `_firmwareExitGuard` in
+      // `route_usp_dashboard.dart` returns `!state.isUpdating` — it **silently**
+      // vetoes the Navigator pop, so a phase left set by an unforeseen throw traps
+      // the user on a page with no card explaining why.
+      //
+      // **`failed`, not the `idle` that belt restores.** This one runs after the
+      // router has flashed and rebooted; an unverified flash must not read as
+      // "nothing happened". `banksUnreadableAfterReboot` is the honest sentence for
+      // every way out of here — "The router restarted, but its firmware information
+      // could not be read."
+      //
+      // **Unreachable as written, and kept anyway.** The `catch` above is total
+      // now, so every throw already lands on `_fail`; what this guards is the next
+      // edit — an early `return` added above without a phase, or a narrowing of
+      // that catch back to a type, which is exactly how the trap got here. The
+      // consequence of being wrong is a page the user cannot leave and cannot read,
+      // which is worth one `if` that normally does nothing.
+      if (!_disposed && state.phase == FirmwareUpdatePhase.verifying) {
+        logger.w('[FirmwareUpdate] verify left the phase set — reporting the '
+            'firmware state as unread rather than leaving the page locked');
+        _fail(const FirmwareFailure.banksUnreadableAfterReboot());
+      }
     }
   }
 
