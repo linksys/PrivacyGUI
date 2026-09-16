@@ -231,7 +231,12 @@ void main() {
         buildService().install(otaInstance: 3),
         throwsA(isA<TimeoutError>()),
       );
-      verifyNever(() => firmware.fetchAutoUpdate());
+      // Exactly one read, and it is the baseline taken *before* the dispatch — not
+      // the poll loop, which a failed dispatch must never reach. Counted rather
+      // than forbidden because the baseline is the fix for the suppressed
+      // `checking` phase, so a `verifyNever` here would forbid the thing this
+      // service is now required to do.
+      verify(() => firmware.fetchAutoUpdate()).called(1);
     });
 
     test('a dispatch with no commandKey never reaches the poll loop', () async {
@@ -245,7 +250,8 @@ void main() {
         buildService().install(otaInstance: 3),
         throwsA(isA<ServiceError>()),
       );
-      verifyNever(() => firmware.fetchAutoUpdate());
+      // One read: the pre-dispatch baseline. See the test above.
+      verify(() => firmware.fetchAutoUpdate()).called(1);
     });
   });
 
@@ -305,8 +311,13 @@ void main() {
       final result =
           await buildService().install(otaInstance: 3, onProgress: emitted.add);
 
-      expect(emitted.map((p) => p.percent).toList(),
-          [null, null, 0, 45, null, null]);
+      // Position 4 is the flash, and it now carries a number: `fwup_progress` was
+      // measured publishing 0 then 50 during `fwup_state=4` on a real install. The
+      // check's 100 is still nowhere — that is what this test is named for — and the
+      // download's 45 does not carry into the flash, because the phases do not share
+      // a scale and the title above the bar changes with them.
+      expect(
+          emitted.map((p) => p.percent).toList(), [null, null, 0, 45, 0, null]);
       expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
     });
 
@@ -352,10 +363,11 @@ void main() {
 
       expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
       // And the stale value is not merely un-concluded-from, it is unpublished:
-      // one `failed` reading reaching the notifier is enough to paint the failure
-      // card, whatever the verdict eventually says.
+      // one leftover `rebooting` reading reaching the notifier would put the
+      // "restarting, don't unplug it" card on screen before anything had been
+      // dispatched, whatever the verdict eventually says.
       expect(emitted.map((p) => p.status),
-          isNot(contains(FirmwareAutoUpdateStatus.failed)));
+          isNot(contains(FirmwareAutoUpdateStatus.rebooting)));
     });
 
     test('the 3 left behind by the last update draws no progress bar',
@@ -373,12 +385,19 @@ void main() {
       expect(emitted.map((p) => p.rawProgress), isNot(contains(62)));
     });
 
-    test('a leftover 5 that outlasts the grace is this install\'s failure',
+    test('a leftover 5 that outlasts the grace hands over to the reboot wait',
         () async {
       // The other side of it. After the grace an unchanged value stands on its
       // own — a dispatch that never moved `fwup_state` at all has to end
       // somewhere, and reporting the router's own last word beats a twenty-minute
       // spinner.
+      //
+      // What that word *means* changed on 2026-09-16: 5 is the reboot, so the
+      // ending is `flashing` and the caller waits for the router and then runs
+      // `verify()`. A stale 5 therefore costs a recovery wait that resolves
+      // itself — the router never went away, `verify()` reads the old version
+      // back, and the failure it reports is `bootedOldImage`, which is the true
+      // statement about a router that did not update.
       feed([_at('5')]);
 
       final result = await buildService(
@@ -386,7 +405,7 @@ void main() {
         ceiling: const Duration(seconds: 5),
       ).install(otaInstance: 3);
 
-      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
     });
 
     test('a leftover 1 does not let the next 0 mean "no update found"',
@@ -416,10 +435,13 @@ void main() {
       // on a flashing router is the reboot taking the connection with it, and REQ-A6
       // is that this reads as the reboot rather than as "your router is
       // unreachable" at the moment it is doing what was asked.
+      // Two reads answer 4, not one: the first is the pre-dispatch baseline and the
+      // second is the poll that matches it and is therefore held back as stale. It
+      // is that held-back reading which has to record `sawBusy`.
       var reads = 0;
       when(() => firmware.fetchAutoUpdate()).thenAnswer((_) async {
         reads++;
-        if (reads == 1) return _at('4', 0);
+        if (reads <= 2) return _at('4', 0);
         throw NetworkError();
       });
 
@@ -441,7 +463,7 @@ void main() {
         ceiling: const Duration(seconds: 5),
       ).install(otaInstance: 3);
 
-      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
     });
 
     test('a state 0 that outlasts the grace is an answer', () async {
@@ -471,18 +493,29 @@ void main() {
 
       await buildService().install(otaInstance: 3, onProgress: emitted.add);
 
-      expect(emitted.map((p) => p.percent).toList(), [40, 40, 60, null, null]);
+      // The `4` now carries a percentage — measured on a real flash, which
+      // publishes 0 then 50 and holds it. It restarts at 0 rather than continuing
+      // from the download's 60 because the two phases do not share a scale, and the
+      // title above the bar changes at the same instant, so a bar that reset under
+      // "Installing" reads as a new step rather than as a regression.
+      expect(emitted.map((p) => p.percent).toList(), [40, 40, 60, 0, null]);
     });
   });
 
   group('the ways it ends', () {
-    test('fwup_state 5 is a failure that keeps the number', () async {
+    test('fwup_state 5 ends the watch as the reboot, keeping the number',
+        () async {
+      // The sequence a real install produced (2026-09-16): the router flashes and
+      // then publishes 5 immediately before it restarts. Ending on `flashing` is
+      // what sends the caller into the recovery wait; ending on a failure is what
+      // this build used to do, and it drew "Update Failed" over a successful
+      // update.
       feed([_at('3', 30), _at('5', 30)]);
 
       final result = await buildService().install(otaInstance: 3);
 
-      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
-      // REQ-A7: the raw value is retrievable from the result, so a failure can
+      expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
+      // REQ-A7: the raw value is retrievable from the result, so a diagnostic can
       // report what the router said rather than a rounded-off app word.
       expect(result.rawState, '5');
       expect(result.lastProgress?.rawProgress, 30);
@@ -703,12 +736,15 @@ void main() {
           referencePath: any(named: 'referencePath')));
     });
 
-    test('a failed update is reported, not swallowed', () async {
+    test('a router already rebooting is reported, not swallowed', () async {
+      // The observe path has no grace, so the first reading stands. A router at 5
+      // is one an auto-update has already flashed, and the page has to say so
+      // rather than draw an idle card over a router that is about to disappear.
       feed([_at('5')]);
 
       final result = await buildService().observe();
 
-      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
       expect(result.rawState, '5');
     });
   });

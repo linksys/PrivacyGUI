@@ -293,7 +293,7 @@ String _rawStateFor(FirmwareAutoUpdateStatus status) => switch (status) {
       FirmwareAutoUpdateStatus.checking => '1',
       FirmwareAutoUpdateStatus.downloading => '3',
       FirmwareAutoUpdateStatus.installing => '4',
-      FirmwareAutoUpdateStatus.failed => '5',
+      FirmwareAutoUpdateStatus.rebooting => '5',
       // Not in the domain of `mapAutoUpdateStatus`, which is the point: REQ-A7 is
       // about a firmware that grows a sixth value.
       FirmwareAutoUpdateStatus.unknown => '7',

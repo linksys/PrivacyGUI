@@ -138,8 +138,12 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
         FirmwareAutoUpdateStatus.downloading =>
           loc(context).downloadingFirmware,
         FirmwareAutoUpdateStatus.installing => loc(context).installingFirmware,
+        // `rebooting` borrows the phase card's own pair rather than inventing a
+        // sentence: `fwup_state=5` and `FirmwareUpdatePhase.rebooting` are the same
+        // event seen from two sides, and the user must not be told two different
+        // things while the router restarts once.
+        FirmwareAutoUpdateStatus.rebooting => loc(context).rebootingRouter,
         FirmwareAutoUpdateStatus.idle ||
-        FirmwareAutoUpdateStatus.failed ||
         FirmwareAutoUpdateStatus.unknown =>
           loc(context).updatingFirmware,
       };
@@ -156,8 +160,9 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
         FirmwareAutoUpdateStatus.downloading =>
           loc(context).routerDownloadingImage,
         FirmwareAutoUpdateStatus.installing => loc(context).routerWritingImage,
+        FirmwareAutoUpdateStatus.rebooting =>
+          loc(context).waitingForRouterOnline,
         FirmwareAutoUpdateStatus.idle ||
-        FirmwareAutoUpdateStatus.failed ||
         FirmwareAutoUpdateStatus.unknown =>
           loc(context).routerUpdatingFirmware,
       };

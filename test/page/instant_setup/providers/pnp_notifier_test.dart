@@ -992,8 +992,8 @@ void main() {
       final firmware = SpyFirmwareUpdateNotifier(
         checkResult: const FirmwareOtaCheckResult.updateAvailable(),
         installResult: const FirmwareOtaInstallResult(
-          verdict: FirmwareOtaInstallVerdict.failed,
-          rawState: '5',
+          verdict: FirmwareOtaInstallVerdict.timedOut,
+          rawState: '4',
         ),
         installLeavesPhase: FirmwareUpdatePhase.failed,
       );

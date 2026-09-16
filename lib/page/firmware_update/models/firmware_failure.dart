@@ -43,12 +43,6 @@ enum FirmwareFailureReason {
   /// The router published `fwup_state=5` — [FirmwareFailure.detail] is the raw
   /// value.
   ///
-  /// The number reaches the screen on purpose. `5` is the only failure value this
-  /// firmware publishes and it says nothing about why, so it is the whole diagnostic
-  /// a support call has to work from. It rides in a placeholder rather than in the
-  /// sentence, so all 26 locales get a translated sentence around the same digit.
-  routerReportedFailure,
-
   /// The router stopped answering while an update was in flight —
   /// [FirmwareFailure.detail] is the last raw `fwup_state`.
   ///
@@ -86,7 +80,7 @@ enum FirmwareFailureReason {
 ///
 /// One class with named constructors rather than a sealed hierarchy of thirteen, which
 /// is the shape [FirmwareOtaCheckResult] already uses in this folder. The
-/// constructors are where the typing lives — [FirmwareFailure.routerReportedFailure]
+/// constructors are where the typing lives — [FirmwareFailure.progressStalled]
 /// cannot be built without its raw state — while [detail] and [number] are two
 /// generic slots the mapper reads per arm.
 class FirmwareFailure extends Equatable {
@@ -136,12 +130,6 @@ class FirmwareFailure extends Equatable {
       : reason = FirmwareFailureReason.noImageSelected,
         error = null,
         detail = null,
-        number = null;
-
-  const FirmwareFailure.routerReportedFailure({required String fwupState})
-      : reason = FirmwareFailureReason.routerReportedFailure,
-        error = null,
-        detail = fwupState,
         number = null;
 
   const FirmwareFailure.progressStalled({required String fwupState})

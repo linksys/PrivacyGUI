@@ -804,15 +804,6 @@
     }
   },
   "firmwareFileTypeUnsupported": "Only .img and .bin firmware files can be installed.",
-  "firmwareRouterReportedFailure": "The router reported that the firmware update failed (fwup_state={state}).",
-  "@firmwareRouterReportedFailure": {
-    "placeholders": {
-      "state": {
-        "type": "String",
-        "example": "5"
-      }
-    }
-  },
   "firmwareProgressStalled": "The router stopped reporting update progress (fwup_state={state}).",
   "@firmwareProgressStalled": {
     "placeholders": {

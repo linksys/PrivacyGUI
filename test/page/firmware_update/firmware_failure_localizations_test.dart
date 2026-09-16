@@ -63,8 +63,6 @@ void main() {
         const FirmwareFailure.fileTypeUnsupported(),
     FirmwareFailureReason.noImageSelected:
         const FirmwareFailure.noImageSelected(),
-    FirmwareFailureReason.routerReportedFailure:
-        const FirmwareFailure.routerReportedFailure(fwupState: '5'),
     FirmwareFailureReason.progressStalled:
         const FirmwareFailure.progressStalled(fwupState: '3'),
     FirmwareFailureReason.progressStalledNoReading:
@@ -105,8 +103,6 @@ void main() {
         // twelfth key: "no image selected" is the same fact in both places, and
         // that sentence already names the two extensions that work.
         FirmwareFailureReason.noImageSelected: l.noFirmwareImageSelected,
-        FirmwareFailureReason.routerReportedFailure:
-            l.firmwareRouterReportedFailure('5'),
         FirmwareFailureReason.progressStalled: l.firmwareProgressStalled('3'),
         // The stall with nothing to name. A second key rather than a sentinel in
         // the placeholder above: the first version passed the literal `unread`,
@@ -143,11 +139,11 @@ void main() {
     testWidgets('the raw fwup_state reaches the sentence', (tester) async {
       final ctx = await pumpContext(tester);
       // The digit is the whole diagnostic a support call has to work from, and
-      // it is the one part of these two sentences that must NOT be translated.
-      expect(
-          localizeFirmwareFailure(
-              ctx, const FirmwareFailure.routerReportedFailure(fwupState: '5')),
-          contains('5'));
+      // it is the one part of this sentence that must NOT be translated.
+      //
+      // One sentence rather than two since 2026-09-16: `routerReportedFailure`
+      // existed for `fwup_state=5`, which is measured to be the reboot, so the only
+      // failure this firmware can still name is where a stalled watch stopped.
       expect(
           localizeFirmwareFailure(
               ctx, const FirmwareFailure.progressStalled(fwupState: '3')),

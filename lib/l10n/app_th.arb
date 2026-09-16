@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "ไฟล์นี้มีขนาดเพียง {size} ซึ่งเล็กเกินกว่าจะเป็นอิมเมจเฟิร์มแวร์",
   "firmwareFileTooLarge": "ไฟล์นี้มีขนาด {size} ซึ่งใหญ่เกินกว่าจะเป็นอิมเมจเฟิร์มแวร์",
   "firmwareFileTypeUnsupported": "ติดตั้งได้เฉพาะไฟล์เฟิร์มแวร์ .img และ .bin เท่านั้น",
-  "firmwareRouterReportedFailure": "เราเตอร์รายงานว่าการอัปเดตเฟิร์มแวร์ล้มเหลว (fwup_state={state})",
   "firmwareProgressStalled": "เราเตอร์หยุดรายงานความคืบหน้าของการอัปเดต (fwup_state={state})",
   "firmwareProgressStalledNoReading": "เราเตอร์หยุดรายงานความคืบหน้าของการอัปเดตก่อนที่จะรายงานขั้นตอนใด ๆ",
   "firmwareBanksUnreadableAfterReboot": "เราเตอร์รีสตาร์ทแล้ว แต่ไม่สามารถอ่านข้อมูลเฟิร์มแวร์ได้",

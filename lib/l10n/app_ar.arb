@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "حجم هذا الملف {size} فقط، وهو أصغر من أن يكون صورة برنامج ثابت.",
   "firmwareFileTooLarge": "حجم هذا الملف {size}، وهو أكبر من أن يكون صورة برنامج ثابت.",
   "firmwareFileTypeUnsupported": "يمكن تثبيت ملفات البرنامج الثابت من نوع ‎.img و‎.bin فقط.",
-  "firmwareRouterReportedFailure": "أبلغ جهاز التوجيه بفشل تحديث البرنامج الثابت (fwup_state={state}).",
   "firmwareProgressStalled": "توقف جهاز التوجيه عن الإبلاغ عن تقدم التحديث (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "توقف جهاز التوجيه عن الإبلاغ عن تقدم التحديث قبل أن يبلغ عن أي مرحلة.",
   "firmwareBanksUnreadableAfterReboot": "أُعيد تشغيل جهاز التوجيه، لكن تعذّرت قراءة معلومات برنامجه الثابت.",

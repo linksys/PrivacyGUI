@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "Bu dosya yalnızca {size} boyutunda; bellenim imajı olamayacak kadar küçük.",
   "firmwareFileTooLarge": "Bu dosya {size} boyutunda; bellenim imajı olamayacak kadar büyük.",
   "firmwareFileTypeUnsupported": "Yalnızca .img ve .bin bellenim dosyaları kurulabilir.",
-  "firmwareRouterReportedFailure": "Yönlendirici, bellenim güncellemesinin başarısız olduğunu bildirdi (fwup_state={state}).",
   "firmwareProgressStalled": "Yönlendirici güncelleme ilerlemesini bildirmeyi durdurdu (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Yönlendirici herhangi bir aşama bildirmeden güncelleme ilerlemesini bildirmeyi durdurdu.",
   "firmwareBanksUnreadableAfterReboot": "Yönlendirici yeniden başlatıldı ancak bellenim bilgileri okunamadı.",

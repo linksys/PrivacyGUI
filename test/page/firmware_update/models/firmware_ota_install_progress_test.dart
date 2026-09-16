@@ -48,13 +48,22 @@ void main() {
           FirmwareOtaInstallProgress.from(_reading('1', 100)).percent, isNull);
     });
 
-    test('installing has none either', () {
-      // `fwup_state=4` is the flash. Nothing has been observed about what
-      // `fwup_progress` does during it — the bench could never be made to find
-      // an image — so it gets the indeterminate treatment rather than a number
-      // whose meaning is a guess.
+    test('installing has one, now that the flash has been watched', () {
+      // `fwup_state=4` is the flash, and it had the indeterminate treatment while
+      // nothing had been observed about `fwup_progress` during it — the bench could
+      // never be made to find an image. A real install on 2026-09-16 published `0`
+      // and then `50`, holding 50 for ~40s before the state moved on. Coarse and
+      // plateau-prone, but a real number in a phase long enough to need one.
+      expect(FirmwareOtaInstallProgress.from(_reading('4', 80)).percent, 80);
+      expect(FirmwareOtaInstallProgress.from(_reading('4', 50)).percent, 50);
+    });
+
+    test('rebooting has none, whatever the flash left behind', () {
+      // `fwup_state=5` arrives with `fwup_progress` at 100, and that 100 is the
+      // flash finishing rather than the reboot progressing. A bar at 100% for the
+      // length of a reboot claims the reboot is nearly done, which nothing knows.
       expect(
-          FirmwareOtaInstallProgress.from(_reading('4', 80)).percent, isNull);
+          FirmwareOtaInstallProgress.from(_reading('5', 100)).percent, isNull);
     });
 
     test('idle has none, at either of its two resting values', () {
@@ -122,12 +131,25 @@ void main() {
       }
     });
 
-    test('idle and failed are evidence of nothing', () {
-      for (final state in ['0', '5']) {
-        final progress = FirmwareOtaInstallProgress.from(_reading(state, 100));
-        expect(progress.isRunning, isFalse, reason: 'fwup_state=$state');
-        expect(progress.namesRouterWork, isFalse, reason: 'fwup_state=$state');
-      }
+    test('idle alone is evidence of nothing', () {
+      // `0` is the only value that is not evidence of work, and it carries three
+      // meanings — nothing started, a check that began and ended between two polls,
+      // and **every failure**, since `fwup_state` has no failure value. That is why
+      // no caller may conclude anything from a lone 0.
+      final progress = FirmwareOtaInstallProgress.from(_reading('0', 100));
+      expect(progress.isRunning, isFalse);
+      expect(progress.namesRouterWork, isFalse);
+    });
+
+    test('rebooting is the strongest evidence of all', () {
+      // It used to be grouped with `0` as evidence of nothing, because 5 was read
+      // as a failure. A router at 5 has already written the image, so it is both
+      // running and unambiguously an update phase — and the exit guard depends on
+      // that: the back arrow must stay vetoed while the router is restarting.
+      final progress = FirmwareOtaInstallProgress.from(_reading('5', 100));
+      expect(progress.isRunning, isTrue);
+      expect(progress.namesAnUpdatePhase, isTrue);
+      expect(progress.namesRouterWork, isTrue);
     });
   });
 

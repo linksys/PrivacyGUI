@@ -106,12 +106,17 @@ class FirmwareRouterOtaInstallService {
   ///
   /// **The window covers every unchanged value, not just 0**, and that is the
   /// difference between this working and appearing to. `fwup_state` is a persistent
-  /// sysevent scalar — it is not cleared per run, so a router whose last update
-  /// failed sits at 5 indefinitely. Gating only 0 meant the first poll of *every*
-  /// install on such a router returned `failed` about a second in, while `fwupd`
-  /// went on to download, flash and reboot underneath a card reading "Update
-  /// Failed" — and it would have done that on every subsequent attempt too, because
-  /// nothing about the router changes to break the loop.
+  /// sysevent scalar — it is not cleared per run, so a router interrupted mid-update
+  /// sits at 3 or 4 indefinitely, and gating only 0 meant the first poll of *every*
+  /// install on such a router concluded from the previous run's value about a second
+  /// in, while `fwupd` went on underneath the card it had already drawn.
+  ///
+  /// **And the baseline it compares against has to predate the dispatch**, which is
+  /// the other half and was missing until 2026-09-16. Taken from the watch's own
+  /// first read it does not: the dispatch returned in 34 ms and `fwupd` had already
+  /// moved to 1, so the baseline captured this run's own value and the window then
+  /// suppressed the whole 6.5 s `checking` phase for being "unchanged". `install()`
+  /// therefore reads `fwup_state` before it dispatches and hands the value in.
   ///
   /// Fifteen seconds is the check's own 10 s deadline plus room for a slow OTA
   /// server. `linksys.fwup.lastsuccess_checktime` is the anchor that would replace
@@ -169,6 +174,25 @@ class FirmwareRouterOtaInstallService {
     // is the only channel it appears on.
     final watch = await openOperationCompleteWatch(_awaiter,
         referencePath: _referencePath);
+    // Also before the dispatch, and for a reason measured the hard way: the
+    // baseline the grace compares against has to predate the thing it is a
+    // baseline for. Taking it from the watch's own first read does not — on
+    // 2026-09-16 the dispatch returned in **34 ms** and `fwupd` had already moved
+    // `fwup_state` to 1, so the first poll a second later captured 1 as "the value
+    // before the dispatch" and then suppressed the whole 6.5 s `checking` phase as
+    // unchanged. The user saw nothing happen, twice over.
+    //
+    // Best-effort on purpose. A router that cannot answer this read is about to
+    // fail the dispatch or the first poll anyway, and neither is worth turning a
+    // diagnostic read into a hard failure over — a null simply restores the old
+    // behaviour for that one run.
+    String? stateBeforeDispatch;
+    try {
+      stateBeforeDispatch = (await _readAutoUpdate()).rawState;
+    } catch (e) {
+      logger.d('[FirmwareUpdate] could not read fwup_state before dispatching '
+          'the install, so the startup grace has no baseline ($e)');
+    }
     try {
       // The lock, and only around the dispatch. The poll loop below is `Get`s,
       // which nothing in this codebase locks — and holding the lock across a loop
@@ -205,6 +229,7 @@ class FirmwareRouterOtaInstallService {
       return await _watch(
         refusal: () => refusal,
         otaInstance: otaInstance,
+        stateBeforeDispatch: stateBeforeDispatch,
         // A state of 0 right after the dispatch means `fwupd` has not started
         // yet, so the first reading cannot be an answer.
         graceFor: _startupGrace,
@@ -252,6 +277,7 @@ class FirmwareRouterOtaInstallService {
     required int? otaInstance,
     required Duration graceFor,
     required bool delayBeforeFirstRead,
+    String? stateBeforeDispatch,
     FirmwareOtaInstallProgressSink? onProgress,
     bool Function()? isCancelled,
   }) async {
@@ -265,13 +291,18 @@ class FirmwareRouterOtaInstallService {
     var interval = _checkingPollInterval;
     FirmwareOtaInstallProgress? last;
 
-    /// The value `fwup_state` already held when the watch began.
+    /// The value `fwup_state` already held before this run could have moved it.
     ///
     /// How a reading is told from an answer. See [defaultStartupGrace] — the
     /// parameter is persistent, so until it *changes* it is still describing the
-    /// previous run. Captured on both paths and inert on the observe one, where
-    /// [graceFor] is zero, so the window is shut before the first read lands.
-    String? stateOnArrival;
+    /// previous run. Inert on the observe path, where [graceFor] is zero, so the
+    /// window is shut before the first read lands.
+    ///
+    /// Seeded from [stateBeforeDispatch] when the caller has it, and that is the
+    /// whole correctness of it: the fallback below captures the *first poll after
+    /// the dispatch*, which on a router that starts checking in 34 ms is already
+    /// this run's own value. Suppressing that is how a real phase went missing.
+    String? stateOnArrival = stateBeforeDispatch;
 
     FirmwareOtaInstallResult ending(FirmwareOtaInstallVerdict verdict) =>
         FirmwareOtaInstallResult(
@@ -362,10 +393,22 @@ class FirmwareRouterOtaInstallService {
       onProgress?.call(last);
 
       switch (reading.status) {
-        case FirmwareAutoUpdateStatus.failed:
-          logger.w('[FirmwareUpdate] the router reported the update failed '
-              '(fwup_state=${reading.rawState})');
-          return ending(FirmwareOtaInstallVerdict.failed);
+        // The router has written the image and is going to reboot. `flashing` is
+        // exactly that verdict, so this arm ends the watch on the same path the
+        // dropped connection and the post-flash `0` already ended on: wait for the
+        // router, then let `verify()` say whether it came back on the new build.
+        //
+        // Until 2026-09-16 this arm read `failed` and returned
+        // `FirmwareOtaInstallVerdict.failed` — see
+        // [FirmwareAutoUpdateStatus.rebooting]. It reported every successful
+        // install as a failure, and the user saw it on the one run that ever
+        // reached this state.
+        case FirmwareAutoUpdateStatus.rebooting:
+          sawBusy = true;
+          logger
+              .i('[FirmwareUpdate] the router is rebooting into the new image '
+                  '(fwup_state=${reading.rawState})');
+          return ending(FirmwareOtaInstallVerdict.flashing);
 
         case FirmwareAutoUpdateStatus.checking:
           sawChecking = true;
@@ -385,9 +428,18 @@ class FirmwareRouterOtaInstallService {
           interval = _busyPollInterval;
 
         case FirmwareAutoUpdateStatus.idle:
-          // Busy first: on this firmware the only way out of 3 or 4 is the
-          // reboot, so a state that has dropped back to 0 after a flash began is
+          // Busy first: a state that has dropped back to 0 after a flash began is
           // reported as the reboot rather than as an install that evaporated.
+          //
+          // This is **not** because 0 can only mean the reboot — measured
+          // 2026-09-16, a failure lands on 0 too, with `fwup_progress` left at 100
+          // (see [FirmwareAutoUpdateStatus]). It is because the two are
+          // indistinguishable here and only one of them is safe to claim: telling
+          // a user their update failed while the router is writing NAND is the
+          // worse mistake, and `verify()` separates them a minute later by
+          // comparing versions. So this arm buys time rather than an answer, and
+          // `FirmwareFailure.bootedOldImage` is where a real flash failure is
+          // finally reported.
           if (sawBusy) return ending(FirmwareOtaInstallVerdict.flashing);
           // Mode 2 checks before it downloads, so an accepted dispatch can end
           // here: the router's own check disagreed with the version we offered.

@@ -28,8 +28,15 @@ enum FirmwareOtaInstallVerdict {
   /// was running has stopped being visible.
   idle,
 
-  /// `fwup_state=5`. The router said the update failed.
-  failed,
+  // There is deliberately no `failed` verdict, and there was one until
+  // 2026-09-16. It existed for `fwup_state=5`, which is measured to be the reboot
+  // — see [FirmwareAutoUpdateStatus.rebooting] — so nothing could reach it that
+  // was not a success. `fwup_state` publishes no failure value at all, which
+  // leaves this watch with nothing to report a failure *from*: a flash that fails
+  // returns to 0 exactly as one that succeeds does, and the two are only
+  // separable after the reboot by comparing versions. That is `verify()`'s job and
+  // `FirmwareFailure.bootedOldImage` is its answer. A verdict this loop cannot
+  // produce would be an arm every caller has to write and no router can trigger.
 
   /// The ceiling elapsed and the update never got as far as downloading.
   ///

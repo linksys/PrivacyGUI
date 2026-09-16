@@ -15,10 +15,17 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_
 ///   two behaviours is not a number a bar can render, so [percent] is null there.
 /// * `Download(ota, AutoActivate="true")` is `fwupd -m 2`, whose own usage string
 ///   reads `checking / downloading / flashing / rebooting`. So one install
-///   produces `1 → 3 → 4`, and `fwup_progress` runs 0→100 **twice**. One shared
-///   bar would therefore show the same install completing twice.
+///   produces `1 → 3 → 4 → 5`, and `fwup_progress` runs 0→100 more than once. One
+///   shared bar would therefore show the same install completing twice, which is
+///   why `checking` has no percentage.
+/// * **A real install skipped `3` entirely** (2026-09-16, `2.0.1.26091515` →
+///   `...16`): the sequence observed was `1 → 4 → 5`, so `downloading` is not a
+///   phase a user is guaranteed to see and nothing may wait for it. The image was
+///   already cached, or the router folds the fetch into the flash.
 /// * `fwup_progress` rests at both `0` and `100` when nothing is running,
-///   depending on which mode last ran, so no value of it means "finished".
+///   depending on which mode last ran, so no value of it means "finished". A
+///   *failure* also rests at 100 — `fwupd` writes `state 0, progress 100` on both
+///   induced failure paths — so a 100 is not even evidence of success.
 ///
 /// It reuses [FirmwareAutoUpdateStatus] rather than declaring a parallel enum: the
 /// raw-to-app mapping has exactly one site (`mapAutoUpdateStatus`), and a second
@@ -55,17 +62,30 @@ class FirmwareOtaInstallProgress extends Equatable {
 
   /// The number a determinate progress bar may show, or null for a spinner.
   ///
-  /// Non-null for [FirmwareAutoUpdateStatus.downloading] and nothing else — see
-  /// the class comment for why each of the other states is excluded, including
-  /// `installing`, whose progress behaviour has never been observed.
-  int? get percent => status == FirmwareAutoUpdateStatus.downloading
+  /// Non-null for `downloading` and `installing`. The second one was excluded as
+  /// "never observed" until 2026-09-16, when a full install was watched: during
+  /// `fwup_state=4` the router published `0`, then `50`, and held 50 for ~40s
+  /// before the state moved on. So it is coarse and it plateaus — which is worth
+  /// knowing before "the bar is stuck at 50%" is filed as a bug — but it is a real
+  /// number in a phase that lasts long enough to need one, and a bar that moves
+  /// once beats a spinner that says nothing for three quarters of a minute.
+  ///
+  /// Still null for `checking` even though mode 2's check does publish numbers:
+  /// the class comment's first bullet is why — the same phase was measured
+  /// sweeping 0→100 on one run and staying at 0 on another. And still null for
+  /// `rebooting`, where the 100 the router leaves behind is the *flash* finishing,
+  /// not the reboot progressing.
+  int? get percent => status == FirmwareAutoUpdateStatus.downloading ||
+          status == FirmwareAutoUpdateStatus.installing
       ? min(100, max(0, rawProgress))
       : null;
 
   /// Whether the router is doing something a user should be shown.
-  bool get isRunning =>
-      status != FirmwareAutoUpdateStatus.idle &&
-      status != FirmwareAutoUpdateStatus.failed;
+  ///
+  /// Everything except `idle`. `rebooting` is in — it is the last thing the router
+  /// says before the connection drops, and the card it draws is the one that tells
+  /// the user not to unplug anything.
+  bool get isRunning => status != FirmwareAutoUpdateStatus.idle;
 
   /// Whether this reading is an update **in progress**, as opposed to merely
   /// something happening.
@@ -104,9 +124,12 @@ class FirmwareOtaInstallProgress extends Equatable {
   /// `checking` is out for the reason [isInstalling] gives — the auto-update daemon
   /// reaches `fwup_state=1` on its own schedule, so it is not evidence of an
   /// install either.
+  /// `rebooting` counts, and it is the strongest of the three: a router at
+  /// `fwup_state=5` has already written the image.
   bool get namesAnUpdatePhase =>
       status == FirmwareAutoUpdateStatus.downloading ||
-      status == FirmwareAutoUpdateStatus.installing;
+      status == FirmwareAutoUpdateStatus.installing ||
+      status == FirmwareAutoUpdateStatus.rebooting;
 
   /// Whether this reading names something `fwupd` was actually doing.
   ///

@@ -5,33 +5,73 @@ import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 /// `Device.X_LINKSYS_Sysevent.fwup_state`.
 ///
 /// Deliberately not exhaustive over the raw value space: [unknown] is the arm
-/// for anything the firmware reports that is not listed here. Only `0` has ever
-/// been observed on real hardware — the bench points at a stage OTA server with
-/// no newer build — so every other arm is written from the data-model
-/// definition, and a future firmware adding a sixth value must cost one enum
-/// value and one arm, not a redesign.
+/// for anything the firmware reports that is not listed here, so a future
+/// firmware adding a sixth value costs one enum value and one arm, not a
+/// redesign.
+///
+/// **Every arm below is now measured on `2.0.1.26091515` (2026-09-16), and one of
+/// them was wrong.** A full OTA install was observed end to end — `1 → 4 → 5`,
+/// then a reboot into the offered build. The corrections, and the sources, are on
+/// [rebooting]: this enum previously had a `failed` arm on `5`, which reported
+/// every successful install as a failure.
+///
+/// **`fwup_state` has no failure value at all.** Two failure paths were induced on
+/// the bench (`fwupd -m 1` against a refused port, and against a server that
+/// answers but offers nothing) and `fwupd`'s own debug output writes
+/// `set_stateprogress: state 0` for both, leaving `fwup_progress` at 100. So a
+/// failure arrives here as [idle] — which is why the install watcher decides
+/// nothing from a lone `0` and why a genuine flash failure is caught after the
+/// reboot instead, by comparing versions (`FirmwareFailure.bootedOldImage`).
 enum FirmwareAutoUpdateStatus {
-  /// Nothing running. Note this is also the value while a check that started and
-  /// finished between two polls was in flight, so it does not mean "no check has
-  /// happened".
+  /// Nothing running — **and where every failure lands**, per the class comment.
+  ///
+  /// Also the value while a check that started and finished between two polls was
+  /// in flight, so it does not mean "no check has happened" either. Three
+  /// meanings on one value is why no caller may conclude anything from it alone.
   idle,
 
-  /// Asking the OTA server whether a newer build exists. Measured to last well
-  /// under a second, so it is usually not observable.
+  /// Asking the OTA server whether a newer build exists.
+  ///
+  /// Measured at 6.5s on a real install (`10:53:20`–`10:53:26`), not the
+  /// sub-second it was documented as: `Download(ota, AutoActivate="true")` is
+  /// `fwupd -m 2`, which checks before it downloads.
   checking,
 
-  /// Downloading the image. This is the only phase where a percentage means
-  /// anything to the user.
+  /// Downloading the image.
   downloading,
 
   /// Writing the downloaded image to the spare bank. A reboot follows.
   installing,
 
-  /// The daemon reported a failure. Download failure and flash failure share
-  /// this value, so they cannot be told apart — see [FirmwareAutoUpdateUIModel
-  /// .rawState], which keeps the number the router sent so a future split does
-  /// not need a new data path.
-  failed,
+  /// The router has committed and is rebooting into the new bank. **A success
+  /// signal, not a failure.**
+  ///
+  /// `fwup_state=5`, and it was mapped to a `failed` arm until 2026-09-16. Four
+  /// independent sources say reboot:
+  ///
+  /// * `/usr/sbin/update_nodes_defs:45-48` — the firmware's own constant table:
+  ///   `SYS_STATE_CHECKING=1`, `SYS_STATE_DOWNLOADING=3`, `SYS_STATE_FLASHING=4`,
+  ///   `SYS_STATE_REBOOT=5`. There is no error constant.
+  /// * `fwupd`'s own usage text for the mode this app dispatches:
+  ///   `2: checking / downloading / flashing / rebooting` — four phases, and 5 is
+  ///   the fourth.
+  /// * `/lib/service_autofwup.sh`'s `fwup_updating()` treats `state > 2` as still
+  ///   updating, 5 included.
+  /// * The observed install: 5 was read at `10:54:10`, the router rebooted, and it
+  ///   came back running the offered `2.0.1.26091516` with `boot_part` moved from
+  ///   2 to 1.
+  ///
+  /// **Where `5 = error` came from, since it was not invented here.**
+  /// `Architecture#194`'s design comment lists `fwup_state` as `0=Idle, 1=Checking,
+  /// 3=Downloading, 4=Flashing` — 5 is absent from its own table — and then its
+  /// proposed C carries `case 5: return "InstallationFailed"; // error`. The
+  /// shipped `sysmngr` implements exactly that, measured by driving the sysevent:
+  /// `FirmwareImage.3.Status` reads `InstallationFailed` at `fwup_state=5`. So the
+  /// router publishes an install failure over TR-181 every time an install
+  /// succeeds, `usp_framework`'s `firmware_auto_update.yaml` inherited the same
+  /// `"5" = Error`, and this app inherited it from there. Only the app half is
+  /// fixed here; the other two are cross-repo.
+  rebooting,
 
   /// The firmware reported a value this build does not define. Rendered as an
   /// unknown state, never silently as [idle].

@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "Tệp này chỉ có {size}, quá nhỏ để là một ảnh firmware.",
   "firmwareFileTooLarge": "Tệp này có {size}, quá lớn để là một ảnh firmware.",
   "firmwareFileTypeUnsupported": "Chỉ có thể cài đặt tệp firmware .img và .bin.",
-  "firmwareRouterReportedFailure": "Router báo rằng bản cập nhật firmware đã thất bại (fwup_state={state}).",
   "firmwareProgressStalled": "Router đã ngừng báo tiến trình cập nhật (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router đã ngừng báo tiến trình cập nhật trước khi báo bất kỳ giai đoạn nào.",
   "firmwareBanksUnreadableAfterReboot": "Router đã khởi động lại, nhưng không đọc được thông tin firmware của nó.",

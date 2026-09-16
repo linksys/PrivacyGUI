@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "このファイルは {size} しかなく、ファームウェアイメージとしては小さすぎます。",
   "firmwareFileTooLarge": "このファイルは {size} あり、ファームウェアイメージとしては大きすぎます。",
   "firmwareFileTypeUnsupported": "インストールできるのは .img と .bin のファームウェアファイルのみです。",
-  "firmwareRouterReportedFailure": "ルーターがファームウェア更新の失敗を報告しました（fwup_state={state}）。",
   "firmwareProgressStalled": "ルーターが更新の進行状況の報告を停止しました（fwup_state={state}）。",
   "firmwareProgressStalledNoReading": "ルーターが段階を報告する前に、更新の進行状況の報告を停止しました。",
   "firmwareBanksUnreadableAfterReboot": "ルーターは再起動しましたが、ファームウェア情報を読み取れませんでした。",

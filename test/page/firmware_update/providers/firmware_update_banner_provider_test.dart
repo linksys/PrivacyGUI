@@ -201,12 +201,13 @@ void main() {
       });
     }
 
-    // The two arms that are *not* work in progress. `failed` especially: a
-    // download that failed is exactly when a user should be able to retry by
-    // hand, so hiding the banner there would remove the only way out.
+    // The two arms that are *not* work in progress. `idle` especially: it is where
+    // a failed update lands, because `fwup_state` has no failure value at all — see
+    // `FirmwareAutoUpdateStatus` — and a failed update is exactly when a user should
+    // be able to retry by hand, so hiding the banner there would remove the only way
+    // out.
     for (final status in [
       FirmwareAutoUpdateStatus.idle,
-      FirmwareAutoUpdateStatus.failed,
       FirmwareAutoUpdateStatus.unknown,
     ]) {
       test('still shown when the daemon is ${status.name}', () {

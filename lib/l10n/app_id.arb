@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "Berkas itu hanya {size}, terlalu kecil untuk menjadi citra firmware.",
   "firmwareFileTooLarge": "Berkas itu {size}, terlalu besar untuk menjadi citra firmware.",
   "firmwareFileTypeUnsupported": "Hanya berkas firmware .img dan .bin yang dapat dipasang.",
-  "firmwareRouterReportedFailure": "Router melaporkan bahwa pembaruan firmware gagal (fwup_state={state}).",
   "firmwareProgressStalled": "Router berhenti melaporkan kemajuan pembaruan (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router berhenti melaporkan kemajuan pembaruan sebelum melaporkan tahap apa pun.",
   "firmwareBanksUnreadableAfterReboot": "Router telah dinyalakan ulang, tetapi informasi firmware-nya tidak dapat dibaca.",

@@ -1512,10 +1512,14 @@ void main() {
         expect(state.phase, FirmwareUpdatePhase.idle);
       });
 
-      test('a failed ending keeps the reading that failed', () async {
+      test('a stalled ending keeps the reading it stalled on', () async {
+        // Was `failed` on `fwup_state=5` until 2026-09-16, when 5 turned out to be
+        // the reboot and the verdict was deleted. `timedOut` is now the only way
+        // this watch reports a failure of its own, and it carries the same two
+        // things this test is about: the phase and the raw state behind it.
         stubInstall(
-          verdict: FirmwareOtaInstallVerdict.failed,
-          readings: [at('3', 62), at('5')],
+          verdict: FirmwareOtaInstallVerdict.timedOut,
+          readings: [at('3', 62), at('4')],
         );
         final container = createContainer();
         addTearDown(container.dispose);
@@ -1530,10 +1534,10 @@ void main() {
         // is the only thing the firmware says about *why*, so it is the one part of
         // this copy that is deliberately not translated.
         expect(state.failure,
-            const FirmwareFailure.routerReportedFailure(fwupState: '5'));
+            const FirmwareFailure.progressStalled(fwupState: '4'));
         // Retained on purpose: the failure card can say where it stopped, which is
         // the difference between "the update failed" and a bug report.
-        expect(state.otaProgress?.rawState, '5');
+        expect(state.otaProgress?.rawState, '4');
       });
 
       test('a timeout is a failure, and never "up to date"', () async {
@@ -1733,9 +1737,9 @@ void main() {
           cancelledAt.add(isCancelled?.call() ?? false);
           return FirmwareOtaInstallResult(
             verdict: attempt == 1
-                ? FirmwareOtaInstallVerdict.failed
+                ? FirmwareOtaInstallVerdict.timedOut
                 : FirmwareOtaInstallVerdict.flashing,
-            rawState: attempt == 1 ? '5' : '4',
+            rawState: attempt == 1 ? '3' : '4',
           );
         });
         final container = createContainer();
@@ -1761,8 +1765,13 @@ void main() {
           () async {
         // The other half of the same reset. `cancel()` clears the sighting as well as
         // the state that described it — left set, the next watch would inherit the
-        // previous one's "I saw it running" and be entitled to report a `fwup_state`
-        // of 5 it only ever read as history.
+        // previous one's "I saw it running" and be entitled to report a stall it
+        // only ever read as history.
+        //
+        // The observed reading is `7`, not `5`: since 5 became the reboot it *is* an
+        // update phase and would set the sighting on its own, which would test the
+        // reading rather than the reset. An unrecognised value sets nothing, so what
+        // is left is the flag — exactly what this test is for.
         when(() => mockOtaInstaller.install(
               otaInstance: any(named: 'otaInstance'),
               onProgress: any(named: 'onProgress'),
@@ -1780,9 +1789,9 @@ void main() {
             )).thenAnswer((invocation) async {
           (invocation.namedArguments[const Symbol('onProgress')]
                   as FirmwareOtaInstallProgressSink?)
-              ?.call(at('5'));
+              ?.call(at('7'));
           return const FirmwareOtaInstallResult(
-              verdict: FirmwareOtaInstallVerdict.failed, rawState: '5');
+              verdict: FirmwareOtaInstallVerdict.timedOut, rawState: '7');
         });
         final container = createContainer();
         addTearDown(container.dispose);
@@ -2062,10 +2071,13 @@ void main() {
       /// promotes the phase. Watched running then failed ⇒ a failure worth showing;
       /// failed on the very first reading ⇒ history.
       group('a state left over from an update nobody watched', () {
-        test('a stale failure is not an update that just failed', () async {
+        test('a stale outcome is not an update that just failed', () async {
+          // `7` rather than the `5` this used to open on: 5 is the reboot now, so a
+          // page that opens on it is opening on a router that really is restarting.
+          // What is still stale is an unrecognised value the watch then gives up on.
           stubObserve(
-            verdict: FirmwareOtaInstallVerdict.failed,
-            readings: [at('5')],
+            verdict: FirmwareOtaInstallVerdict.timedOut,
+            readings: [at('7')],
           );
           final container = createContainer();
           addTearDown(container.dispose);
@@ -2092,8 +2104,8 @@ void main() {
           // page merely *found* running is exactly the one a user needs told about
           // when it fails.
           stubObserve(
-            verdict: FirmwareOtaInstallVerdict.failed,
-            readings: [at('4'), at('5')],
+            verdict: FirmwareOtaInstallVerdict.timedOut,
+            readings: [at('4'), at('4')],
           );
           final container = createContainer();
           addTearDown(container.dispose);
@@ -2105,10 +2117,10 @@ void main() {
           final state = container.read(firmwareUpdateNotifierProvider);
           expect(state.phase, FirmwareUpdatePhase.failed);
           // The raw `fwup_state` reaches the failure, and from there the sentence. It
-          // is the only thing the firmware says about *why*, so it is the one part of
-          // this copy that is deliberately not translated.
+          // is the only thing the firmware says about *where* it stopped, so it is
+          // the one part of this copy that is deliberately not translated.
           expect(state.failure,
-              const FirmwareFailure.routerReportedFailure(fwupState: '5'));
+              const FirmwareFailure.progressStalled(fwupState: '4'));
         });
 
         test('one unrecognised reading is not enough to blame for a failure',
@@ -2126,8 +2138,8 @@ void main() {
           // `unknown` had promoted the phase, so the phase then said the failure was
           // ours. `namesAnUpdatePhase` splits what is drawn from what is claimed.
           stubObserve(
-            verdict: FirmwareOtaInstallVerdict.failed,
-            readings: [at('7'), at('5')],
+            verdict: FirmwareOtaInstallVerdict.timedOut,
+            readings: [at('7'), at('7')],
           );
           final container = createContainer();
           addTearDown(container.dispose);

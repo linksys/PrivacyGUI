@@ -751,18 +751,9 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           clearOtaProgress: true,
         ));
 
-      case FirmwareOtaInstallVerdict.failed:
-        if (!dispatched && !_sawUpdateRunning) {
-          _discardStaleOutcome(result, 'a failure', 'nothing was attempted');
-          return;
-        }
-        // The raw state is carried into the sentence on purpose: `5` is the only
-        // failure value this firmware publishes and it says nothing about why, so
-        // the number is the whole diagnostic a support call has to work from. It
-        // rides as a placeholder, so all 26 locales get a translated sentence
-        // around the same digit.
-        _fail(
-            FirmwareFailure.routerReportedFailure(fwupState: result.rawState));
+      // No `failed` arm, because the watch has no `failed` verdict to give — see
+      // `FirmwareOtaInstallVerdict`. A flash that fails arrives here as `flashing`
+      // like any other, and is reported by `verify()` after the router comes back.
 
       case FirmwareOtaInstallVerdict.timedOut:
         if (!dispatched && !_sawUpdateRunning) {

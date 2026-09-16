@@ -55,8 +55,6 @@ String localizeFirmwareFailure(BuildContext context, FirmwareFailure? failure) {
     // key: "no image selected" is the same fact in both places, and that sentence
     // already names the two extensions that work.
     FirmwareFailureReason.noImageSelected => l.noFirmwareImageSelected,
-    FirmwareFailureReason.routerReportedFailure =>
-      l.firmwareRouterReportedFailure(failure.detail ?? ''),
     FirmwareFailureReason.progressStalled =>
       l.firmwareProgressStalled(failure.detail ?? ''),
     FirmwareFailureReason.progressStalledNoReading =>

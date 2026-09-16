@@ -229,19 +229,43 @@ void main() {
       expect(renderedBar(tester).value, 1.0);
     });
 
-    testWidgets('flashing says the image is being written, with no number',
+    testWidgets('flashing says the image is being written, with its number',
         (tester) async {
       await pump(
-          tester, otaInstallProgressState(FirmwareAutoUpdateStatus.installing));
+        tester,
+        otaInstallProgressState(FirmwareAutoUpdateStatus.installing,
+            progress: 50),
+      );
 
       // The same pair the manual path shows, and deliberately so: `fwup_state=4`
       // *is* the router writing the image, so a second wording for one fact would
       // be a distinction the firmware does not make.
-      expectOnlyTitle(loc.installingFirmware);
+      expect(find.text(loc.installingFirmware), findsOneWidget);
       expect(find.text(loc.routerWritingImage), findsOneWidget);
-      expect(loader(tester).value, isNull,
-          reason: '`fwup_progress` during flashing has never been observed to '
-              'move');
+      // And it draws the number now. `fwup_progress` was documented as never
+      // observed during the flash until a real install published 0 then 50 — see
+      // `FirmwareOtaInstallProgress.percent`. Asserted on the rendered bar rather
+      // than on the widget's argument, because that is the direction the ui_kit #92
+      // fix was needed for.
+      expect(renderedBar(tester).value, 0.5);
+    });
+
+    testWidgets('rebooting says so, and stops drawing a number',
+        (tester) async {
+      // `fwup_state=5`. The router has written the image and is restarting, which
+      // is the moment the user most needs told not to unplug it — and this build
+      // drew "Update Failed" here until 2026-09-16. The 100 the flash leaves in
+      // `fwup_progress` is not the reboot's progress, so no bar.
+      await pump(
+        tester,
+        otaInstallProgressState(FirmwareAutoUpdateStatus.rebooting,
+            progress: 100),
+      );
+
+      expect(find.text(loc.rebootingRouter), findsOneWidget);
+      expect(find.text(loc.waitingForRouterOnline), findsOneWidget);
+      expect(find.text(loc.updateFailed), findsNothing);
+      expect(loader(tester).value, isNull);
     });
 
     // REQ-A7. `7` is not in `mapAutoUpdateStatus`'s domain, which is the point:
@@ -330,21 +354,25 @@ void main() {
   group('a failure keeps the reading without rendering it', () {
     // The documented decision on `FirmwareUpdateState.otaProgress`, pinned because
     // it is easy to "improve" into a percentage on a failure card. It cannot be
-    // one: the last reading before a failure *is* the failing reading, and
-    // `percent` is null for every status except `downloading`.
+    // one: the last reading before a failure *is* the failing reading, and a
+    // failure card is not a progress card whatever the number says.
+    //
+    // It fails on state `4`, not the `5` it used to: 5 is measured to be the
+    // reboot, so the reading a failure is left holding is the last phase the
+    // router was actually seen working in.
     testWidgets('shows the failure and its state number, not a bar',
         (tester) async {
       await pump(
         tester,
-        otaInstallProgressState(FirmwareAutoUpdateStatus.failed).copyWith(
+        otaInstallProgressState(FirmwareAutoUpdateStatus.installing).copyWith(
           phase: FirmwareUpdatePhase.failed,
-          failure: const FirmwareFailure.routerReportedFailure(fwupState: '5'),
+          failure: const FirmwareFailure.progressStalled(fwupState: '4'),
         ),
       );
 
       expect(find.text(loc.updateFailed), findsOneWidget);
-      expect(find.text(loc.firmwareRouterReportedFailure('5')), findsOneWidget,
-          reason: '`5` says nothing about why, so the number is the whole '
+      expect(find.text(loc.firmwareProgressStalled('4')), findsOneWidget,
+          reason: 'the number says where it stopped, which is the whole '
               'diagnostic a support call has to work from');
       expect(find.byType(AppLoader), findsNothing,
           reason: 'nothing is in progress');

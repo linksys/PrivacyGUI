@@ -1065,7 +1065,6 @@
   "firmwareFileTooSmall": "이 파일은 {size}밖에 되지 않아 펌웨어 이미지로는 너무 작습니다.",
   "firmwareFileTooLarge": "이 파일은 {size}로 펌웨어 이미지로는 너무 큽니다.",
   "firmwareFileTypeUnsupported": ".img 및 .bin 펌웨어 파일만 설치할 수 있습니다.",
-  "firmwareRouterReportedFailure": "라우터가 펌웨어 업데이트 실패를 보고했습니다(fwup_state={state}).",
   "firmwareProgressStalled": "라우터가 업데이트 진행 상황 보고를 중단했습니다(fwup_state={state}).",
   "firmwareProgressStalledNoReading": "라우터가 어떤 단계도 보고하지 않은 채 업데이트 진행 상황 보고를 중단했습니다.",
   "firmwareBanksUnreadableAfterReboot": "라우터가 다시 시작되었지만 펌웨어 정보를 읽을 수 없습니다.",

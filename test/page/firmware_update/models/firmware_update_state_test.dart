@@ -24,7 +24,7 @@ const _downloading = FirmwareOtaInstallProgress(
   rawState: '3',
 );
 
-const _refused = FirmwareFailure.routerReportedFailure(fwupState: '5');
+const _refused = FirmwareFailure.progressStalled(fwupState: '4');
 const _stalled = FirmwareFailure.progressStalled(fwupState: 'unread');
 
 void main() {

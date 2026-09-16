@@ -333,14 +333,21 @@ class UspFirmwareUpdateService {
   /// The one place `fwup_state` becomes an app-layer status.
   ///
   /// Keeping it single-sited is the point: the raw domain is `0/1/3/4/5` (`2` is
-  /// a mode of `update_firmware_now`, not a state), only `0` has ever been seen
-  /// on real hardware, and a firmware that grows a sixth value must cost one
-  /// enum value plus one arm here. Unknown values therefore map to
-  /// [FirmwareAutoUpdateStatus.unknown] — never to `idle`, which would report
-  /// "nothing is running" during an unrecognised flash — and never throw.
+  /// a mode of `update_firmware_now`, not a state), and a firmware that grows a
+  /// sixth value must cost one enum value plus one arm here. Unknown values
+  /// therefore map to [FirmwareAutoUpdateStatus.unknown] — never to `idle`, which
+  /// would report "nothing is running" during an unrecognised flash — and never
+  /// throw.
+  ///
+  /// **`5` maps to `rebooting`, not to a failure, and that one arm is the whole of
+  /// this method's history.** All five values are now measured on real hardware;
+  /// see [FirmwareAutoUpdateStatus.rebooting] for the four sources and for where
+  /// the `5 = Error` reading came from, since the definition this app generates
+  /// from still says so. This mapping deliberately disagrees with
+  /// `firmware_auto_update.yaml`, which is the only place in the app that does.
   ///
   /// [FirmwareAutoUpdateUIModel.rawState] carries the value through unparsed so
-  /// a failure keeps the number the router sent.
+  /// a diagnostic keeps the number the router sent.
   ///
   /// `autoupdate_flags` is mapped here too rather than in a second method: it
   /// arrives in the same `Get`, so splitting the mapping would mean two reads of
@@ -351,7 +358,7 @@ class UspFirmwareUpdateService {
       '1' => FirmwareAutoUpdateStatus.checking,
       '3' => FirmwareAutoUpdateStatus.downloading,
       '4' => FirmwareAutoUpdateStatus.installing,
-      '5' => FirmwareAutoUpdateStatus.failed,
+      '5' => FirmwareAutoUpdateStatus.rebooting,
       _ => FirmwareAutoUpdateStatus.unknown,
     };
     if (status == FirmwareAutoUpdateStatus.unknown) {

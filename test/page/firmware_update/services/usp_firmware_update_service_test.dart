@@ -451,15 +451,16 @@ void main() {
   });
 
   group('mapAutoUpdateStatus', () {
-    // The documented `fwup_state` domain is 0/1/3/4/5 — five values, not six.
-    // (`2` is a mode of `update_firmware_now`, not a state.) Only `0` has been
-    // observed on real hardware, so everything below is fixture-driven.
+    // The `fwup_state` domain is 0/1/3/4/5 — five values, not six. (`2` is a mode
+    // of `update_firmware_now`, not a state.) All five are now measured on real
+    // hardware, and `5` is the one that moved: it is the reboot, not a failure.
+    // `FirmwareAutoUpdateStatus.rebooting` carries the four sources.
     const cases = {
       '0': FirmwareAutoUpdateStatus.idle,
       '1': FirmwareAutoUpdateStatus.checking,
       '3': FirmwareAutoUpdateStatus.downloading,
       '4': FirmwareAutoUpdateStatus.installing,
-      '5': FirmwareAutoUpdateStatus.failed,
+      '5': FirmwareAutoUpdateStatus.rebooting,
     };
 
     cases.forEach((raw, expected) {
@@ -496,14 +497,16 @@ void main() {
       expect(model.rawState, '');
     });
 
-    test('the raw fwup_state is retrievable from a failure state', () {
-      // Download failure and flash failure are both `5`. Keeping the raw value
-      // is what lets a later split read the difference off data we already hold.
+    test('the raw fwup_state is retrievable from every state', () {
+      // Keeping the raw value is what lets a later split read a difference off data
+      // we already hold — and it is what made this mapping's own defect legible:
+      // the number reached the failure card, which is how `5` was traced back to
+      // the reboot instead of a flash failure.
       final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
         FirmwareUpdateTestData.autoUpdate(fwupState: '5', fwupProgress: '42'),
       );
 
-      expect(model.status, FirmwareAutoUpdateStatus.failed);
+      expect(model.status, FirmwareAutoUpdateStatus.rebooting);
       expect(model.rawState, '5');
     });
 
@@ -543,7 +546,7 @@ void main() {
             FirmwareAutoUpdateStatus.checking => '1',
             FirmwareAutoUpdateStatus.downloading => '3',
             FirmwareAutoUpdateStatus.installing => '4',
-            FirmwareAutoUpdateStatus.failed => '5',
+            FirmwareAutoUpdateStatus.rebooting => '5',
             FirmwareAutoUpdateStatus.unknown => '7',
           };
 
