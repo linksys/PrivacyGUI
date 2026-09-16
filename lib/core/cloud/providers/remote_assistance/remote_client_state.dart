@@ -30,6 +30,14 @@ class RemoteClientState extends Equatable {
       this.expiredCountdown,
       this.isDialogShown = false});
 
+  /// [pin] when it was minted for the session currently in [sessionInfo], and
+  /// null when it belongs to an earlier one.
+  ///
+  /// Lives here so the provider's "does this session need a PIN?" test and the
+  /// dialog's "is this PIN safe to show?" test cannot drift apart.
+  String? get pinForCurrentSession =>
+      pinSessionId != null && pinSessionId == sessionInfo?.id ? pin : null;
+
   RemoteClientState copyWith({
     ValueGetter<GRASessionInfo?>? sessionInfo,
     ValueGetter<String?>? pin,

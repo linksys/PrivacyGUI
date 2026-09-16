@@ -19,12 +19,16 @@ import '../../../../common/theme_data.dart';
 /// stub it. Extending the real notifier keeps `paused` working and only stubs out
 /// the two things that would reach the network.
 class _FakePollingNotifier extends PollingNotifier {
+  /// The dialog pauses polling on ACTIVE and only closing resumes it, so the
+  /// count is the assertion, not just a stub.
+  int resumeCount = 0;
+
   @override
   FutureOr<CoreTransactionData> build() =>
       const CoreTransactionData(lastUpdate: 0, isReady: false, data: {});
 
   @override
-  void checkAndStartPolling([bool force = false]) {}
+  void checkAndStartPolling([bool force = false]) => resumeCount++;
 }
 
 /// Lets the test move the session between statuses without a cloud service, and
@@ -39,6 +43,11 @@ class _TestRemoteClientNotifier extends RemoteClientNotifier {
 
   @override
   void startSessionInfoStream() {}
+
+  /// The real one reaches the cloud service to delete the session; the parts of
+  /// it these tests care about are driven with [emit] instead.
+  @override
+  Future<void> endRemoteAssistance() async {}
 
   void emit(RemoteClientState next) => state = next;
 }
@@ -129,6 +138,52 @@ void main() {
         reason: 'the dialog should have closed itself');
     expect(find.text('Session expired'), findsOneWidget,
         reason: 'the user should be told, not left guessing');
+    expect(polling.resumeCount, 1,
+        reason: 'polling was paused on ACTIVE and nothing else resumes it');
+  });
+
+  // Locks in the behaviour, not the guard: this passes with or without the
+  // `isClosing` check in the listener, because `showDialog`'s future resolves at
+  // pop time and the notice decision is made before the late state change lands.
+  // Worth keeping because it is the property that matters, and it would fail if
+  // the notice were ever moved to a later point.
+  testWidgets('pressing Close does not then claim the session expired',
+      (tester) async {
+    final notifier = _TestRemoteClientNotifier(
+        RemoteClientState(sessionInfo: sessionWith(GRASessionStatus.active)));
+    final polling = _FakePollingNotifier();
+    useLargeSurface(tester);
+
+    await tester.pumpWidget(harness(
+      overrides: [
+        remoteClientProvider.overrideWith(() => notifier),
+        pollingProvider.overrideWith(() => polling),
+      ],
+      child: Consumer(
+        builder: (context, ref, child) => TextButton(
+          onPressed: () =>
+              showRemoteAssistanceDialog(context, ref, isPassive: true),
+          child: const Text('open'),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('open'));
+    await settle(tester);
+
+    await tester.tap(find.text('Close'));
+    await tester.pump();
+    // What deleting the session does, arriving while the route is still going.
+    notifier.emit(const RemoteClientState());
+    await settle(tester);
+    // Extra frames so a notice would have had every chance to appear.
+    await settle(tester);
+
+    expect(find.text('Close'), findsNothing);
+    expect(find.text('Session expired'), findsNothing,
+        reason: 'the user closed it themselves; nothing expired');
+    // ignore: avoid_print
+    print('PROBE listener fired after Close: \$probeFired times');
   });
 
   testWidgets('a session that stays ACTIVE leaves the dialog alone',

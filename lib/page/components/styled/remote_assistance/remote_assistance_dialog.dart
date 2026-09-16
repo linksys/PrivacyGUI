@@ -61,6 +61,17 @@ Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
                   nextStatus == GRASessionStatus.active) {
                 return;
               }
+              // Not "the session ended underneath us" if we are already tearing
+              // down. Close on an ACTIVE session deletes it, and that state reset
+              // arrives one await later, while the route is still mounted for its
+              // exit animation - measured, the listener does fire again there.
+              //
+              // Today that write is harmless: `showDialog`'s future resolves at
+              // pop time, so the `.then` below has already read the flag and the
+              // late write reaches nobody. Guarded anyway, because "sets a flag
+              // that says the wrong thing, and gets away with it on timing" is
+              // not a property worth relying on.
+              if (isClosing) return;
               logger.i(
                   '[RemoteAssistance]: session left ACTIVE ($nextStatus), closing dialog');
               endedUnderneath = true;
@@ -164,7 +175,7 @@ Widget _buildInitiateWidget(BuildContext context) {
 Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
   final initialSeconds =
       (kPendingSessionDurationSec + (state.sessionInfo?.expiredIn ?? 0)).abs();
-  final pin = state.pinSessionId == state.sessionInfo?.id ? state.pin : null;
+  final pin = state.pinForCurrentSession;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
