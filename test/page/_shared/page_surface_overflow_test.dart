@@ -33,17 +33,20 @@ import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2,
-/// #1379's wave 3, #1380's wave 4, and #1489's five extra tab cases, which are not a
-/// wave because they added no page.
+/// #1379's wave 3, #1380's wave 4, then three later additions that are not waves
+/// because none of them was an onboarding round: #1489's five extra tab cases (no new
+/// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
+/// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-three whole pages, declared as forty-eight cases** — three pages are swept
-/// once per tab, `statistics` as three cases, `port_forwarding` as three and
-/// `wifi_settings` as two (all #1489), so the two counts are different quantities
-/// rather than one of them being stale — × 9 screen widths × 26 locales = **11,232 cells**,
+/// **Forty-four whole pages, declared as fifty cases** — four pages are swept more than
+/// once: `statistics` as three cases, `port_forwarding` as three and `wifi_settings` as
+/// two, once per tab (all #1489), plus `pnp_setup` twice for two *fixture states* rather
+/// than two tabs (#1554 §4). So the two counts are different quantities rather than one
+/// of them being stale — × 9 screen widths × 26 locales = **11,700 cells**,
 /// declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
-/// the declaration, the forty-eight pins, and the readability guards that sit beside
+/// the declaration, the fifty pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
 /// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
@@ -57,8 +60,9 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// `test/layout_gate/page_sweep_suites.dart` is what pins that mapping, one entry per
 /// group title.
 ///
-/// **Nothing remains.** #1380 was the epic's last wave, and 43 swept + 2 excluded is
-/// all 45 page views under `lib/page/`. `test/fixtures/page_roster.tsv` is the register
+/// **Nothing remains.** #1380 was the epic's last wave, and 44 swept + 2 excluded is
+/// all 46 page views under `lib/page/` — 43 and 45 until #1549's split added a view
+/// file, which is the only way that arithmetic has moved since. `test/fixtures/page_roster.tsv` is the register
 /// that does that arithmetic, holds the two exclusions' reasons and the per-page cost,
 /// and is still the file to read before assuming a page absent from this list is a page
 /// with nothing wrong with it — because the two absent ones are absent on a *verdict*,
@@ -79,8 +83,10 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// looking away. `pnp_setup` brought the sixteenth later the same day, wave 3's six
 /// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three.
 /// #1489 then added five without adding a page — the sibling tabs of the three tabbed
-/// pages — so the literal is now written out **forty-eight** times, and #1372's argument
-/// for the repetition is the argument that survived the list doubling.
+/// pages — #1549's split added the forty-ninth, and #1554 §4 a fiftieth that is a second
+/// fixture state rather than a tab, so the literal is now written out **fifty** times,
+/// and #1372's argument for the repetition is the argument that survived the list
+/// doubling.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -244,6 +250,18 @@ void main() {
   // graduation rule asks for: fix to zero, then declare, then capture.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpSetupPageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same view's firmware stage (#1554 §4) — the family's first second case for one
+  // page that is not a tab. #1553 gave the wizard a locked, full-screen firmware phase
+  // and it went out with no width sweep: nine `en` cases at 1200×2400 were all of it.
+  // Beside its sibling rather than with wave 4, for the reason the split cases upstream
+  // are: the two measure one view file, and a reader looking at either wants the other
+  // in the same screenful. `page_surface_cases.dart` carries why it is a second case
+  // rather than a relaxed first one, and why it is the loader exemption's second entry.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpSetupFirmwarePageCase),
     expectedCellCount: 234,
   );
 

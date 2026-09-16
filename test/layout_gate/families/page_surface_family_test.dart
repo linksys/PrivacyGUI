@@ -57,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when forty-eight cases fit. It is *also*
-/// green when forty-eight cases never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when fifty cases fit. It is *also*
+/// green when fifty cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -77,19 +77,33 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is forty-eight cases over
-  // forty-three pages, because three of those pages are swept once per tab. The two
+  // "Cases" and not "pages", corrected by #1489: this list is fifty cases over
+  // forty-four pages, because four of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 45, a third quantity again (page view *files*, which no case
-  // can move), and it is now equal to neither.
+  // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
+  // can move), and it is equal to neither.
+  //
+  // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
+  // title read "forty-eight over forty-three" — #1489's numbers — through #1549, which
+  // split one firmware page in two and added `firmware_ota` to the list below without
+  // touching the sentence above it. Measured 2026-09-16: `kPageSurfaceCases` holds 50
+  // and the roster holds 44 `swept` rows of 46.
+  //
+  // These counts are written out in **five** places — this group, the page sweep file's
+  // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
+  // doc — and every one of them had drifted, because none of them is read by an
+  // assertion. The list below is; that is the whole difference, and it is why the list
+  // was right while five sentences about it were wrong. Writing a number in prose beside
+  // an assertion that does not read it is the failure mode, and copying it to a fifth
+  // place is how it becomes hard to notice.
   group(
-      'the gate declares forty-eight cases over forty-three pages, and which '
-      'forty-eight is a decision', () {
+      'the gate declares fifty cases over forty-four pages, and which fifty is '
+      'a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
-        'wave 3\'s six, wave 4\'s twenty-one and #1489\'s five non-default '
-        'tabs', () {
+        'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
+        '#1549\'s split page and #1554\'s second fixture state', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -112,6 +126,12 @@ void main() {
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
           'pnp_setup',
+          // #1554 §4: the same view file's firmware stage. Beside its sibling rather
+          // than appended, which is the placement #1489 established for the five tab
+          // cases — this list stopped being strictly onboarding-ordered then, and
+          // declaration locality is the more useful of the two orders for a reader
+          // asking "what else sweeps this page".
+          'pnp_setup_firmware',
           'home',
           'login_local',
           'local_router_recovery',
@@ -374,20 +394,34 @@ void main() {
       });
     }
 
-    test('exactly one page is exempt from the loader rule, and it is named',
+    test(
+        'exactly two pages are exempt from the loader rule, and both are named',
         () {
       // The membership pin. The two-branch test above is satisfied by *any*
       // exemption set — including one that grew an entry because a fixture was hard
       // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
       // warns about. A page that always shows a spinner is usually a page whose
       // fixture does not exist yet, and that belongs in the roster as a `-`.
+      //
+      // **One entry until #1554 §4, and the second one makes the first one's
+      // argument rather than a new one** — which is the bar this pin exists to hold.
+      // Both exempt cases are a router being flashed with the user told not to
+      // unplug it, and both draw the progress bar as the subject of the screen. The
+      // set growing by a page that says the same sentence is evidence the rule names
+      // a *kind* of screen; it would not have been evidence of anything if the second
+      // entry had arrived with a fixture excuse.
+      //
+      // Note it is two *cases*, not two views: `pnp_setup` — the same view file in its
+      // form phase — still forbids the loader, because there a spinner really is the
+      // stand-in this rule is about.
       expect(
         kPagesWhoseLoaderIsContent,
-        const {'auto_parent_first_login'},
+        const {'auto_parent_first_login', 'pnp_setup_firmware'},
         reason: 'auto_parent_first_login exists to say "we are installing '
             'firmware, do not unplug the router" — the spinner is the subject of '
-            'the screen. A second entry here needs the same argument made in the '
-            'case doc, not just a passing sweep.',
+            'the screen — and pnp_setup_firmware is the setup wizard saying it. A '
+            'third entry needs that same argument made in the case doc, not just a '
+            'passing sweep.',
       );
       expect(
         kPageSurfaceCases.map((c) => c.id),
