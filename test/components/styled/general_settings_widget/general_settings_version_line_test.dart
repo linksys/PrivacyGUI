@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,10 +20,12 @@ import '../../../util/app_test_fonts.dart';
 /// catch. 20 of the repo's 25 `*_widget_test.dart` files are untagged for the same
 /// reason.
 ///
-/// The other render site, the landing page's footer, has no test of its own:
-/// `UiKitPageView` pulls in `usp_top_bar`, so hosting `HomeView` standalone means
-/// supplying the whole provider set, which is why the layout gate hosts `page.home`
-/// itself. That gate asserts the line renders and does not overflow, not what it
+/// The other render site, the landing page's footer, is covered by
+/// `test/page/landing/views/home_view_version_line_test.dart`. It needs a router
+/// ancestor, because `HomeView` renders `UiKitPageView` and its `UspTopBar` calls
+/// `GoRouter.of` unguarded — which the layout gate's `pageSurfaceHost` already
+/// provides, so that site costs a stub and a pump, not a provider set. The gate's
+/// own `page.home` sweep asserts the line laid out over 234 cells, never what it
 /// says.
 void main() {
   const packageInfoChannel =
