@@ -131,7 +131,7 @@ enum FirmwareAutoUpdatePolicy {
 /// has **no run identity and no timestamp** — see [FirmwareAutoUpdateUIModel.errorCode]
 /// for the rule that follows from it.
 ///
-/// Measured on the bench (M60TB-EU, FW `2.0.1.26091601`, 2026-09-17): a check against
+/// Measured on the bench (M60, FW `2.0.1.26091601`, 2026-09-17): a check against
 /// a refused port produced `newfirmware_status_details = "ERROR: Connecting server"`
 /// and this parameter read `1`; an interrupted run produced `"ERROR: Interrupted"` and
 /// `7`. [serverResponse] could not be induced — a server answering HTTP 404 left the
