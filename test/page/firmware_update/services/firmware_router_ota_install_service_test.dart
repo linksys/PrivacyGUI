@@ -796,4 +796,152 @@ void main() {
           const Duration(minutes: 20));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // #1572 — the router can finally name why an install failed.
+  // ---------------------------------------------------------------------------
+  group('the router names the failure', () {
+    /// `fwup_state` readings in order, with an error code attached to each.
+    void queue(List<(String, FirmwareUpdateErrorCode)> reads) {
+      var i = 0;
+      when(() => firmware.fetchAutoUpdate()).thenAnswer((_) async {
+        final read = reads[i < reads.length ? i : reads.length - 1];
+        i++;
+        return FirmwareUpdateTestData.autoUpdateModel(
+          status: UspFirmwareUpdateService.mapAutoUpdateStatus(
+                  FirmwareUpdateTestData.autoUpdate(fwupState: read.$1))
+              .status,
+          rawState: read.$1,
+          errorCode: read.$2,
+        );
+      });
+    }
+
+    test('a failure code at rest becomes failed, not flashing', () async {
+      // The measured shape of a failed run: it rests at `state=0`, which is exactly
+      // what a reboot looks like from here. Until the error code existed the two were
+      // indistinguishable and only the safer claim could be made — so the user waited
+      // out a reboot that was never coming.
+      queue([
+        ('0', FirmwareUpdateErrorCode.none),
+        ('4', FirmwareUpdateErrorCode.none),
+        ('0', FirmwareUpdateErrorCode.flash),
+      ]);
+
+      final result = await buildService().install(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.flash);
+    });
+
+    test('a failure code at fwup_state=5 outranks the reboot', () async {
+      // The one row where #211's table and our own measurement agree exactly. A
+      // signature failure cannot be followed by a successful boot into the new image.
+      queue([
+        ('0', FirmwareUpdateErrorCode.none),
+        ('4', FirmwareUpdateErrorCode.none),
+        ('5', FirmwareUpdateErrorCode.signature),
+      ]);
+
+      final result = await buildService().install(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.signature);
+      expect(result.rawState, '5');
+    });
+
+    test('state 5 with no code is still the reboot', () async {
+      // The measured success path, unchanged. This is the arm that reported every
+      // successful install as a failure until 2026-09-16, so it gets its own test.
+      queue([
+        ('0', FirmwareUpdateErrorCode.none),
+        ('4', FirmwareUpdateErrorCode.none),
+        ('5', FirmwareUpdateErrorCode.none),
+      ]);
+
+      final result = await buildService().install(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
+      expect(result.errorCode, isNull);
+    });
+
+    test('a stale code the watch never earned is not reported', () async {
+      // The regression guard. The code is persistent and undated — the definition says
+      // it survives until the next operation or the next reboot — so an install
+      // dispatched onto a router carrying last week's failure must not inherit it.
+      // Here the code never moves and the router is never seen working.
+      queue([
+        ('0', FirmwareUpdateErrorCode.signature),
+      ]);
+
+      final result =
+          await buildService(startupGrace: const Duration(milliseconds: 10))
+              .install(otaInstance: 3);
+
+      expect(result.verdict, isNot(FirmwareOtaInstallVerdict.failed));
+      expect(result.errorCode, isNull);
+    });
+
+    test('a code that moved is this install\'s, with no sighting needed',
+        () async {
+      // Baseline-and-diff: the pre-dispatch read is the same one the startup grace
+      // already takes, so the second baseline costs nothing.
+      queue([
+        ('0', FirmwareUpdateErrorCode.none),
+        ('0', FirmwareUpdateErrorCode.download),
+      ]);
+
+      final result =
+          await buildService(startupGrace: const Duration(milliseconds: 10))
+              .install(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.download);
+    });
+
+    test('unknown and unreported codes never fail an install', () async {
+      for (final code in [
+        FirmwareUpdateErrorCode.unknown,
+        FirmwareUpdateErrorCode.unreported,
+      ]) {
+        queue([
+          ('0', FirmwareUpdateErrorCode.none),
+          ('4', FirmwareUpdateErrorCode.none),
+          ('0', code),
+        ]);
+
+        final result = await buildService().install(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaInstallVerdict.flashing,
+            reason: '${code.name} is the absence of a reason, not one');
+      }
+    });
+
+    test('observe attributes a failure only to a run it saw', () async {
+      // No dispatch means no baseline, so the sighting is the only evidence there is.
+      queue([
+        ('4', FirmwareUpdateErrorCode.none),
+        ('0', FirmwareUpdateErrorCode.flash),
+      ]);
+
+      final result = await buildService().observe();
+
+      expect(result.verdict, FirmwareOtaInstallVerdict.failed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.flash);
+    });
+
+    test('a failed verdict cannot be built without a reason', () {
+      // The assert on the result: a `failed` verdict is what makes the page say the
+      // update failed, so it may not exist without something the router named.
+      expect(
+          () => FirmwareOtaInstallResult(
+              verdict: FirmwareOtaInstallVerdict.failed),
+          throwsA(isA<AssertionError>()));
+      expect(
+          () => FirmwareOtaInstallResult(
+              verdict: FirmwareOtaInstallVerdict.failed,
+              errorCode: FirmwareUpdateErrorCode.none),
+          throwsA(isA<AssertionError>()));
+    });
+  });
 }

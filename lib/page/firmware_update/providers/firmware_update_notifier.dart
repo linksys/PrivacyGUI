@@ -748,9 +748,22 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           clearOtaProgress: true,
         ));
 
-      // No `failed` arm, because the watch has no `failed` verdict to give — see
-      // `FirmwareOtaInstallVerdict`. A flash that fails arrives here as `flashing`
-      // like any other, and is reported by `verify()` after the router comes back.
+      case FirmwareOtaInstallVerdict.failed:
+        // The router named the reason (#1572). Guarded like `timedOut` below and for
+        // the identical reason: on the observe path a failure may only be attributed
+        // to an update this watch actually saw running, or a code left over from last
+        // week becomes "your update failed" on a page where nothing was attempted.
+        //
+        // The service has its own half of that rule — it will not return this verdict
+        // for a code it cannot attribute — so this is a second gate on the weaker
+        // evidence rather than a duplicate: the service asks "could this code be this
+        // run's", and this asks "was there a run of ours at all".
+        if (!dispatched && !_sawUpdateRunning) {
+          _discardStaleOutcome(
+              result, 'a failed update', 'nothing was ever seen running');
+          return;
+        }
+        _fail(FirmwareFailure.routerReported(result.errorCode!));
 
       case FirmwareOtaInstallVerdict.timedOut:
         if (!dispatched && !_sawUpdateRunning) {

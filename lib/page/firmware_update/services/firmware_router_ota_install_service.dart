@@ -187,8 +187,14 @@ class FirmwareRouterOtaInstallService {
     // diagnostic read into a hard failure over — a null simply restores the old
     // behaviour for that one run.
     String? stateBeforeDispatch;
+    FirmwareUpdateErrorCode? codeBeforeDispatch;
     try {
-      stateBeforeDispatch = (await _readAutoUpdate()).rawState;
+      final before = await _readAutoUpdate();
+      stateBeforeDispatch = before.rawState;
+      // Same read, second baseline (#1572). `fwup_error_code` is persistent and
+      // undated, so a code standing here belongs to the *previous* run — and a code
+      // that differs from it afterwards can only belong to this one.
+      codeBeforeDispatch = before.errorCode;
     } catch (e) {
       logger.d('[FirmwareUpdate] could not read fwup_state before dispatching '
           'the install, so the startup grace has no baseline ($e)');
@@ -230,6 +236,7 @@ class FirmwareRouterOtaInstallService {
         refusal: () => refusal,
         otaInstance: otaInstance,
         stateBeforeDispatch: stateBeforeDispatch,
+        codeBeforeDispatch: codeBeforeDispatch,
         // A state of 0 right after the dispatch means `fwupd` has not started
         // yet, so the first reading cannot be an answer.
         graceFor: _startupGrace,
@@ -278,6 +285,7 @@ class FirmwareRouterOtaInstallService {
     required Duration graceFor,
     required bool delayBeforeFirstRead,
     String? stateBeforeDispatch,
+    FirmwareUpdateErrorCode? codeBeforeDispatch,
     FirmwareOtaInstallProgressSink? onProgress,
     bool Function()? isCancelled,
   }) async {
@@ -309,6 +317,41 @@ class FirmwareRouterOtaInstallService {
           verdict: verdict,
           rawState: last?.rawState ?? '',
           lastProgress: last,
+        );
+
+    /// The router's reason, if it named one this run is entitled to own.
+    ///
+    /// Two conditions, and they are the same pair the check uses. **The run must have
+    /// been seen doing something** — a code read on a router this watch never
+    /// observed working may be weeks old, and the definition says it survives until
+    /// the next operation or the next reboot. **Or the code must have moved** since
+    /// the pre-dispatch reading, which only this run could have done.
+    ///
+    /// Null on the observe path unless the router was seen busy: there is no
+    /// pre-dispatch baseline there, so the sighting is the only evidence available.
+    FirmwareUpdateErrorCode? attributableFailure(
+        FirmwareAutoUpdateUIModel reading) {
+      final code = reading.errorCode;
+      if (!code.isFailure) return null;
+      final sawWork = sawBusy || sawChecking;
+      if (sawWork ||
+          (codeBeforeDispatch != null && code != codeBeforeDispatch)) {
+        return code;
+      }
+      logger.i(
+          '[FirmwareUpdate] the router reports ${code.name}, but this watch '
+          'never saw it working and the code has not moved — not attributing it '
+          'to this update');
+      return null;
+    }
+
+    /// [FirmwareOtaInstallVerdict.failed] for [code], keeping the same evidence.
+    FirmwareOtaInstallResult failedWith(FirmwareUpdateErrorCode code) =>
+        FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          rawState: last?.rawState ?? '',
+          lastProgress: last,
+          errorCode: code,
         );
 
     while (DateTime.now().isBefore(giveUpAt)) {
@@ -405,6 +448,18 @@ class FirmwareRouterOtaInstallService {
         // reached this state.
         case FirmwareAutoUpdateStatus.rebooting:
           sawBusy = true;
+          // The one place #211's own state table and our measurement agree exactly:
+          // `state=5` with a failure code is a failure, and with no code it is the
+          // reboot. A signature or flash failure cannot be followed by a successful
+          // boot into the new image, so a code attributable to this run outranks the
+          // state. With no code the arm is unchanged, which is the measured success
+          // path.
+          final failure = attributableFailure(reading);
+          if (failure != null) {
+            logger.w('[FirmwareUpdate] the router reports the update failed '
+                '(${failure.name}) at fwup_state=${reading.rawState}');
+            return failedWith(failure);
+          }
           logger
               .i('[FirmwareUpdate] the router is rebooting into the new image '
                   '(fwup_state=${reading.rawState})');
@@ -428,6 +483,18 @@ class FirmwareRouterOtaInstallService {
           interval = _busyPollInterval;
 
         case FirmwareAutoUpdateStatus.idle:
+          // The reason first, when there is one this run owns. A failed run rests at
+          // `state=0` with `fwup_progress` left at 100 — measured — which is exactly
+          // what a reboot looks like from here, and until the error code existed the
+          // two were indistinguishable and only the safer claim could be made. Now
+          // the router can say which it was, and saying so beats making the user
+          // wait out a reboot that is not coming.
+          final failure = attributableFailure(reading);
+          if (failure != null) {
+            logger.w('[FirmwareUpdate] the router reports the update failed '
+                '(${failure.name})');
+            return failedWith(failure);
+          }
           // Busy first: a state that has dropped back to 0 after a flash began is
           // reported as the reboot rather than as an install that evaporated.
           //

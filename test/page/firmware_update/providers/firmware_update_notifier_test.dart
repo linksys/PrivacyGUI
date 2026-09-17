@@ -1382,6 +1382,7 @@ void main() {
       void stubInstall({
         required FirmwareOtaInstallVerdict verdict,
         List<FirmwareOtaInstallProgress> readings = const [],
+        FirmwareUpdateErrorCode? errorCode,
       }) {
         when(() => mockOtaInstaller.install(
               otaInstance: any(named: 'otaInstance'),
@@ -1397,6 +1398,7 @@ void main() {
             verdict: verdict,
             rawState: readings.isEmpty ? '' : readings.last.rawState,
             lastProgress: readings.isEmpty ? null : readings.last,
+            errorCode: errorCode,
           );
         });
       }
@@ -1583,6 +1585,35 @@ void main() {
             const FirmwareFailure.progressStalled(fwupState: '4'));
         // Retained on purpose: the failure card can say where it stopped, which is
         // the difference between "the update failed" and a bug report.
+        expect(state.otaProgress?.rawState, '4');
+      });
+
+      test('a router-named failure becomes that reason, not a stall (#1572)',
+          () async {
+        // The verdict that came back. Before the error code this watch had nothing to
+        // report a failure *from* — a flash that failed rested at `state=0` exactly
+        // like one that succeeded — so the user waited out the ceiling and got "the
+        // router stopped reporting progress". Now they get the reason.
+        stubInstall(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: [at('4', 50)],
+          errorCode: FirmwareUpdateErrorCode.signature,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        // The reading it stopped on is kept for the same reason a stall keeps one:
+        // "where did it get to" is the difference between a complaint and a report.
         expect(state.otaProgress?.rawState, '4');
       });
 
@@ -1891,6 +1922,7 @@ void main() {
       void stubObserve({
         required FirmwareOtaInstallVerdict verdict,
         List<FirmwareOtaInstallProgress> readings = const [],
+        FirmwareUpdateErrorCode? errorCode,
       }) {
         when(() => mockOtaInstaller.observe(
               onProgress: any(named: 'onProgress'),
@@ -1905,6 +1937,7 @@ void main() {
             verdict: verdict,
             rawState: readings.isEmpty ? '' : readings.last.rawState,
             lastProgress: readings.isEmpty ? null : readings.last,
+            errorCode: errorCode,
           );
         });
       }
@@ -1918,6 +1951,52 @@ void main() {
               ),
             ),
           );
+
+      test('a failure is discarded when nothing was seen running (#1572)',
+          () async {
+        // The second gate, on the weaker evidence. The service will not attribute a
+        // code it cannot own, but on the observe path there is no baseline at all — so
+        // the notifier also refuses to report a failure for an update it never saw,
+        // because a code from last week on a page where nothing was attempted is how
+        // a healthy router gets reported as broken.
+        stubObserve(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: const [],
+          errorCode: FirmwareUpdateErrorCode.flash,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .observeRunningOtaInstall();
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.failure, isNull);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+      });
+
+      test('a failure is reported when the update was seen running (#1572)',
+          () async {
+        stubObserve(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: [at('4', 20)],
+          errorCode: FirmwareUpdateErrorCode.flash,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .observeRunningOtaInstall();
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.flash));
+        expect(state.phase, FirmwareUpdatePhase.failed);
+      });
 
       test('watches without dispatching anything', () async {
         stubObserve(
