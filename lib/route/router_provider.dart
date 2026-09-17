@@ -137,10 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         // The '/' branch above already owns the pnp-vs-login election; once we
         // have matched localLoginPassword the destination is settled.
         return router._redirectLogic(state);
-      } else if (state.matchedLocation == RoutePath.pnp ||
-          state.matchedLocation.startsWith('${RoutePath.pnp}/')) {
-        return router._goPnpPath(state);
-      } else if (state.matchedLocation.startsWith('/pnp')) {
+      } else if (state.matchedLocation.startsWith(RoutePath.pnp)) {
         return router._goPnpPath(state);
       }
       return router._redirectLogic(state);

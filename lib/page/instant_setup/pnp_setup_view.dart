@@ -1043,7 +1043,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         );
         _setupStep = _PnpSetupStep.config;
       });
-      showSimpleSnackBar(context, 'Unexpected error! <$errorDetail>');
+      // Localized sentence, raw code kept: pnp_minimal_flow_test pins the code
+      // being on screen, and support asks for it from screenshots.
+      showSimpleSnackBar(
+          context, '${loc(context).generalError} <$errorDetail>');
       return;
     } catch (error) {
       if (!mounted) {
@@ -1054,7 +1057,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.e('[PnP]: Unexpected saving error: $error. Setup step = config');
         _setupStep = _PnpSetupStep.config;
       });
-      showSimpleSnackBar(context, 'Unexpected error! <$error>');
+      showSimpleSnackBar(context, '${loc(context).generalError} <$error>');
       return;
     }
 
@@ -1097,10 +1100,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           .read(pnpProvider.notifier)
           .acknowledgeAutoConfigurationIfNeeded();
     } on ExceptionSavingChanges catch (error) {
+      logger.e(
+        '[PnP]: Auto configuration acknowledgement failed: '
+        '${describePnpSaveError(error.error)}',
+        error: error.error,
+      );
       if (mounted) {
         showSimpleSnackBar(
           context,
-          'Unexpected error! <${describePnpSaveError(error.error)}>',
+          '${loc(context).generalError} '
+          '<${describePnpSaveError(error.error)}>',
         );
       }
       rethrow;
