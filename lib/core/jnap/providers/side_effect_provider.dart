@@ -224,53 +224,65 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         start time delay: $timeDelayStartInSec,
         ''');
     try {
-    int retry = 0;
-    if (timeDelayStartInSec > 0) {
-      await Future.delayed(Duration(seconds: timeDelayStartInSec));
-    }
-    final startTime = DateTime.now().millisecondsSinceEpoch;
-    var result = false;
-    JNAPResult? lastHandledResult;
-    while (maxRetry == -1 || retry <= maxRetry) {
-      logger.d('[SideEffectManager] poll <$retry> times');
-      result = await pollFunc.call().then((value) {
-            lastHandledResult = value.$2;
-            return value.$1;
-          }).onError((error, stackTrace) => false) ||
-          (condition?.call() ?? false);
-      if (result) {
-        return result;
+      int retry = 0;
+      if (timeDelayStartInSec > 0) {
+        await Future.delayed(Duration(seconds: timeDelayStartInSec));
       }
+      final startTime = DateTime.now().millisecondsSinceEpoch;
+      var result = false;
+      JNAPResult? lastHandledResult;
+      while (maxRetry == -1 || retry <= maxRetry) {
+        logger.d('[SideEffectManager] poll <$retry> times');
+        result = await pollFunc.call().then((value) {
+              lastHandledResult = value.$2;
+              return value.$1;
+            }).onError((error, stackTrace) => false) ||
+            (condition?.call() ?? false);
+        if (result) {
+          return result;
+        }
 
-      // check poll exceed to the max time
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      if (maxPollTimeInSec != -1 &&
-          currentTime > startTime + maxPollTimeInSec * 1000) {
-        break;
+        // check poll exceed to the max time
+        final currentTime = DateTime.now().millisecondsSinceEpoch;
+        if (maxPollTimeInSec != -1 &&
+            currentTime > startTime + maxPollTimeInSec * 1000) {
+          break;
+        }
+        _updateProgress(retry, maxRetry, startTime, maxPollTimeInSec);
+        await Future.delayed(Duration(seconds: retryDelayInSec));
+        retry++;
       }
-      _updateProgress(retry, maxRetry, startTime, maxPollTimeInSec);
-      await Future.delayed(Duration(seconds: retryDelayInSec));
-      retry++;
-    }
-    if (!result) {
-      logger.d(('[SideEffectManager] exceed to MAX retry!'));
-      throw JNAPSideEffectError(null, lastHandledResult);
-    }
-    return result;
+      if (!result) {
+        logger.d(('[SideEffectManager] exceed to MAX retry!'));
+        throw JNAPSideEffectError(null, lastHandledResult);
+      }
+      return result;
     } finally {
       _activePollStartedAt = previousPollStartedAt;
     }
   }
 
+  /// How long a router has to keep answering before a silent WAN stops holding
+  /// the poll open.
+  static const routerRespondingGrace = Duration(seconds: 60);
+
+  /// True once the router looks usable again.
+  ///
+  /// A connected WAN is the primary answer. Failing that, a router that has been
+  /// answering [routerRespondingGrace] into the current poll also counts, so a
+  /// reconnect whose WAN never comes back finishes as a success rather than
+  /// exhausting its retries and surfacing as a save failure. That escape hatch
+  /// needs a poll to measure against: called outside one, [_activePollStartedAt]
+  /// is null and only a connected WAN will do.
   Future<(bool, JNAPResult?)> testRouterFullyBootedUp() async {
-    final startTime =
-        _activePollStartedAt ?? DateTime.now().millisecondsSinceEpoch;
+    final pollStartedAt = _activePollStartedAt;
 
     return _getWANStatus().then<(bool, JNAPResult?)>((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';
-      final isRouterRespondingLongEnough =
-          DateTime.now().millisecondsSinceEpoch >= startTime + 60 * 1000;
+      final isRouterRespondingLongEnough = pollStartedAt != null &&
+          DateTime.now().millisecondsSinceEpoch >=
+              pollStartedAt + routerRespondingGrace.inMilliseconds;
 
       return (
         wanConnected || isRouterRespondingLongEnough,
