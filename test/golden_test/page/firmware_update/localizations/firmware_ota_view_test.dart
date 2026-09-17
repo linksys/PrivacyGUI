@@ -44,6 +44,19 @@ import '../fixtures/firmware_update_test_data.dart';
 // through the snack bar here, and through the install card's body on the manual page,
 // where `firmware_update`'s own suite photographs them.
 //
+// **The snack bar is measured, not merely excused.** No suite in the layout gate renders
+// one, so "does that surface hold the longest copy this feature has" had no answer. A
+// throwaway probe pumped it with the longest of the eight sentences per locale, at nine
+// widths in 26 locales, against both of §2.10d's criteria: **zero split tokens and zero
+// clipped paragraphs**. The text is `Flexible` inside the surface's `Row`, so it wraps
+// and the bar grows; the narrowest box is 126.0px at 320px and even there nothing is
+// dropped. (The probe's raw run reports seven split tokens in `ja`, `th`, `zh` and
+// `zh_TW` — exactly `kLocalesWithoutWordSpaces`, where the criterion carries no
+// information because the whole sentence is one token.) So this is a coverage gap with
+// nothing behind it, like the OTA install button's, and it does not earn a probe of its
+// own. What would change that is a snack bar that constrains its own height, or copy long
+// enough to need one.
+//
 // Three of the six are the only image of themselves anywhere, because the
 // layout-gate case for this page (`page.firmware_ota`, 234 cells) pins exactly one
 // fixture and cannot reach them:
