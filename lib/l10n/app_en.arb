@@ -18,6 +18,7 @@
   "australia": "Australia",
   "auto": "Auto",
   "automatic": "Automatic",
+  "autoMtu": "Auto MTU",
   "avg": "Avg: {value}%",
   "@avg": {
     "placeholders": {

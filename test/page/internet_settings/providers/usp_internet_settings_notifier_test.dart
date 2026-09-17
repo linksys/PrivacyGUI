@@ -164,7 +164,12 @@ void main() {
       container.dispose();
     });
 
-    test('updateConnectionType to bridge resets MTU to 0', () async {
+    test('updateConnectionType to bridge leaves MTU and mode untouched',
+        () async {
+      // Bridge ignores MTU entirely — the service sends neither MaxMTUSize nor
+      // X_LINKSYS_MTUMode, and the view renders a fixed "Auto" row. Rewriting
+      // the form here would make a bridge round-trip look like a mode change
+      // and push a mode the user never chose.
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       final container = createContainer();
@@ -177,7 +182,8 @@ void main() {
       final form =
           container.read(uspInternetSettingsProvider).settings.current.form;
       expect(form.connectionType, UspWanConnectionType.bridge);
-      expect(form.mtu, 0);
+      expect(form.mtu, 1500);
+      expect(form.mtuAuto, isFalse);
       container.dispose();
     });
 
@@ -200,27 +206,59 @@ void main() {
       container.dispose();
     });
 
-    test('updateConnectionType from bridge auto-fills MTU with type max',
-        () async {
+    test('a bridge round-trip preserves the MTU the device reported', () async {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final notifier = container.read(uspInternetSettingsProvider.notifier);
-      // Bridge sets mtu = 0 (auto)...
       notifier.updateConnectionType(UspWanConnectionType.bridge);
-      expect(
-          container.read(uspInternetSettingsProvider).settings.current.form.mtu,
-          0);
-
-      // ...switching back to DHCP must not leave MTU empty; 0 is out of range
-      // so it falls back to the type max (1500).
       notifier.updateConnectionType(UspWanConnectionType.dhcp);
+
       final form =
           container.read(uspInternetSettingsProvider).settings.current.form;
       expect(form.connectionType, UspWanConnectionType.dhcp);
       expect(form.mtu, 1500);
+      expect(form.mtuAuto, isFalse);
+      container.dispose();
+    });
+
+    test('updateConnectionType clamps on the way out of bridge too', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.updateConnectionType(UspWanConnectionType.bridge);
+      // 1500 survives bridge, then exceeds PPPoE's 1492 max on the way out.
+      notifier.updateConnectionType(UspWanConnectionType.pppoe);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.mtu, 1492);
+      container.dispose();
+    });
+
+    test('updateConnectionType does not clamp the MTU while in auto mode',
+        () async {
+      // In auto mode the number is device-reported, not user-owned — the app
+      // has no business rewriting it, and the save path sends nothing anyway.
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.updateField((f) => f.copyWith(mtuAuto: true));
+      notifier.updateConnectionType(UspWanConnectionType.pppoe);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.connectionType, UspWanConnectionType.pppoe);
+      expect(form.mtu, 1500, reason: 'auto mode keeps the device-reported MTU');
+      expect(form.mtuAuto, isTrue);
       container.dispose();
     });
 

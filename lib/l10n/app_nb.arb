@@ -11,6 +11,7 @@
   "australia": "Australia",
   "auto": "Automatisk",
   "automatic": "Automatisk",
+  "autoMtu": "Automatisk MTU",
   "back": "Bakside",
   "borderRelay": "Border relay",
   "broadcastSSID": "Kringkast SSID",

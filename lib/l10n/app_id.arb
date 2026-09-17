@@ -11,6 +11,7 @@
   "australia": "Australia",
   "auto": "Otomatis",
   "automatic": "Otomatis",
+  "autoMtu": "MTU Otomatis",
   "back": "Kembali",
   "borderRelay": "Relay perbatasan",
   "broadcastSSID": "Siarkan SSID",

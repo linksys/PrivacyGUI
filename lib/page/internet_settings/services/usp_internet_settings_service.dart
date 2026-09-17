@@ -92,6 +92,9 @@ class UspInternetSettingsService {
         readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance, hostName),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
+        // Absent key means firmware predating feed_bbf#128 — the UI hides the
+        // Auto MTU toggle rather than offering a mode it cannot write.
+        mtuModeSupported: wan.mtuMode != null,
         debugAddressingType: wan.addressingType,
         debugBridgeEnabled: wan.bridgeEnabled,
         debugMtu: wan.mtu,
@@ -172,6 +175,9 @@ class UspInternetSettingsService {
       vlanEnabled: vlan?.enable ?? false,
       vlanId: vlan?.vlanId ?? 0,
       mtu: wan.mtu,
+      // Firmware without the vendor extension returns null → Manual, which is
+      // what the app assumed before X_LINKSYS_MTUMode existed.
+      mtuAuto: wan.mtuMode == 'Auto',
       wanMacAddress: '',
       ipv6Enabled: ipv6.ipv6Enabled,
       dhcpv6Enabled: ipv6.dhcpv6Enabled,
@@ -394,16 +400,28 @@ class UspInternetSettingsService {
 
     // MTU is mode-independent — update via WanSettings if changed.
     //
-    // Bridge is the exception: switching to bridge resets the form's mtu to 0
-    // as a sentinel, and the FW rejects MaxMTUSize=0 (valid range 64..65535,
-    // errorCode 7012) — confirmed with the FW team that 0 is NOT a valid "auto"
-    // value. Sending it would abort saveAll before the terminal bridge SET, so
-    // skip the MTU SET entirely when the target mode is bridge (MTU has no
-    // meaning once the WAN port joins br-lan).
+    // Bridge is the exception: MTU has no meaning once the WAN port joins
+    // br-lan, and the bridge SET is terminal (the transport drops mid-request),
+    // so neither MaxMTUSize nor X_LINKSYS_MTUMode is sent for that target.
     if (edited.connectionType != UspWanConnectionType.bridge) {
-      final mtuDiff = _diff(original.mtu, edited.mtu);
-      if (mtuDiff != null) {
-        _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+      int? mtuArg;
+      String? mtuModeArg;
+      if (edited.mtuAuto) {
+        // Only X_LINKSYS_MTUMode='Auto' clears the UCI mtu option. MaxMTUSize is
+        // never sent in auto mode: 0 is outside the TR-181 range 64..65535 and
+        // the firmware rejects it with fault 9007 (Architecture#122).
+        if (!original.mtuAuto) mtuModeArg = 'Auto';
+      } else {
+        // Manual: writing MaxMTUSize is what puts UCI back into Manual, so
+        // SET X_LINKSYS_MTUMode='Manual' is a firmware no-op and is never sent.
+        // Force the write when leaving auto even if the number is unchanged —
+        // _diff alone returns null there and the device would stay in Auto.
+        mtuArg =
+            original.mtuAuto ? edited.mtu : _diff(original.mtu, edited.mtu);
+      }
+      if (mtuArg != null || mtuModeArg != null) {
+        _handleSetResult(
+            await WanSettings.update(_usp, mtu: mtuArg, mtuMode: mtuModeArg));
       }
     }
   }
@@ -663,6 +681,10 @@ class InternetSettingsFetchResult {
   final String? pppInstancePath;
   final String? vlanInstancePath;
 
+  /// Whether the device exposes `X_LINKSYS_MTUMode`. False on firmware
+  /// predating feed_bbf#128, where MTU is manual-only.
+  final bool mtuModeSupported;
+
   /// Debug fields for logging — not exposed to UI.
   final String debugAddressingType;
   final bool debugBridgeEnabled;
@@ -674,6 +696,7 @@ class InternetSettingsFetchResult {
     required this.readOnlyInfo,
     this.pppInstancePath,
     this.vlanInstancePath,
+    this.mtuModeSupported = false,
     this.debugAddressingType = '',
     this.debugBridgeEnabled = false,
     this.debugMtu = 0,

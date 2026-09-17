@@ -42,6 +42,7 @@ void main() {
       });
 
       test('boolean fields default to false', () {
+        expect(form.mtuAuto, isFalse);
         expect(form.vlanEnabled, isFalse);
         expect(form.ipv6Enabled, isFalse);
         expect(form.dhcpv6Enabled, isFalse);
@@ -95,6 +96,7 @@ void main() {
         expect(base.copyWith(vlanEnabled: true).vlanEnabled, isTrue);
         expect(base.copyWith(vlanId: 100).vlanId, 100);
         expect(base.copyWith(mtu: 1492).mtu, 1492);
+        expect(base.copyWith(mtuAuto: true).mtuAuto, isTrue);
         expect(base.copyWith(wanMacAddress: 'AA:BB:CC:DD:EE:FF').wanMacAddress,
             'AA:BB:CC:DD:EE:FF');
         expect(base.copyWith(ipv6Enabled: true).ipv6Enabled, isTrue);
@@ -145,6 +147,7 @@ void main() {
           base.copyWith(vlanEnabled: true),
           base.copyWith(vlanId: 1),
           base.copyWith(mtu: 1),
+          base.copyWith(mtuAuto: true),
           base.copyWith(wanMacAddress: 'x'),
           base.copyWith(ipv6Enabled: true),
           base.copyWith(dhcpv6Enabled: true),
@@ -155,7 +158,7 @@ void main() {
         ];
 
         // Sanity: one mutation per field declared on the model.
-        expect(mutations.length, 24);
+        expect(mutations.length, 25);
 
         for (final mutated in mutations) {
           expect(mutated, isNot(equals(base)));

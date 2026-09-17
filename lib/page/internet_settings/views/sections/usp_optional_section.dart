@@ -30,21 +30,24 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
   @override
   void initState() {
     super.initState();
-    final form = widget.state.edited;
-    _mtuController =
-        TextEditingController(text: form.mtu == 0 ? '' : form.mtu.toString());
+    _mtuController = TextEditingController(text: _mtuText);
   }
 
   @override
   void didUpdateWidget(covariant UspOptionalSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state.edited != widget.state.edited) {
-      final form = widget.state.edited;
-      final mtuText = form.mtu == 0 ? '' : form.mtu.toString();
-      if (_mtuController.text != mtuText) {
-        _mtuController.text = mtuText;
+      if (_mtuController.text != _mtuText) {
+        _mtuController.text = _mtuText;
       }
     }
+  }
+
+  /// Text for the MTU field. `0` only occurs before the first fetch, where an
+  /// empty field is friendlier than a bogus zero.
+  String get _mtuText {
+    final mtu = widget.state.edited.mtu;
+    return mtu == 0 ? '' : mtu.toString();
   }
 
   @override
@@ -82,25 +85,46 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
           if (isBridge) ...[
             UspInfoRow(label: l.mtu, value: l.auto),
           ] else if (!isEditing) ...[
-            UspInfoRow(label: l.mtu, value: '${form.mtu}'),
-          ] else ...[
-            AppTextFormField(
-              controller: _mtuController,
-              label: '${l.mtu} ($_mtuMin - $_mtuMax)',
-              keyboardType: TextInputType.number,
-              onChanged: (v) {
-                final parsed = int.tryParse(v);
-                if (parsed != null && parsed > 0) {
-                  _updateField((f) => f.copyWith(mtu: parsed));
-                }
-              },
+            // Auto reports the mode alone, like the bridge row above: the number
+            // is the device's, and repeating it here would read as a setting.
+            UspInfoRow(
+              label: l.mtu,
+              value: form.mtuAuto ? l.auto : '${form.mtu}',
             ),
-            if (_getMtuError(context, form.mtu) != null) ...[
-              AppGap.xs(),
-              AppText.bodySmall(
-                _getMtuError(context, form.mtu)!,
-                color: Theme.of(context).colorScheme.error,
+          ] else ...[
+            // Toggle is gated on firmware support: without X_LINKSYS_MTUMode the
+            // mode can neither be read nor written, so only manual entry is shown.
+            if (widget.state.mtuModeSupported)
+              Row(
+                children: [
+                  AppText.labelLarge(l.autoMtu),
+                  const Spacer(),
+                  AppSwitch(
+                    value: form.mtuAuto,
+                    onChanged: _onMtuAutoChanged,
+                  ),
+                ],
               ),
+            if (!form.mtuAuto) ...[
+              if (widget.state.mtuModeSupported) AppGap.md(),
+              AppTextFormField(
+                controller: _mtuController,
+                label: '${l.mtu} ($_mtuMin - $_mtuMax)',
+                keyboardType: TextInputType.number,
+                onChanged: (v) {
+                  final parsed = int.tryParse(v);
+                  if (parsed != null && parsed > 0) {
+                    _updateField((f) => f.copyWith(mtu: parsed));
+                  }
+                },
+              ),
+              if (_getMtuError(context, form.mtu) != null) ...[
+                AppGap.xs(),
+                AppText.bodySmall(
+                  _getMtuError(context, form.mtu)!,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ],
             ],
           ],
           // MAC Address Clone — disabled: USP data model does not support write
@@ -114,6 +138,15 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
         ],
       ),
     );
+  }
+
+  /// Flips MTU mode. Leaving auto seeds the field with the effective MTU the
+  /// device reported, clamped to the current type's range — the user sees the
+  /// baseline they are overriding and the form validates without further input.
+  void _onMtuAutoChanged(bool value) {
+    _updateField((f) => value
+        ? f.copyWith(mtuAuto: true)
+        : f.copyWith(mtuAuto: false, mtu: f.connectionType.clampMtu(f.mtu)));
   }
 
   void _updateField(

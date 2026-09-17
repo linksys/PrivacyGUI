@@ -11,6 +11,7 @@
   "australia": "Austrália",
   "auto": "Automático",
   "automatic": "Automático",
+  "autoMtu": "MTU automático",
   "back": "Voltar",
   "borderRelay": "Border Relay",
   "broadcastSSID": "Transmitir SSID",

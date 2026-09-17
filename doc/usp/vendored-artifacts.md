@@ -41,11 +41,9 @@ without review.
 - the codegen binary version above, and
 - the YAML snapshot in `usp_framework/usp-definitions/` at generation time.
 
-The YAML definitions are **not vendored** into this repo, so the snapshot has to be recorded here or it is unrecoverable — nothing in the generated output carries its source commit.
+The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
 
-**Definitions snapshot**: `usp_framework` `b041809728a63cb1801dda4b58ed5bcf221d14e4` (merged `main`, PR #63, 2026-09-14). It contains PR #57 (`eecf2699`), which re-aligned the DataElements definitions to the FL-WRT 2.0 / prplMesh schema; the last commit touching either DataElements YAML is `ea7c8510` (2026-09-10). Regenerated under it in PrivacyGUI #1555: `lib/generated/data_elements_network.g.dart` and the new `data_elements_network_info.g.dart`. The other 48 files it produces are semantically identical to what is checked in, so a full-tree regeneration at this pin is a no-op outside those two plus the `index.dart` export line.
-
-Generating from the `origin` fork instead of `upstream` at this pin silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` is the 2026-08-05 revision and it has no `data_elements_network_info.yaml`.
+Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure
 
@@ -68,9 +66,6 @@ Generating from the `origin` fork instead of `upstream` at this pin silently rep
      --client-class 'UspClient'
    fvm dart format lib/generated
    ```
-   Record the definitions commit you generated from in the **Definitions
-   snapshot** line above, in the same commit as the regenerated files.
-
    Run the format **from the repo root**, on `lib/generated` — not on a temp
    output directory. The style is decided by this package's language version
    (`pubspec.yaml` pins `sdk: ">=3.3.0 <4.0.0"`, below 3.7), so formatting in
