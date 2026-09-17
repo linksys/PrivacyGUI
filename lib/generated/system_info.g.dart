@@ -9,6 +9,7 @@ class SystemInfo {
   final String manufacturer;
   final String modelName;
   final String serialNumber;
+  final String? baseMacAddress;
   final String hardwareVersion;
   final String softwareVersion;
   final int uptime;
@@ -23,6 +24,7 @@ class SystemInfo {
     required this.manufacturer,
     required this.modelName,
     required this.serialNumber,
+    this.baseMacAddress,
     required this.hardwareVersion,
     required this.softwareVersion,
     required this.uptime,
@@ -38,6 +40,7 @@ class SystemInfo {
     'Device.DeviceInfo.Manufacturer',
     'Device.DeviceInfo.ModelName',
     'Device.DeviceInfo.SerialNumber',
+    'Device.DeviceInfo.X_LINKSYS_BaseMACAddress',
     'Device.DeviceInfo.HardwareVersion',
     'Device.DeviceInfo.SoftwareVersion',
     'Device.DeviceInfo.UpTime',
@@ -99,6 +102,10 @@ class SystemInfo {
       modelName: (response['Device.DeviceInfo.ModelName'] ?? '') as String,
       serialNumber:
           (response['Device.DeviceInfo.SerialNumber'] ?? '') as String,
+      baseMacAddress:
+          response.containsKey('Device.DeviceInfo.X_LINKSYS_BaseMACAddress')
+              ? response['Device.DeviceInfo.X_LINKSYS_BaseMACAddress'] as String
+              : null,
       hardwareVersion:
           (response['Device.DeviceInfo.HardwareVersion'] ?? '') as String,
       softwareVersion:
@@ -139,6 +146,7 @@ class SystemInfo {
         'manufacturer: $manufacturer, '
         'modelName: $modelName, '
         'serialNumber: $serialNumber, '
+        'baseMacAddress: $baseMacAddress, '
         'hardwareVersion: $hardwareVersion, '
         'softwareVersion: $softwareVersion, '
         'uptime: $uptime, '

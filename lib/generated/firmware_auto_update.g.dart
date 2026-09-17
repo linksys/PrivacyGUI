@@ -12,6 +12,10 @@ class FirmwareAutoUpdate {
   final String fwupProgress;
   final String? updateFirmwareNow;
   final String? fwupPeriodicCheck;
+  final String? fwupErrorCode;
+  final String? fwupTriggerSource;
+  final String? fwupCheckedAfterBoot;
+  final String? newfirmwareVersion;
 
   const FirmwareAutoUpdate({
     required this.autoupdateFlags,
@@ -19,6 +23,10 @@ class FirmwareAutoUpdate {
     required this.fwupProgress,
     this.updateFirmwareNow,
     this.fwupPeriodicCheck,
+    this.fwupErrorCode,
+    this.fwupTriggerSource,
+    this.fwupCheckedAfterBoot,
+    this.newfirmwareVersion,
   });
 
   static const _paths = [
@@ -27,6 +35,10 @@ class FirmwareAutoUpdate {
     'Device.X_LINKSYS_Sysevent.fwup_progress',
     'Device.X_LINKSYS_Sysevent.update_firmware_now',
     'Device.X_LINKSYS_Sysevent.fwup_periodic_check',
+    'Device.X_LINKSYS_Sysevent.fwup_error_code',
+    'Device.X_LINKSYS_Sysevent.fwup_trigger_source',
+    'Device.X_LINKSYS_Sysevent.fwup_checked_after_boot',
+    'Device.X_LINKSYS_UCI.linksys.fwup.newfirmware_version',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -65,6 +77,24 @@ class FirmwareAutoUpdate {
       fwupPeriodicCheck: response
               .containsKey('Device.X_LINKSYS_Sysevent.fwup_periodic_check')
           ? response['Device.X_LINKSYS_Sysevent.fwup_periodic_check'] as String
+          : null,
+      fwupErrorCode:
+          response.containsKey('Device.X_LINKSYS_Sysevent.fwup_error_code')
+              ? response['Device.X_LINKSYS_Sysevent.fwup_error_code'] as String
+              : null,
+      fwupTriggerSource: response
+              .containsKey('Device.X_LINKSYS_Sysevent.fwup_trigger_source')
+          ? response['Device.X_LINKSYS_Sysevent.fwup_trigger_source'] as String
+          : null,
+      fwupCheckedAfterBoot: response
+              .containsKey('Device.X_LINKSYS_Sysevent.fwup_checked_after_boot')
+          ? response['Device.X_LINKSYS_Sysevent.fwup_checked_after_boot']
+              as String
+          : null,
+      newfirmwareVersion: response.containsKey(
+              'Device.X_LINKSYS_UCI.linksys.fwup.newfirmware_version')
+          ? response['Device.X_LINKSYS_UCI.linksys.fwup.newfirmware_version']
+              as String
           : null,
     );
   }
@@ -106,7 +136,11 @@ class FirmwareAutoUpdate {
         'fwupState: $fwupState, '
         'fwupProgress: $fwupProgress, '
         'updateFirmwareNow: $updateFirmwareNow, '
-        'fwupPeriodicCheck: $fwupPeriodicCheck'
+        'fwupPeriodicCheck: $fwupPeriodicCheck, '
+        'fwupErrorCode: $fwupErrorCode, '
+        'fwupTriggerSource: $fwupTriggerSource, '
+        'fwupCheckedAfterBoot: $fwupCheckedAfterBoot, '
+        'newfirmwareVersion: $newfirmwareVersion'
         ')';
   }
 }
