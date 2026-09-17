@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/di.dart';
@@ -32,10 +33,20 @@ void main() async {
     mockPnpNotifier = Mock.MockPnpNotifier();
     mockInternetSettingsNotifier = MockInternetSettingsNotifier();
 
+    // The card is gated on the advertised AutoIPoE service as well as on the
+    // supported WAN types, and the fixture's services omit it. Every case here
+    // gets the service so the screenshots turn on the WAN-type half alone.
+    final deviceInfo =
+        NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']);
     when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+        deviceInfo: deviceInfo.copyWith(
+            services: [...deviceInfo.services, JNAPService.autoIPoE.value]),
         isUnconfigured: true));
+    when(mockServiceHelper.isSupportAutoIPoE(any)).thenAnswer((invocation) {
+      final services =
+          invocation.positionalArguments.first as List<String>? ?? const [];
+      return services.contains(JNAPService.autoIPoE.value);
+    });
     when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
@@ -48,6 +59,10 @@ void main() async {
         .thenAnswer((_) async {
       return mockInternetSettingsState;
     });
+  });
+
+  tearDown(() {
+    reset(mockServiceHelper);
   });
 
   testLocalizations('Troubleshooter - PnP ISP type selection: default',
