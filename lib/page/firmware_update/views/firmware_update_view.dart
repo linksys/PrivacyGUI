@@ -384,7 +384,15 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     }
     if (!context.mounted) return;
     try {
-      await notifier.triggerInstall(targetInstance: target.instance);
+      // **The return value is the stop signal, not just the throw.** A busy router
+      // refuses without throwing — being told "one is already running" is an answer —
+      // and the notifier has already put that on the card. Continuing would spend 60 s
+      // polling, open the recovery dialog and end at `verify()`, which would fabricate
+      // a `bootedOldImage` over the top of the correct refusal. The OTA path gates its
+      // reboot wait on `result.isFlashing` for the same reason.
+      if (!await notifier.triggerInstall(targetInstance: target.instance)) {
+        return;
+      }
     } catch (e, st) {
       logger.e('[FirmwareUpdate] triggerInstall error: $e',
           error: e, stackTrace: st);
@@ -392,11 +400,23 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     }
     if (!context.mounted) return;
 
-    // Let user see the "Installing firmware" screen before transitioning to
-    // reboot. The actual flash write is happening in the background on the
-    // router; we have no status feedback (B2 blocker), so a fixed delay is
-    // the best we can do.
-    await Future<void>.delayed(_localInstallDelayBeforeReboot);
+    // The same 60 s the "Installing firmware" screen was always shown for — but spent
+    // watching the router instead of ignoring it (#1572). `fwup_error_code` is the
+    // only thing a refused image produces (no reboot, no bank change, and measured:
+    // not one log line), and the router writes it within seconds. Waiting the delay
+    // out blind and then entering a 60 s recovery cooldown meant a refusal took over
+    // two minutes to reach the user, who by then had watched a progress bar and a
+    // recovery dialog for an update that was already over.
+    //
+    // The comment this replaces said "we have no status feedback (B2 blocker), so a
+    // fixed delay is the best we can do". There is status feedback now.
+    if (await notifier.awaitInstallRefusal(
+        window: _localInstallDelayBeforeReboot)) {
+      // The router named the reason and the notifier has published it. Nothing is
+      // rebooting, so the recovery wait below would be a two-minute wait for an
+      // event that is not coming.
+      return;
+    }
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the

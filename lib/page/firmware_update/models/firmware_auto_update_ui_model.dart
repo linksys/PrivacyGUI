@@ -121,6 +121,165 @@ enum FirmwareAutoUpdatePolicy {
       };
 }
 
+/// Why the router's last firmware operation failed, as read from
+/// `Device.X_LINKSYS_Sysevent.fwup_error_code`.
+///
+/// Not a sysevent despite the path: `dm-reflector` computes it at read time by
+/// substring-matching the UCI value `linksys.fwup.newfirmware_status_details`, which
+/// is why `sysevent get fwup_error_code` returns nothing on a router that answers
+/// this parameter perfectly well over USP. The consequence for us is that the value
+/// has **no run identity and no timestamp** — see [FirmwareAutoUpdateUIModel.errorCode]
+/// for the rule that follows from it.
+///
+/// Measured on the bench (M60, FW `2.0.1.26091601`, 2026-09-17): a check against
+/// a refused port produced `newfirmware_status_details = "ERROR: Connecting server"`
+/// and this parameter read `1`; an interrupted run produced `"ERROR: Interrupted"` and
+/// `7`. [serverResponse] could not be induced — a server answering HTTP 404 left the
+/// details empty and the code at `0` — so it is mapped on the strength of the
+/// definition rather than of a measurement.
+enum FirmwareUpdateErrorCode {
+  /// `0` — the last operation did not fail. **Also the value during one**, since the
+  /// details are cleared when a run starts, so it never means "finished cleanly".
+  none,
+
+  /// `1` — could not reach the update server.
+  serverUnreachable,
+
+  /// `2` — the server answered, but not with something `fwupd` could use.
+  serverResponse,
+
+  /// `3` — the image could not be fetched.
+  download,
+
+  /// `4` — the image could not be written to the spare bank.
+  flash,
+
+  /// `5` — the image failed signature verification.
+  signature,
+
+  /// `6` — the router reported a failure with no reason of its own.
+  ///
+  /// Distinct from [unknown] and from [unreported], and all three have to stay
+  /// distinct: this one is the router saying "it broke and I do not know why", which
+  /// is a fact worth showing. The other two are the app not being told anything.
+  routerUnspecified,
+
+  /// `7` — a run was interrupted: `fwupd` died, or a watchdog killed it.
+  ///
+  /// **A post-hoc diagnostic, never a live signal.** The shell that writes it runs
+  /// from `cron_every_minute`, and `/etc/crontabs/root` schedules that handler
+  /// **hourly** — measured 2026-09-17: `fwupd` killed at `fwup_state=1` left the
+  /// state at `1` with this code still `0` seventy-five seconds later. So nothing may
+  /// wait for it, and a stuck `fwup_state` is bounded only by the app's own ceiling.
+  interrupted,
+
+  /// A code this build does not define. The definition reserves `8+`, so this arm is
+  /// the forward-compatibility one, and it must never render as a failure sentence —
+  /// an unrecognised number is not a reason.
+  unknown,
+
+  /// The router did not report the parameter at all.
+  ///
+  /// A separate value from [unknown] rather than a sentinel in it, for the reason the
+  /// definition was changed before merge: `optional: true` with a `default_value`
+  /// would have made this indistinguishable from [none], and "no error" is a claim
+  /// while "nobody told me" is not.
+  unreported;
+
+  /// The code a raw reading means, or [unreported] for an absent parameter.
+  static FirmwareUpdateErrorCode fromRaw(String? raw) {
+    if (raw == null || raw.isEmpty) return unreported;
+    return switch (raw) {
+      '0' => none,
+      '1' => serverUnreachable,
+      '2' => serverResponse,
+      '3' => download,
+      '4' => flash,
+      '5' => signature,
+      '6' => routerUnspecified,
+      '7' => interrupted,
+      _ => unknown,
+    };
+  }
+
+  /// Whether this code names a failure the app is allowed to report.
+  ///
+  /// Everything except the three that are not failures. [unknown] is out on purpose:
+  /// it is the weakest possible evidence of anything, and the cost of excluding it is
+  /// only that a verdict is withheld — the same trade
+  /// `FirmwareOtaInstallProgress.namesAnUpdatePhase` makes for an unrecognised state.
+  bool get isFailure => this != none && this != unknown && this != unreported;
+
+  /// Whether a *check* could have produced this code.
+  ///
+  /// [download], [flash] and [signature] could not: by definition they happen after a
+  /// check has already succeeded and found something. So a line that says "last check
+  /// did not finish" must not be drawn for them — a failed flash would be reported as
+  /// a failed check, on the very check that found the update. [interrupted] is in
+  /// because a watchdog can kill a check as readily as a flash, and
+  /// [routerUnspecified] is in because it names no phase at all.
+  bool get couldBeACheck =>
+      this == serverUnreachable ||
+      this == serverResponse ||
+      this == routerUnspecified ||
+      this == interrupted;
+}
+
+/// Who started the router's last firmware operation, as read from
+/// `Device.X_LINKSYS_Sysevent.fwup_trigger_source`.
+///
+/// **Mapped for logs and bug reports, and never rendered.** Measured 2026-09-17: the
+/// verb this app dispatches — `FirmwareImage.{ota}.Download()` — does **not** set the
+/// parameter, while `sysevent set update_firmware_now` does. So an operation started
+/// from this app, from another tab, or from another client all leave whatever the
+/// previous operation wrote, and no reading distinguishes "this run was automatic"
+/// from "the last automatic run was, and nobody has overwritten it since". A card
+/// saying "your router started this on its own" would therefore say it about an
+/// update a person started.
+enum FirmwareUpdateTriggerSource {
+  /// The forced check on first boot. Observed live on the bench.
+  boot,
+
+  /// The scheduled check.
+  auto,
+
+  /// A user-initiated operation — but only via `update_firmware_now`; see the class
+  /// comment for why this app never causes it.
+  user,
+
+  /// Backhaul recovery.
+  recovery,
+
+  /// A value this build does not define. The definition reserves `upload` and `mesh`
+  /// for a later phase, and this arm is what absorbs them at no cost.
+  unknown,
+
+  /// The router did not report the parameter, or it was cleared on boot and nothing
+  /// has run since.
+  unreported;
+
+  static FirmwareUpdateTriggerSource fromRaw(String? raw) {
+    if (raw == null || raw.isEmpty) return unreported;
+    return switch (raw) {
+      'boot' => boot,
+      'auto' => auto,
+      'user' => user,
+      'recovery' => recovery,
+      _ => unknown,
+    };
+  }
+}
+
+/// Reads the router's auto-update state in one round trip.
+///
+/// Declared here, beside the model it returns, rather than in either service that
+/// takes it. Both did, under different names, and the reason given was that the check
+/// service must not import the install service — which is true, and is met by the
+/// *service* boundary, not by the typedef. A shared signature in a neutral file
+/// removes the duplication without creating that import: from inside either service
+/// `FirmwareRouterOtaInstallService` is still unnameable.
+typedef FirmwareAutoUpdateReader = Future<FirmwareAutoUpdateUIModel> Function();
+
 /// The router's auto-update progress, mapped once in the service layer.
 class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
   final FirmwareAutoUpdateStatus status;
@@ -147,12 +306,53 @@ class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
   /// reason as [rawState] and read by [checksForUpdates].
   final String rawFlags;
 
+  /// Why the last operation failed — **and not, by itself, whose failure it is.**
+  ///
+  /// The underlying UCI value is cleared on every boot and at the start of every
+  /// `fwupd` run *before any work*, which was measured rather than taken on trust: on
+  /// a good check dispatched over a standing code `1`, the clear landed in the same
+  /// 220 ms sample that `fwup_state` became `1`, and no sample ever showed a started
+  /// run beside the previous run's code. So a non-zero code read **after a run this
+  /// app dispatched was seen to start** belongs to that run.
+  ///
+  /// A code read cold — on page open, with nothing dispatched — does not. The
+  /// definition says so itself: with `autoupdate_flags=0` the error "persists until
+  /// the next user-triggered operation or the next reboot", so a check that failed at
+  /// 09:00 still reads its code at 17:00. There is no timestamp, and
+  /// `fwup_checked_after_boot` plus this cannot supply one. Reporting it as *this*
+  /// update's failure is the mistake that once told users a healthy router had failed.
+  final FirmwareUpdateErrorCode errorCode;
+
+  /// `fwup_error_code` exactly as the router reported it, or null when the parameter
+  /// was absent. Kept for the same reason as [rawState]: a diagnostic of
+  /// [FirmwareUpdateErrorCode.unknown] needs the number itself.
+  final String? rawErrorCode;
+
+  /// Who started the last operation, for logs only — see
+  /// [FirmwareUpdateTriggerSource] for why it is never rendered.
+  final FirmwareUpdateTriggerSource triggerSource;
+
+  /// Whether `fwupd` has run since boot, or null when the router did not say.
+  ///
+  /// Three states rather than a `bool`, and the third is the point: `false` is the
+  /// router telling us it has not checked, and null is the router not answering. Only
+  /// the first may become "not checked yet" on screen.
+  ///
+  /// A one-way latch — measured going `0`→`1` after the boot check and staying — so it
+  /// answers "has anything checked since boot" and cannot answer "has the check I
+  /// just started finished".
+  final bool? checkedAfterBoot;
+
   const FirmwareAutoUpdateUIModel({
     required this.status,
     required this.progress,
     required this.rawState,
     required this.policy,
     required this.rawFlags,
+    this.errorCode = FirmwareUpdateErrorCode.unreported,
+    this.rawErrorCode,
+    this.triggerSource = FirmwareUpdateTriggerSource.unreported,
+    this.checkedAfterBoot,
   });
 
   /// Whether the router looks for newer builds at all — REQ-C3's `flags > 0`,
@@ -179,6 +379,12 @@ class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
         rawState: rawState,
         policy: newPolicy,
         rawFlags: newPolicy.rawValue,
+        // Carried, not reset: a policy write changes what the router is allowed to
+        // do next and says nothing about what its last operation did.
+        errorCode: errorCode,
+        rawErrorCode: rawErrorCode,
+        triggerSource: triggerSource,
+        checkedAfterBoot: checkedAfterBoot,
       );
 
   /// True while the router is doing work the user should see a progress view
@@ -198,6 +404,10 @@ class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
         'progress': progress,
         'rawState': rawState,
         'policy': policy,
+        'errorCode': errorCode,
+        'rawErrorCode': rawErrorCode,
+        'triggerSource': triggerSource,
+        'checkedAfterBoot': checkedAfterBoot,
         'rawFlags': rawFlags,
       };
 }

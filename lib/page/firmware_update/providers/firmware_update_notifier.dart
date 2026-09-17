@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
@@ -15,6 +16,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_pro
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
@@ -89,6 +91,24 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// them resetting the `_cancelRequested` flag the others terminate on, so a
   /// `cancel()` in between is undone rather than obeyed.
   bool _observing = false;
+
+  /// `fwup_error_code` as it stood before the install this page dispatched.
+  ///
+  /// **Load-bearing on the manual path, not a belt.** Measured on FW
+  /// `2.0.1.26091601`: `fwcc` — which is what a manual upload is verified and flashed
+  /// by — writes `newfirmware_status_details` at four sites and **clears it at none**,
+  /// and the only clear in the whole firmware outside `fwupd` is in
+  /// `service_autofwup.sh`'s `init_variables()`, which runs on boot. So one failed
+  /// upload leaves its code standing for the rest of the boot, and without this
+  /// baseline every later manual install — including the ones that work — would report
+  /// "the firmware failed the router's security check".
+  ///
+  /// The OTA path has the same field for the opposite reason: there `fwupd` does clear
+  /// at run start, so the diff is a belt over a guarantee.
+  ///
+  /// Null when the pre-dispatch read failed, which is what makes the comparison
+  /// refuse rather than assume — see [_routerNamedFailure].
+  FirmwareUpdateErrorCode? _codeBeforeInstall;
 
   /// Whether an install this page dispatched is still being watched.
   ///
@@ -211,7 +231,16 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// question, and a user who turned auto-update off and then walked to it is asking.
   FirmwareOtaCheckResult? _offerAlreadyOnTheRouter(
       FirmwareBanksData banksData) {
-    if (state.otaCheck.verdict != FirmwareOtaCheckVerdict.notChecked) {
+    // `checkFailed` is seedable for the same reason `notChecked` is: a check that
+    // failed has said nothing about the firmware on the router, so an offer the router
+    // is *still* making is newer information than our failure. Before this it was
+    // excluded by being "not notChecked", which left the page unable to ever show a
+    // standing offer again — no verdict line, no install action — until another check
+    // succeeded. The install path makes the same choice for the same reason: leaving a
+    // true, re-tappable offer up beats replacing it with our own denial.
+    final verdict = state.otaCheck.verdict;
+    if (verdict != FirmwareOtaCheckVerdict.notChecked &&
+        verdict != FirmwareOtaCheckVerdict.checkFailed) {
       return null;
     }
     final ota = banksData.otaInstance;
@@ -224,14 +253,21 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
   /// Ask the router whether a newer firmware exists.
   ///
-  /// The cloud OTA API used to answer this, which meant assembling a MAC, a model
-  /// number and a hardware revision from three other providers and asking a server
-  /// about a router it could not see. The router knows, so it is asked directly —
-  /// see [FirmwareRouterOtaCheckService]. #1550 parked the cloud path rather than
-  /// deleting it and left when it went as a separate decision; that decision was
-  /// made on 2026-09-16 — the feature is not coming — so
-  /// `firmware_ota_check_service.dart`, its `FirmwareOtaInfo` and the
-  /// cloud-URL install are gone. There is one path, not a selected one.
+  /// **This app used to be a client of the Linksys cloud OTA API, and no longer
+  /// is. That is a change of client, not the removal of a cloud.** The OTA server
+  /// is still what a new image comes from — `fwupd` on the router resolves and
+  /// fetches it, which is why `Download()` on the virtual `ota` instance needs no
+  /// URL (see [UspFirmwareUpdateService.requestOtaCheck]). What went away is the app
+  /// asking that server *itself*: doing so meant assembling a MAC, a model number
+  /// and a hardware revision from three other providers to ask a server about a
+  /// router it could not see, while the router already knew. So the question goes to
+  /// the router — see [FirmwareRouterOtaCheckService] — and the router's firmware
+  /// goes to the cloud.
+  ///
+  /// #1550 parked the direct path rather than deleting it and left when it went as a
+  /// separate decision; that decision was made on 2026-09-16, so
+  /// `firmware_ota_check_service.dart`, its `FirmwareOtaInfo` and the cloud-URL
+  /// install are gone. There is one path from here, not a selected one.
   ///
   /// Returns [FirmwareOtaCheckVerdict.notChecked] — never an error — when the
   /// router has no `ota` row. That is REQ-A1: OEM and rebadged builds never ship
@@ -272,9 +308,30 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
     try {
       final result = await _otaChecker.check(otaInstance: otaInstance.instance);
+      final routerFailed =
+          result.verdict == FirmwareOtaCheckVerdict.checkFailed;
+      // A check the router itself said failed (#1572). It goes into `failure` rather
+      // than only into the verdict, because that is where `localizeFirmwareFailure`
+      // reads and the reason is the router's own vocabulary — not a `ServiceError`
+      // about the transport, which is what the `catch` below handles. The verdict is
+      // still published so the card knows to draw no line: a failed check has said
+      // nothing about the firmware on the router.
       _setState(state.copyWith(
         phase: FirmwareUpdatePhase.idle,
         otaCheck: result,
+        // `clearFailure` is checked first by `copyWith`, so the two are exclusive
+        // rather than combined: a router-reported failure sets one, every other
+        // verdict clears whatever the last check left.
+        // `?? unknown` rather than `!`. The result's constructor asserts a non-null
+        // failure code, but asserts are stripped in release — so on a release build a
+        // `checkFailed` carrying null would crash here instead of showing anything.
+        // `routerUnspecified` is the honest stand-in: the router said the check failed
+        // and this build cannot name why, which is exactly what that arm means.
+        failure: routerFailed
+            ? FirmwareFailure.routerReported(
+                result.errorCode ?? FirmwareUpdateErrorCode.routerUnspecified)
+            : null,
+        clearFailure: !routerFailed,
       ));
       // The check writes `Available`/`Version` on the router, so the L1 cache the
       // dashboard banner and the mascot read from is now stale. Refreshed after
@@ -286,6 +343,22 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       } on ServiceError catch (e) {
         logger.w('[FirmwareUpdate] post-check banks refresh failed', error: e);
       }
+      // And the auto-update reading, which the OTA card's history line is built from
+      // (#1572). `firmwareAutoUpdateDataProvider` is **not** autoDispose and is built
+      // once by the dashboard orchestrator, so without this the line shows a boot-time
+      // snapshot for the whole session: a router that had not checked at boot keeps
+      // saying "not checked yet" however many checks run, and a code standing at boot
+      // keeps saying the last check did not finish — on top of a check the user just
+      // watched succeed. A check moves both values, so this is what makes the line
+      // describe the router rather than the launch.
+      //
+      // **`invalidate`, not `refresh`.** Nothing here wants the value, only for the
+      // stale one to go; and `refresh()` publishes an `AsyncError` and rethrows, so a
+      // re-read that failed would turn a check the user watched succeed into an error
+      // — and on a provider with no live listener it escapes as an uncaught async
+      // error rather than reaching the `catch` above. Invalidation is lazy: whoever
+      // watches next re-reads, which on this page is the very next frame.
+      ref.invalidate(firmwareAutoUpdateDataProvider);
       return result;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] OTA check failed', error: e);
@@ -377,6 +450,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     // running.
     _sawUpdateRunning = false;
     _sawRouterWorking = false;
+    // Cleared with them, for the same reason: it is a baseline *for a run*, so it
+    // means nothing once the run is abandoned. Both dispatch paths re-read it before
+    // use, so this is not load-bearing — it removes the asymmetry rather than fixing a
+    // bug, and an unexplained asymmetry in a lifecycle reset is a question the next
+    // reader has to answer from scratch.
+    _codeBeforeInstall = null;
     _setState(FirmwareUpdateState(
       activeBank: state.activeBank,
       targetBank: state.targetBank,
@@ -457,15 +536,34 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// costs is exactly the mistake `DisruptionClass` exists to prevent — and in
   /// Remote Assistance it is unreachable regardless, because
   /// `_onConfirmInstall` returns as soon as [runUpload] throws.
-  Future<void> triggerInstall({required int targetInstance}) async {
+  /// Returns **false when nothing was dispatched** — currently only the busy
+  /// refusal — so the caller can stop instead of walking a flow for an install that
+  /// never started.
+  ///
+  /// A return value rather than a throw, and rather than nothing: the OTA path
+  /// already hands its caller a verdict and the view gates the reboot wait on
+  /// `result.isFlashing`, which is why the same refusal there is harmless. This one
+  /// returned `void`, so the only caller could not tell a refusal from a dispatch and
+  /// carried on into a 60 s poll, the recovery dialog and `verify()` — ending in a
+  /// fabricated `bootedOldImage` that also **overwrote** the correct
+  /// `updateAlreadyRunning`. A throw would be wrong for the same reason it is wrong
+  /// on the check: being told "one is already running" is an answer, not an error.
+  Future<bool> triggerInstall({required int targetInstance}) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'local firmware install');
+    // The other half of the same lock: the OTA page may have dispatched an install
+    // that this notifier — a different instance — knows nothing about.
+    if (await _refuseIfRouterBusy()) return false;
+    // And the same yield hazard the OTA path documents: `_svc` and the mutation lock
+    // below are both `ref.read`s, and this is now the first await in the method.
+    if (_disposed) return false;
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.triggerLocalDownload(targetInstance: targetInstance);
       });
       _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
+      return true;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] triggerInstall failed', error: e);
       _fail(FirmwareFailure.serviceError(e));
@@ -502,6 +600,22 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   }) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'router OTA firmware install');
+    // Before anything else, and before the phase moves: the manual page may have
+    // started an install that this notifier cannot see. See [_refuseIfRouterBusy].
+    if (await _refuseIfRouterBusy()) {
+      return const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+    }
+    // **The guard's `await` is the first place this method yields**, and everything
+    // after it reaches for a provider off `ref` — so a page torn down during that one
+    // read would make `_otaInstaller` throw `StateError: Tried to read a provider from
+    // a ProviderContainer that was already disposed`. That is a bookkeeping error
+    // standing in front of whatever the caller was actually going to hear, which is
+    // the defect `a failure after the page is gone does not throw` exists to catch.
+    if (_disposed) {
+      return const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+    }
     _cancelRequested = false;
     _sawUpdateRunning = false;
     _sawRouterWorking = false;
@@ -726,9 +840,25 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
           clearOtaProgress: true,
         ));
 
-      // No `failed` arm, because the watch has no `failed` verdict to give — see
-      // `FirmwareOtaInstallVerdict`. A flash that fails arrives here as `flashing`
-      // like any other, and is reported by `verify()` after the router comes back.
+      case FirmwareOtaInstallVerdict.failed:
+        // The router named the reason (#1572). Guarded like `timedOut` below and for
+        // the identical reason: on the observe path a failure may only be attributed
+        // to an update this watch actually saw running, or a code left over from last
+        // week becomes "your update failed" on a page where nothing was attempted.
+        //
+        // The service has its own half of that rule — it will not return this verdict
+        // for a code it cannot attribute — so this is a second gate on the weaker
+        // evidence rather than a duplicate: the service asks "could this code be this
+        // run's", and this asks "was there a run of ours at all".
+        if (!dispatched && !_sawUpdateRunning) {
+          _discardStaleOutcome(
+              result, 'a failed update', 'nothing was ever seen running');
+          return;
+        }
+        // Same reason as the check's arm above: the assert is gone in release, and a
+        // crash is a worse answer than "the router did not say why".
+        _fail(FirmwareFailure.routerReported(
+            result.errorCode ?? FirmwareUpdateErrorCode.routerUnspecified));
 
       case FirmwareOtaInstallVerdict.timedOut:
         if (!dispatched && !_sawUpdateRunning) {
@@ -754,6 +884,134 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         // it would put a card back on a page that has been left.
         break;
     }
+  }
+
+  /// `fwup_error_code`, or null when it could not be read.
+  ///
+  /// Null for two reasons that are the same to every caller — the parameter absent, or
+  /// the `Get` failing — because neither licenses a claim.
+  Future<FirmwareUpdateErrorCode?> _errorCodeOrNull() async {
+    try {
+      return (await _svc.fetchAutoUpdate()).errorCode;
+    } catch (e) {
+      logger.d('[FirmwareUpdate] notifier could not read fwup_error_code ($e)');
+      return null;
+    }
+  }
+
+  /// The reason the router gave for the install this page dispatched, or null.
+  ///
+  /// **The one thing the router says about a failed manual upload.** Measured on
+  /// 2026-09-17 with a deliberately bad image: `fwup_error_code` read `5`,
+  /// `fwup_state` was `0`, the banks were unchanged, and the failure appeared in
+  /// **zero log lines** — so this parameter is not merely the best account of what
+  /// went wrong, it is the only one that exists anywhere. Not reading it does not hide
+  /// the reason, it loses it.
+  ///
+  /// Attributed only when the code has **moved** since [_codeBeforeInstall], for the
+  /// reason that field documents: on the manual path nothing clears it between runs
+  /// inside a boot, so an unchanged code is as likely to be the previous upload's.
+  Future<FirmwareUpdateErrorCode?> _routerNamedFailure() async {
+    final before = _codeBeforeInstall;
+    if (before == null) return null;
+    final code = await _errorCodeOrNull();
+    if (code == null || !code.isFailure || code == before) return null;
+    logger.w('[FirmwareUpdate] the router named the install failure '
+        '(${code.name}), which it did not report before the dispatch');
+    return code;
+  }
+
+  /// Refuse an install when the router is already updating, and say so.
+  ///
+  /// Returns true when the caller must not dispatch — the failure is already in state
+  /// for the page to render.
+  ///
+  /// **Why this cannot be answered from `state.isUpdating`.** This notifier is
+  /// autoDispose, so the OTA page and the manual page hold *different* instances:
+  /// starting a router-side install and then navigating to the manual page disposes
+  /// the first notifier, and the second one begins at `idle` knowing nothing. Upload a
+  /// file there and a second update is dispatched at a router that is writing NAND.
+  /// The reverse holds too. The router's own reading is the only thing both pages can
+  /// see, which is why this asks the router rather than itself.
+  ///
+  /// The dashboard banner needs no equivalent: it already hides while
+  /// `FirmwareAutoUpdateUIModel.isBusy` (`firmware_update_banner_provider.dart`), and
+  /// its Update Now button only navigates to the OTA page — it dispatches nothing, so
+  /// there is one action path per flow and not three.
+  ///
+  /// **Read from the service, not from `firmwareAutoUpdateDataProvider`.** That L1
+  /// survives navigation, which is what makes it tempting, but it is a cache that is
+  /// only invalidated after a check — so it can hold a "not busy" from before the
+  /// install started, which is precisely the reading that would let the second update
+  /// through. A stale *guard* is worse than no guard because it looks like one. The
+  /// throttler's 5 s result cache is fine here and helps: "is the router busy" does
+  /// not change within five seconds of a flash that takes minutes.
+  ///
+  /// **A read that fails allows the dispatch.** This guard is about the user's flow,
+  /// not the router's safety: the firmware serialises `fwupd` itself with a `pidof`
+  /// check and queues what it refuses, so a second dispatch is untidy rather than
+  /// dangerous. Blocking a legitimate update because one diagnostic read hiccuped
+  /// would trade a real cost for a cosmetic one.
+  /// **It also records [_codeBeforeInstall].** The reading it already has in hand is
+  /// exactly the pre-dispatch baseline `verify()` needs, so taking it here is one read
+  /// instead of two identical ones back to back — and it means the baseline cannot be
+  /// forgotten on a path that remembers the guard, which is how the OTA flow ended up
+  /// with a dead `verify()` check in the first place.
+  Future<bool> _refuseIfRouterBusy() async {
+    final FirmwareAutoUpdateUIModel reading;
+    try {
+      reading = await _svc.fetchAutoUpdate();
+    } catch (e) {
+      logger.w('[FirmwareUpdate] could not read the router state before '
+          'dispatching an install — allowing it ($e)');
+      // No reading, so no baseline: `_routerNamedFailure` then attributes nothing,
+      // which is the same refusal it makes for a code it cannot place.
+      _codeBeforeInstall = null;
+      return false;
+    }
+    _codeBeforeInstall = reading.errorCode;
+    if (!reading.isBusy) return false;
+    logger.w('[FirmwareUpdate] refusing the install: the router is already '
+        '${reading.status.name} (fwup_state=${reading.rawState})');
+    _fail(const FirmwareFailure.updateAlreadyRunning());
+    return true;
+  }
+
+  /// Wait out [window], but stop early if the router says it refused the image.
+  ///
+  /// Returns true when a refusal was reported — the failure is already in state — and
+  /// false when the window ran out with nothing to say, which is the caller's cue to
+  /// carry on to the reboot wait.
+  ///
+  /// **This replaces a blind delay rather than adding a wait.** The manual flow spent
+  /// a fixed 60 s drawing "Installing firmware" and then another 60 s of recovery
+  /// cooldown before anything read the router, so a refused image took **over two
+  /// minutes** to produce a message — measured against a router that had written its
+  /// reason within seconds and would never reboot, so the user watched a progress card
+  /// and then a recovery dialog for an update that was already over. Polling inside
+  /// the time we were spending anyway costs nothing in the success case and saves all
+  /// of it in the failure case.
+  ///
+  /// `verify()` keeps the same check afterwards, and the two are not redundant: this
+  /// catches the refusal the router announces *before* any reboot, that one catches a
+  /// flash that failed after one.
+  Future<bool> awaitInstallRefusal({
+    Duration window = const Duration(seconds: 60),
+    Duration pollInterval = const Duration(seconds: 2),
+  }) async {
+    final giveUpAt = DateTime.now().add(window);
+    while (DateTime.now().isBefore(giveUpAt)) {
+      final remaining = giveUpAt.difference(DateTime.now());
+      await Future<void>.delayed(
+          pollInterval < remaining ? pollInterval : remaining);
+      if (_disposed || _cancelRequested) return false;
+      final named = await _routerNamedFailure();
+      if (named != null) {
+        _fail(FirmwareFailure.routerReported(named));
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Log an outcome this page is not entitled to report, and undo what watching it
@@ -884,6 +1142,20 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       logger.d(
           '[FirmwareUpdate] verify: banks=${banks.map((b) => '${b.instancePath}:${b.status}').join(', ')}'
           ', expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
+
+      // **The router's own reason first, when it named one this install produced.**
+      // Everything below infers a failure from the *shape* of the bank table, and all
+      // three sentences are about a reboot: "restarted but did not start the new
+      // firmware", "image N was not reported after the router restarted". An image the
+      // router refused at verification never got as far as a reboot, so those
+      // sentences are wrong twice — and the true one is sitting in
+      // `fwup_error_code`, where a failed manual upload was measured leaving it and
+      // leaving nothing else at all.
+      final named = await _routerNamedFailure();
+      if (named != null) {
+        _fail(FirmwareFailure.routerReported(named));
+        return;
+      }
 
       // Verify: check for inconsistent multi-Active state
       final activeBanks = banks.where((b) => b.isActive).toList();

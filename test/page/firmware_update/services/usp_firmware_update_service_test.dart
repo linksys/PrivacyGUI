@@ -512,6 +512,188 @@ void main() {
       expect(model.rawState, '5');
     });
 
+    group('the diagnostics leaves (#1572)', () {
+      // The mapping is one site for the same reason `fwup_state`'s is: the raw
+      // domain is the firmware's, and a value this build does not define must cost
+      // one enum value and one arm.
+      const codes = {
+        '0': FirmwareUpdateErrorCode.none,
+        '1': FirmwareUpdateErrorCode.serverUnreachable,
+        '2': FirmwareUpdateErrorCode.serverResponse,
+        '3': FirmwareUpdateErrorCode.download,
+        '4': FirmwareUpdateErrorCode.flash,
+        '5': FirmwareUpdateErrorCode.signature,
+        '6': FirmwareUpdateErrorCode.routerUnspecified,
+        '7': FirmwareUpdateErrorCode.interrupted,
+      };
+
+      codes.forEach((raw, expected) {
+        test('fwup_error_code "$raw" maps to ${expected.name}', () {
+          final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+            FirmwareUpdateTestData.autoUpdate(fwupErrorCode: raw),
+          );
+
+          expect(model.errorCode, expected);
+          expect(model.rawErrorCode, raw);
+        });
+      });
+
+      test('a reserved code maps to unknown, and unknown is not a failure', () {
+        // The definition reserves 8+. An unrecognised number is not a reason, so it
+        // must not reach the failure copy — see `FirmwareUpdateErrorCode.isFailure`.
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(fwupErrorCode: '8'),
+        );
+
+        expect(model.errorCode, FirmwareUpdateErrorCode.unknown);
+        expect(model.errorCode.isFailure, isFalse);
+        expect(model.rawErrorCode, '8',
+            reason: 'the number itself is the whole diagnostic');
+      });
+
+      test('an absent fwup_error_code is unreported, never none', () {
+        // The distinction the definition was changed for before merge: with a
+        // `default_value` of "0" this case would have been indistinguishable from
+        // the router saying there was no error.
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(),
+        );
+
+        expect(model.errorCode, FirmwareUpdateErrorCode.unreported);
+        expect(model.errorCode, isNot(FirmwareUpdateErrorCode.none));
+        expect(model.errorCode.isFailure, isFalse);
+        expect(model.rawErrorCode, isNull);
+      });
+
+      test('an empty fwup_error_code is unreported too', () {
+        // A cleared sysevent comes back as the key with an empty value rather than
+        // as an absent key — measured on the bench for `fwup_trigger_source`, and
+        // the same channel serves both.
+        expect(
+          UspFirmwareUpdateService.mapAutoUpdateStatus(
+            FirmwareUpdateTestData.autoUpdate(fwupErrorCode: ''),
+          ).errorCode,
+          FirmwareUpdateErrorCode.unreported,
+        );
+      });
+
+      test(
+          'every failure code reports itself as one, and the three others do not',
+          () {
+        for (final code in FirmwareUpdateErrorCode.values) {
+          expect(
+            code.isFailure,
+            code != FirmwareUpdateErrorCode.none &&
+                code != FirmwareUpdateErrorCode.unknown &&
+                code != FirmwareUpdateErrorCode.unreported,
+            reason: '${code.name} classified wrongly',
+          );
+        }
+      });
+
+      const sources = {
+        'boot': FirmwareUpdateTriggerSource.boot,
+        'auto': FirmwareUpdateTriggerSource.auto,
+        'user': FirmwareUpdateTriggerSource.user,
+        'recovery': FirmwareUpdateTriggerSource.recovery,
+      };
+
+      sources.forEach((raw, expected) {
+        test('fwup_trigger_source "$raw" maps to ${expected.name}', () {
+          expect(
+            UspFirmwareUpdateService.mapAutoUpdateStatus(
+              FirmwareUpdateTestData.autoUpdate(fwupTriggerSource: raw),
+            ).triggerSource,
+            expected,
+          );
+        });
+      });
+
+      test('a Phase 2 trigger source maps to unknown rather than throwing', () {
+        // `upload` and `mesh` are reserved by the definition. Absorbing them here is
+        // what keeps a later firmware from costing a code change.
+        expect(
+          UspFirmwareUpdateService.mapAutoUpdateStatus(
+            FirmwareUpdateTestData.autoUpdate(fwupTriggerSource: 'upload'),
+          ).triggerSource,
+          FirmwareUpdateTriggerSource.unknown,
+        );
+      });
+
+      test('an absent trigger source is unreported', () {
+        expect(
+          UspFirmwareUpdateService.mapAutoUpdateStatus(
+            FirmwareUpdateTestData.autoUpdate(),
+          ).triggerSource,
+          FirmwareUpdateTriggerSource.unreported,
+        );
+      });
+
+      test('fwup_checked_after_boot is a tri-state, and absent is not false',
+          () {
+        FirmwareAutoUpdateUIModel map(String? raw) =>
+            UspFirmwareUpdateService.mapAutoUpdateStatus(
+              FirmwareUpdateTestData.autoUpdate(fwupCheckedAfterBoot: raw),
+            );
+
+        expect(map('1').checkedAfterBoot, isTrue);
+        expect(map('0').checkedAfterBoot, isFalse);
+        // The one that matters: `false` is the router saying it has not checked, and
+        // null is the router not answering. Only the first may become copy.
+        expect(map(null).checkedAfterBoot, isNull);
+        expect(map('').checkedAfterBoot, isNull);
+        expect(map('yes').checkedAfterBoot, isNull,
+            reason: 'an unrecognised value is not a "no"');
+      });
+
+      test('newfirmware_version is deliberately not on the model', () {
+        // Gap 3 on #1572: the offered version already comes from
+        // `FirmwareImage.{ota}.Version`, which is the single source for the OTA card,
+        // the check verdict and the dashboard banner. The definition gives this leaf
+        // the same ambiguity ("empty when no update available or not yet checked"),
+        // so a second channel would add no information and could disagree.
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(newfirmwareVersion: '9.9.9.9'),
+        );
+
+        expect(model.namedProps.keys, isNot(contains('newfirmwareVersion')));
+        expect(model.toString(), isNot(contains('9.9.9.9')));
+      });
+
+      test('a policy write carries the diagnostics through untouched', () {
+        // `withPolicy` is what the OTA card's switch calls. What the router is
+        // allowed to do next says nothing about what its last operation did.
+        final model = UspFirmwareUpdateService.mapAutoUpdateStatus(
+          FirmwareUpdateTestData.autoUpdate(
+            fwupErrorCode: '5',
+            fwupTriggerSource: 'auto',
+            fwupCheckedAfterBoot: '1',
+          ),
+        ).withPolicy(FirmwareAutoUpdatePolicy.notifyOnly);
+
+        expect(model.errorCode, FirmwareUpdateErrorCode.signature);
+        expect(model.rawErrorCode, '5');
+        expect(model.triggerSource, FirmwareUpdateTriggerSource.auto);
+        expect(model.checkedAfterBoot, isTrue);
+        expect(model.policy, FirmwareAutoUpdatePolicy.notifyOnly);
+      });
+
+      test('the diagnostics take part in equality', () {
+        // `props` comes from `namedProps` via `DiagnosticLoggable`, so a field left
+        // out of that map is a field a `ref.watch` cannot see change.
+        final a = FirmwareUpdateTestData.autoUpdateModel(
+            errorCode: FirmwareUpdateErrorCode.none);
+        final b = FirmwareUpdateTestData.autoUpdateModel(
+            errorCode: FirmwareUpdateErrorCode.flash);
+
+        expect(a, isNot(b));
+        expect(
+          FirmwareUpdateTestData.autoUpdateModel(checkedAfterBoot: true),
+          isNot(FirmwareUpdateTestData.autoUpdateModel(checkedAfterBoot: null)),
+        );
+      });
+    });
+
     test('progress parses, and a non-numeric progress falls back to 0', () {
       expect(
         UspFirmwareUpdateService.mapAutoUpdateStatus(

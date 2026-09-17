@@ -284,7 +284,16 @@ const double kGateFloorWithoutPagesMs = 149790;
 /// exact step both re-derivations took — where a 34-pump one would move it by 180. So
 /// "one more guard" is not a fixed cost here, and neither re-derivation could have been
 /// skipped as noise.
-const double kReadabilityGuardWeightMs = 6939;
+///
+/// **6,939 → 7,214 (#1572).** The third time the promise is kept, and the first time
+/// it was kept for a test added *inside* an existing group rather than for a new one:
+/// `firmware_ota`'s readability group gained `'the router history lines fit the slot
+/// the verdict fits'`, which pumps 2 states × 26 locales = **52** cells. `guards.length`
+/// does not move for that, so the projection would have understated the suite by the
+/// whole of it. Same arithmetic as the two steps above — 52 / 13 × 68.7 = **274.8ms**,
+/// carried as 275 — which is also the demonstration that this unit scales with pumps
+/// and not with tests: a 52-pump addition costs a fifth of what a 234-pump one does.
+const double kReadabilityGuardWeightMs = 7214;
 
 /// Which page each readability guard pumps, keyed by the guard's `group` title.
 ///

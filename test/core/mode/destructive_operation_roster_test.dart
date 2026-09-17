@@ -151,9 +151,11 @@ const _seams = <({String file, String method, String disruption})>[
   //
   // **The pair is now a single row.** `triggerOtaInstall` had a row here while it sat
   // in the tree with no caller, because a guard on a parked method costs nothing and
-  // its absence would have been indistinguishable from an oversight. The cloud path
-  // was deleted on 2026-09-16 — #1550's "separate decision", decided, the feature is
-  // not coming — so there is one OTA install to guard.
+  // its absence would have been indistinguishable from an oversight. It was deleted on
+  // 2026-09-16 (#1550's "separate decision", decided), so there is one OTA install to
+  // guard — and it is still an install that pulls an image from the OTA server, just
+  // one the router fetches for itself. The seam is here because of what it does to the
+  // router, which never depended on who called the cloud.
   (
     file: 'lib/page/firmware_update/providers/firmware_update_notifier.dart',
     method: 'triggerRouterOtaInstall',

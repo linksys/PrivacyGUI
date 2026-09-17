@@ -13,10 +13,13 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
@@ -154,6 +157,13 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateNotifierProvider);
     final banks = ref.watch(firmwareBanksDataProvider);
+    // The router's own record, for the check card's history line (#1572). The same
+    // L1 provider the OTA card's auto-update switch reads, so this costs no round
+    // trip. `hasError` is filtered at the call site below for the reason
+    // `firmwareAutoUpdateDataProvider` documents: riverpod attaches the previous
+    // value to an `AsyncError`, so a stale reading is indistinguishable from a fresh
+    // one through `valueOrNull` alone.
+    final autoUpdate = ref.watch(firmwareAutoUpdateDataProvider);
     final systemInfo = ref.watch(systemInfoDataProvider).valueOrNull?.model;
     final support = _readOtaSupport(banks);
     // Null in both non-`present` arms, so the offer cannot be built off a row whose
@@ -174,8 +184,8 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
       child: (childContext, constraints) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child:
-              _buildBody(childContext, state, banks, systemInfo, support, ota),
+          child: _buildBody(childContext, state, banks, systemInfo, support,
+              ota, autoUpdate.hasError ? null : autoUpdate.valueOrNull),
         );
       },
     );
@@ -261,6 +271,7 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
     SystemInfoUIModel? systemInfo,
     _OtaSupport support,
     FirmwareImageUIModel? ota,
+    FirmwareAutoUpdateUIModel? routerHistory,
   ) {
     final install = _buildInstallCard(state);
     // `physicalBanks`: one row per boot slot. The virtual OTA instance is not a
@@ -312,6 +323,10 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
             _OtaCheckCard(
               state: state,
               support: support,
+              // What the *router* remembers, for a page nobody has asked anything on
+              // yet (#1572). Threaded in rather than watched in the card, so the card
+              // stays a presenter.
+              routerHistory: routerHistory,
               onCheck: () => _onCheckForUpdates(context),
               onInstall: _installAction(context, state, support, ota),
             ),
@@ -372,7 +387,21 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   /// as well would give the card two sources for one fact.
   Future<void> _onCheckForUpdates(BuildContext context) async {
     try {
-      await ref.read(firmwareUpdateNotifierProvider.notifier).checkForUpdate();
+      final result = await ref
+          .read(firmwareUpdateNotifierProvider.notifier)
+          .checkForUpdate();
+      // The second way a check fails, and it does not throw: the router named the
+      // reason itself (#1572). The notifier has already put it in
+      // `FirmwareUpdateState.failure`, so this reads it from there rather than
+      // localizing the code twice — `localizeFirmwareFailure` is the one place a
+      // firmware failure becomes a sentence.
+      if (result.verdict == FirmwareOtaCheckVerdict.checkFailed &&
+          context.mounted) {
+        final failure = ref.read(firmwareUpdateNotifierProvider).failure;
+        logger.w('[FirmwareOta] the router reports the check failed '
+            '(${result.errorCode?.name})');
+        showFailedSnackBar(context, localizeFirmwareFailure(context, failure));
+      }
     } on ServiceError catch (e) {
       // The snack bar, not the card. A check that failed leaves the card in
       // `notChecked` — deliberately saying nothing rather than "up to date" — so
@@ -539,12 +568,19 @@ class _OtaCheckCard extends StatelessWidget {
   const _OtaCheckCard({
     required this.state,
     required this.support,
+    required this.routerHistory,
     required this.onCheck,
     required this.onInstall,
   });
 
   final FirmwareUpdateState state;
   final _OtaSupport support;
+
+  /// The router's own last-check record, or null when it could not be read.
+  ///
+  /// Only ever consulted while this session's verdict is `notChecked` — see
+  /// [_routerHistoryLine]. Everything else on the card is what *this* session did.
+  final FirmwareAutoUpdateUIModel? routerHistory;
   final VoidCallback onCheck;
 
   /// Starts the router-side install, or null when there is nothing to install.
@@ -743,6 +779,11 @@ class _OtaCheckCard extends StatelessWidget {
   /// one. The failure is reported in a snack bar instead — see
   /// `_FirmwareOtaViewState._onCheckForUpdates`.
   ///
+  /// Since #1572 "a check that failed" arrives two ways and both land here: a
+  /// transport failure, which is a thrown `ServiceError`, and
+  /// [FirmwareOtaCheckVerdict.checkFailed], which is the router naming the reason
+  /// itself.
+  ///
   /// Also `null` while checking: the in-flight state belongs to the button's own
   /// `isLoading`, and leaving the previous verdict up next to a running spinner
   /// would show the old answer as if it were the new one.
@@ -751,6 +792,17 @@ class _OtaCheckCard extends StatelessWidget {
     if (isChecking) return null;
     switch (state.otaCheck.verdict) {
       case FirmwareOtaCheckVerdict.notChecked:
+        // Nothing has been asked in this session — so the only thing worth saying is
+        // what the *router* already knows about its own history (#1572). Both arms
+        // below are the router's record, not a claim of ours.
+        return _routerHistoryLine(context, scheme);
+      // A check that ran and failed draws no line, and for the reason the method
+      // comment gives: every sentence this returns is a claim about the firmware on
+      // the router, and a failed check supports none of them. The reason goes to the
+      // snack bar in `_onCheckForUpdates`, which does not outlive the next check the
+      // way a card would — and it must not be overwritten by the stale history line
+      // above, which is why this arm is separate and returns nothing.
+      case FirmwareOtaCheckVerdict.checkFailed:
         return null;
       case FirmwareOtaCheckVerdict.updateAvailable:
         final version = state.otaCheck.version;
@@ -788,6 +840,65 @@ class _OtaCheckCard extends StatelessWidget {
           ),
         );
     }
+  }
+
+  /// What the router says about its own last check, for a page nobody has asked
+  /// anything on yet (#1572).
+  ///
+  /// Two facts, and both come from the L1 auto-update reading rather than from
+  /// anything this session did:
+  ///
+  ///   * `fwup_checked_after_boot == false` — the router has not looked since it
+  ///     started. Until this existed the card showed a bare button here, because
+  ///     `notChecked` absorbs both "never checked" and "the check failed" and
+  ///     neither could be told apart. **Only a literal `false` says it**; null is
+  ///     the router not reporting the parameter, and asserting "not checked yet"
+  ///     from silence is the defect the nullable mapping exists to prevent.
+  ///   * a failure code standing on the router — the overnight scheduled check
+  ///     could not reach the server, say. Worth showing as a reason rather than as
+  ///     silence, and it is stated as history because that is all it is: the value
+  ///     is undated, so this line never claims the failure is current and never
+  ///     offers a retry.
+  ///
+  /// Null once anything else is known. The order matters: a router that has not
+  /// checked cannot also have a failure from a check, and if it somehow reports both
+  /// the honest line is the one about not having checked.
+  Widget? _routerHistoryLine(BuildContext context, ColorScheme scheme) {
+    final reading = routerHistory;
+    if (reading == null) return null;
+
+    if (reading.checkedAfterBoot == false) {
+      return _statusLine(
+        icon: Icons.schedule_outlined,
+        color: scheme.onSurfaceVariant,
+        child: AppText.bodyMedium(
+          loc(context).firmwareNotCheckedYet,
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+    // `couldBeACheck`, not `isFailure`: `download`, `flash` and `signature` can only
+    // come from an install, and this line names the *check*. Without the narrowing a
+    // flash that failed would be reported as a failed check — on the very check that
+    // found the update.
+    if (reading.errorCode.couldBeACheck) {
+      return _statusLine(
+        icon: Icons.info_outline,
+        color: scheme.onSurfaceVariant,
+        // **The label alone — the reason deliberately does not go here.** This slot
+        // is ~204px wide at 320px, beside a button that cannot shrink, and it is the
+        // site #1380 measured overflowing in all 26 locales. Measured for this line:
+        // the seven reason sentences take four to seven lines in it, against a
+        // three-line ceiling the existing guard holds them to. The reason still
+        // reaches the user, through the snack bar on a check they just ran, where
+        // there is a full-width surface to say it on.
+        child: AppText.bodyMedium(
+          loc(context).firmwareLastCheckDidNotFinish,
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+    return null;
   }
 
   /// An icon and a sentence that is allowed to wrap.

@@ -19,10 +19,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
+
+import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockUspFirmwareUpdateService extends Mock
     implements UspFirmwareUpdateService {}
@@ -34,14 +37,20 @@ class MockSseOperationAwaiter extends Mock implements SseOperationAwaiter {}
 /// `NoImage` with no version is what an M60TB on the latest build reports, and it
 /// is the reading that means both "checked, nothing new" and "never checked" — the
 /// ambiguity the deadline exists to work around.
-FirmwareImageUIModel _otaRow({required bool available, String version = ''}) =>
+FirmwareImageUIModel _otaRow({
+  required bool available,
+  String version = '',
+  String? status,
+}) =>
     FirmwareImageUIModel(
       instance: 3,
       instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
       alias: 'ota',
       name: '',
       version: version,
-      status: available ? 'Available' : 'NoImage',
+      // `Checking` is the value `linksys/usp_framework#66` added, measured on the
+      // bench to be present for 0.65–0.9 s while `fwupd` queries the OTA server.
+      status: status ?? (available ? 'Available' : 'NoImage'),
       available: available,
     );
 
@@ -72,6 +81,10 @@ void main() {
         // `requestOtaInstall`, and neither can this test hand it one.
         dispatchCheck: firmware.requestOtaCheck,
         readImages: firmware.fetchAllBanks,
+        // A third function, and still not the object: `fetchAutoUpdate` is a read, so
+        // it cannot install anything, and the compiler still cannot see the install
+        // verb from inside the service.
+        readAutoUpdate: firmware.fetchAutoUpdate,
         awaiter: withAwaiter ? awaiter : null,
         lock: lock,
         deadline: deadline,
@@ -88,7 +101,38 @@ void main() {
         .thenAnswer((_) async => watch);
     when(() => firmware.requestOtaCheck(otaInstance: any(named: 'otaInstance')))
         .thenAnswer((_) async => 'cmd-key-1');
+    // The router that reports nothing about errors: the default, so every test that
+    // does not care about the code reads exactly as it did before #1572.
+    when(() => firmware.fetchAutoUpdate())
+        .thenAnswer((_) async => FirmwareUpdateTestData.autoUpdateModel());
   });
+
+  /// Queues one `fetchAllBanks` answer per call, repeating the last forever.
+  ///
+  /// The check's whole new ability is telling a phase from a resting state, so most
+  /// of the tests below are about a *sequence* of reads rather than a single one.
+  void queueImages(List<List<FirmwareImageUIModel>> reads) {
+    var i = 0;
+    when(() => firmware.fetchAllBanks()).thenAnswer((_) async {
+      final read = reads[i < reads.length ? i : reads.length - 1];
+      i++;
+      return read;
+    });
+  }
+
+  /// Queues one `fetchAutoUpdate` answer per call, repeating the last forever.
+  void queueAutoUpdate(List<FirmwareAutoUpdateUIModel> reads) {
+    var i = 0;
+    when(() => firmware.fetchAutoUpdate()).thenAnswer((_) async {
+      final read = reads[i < reads.length ? i : reads.length - 1];
+      i++;
+      return read;
+    });
+  }
+
+  FirmwareAutoUpdateUIModel withCode(FirmwareUpdateErrorCode code) =>
+      FirmwareUpdateTestData.autoUpdateModel(
+          errorCode: code, rawErrorCode: '${code.index}');
 
   group('the dispatch', () {
     test('asks the ota instance, and subscribes before it asks', () async {
@@ -413,14 +457,237 @@ void main() {
 
     test('is tunable, and the production default is documented', () {
       // Pinned so that "replace this once contract request 6 is answered" has a
-      // named thing to delete. Values are a compromise both ends of which are
+      // named thing to delete. The deadline is a compromise both ends of which are
       // wrong: shorter reports "nothing new" while the router is still asking,
       // longer spends the whole window on the common case, which is a router
       // that is already current.
       expect(FirmwareRouterOtaCheckService.defaultDeadline,
           const Duration(seconds: 10));
+      // 300 ms, down from 2 s (#1572). The poll now has to *catch* something rather
+      // than wait for it: the `Checking` window is measured at 0.65–0.9 s, so a 2 s
+      // interval falls outside it on most runs and the check goes back to inferring
+      // "nothing new" from the deadline.
       expect(FirmwareRouterOtaCheckService.defaultPollInterval,
-          const Duration(seconds: 2));
+          const Duration(milliseconds: 300));
+      // And it backs off, because past the fast window the loop is no longer waiting
+      // for a phase — it is waiting out the deadline for a slow router.
+      expect(FirmwareRouterOtaCheckService.defaultSlowPollInterval,
+          const Duration(seconds: 1));
+      expect(FirmwareRouterOtaCheckService.defaultFastPollWindow,
+          const Duration(seconds: 3));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1572 — the router now says *why* a check failed, and when one finished.
+  // ---------------------------------------------------------------------------
+  group('the router names the failure', () {
+    test('a failure code after Checking was seen becomes checkFailed',
+        () async {
+      // The answer this whole file exists to make possible. Before the error code,
+      // a check that could not reach the OTA server waited out the deadline and
+      // returned `noUpdateFound` — a green tick and "No new firmware was found"
+      // for a question the router never managed to ask.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+      queueAutoUpdate([
+        withCode(FirmwareUpdateErrorCode.none),
+        withCode(FirmwareUpdateErrorCode.serverUnreachable),
+      ]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.serverUnreachable);
+    });
+
+    test('an offer outranks a failure code', () async {
+      // `Available=true` is the router answering the question. A code left over from
+      // whatever came before does not un-answer it.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: true, version: '2.0.1.26091601')],
+      ]);
+      queueAutoUpdate([withCode(FirmwareUpdateErrorCode.serverUnreachable)]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.updateAvailable);
+      expect(result.version, '2.0.1.26091601');
+    });
+
+    test('Checking that has been seen and then left is a real "nothing new"',
+        () async {
+      // The other half of the same measurement: before this, "nothing new" could
+      // only ever be inferred from the deadline expiring. `Status=Checking` — added
+      // by `linksys/usp_framework#66` and measured present for 0.65–0.9 s — is the
+      // completion marker contract request 6 asked for, arriving by the one route
+      // nobody expected.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+
+      final stopwatch = Stopwatch()..start();
+      final result = await buildService(deadline: const Duration(seconds: 5))
+          .check(otaInstance: 3);
+      stopwatch.stop();
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)),
+          reason: 'the verdict came from the router, not from the deadline');
+    });
+
+    test('a stale code that never moved is not this check\'s failure',
+        () async {
+      // The regression this rule exists to prevent, and the reason the code is not
+      // trusted on its own: the value is persistent, has no timestamp, and the
+      // definition says it survives until the next operation or the next reboot. A
+      // check whose own run was never observed must not inherit it — that is how a
+      // healthy router once got told its update had failed.
+      queueImages([
+        [_bank, _otaRow(available: false)],
+      ]);
+      queueAutoUpdate([withCode(FirmwareUpdateErrorCode.signature)]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+      expect(result.errorCode, isNull);
+    });
+
+    test('a code that moved is this check\'s, even with no Checking sighting',
+        () async {
+      // Baseline-and-diff, the same mechanism `install()` already applies to
+      // `fwup_state`. The `Checking` window is under a second, so a slow poll can
+      // miss it entirely — but a code that differs from the one standing before the
+      // dispatch can only have been written by the run we started.
+      queueImages([
+        [_bank, _otaRow(available: false)],
+      ]);
+      queueAutoUpdate([
+        // read before the dispatch
+        withCode(FirmwareUpdateErrorCode.none),
+        // every read after it
+        withCode(FirmwareUpdateErrorCode.download),
+      ]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.download);
+    });
+
+    test('unknown and unreported codes never fail a check', () async {
+      for (final code in [
+        FirmwareUpdateErrorCode.unknown,
+        FirmwareUpdateErrorCode.unreported,
+        FirmwareUpdateErrorCode.none,
+      ]) {
+        queueImages([
+          [_bank, _otaRow(available: false, status: 'Checking')],
+          [_bank, _otaRow(available: false)],
+        ]);
+        queueAutoUpdate([
+          withCode(FirmwareUpdateErrorCode.none),
+          withCode(code),
+        ]);
+
+        final result = await buildService().check(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound,
+            reason: '${code.name} is the absence of a reason, not one');
+      }
+    });
+
+    test('a router that cannot answer the diagnostics read still checks',
+        () async {
+      // The diagnostics read is a second `Get` and it can fail on its own. Losing it
+      // costs the reason, not the check — and reporting a failed *check* because a
+      // *diagnostic* read failed would be the same substitution in a new place.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+      when(() => firmware.fetchAutoUpdate()).thenThrow(NetworkError());
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+    });
+
+    test('a failed baseline read does not turn a stale code into a failure',
+        () async {
+      // The hole the `!= null` guard closes. The pre-dispatch read is best-effort, so
+      // it can come back null — and without the guard `code != null` is trivially true,
+      // which would report a week-old code as this check's failure on a router that is
+      // fine. Found in review; the install service always had the guard.
+      queueImages([
+        [_bank, _otaRow(available: false)],
+      ]);
+      var call = 0;
+      when(() => firmware.fetchAutoUpdate()).thenAnswer((_) async {
+        // First call is the baseline and it fails; the concluding read succeeds and
+        // reports a code that was already standing.
+        if (call++ == 0) throw NetworkError();
+        return withCode(FirmwareUpdateErrorCode.signature);
+      });
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+      expect(result.errorCode, isNull);
+    });
+
+    test('a Checking that never cleared still owns its failure', () async {
+      // The deadline path used to hardcode `sawRunStart: false`, throwing away the
+      // strongest evidence the loop had. Here the router is stuck in `Checking` — a
+      // slow OTA server, which is exactly when the server codes appear — and the code
+      // matches the pre-dispatch one, so only the sighting can attribute it.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+      ]);
+      queueAutoUpdate([withCode(FirmwareUpdateErrorCode.serverUnreachable)]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.serverUnreachable);
+    });
+
+    test('an offer read while the router is still Checking is not this answer',
+        () async {
+      // `Checking` is tested before `available` because during a check no field on the
+      // row is this run's answer. The failing case is a router flashed to the version
+      // it had previously offered: `Available` has not been recleared, so the first
+      // poll would offer the user the firmware they are already running.
+      queueImages([
+        [_bank, _otaRow(available: true, version: 'stale', status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound,
+          reason: 'the offer on that row belonged to the previous check');
+    });
+
+    test('the diagnostics read is not made on every poll', () async {
+      // Event-driven, not per-poll: the code only changes at the edges of a run, and
+      // the install watch's cadence is what makes a per-poll second `Get` expensive.
+      // One before the dispatch and one at the conclusion is the budget.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false, status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+
+      await buildService().check(otaInstance: 3);
+
+      verify(() => firmware.fetchAutoUpdate()).called(2);
     });
   });
 }

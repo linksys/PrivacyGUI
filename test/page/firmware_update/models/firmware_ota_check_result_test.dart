@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 
 void main() {
@@ -75,11 +76,48 @@ void main() {
               const FirmwareOtaCheckResult.updateAvailable(version: '2.0.3')));
     });
 
-    test('props are the verdict and the version', () {
+    test('props are the verdict, the version and the error code', () {
       expect(
           const FirmwareOtaCheckResult.updateAvailable(version: '2.0.2.1')
               .props,
-          [FirmwareOtaCheckVerdict.updateAvailable, '2.0.2.1']);
+          [FirmwareOtaCheckVerdict.updateAvailable, '2.0.2.1', null]);
+    });
+
+    test('two failed checks with different reasons are not equal', () {
+      // The code has to be in `props` or a second failure would not republish: the
+      // notifier writes the result into state, and a state that compares equal is a
+      // state riverpod does not notify on — so the card would keep the first reason.
+      expect(
+        const FirmwareOtaCheckResult.checkFailed(
+            FirmwareUpdateErrorCode.serverUnreachable),
+        isNot(const FirmwareOtaCheckResult.checkFailed(
+            FirmwareUpdateErrorCode.flash)),
+      );
+    });
+
+    test('checkFailed carries its reason and claims no version', () {
+      const result =
+          FirmwareOtaCheckResult.checkFailed(FirmwareUpdateErrorCode.signature);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.signature);
+      expect(result.isUpdateAvailable, isFalse);
+      expect(result.version, isEmpty,
+          reason: 'a check that failed has no version to offer');
+    });
+
+    test('a non-failure code cannot become a failed check', () {
+      // The same assert `FirmwareFailure.routerReported` carries, for the same
+      // reason: this verdict is what makes the page say the check failed.
+      for (final code in [
+        FirmwareUpdateErrorCode.none,
+        FirmwareUpdateErrorCode.unknown,
+        FirmwareUpdateErrorCode.unreported,
+      ]) {
+        expect(() => FirmwareOtaCheckResult.checkFailed(code),
+            throwsA(isA<AssertionError>()),
+            reason: '${code.name} is not a failure');
+      }
     });
   });
 }

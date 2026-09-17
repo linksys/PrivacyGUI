@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 
 /// How watching a router-side firmware update ended.
@@ -28,15 +29,23 @@ enum FirmwareOtaInstallVerdict {
   /// was running has stopped being visible.
   idle,
 
-  // There is deliberately no `failed` verdict, and there was one until
-  // 2026-09-16. It existed for `fwup_state=5`, which is measured to be the reboot
-  // — see [FirmwareAutoUpdateStatus.rebooting] — so nothing could reach it that
-  // was not a success. `fwup_state` publishes no failure value at all, which
-  // leaves this watch with nothing to report a failure *from*: a flash that fails
-  // returns to 0 exactly as one that succeeds does, and the two are only
-  // separable after the reboot by comparing versions. That is `verify()`'s job and
-  // `FirmwareFailure.bootedOldImage` is its answer. A verdict this loop cannot
-  // produce would be an arm every caller has to write and no router can trigger.
+  /// The router named a reason the update failed —
+  /// [FirmwareOtaInstallResult.errorCode] is which one.
+  ///
+  /// **This verdict was deleted on 2026-09-16 and is back for a different reason.**
+  /// The version that went away keyed off `fwup_state=5`, which is measured to be
+  /// the reboot — see [FirmwareAutoUpdateStatus.rebooting] — so nothing could reach
+  /// it that was not a success. `fwup_state` still publishes no failure value at
+  /// all; what changed is that `fwup_error_code` does
+  /// (`linksys/usp_framework#66`), so there is finally something to report a
+  /// failure *from* rather than a state to misread.
+  ///
+  /// It does not replace `verify()`. A flash that fails silently — no code, wrong
+  /// bank booted — is still only separable after the reboot by comparing versions,
+  /// and `FirmwareFailure.bootedOldImage` is still the answer for it. This verdict
+  /// is the case where the router says so before the reboot, which saves the user
+  /// the wait rather than replacing the check.
+  failed,
 
   /// The ceiling elapsed and the update never got as far as downloading.
   ///
@@ -58,6 +67,9 @@ enum FirmwareOtaInstallVerdict {
 class FirmwareOtaInstallResult extends Equatable {
   final FirmwareOtaInstallVerdict verdict;
 
+  /// The router's own reason, for [FirmwareOtaInstallVerdict.failed] only.
+  final FirmwareUpdateErrorCode? errorCode;
+
   /// `fwup_state` as the router last spelled it, or empty if it was never read.
   ///
   /// Carried separately from [lastProgress] so REQ-A7 holds without the UI having
@@ -72,10 +84,17 @@ class FirmwareOtaInstallResult extends Equatable {
     required this.verdict,
     this.rawState = '',
     this.lastProgress,
-  });
+    this.errorCode,
+  }) : assert(
+            verdict != FirmwareOtaInstallVerdict.failed ||
+                (errorCode != null &&
+                    errorCode != FirmwareUpdateErrorCode.none &&
+                    errorCode != FirmwareUpdateErrorCode.unknown &&
+                    errorCode != FirmwareUpdateErrorCode.unreported),
+            'a failed verdict needs a reason the router actually named');
 
   bool get isFlashing => verdict == FirmwareOtaInstallVerdict.flashing;
 
   @override
-  List<Object?> get props => [verdict, rawState, lastProgress];
+  List<Object?> get props => [verdict, rawState, lastProgress, errorCode];
 }

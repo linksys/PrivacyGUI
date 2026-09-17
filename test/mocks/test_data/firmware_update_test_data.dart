@@ -174,15 +174,27 @@ class FirmwareUpdateTestData {
   /// A `FirmwareAutoUpdate` reading as the codegen layer hands it over. Both
   /// sysevent values arrive as strings, including the ones that look numeric —
   /// which is the whole reason the mapping has to be explicit.
+  /// The four diagnostics leaves default to **null — the router did not report
+  /// them** — rather than to `'0'`. That is the shape the merged definition has
+  /// (`optional: true`, no `default_value`), and defaulting them to a value would let
+  /// a test assert "no error" against a fixture that never said so.
   static FirmwareAutoUpdate autoUpdate({
     String fwupState = '0',
     String fwupProgress = '0',
     String autoupdateFlags = '2',
+    String? fwupErrorCode,
+    String? fwupTriggerSource,
+    String? fwupCheckedAfterBoot,
+    String? newfirmwareVersion,
   }) =>
       FirmwareAutoUpdate(
         autoupdateFlags: autoupdateFlags,
         fwupState: fwupState,
         fwupProgress: fwupProgress,
+        fwupErrorCode: fwupErrorCode,
+        fwupTriggerSource: fwupTriggerSource,
+        fwupCheckedAfterBoot: fwupCheckedAfterBoot,
+        newfirmwareVersion: newfirmwareVersion,
       );
 
   /// The same reading one layer lower — the raw `Get` map, for stubbing
@@ -196,11 +208,24 @@ class FirmwareUpdateTestData {
     String fwupState = '0',
     String fwupProgress = '0',
     String autoupdateFlags = '2',
+    String? fwupErrorCode,
+    String? fwupTriggerSource,
+    String? fwupCheckedAfterBoot,
   }) =>
       <String, dynamic>{
         'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': autoupdateFlags,
         'Device.X_LINKSYS_Sysevent.fwup_state': fwupState,
         'Device.X_LINKSYS_Sysevent.fwup_progress': fwupProgress,
+        // Present only when asked for: a key absent from the map is how a router
+        // without the diagnostics leaves answers, and the codegen turns that into
+        // null rather than into a value.
+        if (fwupErrorCode != null)
+          'Device.X_LINKSYS_Sysevent.fwup_error_code': fwupErrorCode,
+        if (fwupTriggerSource != null)
+          'Device.X_LINKSYS_Sysevent.fwup_trigger_source': fwupTriggerSource,
+        if (fwupCheckedAfterBoot != null)
+          'Device.X_LINKSYS_Sysevent.fwup_checked_after_boot':
+              fwupCheckedAfterBoot,
       };
 
   /// A `FirmwareAutoUpdateUIModel` as the service hands it to a provider.
@@ -210,6 +235,11 @@ class FirmwareUpdateTestData {
     String rawState = '0',
     FirmwareAutoUpdatePolicy policy = FirmwareAutoUpdatePolicy.autoInstall,
     String? rawFlags,
+    FirmwareUpdateErrorCode errorCode = FirmwareUpdateErrorCode.unreported,
+    String? rawErrorCode,
+    FirmwareUpdateTriggerSource triggerSource =
+        FirmwareUpdateTriggerSource.unreported,
+    bool? checkedAfterBoot,
   }) =>
       FirmwareAutoUpdateUIModel(
         status: status,
@@ -217,6 +247,10 @@ class FirmwareUpdateTestData {
         rawState: rawState,
         policy: policy,
         rawFlags: rawFlags ?? policy.rawValue,
+        errorCode: errorCode,
+        rawErrorCode: rawErrorCode,
+        triggerSource: triggerSource,
+        checkedAfterBoot: checkedAfterBoot,
       );
 
   /// Flexible bank builder for verify tests.

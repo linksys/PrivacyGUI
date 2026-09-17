@@ -5,6 +5,8 @@ import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
@@ -62,8 +64,10 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   @override
   Future<void> runUpload({required String commandKey}) async {}
 
+  // `true` = dispatched, which is what a fixture pinning a *phase* wants: the
+  // caller's flow continues exactly as it did before the busy refusal existed.
   @override
-  Future<void> triggerInstall({required int targetInstance}) async {}
+  Future<bool> triggerInstall({required int targetInstance}) async => true;
 
   @override
   void enterRecoveryWaiting(
@@ -113,6 +117,7 @@ List<Override> firmwareUpdateOverrides({
   required FirmwareUpdateState updateState,
   required FirmwareBanksData banksData,
   required SystemInfoData systemInfoData,
+  FirmwareAutoUpdateUIModel? autoUpdate,
 }) =>
     [
       firmwareUpdateNotifierProvider
@@ -121,7 +126,22 @@ List<Override> firmwareUpdateOverrides({
           .overrideWith(() => FixedFirmwareBanksDataNotifier(banksData)),
       systemInfoDataProvider
           .overrideWith(() => FixedSystemInfoDataNotifier(systemInfoData)),
+      // The router's own last-check record, which the OTA check card's history line
+      // reads (#1572). Defaulted to a router that reports none of the diagnostics
+      // leaves, so every existing caller keeps the rendering it had.
+      if (autoUpdate != null)
+        firmwareAutoUpdateDataProvider
+            .overrideWith(() => _FixedAutoUpdateNotifier(autoUpdate)),
     ];
+
+/// Publishes one auto-update reading and never re-reads.
+class _FixedAutoUpdateNotifier extends FirmwareAutoUpdateDataNotifier {
+  _FixedAutoUpdateNotifier(this._fixed);
+  final FirmwareAutoUpdateUIModel _fixed;
+
+  @override
+  Future<FirmwareAutoUpdateUIModel> build() async => _fixed;
+}
 
 List<Override> firmwareUpdateOverridesWithLoading({
   required FirmwareUpdateState updateState,

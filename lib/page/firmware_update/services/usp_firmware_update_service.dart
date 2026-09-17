@@ -162,9 +162,12 @@ class UspFirmwareUpdateService {
   /// is ignored and `fwupd` resolves the OTA server itself.
   ///
   /// **There is no cloud-URL sibling any more.** A `triggerOtaDownload` used to sit
-  /// above, taking a URL the cloud OTA API supplied and answering `void`; the cloud
-  /// path was deleted on 2026-09-16 — #1550's "separate decision", decided, because
-  /// the feature is not coming. The return type is why this was never folded into it
+  /// above, taking a URL the Linksys cloud OTA API supplied and answering `void`; it
+  /// was deleted on 2026-09-16 (#1550's "separate decision", decided). Note what did
+  /// *not* change: the image still comes from the OTA server. `fwupd` resolves it,
+  /// two paragraphs up — so this is the app ceasing to be a client of that API, not
+  /// the product losing cloud-delivered firmware. The return type is why this was
+  /// never folded into it
   /// anyway: the `commandKey` is the only part of the operate response that carries
   /// information, and the install needs it to tell its own `OperationComplete` from
   /// another command's. A second optional-URL overload of the flash verb would also
@@ -216,6 +219,18 @@ class UspFirmwareUpdateService {
     }
   }
 
+  /// One firmware image's `Status`, by instance.
+  ///
+  /// **Not a verdict, and not read by anything.** Zero production call sites since
+  /// #1549 split the two flows; kept because the tests below document what the router
+  /// reports per slot, which is worth having written down.
+  ///
+  /// It was also a hazard until `linksys/usp_framework#66`: `sysmngr` returned
+  /// `InstallationFailed` for the ota row at `fwup_state=5`, which is the *reboot*, so
+  /// anything reaching for "a status to decide from" got an install failure out of
+  /// every successful install. The definition no longer says that — but the rule this
+  /// ticket establishes stands either way: **the failure verdict comes from
+  /// `fwup_error_code`, never from a row's `Status`.**
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);
@@ -363,18 +378,32 @@ class UspFirmwareUpdateService {
   /// throw.
   ///
   /// **`5` maps to `rebooting`, not to a failure, and that one arm is the whole of
-  /// this method's history.** All five values are now measured on real hardware;
-  /// see [FirmwareAutoUpdateStatus.rebooting] for the four sources and for where
-  /// the `5 = Error` reading came from, since the definition this app generates
-  /// from still says so. This mapping deliberately disagrees with
-  /// `firmware_auto_update.yaml`, which is the only place in the app that does.
+  /// this method's history.** All five values are measured on real hardware; see
+  /// [FirmwareAutoUpdateStatus.rebooting] for the sources and for where the
+  /// `5 = Error` reading came from. **The definition now agrees**: since
+  /// `linksys/usp_framework#66` merged, `firmware_auto_update.yaml` documents
+  /// `"5" = Rebooting (success). No error state — fwupd resets to 0 on failure`, and
+  /// the ota row's `Status` no longer reports `InstallationFailed` there. This
+  /// mapping used to contradict the definition on purpose; it no longer has to.
   ///
   /// [FirmwareAutoUpdateUIModel.rawState] carries the value through unparsed so
   /// a diagnostic keeps the number the router sent.
   ///
   /// `autoupdate_flags` is mapped here too rather than in a second method: it
   /// arrives in the same `Get`, so splitting the mapping would mean two reads of
-  /// one response.
+  /// one response. The same goes for the three diagnostics leaves
+  /// `linksys/usp_framework#66` added — `fwup_error_code`, `fwup_trigger_source` and
+  /// `fwup_checked_after_boot`. Each keeps the null-versus-value distinction the
+  /// definition was corrected to preserve: **absent is `unreported`, never a value**,
+  /// because "the router does not report this" and "the router reports no error" are
+  /// different facts and only one of them is a claim.
+  ///
+  /// The fourth leaf, `newfirmware_version`, is **deliberately not mapped**. The
+  /// offered version comes from `FirmwareImage.{ota}.Version`, which is the single
+  /// source for the OTA card, the check verdict and the dashboard banner, and the new
+  /// leaf carries the same ambiguity ("empty when no update available or not yet
+  /// checked") — so it would add no information while giving two channels for one
+  /// fact that can disagree.
   static FirmwareAutoUpdateUIModel mapAutoUpdateStatus(FirmwareAutoUpdate raw) {
     final status = switch (raw.fwupState) {
       '0' => FirmwareAutoUpdateStatus.idle,
@@ -392,6 +421,17 @@ class UspFirmwareUpdateService {
       logger.w('[FirmwareUpdate] unrecognised autoupdate_flags '
           '"${raw.autoupdateFlags}"');
     }
+    final errorCode = FirmwareUpdateErrorCode.fromRaw(raw.fwupErrorCode);
+    if (errorCode == FirmwareUpdateErrorCode.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised fwup_error_code '
+          '"${raw.fwupErrorCode}"');
+    }
+    final triggerSource =
+        FirmwareUpdateTriggerSource.fromRaw(raw.fwupTriggerSource);
+    if (triggerSource == FirmwareUpdateTriggerSource.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised fwup_trigger_source '
+          '"${raw.fwupTriggerSource}"');
+    }
     return FirmwareAutoUpdateUIModel(
       status: status,
       // Carried verbatim. `fwup_progress` rests at both 0 and 100 after a check
@@ -401,6 +441,18 @@ class UspFirmwareUpdateService {
       rawState: raw.fwupState,
       policy: policy,
       rawFlags: raw.autoupdateFlags,
+      errorCode: errorCode,
+      rawErrorCode: raw.fwupErrorCode,
+      triggerSource: triggerSource,
+      // Only the two values the parameter defines become a bool. Anything else —
+      // absent, cleared, or a spelling this build does not know — is null, because
+      // the consumer's question is "may I say 'not checked yet'" and only a literal
+      // "0" licenses that.
+      checkedAfterBoot: switch (raw.fwupCheckedAfterBoot) {
+        '1' => true,
+        '0' => false,
+        _ => null,
+      },
     );
   }
 

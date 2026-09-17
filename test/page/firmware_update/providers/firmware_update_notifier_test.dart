@@ -16,11 +16,13 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
@@ -824,6 +826,423 @@ void main() {
       );
     });
 
+    group('the two install paths are mutually locked (#1572)', () {
+      // The hole this closes: `firmwareUpdateNotifierProvider` is **autoDispose**, so
+      // the OTA page and the manual page hold different notifiers. Start a router-side
+      // install, navigate to the manual page — the first notifier is disposed — upload
+      // a file, and a second update is dispatched at a router that is writing NAND,
+      // because the fresh notifier begins at `idle` knowing nothing. So neither path
+      // can be gated on this app's own state; both ask the router.
+      //
+      // The dashboard banner needs no test here because it dispatches nothing: it
+      // hides while the router is busy (`firmware_update_banner_provider.dart`) and its
+      // Update Now button only navigates to the OTA page. One action path per flow.
+      void routerIs(FirmwareAutoUpdateStatus status) {
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                status: status,
+                rawState:
+                    status == FirmwareAutoUpdateStatus.installing ? '4' : '0'));
+      }
+
+      test('the OTA install refuses while the router is already installing',
+          () async {
+        routerIs(FirmwareAutoUpdateStatus.installing);
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final result = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaInstallVerdict.abandoned);
+        verifyNever(() => mockOtaInstaller.install(
+              otaInstance: any(named: 'otaInstance'),
+              onProgress: any(named: 'onProgress'),
+              isCancelled: any(named: 'isCancelled'),
+            ));
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            const FirmwareFailure.updateAlreadyRunning());
+      });
+
+      test('the manual install refuses while the router is already installing',
+          () async {
+        routerIs(FirmwareAutoUpdateStatus.installing);
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        verifyNever(() => mockService.triggerLocalDownload(
+            targetInstance: any(named: 'targetInstance')));
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.failure, const FirmwareFailure.updateAlreadyRunning());
+        // The phase never moved, so no progress card is drawn for an install that was
+        // never started — and `failed` leaves the page exitable.
+        expect(state.phase, isNot(FirmwareUpdatePhase.triggering));
+      });
+
+      test('the manual refusal is returned, not just published (round 2, C1)',
+          () async {
+        // The return value is what stops the caller. Publishing the failure was not
+        // enough: `triggerInstall` returned `void`, so the view could not tell a
+        // refusal from a dispatch and walked on into a 60 s poll, the recovery dialog
+        // and `verify()` — which fabricated a `bootedOldImage` **over the top of** the
+        // correct `updateAlreadyRunning`. So the user was told the wrong thing about a
+        // dispatch that never happened, after two minutes of waiting for it.
+        routerIs(FirmwareAutoUpdateStatus.installing);
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final dispatched = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        expect(dispatched, isFalse,
+            reason: 'false is the signal the caller stops on');
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            const FirmwareFailure.updateAlreadyRunning());
+      });
+
+      test('a dispatched manual install returns true', () async {
+        // The other side of the same signal: the success path must keep going, so a
+        // real dispatch has to be distinguishable from a refusal by its return value
+        // alone.
+        routerIs(FirmwareAutoUpdateStatus.idle);
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final dispatched = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        expect(dispatched, isTrue);
+        expect(container.read(firmwareUpdateNotifierProvider).phase,
+            FirmwareUpdatePhase.installing);
+      });
+
+      test('a checking router also blocks, because mode 2 checks first',
+          () async {
+        // `isBusy` covers `checking` as well as the two flashing states. A router
+        // mid-check is one whose `Download()` is about to become a download.
+        routerIs(FirmwareAutoUpdateStatus.checking);
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final result = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaInstallVerdict.abandoned);
+      });
+
+      test('an idle router is not blocked', () async {
+        routerIs(FirmwareAutoUpdateStatus.idle);
+        when(() => mockOtaInstaller.install(
+                  otaInstance: any(named: 'otaInstance'),
+                  onProgress: any(named: 'onProgress'),
+                  isCancelled: any(named: 'isCancelled'),
+                ))
+            .thenAnswer((_) async => const FirmwareOtaInstallResult(
+                verdict: FirmwareOtaInstallVerdict.flashing));
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final result = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull);
+      });
+
+      test('a read that fails allows the install rather than blocking it',
+          () async {
+        // The guard is about the user's flow, not the router's safety: the firmware
+        // serialises `fwupd` with its own `pidof` check and queues what it refuses, so
+        // a second dispatch is untidy rather than dangerous. Refusing a legitimate
+        // update because one diagnostic read hiccuped trades a real cost for a
+        // cosmetic one.
+        when(() => mockService.fetchAutoUpdate()).thenThrow(NetworkError());
+        when(() => mockOtaInstaller.install(
+                  otaInstance: any(named: 'otaInstance'),
+                  onProgress: any(named: 'onProgress'),
+                  isCancelled: any(named: 'isCancelled'),
+                ))
+            .thenAnswer((_) async => const FirmwareOtaInstallResult(
+                verdict: FirmwareOtaInstallVerdict.flashing));
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final result = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        expect(result.verdict, FirmwareOtaInstallVerdict.flashing);
+      });
+    });
+
+    group('a manual upload the router refused (#1572)', () {
+      // Measured on FW `2.0.1.26091601` with a deliberately bad image: the router
+      // wrote `fwup_error_code=5`, left `fwup_state` at `0`, left the banks unchanged,
+      // and logged **nothing at all**. So that parameter is not the best account of the
+      // failure, it is the only one that exists — and the app was reporting "the router
+      // restarted but did not start the new firmware", which is wrong twice over.
+      FirmwareBanksData unflashed() => FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.bankWithStatus(
+                instance: 1, status: 'Active', version: '2.0.1.26091601'),
+            FirmwareUpdateTestData.bankWithStatus(
+                instance: 2, status: 'Available', version: ''),
+          ]);
+
+      /// Runs the real manual sequence — baseline read, dispatch, verify — with the
+      /// error code moving from [before] to [after].
+      Future<FirmwareUpdateState> runInstall({
+        required FirmwareUpdateErrorCode before,
+        required FirmwareUpdateErrorCode after,
+        bool baselineReadFails = false,
+      }) async {
+        // Two readers, in this order: the concurrency guard — which is also where the
+        // pre-dispatch baseline is taken, so there is one read rather than two
+        // identical ones — then whoever asks after the dispatch.
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          final n = call++;
+          if (n == 0 && baselineReadFails) throw NetworkError();
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: n == 0 ? before : after);
+        });
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+        return container.read(firmwareUpdateNotifierProvider);
+      }
+
+      test('the router\'s reason replaces the reboot sentence', () async {
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.none,
+          after: FirmwareUpdateErrorCode.signature,
+        );
+
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        expect(
+            state.failure?.reason, isNot(FirmwareFailureReason.bootedOldImage));
+      });
+
+      test('a code that did not move is the previous upload\'s', () async {
+        // The regression this baseline exists for, and it is not hypothetical: `fwcc`
+        // writes the error at four sites and clears it at **none**, and the only clear
+        // in the firmware outside `fwupd` runs on boot. So without the diff, one bad
+        // image would make every later upload — including the ones that work — report
+        // a signature failure for the rest of the boot.
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.signature,
+          after: FirmwareUpdateErrorCode.signature,
+        );
+
+        expect(state.failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
+            reason: 'the bank shape is all this install actually established');
+      });
+
+      test('a refusal is reported without waiting for a reboot', () async {
+        // The placement bug, pinned. The first version of this fix lived only in
+        // `verify()` — which the manual flow reaches after a fixed 60 s "Installing
+        // firmware" delay *and* a 60 s recovery cooldown, so a refused image took over
+        // two minutes to produce a message about an update that was already over.
+        // Nothing reboots, so the wait was for an event that never comes.
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          // Guard/baseline, then the refusal poll — see the helper above.
+          final n = call++;
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: n == 0
+                  ? FirmwareUpdateErrorCode.none
+                  : FirmwareUpdateErrorCode.signature);
+        });
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        final refused = await notifier.awaitInstallRefusal(
+          window: const Duration(milliseconds: 40),
+          pollInterval: const Duration(milliseconds: 5),
+        );
+
+        expect(refused, isTrue,
+            reason: 'the caller skips the reboot wait on a true');
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        // `failed` is not `isUpdating`, so the back arrow works again — which it does
+        // not while the page sits in `rebooting` waiting for nothing.
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(state.isUpdating, isFalse);
+      });
+
+      test('a window that runs out lets the reboot wait proceed', () async {
+        // The success path must not be slowed or diverted: an install that is really
+        // flashing reports no code, so the poll runs out and the caller carries on to
+        // the recovery wait exactly as before.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.none));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        final refused = await notifier.awaitInstallRefusal(
+          window: const Duration(milliseconds: 30),
+          pollInterval: const Duration(milliseconds: 5),
+        );
+
+        expect(refused, isFalse);
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull);
+      });
+
+      test('a baseline that could not be read attributes nothing', () async {
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.none,
+          after: FirmwareUpdateErrorCode.signature,
+          baselineReadFails: true,
+        );
+
+        expect(state.failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
+            reason: 'with nothing to compare against, the code proves nothing');
+      });
+
+      test('the OTA path gets the same post-reboot backstop', () async {
+        // Found in review round 1, as the consequence of an asymmetry the reviewer
+        // flagged one step short of: `_codeBeforeInstall` was set only by
+        // `triggerInstall`, so on the OTA path `_routerNamedFailure()` returned null
+        // from its first line and `verify()`'s error-code check was **dead code** —
+        // while the commit that added it claimed "both firmware paths reach verify(),
+        // so the OTA half gains the same backstop". It did not.
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          // Read 0 is the guard, which is also the baseline; verify() takes the next.
+          final n = call++;
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: n == 0
+                  ? FirmwareUpdateErrorCode.none
+                  : FirmwareUpdateErrorCode.flash);
+        });
+        when(() => mockOtaInstaller.install(
+                  otaInstance: any(named: 'otaInstance'),
+                  onProgress: any(named: 'onProgress'),
+                  isCancelled: any(named: 'isCancelled'),
+                ))
+            .thenAnswer((_) async => const FirmwareOtaInstallResult(
+                verdict: FirmwareOtaInstallVerdict.flashing));
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerRouterOtaInstall(otaInstance: 3);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            const FirmwareFailure.routerReported(FirmwareUpdateErrorCode.flash),
+            reason:
+                'the router named the reason; the bank shape is the fallback');
+      });
+
+      test('cancel clears the baseline, so no later run inherits it', () async {
+        // The asymmetry itself (review round 1, W-1). Both dispatch paths re-read the
+        // baseline before use, so this is not load-bearing — it is here so that
+        // "which lifecycle fields does cancel reset" has one answer instead of an
+        // exception nobody documented.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.signature));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        notifier.cancel();
+        // With the baseline cleared, a code standing on the router cannot be
+        // attributed to anything, so verify() falls back to the bank shape.
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'));
+      });
+
+      test('a successful flash is not failed by a standing code', () async {
+        // The other half of the same hazard: the flash worked, and a code left over
+        // from an earlier upload must not turn a bank flip into a failure.
+        // The same code on both reads — the baseline and the post-verify one — which
+        // is what a router carrying an earlier upload's failure looks like.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.signature));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final flashed = FirmwareBanksData(banks: [
+          FirmwareUpdateTestData.bankWithStatus(
+              instance: 1, status: 'Available', version: '2.0.1.26091601'),
+          FirmwareUpdateTestData.bankWithStatus(
+              instance: 2, status: 'Active', version: '2.0.1.26091602'),
+        ]);
+        final container = createContainer(banksData: AsyncData(flashed));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.done);
+        expect(state.failure, isNull);
+      });
+    });
+
     test('verify passes on a three-instance router', () async {
       final banksData = FirmwareBanksData(banks: [
         FirmwareUpdateTestData.bankWithStatus(
@@ -1089,6 +1508,95 @@ void main() {
         expect(state.otaCheck.isUpdateAvailable, isFalse);
       });
 
+      test('a router-reported failure lands in state.failure (#1572)',
+          () async {
+        // The point of the whole error-code channel, at the layer that has to route
+        // it: this is not a `ServiceError` about the transport, it is the router
+        // naming a firmware reason, so it belongs where `localizeFirmwareFailure`
+        // reads rather than where `localizeServiceError` does.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.serverUnreachable));
+
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        final result = await notifier.checkForUpdate();
+
+        expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure?.reason, FirmwareFailureReason.routerReportedFailure);
+        expect(state.failure?.errorCode,
+            FirmwareUpdateErrorCode.serverUnreachable);
+        // Idle, not `failed`: nothing was being installed, so there is no update to
+        // report as having failed — and `failed` is a phase the card draws a retry
+        // button on.
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        // And the verdict says nothing about the firmware, which is what stops the
+        // card claiming "no new firmware was found" for a check that never got an
+        // answer.
+        expect(state.otaCheck.isUpdateAvailable, isFalse);
+      });
+
+      test('a failed check can still be re-seeded with a standing offer',
+          () async {
+        // `_offerAlreadyOnTheRouter` only re-seeds `notChecked`, so publishing
+        // `checkFailed` made it permanently inert: the router would still be offering
+        // an update, the app would know it from the banks read, and the card would show
+        // nothing but a Check button until another check succeeded. Found in review.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.serverUnreachable));
+
+        final container =
+            createContainer(banksData: banksWithOta(available: true));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.checkForUpdate();
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.checkFailed);
+
+        // What the read-error card's retry, or any later banks read, does.
+        await notifier.loadBanks();
+
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.updateAvailable,
+            reason:
+                'an offer the router is still making outlives our failed check');
+      });
+
+      test('a later successful check clears the previous reason', () async {
+        // A failure that outlives the check that produced it is the same defect in a
+        // slower form: the snack bar is transient, but `state.failure` is not, and the
+        // install card reads it.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.flash));
+
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.checkForUpdate();
+        expect(
+            container.read(firmwareUpdateNotifierProvider).failure, isNotNull);
+
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer(
+                (_) async => const FirmwareOtaCheckResult.noUpdateFound());
+        await notifier.checkForUpdate();
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull,
+            reason:
+                'the second check answered, so the first reason is history');
+      });
+
       // REQ-A1, the notifier's half. The view decides whether to draw the button
       // from the same fact; this arm is the race where the row disappears between
       // that read and this one — and it must not look like a fault, because on OEM
@@ -1321,6 +1829,7 @@ void main() {
       void stubInstall({
         required FirmwareOtaInstallVerdict verdict,
         List<FirmwareOtaInstallProgress> readings = const [],
+        FirmwareUpdateErrorCode? errorCode,
       }) {
         when(() => mockOtaInstaller.install(
               otaInstance: any(named: 'otaInstance'),
@@ -1336,6 +1845,7 @@ void main() {
             verdict: verdict,
             rawState: readings.isEmpty ? '' : readings.last.rawState,
             lastProgress: readings.isEmpty ? null : readings.last,
+            errorCode: errorCode,
           );
         });
       }
@@ -1525,6 +2035,35 @@ void main() {
         expect(state.otaProgress?.rawState, '4');
       });
 
+      test('a router-named failure becomes that reason, not a stall (#1572)',
+          () async {
+        // The verdict that came back. Before the error code this watch had nothing to
+        // report a failure *from* — a flash that failed rested at `state=0` exactly
+        // like one that succeeded — so the user waited out the ceiling and got "the
+        // router stopped reporting progress". Now they get the reason.
+        stubInstall(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: [at('4', 50)],
+          errorCode: FirmwareUpdateErrorCode.signature,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        // The reading it stopped on is kept for the same reason a stall keeps one:
+        // "where did it get to" is the difference between a complaint and a report.
+        expect(state.otaProgress?.rawState, '4');
+      });
+
       test('a timeout is a failure, and never "up to date"', () async {
         stubInstall(
           verdict: FirmwareOtaInstallVerdict.timedOut,
@@ -1659,15 +2198,50 @@ void main() {
               onProgress: any(named: 'onProgress'),
               isCancelled: any(named: 'isCancelled'),
             )).thenAnswer((_) => gate.future);
+        // The concurrency guard reads the router before dispatching (#1572), so the
+        // dispose below has to happen *after* that read or it lands in a window where
+        // nothing has been dispatched and there is no failure to carry — a different
+        // scenario, pinned by the next test.
+        when(() => mockService.fetchAutoUpdate())
+            .thenAnswer((_) async => FirmwareUpdateTestData.autoUpdateModel());
+        final container = createContainer();
+
+        final pending = container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerRouterOtaInstall(otaInstance: 3);
+        // Let the guard's read resolve and `install()` be entered.
+        await Future<void>.delayed(Duration.zero);
+        container.dispose();
+        gate.completeError(const NetworkError(detail: 'lost the router'));
+
+        await expectLater(pending, throwsA(isA<NetworkError>()));
+      });
+
+      test('a page torn down during the concurrency read abandons quietly',
+          () async {
+        // The window the guard's own `await` created (#1572). Everything after it
+        // reaches for a provider off `ref`, so without a disposed check the first one
+        // throws `StateError: Tried to read a provider from a ProviderContainer that
+        // was already disposed` — a bookkeeping error in front of a caller that was
+        // owed nothing at all, since no install had been dispatched yet.
+        final read = Completer<FirmwareAutoUpdateUIModel>();
+        when(() => mockService.fetchAutoUpdate())
+            .thenAnswer((_) => read.future);
         final container = createContainer();
 
         final pending = container
             .read(firmwareUpdateNotifierProvider.notifier)
             .triggerRouterOtaInstall(otaInstance: 3);
         container.dispose();
-        gate.completeError(const NetworkError(detail: 'lost the router'));
+        read.complete(FirmwareUpdateTestData.autoUpdateModel());
 
-        await expectLater(pending, throwsA(isA<NetworkError>()));
+        final result = await pending;
+        expect(result.verdict, FirmwareOtaInstallVerdict.abandoned);
+        verifyNever(() => mockOtaInstaller.install(
+              otaInstance: any(named: 'otaInstance'),
+              onProgress: any(named: 'onProgress'),
+              isCancelled: any(named: 'isCancelled'),
+            ));
       });
 
       test('a mutation timeout reaches the failure card', () async {
@@ -1830,6 +2404,7 @@ void main() {
       void stubObserve({
         required FirmwareOtaInstallVerdict verdict,
         List<FirmwareOtaInstallProgress> readings = const [],
+        FirmwareUpdateErrorCode? errorCode,
       }) {
         when(() => mockOtaInstaller.observe(
               onProgress: any(named: 'onProgress'),
@@ -1844,6 +2419,7 @@ void main() {
             verdict: verdict,
             rawState: readings.isEmpty ? '' : readings.last.rawState,
             lastProgress: readings.isEmpty ? null : readings.last,
+            errorCode: errorCode,
           );
         });
       }
@@ -1857,6 +2433,52 @@ void main() {
               ),
             ),
           );
+
+      test('a failure is discarded when nothing was seen running (#1572)',
+          () async {
+        // The second gate, on the weaker evidence. The service will not attribute a
+        // code it cannot own, but on the observe path there is no baseline at all — so
+        // the notifier also refuses to report a failure for an update it never saw,
+        // because a code from last week on a page where nothing was attempted is how
+        // a healthy router gets reported as broken.
+        stubObserve(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: const [],
+          errorCode: FirmwareUpdateErrorCode.flash,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .observeRunningOtaInstall();
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.failure, isNull);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+      });
+
+      test('a failure is reported when the update was seen running (#1572)',
+          () async {
+        stubObserve(
+          verdict: FirmwareOtaInstallVerdict.failed,
+          readings: [at('4', 20)],
+          errorCode: FirmwareUpdateErrorCode.flash,
+        );
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .observeRunningOtaInstall();
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.flash));
+        expect(state.phase, FirmwareUpdatePhase.failed);
+      });
 
       test('watches without dispatching anything', () async {
         stubObserve(
