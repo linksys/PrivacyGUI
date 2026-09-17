@@ -366,18 +366,32 @@ class UspFirmwareUpdateService {
   /// throw.
   ///
   /// **`5` maps to `rebooting`, not to a failure, and that one arm is the whole of
-  /// this method's history.** All five values are now measured on real hardware;
-  /// see [FirmwareAutoUpdateStatus.rebooting] for the four sources and for where
-  /// the `5 = Error` reading came from, since the definition this app generates
-  /// from still says so. This mapping deliberately disagrees with
-  /// `firmware_auto_update.yaml`, which is the only place in the app that does.
+  /// this method's history.** All five values are measured on real hardware; see
+  /// [FirmwareAutoUpdateStatus.rebooting] for the sources and for where the
+  /// `5 = Error` reading came from. **The definition now agrees**: since
+  /// `linksys/usp_framework#66` merged, `firmware_auto_update.yaml` documents
+  /// `"5" = Rebooting (success). No error state — fwupd resets to 0 on failure`, and
+  /// the ota row's `Status` no longer reports `InstallationFailed` there. This
+  /// mapping used to contradict the definition on purpose; it no longer has to.
   ///
   /// [FirmwareAutoUpdateUIModel.rawState] carries the value through unparsed so
   /// a diagnostic keeps the number the router sent.
   ///
   /// `autoupdate_flags` is mapped here too rather than in a second method: it
   /// arrives in the same `Get`, so splitting the mapping would mean two reads of
-  /// one response.
+  /// one response. The same goes for the three diagnostics leaves
+  /// `linksys/usp_framework#66` added — `fwup_error_code`, `fwup_trigger_source` and
+  /// `fwup_checked_after_boot`. Each keeps the null-versus-value distinction the
+  /// definition was corrected to preserve: **absent is `unreported`, never a value**,
+  /// because "the router does not report this" and "the router reports no error" are
+  /// different facts and only one of them is a claim.
+  ///
+  /// The fourth leaf, `newfirmware_version`, is **deliberately not mapped**. The
+  /// offered version comes from `FirmwareImage.{ota}.Version`, which is the single
+  /// source for the OTA card, the check verdict and the dashboard banner, and the new
+  /// leaf carries the same ambiguity ("empty when no update available or not yet
+  /// checked") — so it would add no information while giving two channels for one
+  /// fact that can disagree.
   static FirmwareAutoUpdateUIModel mapAutoUpdateStatus(FirmwareAutoUpdate raw) {
     final status = switch (raw.fwupState) {
       '0' => FirmwareAutoUpdateStatus.idle,
@@ -395,6 +409,17 @@ class UspFirmwareUpdateService {
       logger.w('[FirmwareUpdate] unrecognised autoupdate_flags '
           '"${raw.autoupdateFlags}"');
     }
+    final errorCode = FirmwareUpdateErrorCode.fromRaw(raw.fwupErrorCode);
+    if (errorCode == FirmwareUpdateErrorCode.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised fwup_error_code '
+          '"${raw.fwupErrorCode}"');
+    }
+    final triggerSource =
+        FirmwareUpdateTriggerSource.fromRaw(raw.fwupTriggerSource);
+    if (triggerSource == FirmwareUpdateTriggerSource.unknown) {
+      logger.w('[FirmwareUpdate] unrecognised fwup_trigger_source '
+          '"${raw.fwupTriggerSource}"');
+    }
     return FirmwareAutoUpdateUIModel(
       status: status,
       // Carried verbatim. `fwup_progress` rests at both 0 and 100 after a check
@@ -404,6 +429,18 @@ class UspFirmwareUpdateService {
       rawState: raw.fwupState,
       policy: policy,
       rawFlags: raw.autoupdateFlags,
+      errorCode: errorCode,
+      rawErrorCode: raw.fwupErrorCode,
+      triggerSource: triggerSource,
+      // Only the two values the parameter defines become a bool. Anything else —
+      // absent, cleared, or a spelling this build does not know — is null, because
+      // the consumer's question is "may I say 'not checked yet'" and only a literal
+      // "0" licenses that.
+      checkedAfterBoot: switch (raw.fwupCheckedAfterBoot) {
+        '1' => true,
+        '0' => false,
+        _ => null,
+      },
     );
   }
 
