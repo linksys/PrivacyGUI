@@ -22,6 +22,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_resul
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
@@ -823,6 +824,122 @@ void main() {
         state.failure,
         FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
       );
+    });
+
+    group('a manual upload the router refused (#1572)', () {
+      // Measured on FW `2.0.1.26091601` with a deliberately bad image: the router
+      // wrote `fwup_error_code=5`, left `fwup_state` at `0`, left the banks unchanged,
+      // and logged **nothing at all**. So that parameter is not the best account of the
+      // failure, it is the only one that exists — and the app was reporting "the router
+      // restarted but did not start the new firmware", which is wrong twice over.
+      FirmwareBanksData unflashed() => FirmwareBanksData(banks: [
+            FirmwareUpdateTestData.bankWithStatus(
+                instance: 1, status: 'Active', version: '2.0.1.26091601'),
+            FirmwareUpdateTestData.bankWithStatus(
+                instance: 2, status: 'Available', version: ''),
+          ]);
+
+      /// Runs the real manual sequence — baseline read, dispatch, verify — with the
+      /// error code moving from [before] to [after].
+      Future<FirmwareUpdateState> runInstall({
+        required FirmwareUpdateErrorCode before,
+        required FirmwareUpdateErrorCode after,
+        bool baselineReadFails = false,
+      }) async {
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          final isBaseline = call++ == 0;
+          if (isBaseline && baselineReadFails) throw NetworkError();
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: isBaseline ? before : after);
+        });
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+        return container.read(firmwareUpdateNotifierProvider);
+      }
+
+      test('the router\'s reason replaces the reboot sentence', () async {
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.none,
+          after: FirmwareUpdateErrorCode.signature,
+        );
+
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        expect(
+            state.failure?.reason, isNot(FirmwareFailureReason.bootedOldImage));
+      });
+
+      test('a code that did not move is the previous upload\'s', () async {
+        // The regression this baseline exists for, and it is not hypothetical: `fwcc`
+        // writes the error at four sites and clears it at **none**, and the only clear
+        // in the firmware outside `fwupd` runs on boot. So without the diff, one bad
+        // image would make every later upload — including the ones that work — report
+        // a signature failure for the rest of the boot.
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.signature,
+          after: FirmwareUpdateErrorCode.signature,
+        );
+
+        expect(state.failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
+            reason: 'the bank shape is all this install actually established');
+      });
+
+      test('a baseline that could not be read attributes nothing', () async {
+        final state = await runInstall(
+          before: FirmwareUpdateErrorCode.none,
+          after: FirmwareUpdateErrorCode.signature,
+          baselineReadFails: true,
+        );
+
+        expect(state.failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
+            reason: 'with nothing to compare against, the code proves nothing');
+      });
+
+      test('a successful flash is not failed by a standing code', () async {
+        // The other half of the same hazard: the flash worked, and a code left over
+        // from an earlier upload must not turn a bank flip into a failure.
+        // The same code on both reads — the baseline and the post-verify one — which
+        // is what a router carrying an earlier upload's failure looks like.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.signature));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final flashed = FirmwareBanksData(banks: [
+          FirmwareUpdateTestData.bankWithStatus(
+              instance: 1, status: 'Available', version: '2.0.1.26091601'),
+          FirmwareUpdateTestData.bankWithStatus(
+              instance: 2, status: 'Active', version: '2.0.1.26091602'),
+        ]);
+        final container = createContainer(banksData: AsyncData(flashed));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.done);
+        expect(state.failure, isNull);
+      });
     });
 
     test('verify passes on a three-instance router', () async {

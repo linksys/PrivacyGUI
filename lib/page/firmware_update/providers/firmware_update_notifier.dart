@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
@@ -90,6 +91,24 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// them resetting the `_cancelRequested` flag the others terminate on, so a
   /// `cancel()` in between is undone rather than obeyed.
   bool _observing = false;
+
+  /// `fwup_error_code` as it stood before the install this page dispatched.
+  ///
+  /// **Load-bearing on the manual path, not a belt.** Measured on FW
+  /// `2.0.1.26091601`: `fwcc` — which is what a manual upload is verified and flashed
+  /// by — writes `newfirmware_status_details` at four sites and **clears it at none**,
+  /// and the only clear in the whole firmware outside `fwupd` is in
+  /// `service_autofwup.sh`'s `init_variables()`, which runs on boot. So one failed
+  /// upload leaves its code standing for the rest of the boot, and without this
+  /// baseline every later manual install — including the ones that work — would report
+  /// "the firmware failed the router's security check".
+  ///
+  /// The OTA path has the same field for the opposite reason: there `fwupd` does clear
+  /// at run start, so the diff is a belt over a guarantee.
+  ///
+  /// Null when the pre-dispatch read failed, which is what makes the comparison
+  /// refuse rather than assume — see [_routerNamedFailure].
+  FirmwareUpdateErrorCode? _codeBeforeInstall;
 
   /// Whether an install this page dispatched is still being watched.
   ///
@@ -509,6 +528,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'local firmware install');
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
+    // Before the dispatch, and outside the lock: this is a read, and it is the only
+    // thing that will let `verify()` tell a reason this upload produced from one an
+    // earlier upload left behind. Best-effort — losing it costs the reason, not the
+    // install.
+    _codeBeforeInstall = await _errorCodeOrNull();
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.triggerLocalDownload(targetInstance: targetInstance);
@@ -817,6 +841,41 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
+  /// `fwup_error_code`, or null when it could not be read.
+  ///
+  /// Null for two reasons that are the same to every caller — the parameter absent, or
+  /// the `Get` failing — because neither licenses a claim.
+  Future<FirmwareUpdateErrorCode?> _errorCodeOrNull() async {
+    try {
+      return (await _svc.fetchAutoUpdate()).errorCode;
+    } catch (e) {
+      logger.d('[FirmwareUpdate] could not read fwup_error_code ($e)');
+      return null;
+    }
+  }
+
+  /// The reason the router gave for the install this page dispatched, or null.
+  ///
+  /// **The one thing the router says about a failed manual upload.** Measured on
+  /// 2026-09-17 with a deliberately bad image: `fwup_error_code` read `5`,
+  /// `fwup_state` was `0`, the banks were unchanged, and the failure appeared in
+  /// **zero log lines** — so this parameter is not merely the best account of what
+  /// went wrong, it is the only one that exists anywhere. Not reading it does not hide
+  /// the reason, it loses it.
+  ///
+  /// Attributed only when the code has **moved** since [_codeBeforeInstall], for the
+  /// reason that field documents: on the manual path nothing clears it between runs
+  /// inside a boot, so an unchanged code is as likely to be the previous upload's.
+  Future<FirmwareUpdateErrorCode?> _routerNamedFailure() async {
+    final before = _codeBeforeInstall;
+    if (before == null) return null;
+    final code = await _errorCodeOrNull();
+    if (code == null || !code.isFailure || code == before) return null;
+    logger.w('[FirmwareUpdate] the router named the install failure '
+        '(${code.name}), which it did not report before the dispatch');
+    return code;
+  }
+
   /// Log an outcome this page is not entitled to report, and undo what watching it
   /// cost.
   ///
@@ -945,6 +1004,20 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       logger.d(
           '[FirmwareUpdate] verify: banks=${banks.map((b) => '${b.instancePath}:${b.status}').join(', ')}'
           ', expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
+
+      // **The router's own reason first, when it named one this install produced.**
+      // Everything below infers a failure from the *shape* of the bank table, and all
+      // three sentences are about a reboot: "restarted but did not start the new
+      // firmware", "image N was not reported after the router restarted". An image the
+      // router refused at verification never got as far as a reboot, so those
+      // sentences are wrong twice — and the true one is sitting in
+      // `fwup_error_code`, where a failed manual upload was measured leaving it and
+      // leaving nothing else at all.
+      final named = await _routerNamedFailure();
+      if (named != null) {
+        _fail(FirmwareFailure.routerReported(named));
+        return;
+      }
 
       // Verify: check for inconsistent multi-Active state
       final activeBanks = banks.where((b) => b.isActive).toList();
