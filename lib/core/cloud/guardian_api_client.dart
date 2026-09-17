@@ -62,7 +62,18 @@ class GuardianApiClient {
 
   /// Fetch device token from Guardian API.
   ///
-  /// The token is cached in secure storage with a 1-hour TTL.
+  /// The token is cached in secure storage with a 1-hour TTL, **and the cache is
+  /// keyed on the serial number it was issued for**. It has to be: web secure
+  /// storage is per origin, both routers on a bench answer at the same LAN
+  /// address, and logging out does not clear it — `clearAllCredentials()` is a
+  /// no-op and only a first launch calls `deleteAll()`. Keyed on time alone, this
+  /// hands a swapped-in device the previous device's token, which Guardian then
+  /// rejects against the new serial. The symptom is a Remote Assistance session
+  /// that will not start, i.e. indistinguishable from the bug PrivacyGUI#1582
+  /// exists to fix.
+  ///
+  /// An entry with no stored serial is not trusted, so a cache written by a build
+  /// that predates that key is refetched once rather than believed.
   Future<String> fetchDeviceToken({
     required String serialNumber,
     required String macAddress,
@@ -71,13 +82,19 @@ class GuardianApiClient {
     const storage = FlutterSecureStorage();
     final cachedToken = await storage.read(key: pLinksysToken);
     final cachedTs = await storage.read(key: pLinksysTokenTs);
+    final cachedSn = await storage.read(key: pLinksysTokenSn);
 
     if (cachedToken != null && cachedTs != null) {
       final ts = int.tryParse(cachedTs) ?? 0;
       final age = DateTime.now().millisecondsSinceEpoch - ts;
       if (age < 3600000) {
-        logger.d('[Guardian] Using cached device token');
-        return cachedToken;
+        if (cachedSn == serialNumber) {
+          logger.d('[Guardian] Using cached device token');
+          return cachedToken;
+        }
+        logger.i('[Guardian] Cached device token belongs to '
+            '${cachedSn ?? 'an unrecorded device'} — refetching for '
+            '$serialNumber');
       }
     }
 
@@ -86,7 +103,13 @@ class GuardianApiClient {
     final url = Uri.parse(_buildUrl(kDeviceToken, forCA: false))
         .replace(queryParameters: {
       'serialNumber': serialNumber,
-      'macAddress': macAddress,
+      // Both identifiers are upper-cased **here**, at the boundary, not only
+      // wherever they were read. Measured against Guardian on 2026-09-17: the
+      // correct UUID in lower case answers 403, and so does a MAC that differs by
+      // one character — and a 403 on this call surfaces to a person as "Remote
+      // Assistance does nothing". Normalising at the one place that talks to the
+      // cloud means a value arriving from a new source cannot reintroduce that.
+      'macAddress': macAddress.toUpperCase(),
       'uuid': deviceUUID.toUpperCase(),
     });
 
@@ -106,6 +129,7 @@ class GuardianApiClient {
       key: pLinksysTokenTs,
       value: '${DateTime.now().millisecondsSinceEpoch}',
     );
+    await storage.write(key: pLinksysTokenSn, value: serialNumber);
 
     return token;
   }

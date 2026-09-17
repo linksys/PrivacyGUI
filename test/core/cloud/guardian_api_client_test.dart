@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -53,6 +54,98 @@ void main() {
           () => mockHttp.delete(captureAny(), headers: any(named: 'headers')))
       .captured
       .single as Uri;
+
+  // PrivacyGUI#1582: Guardian validates all three identifiers, and measured on
+  // 2026-09-17 it answers 403 for the *correct* UUID in lower case and 403 for a
+  // MAC that differs by one character. A 403 here surfaces to a person as "Remote
+  // Assistance does nothing", so both identifiers are normalised at this boundary
+  // rather than only wherever they happened to be read.
+  group('fetchDeviceToken normalises the identifiers it sends', () {
+    setUp(() {
+      // Empty cache, so the call goes out instead of returning a stored token.
+      FlutterSecureStorage.setMockInitialValues({});
+    });
+
+    test('reuses the cached token for the same device inside the TTL',
+        () async {
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'cached-token',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+        pLinksysTokenSn: RemoteAssistanceTestData.testSerialNumber,
+      });
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'cached-token');
+      verifyNever(() => mockHttp.get(any(), headers: any(named: 'headers')));
+    });
+
+    // Both bench routers answer at 192.168.1.1, and web secure storage is keyed by
+    // origin, so swapping the box reuses the same store. A cache keyed on time
+    // alone then hands device B the token issued for device A, which Guardian
+    // rejects against B's serial — and the symptom is indistinguishable from the
+    // bug #1582 exists to fix. Logging out does not help: `clearAllCredentials()`
+    // is a no-op and only a first launch ever calls `deleteAll()`.
+    test('refetches when the cached token belongs to another device', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'token-of-the-previous-router',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+        pLinksysTokenSn: 'OTHER-SERIAL-0001',
+      });
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async =>
+              http.Response('{"linksysToken":"fresh-token"}', 200));
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'fresh-token');
+      expect(capturedGetUri().queryParameters['serialNumber'],
+          RemoteAssistanceTestData.testSerialNumber);
+    });
+
+    test('a cache written without a serial is not trusted', () async {
+      // Upgrade path: an entry stored by a build that predates the serial key.
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'legacy-token',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+      });
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async =>
+              http.Response('{"linksysToken":"fresh-token"}', 200));
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'fresh-token');
+    });
+
+    test('upper-cases both the MAC and the UUID', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response('{"linksysToken":"t"}', 200));
+
+      await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: '74:12:13:21:55:0a',
+        deviceUUID: '3e68dd2f-cf4f-4e47-a99b-741213215502',
+      );
+
+      final query = capturedGetUri().queryParameters;
+      expect(query['macAddress'], '74:12:13:21:55:0A');
+      expect(query['uuid'], '3E68DD2F-CF4F-4E47-A99B-741213215502');
+      expect(query['serialNumber'], RemoteAssistanceTestData.testSerialNumber);
+    });
+  });
 
   group('client-side requests → router proxy', () {
     test('getSessions targets proxy base', () async {
