@@ -28,18 +28,24 @@ import '../../../../mocks/provider_overrides/mock_login.dart';
 // `context.colWidth(4)` — a four-column box, so a narrow one — and the gate can only say
 // the box holds them, not that they read as an instruction not to unplug a router.
 //
-// ## Recorded, not fixed: the loader sits flush against the title
+// ## What this suite's first capture found, and fixed
 //
-// The first capture showed the spinner touching the title, and the geometry says it is
-// exactly that rather than an overlap — **`title.top - loader.bottom == 0.0`**, measured at
-// 320, 480 and 1280. Every other pair in that `Column` has an `AppGap.lg()` between them;
-// the loader and the title have nothing. It is not an overflow and not a clip, so no gate
-// cell would ever report it, which is the kind of thing this picture exists to surface.
+// The spinner was sitting on the title's first line. The geometry said flush rather than
+// overlapping — **`title.top - loader.bottom == 0.0`**, measured at 320, 480 and 1280 —
+// and the picture is why anyone looked: no gate cell could report it, because nothing
+// overflowed and nothing clipped.
 //
-// Left alone deliberately. Whether a spinner should be spaced off the heading it belongs
-// to is a design call on a page outside this work's scope, and a `lib/` edit made on the
-// strength of one reviewer's eye is the wrong way to settle it. The measurement is here so
-// the decision can be made rather than re-discovered.
+// **What turned it from a design question into a consistency fix was counting the other
+// sites.** Every `AppLoader`-then-text pairing in `lib/page` has an `AppGap` between them:
+// the wizard's `_buildSavingOverlay` and `_buildTestingReconnect` both use `AppGap.lg()`,
+// and five more agree. This page was the only one with nothing, so the convention had
+// already been decided and this screen was the outlier. `AppGap.lg()` added (Austin,
+// 2026-09-17).
+//
+// Worth keeping because of the order it happened in: the first read of the picture called
+// it an overlap, the geometry said flush, and the *census* is what made it actionable. A
+// picture is what surfaces this class of defect; it is not by itself the argument for
+// changing `lib/`.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
