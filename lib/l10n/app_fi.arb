@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Päivitys keskeytyi ennen valmistumista.",
   "firmwareNotCheckedYet": "Ei vielä tarkistettu",
   "firmwareLastCheckDidNotFinish": "Viimeisin tarkistus kesken",
+  "firmwareUpdateAlreadyRunning": "Reititin asentaa jo laiteohjelmistoa.",
   "firmwareProgressStalled": "Reititin lakkasi ilmoittamasta päivityksen edistymistä (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Reititin lakkasi ilmoittamasta päivityksen edistymistä ennen kuin se ilmoitti mitään vaihetta.",
   "firmwareBanksUnreadableAfterReboot": "Reititin käynnistyi uudelleen, mutta sen laiteohjelmistotietoja ei voitu lukea.",

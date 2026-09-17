@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "更新在完成前被中斷。",
   "firmwareNotCheckedYet": "尚未檢查",
   "firmwareLastCheckDidNotFinish": "上次檢查未完成",
+  "firmwareUpdateAlreadyRunning": "路由器正在安裝韌體。",
   "firmwareProgressStalled": "路由器已停止回報更新進度（fwup_state={state}）。",
   "firmwareProgressStalledNoReading": "路由器在回報任何階段之前就已停止回報更新進度。",
   "firmwareBanksUnreadableAfterReboot": "路由器已重新啟動，但無法讀取它的韌體資訊。",

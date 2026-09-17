@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Aktualizacja została przerwana, zanim się zakończyła.",
   "firmwareNotCheckedYet": "Jeszcze nie sprawdzono",
   "firmwareLastCheckDidNotFinish": "Ostatnie sprawdzanie nieukończone",
+  "firmwareUpdateAlreadyRunning": "Router już instaluje oprogramowanie układowe.",
   "firmwareProgressStalled": "Router przestał zgłaszać postęp aktualizacji (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router przestał zgłaszać postęp aktualizacji, zanim zgłosił jakikolwiek etap.",
   "firmwareBanksUnreadableAfterReboot": "Router uruchomił się ponownie, ale nie udało się odczytać informacji o jego oprogramowaniu układowym.",

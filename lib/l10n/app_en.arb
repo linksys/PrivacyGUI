@@ -813,6 +813,7 @@
   "firmwareErrorInterrupted": "The update was interrupted before it finished.",
   "firmwareNotCheckedYet": "Not checked yet",
   "firmwareLastCheckDidNotFinish": "Last check did not finish",
+  "firmwareUpdateAlreadyRunning": "The router is already installing firmware.",
   "firmwareProgressStalled": "The router stopped reporting update progress (fwup_state={state}).",
   "@firmwareProgressStalled": {
     "placeholders": {

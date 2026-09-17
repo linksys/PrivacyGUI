@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "تمّت مقاطعة التحديث قبل اكتماله.",
   "firmwareNotCheckedYet": "لم يتم التحقق بعد",
   "firmwareLastCheckDidNotFinish": "آخر تحقق لم يكتمل",
+  "firmwareUpdateAlreadyRunning": "جهاز التوجيه يثبّت برنامجًا ثابتًا بالفعل.",
   "firmwareProgressStalled": "توقف جهاز التوجيه عن الإبلاغ عن تقدم التحديث (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "توقف جهاز التوجيه عن الإبلاغ عن تقدم التحديث قبل أن يبلغ عن أي مرحلة.",
   "firmwareBanksUnreadableAfterReboot": "أُعيد تشغيل جهاز التوجيه، لكن تعذّرت قراءة معلومات برنامجه الثابت.",

@@ -76,6 +76,19 @@ enum FirmwareFailureReason {
   /// expected instance and [FirmwareFailure.detail] its reported status.
   bootedOldImage,
 
+  /// The router is already installing firmware, so nothing was dispatched.
+  ///
+  /// A refusal rather than a failure, which is the shape [noImageSelected] already
+  /// has: no update was attempted, so there is nothing that failed. It is here
+  /// because this is the vocabulary the two install pages already render.
+  ///
+  /// **The reason it cannot be answered from this app's own state.**
+  /// `firmwareUpdateNotifierProvider` is autoDispose, so the OTA page and the manual
+  /// page hold *different* notifiers: navigating from one to the other disposes the
+  /// first, and the second starts with an idle phase and no knowledge of an install
+  /// in flight. The router's own reading is the only thing both pages can see.
+  updateAlreadyRunning,
+
   /// The router named the reason itself — [FirmwareFailure.errorCode] is which one.
   ///
   /// **One reason carrying a typed value, not seven flat reasons**, and that is the
@@ -197,6 +210,13 @@ class FirmwareFailure extends Equatable {
         error = null,
         detail = status,
         number = instance,
+        errorCode = null;
+
+  const FirmwareFailure.updateAlreadyRunning()
+      : reason = FirmwareFailureReason.updateAlreadyRunning,
+        error = null,
+        detail = null,
+        number = null,
         errorCode = null;
 
   /// The router reported [code] as the reason its last operation failed.

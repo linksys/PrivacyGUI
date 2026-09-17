@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "L'aggiornamento è stato interrotto prima del completamento.",
   "firmwareNotCheckedYet": "Non ancora verificato",
   "firmwareLastCheckDidNotFinish": "Ultima verifica incompleta",
+  "firmwareUpdateAlreadyRunning": "Il router sta già installando il firmware.",
   "firmwareProgressStalled": "Il router ha smesso di segnalare l'avanzamento dell'aggiornamento (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Il router ha smesso di segnalare l'avanzamento dell'aggiornamento prima di segnalare una fase.",
   "firmwareBanksUnreadableAfterReboot": "Il router si è riavviato, ma non è stato possibile leggere le informazioni sul firmware.",

@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "De update is onderbroken voordat deze was voltooid.",
   "firmwareNotCheckedYet": "Nog niet gecontroleerd",
   "firmwareLastCheckDidNotFinish": "Laatste controle onvolledig",
+  "firmwareUpdateAlreadyRunning": "De router installeert al firmware.",
   "firmwareProgressStalled": "De router meldt de voortgang van de update niet meer (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "De router meldt de voortgang van de update niet meer en heeft geen fase gemeld.",
   "firmwareBanksUnreadableAfterReboot": "De router is opnieuw opgestart, maar de firmwaregegevens konden niet worden gelezen.",

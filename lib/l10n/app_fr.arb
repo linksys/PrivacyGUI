@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "La mise à jour a été interrompue avant la fin.",
   "firmwareNotCheckedYet": "Pas encore vérifié",
   "firmwareLastCheckDidNotFinish": "Dernière vérification incomplète",
+  "firmwareUpdateAlreadyRunning": "Le routeur installe déjà un micrologiciel.",
   "firmwareProgressStalled": "Le routeur a cessé de signaler la progression de la mise à jour (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Le routeur a cessé de signaler la progression de la mise à jour avant d'avoir signalé une étape.",
   "firmwareBanksUnreadableAfterReboot": "Le routeur a redémarré, mais ses informations de micrologiciel n'ont pas pu être lues.",

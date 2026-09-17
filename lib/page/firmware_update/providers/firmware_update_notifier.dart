@@ -527,6 +527,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   Future<void> triggerInstall({required int targetInstance}) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'local firmware install');
+    // The other half of the same lock: the OTA page may have dispatched an install
+    // that this notifier — a different instance — knows nothing about.
+    if (await _refuseIfRouterBusy()) return;
+    // And the same yield hazard the OTA path documents: `_svc` and the mutation lock
+    // below are both `ref.read`s, and this is now the first await in the method.
+    if (_disposed) return;
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     // Before the dispatch, and outside the lock: this is a read, and it is the only
     // thing that will let `verify()` tell a reason this upload produced from one an
@@ -574,6 +580,22 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   }) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'router OTA firmware install');
+    // Before anything else, and before the phase moves: the manual page may have
+    // started an install that this notifier cannot see. See [_refuseIfRouterBusy].
+    if (await _refuseIfRouterBusy()) {
+      return const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+    }
+    // **The guard's `await` is the first place this method yields**, and everything
+    // after it reaches for a provider off `ref` — so a page torn down during that one
+    // read would make `_otaInstaller` throw `StateError: Tried to read a provider from
+    // a ProviderContainer that was already disposed`. That is a bookkeeping error
+    // standing in front of whatever the caller was actually going to hear, which is
+    // the defect `a failure after the page is gone does not throw` exists to catch.
+    if (_disposed) {
+      return const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+    }
     _cancelRequested = false;
     _sawUpdateRunning = false;
     _sawRouterWorking = false;
@@ -874,6 +896,53 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     logger.w('[FirmwareUpdate] the router named the install failure '
         '(${code.name}), which it did not report before the dispatch');
     return code;
+  }
+
+  /// Refuse an install when the router is already updating, and say so.
+  ///
+  /// Returns true when the caller must not dispatch — the failure is already in state
+  /// for the page to render.
+  ///
+  /// **Why this cannot be answered from `state.isUpdating`.** This notifier is
+  /// autoDispose, so the OTA page and the manual page hold *different* instances:
+  /// starting a router-side install and then navigating to the manual page disposes
+  /// the first notifier, and the second one begins at `idle` knowing nothing. Upload a
+  /// file there and a second update is dispatched at a router that is writing NAND.
+  /// The reverse holds too. The router's own reading is the only thing both pages can
+  /// see, which is why this asks the router rather than itself.
+  ///
+  /// The dashboard banner needs no equivalent: it already hides while
+  /// `FirmwareAutoUpdateUIModel.isBusy` (`firmware_update_banner_provider.dart`), and
+  /// its Update Now button only navigates to the OTA page — it dispatches nothing, so
+  /// there is one action path per flow and not three.
+  ///
+  /// **Read from the service, not from `firmwareAutoUpdateDataProvider`.** That L1
+  /// survives navigation, which is what makes it tempting, but it is a cache that is
+  /// only invalidated after a check — so it can hold a "not busy" from before the
+  /// install started, which is precisely the reading that would let the second update
+  /// through. A stale *guard* is worse than no guard because it looks like one. The
+  /// throttler's 5 s result cache is fine here and helps: "is the router busy" does
+  /// not change within five seconds of a flash that takes minutes.
+  ///
+  /// **A read that fails allows the dispatch.** This guard is about the user's flow,
+  /// not the router's safety: the firmware serialises `fwupd` itself with a `pidof`
+  /// check and queues what it refuses, so a second dispatch is untidy rather than
+  /// dangerous. Blocking a legitimate update because one diagnostic read hiccuped
+  /// would trade a real cost for a cosmetic one.
+  Future<bool> _refuseIfRouterBusy() async {
+    final FirmwareAutoUpdateUIModel reading;
+    try {
+      reading = await _svc.fetchAutoUpdate();
+    } catch (e) {
+      logger.w('[FirmwareUpdate] could not read the router state before '
+          'dispatching an install — allowing it ($e)');
+      return false;
+    }
+    if (!reading.isBusy) return false;
+    logger.w('[FirmwareUpdate] refusing the install: the router is already '
+        '${reading.status.name} (fwup_state=${reading.rawState})');
+    _fail(const FirmwareFailure.updateAlreadyRunning());
+    return true;
   }
 
   /// Wait out [window], but stop early if the router says it refused the image.

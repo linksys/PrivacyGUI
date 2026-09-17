@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "업데이트가 완료되기 전에 중단되었습니다.",
   "firmwareNotCheckedYet": "확인하지 않음",
   "firmwareLastCheckDidNotFinish": "마지막 확인 미완료",
+  "firmwareUpdateAlreadyRunning": "라우터가 이미 펌웨어를 설치하고 있습니다.",
   "firmwareProgressStalled": "라우터가 업데이트 진행 상황 보고를 중단했습니다(fwup_state={state}).",
   "firmwareProgressStalledNoReading": "라우터가 어떤 단계도 보고하지 않은 채 업데이트 진행 상황 보고를 중단했습니다.",
   "firmwareBanksUnreadableAfterReboot": "라우터가 다시 시작되었지만 펌웨어 정보를 읽을 수 없습니다.",

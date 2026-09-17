@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Güncelleme tamamlanmadan kesildi.",
   "firmwareNotCheckedYet": "Henüz denetlenmedi",
   "firmwareLastCheckDidNotFinish": "Son denetim tamamlanmadı",
+  "firmwareUpdateAlreadyRunning": "Yönlendirici zaten bellenim kuruyor.",
   "firmwareProgressStalled": "Yönlendirici güncelleme ilerlemesini bildirmeyi durdurdu (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Yönlendirici herhangi bir aşama bildirmeden güncelleme ilerlemesini bildirmeyi durdurdu.",
   "firmwareBanksUnreadableAfterReboot": "Yönlendirici yeniden başlatıldı ancak bellenim bilgileri okunamadı.",

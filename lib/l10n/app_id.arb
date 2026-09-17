@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Pembaruan terhenti sebelum selesai.",
   "firmwareNotCheckedYet": "Belum diperiksa",
   "firmwareLastCheckDidNotFinish": "Pemeriksaan terakhir belum selesai",
+  "firmwareUpdateAlreadyRunning": "Router sedang memasang firmware.",
   "firmwareProgressStalled": "Router berhenti melaporkan kemajuan pembaruan (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router berhenti melaporkan kemajuan pembaruan sebelum melaporkan tahap apa pun.",
   "firmwareBanksUnreadableAfterReboot": "Router telah dinyalakan ulang, tetapi informasi firmware-nya tidak dapat dibaca.",

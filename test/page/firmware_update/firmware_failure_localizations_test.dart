@@ -78,6 +78,8 @@ void main() {
         const FirmwareFailure.bootedOldImage(instance: 2, status: 'Standby'),
     FirmwareFailureReason.routerReportedFailure:
         const FirmwareFailure.routerReported(FirmwareUpdateErrorCode.signature),
+    FirmwareFailureReason.updateAlreadyRunning:
+        const FirmwareFailure.updateAlreadyRunning(),
   };
 
   group('localizeFirmwareFailure — reason → key', () {
@@ -121,6 +123,8 @@ void main() {
         FirmwareFailureReason.bootedOldImage:
             l.firmwareBootedOldImage('2', 'Standby'),
         FirmwareFailureReason.routerReportedFailure: l.firmwareErrorSignature,
+        FirmwareFailureReason.updateAlreadyRunning:
+            l.firmwareUpdateAlreadyRunning,
       };
 
       for (final reason in FirmwareFailureReason.values) {

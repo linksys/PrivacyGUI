@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Bản cập nhật đã bị ngắt trước khi hoàn tất.",
   "firmwareNotCheckedYet": "Chưa kiểm tra",
   "firmwareLastCheckDidNotFinish": "Lần kiểm tra trước chưa xong",
+  "firmwareUpdateAlreadyRunning": "Router đang cài đặt firmware.",
   "firmwareProgressStalled": "Router đã ngừng báo tiến trình cập nhật (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router đã ngừng báo tiến trình cập nhật trước khi báo bất kỳ giai đoạn nào.",
   "firmwareBanksUnreadableAfterReboot": "Router đã khởi động lại, nhưng không đọc được thông tin firmware của nó.",

@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "การอัปเดตถูกขัดจังหวะก่อนเสร็จสิ้น",
   "firmwareNotCheckedYet": "ยังไม่ได้ตรวจสอบ",
   "firmwareLastCheckDidNotFinish": "การตรวจสอบครั้งล่าสุดไม่เสร็จ",
+  "firmwareUpdateAlreadyRunning": "เราเตอร์กำลังติดตั้งเฟิร์มแวร์อยู่แล้ว",
   "firmwareProgressStalled": "เราเตอร์หยุดรายงานความคืบหน้าของการอัปเดต (fwup_state={state})",
   "firmwareProgressStalledNoReading": "เราเตอร์หยุดรายงานความคืบหน้าของการอัปเดตก่อนที่จะรายงานขั้นตอนใด ๆ",
   "firmwareBanksUnreadableAfterReboot": "เราเตอร์รีสตาร์ทแล้ว แต่ไม่สามารถอ่านข้อมูลเฟิร์มแวร์ได้",

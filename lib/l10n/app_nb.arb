@@ -1074,6 +1074,7 @@
   "firmwareErrorInterrupted": "Oppdateringen ble avbrutt før den var fullført.",
   "firmwareNotCheckedYet": "Ikke sjekket ennå",
   "firmwareLastCheckDidNotFinish": "Siste sjekk ufullstendig",
+  "firmwareUpdateAlreadyRunning": "Ruteren installerer allerede fastvare.",
   "firmwareProgressStalled": "Ruteren sluttet å rapportere fremdriften for oppdateringen (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Ruteren sluttet å rapportere fremdriften for oppdateringen før den rapporterte noe trinn.",
   "firmwareBanksUnreadableAfterReboot": "Ruteren startet på nytt, men fastvareinformasjonen kunne ikke leses.",

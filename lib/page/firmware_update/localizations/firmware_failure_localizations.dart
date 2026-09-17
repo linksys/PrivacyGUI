@@ -70,6 +70,8 @@ String localizeFirmwareFailure(BuildContext context, FirmwareFailure? failure) {
         '${failure.number ?? 0}',
         failure.detail ?? '',
       ),
+    FirmwareFailureReason.updateAlreadyRunning =>
+      l.firmwareUpdateAlreadyRunning,
     // Delegated, exactly as `serviceError` is: the router's own vocabulary gets its
     // own exhaustive mapping instead of being flattened into seven reasons here.
     FirmwareFailureReason.routerReportedFailure =>
