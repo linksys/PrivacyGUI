@@ -182,8 +182,8 @@ void main() {
     expect(find.text('Close'), findsNothing);
     expect(find.text('Session expired'), findsNothing,
         reason: 'the user closed it themselves; nothing expired');
-    // ignore: avoid_print
-    print('PROBE listener fired after Close: \$probeFired times');
+    expect(polling.resumeCount, 1,
+        reason: 'closing resumes polling however the close was triggered');
   });
 
   testWidgets('a session that stays ACTIVE leaves the dialog alone',

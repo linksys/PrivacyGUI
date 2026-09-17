@@ -5,6 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -391,6 +392,44 @@ void main() {
       final state = container.read(remoteClientProvider);
       expect(state.pin, isNull);
       expect(state.pinSessionId, isNull);
+    });
+  });
+
+  group('pinForCurrentSession', () {
+    const other = GRASessionInfo(
+      id: 'session-2',
+      serialNumber: 'TEST123',
+      modelNumber: 'LN16-EU',
+      status: GRASessionStatus.pending,
+      expiredIn: 2547,
+      createdAt: 1748315872000,
+      statusChangedAt: 1748315989000,
+      currentTime: 1748316924838,
+    );
+
+    test('null when there is no PIN', () {
+      expect(
+          const RemoteClientState(sessionInfo: pendingSessionInfo)
+              .pinForCurrentSession,
+          isNull);
+    });
+
+    test('null when the PIN belongs to a different session', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: other, pin: '1234', pinSessionId: 'session-1')
+              .pinForCurrentSession,
+          isNull);
+    });
+
+    test('the PIN when it belongs to the session on screen', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: pendingSessionInfo,
+                  pin: '1234',
+                  pinSessionId: 'session-1')
+              .pinForCurrentSession,
+          '1234');
     });
   });
 

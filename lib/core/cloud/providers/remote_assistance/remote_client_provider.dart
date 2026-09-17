@@ -95,7 +95,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     try {
       final sessions = await fetchSessions();
       if (sessions.isEmpty) {
-        state = state.copyWith(sessionInfo: () => null);
+        // Same rule as pollSessionOnce: no session means no PIN either, or the
+        // next session inherits a credential that was never issued for it.
+        state = state.copyWith(
+            sessionInfo: () => null, pin: () => null, pinSessionId: () => null);
         return null;
       }
       final master = ref.read(deviceManagerProvider).masterDevice;
@@ -165,6 +168,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     // The dialog is closing in every path below; clear the flag up front so
     // the early returns do not leave it stuck true.
     state = state.copyWith(isDialogShown: () => false);
+    // The PIN dies with the dialog on every path, not only the ACTIVE one that
+    // resets state below - otherwise it stays resident and `pinForCurrentSession`
+    // is the only thing standing between it and the next session.
+    state = state.copyWith(pin: () => null, pinSessionId: () => null);
     final sessionId = state.sessionInfo?.id;
     if (sessionId == null) {
       return;

@@ -33,8 +33,10 @@ class RemoteClientState extends Equatable {
   /// [pin] when it was minted for the session currently in [sessionInfo], and
   /// null when it belongs to an earlier one.
   ///
-  /// Lives here so the provider's "does this session need a PIN?" test and the
-  /// dialog's "is this PIN safe to show?" test cannot drift apart.
+  /// This answers "is the PIN in state safe to show?". The provider asks a
+  /// related but different question - "does the session I have just fetched need
+  /// a PIN?" - against the value in its hand rather than against state, so it
+  /// keeps its own comparison rather than reusing this.
   String? get pinForCurrentSession =>
       pinSessionId != null && pinSessionId == sessionInfo?.id ? pin : null;
 
