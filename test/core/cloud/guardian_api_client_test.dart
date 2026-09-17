@@ -66,6 +66,70 @@ void main() {
       FlutterSecureStorage.setMockInitialValues({});
     });
 
+    test('reuses the cached token for the same device inside the TTL',
+        () async {
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'cached-token',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+        pLinksysTokenSn: RemoteAssistanceTestData.testSerialNumber,
+      });
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'cached-token');
+      verifyNever(() => mockHttp.get(any(), headers: any(named: 'headers')));
+    });
+
+    // Both bench routers answer at 192.168.1.1, and web secure storage is keyed by
+    // origin, so swapping the box reuses the same store. A cache keyed on time
+    // alone then hands device B the token issued for device A, which Guardian
+    // rejects against B's serial — and the symptom is indistinguishable from the
+    // bug #1582 exists to fix. Logging out does not help: `clearAllCredentials()`
+    // is a no-op and only a first launch ever calls `deleteAll()`.
+    test('refetches when the cached token belongs to another device', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'token-of-the-previous-router',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+        pLinksysTokenSn: 'OTHER-SERIAL-0001',
+      });
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async =>
+              http.Response('{"linksysToken":"fresh-token"}', 200));
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'fresh-token');
+      expect(capturedGetUri().queryParameters['serialNumber'],
+          RemoteAssistanceTestData.testSerialNumber);
+    });
+
+    test('a cache written without a serial is not trusted', () async {
+      // Upgrade path: an entry stored by a build that predates the serial key.
+      FlutterSecureStorage.setMockInitialValues({
+        pLinksysToken: 'legacy-token',
+        pLinksysTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+      });
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async =>
+              http.Response('{"linksysToken":"fresh-token"}', 200));
+
+      final token = await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: RemoteAssistanceTestData.testMacAddress,
+        deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
+      );
+
+      expect(token, 'fresh-token');
+    });
+
     test('upper-cases both the MAC and the UUID', () async {
       when(() => mockHttp.get(any(), headers: any(named: 'headers')))
           .thenAnswer((_) async => http.Response('{"linksysToken":"t"}', 200));
