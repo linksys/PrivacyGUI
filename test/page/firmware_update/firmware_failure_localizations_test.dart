@@ -7,6 +7,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 
 /// The defect these tests exist for, stated once: the failure card used to render
@@ -75,6 +76,8 @@ void main() {
         const FirmwareFailure.expectedBankMissing(instance: 2),
     FirmwareFailureReason.bootedOldImage:
         const FirmwareFailure.bootedOldImage(instance: 2, status: 'Standby'),
+    FirmwareFailureReason.routerReportedFailure:
+        const FirmwareFailure.routerReported(FirmwareUpdateErrorCode.signature),
   };
 
   group('localizeFirmwareFailure — reason → key', () {
@@ -117,6 +120,7 @@ void main() {
             l.firmwareExpectedBankMissing('2'),
         FirmwareFailureReason.bootedOldImage:
             l.firmwareBootedOldImage('2', 'Standby'),
+        FirmwareFailureReason.routerReportedFailure: l.firmwareErrorSignature,
       };
 
       for (final reason in FirmwareFailureReason.values) {
@@ -185,6 +189,133 @@ void main() {
         (tester) async {
       final ctx = await pumpContext(tester);
       expect(localizeFirmwareFailure(ctx, null), loc(ctx).unknownError);
+    });
+  });
+
+  group('localizeFirmwareErrorCode — the router\'s own reason (#1572)', () {
+    /// Every code the router can name, and the key each one must reach.
+    ///
+    /// Keyed by the enum for the same reason [samples] is: the first test asserts the
+    /// keys are exactly the failure codes, so an eighth code arrives as a red test
+    /// rather than as an untested arm.
+    Map<FirmwareUpdateErrorCode, String> expectedFor(BuildContext ctx) {
+      final l = loc(ctx);
+      return {
+        FirmwareUpdateErrorCode.serverUnreachable:
+            l.firmwareErrorServerUnreachable,
+        FirmwareUpdateErrorCode.serverResponse: l.firmwareErrorServerResponse,
+        FirmwareUpdateErrorCode.download: l.firmwareErrorDownload,
+        FirmwareUpdateErrorCode.flash: l.firmwareErrorFlash,
+        FirmwareUpdateErrorCode.signature: l.firmwareErrorSignature,
+        FirmwareUpdateErrorCode.routerUnspecified:
+            l.firmwareErrorRouterUnspecified,
+        FirmwareUpdateErrorCode.interrupted: l.firmwareErrorInterrupted,
+      };
+    }
+
+    testWidgets('every failure code has its own key', (tester) async {
+      final ctx = await pumpContext(tester);
+      final expected = expectedFor(ctx);
+
+      expect(
+        expected.keys.toSet(),
+        FirmwareUpdateErrorCode.values.where((c) => c.isFailure).toSet(),
+        reason: 'a new failure code needs a sentence here or it goes untested',
+      );
+      for (final entry in expected.entries) {
+        expect(localizeFirmwareErrorCode(ctx, entry.key), entry.value,
+            reason: '${entry.key.name} should map to its own key');
+      }
+    });
+
+    testWidgets('no two codes share a sentence', (tester) async {
+      final ctx = await pumpContext(tester);
+      final rendered = {
+        for (final code
+            in FirmwareUpdateErrorCode.values.where((c) => c.isFailure))
+          code: localizeFirmwareErrorCode(ctx, code)
+      };
+      expect(rendered.values.toSet(), hasLength(rendered.length),
+          reason: 'two codes rendering identically means one is wearing the '
+              "other's copy: $rendered");
+    });
+
+    testWidgets('the three non-reasons fall back rather than inventing one',
+        (tester) async {
+      // `none`, `unknown` and `unreported` are each the absence of a reason. A
+      // sentence for any of them would be this app telling the user something the
+      // router never said — the defect the whole error-code channel exists to avoid.
+      final ctx = await pumpContext(tester);
+      for (final code in [
+        FirmwareUpdateErrorCode.none,
+        FirmwareUpdateErrorCode.unknown,
+        FirmwareUpdateErrorCode.unreported,
+        null,
+      ]) {
+        expect(localizeFirmwareErrorCode(ctx, code), loc(ctx).unknownError,
+            reason: '$code must not name a reason');
+      }
+    });
+
+    test('a non-failure code cannot be built into a failure', () {
+      // The constructor's assert. Reaching for it with `none` means the caller is
+      // about to render "the update failed" from a reading that says no such thing.
+      for (final code in [
+        FirmwareUpdateErrorCode.none,
+        FirmwareUpdateErrorCode.unknown,
+        FirmwareUpdateErrorCode.unreported,
+      ]) {
+        expect(() => FirmwareFailure.routerReported(code),
+            throwsA(isA<AssertionError>()),
+            reason: '${code.name} is not a failure');
+      }
+      expect(
+          () => FirmwareFailure.routerReported(FirmwareUpdateErrorCode.flash),
+          returnsNormally);
+    });
+
+    testWidgets('every sentence reads under both headings', (tester) async {
+      // The constraint that keeps this at seven keys instead of fourteen: the same
+      // sentence appears under "Update failed" on the install card and under a
+      // neutral "last check" line on page open, where the code is the router's
+      // history and not this app's failure. A sentence naming the actor, or telling
+      // the user to retry, would be wrong in one of the two places.
+      final ctx = await pumpContext(tester);
+      for (final entry in expectedFor(ctx).entries) {
+        final sentence = localizeFirmwareErrorCode(ctx, entry.key);
+        expect(sentence, isNot(contains('Try again')),
+            reason: '${entry.key.name} tells the user what to do, and the '
+                '"last check" heading has nothing to retry');
+        expect(sentence, isNot(contains('your update')),
+            reason: '${entry.key.name} claims the run was the user\'s');
+      }
+    });
+
+    testWidgets('all 26 locales name every code, and differ from en',
+        (tester) async {
+      // The sweep that would have caught the original defect, applied to the new
+      // keys: seven strings added to `app_en.arb` and forgotten in the other
+      // twenty-five would still compile and still render — in English.
+      final codes =
+          FirmwareUpdateErrorCode.values.where((c) => c.isFailure).toList();
+
+      final ctxEn = await pumpContext(tester);
+      final english = {
+        for (final c in codes) c: localizeFirmwareErrorCode(ctxEn, c)
+      };
+
+      for (final locale in AppLocalizations.supportedLocales) {
+        final ctx = await pumpContext(tester, locale: locale);
+        for (final code in codes) {
+          final rendered = localizeFirmwareErrorCode(ctx, code);
+          expect(rendered.trim(), isNotEmpty,
+              reason: '${code.name} is blank in $locale');
+          if (locale.languageCode != 'en') {
+            expect(rendered, isNot(english[code]),
+                reason: '${code.name} is still English in $locale');
+          }
+        }
+      }
     });
   });
 

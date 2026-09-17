@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 
 /// Turns a [FirmwareFailure] into the sentence shown under "Update failed".
@@ -69,5 +70,45 @@ String localizeFirmwareFailure(BuildContext context, FirmwareFailure? failure) {
         '${failure.number ?? 0}',
         failure.detail ?? '',
       ),
+    // Delegated, exactly as `serviceError` is: the router's own vocabulary gets its
+    // own exhaustive mapping instead of being flattened into seven reasons here.
+    FirmwareFailureReason.routerReportedFailure =>
+      localizeFirmwareErrorCode(context, failure.errorCode),
+  };
+}
+
+/// Turns the router's own `fwup_error_code` into the sentence shown for it.
+///
+/// Exhaustive over [FirmwareUpdateErrorCode] and with no `default`, so a code added
+/// to that enum is a compile-time decision about its copy. Its three non-failure arms
+/// are reachable — nothing stops a caller passing them — and all three answer with
+/// [AppLocalizations.unknownError] rather than inventing a reason, because "no error",
+/// "a number this build does not define" and "the router did not say" are each the
+/// absence of a reason and none of them is one.
+///
+/// **Every sentence has to read correctly under two headings**: "Update failed" on the
+/// install card, and a neutral "last check" line on page open, where the code is the
+/// router's history rather than this app's failure. So none of them names who was
+/// updating or implies the user did anything.
+String localizeFirmwareErrorCode(
+  BuildContext context,
+  FirmwareUpdateErrorCode? code,
+) {
+  final l = loc(context);
+  return switch (code) {
+    FirmwareUpdateErrorCode.serverUnreachable =>
+      l.firmwareErrorServerUnreachable,
+    FirmwareUpdateErrorCode.serverResponse => l.firmwareErrorServerResponse,
+    FirmwareUpdateErrorCode.download => l.firmwareErrorDownload,
+    FirmwareUpdateErrorCode.flash => l.firmwareErrorFlash,
+    FirmwareUpdateErrorCode.signature => l.firmwareErrorSignature,
+    FirmwareUpdateErrorCode.routerUnspecified =>
+      l.firmwareErrorRouterUnspecified,
+    FirmwareUpdateErrorCode.interrupted => l.firmwareErrorInterrupted,
+    FirmwareUpdateErrorCode.none ||
+    FirmwareUpdateErrorCode.unknown ||
+    FirmwareUpdateErrorCode.unreported ||
+    null =>
+      l.unknownError,
   };
 }

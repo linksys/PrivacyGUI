@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 
 /// Why a firmware update failed — as a value the view can localize.
 ///
@@ -74,6 +75,19 @@ enum FirmwareFailureReason {
   /// The router rebooted into the old image — [FirmwareFailure.number] is the
   /// expected instance and [FirmwareFailure.detail] its reported status.
   bootedOldImage,
+
+  /// The router named the reason itself — [FirmwareFailure.errorCode] is which one.
+  ///
+  /// **One reason carrying a typed value, not seven flat reasons**, and that is the
+  /// shape [serviceError] already uses in this same enum: a nested vocabulary gets
+  /// its own exhaustive mapping rather than being flattened into this one. Adding a
+  /// code to [FirmwareUpdateErrorCode] then breaks that inner `switch`, which is
+  /// exactly where the copy decision belongs.
+  ///
+  /// Only ever built from a code that [FirmwareUpdateErrorCode.isFailure] — `none`,
+  /// `unknown` and `unreported` are asserted out at the constructor, because each of
+  /// them is the app not having been told a reason and none of them is one.
+  routerReportedFailure,
 }
 
 /// One firmware failure: a [reason] plus whatever that reason needs to be rendered.
@@ -97,70 +111,84 @@ class FirmwareFailure extends Equatable {
   /// A count, a size in bytes, or a bank instance, depending on [reason].
   final int? number;
 
+  /// The router's own reason, for [FirmwareFailureReason.routerReportedFailure] only.
+  final FirmwareUpdateErrorCode? errorCode;
+
   const FirmwareFailure.serviceError(ServiceError this.error)
       : reason = FirmwareFailureReason.serviceError,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.fileEmpty()
       : reason = FirmwareFailureReason.fileEmpty,
         error = null,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.fileTooSmall({required int sizeBytes})
       : reason = FirmwareFailureReason.fileTooSmall,
         error = null,
         detail = null,
-        number = sizeBytes;
+        number = sizeBytes,
+        errorCode = null;
 
   const FirmwareFailure.fileTooLarge({required int sizeBytes})
       : reason = FirmwareFailureReason.fileTooLarge,
         error = null,
         detail = null,
-        number = sizeBytes;
+        number = sizeBytes,
+        errorCode = null;
 
   const FirmwareFailure.fileTypeUnsupported()
       : reason = FirmwareFailureReason.fileTypeUnsupported,
         error = null,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.noImageSelected()
       : reason = FirmwareFailureReason.noImageSelected,
         error = null,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.progressStalled({required String fwupState})
       : reason = FirmwareFailureReason.progressStalled,
         error = null,
         detail = fwupState,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.progressStalledNoReading()
       : reason = FirmwareFailureReason.progressStalledNoReading,
         error = null,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.banksUnreadableAfterReboot()
       : reason = FirmwareFailureReason.banksUnreadableAfterReboot,
         error = null,
         detail = null,
-        number = null;
+        number = null,
+        errorCode = null;
 
   const FirmwareFailure.multipleActiveBanks({required int count})
       : reason = FirmwareFailureReason.multipleActiveBanks,
         error = null,
         detail = null,
-        number = count;
+        number = count,
+        errorCode = null;
 
   const FirmwareFailure.expectedBankMissing({required int instance})
       : reason = FirmwareFailureReason.expectedBankMissing,
         error = null,
         detail = null,
-        number = instance;
+        number = instance,
+        errorCode = null;
 
   const FirmwareFailure.bootedOldImage({
     required int instance,
@@ -168,7 +196,23 @@ class FirmwareFailure extends Equatable {
   })  : reason = FirmwareFailureReason.bootedOldImage,
         error = null,
         detail = status,
-        number = instance;
+        number = instance,
+        errorCode = null;
+
+  /// The router reported [code] as the reason its last operation failed.
+  ///
+  /// The assert is the contract: a caller that reaches for this with `none`,
+  /// `unknown` or `unreported` is about to render "the update failed" from a reading
+  /// that says no such thing.
+  const FirmwareFailure.routerReported(FirmwareUpdateErrorCode code)
+      : assert(code != FirmwareUpdateErrorCode.none &&
+            code != FirmwareUpdateErrorCode.unknown &&
+            code != FirmwareUpdateErrorCode.unreported),
+        reason = FirmwareFailureReason.routerReportedFailure,
+        error = null,
+        detail = null,
+        number = null,
+        errorCode = code;
 
   /// A log line. **Not** what the user reads — that comes from
   /// `localizeFirmwareFailure`, and this deliberately does not look like a sentence
@@ -177,8 +221,9 @@ class FirmwareFailure extends Equatable {
   String toString() => 'FirmwareFailure(${reason.name}'
       '${error != null ? ', error: $error' : ''}'
       '${detail != null ? ', detail: $detail' : ''}'
-      '${number != null ? ', number: $number' : ''})';
+      '${number != null ? ', number: $number' : ''}'
+      '${errorCode != null ? ', errorCode: ${errorCode!.name}' : ''})';
 
   @override
-  List<Object?> get props => [reason, error, detail, number];
+  List<Object?> get props => [reason, error, detail, number, errorCode];
 }
