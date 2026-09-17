@@ -876,6 +876,43 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     return code;
   }
 
+  /// Wait out [window], but stop early if the router says it refused the image.
+  ///
+  /// Returns true when a refusal was reported — the failure is already in state — and
+  /// false when the window ran out with nothing to say, which is the caller's cue to
+  /// carry on to the reboot wait.
+  ///
+  /// **This replaces a blind delay rather than adding a wait.** The manual flow spent
+  /// a fixed 60 s drawing "Installing firmware" and then another 60 s of recovery
+  /// cooldown before anything read the router, so a refused image took **over two
+  /// minutes** to produce a message — measured against a router that had written its
+  /// reason within seconds and would never reboot, so the user watched a progress card
+  /// and then a recovery dialog for an update that was already over. Polling inside
+  /// the time we were spending anyway costs nothing in the success case and saves all
+  /// of it in the failure case.
+  ///
+  /// `verify()` keeps the same check afterwards, and the two are not redundant: this
+  /// catches the refusal the router announces *before* any reboot, that one catches a
+  /// flash that failed after one.
+  Future<bool> awaitInstallRefusal({
+    Duration window = const Duration(seconds: 60),
+    Duration pollInterval = const Duration(seconds: 2),
+  }) async {
+    final giveUpAt = DateTime.now().add(window);
+    while (DateTime.now().isBefore(giveUpAt)) {
+      final remaining = giveUpAt.difference(DateTime.now());
+      await Future<void>.delayed(
+          pollInterval < remaining ? pollInterval : remaining);
+      if (_disposed || _cancelRequested) return false;
+      final named = await _routerNamedFailure();
+      if (named != null) {
+        _fail(FirmwareFailure.routerReported(named));
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Log an outcome this page is not entitled to report, and undo what watching it
   /// cost.
   ///

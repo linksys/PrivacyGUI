@@ -898,6 +898,74 @@ void main() {
             reason: 'the bank shape is all this install actually established');
       });
 
+      test('a refusal is reported without waiting for a reboot', () async {
+        // The placement bug, pinned. The first version of this fix lived only in
+        // `verify()` — which the manual flow reaches after a fixed 60 s "Installing
+        // firmware" delay *and* a 60 s recovery cooldown, so a refused image took over
+        // two minutes to produce a message about an update that was already over.
+        // Nothing reboots, so the wait was for an event that never comes.
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          final isBaseline = call++ == 0;
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: isBaseline
+                  ? FirmwareUpdateErrorCode.none
+                  : FirmwareUpdateErrorCode.signature);
+        });
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        final refused = await notifier.awaitInstallRefusal(
+          window: const Duration(milliseconds: 40),
+          pollInterval: const Duration(milliseconds: 5),
+        );
+
+        expect(refused, isTrue,
+            reason: 'the caller skips the reboot wait on a true');
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure,
+            const FirmwareFailure.routerReported(
+                FirmwareUpdateErrorCode.signature));
+        // `failed` is not `isUpdating`, so the back arrow works again — which it does
+        // not while the page sits in `rebooting` waiting for nothing.
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(state.isUpdating, isFalse);
+      });
+
+      test('a window that runs out lets the reboot wait proceed', () async {
+        // The success path must not be slowed or diverted: an install that is really
+        // flashing reports no code, so the poll runs out and the caller carries on to
+        // the recovery wait exactly as before.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.none));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        final refused = await notifier.awaitInstallRefusal(
+          window: const Duration(milliseconds: 30),
+          pollInterval: const Duration(milliseconds: 5),
+        );
+
+        expect(refused, isFalse);
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull);
+      });
+
       test('a baseline that could not be read attributes nothing', () async {
         final state = await runInstall(
           before: FirmwareUpdateErrorCode.none,
