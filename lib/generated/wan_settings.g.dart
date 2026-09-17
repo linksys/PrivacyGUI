@@ -8,23 +8,21 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 class WanSettings {
   final String addressingType;
   final int mtu;
+  final String? mtuMode;
   final String staticIpAddress;
   final String subnetMask;
   final String defaultGateway;
   final String dnsServers;
-  final String pppUsername;
-  final String pppPassword;
   final bool bridgeEnabled;
 
   const WanSettings({
     required this.addressingType,
     required this.mtu,
+    this.mtuMode,
     required this.staticIpAddress,
     required this.subnetMask,
     required this.defaultGateway,
     required this.dnsServers,
-    required this.pppUsername,
-    required this.pppPassword,
     required this.bridgeEnabled,
   });
 
@@ -48,12 +46,11 @@ class WanSettings {
   static List<String> _buildPaths(String instancePath) => [
         '${instancePath}IPv4Address.1.AddressingType',
         '${instancePath}MaxMTUSize',
+        '${instancePath}X_LINKSYS_MTUMode',
         '${instancePath}IPv4Address.1.IPAddress',
         '${instancePath}IPv4Address.1.SubnetMask',
         '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
         '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
-        'Device.PPP.Interface.1.Username',
-        'Device.PPP.Interface.1.Password',
         'Device.Bridging.Bridge.1.Enable',
       ];
 
@@ -87,12 +84,6 @@ class WanSettings {
         .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers')) {
       missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers');
     }
-    if (!response.containsKey('Device.PPP.Interface.1.Username')) {
-      missing.add('Device.PPP.Interface.1.Username');
-    }
-    if (!response.containsKey('Device.PPP.Interface.1.Password')) {
-      missing.add('Device.PPP.Interface.1.Password');
-    }
     if (!response.containsKey('Device.Bridging.Bridge.1.Enable')) {
       missing.add('Device.Bridging.Bridge.1.Enable');
     }
@@ -106,6 +97,9 @@ class WanSettings {
       mtu: int.tryParse(
               response['${instancePath}MaxMTUSize']?.toString() ?? '') ??
           0,
+      mtuMode: response.containsKey('${instancePath}X_LINKSYS_MTUMode')
+          ? response['${instancePath}X_LINKSYS_MTUMode'] as String
+          : null,
       staticIpAddress:
           (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
       subnetMask:
@@ -116,10 +110,6 @@ class WanSettings {
       dnsServers:
           (response['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] ?? '')
               as String,
-      pppUsername:
-          (response['Device.PPP.Interface.1.Username'] ?? '') as String,
-      pppPassword:
-          (response['Device.PPP.Interface.1.Password'] ?? '') as String,
       bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
           response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
           response['Device.Bridging.Bridge.1.Enable'] == '1',
@@ -130,12 +120,16 @@ class WanSettings {
   static Future<Map<String, dynamic>> update(
     UspClient client, {
     int? mtu,
+    String? mtuMode,
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     final instancePath = await _resolveInstance(client);
     if (mtu != null) {
       params['${instancePath}MaxMTUSize'] = mtu;
+    }
+    if (mtuMode != null) {
+      params['${instancePath}X_LINKSYS_MTUMode'] = mtuMode;
     }
     if (params.isEmpty) {
       return {
@@ -151,12 +145,11 @@ class WanSettings {
     return 'WanSettings('
         'addressingType: $addressingType, '
         'mtu: $mtu, '
+        'mtuMode: $mtuMode, '
         'staticIpAddress: $staticIpAddress, '
         'subnetMask: $subnetMask, '
         'defaultGateway: $defaultGateway, '
         'dnsServers: $dnsServers, '
-        'pppUsername: $pppUsername, '
-        'pppPassword: $pppPassword, '
         'bridgeEnabled: $bridgeEnabled'
         ')';
   }

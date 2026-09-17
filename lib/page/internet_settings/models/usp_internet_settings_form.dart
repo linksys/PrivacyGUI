@@ -32,7 +32,16 @@ class UspInternetSettingsForm extends Equatable {
   final int vlanId;
 
   // === MTU ===
-  final int mtu; // 0 = auto
+  /// Effective MTU in bytes. Always a real value the device reported or the
+  /// user typed — never a sentinel. `0` only occurs before the first fetch.
+  final int mtu;
+
+  /// Whether the device picks the MTU itself (`X_LINKSYS_MTUMode = "Auto"`).
+  ///
+  /// When true, [mtu] still holds the effective value for display, but the app
+  /// must not write `MaxMTUSize`. False also covers firmware that lacks the
+  /// vendor extension — see `InternetSettingsStatus.mtuModeSupported`.
+  final bool mtuAuto;
 
   // === MAC Clone ===
   final String wanMacAddress;
@@ -63,6 +72,7 @@ class UspInternetSettingsForm extends Equatable {
     this.vlanEnabled = false,
     this.vlanId = 0,
     this.mtu = 0,
+    this.mtuAuto = false,
     this.wanMacAddress = '',
     this.ipv6Enabled = false,
     this.dhcpv6Enabled = false,
@@ -90,6 +100,7 @@ class UspInternetSettingsForm extends Equatable {
     bool? vlanEnabled,
     int? vlanId,
     int? mtu,
+    bool? mtuAuto,
     String? wanMacAddress,
     bool? ipv6Enabled,
     bool? dhcpv6Enabled,
@@ -116,6 +127,7 @@ class UspInternetSettingsForm extends Equatable {
       vlanEnabled: vlanEnabled ?? this.vlanEnabled,
       vlanId: vlanId ?? this.vlanId,
       mtu: mtu ?? this.mtu,
+      mtuAuto: mtuAuto ?? this.mtuAuto,
       wanMacAddress: wanMacAddress ?? this.wanMacAddress,
       ipv6Enabled: ipv6Enabled ?? this.ipv6Enabled,
       dhcpv6Enabled: dhcpv6Enabled ?? this.dhcpv6Enabled,
@@ -145,6 +157,7 @@ class UspInternetSettingsForm extends Equatable {
         vlanEnabled,
         vlanId,
         mtu,
+        mtuAuto,
         wanMacAddress,
         ipv6Enabled,
         dhcpv6Enabled,

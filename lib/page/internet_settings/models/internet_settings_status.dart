@@ -28,6 +28,11 @@ class InternetSettingsStatus extends Equatable {
   /// Null if no VLAN instance exists on the device.
   final String? vlanInstancePath;
 
+  /// Whether the device exposes `X_LINKSYS_MTUMode`. False on firmware
+  /// predating feed_bbf#128, where the Auto MTU toggle is hidden because the
+  /// mode cannot be read or written.
+  final bool mtuModeSupported;
+
   const InternetSettingsStatus({
     this.isLoading = true,
     this.isSaving = false,
@@ -37,6 +42,7 @@ class InternetSettingsStatus extends Equatable {
     this.readOnlyInfo = const InternetSettingsReadOnlyInfo(),
     this.pppInstancePath,
     this.vlanInstancePath,
+    this.mtuModeSupported = false,
   });
 
   InternetSettingsStatus copyWith({
@@ -52,6 +58,7 @@ class InternetSettingsStatus extends Equatable {
     bool clearPppInstancePath = false,
     String? vlanInstancePath,
     bool clearVlanInstancePath = false,
+    bool? mtuModeSupported,
   }) {
     return InternetSettingsStatus(
       isLoading: isLoading ?? this.isLoading,
@@ -67,6 +74,7 @@ class InternetSettingsStatus extends Equatable {
       vlanInstancePath: clearVlanInstancePath
           ? null
           : (vlanInstancePath ?? this.vlanInstancePath),
+      mtuModeSupported: mtuModeSupported ?? this.mtuModeSupported,
     );
   }
 
@@ -80,5 +88,6 @@ class InternetSettingsStatus extends Equatable {
         readOnlyInfo,
         pppInstancePath,
         vlanInstancePath,
+        mtuModeSupported,
       ];
 }

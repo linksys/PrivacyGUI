@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/arguments_view.dart';
@@ -64,6 +65,11 @@ class _HomeViewState extends ConsumerState<HomeView> {
             if (kIsWeb) {
               version = '$version - local';
             }
+            // The source this build came from, which the version cannot say on its
+            // own: the build job gives the local and remote flavours different
+            // build numbers from one source (#1573). Short, and not sensitive, so
+            // a screenshot from QA carries it.
+            version = '$version (${BuildConfig.sourceRevision})';
             return AppText.bodySmall(
               version,
             );

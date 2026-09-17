@@ -41,13 +41,9 @@ without review.
 - the codegen binary version above, and
 - the YAML snapshot in `usp_framework/usp-definitions/` at generation time.
 
-The YAML definitions are **not vendored** into this repo, so the snapshot has to be recorded here or it is unrecoverable — nothing in the generated output carries its source commit.
+The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
 
-**Definitions snapshot**: `usp_framework` `6e732f8` (merged `main`, 2026-09-16 — `linksys/usp_framework#64`, `#65` and `#66`). Regenerated under it in PrivacyGUI #1572: `lib/generated/firmware_auto_update.g.dart` (four new read-only firmware diagnostics leaves, from `linksys/usp_framework#66`) and `lib/generated/system_info.g.dart` (`X_LINKSYS_BaseMACAddress`, from `linksys/usp_framework#65`). **`lib/generated/wan_settings.g.dart` is deliberately a revision behind**: `linksys/usp_framework#64` adds `X_LINKSYS_MTUMode` and removes the PPP credential leaves from that definition, and picking it up belongs to #757, which owns the MTU-mode work. So a full-tree regeneration at this pin is a no-op outside those two files plus that one — anyone who regenerates for any reason will pick `linksys/usp_framework#64` up, which #757 wants and has the analysis for.
-
-The previous snapshot was `b041809728a63cb1801dda4b58ed5bcf221d14e4` (merged `main`, `linksys/usp_framework#63`, 2026-09-14), which contained `linksys/usp_framework#57` (`eecf2699`) re-aligning the DataElements definitions to the FL-WRT 2.0 / prplMesh schema; the last commit touching either DataElements YAML is `ea7c8510` (2026-09-10). Regenerated under it in PrivacyGUI #1555: `lib/generated/data_elements_network.g.dart` and the new `data_elements_network_info.g.dart`.
-
-Generating from the `origin` fork instead of `upstream` at this pin silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` is the 2026-08-05 revision and it has no `data_elements_network_info.yaml`.
+Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure
 
@@ -70,9 +66,6 @@ Generating from the `origin` fork instead of `upstream` at this pin silently rep
      --client-class 'UspClient'
    fvm dart format lib/generated
    ```
-   Record the definitions commit you generated from in the **Definitions
-   snapshot** line above, in the same commit as the regenerated files.
-
    Run the format **from the repo root**, on `lib/generated` — not on a temp
    output directory. The style is decided by this package's language version
    (`pubspec.yaml` pins `sdk: ">=3.3.0 <4.0.0"`, below 3.7), so formatting in

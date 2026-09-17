@@ -15,12 +15,11 @@ class MockUspClient extends Mock implements UspClient {}
 const _wanResponse = <String, dynamic>{
   'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
   'Device.IP.Interface.2.MaxMTUSize': '1500',
+  'Device.IP.Interface.2.X_LINKSYS_MTUMode': 'Manual',
   'Device.IP.Interface.2.IPv4Address.1.IPAddress': '192.168.1.100',
   'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '192.168.1.1',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8,8.8.4.4',
-  'Device.PPP.Interface.1.Username': 'testuser',
-  'Device.PPP.Interface.1.Password': 'testpass',
   'Device.Bridging.Bridge.1.Enable': false,
   'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
 };
@@ -192,6 +191,61 @@ void main() {
       expect(result.readOnlyInfo.pppConnectionStatus, equals('Connected'));
     });
 
+    test('maps X_LINKSYS_MTUMode=Manual to mtuAuto false', () async {
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.mtuAuto, isFalse);
+      expect(result.mtuModeSupported, isTrue);
+    });
+
+    test('maps X_LINKSYS_MTUMode=Auto to mtuAuto true, keeping effective MTU',
+        () async {
+      final handler = createFetchMockHandler(
+        wanResponse: {
+          ..._wanResponse,
+          'Device.IP.Interface.2.X_LINKSYS_MTUMode': 'Auto',
+        },
+      );
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.mtuAuto, isTrue);
+      // MaxMTUSize still reports the value netifd settled on — auto mode must
+      // not blank it out, the UI shows it alongside the "Auto" label.
+      expect(result.form.mtu, equals(1500));
+      expect(result.mtuModeSupported, isTrue);
+    });
+
+    test('absent X_LINKSYS_MTUMode fetches fine and reports unsupported',
+        () async {
+      // Firmware predating feed_bbf#128 omits the key. The parameter is
+      // `optional: true` in the YAML precisely so this does not trip the
+      // generated required-leaf check (code 9998) and blank the whole page.
+      final wanWithoutMode = Map<String, dynamic>.from(_wanResponse)
+        ..remove('Device.IP.Interface.2.X_LINKSYS_MTUMode');
+      final handler = createFetchMockHandler(wanResponse: wanWithoutMode);
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.mtuModeSupported, isFalse);
+      expect(result.form.mtuAuto, isFalse);
+      expect(result.form.mtu, equals(1500));
+    });
+
     test('fetches and exposes router hostName', () async {
       final handler = createFetchMockHandler();
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
@@ -222,6 +276,32 @@ void main() {
       expect(result.form.vlanEnabled, isFalse);
       expect(result.pppInstancePath, isNull);
       expect(result.vlanInstancePath, isNull);
+    });
+
+    // Regression: a WAN that is not PPPoE/PPTP/L2TP has zero
+    // Device.PPP.Interface instances, so any concrete PPP path in the
+    // WanSettings GET comes back absent and trips the generated required-leaf
+    // check with fault 9998 — which took the whole Internet Settings page, and
+    // PnP's saveIspSettings, straight to an error view on every DHCP router.
+    // WanSettings used to declare Device.PPP.Interface.1.{Username,Password}
+    // and nothing read them: the credentials the form shows come from
+    // PppInterface's wildcard query, which returns {} gracefully instead. The
+    // test above passed throughout only because its WAN fixture supplied the
+    // two keys the real router does not have, so assert on the request itself.
+    test('the WAN GET requests no Device.PPP paths', () async {
+      final handler = createFetchMockHandler(pppResponse: _pppEmptyResponse);
+      final captured = <List<String>>[];
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        captured.add(paths);
+        return handler(paths);
+      });
+
+      await service.fetchSettings();
+
+      final wanQuery = captured
+          .firstWhere((paths) => paths.any((p) => p.endsWith('MaxMTUSize')));
+      expect(wanQuery.where((p) => p.startsWith('Device.PPP.')), isEmpty);
     });
 
     test('splits comma-separated DNS into 3 fields', () async {
@@ -645,19 +725,18 @@ void main() {
       expect(bridgeParams.first.length, equals(1));
     });
 
-    test('switching to Bridge never sends MaxMTUSize (mtu=0 sentinel)',
+    test('switching to Bridge sends neither MaxMTUSize nor X_LINKSYS_MTUMode',
         () async {
-      // updateConnectionType resets the form's mtu to 0 when switching to
-      // bridge. MaxMTUSize=0 fails FW range validation (64..65535), so the MTU
-      // SET must be skipped entirely in bridge mode — otherwise saveAll aborts
-      // before the terminal bridge SET ever goes out.
+      // MTU has no meaning once the WAN port joins br-lan, and the bridge SET is
+      // terminal (the transport drops mid-request), so an extra MTU SET would
+      // only add a way for saveAll to abort before the bridge SET goes out.
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
         mtu: 1500,
       );
       final edited = original.copyWith(
         connectionType: UspWanConnectionType.bridge,
-        mtu: 0,
+        mtuAuto: true,
       );
 
       await service.saveAll(original, edited);
@@ -669,6 +748,9 @@ void main() {
       for (final params in captured.whereType<Map<String, dynamic>>()) {
         expect(params.containsKey('Device.IP.Interface.2.MaxMTUSize'), isFalse,
             reason: 'bridge mode must not push MaxMTUSize');
+        expect(params.containsKey('Device.IP.Interface.2.X_LINKSYS_MTUMode'),
+            isFalse,
+            reason: 'bridge mode must not push X_LINKSYS_MTUMode');
       }
     });
 
@@ -822,6 +904,100 @@ void main() {
         equals(1400),
       );
       expect(mtuParams.first.length, equals(1));
+    });
+
+    test('switching Manual to Auto sends only X_LINKSYS_MTUMode=Auto',
+        () async {
+      // MaxMTUSize must not ride along: 0 is outside the TR-181 range
+      // 64..65535 and the firmware rejects it with fault 9007, and any other
+      // number would immediately put UCI back into Manual (Architecture#122).
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtuAuto: true);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final params = captured.whereType<Map<String, dynamic>>().where(
+          (m) => m.containsKey('Device.IP.Interface.2.X_LINKSYS_MTUMode'));
+      expect(params.length, equals(1));
+      expect(
+        params.first['Device.IP.Interface.2.X_LINKSYS_MTUMode'],
+        equals('Auto'),
+      );
+      expect(params.first.length, equals(1),
+          reason: 'auto mode must not push MaxMTUSize alongside the mode');
+    });
+
+    test('leaving Auto writes MaxMTUSize even when the number is unchanged',
+        () async {
+      // Regression guard: a plain original-vs-edited diff on mtu returns null
+      // here (1500 both sides), so a diff-only save would send nothing and the
+      // device would silently stay in Auto. Writing MaxMTUSize is what puts UCI
+      // back into Manual, so it must be forced when leaving auto.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+        mtuAuto: true,
+      );
+      final edited = original.copyWith(mtuAuto: false);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final params = captured
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m.containsKey('Device.IP.Interface.2.MaxMTUSize'));
+      expect(params.length, equals(1));
+      expect(
+        params.first['Device.IP.Interface.2.MaxMTUSize'],
+        equals(1500),
+      );
+      // 'Manual' is a firmware no-op, so it is never sent.
+      expect(params.first.length, equals(1));
+    });
+
+    test('MTU change in Manual mode never sends X_LINKSYS_MTUMode', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(params.containsKey('Device.IP.Interface.2.X_LINKSYS_MTUMode'),
+            isFalse,
+            reason: 'writing MaxMTUSize is what selects Manual on the device');
+      }
+    });
+
+    test('staying in Auto with no change sends no MTU params at all', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+        mtuAuto: true,
+      );
+
+      await service.saveAll(original, original);
+
+      // Nothing changed anywhere in the form, so saveAll issues no SET at all.
+      verifyNever(
+        () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')),
+      );
     });
 
     test('switching to PPTP sets LowerLayers, RemoteEndpoints, and IPCP',

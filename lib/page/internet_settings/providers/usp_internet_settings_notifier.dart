@@ -120,6 +120,7 @@ class UspInternetSettingsNotifier
           readOnlyInfo: result.readOnlyInfo,
           pppInstancePath: result.pppInstancePath,
           vlanInstancePath: result.vlanInstancePath,
+          mtuModeSupported: result.mtuModeSupported,
         ),
       );
     } on ServiceError catch (e) {
@@ -270,15 +271,16 @@ class UspInternetSettingsNotifier
     final current = state.settings.current;
     var form = current.form.copyWith(connectionType: type);
 
-    // Normalize MTU for the new type (issue #1083). Bridge always uses auto
-    // (mtu = 0). For every other type, keep the current MTU when it still fits
-    // the type's range, otherwise fall back to the type's max — this both
-    // clamps an over-limit value (e.g. 1500 → 1492 on PPPoE) and auto-fills a
-    // sensible default when the previous value was auto/empty (e.g. leaving
-    // bridge mode).
-    if (type == UspWanConnectionType.bridge) {
-      form = form.copyWith(mtu: 0);
-    } else {
+    // Normalize MTU for the new type (issue #1083): keep the current MTU when it
+    // still fits the type's range, otherwise fall back to the type's max — this
+    // clamps an over-limit value (e.g. 1500 → 1492 on PPPoE).
+    //
+    // Bridge and auto mode both leave MTU untouched. Bridge ignores it entirely
+    // (the service skips both SETs and the view shows a fixed "Auto" row), so a
+    // bridge round-trip must not flip mtuAuto and make the save write a mode the
+    // user never chose. In auto mode the number is device-reported rather than
+    // user-owned, so the app has no business rewriting it.
+    if (type != UspWanConnectionType.bridge && !form.mtuAuto) {
       form = form.copyWith(mtu: type.clampMtu(form.mtu));
     }
 
