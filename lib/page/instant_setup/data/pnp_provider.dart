@@ -76,6 +76,20 @@ bool isExpectedPnpRouter(String? expectedSerial, String? actualSerial) {
   return expected?.isNotEmpty == true && expected == actual;
 }
 
+/// Whether the save transaction may leave the router's existing admin password
+/// alone instead of setting it to the WiFi password.
+///
+/// [routerPasswordSet] is the tri-state answer from the router: null means it
+/// could not be asked. Unknown must not preserve. Finishing PnP with a
+/// factory-default router still on its default credentials is the one outcome a
+/// dropped packet may not cause, and setting a password on a router that
+/// already had one is the safer error of the two.
+bool shouldPreserveExistingAdminPassword({
+  required bool isRouterUnconfigured,
+  required bool? routerPasswordSet,
+}) =>
+    isRouterUnconfigured && (routerPasswordSet ?? false);
+
 List<String> pnpPostSaveAdminPasswordCandidates({
   required String? currentPassword,
   required String? wifiPassword,
@@ -458,7 +472,18 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   @override
-  Future<bool> isRouterPasswordSet() {
+  Future<bool> isRouterPasswordSet() =>
+      // Unknown counts as configured for this caller. The answer drives
+      // routing, and guessing "not set" would bounce a configured router back
+      // into PnP.
+      _queryRouterPasswordSet().then((isSet) => isSet ?? true);
+
+  /// The admin-password query with "could not ask the router" kept distinct
+  /// from yes and no, because the two callers need it to fall opposite ways.
+  /// Routing wants an unknown answer to read as configured; the save path must
+  /// read it as not set, or a dropped packet decides to leave a factory-default
+  /// router on its default credentials.
+  Future<bool?> _queryRouterPasswordSet() {
     final transaction = JNAPTransactionBuilder(
       commands: [
         const MapEntry(JNAPAction.isAdminPasswordDefault, {}),
@@ -473,7 +498,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
     )
-        .then((response) {
+        .then<bool?>((response) {
       bool isAdminPasswordDefault = (response.data
                   .firstWhereOrNull((element) =>
                       element.key == JNAPAction.isAdminPasswordDefault)
@@ -489,8 +514,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       logger.d(
           '[PnP]: Admin changed? isAdminPasswordDefault=$isAdminPasswordDefault, isAdminPasswordSetByUser=$isAdminPasswordSetByUser');
       return !isAdminPasswordDefault || isAdminPasswordSetByUser;
-    }).onError((error, stackTrace) =>
-            true); // error handling - set configured to prevent go to pnp
+    }).onError<Object>((error, stackTrace) {
+      logger.w('[PnP]: Could not read the admin password state', error: error);
+      return null;
+    });
   }
 
   @override
@@ -597,8 +624,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
     // A first-boot hook may already have imported the device passphrase. Do
     // not replace that user-set password with the WiFi password during PnP.
-    final preserveExistingAdminPassword =
-        state.isRouterUnConfigured && await isRouterPasswordSet();
+    final preserveExistingAdminPassword = shouldPreserveExistingAdminPassword(
+      isRouterUnconfigured: state.isRouterUnConfigured,
+      routerPasswordSet: await _queryRouterPasswordSet(),
+    );
     final didSetAdminPassword =
         state.isRouterUnConfigured && !preserveExistingAdminPassword;
     _didSetAdminPasswordDuringSave = didSetAdminPassword;
