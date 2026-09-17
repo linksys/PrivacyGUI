@@ -16,6 +16,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
@@ -1087,6 +1088,66 @@ void main() {
         expect(state.phase, FirmwareUpdatePhase.idle);
         expect(state.otaCheck.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
         expect(state.otaCheck.isUpdateAvailable, isFalse);
+      });
+
+      test('a router-reported failure lands in state.failure (#1572)',
+          () async {
+        // The point of the whole error-code channel, at the layer that has to route
+        // it: this is not a `ServiceError` about the transport, it is the router
+        // naming a firmware reason, so it belongs where `localizeFirmwareFailure`
+        // reads rather than where `localizeServiceError` does.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.serverUnreachable));
+
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        final result = await notifier.checkForUpdate();
+
+        expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(
+            state.failure?.reason, FirmwareFailureReason.routerReportedFailure);
+        expect(state.failure?.errorCode,
+            FirmwareUpdateErrorCode.serverUnreachable);
+        // Idle, not `failed`: nothing was being installed, so there is no update to
+        // report as having failed — and `failed` is a phase the card draws a retry
+        // button on.
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        // And the verdict says nothing about the firmware, which is what stops the
+        // card claiming "no new firmware was found" for a check that never got an
+        // answer.
+        expect(state.otaCheck.isUpdateAvailable, isFalse);
+      });
+
+      test('a later successful check clears the previous reason', () async {
+        // A failure that outlives the check that produced it is the same defect in a
+        // slower form: the snack bar is transient, but `state.failure` is not, and the
+        // install card reads it.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.flash));
+
+        final container = createContainer(banksData: banksWithOta());
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.checkForUpdate();
+        expect(
+            container.read(firmwareUpdateNotifierProvider).failure, isNotNull);
+
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer(
+                (_) async => const FirmwareOtaCheckResult.noUpdateFound());
+        await notifier.checkForUpdate();
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure, isNull,
+            reason:
+                'the second check answered, so the first reason is history');
       });
 
       // REQ-A1, the notifier's half. The view decides whether to draw the button

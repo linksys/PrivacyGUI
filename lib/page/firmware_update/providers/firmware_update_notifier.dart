@@ -279,9 +279,24 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
     try {
       final result = await _otaChecker.check(otaInstance: otaInstance.instance);
+      final routerFailed =
+          result.verdict == FirmwareOtaCheckVerdict.checkFailed;
+      // A check the router itself said failed (#1572). It goes into `failure` rather
+      // than only into the verdict, because that is where `localizeFirmwareFailure`
+      // reads and the reason is the router's own vocabulary — not a `ServiceError`
+      // about the transport, which is what the `catch` below handles. The verdict is
+      // still published so the card knows to draw no line: a failed check has said
+      // nothing about the firmware on the router.
       _setState(state.copyWith(
         phase: FirmwareUpdatePhase.idle,
         otaCheck: result,
+        // `clearFailure` is checked first by `copyWith`, so the two are exclusive
+        // rather than combined: a router-reported failure sets one, every other
+        // verdict clears whatever the last check left.
+        failure: routerFailed
+            ? FirmwareFailure.routerReported(result.errorCode!)
+            : null,
+        clearFailure: !routerFailed,
       ));
       // The check writes `Available`/`Version` on the router, so the L1 cache the
       // dashboard banner and the mascot read from is now stale. Refreshed after

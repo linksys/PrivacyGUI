@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/helpers/firmware_operation_watch.dart';
@@ -18,12 +19,23 @@ typedef OtaCheckDispatcher = Future<String> Function(
 /// Reads every firmware image row the router publishes.
 typedef FirmwareImagesReader = Future<List<FirmwareImageUIModel>> Function();
 
+/// Reads the router's auto-update reading, for `fwup_error_code`.
+///
+/// Declared here rather than imported from `firmware_router_ota_install_service.dart`,
+/// where the identical typedef lives. Importing that file would make
+/// `FirmwareRouterOtaInstallService` nameable from this one, and the whole
+/// arrangement below exists so the install verb is not reachable from a check. A
+/// duplicated one-line typedef is the cheaper half of that trade.
+typedef FirmwareOtaAutoUpdateReader = Future<FirmwareAutoUpdateUIModel>
+    Function();
+
 final firmwareRouterOtaCheckServiceProvider =
     Provider<FirmwareRouterOtaCheckService>((ref) {
   final firmware = ref.read(uspFirmwareUpdateServiceProvider);
   return FirmwareRouterOtaCheckService(
     dispatchCheck: firmware.requestOtaCheck,
     readImages: firmware.fetchAllBanks,
+    readAutoUpdate: firmware.fetchAutoUpdate,
     awaiter: ref.read(sseOperationAwaiterProvider),
     lock: ref.read(uspMutationLockProvider),
   );
@@ -56,6 +68,15 @@ final firmwareRouterOtaCheckServiceProvider =
 ///   caught that in exactly one sample, and most runs would miss it entirely, so
 ///   a check that waited for `1` would hang far more often than it worked. The
 ///   call's own lifecycle is the clock instead.
+/// * `FirmwareImage.{ota}.Status` — **the phase, and the completion marker.** Added
+///   by `linksys/usp_framework#66`, and it is the second of the three things contract
+///   request 6 on #1547 asked for: while `fwupd` is querying the server the ota row
+///   reads `Checking`, so a `Checking` that has been *seen* and has then gone is a
+///   check that finished. Before it, "nothing new" could only ever be inferred from
+///   the deadline expiring.
+/// * `fwup_error_code` — **why it failed.** Read at the edges of the run rather than
+///   on every poll: it changes when a run starts and when it ends, so a per-poll
+///   second `Get` would buy nothing.
 ///
 /// **It is handed two functions, not the service they come off.** The provider
 /// above tears `requestOtaCheck` and `fetchAllBanks` off
@@ -76,10 +97,13 @@ final firmwareRouterOtaCheckServiceProvider =
 class FirmwareRouterOtaCheckService {
   final OtaCheckDispatcher _dispatchCheck;
   final FirmwareImagesReader _readImages;
+  final FirmwareOtaAutoUpdateReader _readAutoUpdate;
   final SseOperationAwaiter? _awaiter;
   final UspMutationLock _lock;
   final Duration _deadline;
   final Duration _pollInterval;
+  final Duration _slowPollInterval;
+  final Duration _fastPollWindow;
 
   /// How long "the router did not find anything" takes to conclude.
   ///
@@ -89,11 +113,17 @@ class FirmwareRouterOtaCheckService {
   /// that means "done, nothing new" — only the absence of a reading that means
   /// "yes" for long enough to give up on.
   ///
-  /// `linksys.fwup.lastsuccess_checktime` is the anchor that would replace this
-  /// with an actual answer: a check whose timestamp moved past the moment we
-  /// dispatched has demonstrably finished. It exists in the sysevent store and is
-  /// not exposed in the data model; contract request 6 on #1547 asks for it. When
-  /// that lands, this constant and the loop below both go away.
+  /// **Narrowed, not removed, by `linksys/usp_framework#66`.** `Status=Checking` is
+  /// now a real completion marker, so a check whose `Checking` phase was *seen* ends
+  /// on the router's word instead of on this clock. What still needs the deadline is
+  /// the run whose `Checking` was missed: the window is measured at 0.65–0.9 s, so a
+  /// poll can fall either side of it, and `Status != Checking` reads the same before
+  /// `fwupd` has started as it does after it has finished.
+  ///
+  /// `linksys.fwup.lastsuccess_checktime` is still the anchor that would remove the
+  /// fallback entirely — it *moves* rather than appearing for under a second, so it
+  /// cannot be missed. It exists in the sysevent store, it was measured advancing on
+  /// every check, and it is still not exposed in the data model.
   ///
   /// Ten seconds because the observed check completes in 1–2 s, leaving room for a
   /// slow OTA server without making a current router feel stuck. Shortening it
@@ -101,26 +131,47 @@ class FirmwareRouterOtaCheckService {
   /// this whole file is arranged to avoid.
   static const Duration defaultDeadline = Duration(seconds: 10);
 
-  /// Gap between reads of `FirmwareImage.`.
+  /// Gap between reads of `FirmwareImage.` while the check could still be running.
   ///
-  /// Two seconds is one read per bench-observed check, which is as fine-grained as
-  /// the answer is: nothing here is timing anything, it is waiting for a value to
-  /// appear. Tighter only adds bridge traffic to a router that is busy.
-  static const Duration defaultPollInterval = Duration(seconds: 2);
+  /// **300 ms, and it used to be 2 s.** The old number was chosen when `Status`
+  /// carried no phase worth catching and the loop was only waiting for `Available` to
+  /// appear. Now the `Checking` window is what turns a timeout into an answer, and it
+  /// was measured at 0.65–0.9 s (three samples of a 220 ms poll on FW
+  /// `2.0.1.26091601`) — at 2 s most runs would miss it entirely.
+  static const Duration defaultPollInterval = Duration(milliseconds: 300);
+
+  /// Gap between reads once the fast window has closed.
+  ///
+  /// The check completes in about a second; past [defaultFastPollWindow] the loop is
+  /// no longer waiting for a phase, it is waiting out the deadline for a router that
+  /// is slow — and there a read every 300 ms is bridge traffic for nothing.
+  static const Duration defaultSlowPollInterval = Duration(seconds: 1);
+
+  /// How long the loop polls at [defaultPollInterval] before backing off.
+  ///
+  /// Three seconds against a measured one-second check, so the phase is catchable
+  /// with room for a slow OTA server, and the cost is bounded at ten reads.
+  static const Duration defaultFastPollWindow = Duration(seconds: 3);
 
   FirmwareRouterOtaCheckService({
     required OtaCheckDispatcher dispatchCheck,
     required FirmwareImagesReader readImages,
+    required FirmwareOtaAutoUpdateReader readAutoUpdate,
     required SseOperationAwaiter? awaiter,
     required UspMutationLock lock,
     Duration deadline = defaultDeadline,
     Duration pollInterval = defaultPollInterval,
+    Duration slowPollInterval = defaultSlowPollInterval,
+    Duration fastPollWindow = defaultFastPollWindow,
   })  : _dispatchCheck = dispatchCheck,
         _readImages = readImages,
+        _readAutoUpdate = readAutoUpdate,
         _awaiter = awaiter,
         _lock = lock,
         _deadline = deadline,
-        _pollInterval = pollInterval;
+        _pollInterval = pollInterval,
+        _slowPollInterval = slowPollInterval,
+        _fastPollWindow = fastPollWindow;
 
   /// The TR-181 subtree whose `OperationComplete` events belong to this check.
   static const String _referencePath = 'Device.DeviceInfo.FirmwareImage.';
@@ -136,6 +187,16 @@ class FirmwareRouterOtaCheckService {
     // Before the dispatch, not after: the refusal is measured to arrive ~49 ms in
     // and the watch is the only place it appears.
     final watch = await _openWatch();
+    // Also before the dispatch, and best-effort. `fwup_error_code` is persistent and
+    // undated, so a code standing here is the *previous* run's — and a code that
+    // differs from it afterwards can only be this one's. The install service takes
+    // the same reading of `fwup_state` for the same reason, after a measured defect
+    // where a baseline captured too late suppressed a real phase.
+    //
+    // A failure to read it costs the diff, not the check: `_readAutoUpdate` is a
+    // second `Get` and turning a diagnostic into a hard failure would report a broken
+    // check because a diagnostic was unavailable.
+    final codeBeforeDispatch = await _errorCodeOrNull();
     try {
       // The lock, and only around the dispatch. Rule 3 exists because the WASM
       // client cannot take concurrent calls, and this is the one call here that
@@ -176,32 +237,111 @@ class FirmwareRouterOtaCheckService {
           .then((r) => refusal = r);
       if (refusalWatch != null) unawaited(refusalWatch);
 
-      final giveUpAt = DateTime.now().add(_deadline);
+      final startedAt = DateTime.now();
+      final giveUpAt = startedAt.add(_deadline);
+      final fastUntil = startedAt.add(_fastPollWindow);
+
+      /// Whether the router was seen querying the OTA server.
+      ///
+      /// The evidence that a run of *ours* happened, and the licence for two things:
+      /// concluding "nothing new" from the router rather than from the clock, and
+      /// attributing an error code to this check. `Status != Checking` reads the same
+      /// before `fwupd` starts as after it finishes, so only the sighting separates
+      /// them.
+      var sawChecking = false;
+
       while (DateTime.now().isBefore(giveUpAt)) {
         // Delay first. An `Available=true` read on the very first tick could be
         // left over from an earlier check, and reporting it would answer this
         // check with a previous one's result — harmless when it agrees, a lie
         // about what just happened when the router has since been flashed.
-        await Future<void>.delayed(_pollInterval);
+        await Future<void>.delayed(DateTime.now().isBefore(fastUntil)
+            ? _pollInterval
+            : _slowPollInterval);
 
         _throwIfRefused(refusal, otaInstance);
 
         final ota = _otaRow(await _readImages());
+        // An offer outranks everything below it, including a failure code: this is
+        // the router answering the question, and a code left over from whatever came
+        // before does not un-answer it.
         if (ota != null && ota.available) {
           logger.d('[FirmwareUpdate] OTA check found ${ota.version.isEmpty ? //
               'an unnamed image' : ota.version}');
           return FirmwareOtaCheckResult.updateAvailable(version: ota.version);
+        }
+        if (ota != null && ota.status == _checkingStatus) {
+          sawChecking = true;
+          continue;
+        }
+        if (sawChecking) {
+          // Seen checking, and no longer checking: the router has finished, which is
+          // the completion marker this service went without until
+          // `linksys/usp_framework#66`. So the verdict below is the router's answer
+          // rather than an inference from the deadline.
+          logger.d('[FirmwareUpdate] the router finished checking');
+          return await _concludeAfterRun(codeBeforeDispatch, sawRunStart: true);
         }
       }
 
       // One last look, for a refusal that landed inside the final gap.
       _throwIfRefused(refusal, otaInstance);
 
-      logger.d('[FirmwareUpdate] OTA check found nothing within '
+      // The deadline, and still the only answer available for a run whose `Checking`
+      // was never caught — the window is under a second. The error code can still
+      // rescue it: a code that *moved* since the dispatch was written by this run
+      // whether or not the phase was seen.
+      logger.d('[FirmwareUpdate] OTA check saw no result within '
           '${_deadline.inSeconds}s');
-      return const FirmwareOtaCheckResult.noUpdateFound();
+      return await _concludeAfterRun(codeBeforeDispatch, sawRunStart: false);
     } finally {
       await watch?.release();
+    }
+  }
+
+  /// The ota row's `Status` while `fwupd` is querying the OTA server.
+  ///
+  /// One spelling, and it is a TR-181 enum token rather than copy — the same
+  /// treatment `FirmwareImageUIModel.isActive` gives `Active`.
+  static const String _checkingStatus = 'Checking';
+
+  /// The verdict for a check that produced no offer.
+  ///
+  /// [sawRunStart] is the whole of the difference between an answer and a guess. With
+  /// it, a failure code belongs to this check because the run was observed. Without
+  /// it, only a code that *differs from the pre-dispatch reading* does — everything
+  /// else may be weeks old, and the definition says it survives until the next
+  /// operation or the next reboot.
+  Future<FirmwareOtaCheckResult> _concludeAfterRun(
+    FirmwareUpdateErrorCode? codeBeforeDispatch, {
+    required bool sawRunStart,
+  }) async {
+    final code = await _errorCodeOrNull();
+    if (code != null && code.isFailure) {
+      if (sawRunStart || code != codeBeforeDispatch) {
+        logger.w('[FirmwareUpdate] the router reports the check failed '
+            '(${code.name})');
+        return FirmwareOtaCheckResult.checkFailed(code);
+      }
+      logger
+          .i('[FirmwareUpdate] the router still reports ${code.name}, but this '
+              'check was never seen running and the code has not moved — not '
+              'reporting it as this check\'s failure');
+    }
+    return const FirmwareOtaCheckResult.noUpdateFound();
+  }
+
+  /// `fwup_error_code`, or null when it could not be read.
+  ///
+  /// Null for two different reasons on purpose — the parameter absent, or the `Get`
+  /// itself failing — because neither licenses a claim and the caller treats them
+  /// the same.
+  Future<FirmwareUpdateErrorCode?> _errorCodeOrNull() async {
+    try {
+      return (await _readAutoUpdate()).errorCode;
+    } catch (e) {
+      logger.d('[FirmwareUpdate] could not read fwup_error_code ($e)');
+      return null;
     }
   }
 

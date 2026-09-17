@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
@@ -372,7 +373,21 @@ class _FirmwareOtaViewState extends ConsumerState<FirmwareOtaView> {
   /// as well would give the card two sources for one fact.
   Future<void> _onCheckForUpdates(BuildContext context) async {
     try {
-      await ref.read(firmwareUpdateNotifierProvider.notifier).checkForUpdate();
+      final result = await ref
+          .read(firmwareUpdateNotifierProvider.notifier)
+          .checkForUpdate();
+      // The second way a check fails, and it does not throw: the router named the
+      // reason itself (#1572). The notifier has already put it in
+      // `FirmwareUpdateState.failure`, so this reads it from there rather than
+      // localizing the code twice — `localizeFirmwareFailure` is the one place a
+      // firmware failure becomes a sentence.
+      if (result.verdict == FirmwareOtaCheckVerdict.checkFailed &&
+          context.mounted) {
+        final failure = ref.read(firmwareUpdateNotifierProvider).failure;
+        logger.w('[FirmwareOta] the router reports the check failed '
+            '(${result.errorCode?.name})');
+        showFailedSnackBar(context, localizeFirmwareFailure(context, failure));
+      }
     } on ServiceError catch (e) {
       // The snack bar, not the card. A check that failed leaves the card in
       // `notChecked` — deliberately saying nothing rather than "up to date" — so
@@ -743,6 +758,11 @@ class _OtaCheckCard extends StatelessWidget {
   /// one. The failure is reported in a snack bar instead — see
   /// `_FirmwareOtaViewState._onCheckForUpdates`.
   ///
+  /// Since #1572 "a check that failed" arrives two ways and both land here: a
+  /// transport failure, which is a thrown `ServiceError`, and
+  /// [FirmwareOtaCheckVerdict.checkFailed], which is the router naming the reason
+  /// itself.
+  ///
   /// Also `null` while checking: the in-flight state belongs to the button's own
   /// `isLoading`, and leaving the previous verdict up next to a running spinner
   /// would show the old answer as if it were the new one.
@@ -751,6 +771,12 @@ class _OtaCheckCard extends StatelessWidget {
     if (isChecking) return null;
     switch (state.otaCheck.verdict) {
       case FirmwareOtaCheckVerdict.notChecked:
+      // A check that ran and failed draws no line either, and for the reason the
+      // method comment gives: every sentence this returns is a claim about the
+      // firmware on the router, and a failed check supports none of them. The reason
+      // goes to the snack bar in `_onCheckForUpdates`, which does not outlive the
+      // next check the way a card would.
+      case FirmwareOtaCheckVerdict.checkFailed:
         return null;
       case FirmwareOtaCheckVerdict.updateAvailable:
         final version = state.otaCheck.version;
