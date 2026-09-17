@@ -319,7 +319,10 @@ if [ "$locales" != "all" ]; then
     # Logged before the strip because the strip's own gate reads git status, and
     # a dirty workspace is the failure that is impossible to diagnose without it.
     echo "workspace state before stripping:"
-    echo "  HEAD:   $(git rev-parse --short HEAD 2> /dev/null || echo unknown)"
+    # Same value the build is stamped with, read from the variable rather than
+    # asked for a second time: two calls could not disagree, but a reader has to
+    # check that before believing the log line.
+    echo "  HEAD:   ${sourceRevision}"
     echo "  branch: $(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo unknown)"
     echo "  git status --porcelain:"
     git status --porcelain | sed 's/^/    /'

@@ -91,7 +91,13 @@ void main() {
       );
 
   Future<void> openPopup(WidgetTester tester) async {
-    await tester.tap(find.byType(Icon).first);
+    // Targeted by identifier rather than `find.byType(Icon).first`, which is what
+    // the neighbouring test file does: `.first` is a positional selector, so any
+    // Icon inserted above this one in the tree would silently redirect the tap and
+    // the assertions would then be about whatever that opened.
+    await tester.tap(find.byWidgetPredicate((widget) =>
+        widget is Semantics &&
+        widget.properties.identifier == 'now-topbar-icon-general-settings'));
     await tester.pumpAndSettle();
   }
 
