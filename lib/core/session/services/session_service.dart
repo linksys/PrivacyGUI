@@ -72,6 +72,10 @@ class SessionService {
     try {
       final systemInfo = await SystemInfo.fetch(_usp);
       logger.d('[SessionService]: DeviceInfo fetched via USP');
+      // `_fetchRouterIdentity` swallows its own errors — do not unwrap it into
+      // this `try`. The outer `catch` turns anything thrown here into a
+      // `ConnectivityError` that fails the login, and a router that cannot answer
+      // the two identity leaves must still be able to log in.
       final identity = await _fetchRouterIdentity(_usp);
       return NodeDeviceInfo.fromUsp(systemInfo).copyWith(
         baseMacAddress: identity.baseMacAddress,

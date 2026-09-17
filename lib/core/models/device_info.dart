@@ -35,10 +35,12 @@ class NodeDeviceInfo extends Equatable {
   ///   and the `system_info` definition covers `Device.DeviceInfo.*`.
   /// - The MAC is a `Device.DeviceInfo.*` leaf and *could*, but
   ///   `X_LINKSYS_BaseMACAddress` is not in the generated model on this branch's
-  ///   base — it exists only on the unmerged #1572 branch. **Recheck when that
-  ///   merges**: `SystemInfo.fetch` will then read the same leaf that
-  ///   `_fetchRouterIdentity` reads, and the MAC should move here so the leaf is
-  ///   fetched once.
+  ///   base — it exists only on the unmerged #1572 branch.
+  ///
+  // TODO(PrivacyGUI#1572): when that branch merges, move `baseMacAddress` into
+  // `fromUsp` — `SystemInfo.fetch` will already be reading the same leaf that
+  // `SessionService._fetchRouterIdentity` reads, so the login would fetch it
+  // twice. Kept as a TODO and not only as prose so `rg TODO` finds it.
   factory NodeDeviceInfo.fromUsp(SystemInfo info) {
     return NodeDeviceInfo(
       manufacturer: info.manufacturer,

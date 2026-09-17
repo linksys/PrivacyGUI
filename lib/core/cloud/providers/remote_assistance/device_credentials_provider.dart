@@ -69,5 +69,12 @@ final _macPattern = RegExp(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$');
 
 /// Bare 8-4-4-4-12. Deliberately rejects a value that still carries the
 /// `uuid::` prefix `Device.LocalAgent.EndpointID` serves it with.
+///
+/// **Case-insensitive on purpose — do not tighten this to `[0-9A-F]`.** Guardian
+/// does answer 403 to a lower-case UUID, but `GuardianApiClient` upper-cases both
+/// identifiers as it builds the request, so a lower-case value here still reaches
+/// the cloud correctly. Rejecting it would turn a request that works into
+/// "Remote Assistance not available" — the very failure this file exists to stop.
+/// This pattern validates the *shape*; case is the boundary's job.
 final _uuidPattern = RegExp(
     r'^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$');
