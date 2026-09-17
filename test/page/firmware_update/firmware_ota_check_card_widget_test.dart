@@ -418,7 +418,11 @@ void main() {
       );
 
       expect(find.text(loc.firmwareLastCheckDidNotFinish), findsOneWidget);
-      expect(find.text(loc.firmwareErrorServerUnreachable), findsOneWidget);
+      // The label only. The reason sentence measured four to seven lines in this
+      // 204px slot — see the history-line guard in `page_surface_overflow_test.dart`
+      // — so it goes to the snack bar on a check the user just ran, where there is a
+      // full-width surface for it.
+      expect(find.text(loc.firmwareErrorServerUnreachable), findsNothing);
       expect(find.text(loc.firmwareNoUpdateFound), findsNothing);
     });
 

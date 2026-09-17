@@ -811,8 +811,8 @@
   "firmwareErrorSignature": "The firmware failed the router's security check.",
   "firmwareErrorRouterUnspecified": "The router reported a failure without saying why.",
   "firmwareErrorInterrupted": "The update was interrupted before it finished.",
-  "firmwareNotCheckedYet": "The router has not checked for updates since it started.",
-  "firmwareLastCheckDidNotFinish": "The router's last update check did not finish.",
+  "firmwareNotCheckedYet": "Not checked yet",
+  "firmwareLastCheckDidNotFinish": "Last check did not finish",
   "firmwareProgressStalled": "The router stopped reporting update progress (fwup_state={state}).",
   "@firmwareProgressStalled": {
     "placeholders": {

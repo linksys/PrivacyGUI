@@ -9,6 +9,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv6_section.dart';
@@ -986,6 +987,87 @@ void main() {
     // 2. **A sentence that wraps too far or breaks mid-word.** It is now `Expanded`,
     //    so it can never overflow again; what it can do instead is become four lines
     //    of two syllables, which is the trade rule 4 exists to keep honest.
+    // #1572 put two more sentences in that same slot, and the sweep cannot see
+    // either: the page cell leaves `firmwareAutoUpdateDataProvider` unoverridden, so
+    // the provider lands in `AsyncError` and the card draws no history line at all.
+    // A cell measuring a rendering the product does not have is the blind spot rule 5
+    // exists for, so the two states get measured here instead.
+    //
+    // **This test is why the copy is what it is.** The first draft read "The router
+    // has not checked for updates since it started." and "The router's last update
+    // check did not finish." — measured at 5 lines in `en`, 6 in `da`/`el`/`nb`/`nl`/
+    // `sv` and 7 in `el` for the second, against the three-line ceiling above. They
+    // were shortened until they fit, rather than the ceiling being raised: this slot
+    // is 204px beside a button that cannot shrink, and it is the site #1380 measured
+    // overflowing in all 26 locales.
+    //
+    // It also pins why the *reason* is not on the card. The seven
+    // `localizeFirmwareErrorCode` sentences measured four to seven lines here, so the
+    // history line carries the label only and the reason goes to the snack bar, where
+    // there is a full-width surface for it.
+    testWidgets('the router history lines fit the slot the verdict fits',
+        (tester) async {
+      const kOtaStatusLineCeiling = 3;
+      final failures = <String>[];
+
+      for (final entry in {
+        'not checked since boot': gateFirmwareNotCheckedAfterBoot,
+        'last check did not finish': gateFirmwareLastCheckFailed,
+      }.entries) {
+        for (final locale in AppLocalizations.supportedLocales) {
+          final tag = localeTag(locale);
+          await setLayoutSurface(tester, const Size(320.0, kPageSweepHeight));
+          await tester.pumpWidget(KeyedSubtree(
+            key: ValueKey('ota-history-${entry.key}-$tag'),
+            child: pageSurfaceHost(
+              view: kFirmwareOtaPageCase.view(),
+              locale: locale,
+              // `notChecked` is the only verdict the history line renders under — a
+              // check that ran in this session is a later answer and outranks it.
+              overrides: firmwareUpdateOverrides(
+                state: const FirmwareUpdateState(),
+                banks: gateFirmwareBanksWithOta,
+                autoUpdate: entry.value,
+              ),
+            ),
+          ));
+          await settleIgnoringAnimations(tester);
+
+          final loc = localizationsByTag[tag]!;
+          final line = find.text(entry.value.checkedAfterBoot == false
+              ? loc.firmwareNotCheckedYet
+              : loc.firmwareLastCheckDidNotFinish);
+          if (line.evaluate().length != 1) {
+            failures.add('$tag: "${entry.key}" rendered '
+                '${line.evaluate().length} history line(s) — the fixture pins a '
+                'notChecked verdict and an ota row, so nothing was measured');
+            continue;
+          }
+
+          final lines = tester.textLineCount(line);
+          final numbers = 'granted '
+              '${tester.paragraphOf(line).size.width.toStringAsFixed(1)}px on '
+              '$lines line(s), widest token '
+              '${tester.widestTokenWidth(line).toStringAsFixed(1)}px';
+          if (lines > kOtaStatusLineCeiling) {
+            failures.add('$tag: "${entry.key}" wrapped onto $lines lines, past '
+                'the $kOtaStatusLineCeiling-line ceiling — $numbers. Shorten the '
+                'copy; this slot is 204px and the ceiling is the verdict line\'s.');
+          }
+          if (tester.isTextClipped(line)) {
+            failures.add('$tag: "${entry.key}" ellipsized — $numbers');
+          }
+          // The reason must not be on the card: it does not fit, and the snack bar is
+          // where it goes. Asserted as an absence so a future edit that reinstates it
+          // has to come back through this measurement.
+          expect(find.text(loc.firmwareErrorServerUnreachable), findsNothing,
+              reason: 'the reason sentence measured 4-7 lines in this slot');
+        }
+      }
+
+      expect(failures, isEmpty, reason: failures.join('\n'));
+    });
+
     testWidgets('the OTA check card stacks below 600px with both strings whole',
         (tester) async {
       // Three, because two is what the deepest locales measure at 320px. Re-measured

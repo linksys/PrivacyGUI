@@ -141,6 +141,7 @@ List<Override> firmwareUpdateOverrides({
   FirmwareUpdateState state = gateFirmwareNoUpdateFoundState,
   FirmwareBanksData banks = gateFirmwareBanks,
   SystemInfoData systemInfo = gateFirmwareSystemInfo,
+  FirmwareAutoUpdateUIModel? autoUpdate,
 }) =>
     [
       firmwareUpdateNotifierProvider
@@ -149,7 +150,44 @@ List<Override> firmwareUpdateOverrides({
           .overrideWith(() => FixedFirmwareBanksDataNotifier(banks)),
       systemInfoDataProvider.overrideWith(
           () => FixedSystemInfoDataNotifierForFirmware(systemInfo)),
+      // The router's own last-check record, which the OTA check card's history line
+      // reads (#1572). **Left unoverridden by default on purpose**: without it the
+      // real provider cannot fetch in a widget test, lands in `AsyncError`, and the
+      // card draws no history line — which is the rendering every cell measured
+      // before #1572 and the one the page sweep's declared cell counts are built on.
+      // A cell that wants the line asks for it.
+      if (autoUpdate != null)
+        firmwareAutoUpdateDataProvider
+            .overrideWith(() => FixedFirmwareAutoUpdateNotifier(autoUpdate)),
     ];
+
+/// The router that has not looked for firmware since it started (#1572).
+///
+/// The widest of the two history lines: "not checked yet" is a longer sentence than
+/// any verdict the card renders, and it lands in the same slot as the one #1380
+/// measured overflowing in all 26 locales.
+const gateFirmwareNotCheckedAfterBoot = FirmwareAutoUpdateUIModel(
+  status: FirmwareAutoUpdateStatus.idle,
+  progress: 0,
+  rawState: '0',
+  policy: FirmwareAutoUpdatePolicy.autoInstall,
+  rawFlags: '2',
+  checkedAfterBoot: false,
+);
+
+/// The router still holding the reason its last check failed (#1572).
+///
+/// Two stacked sentences in the slot, which is the taller of the two history lines
+/// even though each line is shorter than [gateFirmwareNotCheckedAfterBoot]'s one.
+const gateFirmwareLastCheckFailed = FirmwareAutoUpdateUIModel(
+  status: FirmwareAutoUpdateStatus.idle,
+  progress: 0,
+  rawState: '0',
+  policy: FirmwareAutoUpdatePolicy.autoInstall,
+  rawFlags: '2',
+  checkedAfterBoot: true,
+  errorCode: FirmwareUpdateErrorCode.serverUnreachable,
+);
 
 /// The landing state, plus the one verdict that widens the row that overflowed.
 ///

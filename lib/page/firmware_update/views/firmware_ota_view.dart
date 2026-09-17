@@ -881,22 +881,16 @@ class _OtaCheckCard extends StatelessWidget {
       return _statusLine(
         icon: Icons.info_outline,
         color: scheme.onSurfaceVariant,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyMedium(
-              loc(context).firmwareLastCheckDidNotFinish,
-              color: scheme.onSurfaceVariant,
-            ),
-            // The reason on its own line rather than composed into the sentence
-            // above. Every one of these sentences was written to stand alone under
-            // either heading, and a placeholder holding a whole clause is the kind
-            // of composition that reads badly in half the twenty-six locales.
-            AppText.bodySmall(
-              localizeFirmwareErrorCode(context, reading.errorCode),
-              color: scheme.onSurfaceVariant,
-            ),
-          ],
+        // **The label alone — the reason deliberately does not go here.** This slot
+        // is ~204px wide at 320px, beside a button that cannot shrink, and it is the
+        // site #1380 measured overflowing in all 26 locales. Measured for this line:
+        // the seven reason sentences take four to seven lines in it, against a
+        // three-line ceiling the existing guard holds them to. The reason still
+        // reaches the user, through the snack bar on a check they just ran, where
+        // there is a full-width surface to say it on.
+        child: AppText.bodyMedium(
+          loc(context).firmwareLastCheckDidNotFinish,
+          color: scheme.onSurfaceVariant,
         ),
       );
     }
