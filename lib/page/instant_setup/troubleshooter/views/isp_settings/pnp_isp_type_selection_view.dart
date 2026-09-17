@@ -87,6 +87,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   Widget build(BuildContext context) {
     final state = ref.watch(internetSettingsProvider);
     final wanType = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
+    final supportsIPoE = state.ipv4Setting.supportedIPv4ConnectionType
+        .any((type) => WanType.resolve(type) == WanType.ipoe);
     return _isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
@@ -111,18 +113,24 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   },
                 ),
                 const AppGap.small1(),
-                ISPTypeCard(
-                  title: 'IPoE',
-                  description: loc(context).autoIpoePnpDescription,
-                  isCurrentlyApplying: wanType == WanType.ipoe,
-                  tapAction: wanType == WanType.ipoe
-                      ? null
-                      : () {
-                          logger.i('[PnP]: Troubleshooter - Go to IPoE page');
-                          context.goNamed(RouteNamed.pnpIPoE);
-                        },
-                ),
-                const AppGap.small1(),
+                // A router that does not list IPoE among its supported WAN
+                // types can do nothing with this card. Advanced Settings
+                // filters its connection types on the same list, which is the
+                // one the firmware controls, so both surfaces agree.
+                if (supportsIPoE) ...[
+                  ISPTypeCard(
+                    title: 'IPoE',
+                    description: loc(context).autoIpoePnpDescription,
+                    isCurrentlyApplying: wanType == WanType.ipoe,
+                    tapAction: wanType == WanType.ipoe
+                        ? null
+                        : () {
+                            logger.i('[PnP]: Troubleshooter - Go to IPoE page');
+                            context.goNamed(RouteNamed.pnpIPoE);
+                          },
+                  ),
+                  const AppGap.small1(),
+                ],
                 ISPTypeCard(
                   title: loc(context).connectionTypePppoe,
                   description: loc(context).pnpIspTypeSelectionPppoeDesc,

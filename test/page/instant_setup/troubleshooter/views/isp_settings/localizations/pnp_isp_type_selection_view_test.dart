@@ -68,6 +68,41 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
+  // The list as a router that can actually do IPoE shows it. The default
+  // screenshot above is a router whose supported WAN types omit IPoE, so the
+  // card is gated out of it -- without this case no golden renders the card or
+  // its description at all.
+  testLocalizations('Troubleshooter - PnP ISP type selection: IPoE offered',
+      (tester, locale) async {
+    final ipoeCapable =
+        InternetSettingsState.fromMap(internetSettingsStateIpoe);
+    // Supports IPoE while currently on DHCP, so IPoE reads as an option rather
+    // than as what is already applied.
+    final mockInternetSettingsState = ipoeCapable.copyWith(
+      ipv4Setting: ipoeCapable.ipv4Setting.copyWith(
+        ipv4ConnectionType: WanType.dhcp.type,
+      ),
+    );
+    when(mockInternetSettingsNotifier.build())
+        .thenReturn(mockInternetSettingsState);
+    when(mockInternetSettingsNotifier.fetch(fetchRemote: true))
+        .thenAnswer((_) async => mockInternetSettingsState);
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpIspTypeSelectionView(),
+        locale: locale,
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        overrides: [
+          pnpProvider.overrideWith(() => mockPnpNotifier),
+          internetSettingsProvider
+              .overrideWith(() => mockInternetSettingsNotifier)
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
   testLocalizations('Troubleshooter - PnP ISP type selection: DHCP Alert',
       (tester, locale) async {
     final mockInternetSettingsState =
