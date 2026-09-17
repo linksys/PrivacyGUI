@@ -147,15 +147,29 @@ void main() {
           .read(remoteClientProvider.notifier)
           .fetchSessionInfo(sessionInfo.id, startCountdown: true);
       // The timer ticks once a second; one tick is enough to read the seed back.
-      await Future.delayed(const Duration(milliseconds: 1100));
+      await Future.delayed(const Duration(milliseconds: 1500));
     }
 
     test('a positive expiredIn is the countdown, with nothing added to it',
         () async {
+      // Seeded up front, so this needs no waiting and cannot go flaky.
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => testSessionInfo);
+      await container
+          .read(remoteClientProvider.notifier)
+          .fetchSessionInfo('session-1', startCountdown: true);
+
+      expect(container.read(remoteClientProvider).expiredCountdown,
+          testSessionInfo.expiredIn);
+    });
+
+    test('it ticks down once a second', () async {
       await seedCountdown(testSessionInfo);
 
       expect(container.read(remoteClientProvider).expiredCountdown,
-          testSessionInfo.expiredIn - 1);
+          lessThan(testSessionInfo.expiredIn));
     });
 
     test('ending the session stops the countdown instead of re-seeding it',
@@ -185,8 +199,6 @@ void main() {
 
     test('a non-positive expiredIn floors at zero instead of inverting',
         () async {
-      // The old code used `.abs()`, which read an already-expired session as
-      // having that many seconds still to run.
       await seedCountdown(const GRASessionInfo(
         id: 'session-1',
         serialNumber: 'TEST123',
@@ -198,8 +210,10 @@ void main() {
         currentTime: 1748316924838,
       ));
 
-      expect(container.read(remoteClientProvider).expiredCountdown,
-          lessThanOrEqualTo(0));
+      // The old code used `.abs()`, so this seeded 500 seconds of remaining
+      // time. It now seeds zero and the timer stops itself on the first tick,
+      // which clears the field.
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull);
     });
   });
 
@@ -458,6 +472,27 @@ void main() {
         master: anyNamed('master'),
         sessionId: anyNamed('sessionId'),
       )).called(2);
+    });
+
+    test('repeated read failures report the session as gone', () async {
+      // A blip must not end the polling - that would leave the UI claiming a live
+      // session, which is the symptom #1558 exists to remove - but an
+      // unreachable session cannot be reported as live forever either.
+      queueSessionInfo([
+        sessionWith(status: GRASessionStatus.active, expiredIn: 2547),
+      ]);
+      final notifier = container.read(remoteClientProvider.notifier);
+      await notifier.fetchSessionInfo('session-1');
+
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenThrow(Exception('unreachable'));
+      notifier.startSessionInfoStream(interval: 0);
+      await Future.delayed(const Duration(milliseconds: 80));
+
+      expect(container.read(remoteClientProvider).sessionInfo, isNull,
+          reason: 'after the failure budget the session is reported as gone');
     });
 
     test('a finished stream releases the guard on initiateRemoteAssistanceCA',

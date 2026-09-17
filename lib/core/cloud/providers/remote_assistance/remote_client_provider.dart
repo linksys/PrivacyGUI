@@ -28,8 +28,23 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   // stream cadences sit next to each other.
   static const int kPassiveSessionPollIntervalSec = 3;
 
+  // How many session reads may fail in a row before the session is reported as
+  // gone rather than polled again.
+  static const int kMaxConsecutivePollFailures = 3;
+
   @override
-  RemoteClientState build() => RemoteClientState();
+  RemoteClientState build() {
+    // Two timers and a stream subscription, all holding `ref`. Without this they
+    // outlive the provider on invalidate or container teardown.
+    ref.onDispose(() {
+      _stopActivePolling();
+      _expiredCountdownTimer?.cancel();
+      _expiredCountdownTimer = null;
+      _sessionInfoStreamSubscription?.cancel();
+      _sessionInfoStreamSubscription = null;
+    });
+    return RemoteClientState();
+  }
 
   @visibleForTesting
   bool get isActivePolling => _activePolling;
@@ -236,33 +251,45 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     );
   }
 
-  // Polls while the session is still alive. Two things this deliberately does
-  // not do:
+  // Polls for as long as the cloud still considers the session usable.
   //
-  // It does not key on the sign of `expiredIn`. That field is seconds
-  // *remaining* against the session's TTL, so it is positive for the whole life
-  // of a session - the previous `< 0` condition was never true and the body
-  // never ran (#1558).
+  // The loop carries the value it fetched rather than reading `state` back: the
+  // listener in [_startSessionInfoStream] writes `state` in a later microtask,
+  // not synchronously on `yield`, so `state` here is one iteration behind.
   //
-  // It does not read `state` back to decide whether to continue. The listener
-  // in [_startSessionInfoStream] writes `state` in a later microtask, not
-  // synchronously on `yield`, so reading it here would test the previous
-  // iteration's value. The loop carries the value it fetched instead.
+  // The delay comes before the fetch because every caller has just read the
+  // session to seed `state`; fetching immediately would only repeat it.
   //
-  // The delay comes before the fetch on purpose: every caller has just read the
-  // session to seed `state`, so fetching immediately would only repeat it.
+  // A failed read does not end the polling. That is the whole point of #1558:
+  // ending on the first blip would leave the session unpolled and the UI still
+  // claiming it is live, which is the symptom this fix exists to remove. After
+  // [kMaxConsecutivePollFailures] in a row the session is treated as gone and
+  // the stream ends, so listeners are not left waiting on a session nobody can
+  // reach.
   Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
       {int interval = kPassiveSessionPollIntervalSec}) async* {
     var sessionInfo = state.sessionInfo;
-    while (sessionInfo != null &&
-        sessionInfo.status != GRASessionStatus.invalid &&
-        sessionInfo.expiredIn > 0) {
+    var consecutiveFailures = 0;
+    while (sessionInfo != null && sessionInfo.isLive) {
       await Future.delayed(Duration(seconds: interval));
       final master = ref.read(deviceManagerProvider).masterDevice;
-      sessionInfo = await ref
-          .read(deviceCloudServiceProvider)
-          .getSessionInfo(master: master, sessionId: sessionId);
-      yield sessionInfo;
+      try {
+        sessionInfo = await ref
+            .read(deviceCloudServiceProvider)
+            .getSessionInfo(master: master, sessionId: sessionId);
+        consecutiveFailures = 0;
+        yield sessionInfo;
+      } catch (e) {
+        consecutiveFailures++;
+        logger.w(
+            '[RemoteAssistance]: session read failed ($consecutiveFailures/$kMaxConsecutivePollFailures): $e');
+        if (consecutiveFailures >= kMaxConsecutivePollFailures) {
+          logger.e(
+              '[RemoteAssistance]: giving up on session $sessionId; reporting it as gone');
+          state = state.copyWith(sessionInfo: () => null);
+          return;
+        }
+      }
     }
   }
 
@@ -278,24 +305,25 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   void _stopExpiredCountdownTimer() {
     _expiredCountdownTimer?.cancel();
     _expiredCountdownTimer = null;
+    // The field goes with the timer. Left behind it is a number that has stopped
+    // meaning anything but keeps being rendered.
+    state = state.copyWith(expiredCountdown: () => null);
   }
 
   void _startExpiredCountdownTimer(GRASessionInfo sessionInfo) {
     _expiredCountdownTimer?.cancel();
+    // Counted from a local rather than read back out of state each tick. Reading
+    // state meant any other writer that reset it - and several do - handed the
+    // timer a null, which it then re-seeded from this same captured session,
+    // restarting a countdown for a session that had already ended.
+    var remaining = sessionInfo.remainingSeconds;
+    state = state.copyWith(expiredCountdown: () => remaining);
     _expiredCountdownTimer =
         Timer.periodic(const Duration(seconds: 1), (timer) {
-      var expiredCountdown = state.expiredCountdown;
-      // `expiredIn` is seconds remaining, so it is already the countdown's
-      // starting value. The `.abs()` this replaces came from the inverted sign
-      // assumption in #1558 and would have turned an expired session's negative
-      // remainder into time still to run.
-      expiredCountdown ??=
-          sessionInfo.expiredIn > 0 ? sessionInfo.expiredIn : 0;
-      expiredCountdown--;
-      state = state.copyWith(expiredCountdown: () => expiredCountdown);
-      if (expiredCountdown < 0) {
-        timer.cancel();
-        _expiredCountdownTimer = null;
+      remaining--;
+      state = state.copyWith(expiredCountdown: () => remaining);
+      if (remaining < 0) {
+        _stopExpiredCountdownTimer();
       }
     });
   }

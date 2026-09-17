@@ -60,6 +60,15 @@ enum GRASessionStatus {
 /// never negative in any status. The negative sample this comment used to show
 /// is what led the polling loop to guard on `expiredIn < 0` and never run.
 class GRASessionInfo extends Equatable {
+  /// Seconds still to run, floored at zero.
+  ///
+  /// The one definition of "how long is left", so the polling loop's liveness
+  /// test and whatever counts down on screen cannot come apart.
+  int get remainingSeconds => expiredIn > 0 ? expiredIn : 0;
+
+  /// Whether the cloud still considers this session usable.
+  bool get isLive => status != GRASessionStatus.invalid && remainingSeconds > 0;
+
   final String id;
   final String serialNumber;
   final String modelNumber;
