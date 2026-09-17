@@ -219,6 +219,18 @@ class UspFirmwareUpdateService {
     }
   }
 
+  /// One firmware image's `Status`, by instance.
+  ///
+  /// **Not a verdict, and not read by anything.** Zero production call sites since
+  /// #1549 split the two flows; kept because the tests below document what the router
+  /// reports per slot, which is worth having written down.
+  ///
+  /// It was also a hazard until `linksys/usp_framework#66`: `sysmngr` returned
+  /// `InstallationFailed` for the ota row at `fwup_state=5`, which is the *reboot*, so
+  /// anything reaching for "a status to decide from" got an install failure out of
+  /// every successful install. The definition no longer says that — but the rule this
+  /// ticket establishes stands either way: **the failure verdict comes from
+  /// `fwup_error_code`, never from a row's `Status`.**
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);

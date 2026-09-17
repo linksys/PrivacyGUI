@@ -64,8 +64,10 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   @override
   Future<void> runUpload({required String commandKey}) async {}
 
+  // `true` = dispatched, which is what a fixture pinning a *phase* wants: the
+  // caller's flow continues exactly as it did before the busy refusal existed.
   @override
-  Future<void> triggerInstall({required int targetInstance}) async {}
+  Future<bool> triggerInstall({required int targetInstance}) async => true;
 
   @override
   void enterRecoveryWaiting(

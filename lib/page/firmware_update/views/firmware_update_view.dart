@@ -384,7 +384,15 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     }
     if (!context.mounted) return;
     try {
-      await notifier.triggerInstall(targetInstance: target.instance);
+      // **The return value is the stop signal, not just the throw.** A busy router
+      // refuses without throwing — being told "one is already running" is an answer —
+      // and the notifier has already put that on the card. Continuing would spend 60 s
+      // polling, open the recovery dialog and end at `verify()`, which would fabricate
+      // a `bootedOldImage` over the top of the correct refusal. The OTA path gates its
+      // reboot wait on `result.isFlashing` for the same reason.
+      if (!await notifier.triggerInstall(targetInstance: target.instance)) {
+        return;
+      }
     } catch (e, st) {
       logger.e('[FirmwareUpdate] triggerInstall error: $e',
           error: e, stackTrace: st);

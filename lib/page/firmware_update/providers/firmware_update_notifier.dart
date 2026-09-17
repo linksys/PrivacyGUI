@@ -322,8 +322,14 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         // `clearFailure` is checked first by `copyWith`, so the two are exclusive
         // rather than combined: a router-reported failure sets one, every other
         // verdict clears whatever the last check left.
+        // `?? unknown` rather than `!`. The result's constructor asserts a non-null
+        // failure code, but asserts are stripped in release — so on a release build a
+        // `checkFailed` carrying null would crash here instead of showing anything.
+        // `routerUnspecified` is the honest stand-in: the router said the check failed
+        // and this build cannot name why, which is exactly what that arm means.
         failure: routerFailed
-            ? FirmwareFailure.routerReported(result.errorCode!)
+            ? FirmwareFailure.routerReported(
+                result.errorCode ?? FirmwareUpdateErrorCode.routerUnspecified)
             : null,
         clearFailure: !routerFailed,
       ));
@@ -530,21 +536,34 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// costs is exactly the mistake `DisruptionClass` exists to prevent — and in
   /// Remote Assistance it is unreachable regardless, because
   /// `_onConfirmInstall` returns as soon as [runUpload] throws.
-  Future<void> triggerInstall({required int targetInstance}) async {
+  /// Returns **false when nothing was dispatched** — currently only the busy
+  /// refusal — so the caller can stop instead of walking a flow for an install that
+  /// never started.
+  ///
+  /// A return value rather than a throw, and rather than nothing: the OTA path
+  /// already hands its caller a verdict and the view gates the reboot wait on
+  /// `result.isFlashing`, which is why the same refusal there is harmless. This one
+  /// returned `void`, so the only caller could not tell a refusal from a dispatch and
+  /// carried on into a 60 s poll, the recovery dialog and `verify()` — ending in a
+  /// fabricated `bootedOldImage` that also **overwrote** the correct
+  /// `updateAlreadyRunning`. A throw would be wrong for the same reason it is wrong
+  /// on the check: being told "one is already running" is an answer, not an error.
+  Future<bool> triggerInstall({required int targetInstance}) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'local firmware install');
     // The other half of the same lock: the OTA page may have dispatched an install
     // that this notifier — a different instance — knows nothing about.
-    if (await _refuseIfRouterBusy()) return;
+    if (await _refuseIfRouterBusy()) return false;
     // And the same yield hazard the OTA path documents: `_svc` and the mutation lock
     // below are both `ref.read`s, and this is now the first await in the method.
-    if (_disposed) return;
+    if (_disposed) return false;
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.triggerLocalDownload(targetInstance: targetInstance);
       });
       _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
+      return true;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] triggerInstall failed', error: e);
       _fail(FirmwareFailure.serviceError(e));
@@ -836,7 +855,10 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
               result, 'a failed update', 'nothing was ever seen running');
           return;
         }
-        _fail(FirmwareFailure.routerReported(result.errorCode!));
+        // Same reason as the check's arm above: the assert is gone in release, and a
+        // crash is a worse answer than "the router did not say why".
+        _fail(FirmwareFailure.routerReported(
+            result.errorCode ?? FirmwareUpdateErrorCode.routerUnspecified));
 
       case FirmwareOtaInstallVerdict.timedOut:
         if (!dispatched && !_sawUpdateRunning) {
@@ -872,7 +894,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     try {
       return (await _svc.fetchAutoUpdate()).errorCode;
     } catch (e) {
-      logger.d('[FirmwareUpdate] could not read fwup_error_code ($e)');
+      logger.d('[FirmwareUpdate] notifier could not read fwup_error_code ($e)');
       return null;
     }
   }

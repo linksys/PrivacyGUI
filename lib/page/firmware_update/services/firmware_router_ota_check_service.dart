@@ -368,7 +368,8 @@ class FirmwareRouterOtaCheckService {
     try {
       return (await _readAutoUpdate()).errorCode;
     } catch (e) {
-      logger.d('[FirmwareUpdate] could not read fwup_error_code ($e)');
+      logger.d('[FirmwareUpdate] check service could not read fwup_error_code '
+          '($e)');
       return null;
     }
   }

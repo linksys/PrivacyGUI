@@ -887,6 +887,48 @@ void main() {
         expect(state.phase, isNot(FirmwareUpdatePhase.triggering));
       });
 
+      test('the manual refusal is returned, not just published (round 2, C1)',
+          () async {
+        // The return value is what stops the caller. Publishing the failure was not
+        // enough: `triggerInstall` returned `void`, so the view could not tell a
+        // refusal from a dispatch and walked on into a 60 s poll, the recovery dialog
+        // and `verify()` — which fabricated a `bootedOldImage` **over the top of** the
+        // correct `updateAlreadyRunning`. So the user was told the wrong thing about a
+        // dispatch that never happened, after two minutes of waiting for it.
+        routerIs(FirmwareAutoUpdateStatus.installing);
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final dispatched = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        expect(dispatched, isFalse,
+            reason: 'false is the signal the caller stops on');
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            const FirmwareFailure.updateAlreadyRunning());
+      });
+
+      test('a dispatched manual install returns true', () async {
+        // The other side of the same signal: the success path must keep going, so a
+        // real dispatch has to be distinguishable from a refusal by its return value
+        // alone.
+        routerIs(FirmwareAutoUpdateStatus.idle);
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        final dispatched = await container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2);
+
+        expect(dispatched, isTrue);
+        expect(container.read(firmwareUpdateNotifierProvider).phase,
+            FirmwareUpdatePhase.installing);
+      });
+
       test('a checking router also blocks, because mode 2 checks first',
           () async {
         // `isBusy` covers `checking` as well as the two flashing states. A router
