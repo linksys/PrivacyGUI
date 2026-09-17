@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -194,6 +195,36 @@ void main() {
       expect(service.totalFragmentsFor(1), 1);
       expect(service.totalFragmentsFor(4), 1);
       expect(service.totalFragmentsFor(5), 2);
+    });
+
+    // PrivacyGUI#1582 made `SessionService` read the *same* leaf,
+    // `Device.LocalAgent.EndpointID`, and strip its `uuid::` prefix — Guardian's
+    // device APIs take the bare UUID and answer 403 for anything else. **This
+    // file must keep the prefix**: the value here is the USP endpoint identifier
+    // the WebSocket push addresses, not a cloud id. Sharing one helper between
+    // the two is the tempting refactor, and it would break Method 2 in a way the
+    // behavioural tests above cannot see, because they inject `wsStrategyFactory`
+    // and never reach the read. This is that guard.
+    test('the EndpointID read keeps its uuid:: prefix', () {
+      final code = File(
+        'lib/page/firmware_update/services/firmware_local_upload_service.dart',
+      )
+          .readAsStringSync()
+          .split('\n')
+          .where((l) => !l.trimLeft().startsWith('//'))
+          .join('\n');
+
+      expect(code, contains("get(['Device.LocalAgent.EndpointID'])"),
+          reason: 'the read itself must stay here');
+      for (final stripper in [
+        'uuid::',
+        'replaceFirst',
+        'substring',
+        'split('
+      ]) {
+        expect(code, isNot(contains(stripper)),
+            reason: 'nothing here may take the prefix off: $stripper');
+      }
     });
   });
 }

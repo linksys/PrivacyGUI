@@ -20,10 +20,11 @@ class RemoteAssistanceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final credentials = ref.watch(deviceCredentialsProvider);
+    final available = credentials != null;
 
     return LayoutBlock(
       identifier: 'support-remote-assistance',
-      onTap: credentials != null
+      onTap: available
           ? () =>
               showRemoteAssistanceDialog(context, ref, credentials: credentials)
           : null,
@@ -33,13 +34,17 @@ class RemoteAssistanceCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
+              color: available
+                  ? colorScheme.primaryContainer
+                  : colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: AppIcon.font(
               Icons.support_agent,
               size: 24,
-              color: colorScheme.onPrimaryContainer,
+              color: available
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
             ),
           ),
           AppGap.md(),
@@ -47,19 +52,30 @@ class RemoteAssistanceCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(loc(context).remoteAssistance),
+                AppText.labelLarge(
+                  loc(context).remoteAssistance,
+                  color: available ? null : colorScheme.onSurfaceVariant,
+                ),
+                // The unavailable subtitle is the whole point of the state: this
+                // row used to look identical whether or not it could be pressed,
+                // so a router that cannot supply its cloud UUID produced a row
+                // that silently ignored taps. See PrivacyGUI#1582.
                 AppText.bodySmall(
-                  'Get help from Linksys support',
+                  available
+                      ? 'Get help from Linksys support'
+                      : loc(context).notAvailable,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
           ),
-          AppIcon.font(
-            Icons.chevron_right,
-            size: 24,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          // No chevron when there is nowhere to go.
+          if (available)
+            AppIcon.font(
+              Icons.chevron_right,
+              size: 24,
+              color: colorScheme.onSurfaceVariant,
+            ),
         ],
       ),
     );

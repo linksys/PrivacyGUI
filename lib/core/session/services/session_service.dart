@@ -72,10 +72,67 @@ class SessionService {
     try {
       final systemInfo = await SystemInfo.fetch(_usp);
       logger.d('[SessionService]: DeviceInfo fetched via USP');
-      return NodeDeviceInfo.fromUsp(systemInfo);
+      final identity = await _fetchRouterIdentity(_usp);
+      return NodeDeviceInfo.fromUsp(systemInfo).copyWith(
+        baseMacAddress: identity.baseMacAddress,
+        deviceUuid: identity.deviceUuid,
+      );
     } catch (e) {
       logger.e('[SessionService]: USP device info fetch failed: $e');
       throw ConnectivityError(detail: e.toString());
     }
   }
+
+  /// The two identity leaves the `system_info` definition does not cover.
+  ///
+  /// Remote Assistance needs three values to reach Guardian — serial, MAC and the
+  /// cloud's device UUID — and only the serial is in `system_info`, whose
+  /// definition is `Device.DeviceInfo.*`. The UUID lives under
+  /// `Device.LocalAgent.`, so it cannot join that definition; one extra Get here
+  /// is the cheapest honest place, and it rides the same login the serial already
+  /// costs. See PrivacyGUI#1582.
+  ///
+  /// **Best-effort on purpose.** A firmware that serves neither leaf must still
+  /// log in; Remote Assistance then reports itself unavailable, which is a far
+  /// better failure than a session that cannot start. So this swallows its own
+  /// errors rather than joining the `ConnectivityError` above.
+  Future<({String? baseMacAddress, String? deviceUuid})> _fetchRouterIdentity(
+      UspClient usp) async {
+    try {
+      final response = await usp.get([_kBaseMacPath, _kEndpointIdPath]);
+      return (
+        baseMacAddress: _nonEmptyUpper(response[_kBaseMacPath]),
+        deviceUuid:
+            _stripUuidPrefix(_nonEmptyUpper(response[_kEndpointIdPath])),
+      );
+    } catch (e) {
+      logger.w('[SessionService]: router identity read failed: $e '
+          '— Remote Assistance will report itself unavailable');
+      return (baseMacAddress: null, deviceUuid: null);
+    }
+  }
+
+  /// Upper case is not cosmetic: measured 2026-09-17, Guardian's device-token
+  /// endpoint answers `403` for the correct UUID sent in lower case.
+  static String? _nonEmptyUpper(Object? value) {
+    final text = value?.toString().trim().toUpperCase();
+    return (text == null || text.isEmpty) ? null : text;
+  }
+
+  /// `Device.LocalAgent.EndpointID` reads `uuid::<UUID>`. The prefix is part of
+  /// the USP endpoint identifier and must not reach Guardian — but it must stay
+  /// on the value the firmware WebSocket upload uses as its `toId`, which is why
+  /// that call site keeps its own read.
+  /// Case-insensitive on purpose: this must not depend on [_nonEmptyUpper]
+  /// having run first, or one edit there silently changes two properties.
+  static String? _stripUuidPrefix(String? value) {
+    if (value == null) return null;
+    const prefix = 'uuid::';
+    if (!value.toLowerCase().startsWith(prefix)) return value;
+    final stripped = value.substring(prefix.length);
+    return stripped.isEmpty ? null : stripped;
+  }
 }
+
+const _kBaseMacPath = 'Device.DeviceInfo.X_LINKSYS_BaseMACAddress';
+const _kEndpointIdPath = 'Device.LocalAgent.EndpointID';
