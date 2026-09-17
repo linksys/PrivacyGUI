@@ -5,6 +5,48 @@ final _pnpRouteConfig = LinksysRouteConfig(
   noNaviRail: true,
 );
 
+/// Refuses to leave the setup wizard while the firmware stage owns it (REQ-B2).
+///
+/// **This is the whole lock, and the only one.** `PnpSetupView` renders with
+/// `appBarStyle: UiKitAppBarStyle.none`, and `UiKitPageView._buildAppBarConfig()`
+/// returns null for that style before it reaches the one line that consumes
+/// `onBackTap` — so the page's `onBackTap` closure never runs, and a phase check
+/// added there would be dead code. What makes the phase unleavable is this guard
+/// (browser Back and any `go`, both of which consult `onExit`) plus the fact that
+/// `_buildFirmwareUpdate` renders no button at all.
+///
+/// **Two phases, not one.** `WizardUpdatingFirmware` is the flash. The reason
+/// `WizardCheckingFirmware` is here too is a race rather than a screen: a pop
+/// during the check lands on `PnpEntryView`, whose `initState` calls
+/// `startPostLoginFlow()` and overwrites `state.phase` — while `_checkFirmware` is
+/// still awaiting an answer that may be "an update is available", at which point it
+/// writes `WizardUpdatingFirmware` over that flow and dispatches a flash. Two
+/// writers, one phase, and a router being written to with the locked screen never
+/// shown. The window is bounded by `pnpFirmwareCheckDeadlineProvider` (15 s) and
+/// the phase renders a spinner with nothing to press, so what is being refused is
+/// a Back press during a wait the user cannot shorten either way.
+///
+/// **No `loggedOut` escape, unlike `_firmwareExitGuard`.** That guard releases on
+/// a sign-out because the router's `redirect` `go`es a signed-out user to the login
+/// page and the leaving match is a `/usp*` one. Nothing does that here, measured
+/// twice: `redirect` returns `state.uri.toString()` for every `/pnp*` location — the
+/// wizard is not auth-gated — and the only wiring of `listenForCoreSessionExit` is
+/// in `usp_dashboard_shell.dart`, so while the wizard is on screen a
+/// core-reported session exit is not even carried out. The same condition written
+/// here would be a check that never fires, which is the mistake this file's
+/// `onBackTap` note already records once.
+///
+/// Keyed on the **PnP phase**, not on `firmwareUpdateNotifierProvider.isUpdating`
+/// like `_firmwareExitGuard` is. The two answer different questions: the firmware
+/// pages ask "is an install running", whereas this asks "is this wizard the thing
+/// running it" — an update the user started on the dashboard before entering setup
+/// must not lock the wizard, and `isUpdating` cannot tell the two apart.
+Future<bool> _pnpFirmwareExitGuard(
+    BuildContext context, GoRouterState state) async {
+  final phase = ProviderScope.containerOf(context).read(pnpProvider).phase;
+  return phase is! WizardUpdatingFirmware && phase is! WizardCheckingFirmware;
+}
+
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
@@ -16,6 +58,7 @@ final pnpRoute = LinksysRoute(
       path: RoutePath.pnpConfig,
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpSetupView(),
+      onExit: _pnpFirmwareExitGuard,
     ),
   ],
 );

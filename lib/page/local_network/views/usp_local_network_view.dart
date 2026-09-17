@@ -286,6 +286,13 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                 AppSwitch(
                   identifier: 'local-network-dhcp-enable',
                   value: pending.dhcpEnabled,
+                  // Same busy treatment the rule rows carry — see
+                  // `usp_single_port_tab.dart` for why a null `onChanged` was
+                  // not one (#1542). `disabled` here *is* `status.isSaving`, and
+                  // this page has no other signal for it: the bottom bar only
+                  // greys its Save button out.
+                  isLoading: disabled,
+                  busySemanticLabel: disabled ? loc(context).processing : null,
                   onChanged: disabled
                       ? null
                       : (v) => notifier

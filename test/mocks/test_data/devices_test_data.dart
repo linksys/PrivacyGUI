@@ -90,9 +90,7 @@ class DevicesTestData {
     String parentNodeId = masterMac,
   }) =>
       BackhaulInfo(
-        mediaType: 'IEEE 802.11ax',
         linkType: 'Wi-Fi',
-        phyRate: 2402,
         signalStrength: signalStrength,
         uplinkRate: 500000,
         downlinkRate: 1000000,
@@ -103,13 +101,11 @@ class DevicesTestData {
     String parentNodeId = masterMac,
   }) =>
       BackhaulInfo(
-        mediaType: 'Ethernet',
         linkType: 'Ethernet',
-        phyRate: 1000,
         parentNodeId: parentNodeId,
       );
 
-  static const emptyBackhaul = BackhaulInfo(mediaType: '');
+  static const emptyBackhaul = BackhaulInfo.none;
 
   // ===========================================================================
   // ClientInterfaceInfo Factories

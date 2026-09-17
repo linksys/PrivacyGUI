@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -81,7 +82,11 @@ class NodeDetailPopup extends StatelessWidget {
         if (!isMaster) ...[
           if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
             _row('Backhaul', backhaulLinkType),
-          if (backhaulSignalStrength != null && backhaulLinkType != 'Ethernet')
+          // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
+          // reading, so a wired node whose medium is spelled unexpectedly must
+          // not fall into it (#1555).
+          if (backhaulSignalStrength != null &&
+              !isMeshBackhaulEthernet(backhaulLinkType))
             _row('Signal', '$backhaulSignalStrength dBm'),
           if (backhaulUplinkRate != null && backhaulDownlinkRate != null)
             _row(

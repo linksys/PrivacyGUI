@@ -70,6 +70,10 @@ class UspPortRangeTab extends ConsumerWidget {
               identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
+              // Same busy treatment as `usp_single_port_tab.dart` — see the note
+              // there for why a null `onChanged` was not one (#1542).
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
               onChanged: isSaving
                   ? null
                   : (value) => ref

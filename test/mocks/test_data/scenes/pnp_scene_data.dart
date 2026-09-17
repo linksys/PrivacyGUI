@@ -172,7 +172,7 @@ final pnpMeshNodes = <NodeEntity>[
     manufacturer: 'Linksys',
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
-    backhaul: const BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: const BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
 ];
 

@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 
+import '../../../mocks/test_data/firmware_update_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -136,6 +138,71 @@ void main() {
       // Firmware images should be empty (graceful fallback)
       expect(data.model.firmwareImages, isEmpty);
       container.dispose();
+    });
+
+    test('firmwareImages carries physical banks only', () async {
+      // The fan-out point: everything downstream of SystemInfoUIModel
+      // .firmwareImages (the support PDF, the admin card's current version)
+      // wants the physical inventory. Filtering here fixes both at once.
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return systemInfoResponse;
+        } else if (paths
+            .any((p) => p.toString().contains('FirmwareImage.*.'))) {
+          return FirmwareUpdateTestData.threeInstanceResponse(
+            activeVersion: '1.0.16',
+            otaAvailable: true,
+            otaVersion: '2.0.2',
+          );
+        }
+        return <String, dynamic>{};
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      final data = await container.read(systemInfoDataProvider.future);
+
+      expect(data.model.firmwareImages, hasLength(2));
+      expect(
+        data.model.firmwareImages.map((i) => i.version),
+        isNot(contains('2.0.2')),
+        reason: 'the upgradeable version must never reach the physical '
+            'inventory — the PDF prints it as a firmware image and the admin '
+            'card can fall back to it as the current version',
+      );
+    });
+
+    test('firmwareImages.first is a physical bank when Active is unset',
+        () async {
+      // The admin card falls back to `banks.first.version` when no row is
+      // flagged Active. With the ota row filtered out that fallback can only
+      // land on a physical bank.
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return <String, dynamic>{
+            ...systemInfoResponse,
+            'Device.DeviceInfo.ActiveFirmwareImage': '',
+            'Device.DeviceInfo.BootFirmwareImage': '',
+          };
+        } else if (paths
+            .any((p) => p.toString().contains('FirmwareImage.*.'))) {
+          return FirmwareUpdateTestData.threeInstanceResponse(
+            activeVersion: '1.0.16',
+            otaAvailable: true,
+            otaVersion: '2.0.2',
+          );
+        }
+        return <String, dynamic>{};
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      final data = await container.read(systemInfoDataProvider.future);
+
+      expect(data.model.firmwareImages.every((i) => i.isActive), isFalse);
+      expect(data.model.firmwareImages.first.version, '1.0.16');
     });
 
     test('SystemInfoData equality uses model props', () async {

@@ -325,7 +325,10 @@ class StepResultTile extends StatelessWidget {
       };
       details.add(_ResultDetail(
         n.label,
-        '${n.linkType} • $severityText',
+        // `unknown`, not a medium name: a link known only by its parent ID has
+        // no `LinkType`, and node detail says the same word for the same node
+        // (#1555).
+        '${n.linkType ?? loc(context).unknown} • $severityText',
         segments: n.isStale
             ? [(icon: Icons.warning_amber_rounded, text: loc(context).stale)]
             : const [],

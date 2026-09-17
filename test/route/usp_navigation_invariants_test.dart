@@ -318,6 +318,7 @@ const _fallbackRoutes = <String>[
   // Shell children — nothing to pop from a cold URL, so the fallback fires.
   RouteNamed.uspTopology,
   RouteNamed.uspFirmwareUpdate,
+  RouteNamed.uspFirmwareOta,
   RouteNamed.uspSystemLog,
   RouteNamed.uspInstantPrivacy,
   RouteNamed.uspAdmin,
@@ -421,6 +422,7 @@ void main() {
         RouteNamed.uspInstantPrivacy: '/uspInstantPrivacy',
         RouteNamed.uspAdmin: '/uspAdmin',
         RouteNamed.uspFirmwareUpdate: '/uspFirmwareUpdate',
+        RouteNamed.uspFirmwareOta: '/uspFirmwareOta',
         RouteNamed.uspDhcpDetail: '/uspDhcpDetail',
         RouteNamed.uspSystemLog: '/uspSystemLog',
         RouteNamed.uspStatistics: '/uspStatistics',
@@ -487,6 +489,12 @@ void main() {
           {
             RouteNamed.uspTopology: RouteNamed.uspMenu,
             RouteNamed.uspFirmwareUpdate: RouteNamed.uspAdmin,
+            // #1549 split one firmware page into two, and both return to
+            // Administration — the OTA page because its card is there, the
+            // manual page because its card is there too (in local mode; in RA
+            // the manual card is hidden and this address is only reachable from
+            // a deep link, where the fallback is the whole return path).
+            RouteNamed.uspFirmwareOta: RouteNamed.uspAdmin,
             RouteNamed.uspSystemLog: RouteNamed.uspMenu,
             RouteNamed.uspInstantPrivacy: RouteNamed.uspMenu,
             RouteNamed.uspAdmin: RouteNamed.uspMenu,

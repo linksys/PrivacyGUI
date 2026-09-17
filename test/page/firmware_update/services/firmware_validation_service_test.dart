@@ -52,15 +52,20 @@ void main() {
       );
     });
 
-    test('rejects below-min file with tooLarge kind', () {
-      // The validator reports both small and large outside-bounds as tooLarge.
+    test('rejects below-min file with tooSmall kind', () {
+      // This used to expect `tooLarge`, and the test said so: the validator
+      // reported both outside-bounds conditions with the one kind. That was inert
+      // while the only consumer copied the English `message` verbatim — the
+      // message was right even though the kind was not. Once the provider layer
+      // began picking a localized sentence *by kind*, a 1 KB file was reported as
+      // too big.
       expect(
         () => service.validate(filename: 'fw.img', bytes: bytesOf(1024)),
         throwsA(
           isA<FirmwareValidationFailure>().having(
             (e) => e.kind,
             'kind',
-            FirmwareValidationFailureKind.tooLarge,
+            FirmwareValidationFailureKind.tooSmall,
           ),
         ),
       );

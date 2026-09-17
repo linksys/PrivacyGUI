@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'diagnostic_state.dart';
@@ -378,14 +379,20 @@ class DnsLookupCheckUIModel extends DiagnosticStepUIModel {
 }
 
 /// Severity bucket for a single mesh node's backhaul health.
+///
+/// Graded on **RSSI and the last downlink rate**, never on a PHY rate:
+/// `Device.{i}.BackhaulPHYRate` is not in the prplMesh schema and has no
+/// replacement (#1555), so `_gradeMeshBackhaul` reads
+/// `BackhaulStats.LastDataDownlinkRate` — an achieved throughput, not a
+/// negotiated capability. A stale node is [weak] whatever its numbers say.
 enum MeshBackhaulSeverity {
-  /// Wired backhaul, or wireless link with strong PHY rate + RSSI.
+  /// Wired backhaul, or a wireless link with a strong RSSI and downlink rate.
   healthy,
 
-  /// Wireless link with marginal PHY rate or RSSI.
+  /// Wireless link with a marginal RSSI or downlink rate — or a stale node.
   weak,
 
-  /// Wireless link with poor PHY rate or very low RSSI.
+  /// Wireless link with a poor RSSI or a very low downlink rate.
   poor,
 }
 
@@ -397,14 +404,17 @@ class MeshNodeBackhaulUIModel extends Equatable {
   /// Human-friendly label (manufacturer model, falls back to nodeId).
   final String label;
 
-  /// Backhaul media type (e.g. "IEEE 802.11ax", "Ethernet", "MoCA", "G.hn").
-  final String mediaType;
-
-  /// Backhaul link type from codegen ("Wi-Fi" or "Ethernet").
-  final String linkType;
-
-  /// Negotiated PHY rate in Mbps (-1 if unknown).
-  final int phyRateMbps;
+  /// Backhaul link type from codegen ("Wi-Fi" or "Ethernet"), or null when
+  /// firmware named no medium for a link it did report.
+  ///
+  /// Nullable so the two tiles that render it can say `unknown` instead of
+  /// naming a medium nothing measured — see `MeshBackhaulNodeRecord.linkType`,
+  /// which this mirrors field for field.
+  ///
+  /// The only medium field. A `mediaType` string and a `phyRateMbps` used to sit
+  /// beside it, both sourced from `Device.{i}.Backhaul*` paths absent from the
+  /// prplMesh schema and both unread by every view (#1555).
+  final String? linkType;
 
   /// Last data uplink rate observed in kbps (-1 if unknown).
   final int lastUplinkRateKbps;
@@ -436,9 +446,7 @@ class MeshNodeBackhaulUIModel extends Equatable {
   const MeshNodeBackhaulUIModel({
     required this.nodeId,
     required this.label,
-    required this.mediaType,
     required this.linkType,
-    required this.phyRateMbps,
     required this.lastUplinkRateKbps,
     required this.lastDownlinkRateKbps,
     required this.signalStrengthDbm,
@@ -450,15 +458,18 @@ class MeshNodeBackhaulUIModel extends Equatable {
     this.isStale = false,
   });
 
-  bool get isWired => linkType == 'Ethernet';
+  /// Whether this node's backhaul is wired.
+  ///
+  /// Routed through the shared predicate so this and the three other medium
+  /// tests in the app cannot disagree about a spelling; null (unknown medium) is
+  /// correctly not wired.
+  bool get isWired => isMeshBackhaulEthernet(linkType);
 
   @override
   List<Object?> get props => [
         nodeId,
         label,
-        mediaType,
         linkType,
-        phyRateMbps,
         lastUplinkRateKbps,
         lastDownlinkRateKbps,
         signalStrengthDbm,

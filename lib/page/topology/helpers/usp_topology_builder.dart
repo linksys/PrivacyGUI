@@ -279,13 +279,24 @@ class UspTopologyBuilder {
   ///   nullable level in the ui_kit `MeshNode` (`level` is a non-nullable
   ///   `double`), so this is the least-wrong value the current API allows.
   ///
-  /// `isEthernet` is tested **before** `hasInfo`, and the order is load-bearing:
-  /// the two read different fields (`linkType` and `mediaType`) and nothing
-  /// couples them, so `linkType:'Ethernet'` with an empty `mediaType` is
-  /// representable. Checking `hasInfo` first painted that node at 0.0 — dead —
-  /// while the `connectionType` above and the node-detail card's arm chain both
-  /// resolve `isEthernet` first and call it Ethernet. Same node, same fields,
-  /// three answers. All three sites now agree that a positive `linkType` wins.
+  /// `isEthernet` is tested **before** `hasInfo`. That order used to be
+  /// load-bearing: the two read different fields (`linkType` and `mediaType`)
+  /// with nothing coupling them, so `linkType:'Ethernet'` with an empty
+  /// `mediaType` was representable and checking `hasInfo` first painted that
+  /// node at 0.0 — dead — while two other sites called the same node Ethernet.
+  /// Since #1555 `isEthernet` and the medium half of `hasInfo` read the same
+  /// field, so `isEthernet` implies `hasInfo` and that state cannot be
+  /// constructed. The order is kept because it still reads as the intent (a
+  /// positive medium wins), but it is no longer what prevents the disagreement.
+  ///
+  /// The `0.0` arm is narrower than it looks, and deliberately so. `hasInfo`
+  /// counts a known parent as a link even when firmware named no medium (#1555),
+  /// so a node like that falls through to `0.5`/RSSI here rather than being
+  /// painted dead. Keying this on the medium alone is what made the same node
+  /// read "dead link" here and "Wi-Fi, graded on signal" in
+  /// `UnifiedDiagnosticsService` — see `BackhaulInfo.hasInfo`. `0.0` is now only
+  /// for a node with neither medium nor parent, which is a backhaul we have no
+  /// evidence of at all.
   static double _backhaulLevel(BackhaulInfo backhaul) {
     if (backhaul.isEthernet) return 1.0;
     if (!backhaul.hasInfo) return 0.0;

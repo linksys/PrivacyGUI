@@ -345,12 +345,42 @@ void main() {
       expect(ethernet.isWifi, isFalse);
     });
 
-    test('hasInfo returns true when mediaType is not empty', () {
+    test('hasInfo returns true when linkType is not empty', () {
       final withInfo = DevicesTestData.createWifiBackhaul();
-      const noInfo = BackhaulInfo(mediaType: '');
+      const noInfo = BackhaulInfo.none;
 
       expect(withInfo.hasInfo, isTrue);
       expect(noInfo.hasInfo, isFalse);
+    });
+
+    test('hasInfo is true for a link known only by its parent (#1555)', () {
+      // The state prplMesh makes reachable: `MultiAPDevice.Backhaul.LinkType`
+      // is nullable and can arrive empty on a row that still carries a
+      // `BackhaulDeviceID`. That is a link — firmware just did not name its
+      // medium.
+      //
+      // Keying `hasInfo` on the medium alone made the two consumers of this one
+      // node disagree: `usp_topology_builder._backhaulLevel` painted it 0.0, a
+      // dead link, while `UnifiedDiagnosticsService` defaults the same node's
+      // medium to `'Wi-Fi'` (unified_diagnostics_service.dart:619) and graded it
+      // on its RSSI. Same fields, two verdicts. Reverting this getter to
+      // `linkType != null && linkType!.isNotEmpty` reds this test and the
+      // topology-level row that pins the level it feeds.
+      const parentOnly = BackhaulInfo(parentNodeId: DevicesTestData.masterMac);
+
+      expect(parentOnly.hasInfo, isTrue,
+          reason: 'a known parent is evidence of a link, medium or not');
+      expect(parentOnly.linkType, isNull,
+          reason: 'and the medium stays unnamed — nothing fabricates "Wi-Fi" '
+              'into the model to make the two graders agree');
+      expect(parentOnly.isWifi, isTrue,
+          reason: 'a link that is not Ethernet is the wireless arm');
+      expect(parentOnly.isEthernet, isFalse);
+
+      // An empty string is the same absence as null: firmware writes `""`, not
+      // a missing key, when it has no value for a nullable DataElements leaf.
+      const empties = BackhaulInfo(linkType: '', parentNodeId: '');
+      expect(empties.hasInfo, isFalse);
     });
 
     test('Equatable compares all fields', () {

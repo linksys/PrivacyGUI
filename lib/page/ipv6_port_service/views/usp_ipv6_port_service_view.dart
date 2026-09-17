@@ -144,6 +144,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
               value: rule.enabled,
               identifier: 'ipv6-rule-enable-${rule.identifierKey}',
               scale: 0.8,
+              // Same busy treatment the port-forwarding rule rows carry — see
+              // `usp_single_port_tab.dart` for why a null `onChanged` was not one
+              // (#1542).
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
               onChanged: isSaving
                   ? null
                   : (value) => ref

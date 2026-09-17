@@ -30,8 +30,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 
@@ -51,7 +55,41 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   FirmwareUpdateState build() => _fixedState;
 
   @override
-  Future<void> loadBanks() async {}
+  Future<void> loadBanks({bool refresh = false}) async {}
+
+  /// Answers with the verdict already in the fixed state instead of asking the
+  /// router.
+  ///
+  /// Overridden for the same reason as [loadBanks], plus one this method adds:
+  /// the real one dispatches `Download()` on the `ota` instance and then polls for
+  /// up to ten seconds. A cell or a widget test that reaches it does not fail — it
+  /// hangs, and `pumpAndSettle` times out somewhere unrelated to the tap.
+  @override
+  Future<FirmwareOtaCheckResult> checkForUpdate() async => _fixedState.otaCheck;
+
+  /// The router-side install watch (#1551), and the one override on this class that
+  /// is not about a tap.
+  ///
+  /// `FirmwareOtaView.initState` calls this on **every** open, because auto-update
+  /// can start a flash with nobody watching (REQ-A6) — so a cell that merely lays
+  /// the page out would start a twenty-minute poll loop against a router that is
+  /// not there. `abandoned` is the verdict `_applyInstallOutcome` deliberately
+  /// writes nothing for, so answering it cannot move the fixed state out from under
+  /// the cell that pinned it.
+  @override
+  Future<FirmwareOtaInstallResult> observeRunningOtaInstall() async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
+
+  /// The install dispatch, silenced for the reason [checkForUpdate] gives: a cell
+  /// that taps Update Now would reach `Download(ota,"true")` — a real flash, if the
+  /// bridge in front of it ever answered.
+  @override
+  Future<FirmwareOtaInstallResult> triggerRouterOtaInstall({
+    required int otaInstance,
+  }) async =>
+      const FirmwareOtaInstallResult(
+          verdict: FirmwareOtaInstallVerdict.abandoned);
 }
 
 class FixedFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
@@ -61,6 +99,32 @@ class FixedFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
 
   @override
   Future<FirmwareBanksData> build() async => _fixedData;
+}
+
+/// A [FirmwareAutoUpdateDataNotifier] pinned to one reading.
+///
+/// [setPolicy] is overridden to publish locally without a service call, because the
+/// real one writes to the router: a cell that toggles the switch would otherwise
+/// reach `UspFirmwareUpdateService` and fail, and the sweep would report the
+/// failure as a card that renders nothing.
+class FixedFirmwareAutoUpdateNotifier extends FirmwareAutoUpdateDataNotifier {
+  FixedFirmwareAutoUpdateNotifier(this._fixedData);
+
+  final FirmwareAutoUpdateUIModel _fixedData;
+
+  @override
+  Future<FirmwareAutoUpdateUIModel> build() async => _fixedData;
+
+  @override
+  Future<FirmwareAutoUpdateUIModel> refresh() async {
+    state = AsyncData(_fixedData);
+    return _fixedData;
+  }
+
+  @override
+  Future<void> setPolicy(FirmwareAutoUpdatePolicy policy) async {
+    state = AsyncData((state.valueOrNull ?? _fixedData).withPolicy(policy));
+  }
 }
 
 class FixedSystemInfoDataNotifierForFirmware extends SystemInfoDataNotifier {
@@ -74,7 +138,7 @@ class FixedSystemInfoDataNotifierForFirmware extends SystemInfoDataNotifier {
 
 /// Overrides for `firmware_update_view`.
 List<Override> firmwareUpdateOverrides({
-  FirmwareUpdateState state = gateFirmwareUpToDateState,
+  FirmwareUpdateState state = gateFirmwareNoUpdateFoundState,
   FirmwareBanksData banks = gateFirmwareBanks,
   SystemInfoData systemInfo = gateFirmwareSystemInfo,
 }) =>
@@ -87,15 +151,24 @@ List<Override> firmwareUpdateOverrides({
           () => FixedSystemInfoDataNotifierForFirmware(systemInfo)),
     ];
 
-/// The landing state, plus the one flag that widens the row that overflowed.
+/// The landing state, plus the one verdict that widens the row that overflowed.
 ///
 /// `idle` is where a user arrives and where every terminal check returns to, so the
-/// phase is not a choice. `otaUpToDate: true` is a choice, and a deliberate one: the
-/// `Row` in `_OtaCheckCard` holds a button and — only when this flag is set — a
-/// check icon and "firmware is up to date" beside it. #1370 recorded the overflow at
-/// `firmware_update_view.dart:546` with the flag *false*, which means it recorded the
-/// narrow half of that row. Pinning it true measures the whole reachable row, which is
-/// the widest thing this phase can render and therefore the one worth one cell.
+/// phase is not a choice. The verdict is a choice, and a deliberate one: the `Row` in
+/// `_OtaCheckCard` holds a button and — only once a check has returned something — a
+/// status line beside it. #1370 recorded the overflow at
+/// `firmware_update_view.dart:546` with no verdict at all, which means it recorded the
+/// narrow half of that row. Pinning one measures the whole reachable row, which is the
+/// widest thing this phase can render and therefore the one worth one cell.
+///
+/// **`noUpdateFound` rather than `updateAvailable`, because it is the wider of the
+/// two.** #1550 replaced `otaUpToDate: true` with this field; the sentence it renders
+/// ("No new firmware was found") is longer than "Update available" in `en` and in
+/// every locale the sweep reported at 320px, and the `updateAvailable` arm splits its
+/// text over two shorter lines instead of one long one. The third rendering —
+/// `otaCheckNotSupported`, for a router with no `ota` row — carries **no button** and
+/// so is not this row at all; it cannot overflow, and it is covered by the widget
+/// test rather than by a cell.
 ///
 /// What stays unmeasured is the other eight phases. Seven of them are a title, a body
 /// line and a linear `AppLoader` in a `Column` — no `Row`, nothing that can overflow
@@ -103,8 +176,17 @@ List<Override> firmwareUpdateOverrides({
 /// lines of file detail and adds a second button to a `Wrap` that already wraps.
 /// Recorded here rather than in the case so the reason sits next to the fixture that
 /// would have to change to cover them.
-const gateFirmwareUpToDateState = FirmwareUpdateState(
-  otaUpToDate: true,
+///
+/// **The verdict is only a choice for one of the two pages that take this default.**
+/// This is the default `state` of `firmwareUpdateOverrides`, so it also feeds
+/// `page.firmware_update` — and `firmware_update_view.dart` does not read `otaCheck`
+/// at all (measured: zero references), so on that page the verdict above renders
+/// nothing and picking the wider of the two is inert. It decides a row only on
+/// `page.firmware_ota`, whose case doc owns the consequences — including the offer
+/// state this verdict excludes, and why that gap is left open there rather than closed
+/// by editing this line.
+const gateFirmwareNoUpdateFoundState = FirmwareUpdateState(
+  otaCheck: FirmwareOtaCheckResult.noUpdateFound(),
 );
 
 /// Two banks, one active, which is what an M60TB-class router reports.
@@ -131,6 +213,57 @@ const gateFirmwareBanks = FirmwareBanksData(banks: [
     available: true,
   ),
 ]);
+
+/// The same two banks plus a virtual `ota` row reporting an image is waiting.
+///
+/// The banner half of #1552 needs `otaInstance.available` true, and that flag only
+/// exists on the third row — `physicalBanks` deliberately excludes it, so the two
+/// fixtures cannot be merged: a page that lists banks must not grow a third slot,
+/// and a banner must not appear on a router with nothing to install.
+const gateFirmwareBanksWithOta = FirmwareBanksData(banks: [
+  FirmwareImageUIModel(
+    instance: 1,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
+    alias: 'fw1',
+    name: 'firmware-bank-1',
+    version: '1.0.16.213451',
+    status: 'Active',
+    available: true,
+    isBootTarget: true,
+  ),
+  FirmwareImageUIModel(
+    instance: 2,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.2.',
+    alias: 'fw2',
+    name: 'firmware-bank-2',
+    version: '1.0.15.211003',
+    status: 'Standby',
+    available: true,
+  ),
+  FirmwareImageUIModel(
+    instance: 3,
+    instancePath: 'Device.DeviceInfo.FirmwareImage.3.',
+    alias: 'ota',
+    name: '',
+    version: '1.0.17.220118',
+    status: 'Available',
+    available: true,
+  ),
+]);
+
+/// The auto-update reading the OTA card's switch renders in its ON position.
+///
+/// `autoInstall` rather than `notifyOnly` because the two are one pixel apart on
+/// the switch and `autoInstall` is the firmware's own default, so it is the state a
+/// user most often sees. `idle` because a busy daemon locks the switch, and a locked
+/// switch measures the busy figure instead of the control.
+const gateFirmwareAutoUpdateOn = FirmwareAutoUpdateUIModel(
+  status: FirmwareAutoUpdateStatus.idle,
+  progress: 0,
+  rawState: '0',
+  policy: FirmwareAutoUpdatePolicy.autoInstall,
+  rawFlags: '2',
+);
 
 /// The router the status card describes.
 ///

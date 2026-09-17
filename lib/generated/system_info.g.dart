@@ -15,6 +15,7 @@ class SystemInfo {
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
+  final int? firmwareImageNumberOfEntries;
   final String activeFirmwareImage;
   final String bootFirmwareImage;
 
@@ -28,6 +29,7 @@ class SystemInfo {
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
+    this.firmwareImageNumberOfEntries,
     required this.activeFirmwareImage,
     required this.bootFirmwareImage,
   });
@@ -42,6 +44,7 @@ class SystemInfo {
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
+    'Device.DeviceInfo.FirmwareImageNumberOfEntries',
     'Device.DeviceInfo.ActiveFirmwareImage',
     'Device.DeviceInfo.BootFirmwareImage',
   ];
@@ -116,6 +119,13 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
+      firmwareImageNumberOfEntries:
+          response.containsKey('Device.DeviceInfo.FirmwareImageNumberOfEntries')
+              ? int.tryParse(
+                  response['Device.DeviceInfo.FirmwareImageNumberOfEntries']
+                          ?.toString() ??
+                      '')
+              : null,
       activeFirmwareImage:
           (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
       bootFirmwareImage:
@@ -135,6 +145,7 @@ class SystemInfo {
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
         'cpuUsage: $cpuUsage, '
+        'firmwareImageNumberOfEntries: $firmwareImageNumberOfEntries, '
         'activeFirmwareImage: $activeFirmwareImage, '
         'bootFirmwareImage: $bootFirmwareImage'
         ')';

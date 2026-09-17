@@ -8,6 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_available_banner.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -49,6 +50,29 @@ class UspDashboardView extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: AppSpacing.md),
                   child: AppLoader(variant: LoaderVariant.linear),
                 ),
+              // The firmware notice (#1552). Above the scroll view rather than in
+              // it: it is not a dashboard card, it outranks all of them, and a
+              // card would scroll out of sight on the surface where most users
+              // never scroll.
+              //
+              // Shown only on the arm below that renders the dashboard, and it has
+              // to be spelled with both halves. `hasValue` alone is true for an
+              // `AsyncError.copyWithPrevious` — the shape riverpod publishes when a
+              // refresh fails after a successful boot — so on a dropped session the
+              // banner would paint above the `ServiceErrorView` the `when` renders,
+              // offering Update Now on a page that just said it cannot reach the
+              // router.
+              //
+              // What the gate defers is one USP read, the `fwup` UCI subtree. The
+              // other one is already made: `systemInfoDataProvider` is the
+              // orchestrator's first domain provider and its `build()` listens to
+              // `firmwareBanksDataProvider`, so `FirmwareImage.` is fetched during
+              // boot whether this banner exists or not. Deferring is still the
+              // honest order — there is nothing to interrupt until the dashboard is
+              // there to interrupt — and it keeps one fetch out of the boot burst,
+              // not two.
+              if (asyncState.hasValue && !asyncState.hasError)
+                const FirmwareUpdateAvailableBanner(),
               Expanded(
                 child: asyncState.when(
                   loading: () => const Center(

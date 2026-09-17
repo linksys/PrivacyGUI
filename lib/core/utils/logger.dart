@@ -5,6 +5,12 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+// `build_config.dart` imports this file in turn. Dart permits the cycle, and
+// `BuildConfig.sourceRevision` is a `const` resolved at compile time, so there is
+// no initialisation order to get wrong. Reading `String.fromEnvironment` a second
+// time here would avoid the cycle at the price of two sources of truth for the
+// same build flag.
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/util/masking_utils.dart';
 import 'package:privacy_gui/util/screen_utils.dart';
@@ -331,6 +337,11 @@ Future<String> getPackageInfo() async {
     'App ID: ${packageInfo.packageName}',
     'App Build Number: ${packageInfo.buildNumber}',
     'App Version: ${packageInfo.version}',
+    // Named "Source Revision" rather than a bare "Revision" so it cannot be read
+    // as another version string. It is the one line that distinguishes two builds
+    // of the same source — which get different build numbers — from two builds of
+    // different sources (#1573).
+    'Source Revision: ${BuildConfig.sourceRevision}',
     if (!kIsWeb) 'Platform OS: ${Platform.operatingSystem}',
     if (!kIsWeb) 'OS version: ${Platform.operatingSystemVersion}',
     'OS: ${defaultTargetPlatform.name}',

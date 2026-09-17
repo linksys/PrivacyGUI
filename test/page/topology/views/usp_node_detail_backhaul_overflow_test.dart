@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -14,20 +15,25 @@ import '../../../util/app_test_fonts.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';
 
-/// Overflow tests for the node-detail backhaul card's half-width tile captions
-/// (#1302).
+/// Overflow tests for the node-detail backhaul card's tile captions (#1302),
+/// re-measured after #1555 changed which of them are still at risk.
 ///
 /// ## Why this file exists
 ///
 /// Two captions in `_buildBackhaulCard` were built as `Row(children: [Icon(size:
 /// 16), AppGap.xs(), AppText.labelSmall(caption)])` — unconstrained, sized to
-/// their natural width. Both tiles share a `Row` as two `Expanded`s, so each
-/// caption gets half the card and no more, 99dp at 1280px:
+/// their natural width. Each shared a `Row` with a sibling as two `Expanded`s, so
+/// each caption got half the card and no more, 99dp at 1280px:
 ///
-/// - **interface** — `fi` needs 102.6dp for `Käyttöliittymä`; worst case is `ja`
-///   at 1241px, 19dp over.
-/// - **last contact** — 21 of the 26 locales overflow, `ru` by 39dp at 1241px and
-///   **`en` by 2.4dp**, so this one is not a long-translation edge case at all.
+/// - **interface** — still half-width, because the signal indicator is still its
+///   sibling. `fi` needs 102.6dp for `Käyttöliittymä`; worst case is `ja` at
+///   1241px, 19dp over. This is the group that carries the file.
+/// - **last contact** — *was* the worse of the two, 21 of 26 locales over, `ru`
+///   by 39dp at 1241px and **`en` by 2.4dp**. Its sibling was the PHY Rate tile,
+///   which #1555 deleted (`BackhaulPHYRate` is not in the prplMesh schema and has
+///   no replacement), so the tile is now a full-width child of the card's
+///   `Column` and the overflow is closed structurally rather than by the guard.
+///   Measured below, and the group that used to sweep it is gone.
 ///
 /// Nothing else fails on either. The #1183 gate sweeps the dashboard's
 /// `UspWidgetSpecs.all` registry, which does not contain this page. The golden
@@ -42,16 +48,44 @@ import '../../../util/overflow_probe.dart';
 /// 2026-08-24 left this file naming a tag `dart_test.yaml` no longer declares —
 /// so it blocked a PR by luck rather than by selection.)
 ///
+/// ## What #1555 did to the last-contact group, and why 12 cells went away
+///
+/// The 12 cells that swept `ru`/`fi`/`da`/`en` × 320/1241/1280px were re-run
+/// against the pre-fix shape (caption's `Expanded` stripped) after the PHY Rate
+/// tile went, and **none of the 12 failed** — not even with `maxLines` and the
+/// ellipsis dropped as well. They had become 12 green cells reporting a row as
+/// pinned that nothing was holding, which is the failure mode the ledger below
+/// exists to prevent, so they are replaced by one test that can fail.
+///
+/// The numbers, measured at 1241px (the pinch width — the page's 200px desktop
+/// margins open just above 1240px, so the row is *narrower* there than at 320px:
+/// 217dp against 238dp):
+///
+///   | locale | caption natural width | available |
+///   |--------|----------------------|-----------|
+///   | `ru`   | 111.8dp (widest of all 26) | 197dp |
+///   | `sv`   | 94.8dp               | 197dp |
+///   | `el`   | 94.3dp               | 197dp |
+///   | `fi`   | 94.1dp               | 197dp |
+///   | `en`   | 74.9dp               | 197dp |
+///
+/// So the worst locale has 1.76× the room it needs. The replacement test asserts
+/// that ratio directly rather than sweeping widths: it reds if a sibling tile is
+/// ever added back to that row (measured: the ratio falls to 0.65), and it reds
+/// if the `lastContact` copy grows past the headroom — the two ways this can
+/// return. `_buildBackhaulCard`'s comment at the tile says the same thing from
+/// the code side.
+///
 /// ## The Ethernet branch is out of scope, and measured safe
 ///
-/// `_buildBackhaulCard` has a third caption row in its `else` branch (Ethernet
-/// backhaul, `usp_node_detail_view.dart:383`) with the same unguarded shape, left
-/// untouched **by decision**. It is also the one place where the shape is
-/// harmless: that `LayoutBlock` is a direct child of the card's `Column`, not a
-/// half-width `Expanded`, so it has ~2× the room. Sweeping an Ethernet fixture
-/// across all 26 locales × 320/480/601/905/1241/1280px produced zero overflows.
-/// Do not add an Ethernet fixture here to "complete" the matrix: it would pump
-/// untouched code that cannot fail.
+/// `_buildBackhaulCard` has a third caption row in its `else if` branch (Ethernet
+/// backhaul) with the same unguarded shape, left untouched **by decision**. It is
+/// also the one place where the shape is harmless: that `LayoutBlock` is a direct
+/// child of the card's `Column`, not a half-width `Expanded`, so it has ~2× the
+/// room — the same reason the last-contact tile is now safe. Sweeping an Ethernet
+/// fixture across all 26 locales × 320/480/601/905/1241/1280px produced zero
+/// overflows. Do not add an Ethernet fixture here to "complete" the matrix: it
+/// would pump untouched code that cannot fail.
 ///
 /// The throughput cards in the same card are `DetailSpeedCard`s, guarded by
 /// `usp_device_detail_speed_card_overflow_test.dart`; neither fixture here sets
@@ -61,15 +95,16 @@ import '../../../util/overflow_probe.dart';
 ///
 /// Every group was shown to fail against a mutation of the code it guards. An
 /// overflow test that cannot fail is worse than no test, because it reports the
-/// row as pinned.
+/// row as pinned. Re-measured in full on this branch — the interface row's count
+/// moved, so the old numbers were not carried over on trust.
 ///
 ///   | mutation                                      | what failed                  |
 ///   |-----------------------------------------------|------------------------------|
-///   | interface caption's `Expanded` removed (pre-fix shape) | clean interface tile: ja +19px@1241, +12px@1280, +8px@320; fi +10px@1241, +3.6px@1280; da +2.5px@1241 |
-///   | last-contact caption's `Expanded` removed (pre-fix shape) | clean last-contact tile: ru +39px@1241, +33px@1280, +29px@320; fi +22px@1241, +15px@1280, +11px@320; da +12px@1241, +5.3px@1280; en +2.4px@1241 |
+///   | interface caption's `Expanded` removed (pre-fix shape) | clean interface tile: **9 of 9 cells** — every locale at every width. Was 6 of 9 when #1302 wrote this table |
 ///   | interface value given `maxLines: 1` + ellipsis | interface value stays whole |
-///   | last-contact caption's `maxLines`/ellipsis dropped (`Expanded` kept) | caption-shortens-value-does-not, and last-contact-matches-sibling-height (81dp against the sibling's 64dp in `ru`@320) — the clean groups all still pass, because wrapping trades the overflow for a taller tile rather than fixing it |
-///   | `slaveNodeWithBackhaulTiming.phyRate` set to 0 | the precondition group, plus last-contact-matches-sibling-height (the PHY Rate tile it compares against is no longer built at all). The overflow groups stay green: the tile is now full-width, so the caption fits — which is exactly why the precondition asserts `phyRate > 0` rather than trusting the fixture |
+///   | last-contact caption's `Expanded` removed | **nothing** — 24 of 24 green. The measurement that retired the 12-cell group |
+///   | last-contact caption's `Expanded`, `maxLines` and ellipsis all removed | only caption-shortens-value-does-not, which reads the widget's properties rather than measuring the layout. Still zero overflow cells |
+///   | last-contact tile given a sibling `Expanded` in its `Row` (the pre-#1555 shape) | the full-width headroom test: 72.5dp granted against 111.8dp needed, a ratio of 0.65 |
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is square and the
@@ -96,26 +131,23 @@ void main() {
           'tile is only built for one',
     );
     expect(
+      interfaceNode.backhaul.linkType,
+      isNotNull,
+      reason: 'the interface tile prints `linkType` and falls back to the '
+          'localized `unknown` when it is null — a null here would make the '
+          'value test below assert against the fallback string',
+    );
+    expect(
       timingNode.backhaul.isEthernet,
       isFalse,
-      reason: 'slaveNodeWithBackhaulTiming must keep a Wi-Fi backhaul, so the '
-          'last-contact tile is measured in the same half-width layout the fix '
-          'was made for',
+      reason: 'slaveNodeWithBackhaulTiming must keep a Wi-Fi backhaul: the '
+          'Ethernet arm builds neither of the tiles this file measures',
     );
     expect(
       timingNode.backhaul.lastContactTime,
       isNotNull,
       reason: 'slaveNodeWithBackhaulTiming must keep a lastContactTime — the '
           'last-contact tile is built only when it has one',
-    );
-    expect(
-      timingNode.backhaul.phyRate,
-      greaterThan(0),
-      reason: 'slaveNodeWithBackhaulTiming must keep a phyRate — at 0 the PHY '
-          'Rate tile is not built, the last-contact tile becomes the Row\'s '
-          'only child and its Expanded takes the full card width, which is not '
-          'the half-width geometry every number in this file was measured '
-          'against',
     );
   });
 
@@ -181,41 +213,60 @@ void main() {
     }
   });
 
-  group('backhaul last-contact tile is clean (#1302)', () {
-    /// Same three widths as the interface tile, and the same 1241px pinch. This
-    /// caption is the worse of the two: 21 of 26 locales overflow it, so the four
-    /// below are a spread rather than the whole failing set — the worst (`ru`,
-    /// +39px@1241), a mid case (`fi`), the tightest margin (`da`, +5.3px@1280),
-    /// and `en`, which overflows by 2.4px at 1241px and is the reason this is a
-    /// layout bug rather than a translation-length one.
-    ///
-    /// 9 of these 12 cells fail against the pre-fix shape; `en` at 320/1280 and
-    /// `da` at 320 currently fit and are held against a font or copy change.
-    const widths = <double>[1241.0, 1280.0, 320.0];
+  // The replacement for the 12-cell last-contact sweep, which #1555 made
+  // unfailable — see the header. Measured at the worst locale and the worst
+  // width, and asserting the property that closed the overflow (the tile is
+  // full-width) rather than the absence of a stripe.
+  testWidgets(
+      'the last-contact caption has room to spare at full width (#1555)',
+      (tester) async {
+    // `ru` at 1241px: the widest `lastContact` of all 26 locales, at the width
+    // where the row is narrowest (the 200px desktop margins open just above
+    // 1240px, so 1241px lays this row out at 217dp against 320px's 238dp).
+    await overflowsAt(
+      tester: tester,
+      state: timingState,
+      screenWidth: 1241.0,
+      tag: 'ru',
+    );
 
-    for (final tag in ['ru', 'fi', 'da', 'en']) {
-      for (final width in widths) {
-        testWidgets(
-          'no overflow at ${width.toStringAsFixed(0)}px in $tag',
-          (tester) async {
-            final overflows = await overflowsAt(
-              tester: tester,
-              state: timingState,
-              screenWidth: width,
-              tag: tag,
-            );
-            // The interface caption in the same card is fixed and gated by the
-            // group above, so an incident here is this tile's.
-            expect(
-              overflows,
-              isEmpty,
-              reason: 'the backhaul last-contact tile overflows in $tag at '
-                  '${width.toStringAsFixed(0)}px: ${overflows.join(', ')}',
-            );
-          },
-        );
-      }
-    }
+    final tile = find
+        .ancestor(
+          of: find.byIcon(Icons.access_time),
+          matching: find.byType(LayoutBlock),
+        )
+        .first;
+    final caption =
+        find.descendant(of: tile, matching: find.byType(Text)).first;
+
+    // What the caption was granted. Under the `Expanded` this is the room
+    // available to it, which is the number a sibling tile would halve.
+    final granted = tester.getSize(caption).width;
+
+    // What it needs. Taken off the render object rather than the `Text` widget
+    // so the style is the resolved one — `AppText.labelSmall` supplies its own,
+    // and reading `Text.style` would measure a null style at the default size.
+    final paragraph = tester.renderObject<RenderParagraph>(caption);
+    final painter = TextPainter(
+      text: paragraph.text,
+      textDirection: paragraph.textDirection,
+      textScaler: paragraph.textScaler,
+      maxLines: null,
+    )..layout();
+    final needed = painter.width;
+
+    expect(
+      granted,
+      greaterThan(needed * 1.25),
+      reason:
+          'the last-contact caption has $granted dp for $needed dp of text. '
+          'It is safe because #1555 deleted the PHY Rate tile that shared its '
+          'Row, leaving it full-width — measured at 197dp against 111.8dp, a '
+          '1.76x margin. Below 1.25x either a sibling tile is back in that Row '
+          '(which puts the 21-locale overflow of #1302 back with it) or the '
+          'copy has outgrown the room; re-read this file\'s header before '
+          'relaxing the threshold',
+    );
   });
 
   testWidgets(
@@ -272,50 +323,11 @@ void main() {
         reason: 'the last-contact value must not be line-capped');
   });
 
-  testWidgets('the last-contact tile matches its sibling in height (#1302)',
-      (tester) async {
-    // Why the caption is capped at one line rather than left to wrap: wrapping
-    // clears the overflow but makes this tile taller than the PHY Rate tile
-    // beside it, and `Row` centres them, so the pair reads as misaligned cards.
-    // `ru` at 320px is the widest caption in the narrowest tile.
-    await overflowsAt(
-      tester: tester,
-      state: timingState,
-      screenWidth: 320.0,
-      tag: 'ru',
-    );
-
-    final phyRateTile = find.ancestor(
-      of: find.byIcon(Icons.speed),
-      matching: find.byType(LayoutBlock),
-    );
-    final lastContactTile = find.ancestor(
-      of: find.byIcon(Icons.access_time),
-      matching: find.byType(LayoutBlock),
-    );
-    expect(phyRateTile, findsOneWidget,
-        reason: 'the PHY Rate tile is the sibling this height is compared to');
-    expect(lastContactTile, findsOneWidget);
-
-    // Not exact equality: `ru` renders through a Cyrillic fallback font whose
-    // line metrics run 1dp taller than the primary font used for the
-    // hardcoded-English `PHY Rate` caption beside it (in `en` the two are equal
-    // to the pixel). The failure this guards is a whole wrapped line — ~14dp —
-    // so a 2dp window separates the two cases without pinning font metrics.
-    expect(
-      tester.getSize(lastContactTile).height,
-      closeTo(tester.getSize(phyRateTile).height, 2.0),
-      reason: 'the two tiles share a Row and must stay the same height — a '
-          'wrapped caption grows one of them and the pair reads as misaligned',
-    );
-  });
-
   testWidgets('the interface value stays whole (#1302)', (tester) async {
     // Why the caption is allowed to ellipsize: the interface itself is spelled
     // out on the line below. That argument only holds while *that* line is never
     // clipped in turn — `Wi-Fi` shortened to `W…` names no interface.
-    final expected =
-        interfaceNode.backhaul.linkType ?? interfaceNode.backhaul.mediaType;
+    final expected = interfaceNode.backhaul.linkType!;
 
     await overflowsAt(
       tester: tester,

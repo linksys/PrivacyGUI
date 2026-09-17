@@ -16,23 +16,40 @@ const signalThresholdRSSI = [rssiExcellent, rssiGood, rssiFair];
 
 // ─── RCPI / RSSI Conversion ─────────────────────────────────────────────────
 
+/// Highest RCPI value that carries a power reading.
+///
+/// IEEE 802.11k defines 0–220 as the measurement range and reserves 221–254;
+/// 255 means "measurement not available". A DataElements field declared
+/// `check_maximum 255` can therefore hand us a reserved value, and the formula
+/// below happily turns one into a *positive* dBm figure (222 → `+1 dBm`) that
+/// downstream code reads as an unusually strong signal.
+const int rcpiMax = 220;
+
 /// Convert RCPI (Received Channel Power Indicator) to RSSI (dBm).
 ///
 /// RCPI is defined in IEEE 802.11k and ranges from 0–220.
 /// Formula: RSSI (dBm) = (RCPI / 2) - 110
 ///
-/// Returns null if [rcpi] is null or <= 0.
+/// Returns null if [rcpi] is null, <= 0, or above [rcpiMax] — all three mean
+/// "no reading", not "a reading of zero/huge". Callers must treat null as
+/// absence rather than substituting a default, or an unavailable measurement
+/// becomes a fabricated one.
 int? rcpiToRssi(int? rcpi) {
-  if (rcpi == null || rcpi <= 0) return null;
+  if (rcpi == null || rcpi <= 0 || rcpi > rcpiMax) return null;
   return (rcpi ~/ 2) - 110;
 }
 
 /// Convert RSSI (dBm) to RCPI (Received Channel Power Indicator).
 ///
-/// Inverse of [rcpiToRssi].
+/// Inverse of [rcpiToRssi] **over the measured domain only** — negative dBm.
 /// Formula: RCPI = (RSSI + 110) * 2
 ///
-/// Returns 0 if [rssiDbm] is null or 0.
+/// Returns 0 if [rssiDbm] is null or 0. Above 0 dBm the result lands in the
+/// 221-254 band [rcpiToRssi] rejects (`+1 dBm → 222 → null`), so the round trip
+/// does not close there. Left unclamped rather than pinned to [rcpiMax]: no
+/// caller in `lib/` uses this function at all, and clamping would turn an
+/// impossible reading into a plausible one instead of leaving it visibly out of
+/// range.
 int rssiToRcpi(int? rssiDbm) {
   if (rssiDbm == null || rssiDbm == 0) return 0;
   return (rssiDbm + 110) * 2;

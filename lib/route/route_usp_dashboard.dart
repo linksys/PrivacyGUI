@@ -13,6 +13,42 @@ final uspShellNavigatorKey = GlobalKey<NavigatorState>();
 int _uspTabQueryParam(GoRouterState state) =>
     int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
 
+/// Refuses to leave either firmware page while an install is running.
+///
+/// One function referenced by both routes rather than the same closure written
+/// twice. #1549 gave one install two entry points — the OTA page fetches an image
+/// and the manual page uploads one — and "can I navigate away mid-flash" must not
+/// depend on which of them started it. Two byte-identical copies are exactly what
+/// lets a later change tighten one and forget the other, and the per-route matrix
+/// in `test/route/usp_firmware_exit_guard_test.dart` would not catch that: it
+/// pulls each route's own `onExit` out of the real tree, so two guards that
+/// disagree are two guards it faithfully reports as disagreeing, one case at a
+/// time, only if someone reads which case failed.
+///
+/// `pop` is what reaches this (`_handlePopPageWithRouteMatch` consults `onExit`
+/// and vetoes the Navigator pop on `false`), which is the back arrow and the
+/// browser's Back button. A `pushNamed` over the top does not — the pushed-over
+/// match stays in the list, so the guard is deferred rather than skipped.
+///
+/// **A session that is over is not a navigation to argue with.** `go` consults
+/// `onExit` for every match that is leaving, and the sign-out path is a `go`: the
+/// router's `redirect` sends a signed-out user to the login page and the leaving
+/// match is this one. Vetoing that leaves the app on a firmware page it has no
+/// session to talk to, until the install phase happens to end. So
+/// [AppConnectionState.loggedOut] releases the guard — it covers every sign-out,
+/// the core-reported ones and auth's own (an idle timeout, a 401, the account
+/// menu), which is the same reason `session_exit_sink.dart` keys on the cause
+/// rather than on this state.
+Future<bool> _firmwareExitGuard(
+    BuildContext context, GoRouterState state) async {
+  final container = ProviderScope.containerOf(context);
+  if (container.read(appConnectionStateProvider) ==
+      AppConnectionState.loggedOut) {
+    return true;
+  }
+  return !container.read(firmwareUpdateNotifierProvider).isUpdating;
+}
+
 final uspDashboardRoute = ShellRoute(
   navigatorKey: uspShellNavigatorKey,
   builder: (BuildContext context, GoRouterState state, Widget child) =>
@@ -126,10 +162,15 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspFirmwareUpdate,
       path: RoutePath.uspFirmwareUpdate,
       builder: (context, state) => const FirmwareUpdateView(),
-      onExit: (context, state) async {
-        final container = ProviderScope.containerOf(context);
-        return !container.read(firmwareUpdateNotifierProvider).isUpdating;
-      },
+      onExit: _firmwareExitGuard,
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspFirmwareOta,
+      path: RoutePath.uspFirmwareOta,
+      builder: (context, state) => const FirmwareOtaView(),
+      // The same guard object as the manual page above, not a second copy of it —
+      // see `_firmwareExitGuard`.
+      onExit: _firmwareExitGuard,
     ),
     LinksysRoute(
       name: RouteNamed.uspDhcpDetail,

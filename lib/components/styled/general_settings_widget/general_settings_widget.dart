@@ -118,7 +118,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                       const SizedBox.shrink(),
                   AppGap.lg(),
 
-                  // Version
+                  // Version, and the source revision it was built from — the
+                  // version alone cannot distinguish two build numbers cut from one
+                  // source from two different sources (#1573).
                   FutureBuilder(
                     future: getVersion(),
                     initialData: '-',
@@ -128,7 +130,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                         label: 'version',
                         child: Center(
                           child: AppText.bodySmall(
-                            'version ${data.data}',
+                            'version ${data.data} '
+                            '(${BuildConfig.sourceRevision})',
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface

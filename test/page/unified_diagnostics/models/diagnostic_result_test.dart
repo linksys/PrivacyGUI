@@ -446,4 +446,43 @@ void main() {
       expect(result.rawData['targetHost'], 'google.com');
     });
   });
+
+  group('MeshNodeBackhaulUIModel.isWired', () {
+    MeshNodeBackhaulUIModel node(String? linkType) => MeshNodeBackhaulUIModel(
+          nodeId: 'AA:BB:CC:DD:EE:02',
+          label: 'Linksys M60TB',
+          linkType: linkType,
+          lastUplinkRateKbps: 1000,
+          lastDownlinkRateKbps: 1000,
+          signalStrengthDbm: 0,
+          isController: false,
+          severity: MeshBackhaulSeverity.healthy,
+        );
+
+    // Shares one predicate with `BackhaulInfo.isEthernet`, the diagnostics grader
+    // and the topology popup since #1555, so all four fold case the same way. The
+    // tile picks its icon off this getter while the grader graded the same node
+    // off the service's copy of the test — a spelling only one of them recognised
+    // showed a wired node a Wi-Fi icon and a critical RSSI verdict together.
+    test('folds case and padding', () {
+      for (final spelling in [
+        'Ethernet',
+        'ethernet',
+        'ETHERNET',
+        ' Ethernet '
+      ]) {
+        expect(node(spelling).isWired, isTrue, reason: '"$spelling" is wired');
+      }
+    });
+
+    test('wireless and unknown are not wired', () {
+      expect(node('Wi-Fi').isWired, isFalse);
+      expect(node('').isWired, isFalse);
+      // The state #1555 made representable: a real link whose medium firmware
+      // never named. Not wired, and not a claim of anything — the tiles print
+      // `unknown` for it.
+      expect(node(null).isWired, isFalse);
+      expect(node(null).linkType, isNull);
+    });
+  });
 }

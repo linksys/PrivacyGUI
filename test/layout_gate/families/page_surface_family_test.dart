@@ -123,6 +123,7 @@ void main() {
           'support',
           'unified_diagnostics',
           'firmware_update',
+          'firmware_ota',
           'router_assistant',
           'test_console',
           'sliver_dashboard',
@@ -247,6 +248,8 @@ void main() {
         // Nothing remains. The 2 that are not here are excluded as unreachable, with
         // their reasons in `test/fixtures/page_roster.tsv` — so this list and that file
         // now account for all 45, which is the whole of what #1369 was opened to do.
+        // (45 was the roster's length when the epic closed. It is 46 now; see #1549 at
+        // the bottom of this comment.)
         //
         // **#1489's five, which are not a fifth wave.** `statistics_devices`,
         // `statistics_system`, `wifi_settings_advanced`, `port_range` and
@@ -275,6 +278,25 @@ void main() {
         //
         // So this list stops being one row per page here, and the wave arithmetic above
         // stops adding up to its length: 2 + 5 + 9 + 6 + 21 = 43 pages, 48 cases.
+        //
+        // **#1549's one, which is a page the epic never saw.** `firmware_ota` is not a
+        // wave, not a tab and not a re-read limit: it is a view file that did not exist
+        // when the epic closed. #1549 split one firmware entry point into two pages, so
+        // `firmware_update_view.dart` lost `_OtaCheckCard` to a new
+        // `firmware_ota_view.dart` and the roster gained a 46th file.
+        //
+        // It is here rather than deferred because the card it is built around is the one
+        // wave 4 measured widest — 50 of 234 cells, all 26 locales at 320px, worst `ru`
+        // at +357px — and a fix that moves to a page with no case is a fix nobody
+        // measures again. The numbers carry (identical widget, identical card padding,
+        // identical breakpoints) but the *cells* do not: this page's card list is one
+        // card shorter than its sibling's, so its baseline group is generated against it
+        // rather than copied. That is the same rule the roster row applies to ms/cell,
+        // for the same reason — an inherited number has no error bar.
+        //
+        // A page split is therefore the fourth way this list grows, after a wave, a tab
+        // and a falsified limit. It is also the only one of the four where the count of
+        // *pages* goes up without any page being newly reachable: 44 pages, 49 cases.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

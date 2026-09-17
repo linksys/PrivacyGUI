@@ -238,24 +238,34 @@ const double kGateFloorWithoutPagesMs = 149790;
 
 /// What one readability guard group adds to its suite, in milliseconds.
 ///
-/// **Re-derived for #1380's thirteen groups.** The unit underneath it is unchanged:
-/// §11.2's measurement of the pilot's guard, 52 pumps in 3.57s, **68.7ms a pump** —
-/// twice a swept cell, because a guard pumps only the narrowest content boxes this
-/// family visits. What changed is the multiplier. [pageSweepSuiteWeightMs] bills this
-/// once per guard *group*, and a group is no longer one test: the thirteen groups hold
-/// **eighteen tests and 845 pumps**, and 845 / 13 = 65 pumps a group, so 65 × 68.7 =
-/// 4,465. The pump counts are each `widths × locales`, readable in the guard's own
-/// loops: 52 for `dhcp`, `port_forwarding`, `advanced_settings`, `internet_settings`
-/// and `local_network`; 34 for `unified_diagnostics`, `firmware_update`,
-/// `router_assistant` and `test_console`, which read all 26 locales at 320px and one
-/// locale at each of the other eight widths; 78 for `instant_privacy` and
-/// `system_log`; 133 across `admin`'s three tests and 160 across `apps`' four.
+/// **Re-derived twice for #1549**, once per guard it added. The unit underneath it is
+/// unchanged: §11.2's measurement of the pilot's guard, 52 pumps in 3.57s, **68.7ms a
+/// pump** — twice a swept cell, because a guard pumps only the narrowest content boxes
+/// this family visits. What changed is the multiplier. [pageSweepSuiteWeightMs] bills
+/// this once per guard *group*, and a group is not one test: the thirteen groups hold
+/// **twenty tests and 1,313 pumps**, and 1,313 / 13 = 101 pumps a group, so
+/// 101 × 68.7 = 6,939. The pump counts are each `widths × locales`, readable in the
+/// guard's own loops: 52 for `dhcp`, `port_forwarding`, `advanced_settings`,
+/// `internet_settings` and `local_network`; 34 for `unified_diagnostics`,
+/// `firmware_ota`, `router_assistant` and `test_console`, which read all 26 locales at
+/// 320px and one locale at each of the other eight widths; 78 for `instant_privacy`
+/// and `system_log`; 601 across `admin`'s five tests and 160 across `apps`' four.
+/// (`firmware_ota` was `firmware_update` until #1549 moved the guarded card to a new
+/// page; the loop and its 34 pumps came along unchanged. What moved the mean is
+/// `admin`'s **fourth and fifth** tests, 234 pumps each: both watch a reflow that is
+/// reached by different widths in different locales, so neither can sweep a 320px
+/// column and both take the full 9 × 26.)
 ///
 /// So this is a **mean, not a bound**, and it is exact at the only granularity the
-/// file uses it: 13 × 4,465 = 58.0s, which is what 845 pumps cost. Per group it is
-/// wrong in both directions — `apps` runs 2.5× it, the four 34-pump guards about half
-/// — and that starts to matter only when a split puts guards in different suites,
-/// which is what [kReadabilityGuardPages] exists to make survivable.
+/// file uses it: 13 × 6,939 = 90.2s, which is what 1,313 pumps cost. Per group it is
+/// wrong in both directions — `admin` now runs 5.9× it and `apps` 1.6×, the four
+/// 34-pump guards about a third — and that starts to matter only when a split puts
+/// guards in different suites, which is what [kReadabilityGuardPages] exists to make
+/// survivable. #1549 is also the wave that made the spread worth naming: one page now
+/// holds **nearly half** of every guard pump in the file (601 of 1,313), so a split
+/// that put `admin` anywhere would move 41.3s of real work while moving 6.9s of billed
+/// work. That gap is the mean's, not the map's, and it is the reason this doc says
+/// re-derive rather than trust.
 ///
 /// This doc used to promise the other fix: "if a future wave puts three guards in one
 /// group, correct this rather than widening the note." Wave 4 put three in `admin` and
@@ -266,8 +276,15 @@ const double kGateFloorWithoutPagesMs = 149790;
 /// A mean re-derived from arithmetic anyone can redo from the guards' loops keeps the
 /// suite total exact and adds nothing new to drift. The previous value, 3,570, was
 /// this same unit at one pump count per group; re-derive it again when the guard set
-/// changes shape rather than trusting it.
-const double kReadabilityGuardWeightMs = 4465;
+/// changes shape rather than trusting it. #1549 is the first time that promise was
+/// kept, and it was kept twice in one ticket: 4,465 → 5,702 when the OTA card's reflow
+/// gained a guard, then 5,702 → 6,939 when the manual card's did. Both times for one
+/// added test, because each sweeps 234 cells and the mean is over groups rather than
+/// tests: a 234-pump test moves this constant by 234 / 13 × 68.7 = **1,237ms** — the
+/// exact step both re-derivations took — where a 34-pump one would move it by 180. So
+/// "one more guard" is not a fixed cost here, and neither re-derivation could have been
+/// skipped as noise.
+const double kReadabilityGuardWeightMs = 6939;
 
 /// Which page each readability guard pumps, keyed by the guard's `group` title.
 ///
@@ -279,18 +296,18 @@ const double kReadabilityGuardWeightMs = 4465;
 /// This is also the map that makes a future split safe. Rule 4 pairs a guard with
 /// the *site* an overflow fix changed, so when the sweep is finally split the guard
 /// has to travel with its page — otherwise it measures a page that is no longer
-/// beside it, and its 4.5s is charged to the wrong suite. That stops being
+/// beside it, and its 6.9s is charged to the wrong suite. That stops being
 /// hypothetical the day a split happens — whenever a lane appears for it: thirteen
-/// groups over four shards is 58.0s that has to land in the shard holding each guard's
+/// groups over four shards is 90.2s that has to land in the shard holding each guard's
 /// page.
 /// Wave 4 fixed fourteen coordinates on eleven pages and so declares **eleven
-/// groups holding sixteen tests** — thirteen groups and eighteen tests below, with the
-/// pilot's and wave 1's. The count of groups follows the count of *pages*, not of
-/// coordinates, and that is not a naming
+/// groups holding sixteen tests** — thirteen groups and twenty tests below, with the
+/// pilot's, wave 1's and #1549's two. The count of groups follows the count of *pages*, not
+/// of coordinates, and that is not a naming
 /// choice: this map holds one page per title, and a group is billed once by
 /// [pageSweepSuiteWeightMs] — so sixteen tests under one wave-level title would be
 /// unregisterable *and* would bill eleven fixtures as one, while one group per
-/// coordinate would bill `admin`'s fixture twice and `apps`' three times.
+/// coordinate would bill `admin`'s fixture three times and `apps`' three times.
 const Map<String, String> kReadabilityGuardPages = {
   'readability at the site the pilot fixed': 'kDhcpPageCase',
   'readability at the site wave 1 fixed': 'kPortForwardingPageCase',
@@ -298,8 +315,13 @@ const Map<String, String> kReadabilityGuardPages = {
       'kAdvancedSettingsPageCase',
   'readability at the site wave 4 fixed in unified_diagnostics':
       'kUnifiedDiagnosticsPageCase',
-  'readability at the site wave 4 fixed in firmware_update':
-      'kFirmwareUpdatePageCase',
+  // Retargeted by #1549, which is the first time this map has had to do the thing its
+  // own doc describes: the site wave 4 fixed moved pages, so the guard travelled with
+  // its page rather than staying beside the page it was written on. Both the title and
+  // the case changed, together — a rename without the retarget, or the reverse, is a
+  // guard whose 6.9s is billed to a page it does not pump.
+  'readability at the site wave 4 fixed in firmware_ota':
+      'kFirmwareOtaPageCase',
   'readability at the site wave 4 fixed in router_assistant':
       'kRouterAssistantPageCase',
   'readability at the site wave 4 fixed in test_console':
@@ -308,7 +330,18 @@ const Map<String, String> kReadabilityGuardPages = {
   // landed, and they are in one group because the register keys on the group name
   // rather than on the test. Splitting them into two groups would say the page had
   // two independent reasons to be guarded, when it has one page and two sites.
-  'readability at the site wave 4 fixed in admin': 'kAdminPageCase',
+  //
+  // Retitled by #1549, which added a fourth guard here for the OTA card's own reflow
+  // and made the singular wrong. The title is the key, so the rename lands in this
+  // map in the same commit — and the extra guard's 234 pumps are what moved
+  // [kReadabilityGuardWeightMs]; see the arithmetic there.
+  //
+  // Then a **fifth**, for the manual card's reflow — which is on this page too, because
+  // #1549 left the manual entry point on Administration and only moved the OTA one to a
+  // page of its own. So the split that motivated the retitle did not split this group:
+  // the two cards it left side by side stack at different widths, and both thresholds
+  // are guarded here. This group is now 601 of the file's 1,313 guard pumps.
+  'readability at the sites wave 4 and #1549 fixed in admin': 'kAdminPageCase',
   // Four guards, one page, and the plural in the group name is deliberate: `apps`
   // took three `lib/` fixes — a tablet band, a mobile card extent and a heading row
   // — plus the column-count shape guard that keeps the first of them honest. Same
