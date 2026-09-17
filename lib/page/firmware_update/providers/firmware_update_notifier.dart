@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_pro
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
@@ -211,7 +212,16 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// question, and a user who turned auto-update off and then walked to it is asking.
   FirmwareOtaCheckResult? _offerAlreadyOnTheRouter(
       FirmwareBanksData banksData) {
-    if (state.otaCheck.verdict != FirmwareOtaCheckVerdict.notChecked) {
+    // `checkFailed` is seedable for the same reason `notChecked` is: a check that
+    // failed has said nothing about the firmware on the router, so an offer the router
+    // is *still* making is newer information than our failure. Before this it was
+    // excluded by being "not notChecked", which left the page unable to ever show a
+    // standing offer again — no verdict line, no install action — until another check
+    // succeeded. The install path makes the same choice for the same reason: leaving a
+    // true, re-tappable offer up beats replacing it with our own denial.
+    final verdict = state.otaCheck.verdict;
+    if (verdict != FirmwareOtaCheckVerdict.notChecked &&
+        verdict != FirmwareOtaCheckVerdict.checkFailed) {
       return null;
     }
     final ota = banksData.otaInstance;
@@ -308,6 +318,22 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       } on ServiceError catch (e) {
         logger.w('[FirmwareUpdate] post-check banks refresh failed', error: e);
       }
+      // And the auto-update reading, which the OTA card's history line is built from
+      // (#1572). `firmwareAutoUpdateDataProvider` is **not** autoDispose and is built
+      // once by the dashboard orchestrator, so without this the line shows a boot-time
+      // snapshot for the whole session: a router that had not checked at boot keeps
+      // saying "not checked yet" however many checks run, and a code standing at boot
+      // keeps saying the last check did not finish — on top of a check the user just
+      // watched succeed. A check moves both values, so this is what makes the line
+      // describe the router rather than the launch.
+      //
+      // **`invalidate`, not `refresh`.** Nothing here wants the value, only for the
+      // stale one to go; and `refresh()` publishes an `AsyncError` and rethrows, so a
+      // re-read that failed would turn a check the user watched succeed into an error
+      // — and on a provider with no live listener it escapes as an uncaught async
+      // error rather than reaching the `catch` above. Invalidation is lazy: whoever
+      // watches next re-reads, which on this page is the very next frame.
+      ref.invalidate(firmwareAutoUpdateDataProvider);
       return result;
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] OTA check failed', error: e);

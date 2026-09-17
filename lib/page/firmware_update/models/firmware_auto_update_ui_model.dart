@@ -209,6 +209,20 @@ enum FirmwareUpdateErrorCode {
   /// only that a verdict is withheld — the same trade
   /// `FirmwareOtaInstallProgress.namesAnUpdatePhase` makes for an unrecognised state.
   bool get isFailure => this != none && this != unknown && this != unreported;
+
+  /// Whether a *check* could have produced this code.
+  ///
+  /// [download], [flash] and [signature] could not: by definition they happen after a
+  /// check has already succeeded and found something. So a line that says "last check
+  /// did not finish" must not be drawn for them — a failed flash would be reported as
+  /// a failed check, on the very check that found the update. [interrupted] is in
+  /// because a watchdog can kill a check as readily as a flash, and
+  /// [routerUnspecified] is in because it names no phase at all.
+  bool get couldBeACheck =>
+      this == serverUnreachable ||
+      this == serverResponse ||
+      this == routerUnspecified ||
+      this == interrupted;
 }
 
 /// Who started the router's last firmware operation, as read from

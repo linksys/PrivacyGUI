@@ -138,6 +138,24 @@ class FirmwareRouterOtaCheckService {
   /// appear. Now the `Checking` window is what turns a timeout into an answer, and it
   /// was measured at 0.65–0.9 s (three samples of a 220 ms poll on FW
   /// `2.0.1.26091601`) — at 2 s most runs would miss it entirely.
+  ///
+  /// **But this interval is not the effective read cadence, and `Checking` detection
+  /// is therefore opportunistic rather than reliable.** `UspClient.get` routes through
+  /// `BridgeRequestThrottler` with a **5 s** result cache keyed on the joined path
+  /// list, and `FirmwareImages._paths` is a compile-time constant — so consecutive
+  /// polls inside 5 s are served the same map and cannot observe a sub-second
+  /// transition. Nothing here can pass a shorter TTL: the generated `_paths` is
+  /// private, so the service cannot issue an equivalent uncached `Get`, and the
+  /// throttler's only escape hatch is `clearCache()`, which would drop every other
+  /// provider's entry too.
+  ///
+  /// What that costs is the *early* verdict, not correctness: a missed `Checking`
+  /// falls through to [defaultDeadline], which is the behaviour this service had
+  /// before the marker existed. The cheap polls stay because a cache hit is not
+  /// bridge traffic and the loop should react on the first tick after the entry does
+  /// expire. Fixing it properly means a `cacheTtl` passthrough on the generated
+  /// `fetch` — filed on #1572, and it applies at least as much to the install watch,
+  /// whose 1–2 s cadence is bounded by the same 5 s TTL.
   static const Duration defaultPollInterval = Duration(milliseconds: 300);
 
   /// Gap between reads once the fast window has closed.
@@ -178,11 +196,13 @@ class FirmwareRouterOtaCheckService {
 
   /// Run one check against [otaInstance] and say what it found.
   ///
-  /// Returns [FirmwareOtaCheckVerdict.updateAvailable] or
-  /// [FirmwareOtaCheckVerdict.noUpdateFound]; **throws** for anything else.
-  /// Never returns `noUpdateFound` for a check that did not run — that
-  /// substitution is what makes a broken check read as reassurance, and it is the
-  /// single failure this service is written to prevent.
+  /// Returns [FirmwareOtaCheckVerdict.updateAvailable],
+  /// [FirmwareOtaCheckVerdict.noUpdateFound], or
+  /// [FirmwareOtaCheckVerdict.checkFailed] when the router named a reason itself;
+  /// **throws** for a transport failure or a refusal. Never returns `noUpdateFound`
+  /// for a check that did not run — that substitution is what makes a broken check
+  /// read as reassurance, and it is the single failure this service is written to
+  /// prevent.
   Future<FirmwareOtaCheckResult> check({required int otaInstance}) async {
     // Before the dispatch, not after: the refusal is measured to arrive ~49 ms in
     // and the watch is the only place it appears.
@@ -262,6 +282,17 @@ class FirmwareRouterOtaCheckService {
         _throwIfRefused(refusal, otaInstance);
 
         final ota = _otaRow(await _readImages());
+        // `Checking` first, and the order is the correctness. While `fwupd` is
+        // querying, **no field on this row is this run's answer** — `Available` and
+        // `Version` still hold whatever the last check left, so a router that was
+        // flashed to the version it had previously offered would have that version
+        // read back as a fresh offer. `fwupd` was measured entering `Checking` about
+        // 34 ms after the dispatch, well inside the first poll, so this is the common
+        // case rather than a race.
+        if (ota != null && ota.status == _checkingStatus) {
+          sawChecking = true;
+          continue;
+        }
         // An offer outranks everything below it, including a failure code: this is
         // the router answering the question, and a code left over from whatever came
         // before does not un-answer it.
@@ -269,10 +300,6 @@ class FirmwareRouterOtaCheckService {
           logger.d('[FirmwareUpdate] OTA check found ${ota.version.isEmpty ? //
               'an unnamed image' : ota.version}');
           return FirmwareOtaCheckResult.updateAvailable(version: ota.version);
-        }
-        if (ota != null && ota.status == _checkingStatus) {
-          sawChecking = true;
-          continue;
         }
         if (sawChecking) {
           // Seen checking, and no longer checking: the router has finished, which is
@@ -293,7 +320,12 @@ class FirmwareRouterOtaCheckService {
       // whether or not the phase was seen.
       logger.d('[FirmwareUpdate] OTA check saw no result within '
           '${_deadline.inSeconds}s');
-      return await _concludeAfterRun(codeBeforeDispatch, sawRunStart: false);
+      // `sawChecking`, not `false`: a check whose `Checking` never cleared inside the
+      // deadline — a slow OTA server, which is exactly when the server codes appear —
+      // was still observably ours, and passing `false` would fall back to the weaker
+      // diff test and answer two identical consecutive failures with "nothing found".
+      return await _concludeAfterRun(codeBeforeDispatch,
+          sawRunStart: sawChecking);
     } finally {
       await watch?.release();
     }
@@ -318,7 +350,13 @@ class FirmwareRouterOtaCheckService {
   }) async {
     final code = await _errorCodeOrNull();
     if (code != null && code.isFailure) {
-      if (sawRunStart || code != codeBeforeDispatch) {
+      // `codeBeforeDispatch != null` is load-bearing, not defensive: that read is
+      // best-effort, and without the guard a *failed* baseline read makes
+      // `code != null` trivially true — so a week-old code would be reported as this
+      // check's failure, which is the one outcome this rule exists to prevent. The
+      // install service carries the identical predicate.
+      if (sawRunStart ||
+          (codeBeforeDispatch != null && code != codeBeforeDispatch)) {
         logger.w('[FirmwareUpdate] the router reports the check failed '
             '(${code.name})');
         return FirmwareOtaCheckResult.checkFailed(code);

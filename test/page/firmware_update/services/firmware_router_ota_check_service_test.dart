@@ -618,6 +618,62 @@ void main() {
       expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
     });
 
+    test('a failed baseline read does not turn a stale code into a failure',
+        () async {
+      // The hole the `!= null` guard closes. The pre-dispatch read is best-effort, so
+      // it can come back null — and without the guard `code != null` is trivially true,
+      // which would report a week-old code as this check's failure on a router that is
+      // fine. Found in review; the install service always had the guard.
+      queueImages([
+        [_bank, _otaRow(available: false)],
+      ]);
+      var call = 0;
+      when(() => firmware.fetchAutoUpdate()).thenAnswer((_) async {
+        // First call is the baseline and it fails; the concluding read succeeds and
+        // reports a code that was already standing.
+        if (call++ == 0) throw NetworkError();
+        return withCode(FirmwareUpdateErrorCode.signature);
+      });
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound);
+      expect(result.errorCode, isNull);
+    });
+
+    test('a Checking that never cleared still owns its failure', () async {
+      // The deadline path used to hardcode `sawRunStart: false`, throwing away the
+      // strongest evidence the loop had. Here the router is stuck in `Checking` — a
+      // slow OTA server, which is exactly when the server codes appear — and the code
+      // matches the pre-dispatch one, so only the sighting can attribute it.
+      queueImages([
+        [_bank, _otaRow(available: false, status: 'Checking')],
+      ]);
+      queueAutoUpdate([withCode(FirmwareUpdateErrorCode.serverUnreachable)]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.checkFailed);
+      expect(result.errorCode, FirmwareUpdateErrorCode.serverUnreachable);
+    });
+
+    test('an offer read while the router is still Checking is not this answer',
+        () async {
+      // `Checking` is tested before `available` because during a check no field on the
+      // row is this run's answer. The failing case is a router flashed to the version
+      // it had previously offered: `Available` has not been recleared, so the first
+      // poll would offer the user the firmware they are already running.
+      queueImages([
+        [_bank, _otaRow(available: true, version: 'stale', status: 'Checking')],
+        [_bank, _otaRow(available: false)],
+      ]);
+
+      final result = await buildService().check(otaInstance: 3);
+
+      expect(result.verdict, FirmwareOtaCheckVerdict.noUpdateFound,
+          reason: 'the offer on that row belonged to the previous check');
+    });
+
     test('the diagnostics read is not made on every poll', () async {
       // Event-driven, not per-poll: the code only changes at the edges of a run, and
       // the install watch's cadence is what makes a per-poll second `Get` expensive.

@@ -877,7 +877,11 @@ class _OtaCheckCard extends StatelessWidget {
         ),
       );
     }
-    if (reading.errorCode.isFailure) {
+    // `couldBeACheck`, not `isFailure`: `download`, `flash` and `signature` can only
+    // come from an install, and this line names the *check*. Without the narrowing a
+    // flash that failed would be reported as a failed check — on the very check that
+    // found the update.
+    if (reading.errorCode.couldBeACheck) {
       return _statusLine(
         icon: Icons.info_outline,
         color: scheme.onSurfaceVariant,

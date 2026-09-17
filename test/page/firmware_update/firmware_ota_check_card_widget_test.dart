@@ -426,6 +426,26 @@ void main() {
       expect(find.text(loc.firmwareNoUpdateFound), findsNothing);
     });
 
+    testWidgets('an install-only reason is not reported as a failed check',
+        (tester) async {
+      // `download`, `flash` and `signature` can only come from an install, so drawing
+      // "last check did not finish" for them reports a failed flash as a failed check —
+      // on the very check that found the update. Found in review; the line is gated on
+      // `couldBeACheck` now.
+      await pump(
+        tester,
+        const FirmwareUpdateState(phase: FirmwareUpdatePhase.idle),
+        testThreeInstanceBanksData,
+        autoUpdate: FirmwareUpdateTestData.autoUpdateModel(
+          checkedAfterBoot: true,
+          errorCode: FirmwareUpdateErrorCode.flash,
+        ),
+      );
+
+      expect(find.text(loc.firmwareLastCheckDidNotFinish), findsNothing);
+      expect(find.text(loc.firmwareNotCheckedYet), findsNothing);
+    });
+
     testWidgets('this session\'s verdict outranks the router\'s history',
         (tester) async {
       // A check that ran in this session is a later answer than the row. The history

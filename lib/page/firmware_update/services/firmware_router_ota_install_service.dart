@@ -447,6 +447,16 @@ class FirmwareRouterOtaInstallService {
         // install as a failure, and the user saw it on the one run that ever
         // reached this state.
         case FirmwareAutoUpdateStatus.rebooting:
+          // **Judged before `sawBusy` is set, and that ordering is the whole guard.**
+          // `attributableFailure` closes over `sawBusy`, so setting it first would let
+          // this reading authorise itself: a page opened on a router parked at
+          // `fwup_state=5` — a persistent value, so a killed `fwupd` leaves one — with
+          // any standing code would report a failed update from its very first read,
+          // on a page where nothing was attempted. The notifier's second gate cannot
+          // catch that either, because `rebooting` satisfies `namesAnUpdatePhase` and
+          // `_publishOtaProgress` runs on the same reading first. The `idle` arm below
+          // never had the problem: it does not set the flag.
+          final failure = attributableFailure(reading);
           sawBusy = true;
           // The one place #211's own state table and our measurement agree exactly:
           // `state=5` with a failure code is a failure, and with no code it is the
@@ -454,7 +464,6 @@ class FirmwareRouterOtaInstallService {
           // boot into the new image, so a code attributable to this run outranks the
           // state. With no code the arm is unchanged, which is the measured success
           // path.
-          final failure = attributableFailure(reading);
           if (failure != null) {
             logger.w('[FirmwareUpdate] the router reports the update failed '
                 '(${failure.name}) at fwup_state=${reading.rawState}');

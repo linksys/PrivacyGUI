@@ -1123,6 +1123,35 @@ void main() {
         expect(state.otaCheck.isUpdateAvailable, isFalse);
       });
 
+      test('a failed check can still be re-seeded with a standing offer',
+          () async {
+        // `_offerAlreadyOnTheRouter` only re-seeds `notChecked`, so publishing
+        // `checkFailed` made it permanently inert: the router would still be offering
+        // an update, the app would know it from the banks read, and the card would show
+        // nothing but a Check button until another check succeeded. Found in review.
+        when(() => mockOtaChecker.check(otaInstance: any(named: 'otaInstance')))
+            .thenAnswer((_) async => const FirmwareOtaCheckResult.checkFailed(
+                FirmwareUpdateErrorCode.serverUnreachable));
+
+        final container =
+            createContainer(banksData: banksWithOta(available: true));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.checkForUpdate();
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.checkFailed);
+
+        // What the read-error card's retry, or any later banks read, does.
+        await notifier.loadBanks();
+
+        expect(container.read(firmwareUpdateNotifierProvider).otaCheck.verdict,
+            FirmwareOtaCheckVerdict.updateAvailable,
+            reason:
+                'an offer the router is still making outlives our failed check');
+      });
+
       test('a later successful check clears the previous reason', () async {
         // A failure that outlives the check that produced it is the same defect in a
         // slower form: the snack bar is transient, but `state.failure` is not, and the

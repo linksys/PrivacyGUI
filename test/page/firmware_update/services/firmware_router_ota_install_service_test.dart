@@ -930,6 +930,22 @@ void main() {
       expect(result.errorCode, FirmwareUpdateErrorCode.flash);
     });
 
+    test('a router parked at state 5 does not self-report a failure', () async {
+      // `fwup_state` is persistent, so a killed `fwupd` leaves a 5 behind. The
+      // `rebooting` arm used to set `sawBusy` *before* asking whether the code was
+      // attributable, so that first reading authorised itself and the page reported a
+      // failed update having observed nothing. Judged before the flag is set now.
+      queue([
+        ('5', FirmwareUpdateErrorCode.signature),
+      ]);
+
+      final result = await buildService().observe();
+
+      expect(result.verdict, isNot(FirmwareOtaInstallVerdict.failed),
+          reason: 'one reading of a parked state is evidence of nothing');
+      expect(result.errorCode, isNull);
+    });
+
     test('a failed verdict cannot be built without a reason', () {
       // The assert on the result: a `failed` verdict is what makes the page say the
       // update failed, so it may not exist without something the router named.
