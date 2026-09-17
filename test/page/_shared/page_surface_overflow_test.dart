@@ -38,15 +38,16 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
 /// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-four whole pages, declared as fifty cases** — four pages are swept more than
-/// once: `statistics` as three cases, `port_forwarding` as three and `wifi_settings` as
-/// two, once per tab (all #1489), plus `pnp_setup` twice for two *fixture states* rather
-/// than two tabs (#1554 §4). So the two counts are different quantities rather than one
-/// of them being stale — × 9 screen widths × 26 locales = **11,700 cells**,
-/// declared through the shared runner. Everything about *which* cells exist and *how*
+/// **Forty-four whole pages, declared as fifty-one cases** — five pages are swept more
+/// than once, by two different mechanisms. Three are tabs: `statistics` as three cases,
+/// `port_forwarding` as three, `wifi_settings` as two (all #1489). Two are *fixture
+/// states* of one page: `pnp_setup`/`pnp_setup_firmware` and
+/// `firmware_update`/`firmware_failed` (both #1554). So the two counts are different
+/// quantities rather than one of them being stale — × 9 screen widths × 26 locales =
+/// **11,934 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
-/// the declaration, the fifty pins, and the readability guards that sit beside
+/// the declaration, the fifty-one pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
 /// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
@@ -83,8 +84,8 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// looking away. `pnp_setup` brought the sixteenth later the same day, wave 3's six
 /// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three.
 /// #1489 then added five without adding a page — the sibling tabs of the three tabbed
-/// pages — #1549's split added the forty-ninth, and #1554 §4 a fiftieth that is a second
-/// fixture state rather than a tab, so the literal is now written out **fifty** times,
+/// pages — #1549's split added the forty-ninth, and #1554 two more that are fixture
+/// states rather than tabs, so the literal is now written out **fifty-one** times,
 /// and #1372's argument for the repetition is the argument that survived the list
 /// doubling.
 ///
@@ -325,6 +326,17 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kFirmwareUpdatePageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same view's `failed` phase — the family's second fixture-state case, and the
+  // first one that arrived because of a defect rather than a gap. Six of eleven phases
+  // render `FirmwareInstallPhaseCard`, and the two arms that open with a title `Row`
+  // (`_failed`, `_done`) had no cell at all: `pl` overflowed by 30px at 320px, in a
+  // widget both firmware pages and the setup wizard draw. Fixed in `lib/` first, so
+  // this arrives at zero.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kFirmwareFailedPageCase),
     expectedCellCount: 234,
   );
 

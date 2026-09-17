@@ -3,6 +3,11 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_firmware_update.dart';
+// `show`, to take one fixture without the same-named `firmwareUpdateOverrides` the gate
+// mocks also declare. `gateFirmwareFailedState` is read by three carriers now — this
+// picture, `page.firmware_failed`, and the probe that found the overflow behind it.
+import '../../../../mocks/provider_overrides/mock_firmware_update.dart'
+    show gateFirmwareFailedState;
 import '../fixtures/firmware_update_test_data.dart';
 
 // #1549 took `_OtaCheckCard` off this page, so all twelve photographs below lost a
@@ -108,6 +113,26 @@ void main() {
         'failed': (overrides) => overrides.addAll(
               firmwareUpdateOverrides(
                 updateState: failedState,
+                banksData: testBanksData,
+                systemInfoData: testSystemInfoData,
+              ),
+            ),
+        // The failure as the *router* named it (#1572), which is where the seven
+        // error-code sentences actually live: `_failed`'s body is the one persistent
+        // surface any of them reaches, since the OTA page sends its reason to a snack
+        // bar. `failed` above is the other kind — a dropped upload, a `ServiceError`
+        // through `localizeServiceError` — so the two states exercise both mappers
+        // rather than one twice.
+        //
+        // This state is also what found a live defect. Its title `Row` had no
+        // `Expanded`, and at 320px `pl` overflowed it by 30.0px, `it` by 21.0, `es` by
+        // 12.0 and `sv` by 11.0 — unseen because no gate cell rendered this phase.
+        // Fixed in `lib/`, and `page.firmware_failed` now sweeps it at nine widths. The
+        // picture is the other half: a sweep says the box holds, not that the sentence
+        // beneath it reads.
+        'failed_router_reason': (overrides) => overrides.addAll(
+              firmwareUpdateOverrides(
+                updateState: gateFirmwareFailedState,
                 banksData: testBanksData,
                 systemInfoData: testSystemInfoData,
               ),

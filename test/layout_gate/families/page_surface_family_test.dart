@@ -57,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when fifty cases fit. It is *also*
-/// green when fifty cases never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when fifty-one cases fit. It is *also*
+/// green when fifty-one cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -77,8 +77,8 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is fifty cases over
-  // forty-four pages, because four of those pages are swept more than once. The two
+  // "Cases" and not "pages", corrected by #1489: this list is fifty-one cases over
+  // forty-four pages, because five of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
   // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
@@ -87,8 +87,12 @@ void main() {
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
   // title read "forty-eight over forty-three" — #1489's numbers — through #1549, which
   // split one firmware page in two and added `firmware_ota` to the list below without
-  // touching the sentence above it. Measured 2026-09-16: `kPageSurfaceCases` holds 50
-  // and the roster holds 44 `swept` rows of 46.
+  // touching the sentence above it. Re-measured 2026-09-17 after #1554 gained a second
+  // fixture-state case on top of #1572: `kPageSurfaceCases` holds 51 and the roster
+  // holds 44 `swept` rows of 46. **Three of the five multiply-swept pages are tabs and
+  // two are fixture states** — `pnp_setup`/`pnp_setup_firmware` and
+  // `firmware_update`/`firmware_failed` — so "swept more than once" now has two
+  // mechanisms behind it, not one.
   //
   // These counts are written out in **five** places — this group, the page sweep file's
   // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
@@ -98,12 +102,12 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares fifty cases over forty-four pages, and which fifty is '
-      'a decision', () {
+      'the gate declares fifty-one cases over forty-four pages, and which '
+      'fifty-one is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
-        '#1549\'s split page and #1554\'s second fixture state', () {
+        '#1549\'s split page and #1554\'s two fixture states', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -143,6 +147,11 @@ void main() {
           'support',
           'unified_diagnostics',
           'firmware_update',
+          // #1554, added after #1572: the same view file's `failed` phase. The first
+          // case in this family that arrived because of a *defect* rather than a gap —
+          // the two title `Row`s in `FirmwareInstallPhaseCard` had no cell at all, and
+          // `pl` overflowed by 30px at 320px.
+          'firmware_failed',
           'firmware_ota',
           'router_assistant',
           'test_console',

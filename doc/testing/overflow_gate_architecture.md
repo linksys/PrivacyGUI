@@ -109,7 +109,7 @@ measurement retired the epic's cost model as an *estimate*: a projection summed 
 per-page figures is a **floor** — 336.1s modelled against 558s measured — because a page
 in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
 #1380 measured and did not explain. `known_overflows.json` is **still** empty — four waves
-and a pilot in, across every one of the 11,700 cells the sweep now holds, it has never held
+and a pilot in, across every one of the 11,934 cells the sweep now holds, it has never held
 an entry.
 
 **#1489 then added 1,170 cells of coverage without adding a page** (2026-09-09), which
@@ -156,8 +156,8 @@ setup wizard, a page-sized tree with no stepper and no fields, which the form ca
 be re-pointed at because it fails both of that case's lists. Both entered clean — **234 cells,
 zero incidents** for the second, so `known_overflows.json` is still empty across all of it.
 
-So the gate now holds **44 pages as 50 cases** and **11,700** page cells, the committed
-dataset is **15,315** rows, and the roster holds **46** rows of which **44** are swept. Two
+So the gate now holds **44 pages as 51 cases** and **11,934** page cells, the committed
+dataset is **15,549** rows, and the roster holds **46** rows of which **44** are swept. Two
 consequences of the second case are recorded where they bite rather than here: the roster's
 `# second-state` block carries its measured ms/cell (**9.9**, against the row's 34.3 — a 3.5×
 over-projection, the largest inheritance error this register has recorded, and larger than any
@@ -417,9 +417,9 @@ rather than out of §11.12:
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **37** (38 pre-#1367, 37 pre-merge, 80 pre-#1344) | 77 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **518** since #1554 §4 (508 since #1549), **498** since #1489, **448** when this row's clock was taken (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 11,700 since #1554 §4, 11,232 since #1489, 10,062 clocked + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
-| The five overflow sweeps (5 files, named) | **794** since #1554 §4 (784 since #1549), **774** since #1489, **724** clocked (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 15,315 rows † (13,677 clocked) | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
-| The same five via `--tags overflow` | **794** since #1554 §4, **724** clocked | 15,315 rows † (13,677 clocked) | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
+| **Page sweep (one file, new at #1349)** | **528** since #1554's second pair (518, then 508 since #1549), **498** since #1489, **448** when this row's clock was taken (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 11,934 since #1554, 11,232 since #1489, 10,062 clocked + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| The five overflow sweeps (5 files, named) | **804** since #1554's second pair (794, then 784 since #1549), **774** since #1489, **724** clocked (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 15,549 rows † (13,677 clocked) | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
+| The same five via `--tags overflow` | **804** since #1554, **724** clocked | 15,549 rows † (13,677 clocked) | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
 | Whole `layout-gate` family (50 files since #1488; 49 when this row was measured) | **2,061** (2,041 pre-#1367; 1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,847 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |
 | Whole PR gate (`./run_tests.sh`) | **6,063** (6,034 pre-#1367; 5,757 pre-#1380; 5,678 pre-#1379; 5,666 pre-`pnp_setup`; 5,646 pre-#1371; 5,630 pre-#1372; 5,530 pre-#1378; 5,469 pre-#1377; 5,463 pre-#1370; 5,430 measured pre-#1382 where this row read 5,405 — see below; 5,410 pre-#1339 — *down* 5; 5,384 before `shoot`, 5,362 before the baseline reporter, 5,343 same session with the page suite moved aside, 5,327 pre-#1349, 5,316 after #1364, 5,310 at the merge, 5,223 pre-merge) | — | **9m40s / 9m46s** wall (3m27s / 3m32s pre-#1380, 3m00s / 3m08s pre-#1379, 3m02s / 3m08s pre-`pnp_setup`, 3m13s / 3m20s pre-#1371, 3m02s / 3m08s pre-#1372, 3m19s / 3m25s pre-#1378 where 5,530 reproduced on two runs, 2m51s / 2m58s pre-#1377, 3m13s pre-#1370, 2m49s pre-#1382, 2m52s pre-#1339) | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
@@ -449,7 +449,7 @@ clock in this table is only comparable to another taken on the same box in the s
 † **Dataset rows, not sweep cells**, and the two differ by design. The table above quotes
 the dataset as it stood when each clock was taken (13,677, pre-#1489); the totals in this
 footnote are current. The five committed
-baselines hold 1,943 + 347 + 77 + 1,248 + 11,700 = **15,315** rows (14,847 pre-#1549,
+baselines hold 1,943 + 347 + 77 + 1,248 + 11,934 = **15,549** rows (15,315 pre-#1554's second pair, 14,847 pre-#1549,
 13,677 pre-#1489, 13,678 pre-#1367, 8,764 pre-#1380), of
 which the *sweeps* pump 14,125 and **20 are hand-written guards that pump a real card and
 record their coordinate
@@ -4434,8 +4434,8 @@ cells and the committed dataset was **13,677** rows. With the two exclusions tha
 pages as **48 cases**, 11,232 and 14,847 — §11.13, and the last bullet of this section is
 the claim it falsified. Two later moves are recorded above: #1549's split added the 44th page
 as the 49th case, and #1554 §4 added a 50th case to a page already swept — the first one whose
-second case is a *fixture state* rather than a tab — for **44 pages as 50 cases**, 11,700 and
-15,315.)
+second case is a *fixture state* rather than a tab — for **44 pages as 51 cases**, 11,934 and
+15,549.)
 (13,677 and not 13,678 because the `dev-2.7.0` merge landed on this branch the same day
 and #1367 retired one forced-form coordinate on the way in — §1.1's note on the first cell
 this gate ever lost. Nothing in this section's page arithmetic moves: the subtraction is
@@ -4974,7 +4974,7 @@ the only reason this epic accepts for an exclusion, and none of the four is unre
 is the second — see the `# second-state` block in `page_roster.tsv` for the one it added and
 why its mechanism is not a tab. At #1489 the gate held **43 pages declared as 48 cases**,
 `page` held **11,232** cells and the committed dataset was **14,847** rows; today those read
-**44 pages as 50 cases**, **11,700** and **15,315**. `page_roster.tsv` holds **46** rows,
+**44 pages as 51 cases**, **11,934** and **15,549**. `page_roster.tsv` holds **46** rows,
 44 of them swept, and gained none from either second case, because its
 key is the page view *file* and `PageRoster._rejectDuplicates` forbids a second row for one
 path. Those two counts were one number from #1349 to #1380 and are now two, which is the

@@ -43,6 +43,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
@@ -276,6 +277,27 @@ const gatePnpFirmwareInstallingState = FirmwareUpdateState(
     rawProgress: 42,
     rawState: '3',
   ),
+);
+
+/// The manual page in its **`failed`** phase, with a reason the router named.
+///
+/// The fixture for `page.firmware_failed`, and it exists because a live overflow was
+/// sitting behind the one phase no cell rendered. `FirmwareInstallPhaseCard`'s `_failed`
+/// and `_done` arms each open with a bare `Row` of a 24px icon, an `AppGap.sm()` and an
+/// `AppText.titleMedium` — no `Expanded` until this work added one — and at the 320px
+/// product floor that leaves the sentence about 198px. Measured before the fix, on this
+/// state, at nine widths in 26 locales: **`pl` +30.0px, `it` +21.0px, `es` +12.0px,
+/// `sv` +11.0px**, every one of them at 320px and none at any other width.
+///
+/// **`routerReported` rather than a file or service failure**, because #1572's seven
+/// error-code sentences are the longest thing this card's body can hold and this is the
+/// only constructor that carries one. The body is a direct child of the `Column`, so it
+/// wraps freely and cannot overflow horizontally — the *title* was the defect, and the
+/// reason is here so the cell measures the card at its full height as well.
+const gateFirmwareFailedState = FirmwareUpdateState(
+  phase: FirmwareUpdatePhase.failed,
+  failure:
+      FirmwareFailure.routerReported(FirmwareUpdateErrorCode.serverUnreachable),
 );
 
 /// Two banks, one active, which is what an M60TB-class router reports.

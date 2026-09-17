@@ -1366,6 +1366,50 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 /// That last bullet is why this stays a note: the gap is in the coverage, not in the
 /// page. What would reopen it is a *third* control in that arm or a label that is no
 /// longer dominated, and either is a reason to pay for the tenth case then.
+/// `firmware_update_view` again, in its **`failed`** phase — and the case that found a
+/// live overflow rather than recording a coverage gap.
+///
+/// The second fixture-state case in this family after `pnp_setup_firmware`, and the
+/// mechanism is the one that case established: same view file, one roster row, its own
+/// `requires`/`forbids`. What is different is what it bought. `FirmwareInstallPhaseCard`
+/// is rendered by both firmware pages and by the setup wizard, in six of eleven phases,
+/// and **not one cell rendered the two arms that open with a title `Row`** — `_failed`
+/// and `_done`. Both were a bare `Row(Icon(24), AppGap.sm(), AppText.titleMedium(...))`
+/// with no `Expanded`, which at the 320px floor leaves the sentence about 198px.
+/// Measured on this state at nine widths in 26 locales: **`pl` +30.0px, `it` +21.0px,
+/// `es` +12.0px, `sv` +11.0px**, all four at 320px. Fixed in `lib/` first — §8's
+/// graduation rule — so this case arrives at zero and `known_overflows.json` stays empty.
+///
+/// **The manual page rather than the OTA page**, for two reasons that both cut the same
+/// way: the OTA case's fixture is pinned by two readability guards now (wave 4's
+/// `firmwareNoUpdateFound` and #1572's `notChecked` history line), so a third state was
+/// never going to live there; and `_failed`'s body is where #1572's seven error-code
+/// sentences land, which is the manual flow's own failure surface as much as the OTA
+/// one's.
+///
+/// ## What the premise can and cannot pin
+///
+/// `requires: [FirmwareInstallPhaseCard, AppButton]` with `forbids: [AppLoader]` rules
+/// out everything except the two title-`Row` arms:
+///
+///   * `idle` renders the upload card and no phase card at all — caught by `requires`.
+///   * `triggering`, `installing`, `rebooting`, `verifying` render the progress card's
+///     linear loader — caught by `forbids`.
+///   * `done` passes. **That one is a deliberate equivalence, not a hole**: the two arms
+///     are the same tree with a different icon, string and body, so a fixture drifting
+///     between them measures the same `Row` this case exists for. It is stated here
+///     because `pnp_setup_firmware` needed a type-unique premise
+///     (`LinearProgressIndicator`) and this one has none available — there is no widget
+///     type only `failed` renders. If the two arms ever diverge, that is the moment this
+///     case needs a real discriminator.
+final kFirmwareFailedPageCase = PageSurfaceCase(
+  id: 'firmware_failed',
+  view: () => const FirmwareUpdateView(),
+  overrides: () => firmwareUpdateOverrides(state: gateFirmwareFailedState),
+  requires: const [FirmwareInstallPhaseCard, AppButton],
+  forbids: const [AppLoader],
+);
+
 final kFirmwareOtaPageCase = PageSurfaceCase(
   id: 'firmware_ota',
   view: () => const FirmwareOtaView(),
@@ -2332,6 +2376,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kSupportPageCase,
   kUnifiedDiagnosticsPageCase,
   kFirmwareUpdatePageCase,
+  kFirmwareFailedPageCase,
   // #1549, and not wave 4 — it sits here for the reason the three statistics tabs sit
   // beside `statistics`: it is the other half of the page above it. The split moved
   // `_OtaCheckCard` out of `firmware_update_view.dart` whole, which took wave 4's widest

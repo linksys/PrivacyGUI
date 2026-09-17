@@ -235,11 +235,22 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // `Expanded` on the title, and the reason is measured rather than defensive:
+          // a bare `Row` of a 24px icon, an `AppGap.sm()` and this text leaves the
+          // sentence about 198px at the 320px product floor, and it does not fit
+          // there. Measured on the failed arm below at nine widths in 26 locales —
+          // `pl` +30.0px, `it` +21.0px, `es` +12.0px, `sv` +11.0px, all of them at
+          // 320px and none anywhere else. Nothing had reported it because no gate
+          // cell rendered either of these two phases; `page.firmware_failed` now
+          // does. The same shape as `firmware_ota_view.dart`'s `_statusLine`, which
+          // already made this choice for the same reason (#1380).
           Row(
             children: [
               Icon(Icons.check_circle, color: scheme.primary, size: 24),
               AppGap.sm(),
-              AppText.titleMedium(loc(context).updateComplete),
+              Expanded(
+                child: AppText.titleMedium(loc(context).updateComplete),
+              ),
             ],
           ),
           AppGap.md(),
@@ -255,11 +266,17 @@ class FirmwareInstallPhaseCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Same `Expanded` as the done arm above, and this is the arm the overflow
+          // was measured on. `updateComplete` was fixed with it because the two Rows
+          // are the same shape with a different string, so a fix to one alone would
+          // have left the other waiting for a locale to grow.
           Row(
             children: [
               Icon(Icons.error_outline, color: scheme.error, size: 24),
               AppGap.sm(),
-              AppText.titleMedium(loc(context).updateFailed),
+              Expanded(
+                child: AppText.titleMedium(loc(context).updateFailed),
+              ),
             ],
           ),
           AppGap.md(),

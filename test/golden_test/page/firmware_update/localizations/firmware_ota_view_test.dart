@@ -3,6 +3,12 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_firmware_update.dart';
+// `show`, not a plain import: this file's `firmwareUpdateOverrides` comes from the
+// golden framework and the gate mocks declare one of the same name. Only the two
+// router-history readings are wanted here, and they are #1572's own — the same values
+// its layout-gate guard pumps, so the picture and the sweep describe one router.
+import '../../../../mocks/provider_overrides/mock_firmware_update.dart'
+    show gateFirmwareLastCheckFailed, gateFirmwareNotCheckedAfterBoot;
 import '../fixtures/firmware_update_test_data.dart';
 
 // The OTA entry point's first suite (#1554 §1). #1549 split one firmware page in
@@ -18,11 +24,25 @@ import '../fixtures/firmware_update_test_data.dart';
 //
 // ## What is photographed, and what a picture buys over the tests already here
 //
-// Six states. The ordering below is the page's own: the two states of a check in
-// flight or not yet run, then the two verdicts a completed check produces, then the
-// two states that are about the *router* rather than about a check. (Three verdicts
-// exist, not four — `notChecked` is the resting one, which is why `idle_not_checked`
-// heads the list rather than being counted again further down.)
+// Eight states. The ordering below is the page's own: the two states of a check in
+// flight or not yet run, then the two verdicts a completed check produces, then the two
+// states that are about the *router* rather than about a check, then the two lines the
+// router's own history draws.
+//
+// **There are four verdicts, not three — corrected after #1572.** An earlier version of
+// this comment said three and named `notChecked` as the resting one, which was true when
+// it was written and stopped being true when #1572 added
+// `FirmwareOtaCheckVerdict.checkFailed`. No test reads a comment, so nothing failed;
+// this is the note going stale that a count in prose beside an assertion always can.
+//
+// **`checkFailed` is deliberately not one of the eight, and that is a measurement.**
+// `_verdictLine` returns `null` for it: the reason goes to a snack bar instead, because a
+// card would outlive the next check and because the stale history line must not be
+// overwritten by it. So the page renders *nothing* for that verdict, and a golden of it
+// would be `idle_not_checked` with a different fixture. The seven error-code sentences
+// #1572 added therefore have no persistent home on this page at all — they reach the user
+// through the snack bar here, and through the install card's body on the manual page,
+// where `firmware_update`'s own suite photographs them.
 //
 // Three of the six are the only image of themselves anywhere, because the
 // layout-gate case for this page (`page.firmware_ota`, 234 cells) pins exactly one
@@ -148,6 +168,34 @@ void main() {
               firmwareUpdateOverridesWithBanksError(
                 updateState: firmwareStateUnreadableState,
                 systemInfoData: testSystemInfoData,
+              ),
+            ),
+        // The router has not checked since it booted (#1572). One of two lines the
+        // check card draws from the router's *own* record rather than from this
+        // session, and the only reason they need a picture is that they occupy the
+        // ~204px slot beside a button that cannot shrink — the site #1380 measured
+        // overflowing in all 26 locales. #1572's layout-gate guard holds them to three
+        // lines; what a guard cannot say is whether three lines of it reads as a
+        // sentence.
+        'history_not_checked': (overrides) => overrides.addAll(
+              firmwareUpdateOverrides(
+                updateState: idleNoFileState,
+                banksData: testThreeInstanceBanksData,
+                systemInfoData: testSystemInfoData,
+                autoUpdate: gateFirmwareNotCheckedAfterBoot,
+              ),
+            ),
+        // The router's last check failed (#1572). The label only — the *reason* is
+        // deliberately absent from this slot, which is the decision worth having a
+        // picture of: #1572 measured the seven reason sentences at four to seven lines
+        // here against a three-line ceiling, so the slot carries a fixed label and the
+        // reason goes to the snack bar.
+        'history_check_failed': (overrides) => overrides.addAll(
+              firmwareUpdateOverrides(
+                updateState: idleNoFileState,
+                banksData: testThreeInstanceBanksData,
+                systemInfoData: testSystemInfoData,
+                autoUpdate: gateFirmwareLastCheckFailed,
               ),
             ),
       },
