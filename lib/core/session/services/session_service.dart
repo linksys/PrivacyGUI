@@ -96,6 +96,11 @@ class SessionService {
   /// log in; Remote Assistance then reports itself unavailable, which is a far
   /// better failure than a session that cannot start. So this swallows its own
   /// errors rather than joining the `ConnectivityError` above.
+  ///
+  /// That is also why it does **not** map through `mapUspErrorToServiceError`
+  /// (constitution Article XIII): there is no caller to hand a `ServiceError` to —
+  /// the result is two nullable strings, and the absence *is* the outcome. The
+  /// cause is kept in the log line rather than in a type.
   Future<({String? baseMacAddress, String? deviceUuid})> _fetchRouterIdentity(
       UspClient usp) async {
     try {

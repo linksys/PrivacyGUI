@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Provides [DeviceCredentials] for Remote Assistance API calls.
 ///
@@ -34,9 +35,16 @@ final deviceCredentialsProvider = Provider<DeviceCredentials?>((ref) {
   final macAddress = deviceInfo.baseMacAddress;
   final deviceUuid = deviceInfo.deviceUuid;
 
-  if (serialNumber.isEmpty) return null;
-  if (macAddress == null || !_macPattern.hasMatch(macAddress)) return null;
-  if (deviceUuid == null || !_uuidPattern.hasMatch(deviceUuid)) return null;
+  // Which value is missing is the first thing anyone asks when the support page's
+  // row is inert, and the UI can only say "not available" without new copy in 26
+  // ARB files. Naming it here costs nothing and answers the question from a log.
+  if (serialNumber.isEmpty) return _incomplete('serial number');
+  if (macAddress == null || !_macPattern.hasMatch(macAddress)) {
+    return _incomplete('base MAC ("$macAddress")');
+  }
+  if (deviceUuid == null || !_uuidPattern.hasMatch(deviceUuid)) {
+    return _incomplete('device UUID ("$deviceUuid")');
+  }
 
   return DeviceCredentials(
     serialNumber: serialNumber,
@@ -45,7 +53,18 @@ final deviceCredentialsProvider = Provider<DeviceCredentials?>((ref) {
   );
 });
 
+DeviceCredentials? _incomplete(String what) {
+  logger.w('[RemoteAssistance]: the router did not supply a usable $what '
+      '— Remote Assistance cannot be started');
+  return null;
+}
+
 /// Colon-separated hex, the form Guardian's device APIs specify.
+///
+/// Deliberately **stricter** than `MACAddressRule` in `lib/validator_rules/rules.dart`,
+/// which also accepts `-` separators for user input. This value is not typed by a
+/// person; it goes straight into a cloud request that answers 403 to anything the
+/// registry does not match, so the looser rule would let a wrong shape through.
 final _macPattern = RegExp(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$');
 
 /// Bare 8-4-4-4-12. Deliberately rejects a value that still carries the

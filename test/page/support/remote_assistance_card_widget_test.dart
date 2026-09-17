@@ -7,6 +7,8 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
+import '../../mocks/test_data/remote_assistance_test_data.dart';
+
 // =============================================================================
 // The support page's Remote Assistance row must say when it cannot be used
 // (#1582).
@@ -28,11 +30,16 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 void main() {
   const identifier = 'support-remote-assistance';
 
-  const credentials = DeviceCredentials(
-    serialNumber: '67A10M24F00066',
-    macAddress: '74:12:13:21:55:02',
-    deviceUUID: '3E68DD2F-CF4F-4E47-A99B-741213215502',
-  );
+  final credentials = RemoteAssistanceTestData.credentials();
+
+  /// The copy is read from the same ARB the widget reads, so re-wording
+  /// `notAvailable` cannot redden this — only losing the state can.
+  late final String notAvailable;
+
+  setUpAll(() async {
+    notAvailable =
+        (await AppLocalizations.delegate.load(const Locale('en'))).notAvailable;
+  });
 
   Widget wrap({DeviceCredentials? creds}) {
     return ProviderScope(
@@ -54,7 +61,7 @@ void main() {
     await tester.pumpWidget(wrap(creds: null));
     await tester.pumpAndSettle();
 
-    expect(find.text('Not available'), findsOneWidget,
+    expect(find.text(notAvailable), findsOneWidget,
         reason: 'an unusable row must say so rather than look normal');
     expect(find.byIcon(Icons.chevron_right), findsNothing,
         reason: 'a chevron promises navigation this row cannot deliver');
@@ -71,7 +78,7 @@ void main() {
     await tester.pumpWidget(wrap(creds: credentials));
     await tester.pumpAndSettle();
 
-    expect(find.text('Not available'), findsNothing);
+    expect(find.text(notAvailable), findsNothing);
     expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
     final node = tester.getSemantics(find.bySemanticsIdentifier(identifier));

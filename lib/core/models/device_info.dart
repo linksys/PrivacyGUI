@@ -27,10 +27,18 @@ class NodeDeviceInfo extends Equatable {
   /// - softwareVersion → firmwareVersion (different name, same semantics)
   /// - firmwareDate/description → empty string (not available in TR-181)
   ///
-  /// [baseMacAddress] and [deviceUuid] are deliberately **not** set here: the
-  /// `system_info` definition covers `Device.DeviceInfo.*` only, and the UUID
-  /// lives under `Device.LocalAgent.`. `SessionService` reads them separately and
-  /// copies them in — see PrivacyGUI#1582.
+  /// [baseMacAddress] and [deviceUuid] are deliberately **not** set here, for two
+  /// different reasons — `SessionService` reads both separately and copies them in
+  /// (PrivacyGUI#1582):
+  ///
+  /// - The UUID **cannot** come from this DTO: it is `Device.LocalAgent.EndpointID`,
+  ///   and the `system_info` definition covers `Device.DeviceInfo.*`.
+  /// - The MAC is a `Device.DeviceInfo.*` leaf and *could*, but
+  ///   `X_LINKSYS_BaseMACAddress` is not in the generated model on this branch's
+  ///   base — it exists only on the unmerged #1572 branch. **Recheck when that
+  ///   merges**: `SystemInfo.fetch` will then read the same leaf that
+  ///   `_fetchRouterIdentity` reads, and the MAC should move here so the leaf is
+  ///   fetched once.
   factory NodeDeviceInfo.fromUsp(SystemInfo info) {
     return NodeDeviceInfo(
       manufacturer: info.manufacturer,

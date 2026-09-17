@@ -86,7 +86,13 @@ class GuardianApiClient {
     final url = Uri.parse(_buildUrl(kDeviceToken, forCA: false))
         .replace(queryParameters: {
       'serialNumber': serialNumber,
-      'macAddress': macAddress,
+      // Both identifiers are upper-cased **here**, at the boundary, not only
+      // wherever they were read. Measured against Guardian on 2026-09-17: the
+      // correct UUID in lower case answers 403, and so does a MAC that differs by
+      // one character — and a 403 on this call surfaces to a person as "Remote
+      // Assistance does nothing". Normalising at the one place that talks to the
+      // cloud means a value arriving from a new source cannot reintroduce that.
+      'macAddress': macAddress.toUpperCase(),
       'uuid': deviceUUID.toUpperCase(),
     });
 

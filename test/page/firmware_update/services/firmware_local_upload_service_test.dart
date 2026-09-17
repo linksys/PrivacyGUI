@@ -216,15 +216,16 @@ void main() {
 
       expect(code, contains("get(['Device.LocalAgent.EndpointID'])"),
           reason: 'the read itself must stay here');
-      for (final stripper in [
-        'uuid::',
-        'replaceFirst',
-        'substring',
-        'split('
-      ]) {
-        expect(code, isNot(contains(stripper)),
-            reason: 'nothing here may take the prefix off: $stripper');
-      }
+      // Only the prefix literal is banned. An earlier version of this guard also
+      // banned `substring` / `split(` / `replaceFirst` anywhere in the file, which
+      // would go red for any unrelated string handling added later: a census keyed
+      // on a substring polices identifiers, not calls.
+      expect(code.toLowerCase(), isNot(contains('uuid::')),
+          reason: 'stripping the prefix here would break the WebSocket toId');
+      // What this cannot reach is the value actually handed to `toId`: the read is
+      // a private function behind a provider, and the behavioural tests above
+      // inject `wsStrategyFactory`, so nothing here executes it. That is why the
+      // guard is textual rather than behavioural — stated, not hidden.
     });
   });
 }

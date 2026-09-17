@@ -21,6 +21,12 @@ class RemoteAssistanceCard extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final credentials = ref.watch(deviceCredentialsProvider);
     final available = credentials != null;
+    final iconBackground = available
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
+    final iconForeground = available
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurfaceVariant;
 
     return LayoutBlock(
       identifier: 'support-remote-assistance',
@@ -34,17 +40,13 @@ class RemoteAssistanceCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: available
-                  ? colorScheme.primaryContainer
-                  : colorScheme.surfaceContainerHighest,
+              color: iconBackground,
               borderRadius: BorderRadius.circular(8),
             ),
             child: AppIcon.font(
               Icons.support_agent,
               size: 24,
-              color: available
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurfaceVariant,
+              color: iconForeground,
             ),
           ),
           AppGap.md(),

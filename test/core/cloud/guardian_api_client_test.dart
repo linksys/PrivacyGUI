@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -53,6 +54,34 @@ void main() {
           () => mockHttp.delete(captureAny(), headers: any(named: 'headers')))
       .captured
       .single as Uri;
+
+  // PrivacyGUI#1582: Guardian validates all three identifiers, and measured on
+  // 2026-09-17 it answers 403 for the *correct* UUID in lower case and 403 for a
+  // MAC that differs by one character. A 403 here surfaces to a person as "Remote
+  // Assistance does nothing", so both identifiers are normalised at this boundary
+  // rather than only wherever they happened to be read.
+  group('fetchDeviceToken normalises the identifiers it sends', () {
+    setUp(() {
+      // Empty cache, so the call goes out instead of returning a stored token.
+      FlutterSecureStorage.setMockInitialValues({});
+    });
+
+    test('upper-cases both the MAC and the UUID', () async {
+      when(() => mockHttp.get(any(), headers: any(named: 'headers')))
+          .thenAnswer((_) async => http.Response('{"linksysToken":"t"}', 200));
+
+      await client.fetchDeviceToken(
+        serialNumber: RemoteAssistanceTestData.testSerialNumber,
+        macAddress: '74:12:13:21:55:0a',
+        deviceUUID: '3e68dd2f-cf4f-4e47-a99b-741213215502',
+      );
+
+      final query = capturedGetUri().queryParameters;
+      expect(query['macAddress'], '74:12:13:21:55:0A');
+      expect(query['uuid'], '3E68DD2F-CF4F-4E47-A99B-741213215502');
+      expect(query['serialNumber'], RemoteAssistanceTestData.testSerialNumber);
+    });
+  });
 
   group('client-side requests → router proxy', () {
     test('getSessions targets proxy base', () async {
