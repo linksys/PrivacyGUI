@@ -61,14 +61,26 @@ class BuildConfig {
   static const String sourceRevision = String.fromEnvironment('source_revision',
       defaultValue: unknownSourceRevision);
 
-  // Empty when the revision is unknown, so a plain `flutter run` does not
-  // render "(unknown)" beside the version.
-  static String get sourceRevisionSuffix =>
-      sourceRevision == unknownSourceRevision ? '' : ' ($sourceRevision)';
+  /// How a revision is rendered beside a version string.
+  ///
+  /// Pure and takes the revision so both branches are testable; `const` inputs
+  /// mean the call folds away.
+  static String revisionSuffix(String revision) => ' ($revision)';
 
-  // Gates the client-side remote assistance entry points. Kept `const` so
-  // dart2js tree-shakes the guarded code out of a default build, which is the
-  // property the commented-out entry points used to provide.
+  /// Always rendered, `unknown` included: a build that did not come through the
+  /// pipeline showing nothing is indistinguishable from a build made before any
+  /// of this existed, which is the ambiguity the stamp exists to remove.
+  static String get sourceRevisionSuffix => revisionSuffix(sourceRevision);
+
+  // Gates the three client-side remote assistance entry points: the support
+  // button in the top bar, the active-session poll in the polling provider, and
+  // the dashboard shell's passive dialog. Kept `const` so dart2js drops the
+  // guarded code from a default build - measured absent from the bundle - which
+  // is what commenting those sites out used to achieve.
+  //
+  // It does not gate the Guardian path (`initiateRemoteAssistanceCA`, reached on
+  // a remote login), which ships either way, so remote assistance code remains
+  // reachable in a default build even though none of these entry points do.
   static const bool enableRemoteAssistance =
       bool.fromEnvironment('enable_remote_assistance', defaultValue: false);
 

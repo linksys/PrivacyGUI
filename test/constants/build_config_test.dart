@@ -14,10 +14,24 @@ void main() {
       expect(BuildConfig.sourceRevision, BuildConfig.unknownSourceRevision);
     });
 
-    // A plain `flutter run` has no revision, and rendering "(unknown)" beside
-    // the version in that case is noise rather than information.
-    test('an unknown revision renders no suffix beside the version', () {
-      expect(BuildConfig.sourceRevisionSuffix, isEmpty);
+    // Rendered even when unknown: a build that skipped the pipeline showing
+    // nothing would look exactly like a build made before any of this existed,
+    // which is the ambiguity the stamp exists to remove.
+    test('an unknown revision is still rendered beside the version', () {
+      expect(BuildConfig.sourceRevisionSuffix, ' (unknown)');
+    });
+  });
+
+  // The formatting is a pure function precisely so the populated branch is
+  // reachable from a test; `sourceRevision` itself is fixed per compilation.
+  group('BuildConfig.revisionSuffix', () {
+    test('renders a revision in parentheses after a space', () {
+      expect(BuildConfig.revisionSuffix('abc1234'), ' (abc1234)');
+    });
+
+    test('renders whatever the build supplied, unknown included', () {
+      expect(BuildConfig.revisionSuffix(BuildConfig.unknownSourceRevision),
+          ' (unknown)');
     });
   });
 }
