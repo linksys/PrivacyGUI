@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "ファームウェアがルーターのセキュリティ検証に通りませんでした。",
   "firmwareErrorRouterUnspecified": "ルーターが理由を示さずにエラーを報告しました。",
   "firmwareErrorInterrupted": "更新は完了する前に中断されました。",
+  "firmwareNotCheckedYet": "ルーターは起動してから更新を確認していません。",
+  "firmwareLastCheckDidNotFinish": "ルーターの前回の更新確認は完了しませんでした。",
   "firmwareProgressStalled": "ルーターが更新の進行状況の報告を停止しました（fwup_state={state}）。",
   "firmwareProgressStalledNoReading": "ルーターが段階を報告する前に、更新の進行状況の報告を停止しました。",
   "firmwareBanksUnreadableAfterReboot": "ルーターは再起動しましたが、ファームウェア情報を読み取れませんでした。",

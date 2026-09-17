@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "固件未通过路由器的安全校验。",
   "firmwareErrorRouterUnspecified": "路由器报告了错误，但未说明原因。",
   "firmwareErrorInterrupted": "更新在完成前被中断。",
+  "firmwareNotCheckedYet": "路由器自启动后尚未检查更新。",
+  "firmwareLastCheckDidNotFinish": "路由器上次检查更新未完成。",
   "firmwareProgressStalled": "路由器已停止报告更新进度（fwup_state={state}）。",
   "firmwareProgressStalledNoReading": "路由器在报告任何阶段之前就已停止报告更新进度。",
   "firmwareBanksUnreadableAfterReboot": "路由器已重新启动，但无法读取它的固件信息。",

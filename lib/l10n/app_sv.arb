@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "Den fasta programvaran klarade inte routerns säkerhetskontroll.",
   "firmwareErrorRouterUnspecified": "Routern rapporterade ett fel utan att ange orsaken.",
   "firmwareErrorInterrupted": "Uppdateringen avbröts innan den var klar.",
+  "firmwareNotCheckedYet": "Routern har inte sökt efter uppdateringar sedan den startade.",
+  "firmwareLastCheckDidNotFinish": "Routerns senaste uppdateringskontroll slutfördes inte.",
   "firmwareProgressStalled": "Routern slutade rapportera uppdateringens förlopp (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Routern slutade rapportera uppdateringens förlopp innan den rapporterade något steg.",
   "firmwareBanksUnreadableAfterReboot": "Routern startade om, men dess information om fast programvara kunde inte läsas.",

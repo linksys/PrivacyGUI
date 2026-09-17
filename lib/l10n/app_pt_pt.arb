@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "O firmware não passou a verificação de segurança do router.",
   "firmwareErrorRouterUnspecified": "O router comunicou uma falha sem indicar o motivo.",
   "firmwareErrorInterrupted": "A atualização foi interrompida antes de ser concluída.",
+  "firmwareNotCheckedYet": "O router não procurou atualizações desde que foi iniciado.",
+  "firmwareLastCheckDidNotFinish": "A última procura de atualizações do router não foi concluída.",
   "firmwareProgressStalled": "O router deixou de comunicar o progresso da atualização (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "O router deixou de comunicar o progresso da atualização antes de comunicar qualquer fase.",
   "firmwareBanksUnreadableAfterReboot": "O router reiniciou, mas não foi possível ler as respetivas informações de firmware.",

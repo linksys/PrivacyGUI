@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "펌웨어가 라우터의 보안 검사를 통과하지 못했습니다.",
   "firmwareErrorRouterUnspecified": "라우터가 이유를 알리지 않고 오류를 보고했습니다.",
   "firmwareErrorInterrupted": "업데이트가 완료되기 전에 중단되었습니다.",
+  "firmwareNotCheckedYet": "라우터가 시작된 후 업데이트를 확인하지 않았습니다.",
+  "firmwareLastCheckDidNotFinish": "라우터의 마지막 업데이트 확인이 완료되지 않았습니다.",
   "firmwareProgressStalled": "라우터가 업데이트 진행 상황 보고를 중단했습니다(fwup_state={state}).",
   "firmwareProgressStalledNoReading": "라우터가 어떤 단계도 보고하지 않은 채 업데이트 진행 상황 보고를 중단했습니다.",
   "firmwareBanksUnreadableAfterReboot": "라우터가 다시 시작되었지만 펌웨어 정보를 읽을 수 없습니다.",

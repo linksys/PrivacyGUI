@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "Firmware tidak lolos pemeriksaan keamanan router.",
   "firmwareErrorRouterUnspecified": "Router melaporkan kegagalan tanpa menyebutkan alasannya.",
   "firmwareErrorInterrupted": "Pembaruan terhenti sebelum selesai.",
+  "firmwareNotCheckedYet": "Router belum memeriksa pembaruan sejak dinyalakan.",
+  "firmwareLastCheckDidNotFinish": "Pemeriksaan pembaruan terakhir router tidak selesai.",
   "firmwareProgressStalled": "Router berhenti melaporkan kemajuan pembaruan (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Router berhenti melaporkan kemajuan pembaruan sebelum melaporkan tahap apa pun.",
   "firmwareBanksUnreadableAfterReboot": "Router telah dinyalakan ulang, tetapi informasi firmware-nya tidak dapat dibaca.",

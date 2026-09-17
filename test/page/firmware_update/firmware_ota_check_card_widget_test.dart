@@ -17,6 +17,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../golden_test/golden_framework/mocks/mock_firmware_update.dart';
 import '../../golden_test/page/firmware_update/fixtures/firmware_update_test_data.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
+import '../../mocks/test_data/firmware_update_test_data.dart';
 
 /// What the OTA check card says, per #1550 (REQ-A3 and the UI half of REQ-A1).
 ///
@@ -65,7 +66,11 @@ void main() {
     );
   });
 
-  Widget wrap(FirmwareUpdateState state, FirmwareBanksData banks) {
+  Widget wrap(
+    FirmwareUpdateState state,
+    FirmwareBanksData banks, {
+    FirmwareAutoUpdateUIModel? autoUpdate,
+  }) {
     final router = GoRouter(
       initialLocation: '/',
       routes: [
@@ -83,6 +88,7 @@ void main() {
           updateState: state,
           banksData: banks,
           systemInfoData: testSystemInfoData,
+          autoUpdate: autoUpdate,
         ),
       ],
       child: MaterialApp.router(
@@ -103,14 +109,15 @@ void main() {
   Future<void> pump(
     WidgetTester tester,
     FirmwareUpdateState state,
-    FirmwareBanksData banks,
-  ) async {
+    FirmwareBanksData banks, {
+    FirmwareAutoUpdateUIModel? autoUpdate,
+  }) async {
     tester.view.physicalSize = const Size(1280, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(wrap(state, banks));
+    await tester.pumpWidget(wrap(state, banks, autoUpdate: autoUpdate));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
   }
@@ -354,6 +361,112 @@ void main() {
       expect(button.onTap, isNotNull,
           reason: '`isLoading` already refuses the tap, and nulling it as well '
               'would re-state that in a second place');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1572 — what the *router* remembers, on a page nobody has asked anything on.
+  // ---------------------------------------------------------------------------
+  group('the router history line', () {
+    testWidgets('a router that has not checked since boot says so',
+        (tester) async {
+      // The fifth rendering, and the gap it fills: `notChecked` absorbs both "never
+      // checked" and "the check failed", so this state used to show a bare button and
+      // the user could not tell the two apart.
+      await pump(
+        tester,
+        const FirmwareUpdateState(phase: FirmwareUpdatePhase.idle),
+        testThreeInstanceBanksData,
+        autoUpdate:
+            FirmwareUpdateTestData.autoUpdateModel(checkedAfterBoot: false),
+      );
+
+      expect(find.text(loc.firmwareNotCheckedYet), findsOneWidget);
+      expect(find.text(loc.firmwareNoUpdateFound), findsNothing);
+      expect(find.text(loc.updateAvailable), findsNothing);
+    });
+
+    testWidgets('a router that did not report the field says nothing',
+        (tester) async {
+      // The distinction the nullable mapping exists for: null is the router not
+      // answering, and asserting "not checked yet" from silence is the same class of
+      // defect as asserting "up to date" from a timeout.
+      await pump(
+        tester,
+        const FirmwareUpdateState(phase: FirmwareUpdatePhase.idle),
+        testThreeInstanceBanksData,
+        autoUpdate: FirmwareUpdateTestData.autoUpdateModel(),
+      );
+
+      expect(find.text(loc.firmwareNotCheckedYet), findsNothing);
+      expect(find.text(loc.firmwareLastCheckDidNotFinish), findsNothing);
+    });
+
+    testWidgets('a failure the router still holds is shown as history',
+        (tester) async {
+      // The overnight scheduled check that could not reach the server. Stated as
+      // history and with no retry, because the value is undated — see
+      // `FirmwareAutoUpdateUIModel.errorCode`.
+      await pump(
+        tester,
+        const FirmwareUpdateState(phase: FirmwareUpdatePhase.idle),
+        testThreeInstanceBanksData,
+        autoUpdate: FirmwareUpdateTestData.autoUpdateModel(
+          checkedAfterBoot: true,
+          errorCode: FirmwareUpdateErrorCode.serverUnreachable,
+        ),
+      );
+
+      expect(find.text(loc.firmwareLastCheckDidNotFinish), findsOneWidget);
+      expect(find.text(loc.firmwareErrorServerUnreachable), findsOneWidget);
+      expect(find.text(loc.firmwareNoUpdateFound), findsNothing);
+    });
+
+    testWidgets('this session\'s verdict outranks the router\'s history',
+        (tester) async {
+      // A check that ran in this session is a later answer than the row. The history
+      // line only exists for `notChecked`, so a stale reason must not sit under a
+      // fresh "nothing found".
+      await pump(
+        tester,
+        const FirmwareUpdateState(
+          phase: FirmwareUpdatePhase.idle,
+          otaCheck: FirmwareOtaCheckResult.noUpdateFound(),
+        ),
+        testThreeInstanceBanksData,
+        autoUpdate: FirmwareUpdateTestData.autoUpdateModel(
+          checkedAfterBoot: false,
+          errorCode: FirmwareUpdateErrorCode.serverUnreachable,
+        ),
+      );
+
+      expect(find.text(loc.firmwareNoUpdateFound), findsOneWidget);
+      expect(find.text(loc.firmwareNotCheckedYet), findsNothing);
+      expect(find.text(loc.firmwareLastCheckDidNotFinish), findsNothing);
+    });
+
+    testWidgets('a check this session failed shows no history line',
+        (tester) async {
+      // `checkFailed` reports through the snack bar, which is transient by design.
+      // Letting the history line fill the space would put a *different*, undated
+      // reason on the card immediately underneath it.
+      await pump(
+        tester,
+        const FirmwareUpdateState(
+          phase: FirmwareUpdatePhase.idle,
+          otaCheck: FirmwareOtaCheckResult.checkFailed(
+              FirmwareUpdateErrorCode.serverResponse),
+        ),
+        testThreeInstanceBanksData,
+        autoUpdate: FirmwareUpdateTestData.autoUpdateModel(
+          checkedAfterBoot: false,
+          errorCode: FirmwareUpdateErrorCode.serverUnreachable,
+        ),
+      );
+
+      expect(find.text(loc.firmwareNotCheckedYet), findsNothing);
+      expect(find.text(loc.firmwareLastCheckDidNotFinish), findsNothing);
+      expect(find.text(loc.firmwareNoUpdateFound), findsNothing);
     });
   });
 }

@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "De firmware is niet door de veiligheidscontrole van de router gekomen.",
   "firmwareErrorRouterUnspecified": "De router meldde een fout zonder de reden te noemen.",
   "firmwareErrorInterrupted": "De update is onderbroken voordat deze was voltooid.",
+  "firmwareNotCheckedYet": "De router heeft sinds het opstarten niet naar updates gezocht.",
+  "firmwareLastCheckDidNotFinish": "De laatste updatecontrole van de router is niet voltooid.",
   "firmwareProgressStalled": "De router meldt de voortgang van de update niet meer (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "De router meldt de voortgang van de update niet meer en heeft geen fase gemeld.",
   "firmwareBanksUnreadableAfterReboot": "De router is opnieuw opgestart, maar de firmwaregegevens konden niet worden gelezen.",

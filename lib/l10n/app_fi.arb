@@ -1072,6 +1072,8 @@
   "firmwareErrorSignature": "Laiteohjelmisto ei läpäissyt reitittimen turvatarkistusta.",
   "firmwareErrorRouterUnspecified": "Reititin ilmoitti virheestä kertomatta syytä.",
   "firmwareErrorInterrupted": "Päivitys keskeytyi ennen valmistumista.",
+  "firmwareNotCheckedYet": "Reititin ei ole etsinyt päivityksiä käynnistyksen jälkeen.",
+  "firmwareLastCheckDidNotFinish": "Reitittimen viimeisin päivitystarkistus ei valmistunut.",
   "firmwareProgressStalled": "Reititin lakkasi ilmoittamasta päivityksen edistymistä (fwup_state={state}).",
   "firmwareProgressStalledNoReading": "Reititin lakkasi ilmoittamasta päivityksen edistymistä ennen kuin se ilmoitti mitään vaihetta.",
   "firmwareBanksUnreadableAfterReboot": "Reititin käynnistyi uudelleen, mutta sen laiteohjelmistotietoja ei voitu lukea.",
