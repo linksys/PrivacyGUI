@@ -19,16 +19,6 @@ typedef OtaCheckDispatcher = Future<String> Function(
 /// Reads every firmware image row the router publishes.
 typedef FirmwareImagesReader = Future<List<FirmwareImageUIModel>> Function();
 
-/// Reads the router's auto-update reading, for `fwup_error_code`.
-///
-/// Declared here rather than imported from `firmware_router_ota_install_service.dart`,
-/// where the identical typedef lives. Importing that file would make
-/// `FirmwareRouterOtaInstallService` nameable from this one, and the whole
-/// arrangement below exists so the install verb is not reachable from a check. A
-/// duplicated one-line typedef is the cheaper half of that trade.
-typedef FirmwareOtaAutoUpdateReader = Future<FirmwareAutoUpdateUIModel>
-    Function();
-
 final firmwareRouterOtaCheckServiceProvider =
     Provider<FirmwareRouterOtaCheckService>((ref) {
   final firmware = ref.read(uspFirmwareUpdateServiceProvider);
@@ -97,7 +87,7 @@ final firmwareRouterOtaCheckServiceProvider =
 class FirmwareRouterOtaCheckService {
   final OtaCheckDispatcher _dispatchCheck;
   final FirmwareImagesReader _readImages;
-  final FirmwareOtaAutoUpdateReader _readAutoUpdate;
+  final FirmwareAutoUpdateReader _readAutoUpdate;
   final SseOperationAwaiter? _awaiter;
   final UspMutationLock _lock;
   final Duration _deadline;
@@ -174,7 +164,7 @@ class FirmwareRouterOtaCheckService {
   FirmwareRouterOtaCheckService({
     required OtaCheckDispatcher dispatchCheck,
     required FirmwareImagesReader readImages,
-    required FirmwareOtaAutoUpdateReader readAutoUpdate,
+    required FirmwareAutoUpdateReader readAutoUpdate,
     required SseOperationAwaiter? awaiter,
     required UspMutationLock lock,
     Duration deadline = defaultDeadline,

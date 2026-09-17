@@ -16,9 +16,6 @@ import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_se
 typedef OtaInstallDispatcher = Future<String> Function(
     {required int otaInstance});
 
-/// Reads `fwup_state` / `fwup_progress` / `autoupdate_flags` in one round trip.
-typedef FirmwareAutoUpdateReader = Future<FirmwareAutoUpdateUIModel> Function();
-
 /// Where the update has got to, once per poll.
 typedef FirmwareOtaInstallProgressSink = void Function(
     FirmwareOtaInstallProgress progress);

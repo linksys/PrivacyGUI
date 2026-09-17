@@ -968,15 +968,15 @@ void main() {
         required FirmwareUpdateErrorCode after,
         bool baselineReadFails = false,
       }) async {
-        // Three readers now, in this order: the concurrency guard
-        // (`_refuseIfRouterBusy`), then `triggerInstall`'s baseline, then whoever
-        // asks afterwards. The guard's model is idle, so it allows the dispatch.
+        // Two readers, in this order: the concurrency guard — which is also where the
+        // pre-dispatch baseline is taken, so there is one read rather than two
+        // identical ones — then whoever asks after the dispatch.
         var call = 0;
         when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
           final n = call++;
-          if (n == 1 && baselineReadFails) throw NetworkError();
+          if (n == 0 && baselineReadFails) throw NetworkError();
           return FirmwareUpdateTestData.autoUpdateModel(
-              errorCode: n <= 1 ? before : after);
+              errorCode: n == 0 ? before : after);
         });
         when(() => mockService.triggerLocalDownload(
                 targetInstance: any(named: 'targetInstance')))
@@ -1031,10 +1031,10 @@ void main() {
         // Nothing reboots, so the wait was for an event that never comes.
         var call = 0;
         when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
-          // Guard, then baseline, then the refusal poll — see the helper above.
+          // Guard/baseline, then the refusal poll — see the helper above.
           final n = call++;
           return FirmwareUpdateTestData.autoUpdateModel(
-              errorCode: n <= 1
+              errorCode: n == 0
                   ? FirmwareUpdateErrorCode.none
                   : FirmwareUpdateErrorCode.signature);
         });
@@ -1102,6 +1102,71 @@ void main() {
         expect(state.failure,
             FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'),
             reason: 'with nothing to compare against, the code proves nothing');
+      });
+
+      test('the OTA path gets the same post-reboot backstop', () async {
+        // Found in review round 1, as the consequence of an asymmetry the reviewer
+        // flagged one step short of: `_codeBeforeInstall` was set only by
+        // `triggerInstall`, so on the OTA path `_routerNamedFailure()` returned null
+        // from its first line and `verify()`'s error-code check was **dead code** —
+        // while the commit that added it claimed "both firmware paths reach verify(),
+        // so the OTA half gains the same backstop". It did not.
+        var call = 0;
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async {
+          // Read 0 is the guard, which is also the baseline; verify() takes the next.
+          final n = call++;
+          return FirmwareUpdateTestData.autoUpdateModel(
+              errorCode: n == 0
+                  ? FirmwareUpdateErrorCode.none
+                  : FirmwareUpdateErrorCode.flash);
+        });
+        when(() => mockOtaInstaller.install(
+                  otaInstance: any(named: 'otaInstance'),
+                  onProgress: any(named: 'onProgress'),
+                  isCancelled: any(named: 'isCancelled'),
+                ))
+            .thenAnswer((_) async => const FirmwareOtaInstallResult(
+                verdict: FirmwareOtaInstallVerdict.flashing));
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerRouterOtaInstall(otaInstance: 3);
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            const FirmwareFailure.routerReported(FirmwareUpdateErrorCode.flash),
+            reason:
+                'the router named the reason; the bank shape is the fallback');
+      });
+
+      test('cancel clears the baseline, so no later run inherits it', () async {
+        // The asymmetry itself (review round 1, W-1). Both dispatch paths re-read the
+        // baseline before use, so this is not load-bearing — it is here so that
+        // "which lifecycle fields does cancel reset" has one answer instead of an
+        // exception nobody documented.
+        when(() => mockService.fetchAutoUpdate()).thenAnswer((_) async =>
+            FirmwareUpdateTestData.autoUpdateModel(
+                errorCode: FirmwareUpdateErrorCode.signature));
+        when(() => mockService.triggerLocalDownload(
+                targetInstance: any(named: 'targetInstance')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer(banksData: AsyncData(unflashed()));
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerInstall(targetInstance: 2);
+        notifier.cancel();
+        // With the baseline cleared, a code standing on the router cannot be
+        // attributed to anything, so verify() falls back to the bank shape.
+        await notifier.verify(expectedVersion: '', expectedActiveInstance: 2);
+
+        expect(container.read(firmwareUpdateNotifierProvider).failure,
+            FirmwareFailure.bootedOldImage(instance: 2, status: 'Available'));
       });
 
       test('a successful flash is not failed by a standing code', () async {

@@ -270,6 +270,16 @@ enum FirmwareUpdateTriggerSource {
   }
 }
 
+/// Reads the router's auto-update state in one round trip.
+///
+/// Declared here, beside the model it returns, rather than in either service that
+/// takes it. Both did, under different names, and the reason given was that the check
+/// service must not import the install service — which is true, and is met by the
+/// *service* boundary, not by the typedef. A shared signature in a neutral file
+/// removes the duplication without creating that import: from inside either service
+/// `FirmwareRouterOtaInstallService` is still unnameable.
+typedef FirmwareAutoUpdateReader = Future<FirmwareAutoUpdateUIModel> Function();
+
 /// The router's auto-update progress, mapped once in the service layer.
 class FirmwareAutoUpdateUIModel extends Equatable with DiagnosticLoggable {
   final FirmwareAutoUpdateStatus status;

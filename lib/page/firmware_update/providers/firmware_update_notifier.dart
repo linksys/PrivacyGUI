@@ -444,6 +444,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     // running.
     _sawUpdateRunning = false;
     _sawRouterWorking = false;
+    // Cleared with them, for the same reason: it is a baseline *for a run*, so it
+    // means nothing once the run is abandoned. Both dispatch paths re-read it before
+    // use, so this is not load-bearing — it removes the asymmetry rather than fixing a
+    // bug, and an unexplained asymmetry in a lifecycle reset is a question the next
+    // reader has to answer from scratch.
+    _codeBeforeInstall = null;
     _setState(FirmwareUpdateState(
       activeBank: state.activeBank,
       targetBank: state.targetBank,
@@ -534,11 +540,6 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     // below are both `ref.read`s, and this is now the first await in the method.
     if (_disposed) return;
     _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
-    // Before the dispatch, and outside the lock: this is a read, and it is the only
-    // thing that will let `verify()` tell a reason this upload produced from one an
-    // earlier upload left behind. Best-effort — losing it costs the reason, not the
-    // install.
-    _codeBeforeInstall = await _errorCodeOrNull();
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.triggerLocalDownload(targetInstance: targetInstance);
@@ -929,6 +930,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// check and queues what it refuses, so a second dispatch is untidy rather than
   /// dangerous. Blocking a legitimate update because one diagnostic read hiccuped
   /// would trade a real cost for a cosmetic one.
+  /// **It also records [_codeBeforeInstall].** The reading it already has in hand is
+  /// exactly the pre-dispatch baseline `verify()` needs, so taking it here is one read
+  /// instead of two identical ones back to back — and it means the baseline cannot be
+  /// forgotten on a path that remembers the guard, which is how the OTA flow ended up
+  /// with a dead `verify()` check in the first place.
   Future<bool> _refuseIfRouterBusy() async {
     final FirmwareAutoUpdateUIModel reading;
     try {
@@ -936,8 +942,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     } catch (e) {
       logger.w('[FirmwareUpdate] could not read the router state before '
           'dispatching an install — allowing it ($e)');
+      // No reading, so no baseline: `_routerNamedFailure` then attributes nothing,
+      // which is the same refusal it makes for a code it cannot place.
+      _codeBeforeInstall = null;
       return false;
     }
+    _codeBeforeInstall = reading.errorCode;
     if (!reading.isBusy) return false;
     logger.w('[FirmwareUpdate] refusing the install: the router is already '
         '${reading.status.name} (fwup_state=${reading.rawState})');
