@@ -609,6 +609,23 @@ class SseOperationAwaiter {
       onNotification: (_) {}, // No-op: matching happens on the wildcard below.
     );
 
+    // **This handler deliberately does not filter on [referencePath], and the
+    // asymmetry with `SseManager._handleSseSubscribe` — which does prefix-filter —
+    // is a decision, not an oversight (#1533, handed over from #1561).**
+    //
+    // A prefix filter here has no safe field to test. The local bridge sends
+    // `command_name` as a *bare* name (`IPPing()`) and no `obj_path` at all, while
+    // the Guardian payload sends `command_name` as a full path. So a
+    // `startsWith(referencePath)` test would either fail open on every local event
+    // — achieving nothing — or, if written to fail closed, starve this watch of the
+    // very events it exists for, and both consumers hold it open for up to an
+    // install's 20-minute ceiling.
+    //
+    // What the missing filter costs is bounded and known: [OperationCompleteWatch]
+    // ._seen accumulates every `OperationComplete` in the app for the life of the
+    // watch. It cannot cause a wrong verdict, because both consumers match on
+    // `commandKey` (`firmware_router_ota_check_service.dart`,
+    // `..._install_service.dart`), which no other subtree's event can collide with.
     late final OperationCompleteWatch watch;
     final removeHandler = _manager.addWildcardHandler((notification) {
       if (notification.type != 'OperationComplete') return;
@@ -681,6 +698,10 @@ class OperationCompleteWatch {
     return completer.future;
   }
 
+  /// Tears the watch down. **Pending [firstWhere] futures are dropped, not
+  /// completed** — see that method's contract for why erroring them would turn
+  /// every ordinary race into an unhandled async error. Awaiting one across a
+  /// release is therefore not supported.
   Future<void> release() async {
     _waiters.clear();
     await _onRelease?.call();

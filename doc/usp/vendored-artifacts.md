@@ -31,9 +31,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.16.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.12.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.12.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.12.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 

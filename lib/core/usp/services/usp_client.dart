@@ -900,9 +900,10 @@ class UspClient {
           await _withAuthRetry(() => _client.operate(command, args: args));
       sw.stop();
 
-      // Extract commandKey and outputArgs from WASM v0.11.0 unified format:
-      // { success, result: { data: { commandKey, outputArgs }, error? } }
-      final response = _extractOperateResult(rawResponse);
+      // usp-client 0.13.0 unified format:
+      // { success, result: { data: { commandKey, requestPath, outputArgs }, error? } }
+      // Throws when the agent refused the command — see extractOperateResult.
+      final response = extractOperateResult(rawResponse);
       final label = _idLabel(id);
       logger.d('$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
           '${_prettyMap(response)}');
@@ -915,10 +916,34 @@ class UspClient {
     }
   }
 
-  /// Extracts commandKey and outputArgs from WASM v0.11.0 unified format.
-  Map<String, dynamic> _extractOperateResult(Map<String, dynamic> raw) {
+  /// Reads the usp-client unified Operate response: `{ success, result: { data,
+  /// error? } }`.
+  ///
+  /// Returns `commandKey`, `requestPath` and the flattened output arguments —
+  /// and **throws when the agent refused the command**.
+  ///
+  /// Throwing is the point (#1533). usp-client 0.13.0 reports a refusal as
+  /// `success: false` with the agent's code in band, and the JS Promise
+  /// *fulfils*: the reject path across the Wasm boundary replaces the agent's
+  /// code with a `9999` transport sentinel, so a caller can only see the refusal
+  /// by reading the value. This method used to read `data` and nothing else, so a
+  /// refusal returned `{}` and every caller reported success — a firmware chunk
+  /// the router rejected completed normally in the UI, with no error anywhere.
+  ///
+  /// It throws a **string in the USP layer's own shape**, not a [ServiceError]:
+  /// `Operate failed: Operation error: … (code: N)`. That keeps two contracts
+  /// intact — `parseUspError` reads it as an *operation* failure carrying the
+  /// agent's code, so every existing `catch (e) => mapUspErrorToServiceError(e)`
+  /// classifies it without change; and mapping to `ServiceError` stays in the
+  /// service layer where constitution Article XIII puts it, not here in transport.
+  @visibleForTesting
+  static Map<String, dynamic> extractOperateResult(Map<String, dynamic> raw) {
     final result = raw['result'] as Map?;
-    if (result == null) return raw; // fallback to raw if not v0.11.0 format
+    if (result == null) return raw; // fallback to raw if not the unified format
+
+    if (raw['success'] == false) {
+      throw _operateRefusal(result['error']);
+    }
 
     final data = result['data'] as Map?;
     if (data == null) return {};
@@ -928,6 +953,12 @@ class UspClient {
     if (commandKey != null && commandKey.isNotEmpty) {
       output['commandKey'] = commandKey;
     }
+    // New in 0.13.0 (`OperateResp.req_obj_path`): the only server-assigned handle
+    // for an accepted asynchronous command when not subscribed to Notify.
+    final requestPath = data['requestPath']?.toString();
+    if (requestPath != null && requestPath.isNotEmpty) {
+      output['requestPath'] = requestPath;
+    }
     final rawOutputArgs = data['outputArgs'];
     if (rawOutputArgs is Map) {
       for (final entry in rawOutputArgs.entries) {
@@ -935,6 +966,37 @@ class UspClient {
       }
     }
     return output;
+  }
+
+  /// Builds the refusal string from the unified response's `error` member.
+  ///
+  /// The member is keyed by the path that failed, each entry carrying
+  /// `errorCode` / `errorMessage`. Everything is optional on purpose: a
+  /// `success: false` with no readable detail must still throw, because a caller
+  /// handed `{}` cannot tell a refusal from a success.
+  static String _operateRefusal(Object? error) {
+    String? path;
+    Object? code;
+    String? message;
+
+    if (error is Map && error.isNotEmpty) {
+      final first = error.entries.first;
+      path = first.key.toString();
+      final detail = first.value;
+      if (detail is Map) {
+        code = detail['errorCode'];
+        message = detail['errorMessage']?.toString();
+      } else if (detail != null) {
+        message = detail.toString();
+      }
+    }
+
+    final what = path ?? 'the command';
+    final why = (message == null || message.isEmpty)
+        ? 'the router gave no reason'
+        : message;
+    final suffix = code == null ? '' : ' (code: $code)';
+    return 'Operate failed: Operation error: $what refused: $why$suffix';
   }
 
   // ===========================================================================

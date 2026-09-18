@@ -142,12 +142,21 @@ UspError? parseUspError(Object error) {
 /// | 7004 | parameter not writable           | InvalidInputError       |
 /// | 7005 | invalid parameter name¹          | InvalidInputError       |
 /// | 7006 | invalid parameter value          | InvalidInputError       |
+/// | 7022 | command refused by the agent²    | UspCompleteFailureError |
 /// | 7026 | parameter (path) not found       | ResourceNotFoundError   |
 /// | 7027 | object not found                 | ResourceNotFoundError   |
 /// | 9001 | bbfdm: request denied            | UnauthorizedError       |
 /// | 9005 | bbfdm: invalid/unimplemented param | ResourceNotFoundError |
 /// | 9007 | bbfdm: (resource not found)      | ResourceNotFoundError   |
 /// | 9008 | bbfdm: non-writable parameter    | InvalidInputError       |
+///
+/// ² 7022 reaches this mapping only because `UspClient.extractOperateResult`
+/// throws a refused synchronous Operate instead of returning an empty map
+/// (#1533). It is mapped away from the `UnexpectedError` fallthrough on purpose:
+/// that reads as "something went wrong", indistinguishable from a network blip,
+/// and a refusal is the router answering. The 7022 seen on FL-WRT 2.0 has its own
+/// cause — `rpcd` missing from the image, so `bbf.diag` never reaches ubus — but
+/// this mapping is about reporting a refusal correctly whatever its reason.
 ///
 /// ¹ 7005 has a second, broker-level meaning on OBUSPA: an atomic SET
 /// (`allow_partial=false`) that spans more than one USP micro-service is
@@ -277,6 +286,25 @@ ServiceError _mapProtocolError(UspError e) {
 ///    forward null, so it's omitted. Only `detail` (the raw message) is kept.
 ServiceError _mapOperationError(UspError e) {
   final msg = e.message;
+  // 7022 — the agent refused the command (USP "Command Failure"). It arrives here
+  // because `UspClient.extractOperateResult` throws a refused Operate in this
+  // shape (#1533); before that it read as a success and a router-refused firmware
+  // chunk completed normally.
+  //
+  // Deliberately **not** the `UnexpectedError` fallthrough below: that renders as
+  // "something went wrong", which is also what a network blip looks like, and a
+  // refusal is the router answering rather than the network failing.
+  // `failures` is empty because the thrown string carries no structured per-path
+  // detail — the path and the reason are both in [summary], and inventing a
+  // `UspErrorDetail` from a parsed string would fake a structure we do not have.
+  if (e.faultCode == 7022) {
+    return UspCompleteFailureError(
+      summary: msg,
+      failures: const [],
+      code: 7022,
+      detail: msg,
+    );
+  }
   if (msg.contains('Path not found')) return const ResourceNotFoundError();
   if (msg.contains('read-only')) {
     return InvalidInputError(detail: msg);
