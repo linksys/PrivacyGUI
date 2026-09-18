@@ -19,12 +19,25 @@ class OperateResult {
   /// The router's own error code, when this notification carried `cmd_failure`
   /// instead of output arguments.
   ///
-  /// This is the **only** channel a refusal arrives on. An Operate *response* is
-  /// not one: measured, a command that does not exist and a misspelled argument
-  /// name both answer `UspSuccess`, so a caller that reads its result out of the
-  /// data model — a firmware check re-reading `FirmwareImage.{ota}.Available`,
-  /// say — has to watch here to tell "the router looked and found nothing" from
-  /// "the router would not look".
+  /// **Which refusals arrive here depends on the usp-client version**, and the
+  /// sentence this paragraph used to carry — "this is the *only* channel a refusal
+  /// arrives on" — stops being true at 0.13.0.
+  ///
+  /// Up to 0.11.0 it was the only channel: measured, a command that does not exist
+  /// and a misspelled argument name both answered `UspSuccess`, so a caller reading
+  /// its result out of the data model — a firmware check re-reading
+  /// `FirmwareImage.{ota}.Available`, say — had to watch here to tell "the router
+  /// looked and found nothing" from "the router would not look".
+  ///
+  /// From 0.13.0 the **Operate response** is a second channel: it reports a refusal
+  /// as `success: false` with the agent's code in band, and `UspClient.operate`
+  /// throws on it rather than returning `{}` (#1533). That does not make this field
+  /// redundant — an agent that accepted the command and then failed it still reports
+  /// here, and only here — but a caller must no longer read "no `errorCode`" as "not
+  /// refused" without also having survived the call.
+  ///
+  /// Corrected from this side because #1533's own change does not touch this file, so
+  /// nothing in it would have caught the claim going stale.
   ///
   /// Null on every ordinary completion, including a failed *diagnostic*: those
   /// report their failure in [status] because the command itself ran.

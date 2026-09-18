@@ -310,6 +310,31 @@ void main() {
     verify(() => mockBridge.results('key-abc')).called(1);
   });
 
+  test('an operate the agent REFUSED engages nothing', () async {
+    // The seam with #1533 / PR #1599, and **neither side's tests cover it**: from
+    // usp-client 0.13.0 `UspClient.operate` *throws* on a refusal instead of returning
+    // an empty map, and every test in this file stubs `operate` to succeed. So this
+    // case is written from this side, by making the stub throw the way that change
+    // will.
+    //
+    // What must happen: the error reaches the caller, and the reconcile machinery
+    // never engages. There is nothing to reconcile — a command the agent refused was
+    // never executed, so Guardian has no stored result and a read would spend a
+    // request to be told so. It also means `expectedKey` is never assigned, which is
+    // what keeps `_pending` clean without a special case.
+    //
+    // A `String`, not an `Exception`, because that is what the USP layer throws across
+    // the Wasm boundary — and it is also why `_operateWithRetry` does not swallow it:
+    // that method catches `TimeoutException` alone, so a refusal is not re-fired.
+    await connectManager();
+    when(() => mockUsp.operate(any(), args: any(named: 'args')))
+        .thenThrow('Operate failed: Operation error: refused (code: 7004)');
+
+    await expectLater(runDiagnostic(), throwsA(isA<String>()));
+
+    verifyNever(() => mockBridge.results(any()));
+  });
+
   test('an SSE push still wins, and costs no read at all', () async {
     // The happy path must not have gained a read. The store is the recovery path,
     // and a reconcile on every successful diagnostic would double the read volume
