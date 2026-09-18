@@ -9,25 +9,19 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_optional_pane.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 bool shouldShowPnpIPoEEditor({required bool isRecovering}) => !isRecovering;
-
-/// New Auto-IPoE runtimes perform their own multi-target connectivity check.
-/// Older firmware has no structured completion signal, so it keeps the
-/// LinksysNow probe as a compatibility fallback.
-bool shouldRunLegacyPnpIPoEConnectivityProbe(AutoIPoEStatus status) =>
-    !status.terminalResultSupported && !status.hasVerifiedBackendConnectivity;
 
 class PnpIpoeView extends ConsumerStatefulWidget {
   const PnpIpoeView({super.key});
@@ -153,113 +147,76 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     setState(() {
       _isSubmitting = true;
     });
-    final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
-    var latestStatus = _progressStatus;
+    // The generation fence is the whole reason this is a closure: every await
+    // inside the coordinator asks again whether this attempt is still the one on
+    // screen, so a superseded run reports Cancelled instead of writing over what
+    // replaced it.
+    bool isCurrent() => mounted && generation == _recoveryGeneration;
+    final coordinator = AutoIPoEReconciliationCoordinator(
+      bridge: ref.read(autoIPoEInternetSettingsBridgeProvider),
+      // Same native status check and retry budget as DHCP/PPPoE. ICC refreshes
+      // asynchronously after tunnel hotplug events.
+      verifyInternet: () =>
+          ref.read(pnpProvider.notifier).checkInternetConnection(30),
+    );
     try {
-      while (mounted && generation == _recoveryGeneration) {
-        try {
-          await bridge.waitForPnpIPoESetupCompletion(
-            expectedMode: _settings.selectedMode,
-            useStructuredProgress: true,
-            onReconciliationProgress: (progress) {
-              _updateProgress(progress, generation);
-            },
-            onProgress: (status, log) {
-              latestStatus = status;
-              if (!mounted || generation != _recoveryGeneration) {
-                return;
-              }
-              setState(() {
-                _progressStatus = status;
-                _progressLog = log;
-              });
-            },
-          );
-          if (shouldRunLegacyPnpIPoEConnectivityProbe(latestStatus)) {
-            await bridge.waitForPnpIPoEInternetConnectivity(
-              shouldContinue: () =>
-                  mounted && generation == _recoveryGeneration,
-              onReconciliationProgress: (progress) {
-                _updateProgress(progress, generation);
-              },
-            );
+      final outcome = await coordinator.follow(
+        expectedMode: _settings.selectedMode,
+        isCurrent: isCurrent,
+        onProgress: (progress) => _updateProgress(progress, generation),
+        onRuntime: (status, log) {
+          if (!isCurrent()) {
+            return;
           }
-          // Use the same native status check/retry budget as DHCP/PPPoE.
-          // ICC is refreshed asynchronously after tunnel hotplug events.
-          await ref.read(pnpProvider.notifier).checkInternetConnection(30);
-          // Let the determinate indicator visibly reach 5/5 before this
-          // route is replaced by the PnP configuration screen.
+          setState(() {
+            _progressStatus = status;
+            _progressLog = log;
+          });
+        },
+        onPollingWindowEnded: (issue) {
+          if (!isCurrent()) {
+            return;
+          }
+          // A bounded window ended while the same worker may still be running.
+          // Stay in the compact progress UI; nothing here re-sends Apply.
+          setState(() {
+            _isRecovering = true;
+            _issue = issue;
+          });
+        },
+      );
+      if (!isCurrent()) {
+        return;
+      }
+      switch (outcome) {
+        case AutoIPoEReconciliationCompleted():
+          // Let the determinate indicator visibly reach 5/5 before this route is
+          // replaced by the PnP configuration screen.
           await Future<void>.delayed(const Duration(milliseconds: 800));
           if (mounted && generation == _recoveryGeneration) {
             context.goNamed(RouteNamed.pnp);
           }
-          return;
-        } on AutoIPoERecoveryPending catch (error) {
-          if (error.issue.recoveryAction !=
-              AutoIPoERecoveryAction.continueChecking) {
-            rethrow;
+        case AutoIPoEReconciliationNoInternet():
+          if (mounted) {
+            context.goNamed(RouteNamed.pnpNoInternetConnection);
           }
-          if (!mounted || generation != _recoveryGeneration) {
-            return;
-          }
-          // A bounded polling window ended while the same worker may still be
-          // running. Continue read-only reconciliation under the same compact
-          // progress UI; never issue Set or Apply here.
+        case AutoIPoEReconciliationFailed(
+            issue: final issue,
+            terminal: final terminal
+          ):
           setState(() {
-            _isRecovering = true;
-            _issue = error.issue;
+            // Retry and Edit are safe to reveal only because the worker ended.
+            _isRecovering = !terminal;
+            _issue = issue;
           });
-        }
-      }
-    } on ExceptionNoInternetConnection {
-      if (mounted && generation == _recoveryGeneration) {
-        context.goNamed(RouteNamed.pnpNoInternetConnection);
-      }
-    } on TimeoutException catch (error, stackTrace) {
-      logger.w(
-        '[PnP Troubleshooter]: Post-IPoE Internet connectivity did not '
-        'recover within the bounded retry window',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (mounted && generation == _recoveryGeneration) {
-        context.goNamed(RouteNamed.pnpNoInternetConnection);
-      }
-    } on AutoIPoETerminalFailure catch (error) {
-      if (!mounted || generation != _recoveryGeneration) {
-        return;
-      }
-      setState(() {
-        _isRecovering = false;
-        _issue = error.issue;
-      });
-      await showAutoIPoETerminalFailureDialog(context, error.issue);
-    } on AutoIPoERecoveryPending catch (error) {
-      // Only a real retrySetup failure reaches this branch. The worker ended,
-      // so it is safe to reveal Retry/Edit actions.
-      if (mounted && generation == _recoveryGeneration) {
-        setState(() {
-          _isRecovering = true;
-          _issue = error.issue;
-        });
-      }
-    } catch (error) {
-      final issue = AutoIPoEIssueMapper.from(
-        error: error,
-        mode: _settings.selectedMode,
-      );
-      if (!mounted || generation != _recoveryGeneration) {
-        return;
-      }
-      setState(() {
-        _isRecovering = issue.retryable;
-        _issue = issue;
-      });
-      if (issue.isTerminal) {
-        await showAutoIPoETerminalFailureDialog(context, issue);
+          if (terminal && mounted) {
+            await showAutoIPoETerminalFailureDialog(context, issue);
+          }
+        case AutoIPoEReconciliationCancelled():
+          break;
       }
     } finally {
-      if (mounted && generation == _recoveryGeneration) {
+      if (isCurrent()) {
         setState(() {
           _isSubmitting = false;
         });
