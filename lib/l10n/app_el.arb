@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Κανονική",
   "cardFormCompact": "Συμπαγής",
   "cardFormPopup": "Αναδυόμενο",
-  "cardFormForNamed": "Μορφή κάρτας για {name}"
+  "cardFormForNamed": "Μορφή κάρτας για {name}",
+  "notificationHistory": "Ιστορικό ειδοποιήσεων",
+  "menuNotificationHistoryDesc": "Ειδοποιήσεις που αποθηκεύτηκαν κατά τη διάρκεια αυτής της συνεδρίας υποστήριξης",
+  "notificationHistoryLastBoot": "Τελευταία εκκίνηση",
+  "notificationHistoryLastActivity": "Τελευταία δραστηριότητα USP",
+  "notificationHistoryEmpty": "Αυτή η συνεδρία υποστήριξης δεν έχει παράγει ακόμη ειδοποιήσεις",
+  "notificationHistoryUnavailable": "Το ιστορικό ειδοποιήσεων είναι διαθέσιμο μόνο κατά τη διάρκεια συνεδρίας απομακρυσμένης βοήθειας",
+  "notificationHistoryGone": "Αυτή η ειδοποίηση δεν είναι πλέον διαθέσιμη",
+  "notificationHistoryMessageId": "Αναγνωριστικό μηνύματος",
+  "notificationHistoryCommandKey": "Κλειδί εντολής",
+  "notificationHistoryShowMore": "Εμφάνιση περισσότερων",
+  "sseRouterOffline": "Ο δρομολογητής είναι εκτός σύνδεσης — αναμονή για την επιστροφή του"
 }

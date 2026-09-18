@@ -51,6 +51,36 @@ class SseManager {
   /// to wire [UspAuthCoordinator.ensureAuth].
   Future<void> Function()? onHeartbeatAuth;
 
+  /// The transport this manager talks over.
+  ///
+  /// Exposed for [SseOperationAwaiter]'s reconcile read (#1578), and exposed rather
+  /// than passed to the awaiter separately on purpose: the awaiter already takes this
+  /// manager, so a second constructor argument would be a second source for the same
+  /// object and two sources can disagree. Nothing else should reach through here —
+  /// the manager owns the stream, the registry and the router precisely so callers do
+  /// not hand-roll their own.
+  UspBridgeClient get bridge => _bridge;
+
+  /// Extra listeners for the stream-opened edge (#1578).
+  ///
+  /// The edge itself is already claimed by [_onSseStreamOpened], which is where the
+  /// remote strategy puts its subscriptions back, and that ordering matters — see
+  /// [_onSseStreamOpened]. So this is a *list* rather than a settable callback: two
+  /// consumers must both get the edge, and a `set onStreamOpened` would let the second
+  /// silently replace the first's re-registration.
+  final List<void Function()> _streamOpenedListeners = [];
+
+  /// Registers [listener] for every subsequent stream open. Returns its remover.
+  ///
+  /// Fires **after** subscriptions are put back, because a reconcile that ran first
+  /// would read Guardian before the stream it is compensating for is able to deliver
+  /// anything — which is not wrong, just wasted, and the ordering is cheaper to state
+  /// than to rediscover.
+  VoidCallback addStreamOpenedListener(void Function() listener) {
+    _streamOpenedListeners.add(listener);
+    return () => _streamOpenedListeners.remove(listener);
+  }
+
   /// Delegate called on each reconnect failure with the attempt number.
   /// Set by provider layer to enable early recovery detection.
   set onReconnectFailed(void Function(int attempt)? callback) {
@@ -246,6 +276,12 @@ class SseManager {
   ///   arrive until something is subscribed
   Future<void> _onSseStreamOpened() async {
     await registry.onSseStreamOpened();
+    // After the registry, per `addStreamOpenedListener`'s contract. A copy of the
+    // list, because a listener that removes itself while being notified would
+    // otherwise mutate the list being iterated.
+    for (final listener in [..._streamOpenedListeners]) {
+      listener();
+    }
   }
 
   /// Called when SSE connects — first real event received. Strategy decides

@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Pop-up",
-  "cardFormForNamed": "Kartenformat für {name}"
+  "cardFormForNamed": "Kartenformat für {name}",
+  "notificationHistory": "Benachrichtigungsverlauf",
+  "menuNotificationHistoryDesc": "Während dieser Support-Sitzung gespeicherte Benachrichtigungen",
+  "notificationHistoryLastBoot": "Letzter Start",
+  "notificationHistoryLastActivity": "Letzte USP-Aktivität",
+  "notificationHistoryEmpty": "Diese Support-Sitzung hat noch keine Benachrichtigungen erzeugt",
+  "notificationHistoryUnavailable": "Der Benachrichtigungsverlauf ist nur während einer Fernwartungssitzung verfügbar",
+  "notificationHistoryGone": "Diese Benachrichtigung ist nicht mehr verfügbar",
+  "notificationHistoryMessageId": "Nachrichten-ID",
+  "notificationHistoryCommandKey": "Befehlsschlüssel",
+  "notificationHistoryShowMore": "Mehr anzeigen",
+  "sseRouterOffline": "Router ist offline — es wird auf seine Rückkehr gewartet"
 }

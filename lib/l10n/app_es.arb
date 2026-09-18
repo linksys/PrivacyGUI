@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Ventana emergente",
-  "cardFormForNamed": "Formato de tarjeta para {name}"
+  "cardFormForNamed": "Formato de tarjeta para {name}",
+  "notificationHistory": "Historial de notificaciones",
+  "menuNotificationHistoryDesc": "Notificaciones almacenadas durante esta sesión de asistencia",
+  "notificationHistoryLastBoot": "Último arranque",
+  "notificationHistoryLastActivity": "Última actividad USP",
+  "notificationHistoryEmpty": "Esta sesión de asistencia aún no ha generado notificaciones",
+  "notificationHistoryUnavailable": "El historial de notificaciones solo está disponible durante una sesión de asistencia remota",
+  "notificationHistoryGone": "Esta notificación ya no está disponible",
+  "notificationHistoryMessageId": "ID de mensaje",
+  "notificationHistoryCommandKey": "Clave de comando",
+  "notificationHistoryShowMore": "Mostrar más",
+  "sseRouterOffline": "El router está desconectado: esperando a que vuelva"
 }

@@ -151,6 +151,7 @@ import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribu
 import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
+import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
@@ -197,6 +198,7 @@ import '../../mocks/provider_overrides/mock_ipv6_port_service.dart';
 import '../../mocks/provider_overrides/mock_local_network.dart';
 import '../../mocks/provider_overrides/mock_static_routing.dart';
 import '../../mocks/provider_overrides/mock_statistics.dart';
+import '../../mocks/provider_overrides/mock_notification_history.dart';
 import '../../mocks/provider_overrides/mock_system_log.dart';
 import '../../mocks/provider_overrides/mock_login.dart';
 import '../../mocks/provider_overrides/mock_menu.dart';
@@ -2323,6 +2325,52 @@ final kSystemLogPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_notification_history_view` — the Remote Assistance notification history
+/// (#1580), and the 47th page view file.
+///
+/// **The page's whole horizontal risk is field lines whose values are UUIDs.** Every
+/// row renders `Message ID` beside a 36-character id, and an `OperationComplete` row
+/// renders `Command key` beside a second one; the row's header puts the stored type
+/// name and a `YYYY-MM-DD HH:MM:SS` stamp at opposite ends. None of those values
+/// shortens in any locale, and none of the labels is flexible — so this is the same
+/// four-inflexible-children shape that produced an overflow on most of wave 4, with
+/// the difference that here the *values* are the wide part and the labels are what
+/// varies by locale. Every one of them is a `Wrap`, which is the fix wave 4 arrived
+/// at rather than something to rediscover.
+///
+/// **The premise carries more weight on this page than on any other case**, because
+/// this page has *four* content states and three of them cannot overflow at all:
+///
+/// - the loader, which every case guards with `forbids: [AppLoader]`;
+/// - the **"not available in this mode"** state, which is what a local build renders
+///   and which the gate reaches by default — the page reads
+///   `notificationHistoryAvailableProvider`, i.e. `BridgeConfig.remoteReads`, and
+///   there is no Guardian session in a test. A centred icon over one sentence;
+/// - the **empty** state, an icon over one line of prose, which is the normal state
+///   of a fresh support session.
+///
+/// So [AppCard] separates content from the first two and
+/// [NotificationHistoryTypeFilter] separates it
+/// from the third — the type filter renders only when there are rows. Without both,
+/// "234 cells green" and "234 cells of a sentence in a `Center`" are the same result.
+/// `notificationHistoryOverrides()` is the other half; see its library doc.
+///
+/// [AppButton] is required for a third thing the fixture could lose quietly: the Show
+/// more button, which `gateNotificationHistoryState` reaches by pinning `visibleCount`
+/// below its row count rather than by carrying twenty-six rows.
+final kNotificationHistoryPageCase = PageSurfaceCase(
+  id: 'notification_history',
+  view: () => const UspNotificationHistoryView(),
+  overrides: () => notificationHistoryOverrides(),
+  requires: const [
+    UspTopBar,
+    AppCard,
+    NotificationHistoryTypeFilter,
+    AppButton,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
@@ -2411,4 +2459,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsDevicesPageCase,
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
+  kNotificationHistoryPageCase,
 ];

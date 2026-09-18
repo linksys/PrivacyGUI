@@ -21,6 +21,50 @@ class SessionExpiredException implements Exception {
   String toString() => 'SessionExpiredException: $message';
 }
 
+/// A bridge read that answered with something other than a 2xx.
+///
+/// Carries the status code because the callers need it: a `404` on a single
+/// notification means "no longer available" and is ordinary, while anything else
+/// is a fault. Mapping to `ServiceError` happens in the service layer, per
+/// constitution Article XIII — this type is the transport's own vocabulary.
+class BridgeReadException implements Exception {
+  final int statusCode;
+
+  /// Which read produced it, for the log line. Not user-visible.
+  final String label;
+
+  BridgeReadException(this.statusCode, this.label);
+
+  bool get isNotFound => statusCode == 404;
+
+  @override
+  String toString() => 'BridgeReadException($label, HTTP $statusCode)';
+}
+
+/// An SSE stream that Guardian or the bridge refused to open.
+///
+/// Carries the status because **400 means something different from every other
+/// code**: Guardian rejects a stream against an offline device with a 400, before it
+/// publishes anything, and keeps doing so until the device comes back. Every other
+/// failure is the connection between this browser and the proxy. #205 Item 8 asks the
+/// UI to tell those apart, and a plain string error — which is what this path added
+/// until #1577 — cannot.
+class SseStreamException implements Exception {
+  final int statusCode;
+  final String statusText;
+
+  SseStreamException(this.statusCode, this.statusText);
+
+  /// Whether the device is not currently reachable by the proxy.
+  ///
+  /// Retrying is pointless until it is back, which is the distinction the banner
+  /// renders: "wait" versus "something between you and the proxy broke".
+  bool get isDeviceOffline => statusCode == 400;
+
+  @override
+  String toString() => 'SseStreamException($statusCode $statusText)';
+}
+
 /// Global JS property to persist SSE AbortController across hot restarts.
 @JS('_sseAbort')
 external JSAny? get _jsSseAbort;
@@ -42,6 +86,7 @@ class UspBridgeClient {
   final String? _overrideToken;
   final String? _clientTypeId;
   final AuthBehavior _authBehavior;
+  final RemoteReads? _remoteReads;
 
   /// Called when auth fails and cannot be recovered (session expired).
   void Function()? onAuthFailed;
@@ -53,11 +98,13 @@ class UspBridgeClient {
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,
+    RemoteReads? remoteReads,
   })  : _endpoints = endpoints ?? BridgeEndpoints.local,
         _overrideBaseUrl = baseUrl,
         _overrideToken = authToken,
         _clientTypeId = clientTypeId,
-        _authBehavior = authBehavior;
+        _authBehavior = authBehavior,
+        _remoteReads = remoteReads;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -129,11 +176,100 @@ class UspBridgeClient {
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Calls GET health endpoint.
+  ///
+  /// Throws [BridgeReadException] on any non-2xx, and the status matters to one
+  /// caller: `RemoteTransportStrategy.isRouterReachable` reads a **404** as "this
+  /// deployment does not serve the endpoint" and falls back, while every other
+  /// code means the router is away (#1576).
+  ///
+  /// Checking the status here rather than letting the decode decide is what makes
+  /// that possible at all. [_withAuthRetry] hands its parser every non-401
+  /// response, and Guardian answers an error with a JSON body — so `jsonDecode`
+  /// **succeeds** on a 404 and the probe would have read "unreachable endpoint" as
+  /// "reachable router".
   Future<Map<String, dynamic>> health() async {
     return _withAuthRetry(
       () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
           headers: _authHeaders),
-      (r) => jsonDecode(r.body) as Map<String, dynamic>,
+      (r) {
+        if (r.statusCode < 200 || r.statusCode >= 300) {
+          throw BridgeReadException(r.statusCode, 'health');
+        }
+        return jsonDecode(r.body) as Map<String, dynamic>;
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Remote-only reads (#1580)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Guardian's per-device USP state — `deviceUuid`, `lastBoot`,
+  /// `lastUspActivity`.
+  ///
+  /// Both timestamps `null` is a normal answer, not an error. The device need
+  /// not be online.
+  Future<Map<String, dynamic>> uspState() =>
+      _getRemoteRead((r) => r.state, 'uspState');
+
+  /// This session's notification metadata, newest first, unpaged, no bodies.
+  ///
+  /// An empty list is the normal state at session start.
+  Future<Map<String, dynamic>> notificationsHistory() =>
+      _getRemoteRead((r) => r.notificationsHistory, 'notificationsHistory');
+
+  /// One notification including its `body`.
+  ///
+  /// Throws [BridgeReadException] with `statusCode == 404` when the entry is
+  /// gone or was never this session's — the spec makes those deliberately
+  /// indistinguishable, so the caller must report one thing for both.
+  Future<Map<String, dynamic>> notification(String msgId) =>
+      _getRemoteRead((r) => r.notification(msgId), 'notification');
+
+  /// Every stored result for one `commandKey`, newest first (#1578).
+  ///
+  /// Answers with a **bare array**, which `_getRemoteRead` hands back under `items`.
+  /// An empty list is a normal answer and not worth retrying.
+  Future<List<Object?>> results(String commandKey) async {
+    final json = await _getRemoteRead((r) => r.results(commandKey), 'results');
+    final items = json['items'];
+    return items is List ? items : const [];
+  }
+
+  /// The one request shape all three reads share.
+  ///
+  /// Status codes are checked here rather than left to the JSON decode, and that
+  /// is a departure from the rest of this client on purpose: [_withAuthRetry]
+  /// hands its parser every non-401 response, so a `404` body would surface as a
+  /// `FormatException` naming a column number instead of the thing that
+  /// happened. These reads are consumed by a page that has to tell a missing
+  /// entry from a broken one, so the distinction has to survive the trip.
+  Future<Map<String, dynamic>> _getRemoteRead(
+    String Function(RemoteReads) path,
+    String label,
+  ) {
+    final reads = _remoteReads;
+    if (reads == null) {
+      throw StateError(
+        'UspBridgeClient.$label needs RemoteReads, and this transport has none. '
+        'Only the Guardian proxy serves these; see BridgeConfig.remoteReads.',
+      );
+    }
+    return _withAuthRetry(
+      () =>
+          http.get(Uri.parse('$_baseUrl${path(reads)}'), headers: _authHeaders),
+      (r) {
+        if (r.statusCode < 200 || r.statusCode >= 300) {
+          throw BridgeReadException(r.statusCode, label);
+        }
+        final decoded = jsonDecode(r.body);
+        // Guardian answers these three with an object. A bare array is what
+        // `/usp/results` answers with (#1578), and wrapping it rather than
+        // widening this return type keeps one shape for every caller.
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{'items': decoded};
+      },
     );
   }
 
@@ -284,8 +420,12 @@ class UspBridgeClient {
         // SseConnectionManager._onError will handle cleanup and reconnect.
         // Calling both addError + close fires both _onError and _onDone,
         // which causes double _handleStreamEnd and timer multiplication.
-        controller.addError(
-            'SSE connection failed: ${response.status} ${response.statusText}');
+        // Typed rather than a string (#1577): `SseConnectionManager` reads the
+        // status to tell "the device is offline" — Guardian's 400, returned before
+        // it publishes anything — from "the path between this browser and the proxy
+        // broke". A string carries the same number and no way to ask.
+        controller
+            .addError(SseStreamException(response.status, response.statusText));
         if (!controller.isClosed) {
           await controller.close();
         }

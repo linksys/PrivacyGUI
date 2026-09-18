@@ -77,14 +77,16 @@ void main() {
               'the asymmetry is Guardian\'s, and it is the kind of detail a '
               'well-meaning "consistency" edit breaks');
 
-      // These two are documented fabrications, and the expectations exist to
-      // record that rather than to bless it: Guardian has no health or turbo
-      // endpoint, which is why `sseBootstrapProvider` skips its `health()` call
-      // in remote mode instead of calling a 404. #1474 phase 3 deliberately left
-      // that `if` in place — see the comment there — because wrapping a
-      // fabricated path in a strategy member would freeze it into a contract.
-      // When the transport layer deletes these two fields, delete these two
-      // lines with them.
+      // **`health` is not a fabrication, and this comment used to say it was.**
+      // Guardian's own OpenAPI spec serves `/usp/health` at exactly this path, so
+      // #1576 deleted the remote-mode skip in `sseBootstrapProvider` and pointed
+      // `RemoteTransportStrategy.isRouterReachable` at it. The expectation below is
+      // now an ordinary contract assertion.
+      //
+      // `turboPrefix` is a different matter and is still unverified: nothing calls
+      // it remotely and no spec has been seen for it. Left as a declared path
+      // rather than deleted, because deleting a `required` field to express "we
+      // have not checked" would be the mistake `health` just cost a release cycle.
       expect(remote.health, '$base/health');
       expect(remote.turboPrefix, '$base/turbo');
     });
@@ -111,10 +113,108 @@ void main() {
             'was well formed and simply went nowhere useful');
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RemoteReads — #1580 / epic #1575
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // THE DECISION GUARDED. That these paths are **optional**, not a fifth, sixth
+  // and seventh `required` field on `BridgeEndpoints`. They are the first group
+  // of endpoints that exists remotely and has no local counterpart at all — the
+  // router keeps no notification store — so giving local a placeholder would
+  // repeat exactly the mistake three docstrings spent a year repeating about
+  // `health` (#1576). `BridgeConfig.remoteReads == null` is how a local build
+  // says "these do not exist here", and the page reads that to render its
+  // not-available state instead of a red developer page.
+  group('the remote read table', () {
+    test('exact paths', () {
+      final reads = RemoteReads.forSession('sess-4711');
+      const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';
+
+      expect(reads.state, '$base/state');
+      expect(reads.notificationsHistory, '$base/notifications/history');
+      expect(reads.notification('msg-9'), '$base/notifications/msg-9');
+    });
+
+    test('the per-entry path is the history path with the id swapped in', () {
+      final reads = RemoteReads.forSession('sess-4711');
+
+      expect(
+        reads.notification('history'),
+        reads.notificationsHistory,
+        reason: 'not a bug to fix — the spec says the `history` route wins on '
+            'the server, so a msgId of that literal can never address an '
+            'entry. The equality is here so that a reader who wonders reaches '
+            'this note rather than filing it.',
+      );
+    });
+
+    test('every path is scoped to the session', () {
+      final reads = RemoteReads.forSession('sess-4711');
+
+      for (final path in [
+        reads.state,
+        reads.notificationsHistory,
+        reads.notification('msg-9'),
+        reads.results('key-abc'),
+      ]) {
+        expect(path, contains('sess-4711'));
+      }
+    });
+
+    group('results — #1578', () {
+      test('carries commandKey as a required query parameter', () {
+        final reads = RemoteReads.forSession('sess-4711');
+        const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';
+
+        expect(reads.results('key-abc'), '$base/results?commandKey=key-abc');
+      });
+
+      test('percent-encodes the key', () {
+        // The UUIDs Guardian mints need no escaping, which is exactly why an
+        // unescaped interpolation would survive review and break on the first key
+        // that does. The value reaches us out of a JSON response and is echoed into
+        // a query string.
+        final reads = RemoteReads.forSession('sess-4711');
+
+        expect(reads.results('a b&c=d'), endsWith('?commandKey=a+b%26c%3Dd'));
+      });
+
+      test('is not a path on its own', () {
+        // There is no `results` field, deliberately: `commandKey` has no default and
+        // the endpoint rejects a bare call, so a bare path would be a URL that can
+        // only 400. The method is the whole API.
+        final reads = RemoteReads.forSession('sess-4711');
+
+        expect(reads.results('k'), contains('?commandKey='));
+      });
+    });
+
+    test('a different session yields a different table', () {
+      expect(
+        RemoteReads.forSession('sess-a').notificationsHistory,
+        isNot(RemoteReads.forSession('sess-b').notificationsHistory),
+      );
+    });
+
+    test('shares no path with the local table', () {
+      final reads = RemoteReads.forSession('sess-4711');
+      final local = _paths(BridgeEndpoints.local).toSet();
+
+      expect(
+        local.intersection({reads.state, reads.notificationsHistory}),
+        isEmpty,
+      );
+    });
+  });
+
   test('every path is absolute', () {
+    final reads = RemoteReads.forSession('sess-4711');
     final all = [
       ..._paths(BridgeEndpoints.local),
       ..._paths(BridgeEndpoints.remote('sess-4711')),
+      reads.state,
+      reads.notificationsHistory,
+      reads.notification('msg-9'),
     ];
 
     for (final path in all) {

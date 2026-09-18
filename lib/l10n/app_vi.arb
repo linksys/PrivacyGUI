@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Bình thường",
   "cardFormCompact": "Gọn",
   "cardFormPopup": "Cửa sổ bật lên",
-  "cardFormForNamed": "Định dạng thẻ cho {name}"
+  "cardFormForNamed": "Định dạng thẻ cho {name}",
+  "notificationHistory": "Lịch sử thông báo",
+  "menuNotificationHistoryDesc": "Thông báo được lưu trong phiên hỗ trợ này",
+  "notificationHistoryLastBoot": "Lần khởi động cuối",
+  "notificationHistoryLastActivity": "Hoạt động USP gần nhất",
+  "notificationHistoryEmpty": "Phiên hỗ trợ này chưa tạo ra thông báo nào",
+  "notificationHistoryUnavailable": "Lịch sử thông báo chỉ có sẵn trong phiên Hỗ trợ Từ xa",
+  "notificationHistoryGone": "Thông báo này không còn khả dụng",
+  "notificationHistoryMessageId": "ID tin nhắn",
+  "notificationHistoryCommandKey": "Khóa lệnh",
+  "notificationHistoryShowMore": "Xem thêm",
+  "sseRouterOffline": "Bộ định tuyến đang ngoại tuyến — đang chờ kết nối lại"
 }

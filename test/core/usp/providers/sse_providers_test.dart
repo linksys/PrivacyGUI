@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
@@ -15,6 +17,10 @@ void main() {
     mockUsp = MockUspClient();
     mockBridge = MockUspBridgeClient();
     mockManager = MockSseManager();
+    // #1578: `SseOperationAwaiter`'s constructor registers a reconcile listener on
+    // the manager and keeps the remover, so the mock has to hand one back — an
+    // unstubbed call returns null and `ref.onDispose` would reject it.
+    when(() => mockManager.addStreamOpenedListener(any())).thenReturn(() {});
   });
 
   /// Creates a container with optional overrides for all three providers.
@@ -199,6 +205,36 @@ void main() {
       ]);
       // setCoreSubscriptions is deferred to dashboard orchestrator
       verifyNever(() => mockManager.setCoreSubscriptions(any()));
+      container.dispose();
+    });
+
+    test('runs under the REMOTE profile too (#1576)', () async {
+      // The deleted gate. Until #1576 this read was wrapped in
+      // `if (!GlobalConfig.remote.isActive)`, on the recorded grounds that
+      // `BridgeEndpoints.remote()`'s `health` path was invented and Guardian would
+      // answer a 404. Guardian's own OpenAPI spec serves it, at exactly that path.
+      //
+      // Asserted through `appModeProfileProvider` rather than by trusting that the
+      // bootstrap no longer mentions the mode: "the `if` is gone" is a claim about
+      // source, and this is a claim about behaviour. It fails if the gate comes back
+      // in any spelling.
+      when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
+      when(() => mockManager.connect()).thenAnswer((_) async {});
+
+      final container = ProviderContainer(overrides: [
+        appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
+        uspClientProvider.overrideWithValue(mockUsp),
+        uspBridgeClientProvider.overrideWithValue(mockBridge),
+        sseManagerProvider.overrideWithValue(mockManager),
+      ]);
+
+      await container.read(sseBootstrapProvider.future);
+
+      verifyInOrder([
+        () => mockBridge.health(),
+        () => mockManager.connect(),
+      ]);
       container.dispose();
     });
 

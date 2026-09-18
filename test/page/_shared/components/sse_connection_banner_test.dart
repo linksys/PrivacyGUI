@@ -85,15 +85,32 @@ final _theme = AppTheme.create(
   designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
 );
 
+/// The banner reads `SseManager.connection.lastDisconnectCause` since #1577, and
+/// `connection` is a plain final field a `Mock` answers with null — so the mock needs
+/// a mock behind it. [_setCause] is how each case says which of the two situations it
+/// is rendering.
+class _MockConnection extends Mock implements SseConnectionManager {}
+
 void main() {
   late MockSseManager manager;
+  late _MockConnection connection;
   late StreamController<SseConnectionState> sse;
 
   setUp(() {
     manager = MockSseManager();
+    connection = _MockConnection();
     when(() => manager.tryReconnect()).thenAnswer((_) async => true);
+    when(() => manager.connection).thenReturn(connection);
+    // The default: no failure recorded. Every pre-#1577 case renders the same copy
+    // it always did, which is what makes the two new cases below a distinction rather
+    // than a rewrite.
+    when(() => connection.lastDisconnectCause)
+        .thenReturn(SseDisconnectCause.none);
     sse = StreamController<SseConnectionState>.broadcast();
   });
+
+  void setCause(SseDisconnectCause cause) =>
+      when(() => connection.lastDisconnectCause).thenReturn(cause);
 
   tearDown(() => sse.close());
 
@@ -158,6 +175,108 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pump(const Duration(milliseconds: 400));
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // #1577 / #205 Item 8 — "the device is offline" vs "the connection dropped"
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // THE DECISION GUARDED. The two arrive through the same failed connect and need
+  // opposite responses: wait, or try again. Guardian refuses a stream against an
+  // offline device with a 400 before publishing anything, and keeps refusing until
+  // the device is back, so an agent reading "Disconnected" and pressing Reconnect
+  // was being told to do the one thing that cannot work.
+  //
+  // HOW IT COULD SILENTLY REVERT. The `when deviceOffline` guards being dropped from
+  // the label switch. Nothing throws — the banner falls back to the generic copy,
+  // which is what shipped before — and only a test that reads the sentence notices.
+  group('the offline distinction', () {
+    testWidgets('a 400 says the router is offline, not "Disconnected"',
+        (tester) async {
+      setCause(SseDisconnectCause.deviceOffline);
+      await pumpBanner(tester, profile: const RemoteModeProfile());
+
+      await emit(tester, SseConnectionState.disconnected);
+      await waitOutGrace(tester);
+
+      expect(find.text('Router is offline — waiting for it to come back'),
+          findsOneWidget);
+      expect(find.text('Disconnected'), findsNothing,
+          reason: 'the generic copy tells the agent to retry, which is the one '
+              'thing that cannot work until the device is back');
+    });
+
+    testWidgets('suspended says it too', (tester) async {
+      // The other settled state. `suspended` means the manager gave up retrying, so
+      // if the reason it gave up is an absent device the agent needs that sentence
+      // more here than anywhere.
+      setCause(SseDisconnectCause.deviceOffline);
+      await pumpBanner(tester, profile: const RemoteModeProfile());
+
+      await emit(tester, SseConnectionState.suspended);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Router is offline — waiting for it to come back'),
+          findsOneWidget);
+      expect(find.text('Real-time connection lost'), findsNothing);
+    });
+
+    testWidgets('a transport failure keeps the generic copy', (tester) async {
+      setCause(SseDisconnectCause.transportFailure);
+      await pumpBanner(tester, profile: const RemoteModeProfile());
+
+      await emit(tester, SseConnectionState.disconnected);
+      await waitOutGrace(tester);
+
+      expect(find.text('Disconnected'), findsOneWidget);
+      expect(find.text('Router is offline — waiting for it to come back'),
+          findsNothing);
+    });
+
+    testWidgets('while still retrying, the copy stays "Reconnecting"',
+        (tester) async {
+      // The override is on the two *settled* states only. Whatever the last
+      // attempt's status was, the honest thing to say while the manager is mid-
+      // attempt is that it is trying.
+      setCause(SseDisconnectCause.deviceOffline);
+      await pumpBanner(tester, profile: const RemoteModeProfile());
+
+      await emit(tester, SseConnectionState.reconnecting);
+      await waitOutGrace(tester);
+
+      expect(find.text('Reconnecting...'), findsOneWidget);
+      expect(find.text('Router is offline — waiting for it to come back'),
+          findsNothing);
+    });
+
+    testWidgets('the Reconnect button is still offered', (tester) async {
+      // Deliberate: a reconnect against an absent device fails the same way, so the
+      // button is not *useful* — but removing it would leave an agent who can see the
+      // router come back with nothing to press until the next scheduled attempt.
+      setCause(SseDisconnectCause.deviceOffline);
+      await pumpBanner(tester, profile: const RemoteModeProfile());
+
+      await emit(tester, SseConnectionState.disconnected);
+      await waitOutGrace(tester);
+
+      expect(find.text('Reconnect'), findsOneWidget);
+    });
+
+    testWidgets('local says it too, when local ever sees a 400',
+        (tester) async {
+      // Not a remote-only distinction, and not a claim that the on-router bridge
+      // answers 400: the cause is whatever the transport recorded, and the banner
+      // renders what it is handed. If the local bridge ever grows that answer, the
+      // copy is already right.
+      setCause(SseDisconnectCause.deviceOffline);
+      await pumpBanner(tester, profile: const LocalModeProfile());
+
+      await emit(tester, SseConnectionState.disconnected);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Router is offline — waiting for it to come back'),
+          findsOneWidget);
+    });
+  });
 
   group('the banner exists under the remote profile at all', () {
     testWidgets('a Guardian stream close is reported, not swallowed',

@@ -217,6 +217,30 @@ abstract class SurfaceStrategy {
   Future<void> Function(BuildContext context, WidgetRef ref)?
       firstRunPresetFlow();
 
+  /// This surface's notification-history menu entry, or `null` where the mode has
+  /// no notification store to read.
+  ///
+  /// The store is Guardian's, not the router's: the cloud persists every notify
+  /// it proxies to DynamoDB, while usp-bridge on the box forgets each one the
+  /// moment it is published. So this is not a surface a local build hides — it is
+  /// a surface a local build has nothing behind, which is why the answer is
+  /// composition (`null` or the entry) rather than a `canShowHistory` bool.
+  ///
+  /// **Generic, and it is the contract's shape rather than cleverness.** The
+  /// menu's item type lives under `lib/page/`, which `lib/framework/mode/` may not
+  /// import — the same constraint that makes [firmwareManualEntry] take a builder
+  /// and [fixedDashboardLayout] return the package's `LayoutItem`s. Taking the
+  /// entry as a builder keeps the call site's type exact (`AppSectionItemData?`
+  /// falls out of inference) while naming nothing from `lib/page/` here. It also
+  /// means a surface that omits the entry never *builds* it, so the local menu
+  /// evaluates no `loc(context)` lookup and registers no route name for a card it
+  /// is not showing.
+  ///
+  /// See #1580; the page behind it degrades explicitly when reached by URL,
+  /// because its route lives under the shared dashboard and a hand-typed location
+  /// therefore resolves in every mode.
+  T? notificationHistoryMenuEntry<T>(T Function() entry);
+
   /// The firmware page's manual entry point — the card that offers picking a
   /// local image and starting the upload — or nothing where pushing an image from
   /// the operator's browser is not a thing this surface does.

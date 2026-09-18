@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Ringkas",
   "cardFormPopup": "Popup",
-  "cardFormForNamed": "Format kartu untuk {name}"
+  "cardFormForNamed": "Format kartu untuk {name}",
+  "notificationHistory": "Riwayat Notifikasi",
+  "menuNotificationHistoryDesc": "Notifikasi yang tersimpan selama sesi dukungan ini",
+  "notificationHistoryLastBoot": "Boot terakhir",
+  "notificationHistoryLastActivity": "Aktivitas USP terakhir",
+  "notificationHistoryEmpty": "Sesi dukungan ini belum menghasilkan notifikasi apa pun",
+  "notificationHistoryUnavailable": "Riwayat notifikasi hanya tersedia selama sesi Bantuan Jarak Jauh",
+  "notificationHistoryGone": "Notifikasi ini sudah tidak tersedia",
+  "notificationHistoryMessageId": "ID Pesan",
+  "notificationHistoryCommandKey": "Kunci perintah",
+  "notificationHistoryShowMore": "Tampilkan lebih banyak",
+  "sseRouterOffline": "Router offline — menunggu router kembali"
 }

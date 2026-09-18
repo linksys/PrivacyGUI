@@ -1174,5 +1174,16 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Pop-up",
-  "cardFormForNamed": "Formato do cartão para {name}"
+  "cardFormForNamed": "Formato do cartão para {name}",
+  "notificationHistory": "Histórico de notificações",
+  "menuNotificationHistoryDesc": "Notificações armazenadas durante esta sessão de suporte",
+  "notificationHistoryLastBoot": "Última inicialização",
+  "notificationHistoryLastActivity": "Última atividade USP",
+  "notificationHistoryEmpty": "Esta sessão de suporte ainda não gerou nenhuma notificação",
+  "notificationHistoryUnavailable": "O histórico de notificações está disponível apenas durante uma sessão de assistência remota",
+  "notificationHistoryGone": "Esta notificação não está mais disponível",
+  "notificationHistoryMessageId": "ID da mensagem",
+  "notificationHistoryCommandKey": "Chave do comando",
+  "notificationHistoryShowMore": "Mostrar mais",
+  "sseRouterOffline": "O roteador está offline — aguardando seu retorno"
 }

@@ -205,7 +205,11 @@ void main() {
       verifyNever(() =>
           mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
       verifyNever(() => mockFingerprint.matches(any()));
-      verifyNever(() => mockBridge.health());
+      // A third `verifyNever(() => mockBridge.health())` stood here until #1576,
+      // and it was asserting the fabrication claim rather than acceptance 4:
+      // Guardian serves `/usp/health`, so calling it is now what step 1 *does*.
+      // The two above are the acceptance; that one was a premise.
+      verify(() => mockBridge.health()).called(1);
     });
 
     test('never force-logs-out on ProbeResult.serialMismatch', () async {

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
@@ -42,6 +43,11 @@ class RemoteTransportStrategy implements TransportStrategy {
       authToken: config.temporaryAccessToken,
       clientTypeId: config.clientTypeId,
       authBehavior: credential.authBehavior,
+      // The three reads Guardian serves over its own notification store, which
+      // the router has no counterpart for. Non-null here and null in the local
+      // arm is the whole of how #1580's page learns whether it has anything to
+      // read; see [RemoteReads].
+      remoteReads: RemoteReads.forSession(config.sessionId),
     );
   }
 
@@ -49,22 +55,97 @@ class RemoteTransportStrategy implements TransportStrategy {
   SseOperationStrategy sseStrategy(UspBridgeClient bridge) =>
       RemoteSseStrategy(bridge);
 
-  /// A cheap USP `Get` over the same `POST /actions/usp` as every other call —
-  /// **not** `bridge.health()`.
+  /// Guardian's own `/usp/health`, which is a purpose-built liveness check with a
+  /// ~5-second budget of its own — not a full object-model round trip.
   ///
-  /// `BridgeEndpoints.remote()` has a `health` path and Guardian does not serve
-  /// it, so the pre-#1323 probe's step 1 could only ever fail remotely, which is
-  /// half of why an RA recovery never recovered. The other half was step 2, and
-  /// that one is `RemoteCredentialStrategy.reestablishAfterOutage`.
+  /// **The claim this replaced was false.** Until #1576 this read
+  /// `Device.DeviceInfo.SerialNumber` over `POST /actions/usp`, on the recorded
+  /// grounds that `BridgeEndpoints.remote()`'s `health` path was a fabrication
+  /// Guardian did not serve. Guardian's OpenAPI spec serves it, at exactly the path
+  /// we have always declared. The probe runs every 30 s
+  /// (`RemoteProximityStrategy`), so trading a whole object-model round trip for a
+  /// 5-second yes/no is a straight win.
+  ///
+  /// Any `200` is reachable, **including a partial answer**: firmware that lacks
+  /// one of the seven parameters has its key omitted rather than sent as null, and
+  /// only an answer carrying none of them is a `400`. So nothing in the body
+  /// *decides* the verdict — the status is the whole of it. That is the one asymmetry
+  /// with `LocalTransportStrategy`, which reads `agent_connected` / `agent_state`
+  /// because the on-router bridge answers `200` while OBUSPA behind it is still
+  /// starting. Guardian has already talked to the device by the time it answers.
+  ///
+  /// The body is *logged*, though, for the one field #1576 asks about: `serialNumber`.
+  /// The spec suggests comparing it against the serial in the path, which on the
+  /// device-side variant `GET /devices/{serialNumber}/usp/health` would be a real
+  /// identity check — the first one RA has ever had. **There is no serial in the RA
+  /// path** (it is scoped by session id), so there is nothing here to compare it
+  /// *to*, and the stored fingerprint is deliberately not consulted in this mode
+  /// (#1323). Logging it is therefore the whole of what this package can honestly do,
+  /// and it is what the epic's "Logged only" decision asks for: the value ends up in a
+  /// support log where a human can compare it, and no code acts on it.
+  ///
+  /// **The `404` fallback is temporary and dated.** The spec is documentation, and
+  /// whether QA has the endpoint deployed is #1575's verification item 3, still
+  /// open on 2026-09-18. Pointed at an undeployed endpoint this probe would answer
+  /// false forever and an RA session would never recover from a transient drop —
+  /// strictly worse than the workaround it replaces. So a `404`, and only a `404`,
+  /// falls back to the old read: any other status, a timeout or a throw is the
+  /// router being away, which is what the probe is for. **Delete
+  /// [_reachableViaSerialNumber] and this arm once that item is answered** (Austin's
+  /// call, 2026-09-18); it is a deployment hedge, not a firmware one, so it has an
+  /// end date rather than being the permanent-absence case
+  /// `dev-phase-no-fw-back-compat` would rule out entirely.
+  ///
+  /// Never throws — `RecoveryProbeService.probe()` has no try/catch around the
+  /// call, and `Timer.periodic` does not await its callback, so an escape would be
+  /// an unhandled async error with the probe loop still running.
+  @override
+  Future<bool> isRouterReachable(Ref ref) async {
+    // Read, not watch: this runs inside a probe loop, and a rebuild of the bridge
+    // mid-outage must not re-enter the probe.
+    final bridge = ref.read(uspBridgeClientProvider);
+    if (bridge == null) return false;
+
+    try {
+      // The endpoint budgets ~5 s for itself, and this runs on a 30-second probe
+      // loop, so a request that hangs past that budget has already answered the
+      // question. Without the cap a stalled socket stalls the loop — the acceptance
+      // names "timeout" as one of the three false cases, and `TimeoutException`
+      // lands in the generic `catch` below.
+      final health = await bridge.health().timeout(const Duration(seconds: 5));
+      final serial = health['serialNumber'];
+      if (serial != null) {
+        // Logged, never acted on. See the docstring: `reestablishAfterOutage`
+        // returning a constant `true` is what stopped a transient drop from ending a
+        // live support session (#1323), and a probe that could answer
+        // `serialMismatch` again would reopen exactly that.
+        logger.d('[Recovery] Guardian health reports serialNumber=$serial');
+      }
+      return true;
+    } on BridgeReadException catch (e) {
+      if (e.isNotFound) {
+        logger.w('[Recovery] Guardian has no /usp/health here (404) — '
+            'falling back to the pre-#1576 read. See #1575 item 3.');
+        return _reachableViaSerialNumber(ref);
+      }
+      logger.d('[Recovery] Guardian health check answered ${e.statusCode}');
+      return false;
+    } catch (e) {
+      logger.d('[Recovery] Guardian health check failed: $e');
+      return false;
+    }
+  }
+
+  /// The pre-#1576 probe, kept only for a deployment that has no `/usp/health`.
   ///
   /// `Device.DeviceInfo.SerialNumber` is the path because it is the cheapest
   /// parameter on the object model that is always present and never permission
   /// gated: reaching it proves the whole chain — browser → Guardian → agent →
   /// OBUSPA → the box — is carrying traffic. The value is deliberately not
   /// compared to anything; see [RemoteCredentialStrategy] for why identity needs
-  /// no check here.
-  @override
-  Future<bool> isRouterReachable(Ref ref) async {
+  /// no check here, and #1576 for why comparing the serial `/usp/health` now
+  /// returns is a separate decision from this one.
+  Future<bool> _reachableViaSerialNumber(Ref ref) async {
     final usp = ref.read(uspClientProvider);
     if (usp == null) return false;
 

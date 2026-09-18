@@ -460,6 +460,15 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // `notification_history` — #1580, the 47th page view file and the first page the
+  // remote surface *adds* rather than hides. Nine widths x 26 locales like every
+  // other single-state page; see `kNotificationHistoryPageCase` for why its premise
+  // names four types instead of the usual two.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kNotificationHistoryPageCase),
+    expectedCellCount: 234,
+  );
+
   // The readability assertion rule 4 of the skill requires beside an overflow
   // assertion, aimed at the one site this pilot changed. Neither this group nor
   // wave 1's below names a cell, so the committed `page` baseline counts the page

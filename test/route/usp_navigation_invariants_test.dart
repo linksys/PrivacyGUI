@@ -320,6 +320,7 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspFirmwareUpdate,
   RouteNamed.uspFirmwareOta,
   RouteNamed.uspSystemLog,
+  RouteNamed.uspNotificationHistory,
   RouteNamed.uspInstantPrivacy,
   RouteNamed.uspAdmin,
   RouteNamed.uspInstantSafety,
@@ -425,6 +426,11 @@ void main() {
         RouteNamed.uspFirmwareOta: '/uspFirmwareOta',
         RouteNamed.uspDhcpDetail: '/uspDhcpDetail',
         RouteNamed.uspSystemLog: '/uspSystemLog',
+        // Registered in every mode, deliberately: the shared dashboard's
+        // children are one table, so this location resolves locally too and
+        // the page answers with its own "not available in this mode" state
+        // rather than go_router's error page (#1580).
+        RouteNamed.uspNotificationHistory: '/uspNotificationHistory',
         RouteNamed.uspStatistics: '/uspStatistics',
         RouteNamed.uspAdvancedSettings: '/uspAdvancedSettings',
         RouteNamed.uspInternetSettings:
@@ -496,6 +502,7 @@ void main() {
             // a deep link, where the fallback is the whole return path).
             RouteNamed.uspFirmwareOta: RouteNamed.uspAdmin,
             RouteNamed.uspSystemLog: RouteNamed.uspMenu,
+            RouteNamed.uspNotificationHistory: RouteNamed.uspMenu,
             RouteNamed.uspInstantPrivacy: RouteNamed.uspMenu,
             RouteNamed.uspAdmin: RouteNamed.uspMenu,
             RouteNamed.uspInstantSafety: RouteNamed.uspMenu,
