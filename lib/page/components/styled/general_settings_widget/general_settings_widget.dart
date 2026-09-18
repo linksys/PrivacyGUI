@@ -103,7 +103,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                         identifier: 'now-general-text-version',
                         label: 'version',
                         child: AppText.bodySmall(
-                          'version ${data.data}',
+                          'version ${data.data}${BuildConfig.sourceRevisionSuffix}',
                         ),
                       );
                     }),
