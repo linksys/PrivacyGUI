@@ -70,6 +70,9 @@ class UspBridgeClient {
   Future<Map<String, dynamic>> notification(String msgId) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
+  Future<List<Object?>> results(String commandKey) =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
   Future<Map<String, dynamic>> subscribe({
     required String subscriptionId,
     required String path,

@@ -189,7 +189,11 @@ final sseOperationAwaiterProvider = Provider<SseOperationAwaiter?>((ref) {
   final manager = ref.watch(sseManagerProvider);
   final usp = ref.watch(uspClientProvider);
   if (manager == null || usp == null) return null;
-  return SseOperationAwaiter(manager, usp);
+  final awaiter = SseOperationAwaiter(manager, usp);
+  // #1578: the awaiter registers a stream-opened listener on the manager, so it has
+  // something to give back.
+  ref.onDispose(awaiter.dispose);
+  return awaiter;
 });
 
 /// Provides [NetworkDiagnosticsExecutor] — typed wrapper for TR-181 network

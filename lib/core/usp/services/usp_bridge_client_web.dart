@@ -202,6 +202,16 @@ class UspBridgeClient {
   Future<Map<String, dynamic>> notification(String msgId) =>
       _getRemoteRead((r) => r.notification(msgId), 'notification');
 
+  /// Every stored result for one `commandKey`, newest first (#1578).
+  ///
+  /// Answers with a **bare array**, which `_getRemoteRead` hands back under `items`.
+  /// An empty list is a normal answer and not worth retrying.
+  Future<List<Object?>> results(String commandKey) async {
+    final json = await _getRemoteRead((r) => r.results(commandKey), 'results');
+    final items = json['items'];
+    return items is List ? items : const [];
+  }
+
   /// The one request shape all three reads share.
   ///
   /// Status codes are checked here rather than left to the JSON decode, and that

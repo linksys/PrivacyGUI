@@ -15,6 +15,10 @@ void main() {
     mockUsp = MockUspClient();
     mockBridge = MockUspBridgeClient();
     mockManager = MockSseManager();
+    // #1578: `SseOperationAwaiter`'s constructor registers a reconcile listener on
+    // the manager and keeps the remover, so the mock has to hand one back — an
+    // unstubbed call returns null and `ref.onDispose` would reject it.
+    when(() => mockManager.addStreamOpenedListener(any())).thenReturn(() {});
   });
 
   /// Creates a container with optional overrides for all three providers.

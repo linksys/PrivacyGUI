@@ -75,11 +75,17 @@ class RemoteReads {
   /// Base the per-entry read appends a `msgId` to. Not a path on its own.
   final String _notificationsBase;
 
+  /// Base the results read appends its required query parameter to. Not a path on
+  /// its own — `commandKey` has no default and the endpoint rejects a bare call.
+  final String _resultsBase;
+
   const RemoteReads({
     required this.state,
     required this.notificationsHistory,
     required String notificationsBase,
-  }) : _notificationsBase = notificationsBase;
+    required String resultsBase,
+  })  : _notificationsBase = notificationsBase,
+        _resultsBase = resultsBase;
 
   /// One notification including its `body`.
   ///
@@ -90,6 +96,27 @@ class RemoteReads {
   /// server, so such a request answers with the list. Nothing needs to guard it;
   /// no id the client holds came from anywhere but [notificationsHistory].
   String notification(String msgId) => '$_notificationsBase/$msgId';
+
+  /// Every stored result for one `commandKey` — a **bare array**, newest first, one
+  /// row per execution (#1578).
+  ///
+  /// This is the recovery path for a diagnostic whose push never arrived: Guardian
+  /// publishes that signal **at most once and never retries it**, so a signal lost to
+  /// a reconnect is otherwise unrecoverable. **The device does not need to be
+  /// online**, which is the whole point — the device having dropped is a likely
+  /// reason the push went missing.
+  ///
+  /// An empty array is a normal `200` and **is not worth retrying**: the index is a
+  /// strongly-consistent LSI, so "not there" is an answer rather than a race. Do not
+  /// build a retry loop on it, and do not poll — the server already polls DynamoDB on
+  /// our behalf.
+  ///
+  /// `commandKey` is percent-encoded because it reaches us from a JSON response and
+  /// is echoed into a query string; the UUIDs Guardian mints need no escaping today,
+  /// which is exactly why an unescaped interpolation would survive review and break on
+  /// the first key that does.
+  String results(String commandKey) =>
+      '$_resultsBase?commandKey=${Uri.encodeQueryComponent(commandKey)}';
 
   /// The reads for one Remote Assistance session.
   ///
@@ -103,6 +130,7 @@ class RemoteReads {
       state: '$prefix/$sessionId/usp/state',
       notificationsHistory: '$prefix/$sessionId/usp/notifications/history',
       notificationsBase: '$prefix/$sessionId/usp/notifications',
+      resultsBase: '$prefix/$sessionId/usp/results',
     );
   }
 }

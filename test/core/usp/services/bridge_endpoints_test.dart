@@ -155,9 +155,38 @@ void main() {
         reads.state,
         reads.notificationsHistory,
         reads.notification('msg-9'),
+        reads.results('key-abc'),
       ]) {
         expect(path, contains('sess-4711'));
       }
+    });
+
+    group('results — #1578', () {
+      test('carries commandKey as a required query parameter', () {
+        final reads = RemoteReads.forSession('sess-4711');
+        const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';
+
+        expect(reads.results('key-abc'), '$base/results?commandKey=key-abc');
+      });
+
+      test('percent-encodes the key', () {
+        // The UUIDs Guardian mints need no escaping, which is exactly why an
+        // unescaped interpolation would survive review and break on the first key
+        // that does. The value reaches us out of a JSON response and is echoed into
+        // a query string.
+        final reads = RemoteReads.forSession('sess-4711');
+
+        expect(reads.results('a b&c=d'), endsWith('?commandKey=a+b%26c%3Dd'));
+      });
+
+      test('is not a path on its own', () {
+        // There is no `results` field, deliberately: `commandKey` has no default and
+        // the endpoint rejects a bare call, so a bare path would be a URL that can
+        // only 400. The method is the whole API.
+        final reads = RemoteReads.forSession('sess-4711');
+
+        expect(reads.results('k'), contains('?commandKey='));
+      });
     });
 
     test('a different session yields a different table', () {
