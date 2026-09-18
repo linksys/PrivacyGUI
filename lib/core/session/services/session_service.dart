@@ -72,14 +72,19 @@ class SessionService {
     try {
       final systemInfo = await SystemInfo.fetch(_usp);
       logger.d('[SessionService]: DeviceInfo fetched via USP');
-      // `_fetchRouterIdentity` swallows its own errors — do not unwrap it into
-      // this `try`. The outer `catch` turns anything thrown here into a
+      // `_fetchDeviceUuid` swallows its own errors — do not unwrap it into this
+      // `try`. The outer `catch` turns anything thrown here into a
       // `ConnectivityError` that fails the login, and a router that cannot answer
-      // the two identity leaves must still be able to log in.
-      final identity = await _fetchRouterIdentity(_usp);
+      // the identity leaf must still be able to log in.
+      final deviceUuid = await _fetchDeviceUuid(_usp);
       return NodeDeviceInfo.fromUsp(systemInfo).copyWith(
-        baseMacAddress: identity.baseMacAddress,
-        deviceUuid: identity.deviceUuid,
+        // Read off the SystemInfo response, not a second Get: the base MAC is a
+        // `Device.DeviceInfo.*` leaf and `SystemInfo.fetch` already asks for it
+        // (PrivacyGUI#1572 added it to the definition). Normalising it here
+        // rather than in `fromUsp` keeps it beside the UUID's identical rule —
+        // see `_nonEmptyUpper`.
+        baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
+        deviceUuid: deviceUuid,
       );
     } catch (e) {
       logger.e('[SessionService]: USP device info fetch failed: $e');
@@ -87,37 +92,36 @@ class SessionService {
     }
   }
 
-  /// The two identity leaves the `system_info` definition does not cover.
+  /// The one identity leaf the `system_info` definition cannot cover.
   ///
   /// Remote Assistance needs three values to reach Guardian — serial, MAC and the
-  /// cloud's device UUID — and only the serial is in `system_info`, whose
-  /// definition is `Device.DeviceInfo.*`. The UUID lives under
-  /// `Device.LocalAgent.`, so it cannot join that definition; one extra Get here
-  /// is the cheapest honest place, and it rides the same login the serial already
-  /// costs. See PrivacyGUI#1582.
+  /// cloud's device UUID. Two of them are `Device.DeviceInfo.*` leaves and so ride
+  /// `SystemInfo.fetch` for free. The UUID lives under `Device.LocalAgent.`, which
+  /// that definition cannot reach, so it costs this one extra Get. See
+  /// PrivacyGUI#1582 and PrivacyGUI#1592.
   ///
-  /// **Best-effort on purpose.** A firmware that serves neither leaf must still
-  /// log in; Remote Assistance then reports itself unavailable, which is a far
-  /// better failure than a session that cannot start. So this swallows its own
+  /// Asking for **one** path is load-bearing, not tidiness: the base MAC appears
+  /// in both reads' path lists the moment it joins `system_info`, and a caller —
+  /// or a test stub — that tells the two reads apart by their paths then cannot.
+  /// That is how PrivacyGUI#1592 turned `dev-2.7.1` red.
+  ///
+  /// **Best-effort on purpose.** A firmware that does not serve the leaf must
+  /// still log in; Remote Assistance then reports itself unavailable, which is a
+  /// far better failure than a session that cannot start. So this swallows its own
   /// errors rather than joining the `ConnectivityError` above.
   ///
   /// That is also why it does **not** map through `mapUspErrorToServiceError`
   /// (constitution Article XIII): there is no caller to hand a `ServiceError` to —
-  /// the result is two nullable strings, and the absence *is* the outcome. The
+  /// the result is one nullable string, and the absence *is* the outcome. The
   /// cause is kept in the log line rather than in a type.
-  Future<({String? baseMacAddress, String? deviceUuid})> _fetchRouterIdentity(
-      UspClient usp) async {
+  Future<String?> _fetchDeviceUuid(UspClient usp) async {
     try {
-      final response = await usp.get([_kBaseMacPath, _kEndpointIdPath]);
-      return (
-        baseMacAddress: _nonEmptyUpper(response[_kBaseMacPath]),
-        deviceUuid:
-            _stripUuidPrefix(_nonEmptyUpper(response[_kEndpointIdPath])),
-      );
+      final response = await usp.get([_kEndpointIdPath]);
+      return _stripUuidPrefix(_nonEmptyUpper(response[_kEndpointIdPath]));
     } catch (e) {
-      logger.w('[SessionService]: router identity read failed: $e '
+      logger.w('[SessionService]: device UUID read failed: $e '
           '— Remote Assistance will report itself unavailable');
-      return (baseMacAddress: null, deviceUuid: null);
+      return null;
     }
   }
 
@@ -143,5 +147,4 @@ class SessionService {
   }
 }
 
-const _kBaseMacPath = 'Device.DeviceInfo.X_LINKSYS_BaseMACAddress';
 const _kEndpointIdPath = 'Device.LocalAgent.EndpointID';

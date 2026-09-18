@@ -27,20 +27,17 @@ class NodeDeviceInfo extends Equatable {
   /// - softwareVersion → firmwareVersion (different name, same semantics)
   /// - firmwareDate/description → empty string (not available in TR-181)
   ///
-  /// [baseMacAddress] and [deviceUuid] are deliberately **not** set here, for two
-  /// different reasons — `SessionService` reads both separately and copies them in
-  /// (PrivacyGUI#1582):
+  /// [baseMacAddress] and [deviceUuid] are deliberately **not** set here —
+  /// `SessionService` copies both in (PrivacyGUI#1582, PrivacyGUI#1592):
   ///
   /// - The UUID **cannot** come from this DTO: it is `Device.LocalAgent.EndpointID`,
   ///   and the `system_info` definition covers `Device.DeviceInfo.*`.
-  /// - The MAC is a `Device.DeviceInfo.*` leaf and *could*, but
-  ///   `X_LINKSYS_BaseMACAddress` is not in the generated model on this branch's
-  ///   base — it exists only on the unmerged #1572 branch.
-  ///
-  // TODO(PrivacyGUI#1572): when that branch merges, move `baseMacAddress` into
-  // `fromUsp` — `SystemInfo.fetch` will already be reading the same leaf that
-  // `SessionService._fetchRouterIdentity` reads, so the login would fetch it
-  // twice. Kept as a TODO and not only as prose so `rg TODO` finds it.
+  /// - The MAC *is* on the DTO since PrivacyGUI#1572 added
+  ///   `X_LINKSYS_BaseMACAddress` to the definition, and `SessionService` now reads
+  ///   it from there instead of paying a second Get. It is not mapped here because
+  ///   the value needs the same upper-casing Guardian requires of the UUID, and
+  ///   splitting that rule across a DTO mapper and a service would leave two places
+  ///   encoding it. This factory stays a pure field mapping.
   factory NodeDeviceInfo.fromUsp(SystemInfo info) {
     return NodeDeviceInfo(
       manufacturer: info.manufacturer,
