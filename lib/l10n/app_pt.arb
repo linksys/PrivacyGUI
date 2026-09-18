@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Esta notificação não está mais disponível",
   "notificationHistoryMessageId": "ID da mensagem",
   "notificationHistoryCommandKey": "Chave do comando",
-  "notificationHistoryShowMore": "Mostrar mais"
+  "notificationHistoryShowMore": "Mostrar mais",
+  "sseRouterOffline": "O roteador está offline — aguardando seu retorno"
 }

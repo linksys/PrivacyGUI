@@ -32,9 +32,46 @@ class HeartbeatConfig {
     authCheckEnabled: true,
   );
 
+  /// **In force today, and deliberately the watchdog-off one.**
+  ///
+  /// Guardian's own spec says the RA stream sends a `heartbeat` every 20 s, and
+  /// [remoteWithHeartbeat] below is that config, written and tested. It is not wired
+  /// up, because a spec is not a deployment: if that environment does not actually
+  /// send heartbeats, a 35-second watchdog declares the stream dead every 35 seconds
+  /// and pushes the app into recovery — strictly worse than having no watchdog at all.
+  ///
+  /// Flipping this is a one-word change once #1575's verification item 1 is answered:
+  /// name [remoteWithHeartbeat] here. `sse_operation_strategy_test.dart` pins both
+  /// values and which one is live, so the flip cannot happen by accident either.
+  ///
+  /// `authCheckEnabled` stays false in both: the heartbeat auth check refreshes a WASM
+  /// session token, and a Guardian `temporaryAccessToken` cannot be refreshed.
   static const remote = HeartbeatConfig(
     enabled: false,
     timeout: Duration.zero,
+    authCheckEnabled: false,
+  );
+
+  /// What [remote] becomes once the 20-second heartbeat is confirmed on QA (#1577).
+  ///
+  /// 20 s plus a 15-second grace, the same arithmetic as [local]'s 30 + 15.
+  ///
+  /// Two consequences of switching it on, one wanted and one to guard against:
+  ///
+  /// * **Wanted.** `SseConnectionManager.connected` is inferred from traffic (the
+  ///   first non-`_debug` event), so with heartbeats arriving a reopened remote stream
+  ///   reaches `connected` on its own instead of sitting in `connecting` for the rest
+  ///   of the session.
+  /// * **To guard against.** Re-registering subscriptions stays on
+  ///   `onSseStreamOpened`. Its justification weakens from "the only edge that can
+  ///   fire" to "the earlier edge", which is not the same as becoming wrong: with
+  ///   heartbeats, `onSseConnected` fires on a stream that is *already delivering*, so
+  ///   unregister → register there would tear down live subscriptions. #1474 phase 7
+  ///   has the full reasoning, and this is the config change that removes its premise
+  ///   without removing its conclusion.
+  static const remoteWithHeartbeat = HeartbeatConfig(
+    enabled: true,
+    timeout: Duration(seconds: 35),
     authCheckEnabled: false,
   );
 }

@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Thông báo này không còn khả dụng",
   "notificationHistoryMessageId": "ID tin nhắn",
   "notificationHistoryCommandKey": "Khóa lệnh",
-  "notificationHistoryShowMore": "Xem thêm"
+  "notificationHistoryShowMore": "Xem thêm",
+  "sseRouterOffline": "Bộ định tuyến đang ngoại tuyến — đang chờ kết nối lại"
 }

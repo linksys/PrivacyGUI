@@ -1922,5 +1922,7 @@
   "@notificationHistoryGone": {"description": "A 404 on one stored notification. The spec makes that status cover both \"does not exist\" and \"is not yours\" and deliberately does not distinguish them, so one message answers both."},
   "notificationHistoryMessageId": "Message ID",
   "notificationHistoryCommandKey": "Command key",
-  "notificationHistoryShowMore": "Show more"
+  "notificationHistoryShowMore": "Show more",
+  "sseRouterOffline": "Router is offline — waiting for it to come back",
+  "@sseRouterOffline": {"description": "Shown when the SSE stream was refused with a 400, which is how the proxy reports a device it cannot reach. Distinct from \"Disconnected\", which is the path between this browser and the proxy: the two need opposite responses (wait vs retry) and arrived as one failed connect before #1577."}
 }

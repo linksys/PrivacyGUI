@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Diese Benachrichtigung ist nicht mehr verfügbar",
   "notificationHistoryMessageId": "Nachrichten-ID",
   "notificationHistoryCommandKey": "Befehlsschlüssel",
-  "notificationHistoryShowMore": "Mehr anzeigen"
+  "notificationHistoryShowMore": "Mehr anzeigen",
+  "sseRouterOffline": "Router ist offline — es wird auf seine Rückkehr gewartet"
 }

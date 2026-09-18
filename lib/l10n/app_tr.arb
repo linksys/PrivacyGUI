@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Bu bildirim artık kullanılamıyor",
   "notificationHistoryMessageId": "Mesaj kimliği",
   "notificationHistoryCommandKey": "Komut anahtarı",
-  "notificationHistoryShowMore": "Daha fazla göster"
+  "notificationHistoryShowMore": "Daha fazla göster",
+  "sseRouterOffline": "Yönlendirici çevrimdışı — geri gelmesi bekleniyor"
 }

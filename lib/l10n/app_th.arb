@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "การแจ้งเตือนนี้ไม่พร้อมใช้งานอีกต่อไป",
   "notificationHistoryMessageId": "รหัสข้อความ",
   "notificationHistoryCommandKey": "คีย์คำสั่ง",
-  "notificationHistoryShowMore": "แสดงเพิ่มเติม"
+  "notificationHistoryShowMore": "แสดงเพิ่มเติม",
+  "sseRouterOffline": "เราเตอร์ออฟไลน์ — กำลังรอให้กลับมา"
 }

@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Tämä ilmoitus ei ole enää saatavilla",
   "notificationHistoryMessageId": "Viestitunnus",
   "notificationHistoryCommandKey": "Komentoavain",
-  "notificationHistoryShowMore": "Näytä lisää"
+  "notificationHistoryShowMore": "Näytä lisää",
+  "sseRouterOffline": "Reititin on offline-tilassa — odotetaan sen palaamista"
 }

@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "此通知已不再可用",
   "notificationHistoryMessageId": "訊息 ID",
   "notificationHistoryCommandKey": "命令金鑰",
-  "notificationHistoryShowMore": "顯示更多"
+  "notificationHistoryShowMore": "顯示更多",
+  "sseRouterOffline": "路由器已離線 — 正在等待其恢復"
 }

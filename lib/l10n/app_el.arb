@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Αυτή η ειδοποίηση δεν είναι πλέον διαθέσιμη",
   "notificationHistoryMessageId": "Αναγνωριστικό μηνύματος",
   "notificationHistoryCommandKey": "Κλειδί εντολής",
-  "notificationHistoryShowMore": "Εμφάνιση περισσότερων"
+  "notificationHistoryShowMore": "Εμφάνιση περισσότερων",
+  "sseRouterOffline": "Ο δρομολογητής είναι εκτός σύνδεσης — αναμονή για την επιστροφή του"
 }

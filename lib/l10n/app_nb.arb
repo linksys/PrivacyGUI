@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Dette varselet er ikke lenger tilgjengelig",
   "notificationHistoryMessageId": "Meldings-ID",
   "notificationHistoryCommandKey": "Kommandonøkkel",
-  "notificationHistoryShowMore": "Vis mer"
+  "notificationHistoryShowMore": "Vis mer",
+  "sseRouterOffline": "Ruteren er frakoblet — venter på at den kommer tilbake"
 }

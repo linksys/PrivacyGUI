@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "To powiadomienie nie jest już dostępne",
   "notificationHistoryMessageId": "Identyfikator wiadomości",
   "notificationHistoryCommandKey": "Klucz polecenia",
-  "notificationHistoryShowMore": "Pokaż więcej"
+  "notificationHistoryShowMore": "Pokaż więcej",
+  "sseRouterOffline": "Router jest offline — oczekiwanie na jego powrót"
 }

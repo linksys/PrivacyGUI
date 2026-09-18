@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Cette notification n'est plus disponible",
   "notificationHistoryMessageId": "ID du message",
   "notificationHistoryCommandKey": "Clé de commande",
-  "notificationHistoryShowMore": "Afficher plus"
+  "notificationHistoryShowMore": "Afficher plus",
+  "sseRouterOffline": "Le routeur est hors ligne — en attente de son retour"
 }

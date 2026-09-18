@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Это уведомление больше недоступно",
   "notificationHistoryMessageId": "Идентификатор сообщения",
   "notificationHistoryCommandKey": "Ключ команды",
-  "notificationHistoryShowMore": "Показать больше"
+  "notificationHistoryShowMore": "Показать больше",
+  "sseRouterOffline": "Маршрутизатор не в сети — ожидание его возврата"
 }

@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "هذا الإشعار غير متاح بعد الآن",
   "notificationHistoryMessageId": "معرّف الرسالة",
   "notificationHistoryCommandKey": "مفتاح الأمر",
-  "notificationHistoryShowMore": "عرض المزيد"
+  "notificationHistoryShowMore": "عرض المزيد",
+  "sseRouterOffline": "جهاز التوجيه غير متصل — في انتظار عودته"
 }

@@ -41,6 +41,30 @@ class BridgeReadException implements Exception {
   String toString() => 'BridgeReadException($label, HTTP $statusCode)';
 }
 
+/// An SSE stream that Guardian or the bridge refused to open.
+///
+/// Carries the status because **400 means something different from every other
+/// code**: Guardian rejects a stream against an offline device with a 400, before it
+/// publishes anything, and keeps doing so until the device comes back. Every other
+/// failure is the connection between this browser and the proxy. #205 Item 8 asks the
+/// UI to tell those apart, and a plain string error — which is what this path added
+/// until #1577 — cannot.
+class SseStreamException implements Exception {
+  final int statusCode;
+  final String statusText;
+
+  SseStreamException(this.statusCode, this.statusText);
+
+  /// Whether the device is not currently reachable by the proxy.
+  ///
+  /// Retrying is pointless until it is back, which is the distinction the banner
+  /// renders: "wait" versus "something between you and the proxy broke".
+  bool get isDeviceOffline => statusCode == 400;
+
+  @override
+  String toString() => 'SseStreamException($statusCode $statusText)';
+}
+
 /// Global JS property to persist SSE AbortController across hot restarts.
 @JS('_sseAbort')
 external JSAny? get _jsSseAbort;
@@ -396,8 +420,12 @@ class UspBridgeClient {
         // SseConnectionManager._onError will handle cleanup and reconnect.
         // Calling both addError + close fires both _onError and _onDone,
         // which causes double _handleStreamEnd and timer multiplication.
-        controller.addError(
-            'SSE connection failed: ${response.status} ${response.statusText}');
+        // Typed rather than a string (#1577): `SseConnectionManager` reads the
+        // status to tell "the device is offline" — Guardian's 400, returned before
+        // it publishes anything — from "the path between this browser and the proxy
+        // broke". A string carries the same number and no way to ask.
+        controller
+            .addError(SseStreamException(response.status, response.statusText));
         if (!controller.isClosed) {
           await controller.close();
         }

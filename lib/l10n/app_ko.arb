@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "이 알림은 더 이상 사용할 수 없습니다",
   "notificationHistoryMessageId": "메시지 ID",
   "notificationHistoryCommandKey": "명령 키",
-  "notificationHistoryShowMore": "더 보기"
+  "notificationHistoryShowMore": "더 보기",
+  "sseRouterOffline": "라우터가 오프라인입니다 — 다시 연결될 때까지 기다리는 중"
 }

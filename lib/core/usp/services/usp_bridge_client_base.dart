@@ -13,6 +13,30 @@ class SessionExpiredException implements Exception {
   String toString() => 'SessionExpiredException: $message';
 }
 
+/// An SSE stream that Guardian or the bridge refused to open.
+///
+/// Carries the status because **400 means something different from every other
+/// code**: Guardian rejects a stream against an offline device with a 400, before it
+/// publishes anything, and keeps doing so until the device comes back. Every other
+/// failure is the connection between this browser and the proxy. #205 Item 8 asks the
+/// UI to tell those apart, and a plain string error — which is what this path added
+/// until #1577 — cannot.
+class SseStreamException implements Exception {
+  final int statusCode;
+  final String statusText;
+
+  SseStreamException(this.statusCode, this.statusText);
+
+  /// Whether the device is not currently reachable by the proxy.
+  ///
+  /// Retrying is pointless until it is back, which is the distinction the banner
+  /// renders: "wait" versus "something between you and the proxy broke".
+  bool get isDeviceOffline => statusCode == 400;
+
+  @override
+  String toString() => 'SseStreamException($statusCode $statusText)';
+}
+
 /// A bridge read that answered with something other than a 2xx.
 ///
 /// Carries the status code because the callers need it: a `404` on a single

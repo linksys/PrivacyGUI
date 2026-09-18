@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Notifikasi ini sudah tidak tersedia",
   "notificationHistoryMessageId": "ID Pesan",
   "notificationHistoryCommandKey": "Kunci perintah",
-  "notificationHistoryShowMore": "Tampilkan lebih banyak"
+  "notificationHistoryShowMore": "Tampilkan lebih banyak",
+  "sseRouterOffline": "Router offline — menunggu router kembali"
 }

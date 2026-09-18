@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "Denne notifikation er ikke længere tilgængelig",
   "notificationHistoryMessageId": "Besked-id",
   "notificationHistoryCommandKey": "Kommandonøgle",
-  "notificationHistoryShowMore": "Vis mere"
+  "notificationHistoryShowMore": "Vis mere",
+  "sseRouterOffline": "Routeren er offline — venter på, at den kommer tilbage"
 }

@@ -1184,5 +1184,6 @@
   "notificationHistoryGone": "この通知は利用できなくなりました",
   "notificationHistoryMessageId": "メッセージ ID",
   "notificationHistoryCommandKey": "コマンドキー",
-  "notificationHistoryShowMore": "さらに表示"
+  "notificationHistoryShowMore": "さらに表示",
+  "sseRouterOffline": "ルーターがオフラインです — 復帰を待っています"
 }
