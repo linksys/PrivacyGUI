@@ -141,6 +141,24 @@ void main() {
     });
   });
 
+  group('fetchCapabilities', () {
+    test('reads only the capabilities and leaves the rest alone', () async {
+      build(serviceAdvertised: true);
+
+      final capabilities = await notifier.fetchCapabilities();
+
+      // The troubleshooter asks before the user has chosen anything, and must
+      // not adopt whatever mode the router happens to be configured with.
+      expect(service.calls, ['getCapabilities']);
+      expect(capabilities, seed.capabilities);
+      expect(container.read(autoIPoEProvider).capabilities, seed.capabilities);
+      expect(container.read(autoIPoEProvider).settings,
+          const AutoIPoESettings.init());
+      expect(
+          container.read(autoIPoEProvider).status, const AutoIPoEStatus.init());
+    });
+  });
+
   group('runtime refreshes', () {
     test('refreshStatus touches only the status', () async {
       build(serviceAdvertised: true);

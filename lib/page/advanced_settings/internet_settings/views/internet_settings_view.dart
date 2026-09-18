@@ -16,8 +16,11 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue_presentation.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_apply_dispatcher.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
@@ -148,11 +151,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       ]).then((value) {
         final internetState = value[0] as InternetSettingsState;
         final autoState = value[1] as AutoIPoEState;
-          setState(() {
+        setState(() {
           originalState = internetState;
           originalAutoIPoEState = autoState;
-            initUI(originalState);
-          });
+          initUI(originalState);
+        });
       }),
     );
   }
@@ -443,10 +446,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 loc(context).releaseAndRenew,
                 onTap:
                     isBridgeMode || _effectiveIpv4WanType(state) == WanType.ipoe
-                    ? null
-                    : () {
-                        _showRenewIPAlert(InternetSettingsViewType.ipv4);
-                      },
+                        ? null
+                        : () {
+                            _showRenewIPAlert(InternetSettingsViewType.ipv4);
+                          },
               ),
             ),
           ),
@@ -516,30 +519,30 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     final isRemote = BuildConfig.isRemote();
     final isIpv6Locked = _isIPv6LockedByAutoIPoE(state, autoIPoEState);
     return Tooltip(
-        message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
-        child: switch (viewType) {
-          InternetSettingsViewType.ipv4 => AppIconButton.noPadding(
-              icon: isIpv4Editing ? LinksysIcons.close : LinksysIcons.edit,
+      message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
+      child: switch (viewType) {
+        InternetSettingsViewType.ipv4 => AppIconButton.noPadding(
+            icon: isIpv4Editing ? LinksysIcons.close : LinksysIcons.edit,
             color: isIpv4Editing ? null : Theme.of(context).colorScheme.primary,
-              onTap: isRemote
-                  ? null
-                  : isIpv4Editing
-                      ? () {
-                          setState(() {
-                            isIpv4Editing = false;
-                          });
-                          if (!isEditing) {
-                            _notifier
-                                .updateIpv4Settings(originalState.ipv4Setting);
+            onTap: isRemote
+                ? null
+                : isIpv4Editing
+                    ? () {
+                        setState(() {
+                          isIpv4Editing = false;
+                        });
+                        if (!isEditing) {
+                          _notifier
+                              .updateIpv4Settings(originalState.ipv4Setting);
                           _autoIPoENotifier
                               .updateSettings(originalAutoIPoEState.settings);
-                            _notifier.updateMacAddressCloneEnable(
+                          _notifier.updateMacAddressCloneEnable(
                             originalState.macClone,
                           );
-                            _notifier.updateMacAddressClone(
+                          _notifier.updateMacAddressClone(
                             originalState.macCloneAddress,
                           );
-                          } else {
+                        } else {
                           _notifier.updateIpv4Settings(
                             originalState.ipv4Setting.copyWith(
                               mtu: state.ipv4Setting.mtu,
@@ -547,55 +550,55 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                           );
                           _autoIPoENotifier
                               .updateSettings(originalAutoIPoEState.settings);
-                          }
-                          setState(() {
-                            initUI(ref.read(internetSettingsProvider));
-                          });
                         }
-                      : () {
-                          setState(() {
-                            isIpv4Editing = true;
-                          });
-                        },
-            ),
-          InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
-              icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
+                        setState(() {
+                          initUI(ref.read(internetSettingsProvider));
+                        });
+                      }
+                    : () {
+                        setState(() {
+                          isIpv4Editing = true;
+                        });
+                      },
+          ),
+        InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
+            icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
             color: isBridgeMode || isIpv6Locked
-                  ? null
-                  : isIpv6Editing
-                      ? null
-                      : Theme.of(context).colorScheme.primary,
+                ? null
+                : isIpv6Editing
+                    ? null
+                    : Theme.of(context).colorScheme.primary,
             onTap: isBridgeMode || isRemote || isIpv6Locked
-                  ? null
-                  : isIpv6Editing
-                      ? () {
-                          setState(() {
-                            isIpv6Editing = false;
-                          });
+                ? null
+                : isIpv6Editing
+                    ? () {
+                        setState(() {
+                          isIpv6Editing = false;
+                        });
                         _notifier.updateIpv6Settings(originalState.ipv6Setting);
-                          if (!isEditing) {
+                        if (!isEditing) {
                           _notifier.updateIpv4Settings(
                             state.ipv4Setting.copyWith(
                               mtu: originalState.ipv4Setting.mtu,
                             ),
                           );
-                            _notifier.updateMacAddressCloneEnable(
+                          _notifier.updateMacAddressCloneEnable(
                             originalState.macClone,
                           );
-                            _notifier.updateMacAddressClone(
+                          _notifier.updateMacAddressClone(
                             originalState.macCloneAddress,
                           );
-                          }
-                          setState(() {
-                            initUI(ref.read(internetSettingsProvider));
-                          });
                         }
-                      : () {
-                          setState(() {
-                            isIpv6Editing = true;
-                          });
-                        },
-            ),
+                        setState(() {
+                          initUI(ref.read(internetSettingsProvider));
+                        });
+                      }
+                    : () {
+                        setState(() {
+                          isIpv6Editing = true;
+                        });
+                      },
+          ),
       },
     );
   }
@@ -622,7 +625,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           : _buildIpv4InfoCards(state, autoIPoEState),
       InternetSettingsViewType.ipv6 =>
         isIpv6Editing && !_isIPv6LockedByAutoIPoE(state, autoIPoEState)
-          ? _buildIpv6EditingCards(state)
+            ? _buildIpv6EditingCards(state)
             : _buildIpv6InfoCards(state, autoIPoEState),
     };
   }
@@ -951,7 +954,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               onChanged: (value) {
                 _notifier.updateIpv4Settings(
                   ipv4Setting.copyWith(
-                  domainName: () => value.isEmpty ? null : value,
+                    domainName: () => value.isEmpty ? null : value,
                   ),
                 );
               },
@@ -1203,14 +1206,14 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               );
             }
             _notifier.updateIpv4Settings(
-                value == originalState.ipv4Setting.ipv4ConnectionType
-                    ? originalState.ipv4Setting.copyWith(mtu: ipv4Setting.mtu)
-                    : Ipv4Setting(
-                        ipv4ConnectionType: value,
+              value == originalState.ipv4Setting.ipv4ConnectionType
+                  ? originalState.ipv4Setting.copyWith(mtu: ipv4Setting.mtu)
+                  : Ipv4Setting(
+                      ipv4ConnectionType: value,
                       supportedIPv4ConnectionType: supportedWanTypes,
-                        supportedWANCombinations:
-                            ipv4Setting.supportedWANCombinations,
-                        mtu: ipv4Setting.mtu,
+                      supportedWANCombinations:
+                          ipv4Setting.supportedWANCombinations,
+                      mtu: ipv4Setting.mtu,
                     ),
             );
             // Set settings to default if ipv4 set to bridge
@@ -1276,7 +1279,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           onChanged: (value) {
             _notifier.updateIpv4Settings(
               ipv4Setting.copyWith(
-              vlanId: () => value.isEmpty ? null : int.parse(value),
+                vlanId: () => value.isEmpty ? null : int.parse(value),
               ),
             );
           },
@@ -1346,8 +1349,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             if (isValidSubnetMask) {
               _notifier.updateIpv4Settings(
                 ipv4Setting.copyWith(
-                networkPrefixLength: () =>
-                    NetworkUtils.subnetMaskToPrefixLength(value),
+                  networkPrefixLength: () =>
+                      NetworkUtils.subnetMaskToPrefixLength(value),
                 ),
               );
               setState(() {
@@ -1399,7 +1402,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           onChanged: (value) {
             _notifier.updateIpv4Settings(
               ipv4Setting.copyWith(
-              staticDns2: () => value.isEmpty ? null : value,
+                staticDns2: () => value.isEmpty ? null : value,
               ),
             );
           },
@@ -1415,7 +1418,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           onChanged: (value) {
             _notifier.updateIpv4Settings(
               ipv4Setting.copyWith(
-              staticDns3: () => value.isEmpty ? null : value,
+                staticDns3: () => value.isEmpty ? null : value,
               ),
             );
           },
@@ -1528,10 +1531,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                         onChanged: (value) {
                           _notifier.updateIpv4Settings(
                             ipv4Setting.copyWith(
-                            behavior: () =>
-                                PPPConnectionBehavior.connectOnDemand,
-                            maxIdleMinutes: () =>
-                                int.parse(_idleTimeController.text),
+                              behavior: () =>
+                                  PPPConnectionBehavior.connectOnDemand,
+                              maxIdleMinutes: () =>
+                                  int.parse(_idleTimeController.text),
                             ),
                           );
                         },
@@ -1559,9 +1562,9 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                         onChanged: (value) {
                           _notifier.updateIpv4Settings(
                             ipv4Setting.copyWith(
-                            behavior: () => PPPConnectionBehavior.keepAlive,
-                            reconnectAfterSeconds: () =>
-                                int.parse(_redialPeriodController.text),
+                              behavior: () => PPPConnectionBehavior.keepAlive,
+                              reconnectAfterSeconds: () =>
+                                  int.parse(_redialPeriodController.text),
                             ),
                           );
                         },
@@ -1575,16 +1578,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               if (type == PPPConnectionBehavior.connectOnDemand) {
                 _notifier.updateIpv4Settings(
                   ipv4Setting.copyWith(
-                  behavior: () => PPPConnectionBehavior.connectOnDemand,
-                  maxIdleMinutes: () => int.parse(_idleTimeController.text),
+                    behavior: () => PPPConnectionBehavior.connectOnDemand,
+                    maxIdleMinutes: () => int.parse(_idleTimeController.text),
                   ),
                 );
               } else {
                 _notifier.updateIpv4Settings(
                   ipv4Setting.copyWith(
-                  behavior: () => PPPConnectionBehavior.keepAlive,
-                  reconnectAfterSeconds: () =>
-                      int.parse(_redialPeriodController.text),
+                    behavior: () => PPPConnectionBehavior.keepAlive,
+                    reconnectAfterSeconds: () =>
+                        int.parse(_redialPeriodController.text),
                   ),
                 );
               }
@@ -1622,7 +1625,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             onChanged: (index, type) {
               _notifier.updateIpv4Settings(
                 ipv4Setting.copyWith(
-                useStaticSettings: () => type == PPTPIpAddressMode.specify,
+                  useStaticSettings: () => type == PPTPIpAddressMode.specify,
                 ),
               );
             },
@@ -1664,16 +1667,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           },
           onChanged: (value) {
             _notifier.updateIpv6Settings(
-                value == originalState.ipv6Setting.ipv6ConnectionType
-                    ? originalState.ipv6Setting
-                    : Ipv6Setting(
-                        ipv6ConnectionType: value,
-                        supportedIPv6ConnectionType:
-                            state.ipv6Setting.supportedIPv6ConnectionType,
-                        duid: state.ipv6Setting.duid,
-                        isIPv6AutomaticEnabled:
-                            state.ipv6Setting.isIPv6AutomaticEnabled,
-                        ipv6rdTunnelMode: state.ipv6Setting.ipv6rdTunnelMode,
+              value == originalState.ipv6Setting.ipv6ConnectionType
+                  ? originalState.ipv6Setting
+                  : Ipv6Setting(
+                      ipv6ConnectionType: value,
+                      supportedIPv6ConnectionType:
+                          state.ipv6Setting.supportedIPv6ConnectionType,
+                      duid: state.ipv6Setting.duid,
+                      isIPv6AutomaticEnabled:
+                          state.ipv6Setting.isIPv6AutomaticEnabled,
+                      ipv6rdTunnelMode: state.ipv6Setting.ipv6rdTunnelMode,
                     ),
             );
             setState(() {
@@ -1701,11 +1704,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 if (value == true) {
                   _notifier.updateIpv6Settings(
                     Ipv6Setting(
-                    ipv6ConnectionType: ipv6Setting.ipv6ConnectionType,
-                    supportedIPv6ConnectionType:
-                        ipv6Setting.supportedIPv6ConnectionType,
-                    duid: ipv6Setting.duid,
-                    isIPv6AutomaticEnabled: true,
+                      ipv6ConnectionType: ipv6Setting.ipv6ConnectionType,
+                      supportedIPv6ConnectionType:
+                          ipv6Setting.supportedIPv6ConnectionType,
+                      duid: ipv6Setting.duid,
+                      isIPv6AutomaticEnabled: true,
                     ),
                   );
                 } else {
@@ -1787,26 +1790,26 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-            padding: inputPadding,
-            child: AppTextField(
-              headerText: loc(context).prefix,
-              hintText: '',
-              controller: _ipv6PrefixController,
-              enable: isEnable,
-              errorText: ipv6PrefixErrorText,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                setState(() {
-                  if (_ipv6PrefixValidator.validate(value)) {
-                    ipv6PrefixErrorText = null;
-                    _notifier.updateIpv6Settings(
+          padding: inputPadding,
+          child: AppTextField(
+            headerText: loc(context).prefix,
+            hintText: '',
+            controller: _ipv6PrefixController,
+            enable: isEnable,
+            errorText: ipv6PrefixErrorText,
+            border: const OutlineInputBorder(),
+            onChanged: (value) {
+              setState(() {
+                if (_ipv6PrefixValidator.validate(value)) {
+                  ipv6PrefixErrorText = null;
+                  _notifier.updateIpv6Settings(
                     ipv6Setting.copyWith(ipv6Prefix: () => value),
                   );
-                  } else {
-                    ipv6PrefixErrorText = loc(context).invalidIpAddress;
-                  }
-                });
-              },
+                } else {
+                  ipv6PrefixErrorText = loc(context).invalidIpAddress;
+                }
+              });
+            },
           ),
         ),
         Padding(
@@ -1888,8 +1891,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       WanType.l2tp => loc(context).connectionTypeL2tp,
       WanType.bridge => loc(context).connectionTypeBridge,
       _ => switch (type) {
-      'Automatic' => loc(context).connectionTypeAutomatic,
-      'Pass-through' => loc(context).connectionTypePassThrough,
+          'Automatic' => loc(context).connectionTypeAutomatic,
+          'Pass-through' => loc(context).connectionTypePassThrough,
           _ => '',
         },
     };
@@ -1917,11 +1920,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       // Set ipv6 to automatic
       _notifier.updateIpv6Settings(
         Ipv6Setting(
-        ipv6ConnectionType: WanIPv6Type.automatic.type,
-        supportedIPv6ConnectionType:
-            state.ipv6Setting.supportedIPv6ConnectionType,
-        duid: state.ipv6Setting.duid,
-        isIPv6AutomaticEnabled: state.ipv6Setting.isIPv6AutomaticEnabled,
+          ipv6ConnectionType: WanIPv6Type.automatic.type,
+          supportedIPv6ConnectionType:
+              state.ipv6Setting.supportedIPv6ConnectionType,
+          duid: state.ipv6Setting.duid,
+          isIPv6AutomaticEnabled: state.ipv6Setting.isIPv6AutomaticEnabled,
         ),
       );
       // Mtu
@@ -1980,8 +1983,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     }
     // Show error if WAN combinations are invalid
     final isValidCombination = state.ipv4Setting.supportedWANCombinations.any(
-        (combine) =>
-            combine.wanType == state.ipv4Setting.ipv4ConnectionType &&
+      (combine) =>
+          combine.wanType == state.ipv4Setting.ipv4ConnectionType &&
           combine.wanIPv6Type == state.ipv6Setting.ipv6ConnectionType,
     );
     if (!isValidCombination) {
@@ -2003,15 +2006,15 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               children: [
                 const TableRow(
                   children: [
-                  AppText.labelLarge('IPv4'),
-                  AppText.labelLarge('IPv6'),
+                    AppText.labelLarge('IPv4'),
+                    AppText.labelLarge('IPv6'),
                   ],
                 ),
                 ...state.ipv4Setting.supportedWANCombinations.map((combine) {
                   return TableRow(
                     children: [
-                    AppText.bodyMedium(combine.wanType),
-                    AppText.bodyMedium(combine.wanIPv6Type),
+                      AppText.bodyMedium(combine.wanType),
+                      AppText.bodyMedium(combine.wanIPv6Type),
                     ],
                   );
                 }).toList(),
@@ -2106,19 +2109,22 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   }
 
   void _handleAdvancedAutoIPoEIssue(AutoIPoEIssue issue) {
-    if (!mounted || _isFinalizingAutoIPoE) {
+    if (!mounted) {
+      return;
+    }
+    final decision = decideAdvancedAutoIPoEIssue(
+      issue,
+      isFinalizing: _isFinalizingAutoIPoE,
+      dialogVisible: _autoIPoETerminalDialogVisible,
+    );
+    if (!decision.handled) {
       return;
     }
     setState(() {
       _autoIPoEIssue = issue;
-      _awaitingAutoIPoECompletion =
-          issue.recoveryAction == AutoIPoERecoveryAction.continueChecking ||
-              issue.hasScheduledRecovery;
+      _awaitingAutoIPoECompletion = decision.keepAwaiting;
     });
-    if ((issue.isTerminal ||
-            issue.requiresFreshApply ||
-            issue.hasScheduledRecovery) &&
-        !_autoIPoETerminalDialogVisible) {
+    if (decision.announce) {
       unawaited(_showAdvancedAutoIPoETerminalDialog(issue));
     }
   }
@@ -2186,7 +2192,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       return;
     }
     final autoIPoEState = ref.read(autoIPoEProvider);
-    final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
+    final dispatcher = ref.read(autoIPoEApplyDispatcherProvider);
+    final coordinator = ref.read(autoIPoEReconciliationCoordinatorProvider);
     _advancedAutoIPoEProgress.value =
         const AutoIPoEReconciliationProgress.initial();
     setState(() {
@@ -2196,9 +2203,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     });
     var reconciledState = autoIPoEState;
 
-    Future<AutoIPoEState> applyAndReconcile() async {
+    Future<(AutoIPoEState, AutoIPoEReconciliationOutcome)>
+        applyAndReconcile() async {
       try {
-        await bridge.saveIPoEInternetSettings(
+        await dispatcher.applyFromInternetSettings(
           settings: autoIPoEState.settings,
           originalWanType: WanType.resolve(
             originalState.ipv4Setting.ipv4ConnectionType,
@@ -2218,37 +2226,26 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           _awaitingAutoIPoECompletion = true;
         });
       }
-      while (mounted) {
-        try {
-          await bridge.waitForPnpIPoESetupCompletion(
-            expectedMode: autoIPoEState.settings.selectedMode,
-            useStructuredProgress: true,
-            onReconciliationProgress: _updateAdvancedAutoIPoEProgress,
-            onProgress: (status, log) {
-              reconciledState = reconciledState.copyWith(
-                status: status,
-                log: log,
-              );
-              if (mounted) {
-                _autoIPoENotifier.updateRuntime(status, log);
-              }
-            },
-          );
-          break;
-        } on AutoIPoERecoveryPending catch (error) {
-          if (error.issue.recoveryAction !=
-              AutoIPoERecoveryAction.continueChecking) {
-            rethrow;
+      // Apply is dispatched above and never again: the coordinator only reads.
+      final outcome = await coordinator.followAdvancedApply(
+        expectedMode: autoIPoEState.settings.selectedMode,
+        isCurrent: () => mounted,
+        // An error arriving before any progress is classified against the status
+        // the page already had, which is what the accumulated state used to do.
+        initialStatus: autoIPoEState.status,
+        onProgress: _updateAdvancedAutoIPoEProgress,
+        onRuntime: (status, log) {
+          reconciledState = reconciledState.copyWith(status: status, log: log);
+          if (mounted) {
+            _autoIPoENotifier.updateRuntime(status, log);
           }
-          // Keep this modal open across bounded read-only polling windows.
-          // Apply has already been dispatched and is never repeated here.
-        }
-      }
-      return reconciledState;
+        },
+      );
+      return (reconciledState, outcome);
     }
 
     try {
-      final nextState = await doSomethingWithSpinner(
+      final result = await doSomethingWithSpinner(
         context,
         applyAndReconcile(),
         title: loadingTitle,
@@ -2262,11 +2259,25 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           ),
         ),
       );
-      if (!mounted || nextState == null) {
+      if (!mounted || result == null) {
         return;
       }
-      await _completeAdvancedAutoIPoE(nextState);
+      final (nextState, outcome) = result;
+      switch (outcome) {
+        case AutoIPoEReconciliationCompleted():
+          await _completeAdvancedAutoIPoE(nextState);
+        case AutoIPoEReconciliationFailed(issue: final issue):
+          _handleAdvancedAutoIPoEIssue(issue);
+        case AutoIPoEReconciliationNoInternet():
+          // Advanced settings never asks for the native internet check, so the
+          // coordinator cannot report this from here.
+          break;
+        case AutoIPoEReconciliationCancelled():
+          break;
+      }
     } on AutoIPoETerminalFailure catch (error) {
+      // Reconciliation classifies its own failures; only the Apply dispatch can
+      // still raise these.
       if (mounted) {
         _handleAdvancedAutoIPoEIssue(error.issue);
       }
@@ -2323,32 +2334,24 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       loadingTitle = loc(context).restarting;
     });
     final state = ref.read(internetSettingsProvider);
-    final autoIPoEState = ref.read(autoIPoEProvider);
-    final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
-    final isAutoIPoE = _effectiveIpv4WanType(state) == WanType.ipoe;
+    final dispatcher = ref.read(autoIPoEApplyDispatcherProvider);
     doSomethingWithSpinner(
       context,
       () async {
-        if (isAutoIPoE) {
-          await bridge.saveIPoEInternetSettings(
-            settings: autoIPoEState.settings,
-            originalWanType: WanType.resolve(
-              originalState.ipv4Setting.ipv4ConnectionType,
-            ),
-            originalStatus: originalAutoIPoEState.status,
-          );
-        } else {
-          await bridge.resetIfNeededBeforeSaving(
-            originalWanType: WanType.resolve(
-              originalState.ipv4Setting.ipv4ConnectionType,
-            ),
-            originalStatus: originalAutoIPoEState.status,
-          );
-          await _notifier.saveInternetSettings(
-            state,
-            originalState,
-          );
-        }
+        // IPoE never reaches here: the guard above hands it to
+        // _saveAdvancedAutoIPoE, which owns Apply and reconciliation. What is
+        // left is the ordinary WAN save, which still has to undo Auto-IPoE first
+        // if it is leaving that WAN type.
+        await dispatcher.resetBeforeLeavingIPoE(
+          originalWanType: WanType.resolve(
+            originalState.ipv4Setting.ipv4ConnectionType,
+          ),
+          originalStatus: originalAutoIPoEState.status,
+        );
+        await _notifier.saveInternetSettings(
+          state,
+          originalState,
+        );
         try {
           await Future.wait([
             _notifier.fetch(fetchRemote: true),
@@ -2373,11 +2376,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         originalState = ref.read(internetSettingsProvider).copyWith();
         originalAutoIPoEState = ref.read(autoIPoEProvider).copyWith();
         initUI(originalState);
-        if (isAutoIPoE) {
-          _awaitingAutoIPoECompletion = true;
-        } else {
-          _awaitingAutoIPoECompletion = false;
-        }
+        // Nothing to wait for: an IPoE save never comes through this path.
+        _awaitingAutoIPoECompletion = false;
       });
       showSuccessSnackBar(context, loc(context).changesSaved);
     }).catchError((error) {
@@ -2386,21 +2386,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         context,
         ref,
         onComplete: () async {
-        await _notifier.fetch(fetchRemote: true);
+          await _notifier.fetch(fetchRemote: true);
           await _autoIPoENotifier.fetchAll();
-        setState(() {
-          isIpv4Editing = false;
-          isIpv6Editing = false;
-          originalState = ref.read(internetSettingsProvider).copyWith();
+          setState(() {
+            isIpv4Editing = false;
+            isIpv6Editing = false;
+            originalState = ref.read(internetSettingsProvider).copyWith();
             originalAutoIPoEState = ref.read(autoIPoEProvider).copyWith();
-          initUI(originalState);
-            if (isAutoIPoE) {
-              _awaitingAutoIPoECompletion = true;
-            }
-        });
+            initUI(originalState);
+          });
           showSuccessSnackBar(context, loc(context).changesSaved);
         },
-        );
+      );
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
       _awaitingAutoIPoECompletion = false;
@@ -2415,9 +2412,9 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         errorMsg ?? loc(context).unknownErrorCode(jnapError?.result ?? ''),
       );
     }).whenComplete(() {
-        setState(() {
-          loadingTitle = '';
-        });
+      setState(() {
+        loadingTitle = '';
+      });
     });
   }
 
@@ -2459,13 +2456,13 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         showSuccessSnackBar(context, loc(context).successExclamation);
       }).catchError((error) {
         showRouterNotFoundAlert(
-            context,
+          context,
           ref,
           onComplete: () async {
-          await ref.read(pollingProvider.notifier).forcePolling();
+            await ref.read(pollingProvider.notifier).forcePolling();
             showSuccessSnackBar(context, loc(context).successExclamation);
           },
-          );
+        );
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
         final jnapError = error is JNAPError ? error : null;
@@ -2491,13 +2488,13 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         showSuccessSnackBar(context, loc(context).successExclamation);
       }).catchError((error) {
         showRouterNotFoundAlert(
-            context,
+          context,
           ref,
           onComplete: () async {
-          await ref.read(pollingProvider.notifier).forcePolling();
+            await ref.read(pollingProvider.notifier).forcePolling();
             showSuccessSnackBar(context, loc(context).successExclamation);
           },
-          );
+        );
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
         final jnapError = error is JNAPError ? error : null;

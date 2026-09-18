@@ -57,9 +57,9 @@ void main() {
     // The router reports an already-configured secret as stored with no value,
     // and the state has to keep that distinction rather than inventing an empty
     // password.
-    final secret = state.settings.v6PlusStaticIpSettings?.userPassword;
-    expect(secret?.hasStoredValue, isTrue);
-    expect(secret?.value, isNull);
+    final secret = state.settings.v6PlusStaticIpSettings.userPassword;
+    expect(secret.hasStoredValue, isTrue);
+    expect(secret.value, isNull);
   });
 
   test('equality is by value across all four parts', () {

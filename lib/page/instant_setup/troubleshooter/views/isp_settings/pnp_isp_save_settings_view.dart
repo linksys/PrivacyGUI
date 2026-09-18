@@ -10,6 +10,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_apply_dispatcher.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -165,8 +166,8 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
     try {
       if (wanType == WanType.ipoe) {
         await ref
-            .read(autoIPoEInternetSettingsBridgeProvider)
-            .savePnpIPoE(settings: autoIPoESettings);
+            .read(autoIPoEApplyDispatcherProvider)
+            .applyFromPnp(settings: autoIPoESettings);
       } else {
         await ref.read(internetSettingsProvider.notifier).savePnpIpv4(
               newSettings,

@@ -36,6 +36,18 @@ class AutoIPoENotifier extends Notifier<AutoIPoEState> {
     return state;
   }
 
+  /// Reads just the capabilities.
+  ///
+  /// The troubleshooter needs the supported mode list before the user has
+  /// chosen anything, and deliberately does not adopt the router's current
+  /// settings: that flow starts from Auto regardless of what is configured.
+  Future<AutoIPoECapabilities> fetchCapabilities() async {
+    final capabilities =
+        await ref.read(autoIPoEServiceProvider).getCapabilities();
+    state = state.copyWith(capabilities: capabilities);
+    return capabilities;
+  }
+
   Future<AutoIPoEState> refreshStatus() async {
     final status = await ref.read(autoIPoEServiceProvider).getStatus();
     state = state.copyWith(status: status);
