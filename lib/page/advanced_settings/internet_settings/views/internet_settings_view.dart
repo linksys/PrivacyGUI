@@ -17,6 +17,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_apply_dispatcher.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
@@ -2187,7 +2188,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       return;
     }
     final autoIPoEState = ref.read(autoIPoEProvider);
-    final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
+    final dispatcher = ref.read(autoIPoEApplyDispatcherProvider);
     final coordinator = ref.read(autoIPoEReconciliationCoordinatorProvider);
     _advancedAutoIPoEProgress.value =
         const AutoIPoEReconciliationProgress.initial();
@@ -2201,7 +2202,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     Future<(AutoIPoEState, AutoIPoEReconciliationOutcome)>
         applyAndReconcile() async {
       try {
-        await bridge.saveIPoEInternetSettings(
+        await dispatcher.applyFromInternetSettings(
           settings: autoIPoEState.settings,
           originalWanType: WanType.resolve(
             originalState.ipv4Setting.ipv4ConnectionType,
@@ -2326,7 +2327,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       loadingTitle = loc(context).restarting;
     });
     final state = ref.read(internetSettingsProvider);
-    final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
+    final dispatcher = ref.read(autoIPoEApplyDispatcherProvider);
     doSomethingWithSpinner(
       context,
       () async {
@@ -2334,7 +2335,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         // _saveAdvancedAutoIPoE, which owns Apply and reconciliation. What is
         // left is the ordinary WAN save, which still has to undo Auto-IPoE first
         // if it is leaving that WAN type.
-        await bridge.resetIfNeededBeforeSaving(
+        await dispatcher.resetBeforeLeavingIPoE(
           originalWanType: WanType.resolve(
             originalState.ipv4Setting.ipv4ConnectionType,
           ),
