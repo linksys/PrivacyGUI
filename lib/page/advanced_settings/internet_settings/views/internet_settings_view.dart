@@ -2326,32 +2326,24 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       loadingTitle = loc(context).restarting;
     });
     final state = ref.read(internetSettingsProvider);
-    final autoIPoEState = ref.read(autoIPoEProvider);
     final bridge = ref.read(autoIPoEInternetSettingsBridgeProvider);
-    final isAutoIPoE = _effectiveIpv4WanType(state) == WanType.ipoe;
     doSomethingWithSpinner(
       context,
       () async {
-        if (isAutoIPoE) {
-          await bridge.saveIPoEInternetSettings(
-            settings: autoIPoEState.settings,
-            originalWanType: WanType.resolve(
-              originalState.ipv4Setting.ipv4ConnectionType,
-            ),
-            originalStatus: originalAutoIPoEState.status,
-          );
-        } else {
-          await bridge.resetIfNeededBeforeSaving(
-            originalWanType: WanType.resolve(
-              originalState.ipv4Setting.ipv4ConnectionType,
-            ),
-            originalStatus: originalAutoIPoEState.status,
-          );
-          await _notifier.saveInternetSettings(
-            state,
-            originalState,
-          );
-        }
+        // IPoE never reaches here: the guard above hands it to
+        // _saveAdvancedAutoIPoE, which owns Apply and reconciliation. What is
+        // left is the ordinary WAN save, which still has to undo Auto-IPoE first
+        // if it is leaving that WAN type.
+        await bridge.resetIfNeededBeforeSaving(
+          originalWanType: WanType.resolve(
+            originalState.ipv4Setting.ipv4ConnectionType,
+          ),
+          originalStatus: originalAutoIPoEState.status,
+        );
+        await _notifier.saveInternetSettings(
+          state,
+          originalState,
+        );
         try {
           await Future.wait([
             _notifier.fetch(fetchRemote: true),
@@ -2376,11 +2368,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         originalState = ref.read(internetSettingsProvider).copyWith();
         originalAutoIPoEState = ref.read(autoIPoEProvider).copyWith();
         initUI(originalState);
-        if (isAutoIPoE) {
-          _awaitingAutoIPoECompletion = true;
-        } else {
-          _awaitingAutoIPoECompletion = false;
-        }
+        // Nothing to wait for: an IPoE save never comes through this path.
+        _awaitingAutoIPoECompletion = false;
       });
       showSuccessSnackBar(context, loc(context).changesSaved);
     }).catchError((error) {
@@ -2397,9 +2386,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             originalState = ref.read(internetSettingsProvider).copyWith();
             originalAutoIPoEState = ref.read(autoIPoEProvider).copyWith();
             initUI(originalState);
-            if (isAutoIPoE) {
-              _awaitingAutoIPoECompletion = true;
-            }
           });
           showSuccessSnackBar(context, loc(context).changesSaved);
         },
