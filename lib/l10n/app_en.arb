@@ -699,6 +699,7 @@
   "errorTimeout": "The operation timed out. Please try again.",
   "errorServiceNotReady": "The service is not ready yet. Please try again in a moment.",
   "errorUnexpected": "Something went wrong. Please try again.",
+  "errorCommandRefused": "The router refused this command. Please try again in a moment.",
   "menuWifiSettings": "WiFi Settings",
   "menuWifiSettingsDesc": "Networks, security, MAC filtering",
   "menuTopologyDesc": "View network topology and mesh nodes",

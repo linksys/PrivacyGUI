@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
+
+class _MockTransport extends Mock implements UspTransport {}
 
 // =============================================================================
 // `operate()`'s reading of the unified response (#1533).
@@ -149,6 +154,75 @@ void main() {
         'result': {'data': null},
       });
       expect(out, isEmpty);
+    });
+  });
+
+  // The two groups above test the extraction in isolation. This one runs the real
+  // `operate()` over a faked transport, so the path a caller actually takes —
+  // transport answers `success: false` → `operate` throws → a service maps it — is
+  // covered end to end. Worth having because `UspClient` is mocked wholesale in the
+  // firmware tests, which means nothing there ever executes this extraction: a
+  // refusal is injected as a pre-formatted throw, and the two halves are only
+  // joined by the mock.
+  group('operate() over a faked transport', () {
+    setUpAll(() => registerFallbackValue(<String, String>{}));
+
+    test(
+        'a transport that answers success:false makes operate() throw a mappable refusal',
+        () async {
+      final transport = _MockTransport();
+      when(() => transport.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.LocalAgent.X_LINKSYS_Download()': {
+                      'errorCode': 7022,
+                      'errorMessage': 'Command Failure',
+                    },
+                  },
+                },
+              });
+      final client = UspClient.withTransport(transport);
+
+      Object? thrown;
+      try {
+        await client.operate('Device.LocalAgent.X_LINKSYS_Download()');
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown, isNotNull, reason: 'the refusal must not read as success');
+
+      final mapped = mapUspErrorToServiceError(thrown!);
+      expect(mapped, isA<UspCompleteFailureError>());
+      expect(mapped.code, 7022);
+      expect(mapped, isNot(isA<NetworkError>()));
+      // Non-empty, because an empty list localizes as the generic
+      // "something went wrong" — see service_error_localizations_test.dart.
+      expect((mapped as UspCompleteFailureError).failures, isNotEmpty);
+    });
+
+    test('a transport that answers success:true returns the flattened output',
+        () async {
+      final transport = _MockTransport();
+      when(() => transport.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {
+                  'data': {
+                    'commandKey': 'k-1',
+                    'outputArgs': {'Status': 'Complete'}
+                  },
+                },
+              });
+      final client = UspClient.withTransport(transport);
+
+      final out = await client.operate('Device.Reboot()');
+
+      expect(out['commandKey'], 'k-1');
+      expect(out['Status'], 'Complete');
     });
   });
 }

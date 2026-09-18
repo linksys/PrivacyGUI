@@ -11,11 +11,12 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-08-05
+**Last updated**: 2026-09-18
 
 The web package records reviewed `usp_framework` commit
-`344a1757f97bcc8643b05322027aafd7053856cd` (merged `main`, PR #45
-WebSocket readiness) and was built with both the
+`d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
+unmodified Broadband Forum USP schemas, which fixed `OperateResp` swallowing
+synchronous failures) and was built with both the
 `wasm` and `websocket` features. Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer

@@ -1,4 +1,6 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
+    show UspErrorDetail;
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Error categories from the Rust WASM client's UspError hierarchy.
@@ -116,7 +118,7 @@ UspError? parseUspError(Object error) {
 ///
 /// ## Error Contract (the match points this function depends on)
 ///
-/// Errors reach this function from THREE sources. Each match point below is a
+/// Errors reach this function from FOUR sources. Each match point below is a
 /// brittle coupling — if the source string/code changes, the mapping silently
 /// breaks. This table lists ONLY the values actually compared against (not the
 /// full set of strings the sources can emit). Keep it in sync with the sources.
@@ -174,11 +176,23 @@ UspError? parseUspError(Object error) {
 /// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError |
 /// |             | (category=validation → handled by the validation arm)|                  |
 ///
+/// ### Source 4 — synthesised in Dart by `UspClient._operateRefusal` (#1533)
+///
+/// | Dart match       | emitted by                                        | → ServiceError          |
+/// |------------------|---------------------------------------------------|-------------------------|
+/// | code `7022`      | a refused synchronous Operate, thrown rather than | UspCompleteFailureError |
+/// |                  | returned as `{}` — `Operation error:` category    |                         |
+///
+/// This is the only source that is **not** produced outside Dart, and it is the
+/// reason `_mapOperationError` is no longer dead in production (see below).
+///
 /// ### Dead match points (kept for completeness / contract tests only)
-/// `_mapOperationError` strings — `'Path not found'`, `'read-only'`,
-/// `'Invalid value'` — map `OperationError::*`, which is constructed ONLY in the
-/// Rust `ffi` module (native, `#[cfg(not(target_arch = "wasm32"))]`). They never
-/// fire in the production WASM build. See [_mapOperationError].
+/// `_mapOperationError`'s *string* match points — `'Path not found'`,
+/// `'read-only'`, `'Invalid value'` — map `OperationError::*`, which is
+/// constructed ONLY in the Rust `ffi` module (native,
+/// `#[cfg(not(target_arch = "wasm32"))]`). Those never fire in the production WASM
+/// build. **Its 7022 arm does**, from source 4 — so the function itself is live
+/// even though its string arms are not. See [_mapOperationError].
 ///
 /// **Warning**: anything not matched above falls through to NetworkError
 /// (transport) or UnexpectedError (auth/protocol/unparseable). If source
@@ -270,7 +284,11 @@ ServiceError _mapProtocolError(UspError e) {
 ///
 /// Two things to know about this mapper:
 ///
-/// 1. **Effectively dead in production.** `UspError::OperationError` variants
+/// 1. **Its string arms are effectively dead in production; the function is not.**
+///    Since #1533 a refused synchronous Operate arrives here with `faultCode`
+///    7022, thrown by `UspClient._operateRefusal` — so the 7022 arm below is the
+///    live path and everything in this paragraph applies only to the string
+///    matches. `UspError::OperationError` variants
 ///    are constructed ONLY in the Rust `ffi` module, gated behind
 ///    `#[cfg(not(target_arch = "wasm32"))]` — native FFI only, stripped from the
 ///    WASM binary the app actually runs. (The one WASM-side `OperationError`,
@@ -279,11 +297,12 @@ ServiceError _mapProtocolError(UspError e) {
 ///    Kept only for completeness + the existing contract tests; don't rely on
 ///    it firing in prod.
 ///
-/// 2. **No `code` is passed — by design.** Unlike protocol errors, the Rust
-///    `OperationError` Display strings carry NO `(code: XXXX)` suffix (they are
-///    path/reason text only). So `parseUspError`'s regex never extracts a
-///    faultCode here — `e.faultCode` is always null. Passing `code:` would just
-///    forward null, so it's omitted. Only `detail` (the raw message) is kept.
+/// 2. **No `code` is passed on the string arms — by design.** Unlike protocol
+///    errors, the Rust `OperationError` Display strings carry NO `(code: XXXX)`
+///    suffix (they are path/reason text only), so `parseUspError`'s regex extracts
+///    no faultCode from them and forwarding `code:` would just forward null.
+///    **The 7022 arm is the exception and passes one**, because source 4 writes the
+///    suffix deliberately for exactly that purpose.
 ServiceError _mapOperationError(UspError e) {
   final msg = e.message;
   // 7022 — the agent refused the command (USP "Command Failure"). It arrives here
@@ -294,13 +313,28 @@ ServiceError _mapOperationError(UspError e) {
   // Deliberately **not** the `UnexpectedError` fallthrough below: that renders as
   // "something went wrong", which is also what a network blip looks like, and a
   // refusal is the router answering rather than the network failing.
-  // `failures` is empty because the thrown string carries no structured per-path
-  // detail — the path and the reason are both in [summary], and inventing a
-  // `UspErrorDetail` from a parsed string would fake a structure we do not have.
+  // **`failures` must carry one entry, and that is not bookkeeping.**
+  // `_localizeBatch` in `service_error_localizations.dart` returns
+  // `l.errorUnexpected` — "Something went wrong" — for an *empty* list, so a
+  // refusal reported with no entries reaches the screen as the very generic
+  // message this mapping exists to avoid. The entry is what routes it to
+  // `_localizeFaultCode`, where 7022 says the router refused the command.
+  //
+  // `requestedPath` is empty on purpose: the thrown string carries the path in its
+  // summary, and recovering it here would couple this mapper to a format built in
+  // `UspClient._operateRefusal` by a regex neither side declares. The path is in
+  // `summary` for a human and in the log for a developer; `failedPaths` is not a
+  // consumer this code has.
   if (e.faultCode == 7022) {
     return UspCompleteFailureError(
       summary: msg,
-      failures: const [],
+      failures: const [
+        UspErrorDetail(
+          requestedPath: '',
+          errorCode: 7022,
+          errorMessage: 'Command Failure',
+        ),
+      ],
       code: 7022,
       detail: msg,
     );
