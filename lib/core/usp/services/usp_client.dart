@@ -938,12 +938,24 @@ class UspClient {
   /// service layer where constitution Article XIII puts it, not here in transport.
   @visibleForTesting
   static Map<String, dynamic> extractOperateResult(Map<String, dynamic> raw) {
+    // **The refusal check runs first, and the order is the correctness.** It used
+    // to sit after the `result == null` fallback, which made the guard fail *open*:
+    // a `{ "success": false }` carrying no `result` returned the raw map instead of
+    // throwing, and a caller reading `{}` cannot tell a refusal from a success —
+    // the exact defect #1533 exists to fix, reintroduced for one response shape.
+    //
+    // Whether the agent can produce that shape is not something this file can
+    // settle: `success` is assembled inside `usp_client_bg.wasm`, and the JS shim
+    // contains no `success: false` literal to read. So the shape is neither proven
+    // reachable nor proven impossible — which is the argument for checking it
+    // rather than against. Four lines, and being wrong the other way means this
+    // PR's own bug comes back silently.
+    if (raw['success'] == false) {
+      throw _operateRefusal((raw['result'] as Map?)?['error']);
+    }
+
     final result = raw['result'] as Map?;
     if (result == null) return raw; // fallback to raw if not the unified format
-
-    if (raw['success'] == false) {
-      throw _operateRefusal(result['error']);
-    }
 
     final data = result['data'] as Map?;
     if (data == null) return {};
@@ -995,7 +1007,25 @@ class UspClient {
     final why = (message == null || message.isEmpty)
         ? 'the router gave no reason'
         : message;
-    final suffix = code == null ? '' : ' (code: $code)';
+    // **Normalised to an integer literal, because the consumer reads it with a
+    // regex.** `parseUspError` recovers the code with `\(code:\s*(\d+)\)`, and
+    // `errorCode` arrives here untyped from a JS object: an integral JS number can
+    // cross the interop boundary as a Dart `double`, at which point `'$code'`
+    // renders `7022.0`, the `(\d+)` cannot match through the `.`, `faultCode` is
+    // null, and `_mapOperationError` sends the user back to "Something went wrong"
+    // — for the one code this change exists to give a message to.
+    //
+    // Fixed at the producer rather than by widening the regex: the regex serves
+    // every USP error string, and a `(\d+(?:\.\d+)?)` there would start accepting
+    // codes that are not codes. A non-integral value still falls through
+    // unnormalised, which is correct — that is not a fault code, and it should not
+    // be read as one.
+    final codeText = switch (code) {
+      null => null,
+      final num n when n == n.truncateToDouble() => n.toInt().toString(),
+      _ => code.toString(),
+    };
+    final suffix = codeText == null ? '' : ' (code: $codeText)';
     return 'Operate failed: Operation error: $what refused: $why$suffix';
   }
 

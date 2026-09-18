@@ -641,6 +641,7 @@
   "errorTimeout": "Handlingen fik timeout. Prøv igen.",
   "errorUnauthorized": "Du har ikke tilladelse til at udføre denne handling.",
   "errorUnexpected": "Noget gik galt. Prøv igen.",
+  "errorCommandRefused": "Routeren afviste denne kommando. Prøv igen om et øjeblik.",
   "errors": "Fejl",
   "estimatedTimeRemaining": "Anslået resterende tid: {time}",
   "ethernetPorts": "Ethernet-porte",

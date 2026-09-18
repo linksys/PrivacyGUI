@@ -33,6 +33,38 @@ class _MockTransport extends Mock implements UspTransport {}
 //    for that outcome when not subscribed to Notify.
 // =============================================================================
 
+/// The string `extractOperateResult` throws for [raw].
+///
+/// A helper rather than a `try`/`catch` in each test: the thrown value is a `String`
+/// by design (the USP layer's own error currency, so `parseUspError` can read it),
+/// and `expect(..., throwsA(...))` cannot hand the value back for inspection.
+String _thrownFrom(Map<String, dynamic> raw) {
+  try {
+    UspClient.extractOperateResult(raw);
+  } catch (e) {
+    return e as String;
+  }
+  throw StateError('expected extractOperateResult to throw for $raw');
+}
+
+/// The same refusal with its `errorCode` as a `double`, which is how an integral JS
+/// number can arrive across the interop boundary.
+extension on Map<String, dynamic> {
+  Map<String, dynamic> withDoubleCode() {
+    final error = (this['result'] as Map)['error'] as Map;
+    final entry = error.entries.first;
+    final detail = Map<String, dynamic>.from(entry.value as Map);
+    detail['errorCode'] = (detail['errorCode'] as int).toDouble();
+    return {
+      ...this,
+      'result': {
+        ...(this['result'] as Map),
+        'error': {entry.key: detail},
+      },
+    };
+  }
+}
+
 void main() {
   Map<String, dynamic> refused({
     String path = 'Device.LocalAgent.X_LINKSYS_Download()',
@@ -48,6 +80,135 @@ void main() {
           },
         },
       };
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Round-1 review remediation — the three defects the reviews found
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // All three are the *same* failure mode as the bug this PR was written to fix: a
+  // refusal that reaches a user as something other than a refusal. Each was a
+  // different way back into it.
+  group('UspClient.extractOperateResult — review remediation', () {
+    test('a refusal with no `result` key still throws', () {
+      // The guard used to sit *after* `if (result == null) return raw`, so this
+      // shape returned the raw map and a caller reading it saw a success. Whether
+      // the agent can produce it is not knowable from this repo — `success` is
+      // assembled inside the wasm and the JS shim holds no `success: false` literal
+      // — which is the argument for checking rather than against.
+      expect(
+        () => UspClient.extractOperateResult({'success': false}),
+        throwsA(isA<String>()),
+      );
+    });
+
+    test('a refusal with a null `result` still throws', () {
+      expect(
+        () =>
+            UspClient.extractOperateResult({'success': false, 'result': null}),
+        throwsA(isA<String>()),
+      );
+    });
+
+    test('a non-unified response is still passed through untouched', () {
+      // The fallback the reordering must not have eaten: no `success` key at all,
+      // no `result` — a pre-0.13.0 shape, returned as-is.
+      final raw = {'commandKey': 'k', 'outputArgs': <String, String>{}};
+
+      expect(UspClient.extractOperateResult(raw), same(raw));
+    });
+
+    test('an integral code arriving as a double still reads as a fault code',
+        () {
+      // JS numbers are doubles, and `errorCode` crosses the interop boundary
+      // untyped. Interpolated raw it rendered `(code: 7022.0)`, whose digits the
+      // fault-code pattern cannot match through the `.` — so `faultCode` came back
+      // null and the user got "Something went wrong" for the one code this change
+      // exists to give a message to.
+      final thrown = _thrownFrom(refused(code: 7022).withDoubleCode());
+
+      expect(thrown, contains('(code: 7022)'));
+      expect(thrown, isNot(contains('7022.0')));
+      expect(parseUspError(thrown)?.faultCode, 7022);
+    });
+
+    test('a non-integral code is left alone, because it is not a fault code',
+        () {
+      // Normalising means "render an integer as an integer", not "coerce anything
+      // numeric into one". A fractional value is not a USP fault code and must not
+      // be promoted into looking like one.
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {
+          'error': {
+            'Device.X()': {'errorCode': 70.5, 'errorMessage': 'odd'},
+          },
+        },
+      });
+
+      expect(thrown, contains('70.5'));
+      expect(parseUspError(thrown)?.faultCode, isNull);
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // The refusal reaches the user in their own language, whatever the code
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // The review's Critical, and the one finding that was a user-visible regression
+  // **this PR introduced**: `_mapOperationError` was dead in the WASM build until
+  // refusals started throwing, so its `UnexpectedError` fallthrough could not be
+  // reached. Once it could, every code other than 7022 landed on it — and
+  // `service_error_localizations.dart` surfaces `UnexpectedError`'s `detail`
+  // verbatim, so a log-shaped English string went on screen in all 26 locales.
+  group('mapUspErrorToServiceError — a refusal is never raw English', () {
+    test('7022 maps to a batch failure carrying its code', () {
+      final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 7022)));
+
+      expect(error, isA<UspCompleteFailureError>());
+      expect(
+          (error as UspCompleteFailureError).failures.single.errorCode, 7022);
+    });
+
+    test('a code other than 7022 maps the same way, not to UnexpectedError',
+        () {
+      // 9005 is the interesting one: `_localizeFaultCode` already knows it as
+      // `errorResourceNotFound`, so generalising this arm is not merely "less raw"
+      // — it is *more specific* than the 7022-only version could ever be.
+      final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 9005)));
+
+      expect(error, isA<UspCompleteFailureError>(),
+          reason:
+              'UnexpectedError surfaces its detail verbatim, which would put '
+              'the log string on screen in every locale');
+      expect(
+          (error as UspCompleteFailureError).failures.single.errorCode, 9005);
+    });
+
+    test('an unknown code still maps to a batch failure', () {
+      // `_localizeFaultCode`'s `_` arm is `errorUnexpected` — localized. So even a
+      // code nothing recognises reaches the user in their own language, which the
+      // raw-detail path did not.
+      final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 8123)));
+
+      expect(error, isA<UspCompleteFailureError>());
+      expect(
+          (error as UspCompleteFailureError).failures.single.errorCode, 8123);
+    });
+
+    test('a native operation error with no code keeps its own mapping', () {
+      // The three string arms sit after the generalised one and must stay
+      // reachable: they match native `OperationError::*` strings, which carry no
+      // `(code: N)` suffix, so `faultCode` is null and the new `if` declines.
+      // The `<verb> failed: ` prefix is what `parseUspError` strips before reading
+      // the category, so the bare `Operation error: …` a first draft of this test
+      // used was never classified as one at all.
+      expect(
+        mapUspErrorToServiceError(
+            'Get failed: Operation error: Path not found: Device.Bogus.Path'),
+        isA<ResourceNotFoundError>(),
+      );
+    });
+  });
 
   group('UspClient.extractOperateResult — a refused command', () {
     test('throws, rather than returning an empty map', () {

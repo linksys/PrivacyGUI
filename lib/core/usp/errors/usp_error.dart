@@ -305,37 +305,59 @@ ServiceError _mapProtocolError(UspError e) {
 ///    suffix deliberately for exactly that purpose.
 ServiceError _mapOperationError(UspError e) {
   final msg = e.message;
-  // 7022 — the agent refused the command (USP "Command Failure"). It arrives here
-  // because `UspClient.extractOperateResult` throws a refused Operate in this
-  // shape (#1533); before that it read as a success and a router-refused firmware
+  // **Any refusal that carries a fault code, not 7022 alone.** The agent refused
+  // the command (USP "Command Failure"); it arrives here because
+  // `UspClient.extractOperateResult` throws a refused Operate in this shape
+  // (#1533), and before that it read as a success and a router-refused firmware
   // chunk completed normally.
   //
-  // Deliberately **not** the `UnexpectedError` fallthrough below: that renders as
-  // "something went wrong", which is also what a network blip looks like, and a
-  // refusal is the router answering rather than the network failing.
+  // This arm was `e.faultCode == 7022` and that was a **user-visible defect this
+  // very change introduced**. Before #1533, `_mapOperationError` was dead in the
+  // WASM build — nothing constructed an `Operation error:` string — so its
+  // `UnexpectedError` fallthrough could not be reached. Making refusals throw made
+  // the whole function live, fallthrough included: any code other than 7022 failed
+  // this `if`, failed the three native-only string arms below, and landed on
+  // `UnexpectedError(detail: msg)`. `service_error_localizations.dart` surfaces
+  // `UnexpectedError`'s `detail` **verbatim**, so a code-9005 refusal put
+  // `Operation error: Device.X() refused: … (code: 9005)` — raw English, built for
+  // a log — on screen in all 26 locales. The fallthrough pre-existed; its
+  // reachability did not, which is why "pre-existing" is the wrong reading.
+  //
+  // Generalising costs nothing and gains accuracy, because `_localizeFaultCode`
+  // already knows more codes than this arm did: 9005 is `errorResourceNotFound`,
+  // 7004 is `errorInvalidInput`, 7022 is `errorCommandRefused`, and its `_` arm is
+  // `errorUnexpected` — **localized**, unlike the raw string it replaces. So every
+  // refusal now reaches the user in their own language, and several reach them more
+  // precisely than 7022 alone allowed.
+  //
   // **`failures` must carry one entry, and that is not bookkeeping.**
   // `_localizeBatch` in `service_error_localizations.dart` returns
-  // `l.errorUnexpected` — "Something went wrong" — for an *empty* list, so a
-  // refusal reported with no entries reaches the screen as the very generic
-  // message this mapping exists to avoid. The entry is what routes it to
-  // `_localizeFaultCode`, where 7022 says the router refused the command.
+  // `l.errorUnexpected` for an *empty* list, so a refusal reported with no entries
+  // reaches the screen as the very generic message this mapping exists to avoid.
+  // The entry is what routes it to `_localizeFaultCode`.
   //
   // `requestedPath` is empty on purpose: the thrown string carries the path in its
   // summary, and recovering it here would couple this mapper to a format built in
   // `UspClient._operateRefusal` by a regex neither side declares. The path is in
   // `summary` for a human and in the log for a developer; `failedPaths` is not a
   // consumer this code has.
-  if (e.faultCode == 7022) {
+  //
+  // The three string arms below stay *after* this one and are still reachable for
+  // what they describe: they match native `OperationError::*` strings, which carry
+  // no `(code: N)` suffix at all, so `faultCode` is null for them and this `if`
+  // declines.
+  final refusalCode = e.faultCode;
+  if (refusalCode != null) {
     return UspCompleteFailureError(
       summary: msg,
-      failures: const [
+      failures: [
         UspErrorDetail(
           requestedPath: '',
-          errorCode: 7022,
+          errorCode: refusalCode,
           errorMessage: 'Command Failure',
         ),
       ],
-      code: 7022,
+      code: refusalCode,
       detail: msg,
     );
   }

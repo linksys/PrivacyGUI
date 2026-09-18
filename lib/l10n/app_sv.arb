@@ -641,6 +641,7 @@
   "errorTimeout": "Åtgärden tog för lång tid. Försök igen.",
   "errorUnauthorized": "Du har inte behörighet att utföra denna åtgärd.",
   "errorUnexpected": "Något gick fel. Försök igen.",
+  "errorCommandRefused": "Routern nekade det här kommandot. Försök igen om en stund.",
   "errors": "Fel",
   "estimatedTimeRemaining": "Beräknad återstående tid: {time}",
   "ethernetPorts": "Ethernet-portar",

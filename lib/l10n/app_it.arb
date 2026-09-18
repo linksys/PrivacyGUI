@@ -641,6 +641,7 @@
   "errorTimeout": "L'operazione è scaduta. Riprova.",
   "errorUnauthorized": "Non disponi dei permessi per eseguire questa azione.",
   "errorUnexpected": "Si è verificato un problema. Riprova.",
+  "errorCommandRefused": "Il router ha rifiutato questo comando. Riprova tra un momento.",
   "errors": "Errori",
   "estimatedTimeRemaining": "Tempo stimato rimanente: {time}",
   "ethernetPorts": "Porte Ethernet",

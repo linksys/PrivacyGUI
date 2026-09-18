@@ -641,6 +641,7 @@
   "errorTimeout": "A operação expirou. Tente novamente.",
   "errorUnauthorized": "Você não tem permissão para realizar esta ação.",
   "errorUnexpected": "Algo deu errado. Tente novamente.",
+  "errorCommandRefused": "O roteador recusou este comando. Tente novamente em instantes.",
   "errors": "Erros",
   "estimatedTimeRemaining": "Tempo restante estimado: {time}",
   "ethernetPorts": "Portas Ethernet",

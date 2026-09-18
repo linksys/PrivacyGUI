@@ -641,6 +641,7 @@
   "errorTimeout": "Tidsavbrudd for operasjonen. Prøv igjen.",
   "errorUnauthorized": "Du har ikke tillatelse til å utføre denne handlingen.",
   "errorUnexpected": "Noe gikk galt. Prøv igjen.",
+  "errorCommandRefused": "Ruteren avviste denne kommandoen. Prøv igjen om et øyeblikk.",
   "errors": "Feil",
   "estimatedTimeRemaining": "Estimert gjenstående tid: {time}",
   "ethernetPorts": "Ethernet-porter",
