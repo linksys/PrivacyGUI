@@ -5,6 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -343,6 +344,128 @@ void main() {
 
       expect(container.read(remoteClientProvider).sessionInfo, isNull);
       expect(container.read(remoteClientProvider).pin, isNull);
+    });
+  });
+
+  // #1560: the gate was `state.pin == null`, so a PIN left over from a finished
+  // session suppressed createPin for every session that followed.
+  group('pin belongs to one session', () {
+    const laterSessionInfo = GRASessionInfo(
+      id: 'session-2',
+      serialNumber: 'TEST123',
+      modelNumber: 'LN16-EU',
+      status: GRASessionStatus.initiate,
+      expiredIn: 2547,
+      createdAt: 1748315872000,
+      statusChangedAt: 1748315989000,
+      currentTime: 1748316924838,
+    );
+
+    test('a PIN from a finished session does not suppress the next one',
+        () async {
+      when(mockCloudService.createPin(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => '1234');
+
+      // First session gets its PIN.
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [initiateSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => initiateSessionInfo);
+
+      final notifier = container.read(remoteClientProvider.notifier);
+      await notifier.pollSessionOnce();
+      expect(container.read(remoteClientProvider).pinSessionId, 'session-1');
+
+      // A different session appears while that PIN is still in state.
+      when(mockCloudService.createPin(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => '5678');
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [laterSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => laterSessionInfo);
+
+      await notifier.pollSessionOnce();
+
+      // Before the fix this second call created nothing, and the dialog went on
+      // showing 1234 - a PIN for a session that no longer existed.
+      verify(mockCloudService.createPin(
+        master: anyNamed('master'),
+        sessionId: 'session-2',
+      )).called(1);
+      final state = container.read(remoteClientProvider);
+      expect(state.pin, '5678');
+      expect(state.pinSessionId, 'session-2');
+    });
+
+    test('an empty session list clears the PIN and the session it belonged to',
+        () async {
+      when(mockCloudService.createPin(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => '1234');
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [initiateSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => initiateSessionInfo);
+
+      final notifier = container.read(remoteClientProvider.notifier);
+      await notifier.pollSessionOnce();
+
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => []);
+      await notifier.pollSessionOnce();
+
+      final state = container.read(remoteClientProvider);
+      expect(state.pin, isNull);
+      expect(state.pinSessionId, isNull);
+    });
+  });
+
+  group('pinForCurrentSession', () {
+    const other = GRASessionInfo(
+      id: 'session-2',
+      serialNumber: 'TEST123',
+      modelNumber: 'LN16-EU',
+      status: GRASessionStatus.pending,
+      expiredIn: 2547,
+      createdAt: 1748315872000,
+      statusChangedAt: 1748315989000,
+      currentTime: 1748316924838,
+    );
+
+    test('null when there is no PIN', () {
+      expect(
+          const RemoteClientState(sessionInfo: pendingSessionInfo)
+              .pinForCurrentSession,
+          isNull);
+    });
+
+    test('null when the PIN belongs to a different session', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: other, pin: '1234', pinSessionId: 'session-1')
+              .pinForCurrentSession,
+          isNull);
+    });
+
+    test('the PIN when it belongs to the session on screen', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: pendingSessionInfo,
+                  pin: '1234',
+                  pinSessionId: 'session-1')
+              .pinForCurrentSession,
+          '1234');
     });
   });
 

@@ -59,7 +59,8 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   Future<GRASessionInfo?> pollSessionOnce() async {
     final sessions = await fetchSessions();
     if (sessions.isEmpty) {
-      state = state.copyWith(sessionInfo: () => null, pin: () => null);
+      state = state.copyWith(
+          sessionInfo: () => null, pin: () => null, pinSessionId: () => null);
       return null;
     }
     final sessionInfo = await fetchSessionInfo(sessions.first.id);
@@ -71,7 +72,14 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     // so requesting only on PENDING would stall a session stuck at INITIATE.
     final needsPin = sessionInfo.status == GRASessionStatus.initiate ||
         sessionInfo.status == GRASessionStatus.pending;
-    if (needsPin && state.pin == null) {
+    // The PIN has to belong to *this* session. Asking only whether any PIN
+    // existed meant one left over from a finished session suppressed createPin
+    // for every session that followed - the DUT then sat at INITIATE showing no
+    // PIN, and once the session reached PENDING it displayed the stale PIN,
+    // which no Guardian can use (#1560).
+    final hasPinForThisSession =
+        state.pin != null && state.pinSessionId == sessionInfo.id;
+    if (needsPin && !hasPinForThisSession) {
       logger.i(
           '[RemoteAssistance]: createPin - ${sessionInfo.id}, ${sessionInfo.status}');
       await createPin(sessionInfo.id);
@@ -108,7 +116,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     try {
       final sessions = await fetchSessions();
       if (sessions.isEmpty) {
-        state = state.copyWith(sessionInfo: () => null);
+        // Same rule as pollSessionOnce: no session means no PIN either, or the
+        // next session inherits a credential that was never issued for it.
+        state = state.copyWith(
+            sessionInfo: () => null, pin: () => null, pinSessionId: () => null);
         return null;
       }
       final master = ref.read(deviceManagerProvider).masterDevice;
@@ -200,6 +211,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     // The dialog is closing in every path below; clear the flag up front so
     // the early returns do not leave it stuck true.
     state = state.copyWith(isDialogShown: () => false);
+    // The PIN dies with the dialog on every path, not only the ACTIVE one that
+    // resets state below - otherwise it stays resident and `pinForCurrentSession`
+    // is the only thing standing between it and the next session.
+    state = state.copyWith(pin: () => null, pinSessionId: () => null);
     final sessionId = state.sessionInfo?.id;
     if (sessionId == null) {
       return;
@@ -298,7 +313,9 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     final pin = await ref
         .read(deviceCloudServiceProvider)
         .createPin(master: master, sessionId: sessionId);
-    state = state.copyWith(pin: () => pin);
+    // Recorded together: a PIN with no session id attached is what let a stale
+    // one stand in for a new session's (#1560).
+    state = state.copyWith(pin: () => pin, pinSessionId: () => sessionId);
     return pin;
   }
 
