@@ -11,7 +11,6 @@ import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_optional_pane.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart';
@@ -37,41 +36,45 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
   int _recoveryGeneration = 0;
   String? _errorMessage;
   AutoIPoEIssue? _issue;
-  AutoIPoEStatus _progressStatus = const AutoIPoEStatus.init();
-  AutoIPoELog _progressLog = const AutoIPoELog.init();
   AutoIPoEReconciliationProgress _progress =
       const AutoIPoEReconciliationProgress.initial();
-  AutoIPoESettings _settings = const AutoIPoESettings.init().copyWith(
-    isEnabled: true,
-    selectedMode: AutoIPoEMode.auto,
-  );
 
   @override
   void initState() {
     super.initState();
-    _loadCapabilities();
+    // Off the life-cycle stack: the first thing this does is seed the draft in
+    // the provider, and Riverpod refuses a write made from initState.
+    Future.microtask(_loadCapabilities);
   }
 
   Future<void> _loadCapabilities() async {
+    final notifier = ref.read(autoIPoEProvider.notifier);
+    // This flow always starts from Auto, whatever the router is configured with,
+    // so the draft is seeded here rather than inherited. It has to happen before
+    // the read: the fallback editor below would otherwise show whatever a
+    // previous screen left in the provider.
+    notifier.updateSettings(const AutoIPoESettings.init().copyWith(
+      isEnabled: true,
+      selectedMode: AutoIPoEMode.auto,
+    ));
     try {
-      final capabilities =
-          await ref.read(autoIPoEProvider.notifier).fetchCapabilities();
+      final capabilities = await notifier.fetchCapabilities();
       final supportedModes = capabilities.supportedModes
           .where((mode) => mode != AutoIPoEMode.disabled)
           .toList();
-      final selectedMode = supportedModes.contains(_settings.selectedMode)
-          ? _settings.selectedMode
+      final current = ref.read(autoIPoEProvider).settings;
+      final selectedMode = supportedModes.contains(current.selectedMode)
+          ? current.selectedMode
           : (supportedModes.isNotEmpty
               ? supportedModes.first
               : AutoIPoEMode.auto);
       if (!mounted) {
         return;
       }
+      notifier.updateSettings(
+        current.copyWith(isEnabled: true, selectedMode: selectedMode),
+      );
       setState(() {
-        _settings = _settings.copyWith(
-          isEnabled: true,
-          selectedMode: selectedMode,
-        );
         _isLoading = false;
       });
     } catch (error, stackTrace) {
@@ -96,10 +99,12 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
       _isSubmitting = true;
       _errorMessage = null;
       _issue = null;
-      _progressStatus = const AutoIPoEStatus.init();
-      _progressLog = const AutoIPoELog.init();
       _progress = const AutoIPoEReconciliationProgress.initial();
     });
+    ref.read(autoIPoEProvider.notifier).updateRuntime(
+          const AutoIPoEStatus.init(),
+          const AutoIPoELog.init(),
+        );
     logger.i('[PnP Troubleshooter]: Open IPoE save path');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
@@ -111,7 +116,9 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
       RouteNamed.pnpIspSaveSettings,
       extra: {
         'newSettings': newState,
-        'autoIPoESettings': buildEnabledAutoIPoESettings(_settings),
+        'autoIPoESettings': buildEnabledAutoIPoESettings(
+          ref.read(autoIPoEProvider).settings,
+        ),
       },
     );
     if (!mounted) {
@@ -153,7 +160,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     final coordinator = ref.read(autoIPoEReconciliationCoordinatorProvider);
     try {
       final outcome = await coordinator.followPnpSetup(
-        expectedMode: _settings.selectedMode,
+        expectedMode: ref.read(autoIPoEProvider).settings.selectedMode,
         isCurrent: isCurrent,
         // Same native status check and retry budget as DHCP/PPPoE. ICC refreshes
         // asynchronously after tunnel hotplug events.
@@ -164,10 +171,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
           if (!isCurrent()) {
             return;
           }
-          setState(() {
-            _progressStatus = status;
-            _progressLog = log;
-          });
+          ref.read(autoIPoEProvider.notifier).updateRuntime(status, log);
         },
         onPollingWindowEnded: (issue) {
           if (!isCurrent()) {
@@ -266,9 +270,10 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     if (_isLoading) {
       return const AppFullScreenSpinner();
     }
-    // Capabilities live in the provider now: they describe the router, not this
-    // screen, and two screens ask the same question.
-    final capabilities = ref.watch(autoIPoEProvider).capabilities;
+    // The provider owns the whole Auto-IPoE picture: the capabilities describe
+    // the router, the settings are the draft being edited, and the status and log
+    // are what reconciliation has observed. This screen no longer keeps copies.
+    final autoIPoEState = ref.watch(autoIPoEProvider);
     final showEditor = shouldShowPnpIPoEEditor(isRecovering: _isRecovering);
 
     return StyledAppPageView(
@@ -290,12 +295,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
             AutoIPoEOptionalPane(
               compactProgress: true,
               progress: _progress,
-              state: AutoIPoEState(
-                capabilities: capabilities,
-                settings: _settings,
-                status: _progressStatus,
-                log: _progressLog,
-              ),
+              state: autoIPoEState,
               shouldTrackRuntime: false,
               awaitingCompletion: true,
               issue: _issue,
@@ -309,15 +309,17 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
           ],
           if (showEditor) ...[
             AutoIPoESection(
-              settings: _settings,
+              settings: autoIPoEState.settings,
               status: const AutoIPoEStatus.init(),
-              capabilities: capabilities,
+              capabilities: autoIPoEState.capabilities,
               isEditing: true,
               highlightedFieldGroup:
                   _issue?.fieldGroup ?? AutoIPoEFieldGroup.none,
               onChanged: (settings) {
+                ref
+                    .read(autoIPoEProvider.notifier)
+                    .updateSettings(settings.copyWith(isEnabled: true));
                 setState(() {
-                  _settings = settings.copyWith(isEnabled: true);
                   _issue = null;
                 });
               },
