@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normale",
   "cardFormCompact": "Compatto",
   "cardFormPopup": "Popup",
-  "cardFormForNamed": "Formato scheda per {name}"
+  "cardFormForNamed": "Formato scheda per {name}",
+  "notificationHistory": "Cronologia notifiche",
+  "menuNotificationHistoryDesc": "Notifiche memorizzate durante questa sessione di assistenza",
+  "notificationHistoryLastBoot": "Ultimo avvio",
+  "notificationHistoryLastActivity": "Ultima attività USP",
+  "notificationHistoryEmpty": "Questa sessione di assistenza non ha ancora prodotto notifiche",
+  "notificationHistoryUnavailable": "La cronologia delle notifiche è disponibile solo durante una sessione di assistenza remota",
+  "notificationHistoryGone": "Questa notifica non è più disponibile",
+  "notificationHistoryMessageId": "ID messaggio",
+  "notificationHistoryCommandKey": "Chiave comando",
+  "notificationHistoryShowMore": "Mostra altro"
 }

@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Обычный",
   "cardFormCompact": "Компактный",
   "cardFormPopup": "Всплывающее окно",
-  "cardFormForNamed": "Формат карточки для {name}"
+  "cardFormForNamed": "Формат карточки для {name}",
+  "notificationHistory": "История уведомлений",
+  "menuNotificationHistoryDesc": "Уведомления, сохранённые во время этого сеанса поддержки",
+  "notificationHistoryLastBoot": "Последний запуск",
+  "notificationHistoryLastActivity": "Последняя активность USP",
+  "notificationHistoryEmpty": "В этом сеансе поддержки пока не было уведомлений",
+  "notificationHistoryUnavailable": "История уведомлений доступна только во время сеанса удалённой помощи",
+  "notificationHistoryGone": "Это уведомление больше недоступно",
+  "notificationHistoryMessageId": "Идентификатор сообщения",
+  "notificationHistoryCommandKey": "Ключ команды",
+  "notificationHistoryShowMore": "Показать больше"
 }

@@ -1174,5 +1174,15 @@
   "cardFormNormal": "표준",
   "cardFormCompact": "간략",
   "cardFormPopup": "팝업",
-  "cardFormForNamed": "{name}의 카드 형식"
+  "cardFormForNamed": "{name}의 카드 형식",
+  "notificationHistory": "알림 기록",
+  "menuNotificationHistoryDesc": "이 지원 세션 중에 저장된 알림",
+  "notificationHistoryLastBoot": "마지막 부팅",
+  "notificationHistoryLastActivity": "마지막 USP 활동",
+  "notificationHistoryEmpty": "이 지원 세션에서는 아직 알림이 발생하지 않았습니다",
+  "notificationHistoryUnavailable": "알림 기록은 원격 지원 세션 중에만 사용할 수 있습니다",
+  "notificationHistoryGone": "이 알림은 더 이상 사용할 수 없습니다",
+  "notificationHistoryMessageId": "메시지 ID",
+  "notificationHistoryCommandKey": "명령 키",
+  "notificationHistoryShowMore": "더 보기"
 }

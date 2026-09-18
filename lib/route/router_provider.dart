@@ -53,6 +53,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';

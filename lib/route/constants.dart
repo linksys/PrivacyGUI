@@ -42,6 +42,7 @@ class RoutePath {
   static const uspAdmin = '/uspAdmin';
   static const uspDhcpDetail = '/uspDhcpDetail';
   static const uspSystemLog = '/uspSystemLog';
+  static const uspNotificationHistory = '/uspNotificationHistory';
   static const uspAdvancedSettings = '/uspAdvancedSettings';
   static const uspStatistics = '/uspStatistics';
   static const uspTestConsole = '/uspTestConsole';
@@ -209,6 +210,7 @@ class RouteNamed {
   static const uspDhcpDetail = 'uspDhcpDetail';
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
   static const uspSystemLog = 'uspSystemLog';
+  static const uspNotificationHistory = 'uspNotificationHistory';
   static const uspFirewall = 'uspFirewall';
   static const uspDmz = 'uspDmz';
   static const uspLocalNetwork = 'uspLocalNetwork';

@@ -63,6 +63,10 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
     authToken: config.authToken,
     clientTypeId: config.clientTypeId,
     authBehavior: config.authBehavior,
+    // Null locally, and the client throws on any read that needs it. Nothing
+    // local calls one: the only caller is #1580's page, whose entry point the
+    // local surface does not offer.
+    remoteReads: config.remoteReads,
   );
 
   // W-1 fix: wire auth failure to logout (both modes)

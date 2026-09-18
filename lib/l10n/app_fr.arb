@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Fenêtre contextuelle",
-  "cardFormForNamed": "Format de carte pour {name}"
+  "cardFormForNamed": "Format de carte pour {name}",
+  "notificationHistory": "Historique des notifications",
+  "menuNotificationHistoryDesc": "Notifications enregistrées pendant cette session d'assistance",
+  "notificationHistoryLastBoot": "Dernier démarrage",
+  "notificationHistoryLastActivity": "Dernière activité USP",
+  "notificationHistoryEmpty": "Cette session d'assistance n'a encore produit aucune notification",
+  "notificationHistoryUnavailable": "L'historique des notifications n'est disponible que pendant une session d'assistance à distance",
+  "notificationHistoryGone": "Cette notification n'est plus disponible",
+  "notificationHistoryMessageId": "ID du message",
+  "notificationHistoryCommandKey": "Clé de commande",
+  "notificationHistoryShowMore": "Afficher plus"
 }

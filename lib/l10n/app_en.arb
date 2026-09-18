@@ -1909,5 +1909,18 @@
   "cardFormCompact": "Compact",
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Card form for {name}",
-  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}}
+  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}},
+  "notificationHistory": "Notification History",
+  "menuNotificationHistoryDesc": "Notifications stored during this support session",
+  "notificationHistoryLastBoot": "Last boot",
+  "notificationHistoryLastActivity": "Last USP activity",
+  "notificationHistoryEmpty": "This support session has not produced any notifications yet",
+  "@notificationHistoryEmpty": {"description": "History is scoped to one support session, so a fresh session always starts with nothing. Worded as a normal state rather than \"no data\", which reads like a fault."},
+  "notificationHistoryUnavailable": "Notification history is only available during a Remote Assistance session",
+  "@notificationHistoryUnavailable": {"description": "Shown when the page is reached in a build that has no Guardian session, which a hand-typed URL can do because the route lives under the shared dashboard. Better than the developer error page a missing route would produce."},
+  "notificationHistoryGone": "This notification is no longer available",
+  "@notificationHistoryGone": {"description": "A 404 on one stored notification. The spec makes that status cover both \"does not exist\" and \"is not yours\" and deliberately does not distinguish them, so one message answers both."},
+  "notificationHistoryMessageId": "Message ID",
+  "notificationHistoryCommandKey": "Command key",
+  "notificationHistoryShowMore": "Show more"
 }

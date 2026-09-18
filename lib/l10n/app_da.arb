@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Pop op",
-  "cardFormForNamed": "Kortformat for {name}"
+  "cardFormForNamed": "Kortformat for {name}",
+  "notificationHistory": "Notifikationshistorik",
+  "menuNotificationHistoryDesc": "Notifikationer gemt under denne supportsession",
+  "notificationHistoryLastBoot": "Sidste opstart",
+  "notificationHistoryLastActivity": "Seneste USP-aktivitet",
+  "notificationHistoryEmpty": "Denne supportsession har endnu ikke genereret nogen notifikationer",
+  "notificationHistoryUnavailable": "Notifikationshistorik er kun tilgængelig under en fjernsupportsession",
+  "notificationHistoryGone": "Denne notifikation er ikke længere tilgængelig",
+  "notificationHistoryMessageId": "Besked-id",
+  "notificationHistoryCommandKey": "Kommandonøgle",
+  "notificationHistoryShowMore": "Vis mere"
 }

@@ -13,6 +13,26 @@ class SessionExpiredException implements Exception {
   String toString() => 'SessionExpiredException: $message';
 }
 
+/// A bridge read that answered with something other than a 2xx.
+///
+/// Carries the status code because the callers need it: a `404` on a single
+/// notification means "no longer available" and is ordinary, while anything else
+/// is a fault. Mapping to `ServiceError` happens in the service layer, per
+/// constitution Article XIII — this type is the transport's own vocabulary.
+class BridgeReadException implements Exception {
+  final int statusCode;
+
+  /// Which read produced it, for the log line. Not user-visible.
+  final String label;
+
+  BridgeReadException(this.statusCode, this.label);
+
+  bool get isNotFound => statusCode == 404;
+
+  @override
+  String toString() => 'BridgeReadException($label, HTTP $statusCode)';
+}
+
 /// Stub implementation of [UspBridgeClient] for non-Web platforms (Dart VM / tests).
 ///
 /// Selected by conditional export when `dart.library.js_interop` is unavailable.
@@ -29,6 +49,7 @@ class UspBridgeClient {
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,
+    RemoteReads? remoteReads,
   });
 
   Future<Map<String, dynamic>> health() =>
@@ -38,6 +59,15 @@ class UspBridgeClient {
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, String>> notificationsProbe() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> uspState() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> notificationsHistory() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> notification(String msgId) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> subscribe({

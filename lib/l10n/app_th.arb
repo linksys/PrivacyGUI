@@ -1174,5 +1174,15 @@
   "cardFormNormal": "ปกติ",
   "cardFormCompact": "กระชับ",
   "cardFormPopup": "ป๊อปอัป",
-  "cardFormForNamed": "รูปแบบการ์ดของ {name}"
+  "cardFormForNamed": "รูปแบบการ์ดของ {name}",
+  "notificationHistory": "ประวัติการแจ้งเตือน",
+  "menuNotificationHistoryDesc": "การแจ้งเตือนที่จัดเก็บระหว่างเซสชันการสนับสนุนนี้",
+  "notificationHistoryLastBoot": "การบูตครั้งล่าสุด",
+  "notificationHistoryLastActivity": "กิจกรรม USP ครั้งล่าสุด",
+  "notificationHistoryEmpty": "เซสชันการสนับสนุนนี้ยังไม่มีการแจ้งเตือน",
+  "notificationHistoryUnavailable": "ประวัติการแจ้งเตือนใช้ได้เฉพาะระหว่างเซสชันการช่วยเหลือระยะไกล",
+  "notificationHistoryGone": "การแจ้งเตือนนี้ไม่พร้อมใช้งานอีกต่อไป",
+  "notificationHistoryMessageId": "รหัสข้อความ",
+  "notificationHistoryCommandKey": "คีย์คำสั่ง",
+  "notificationHistoryShowMore": "แสดงเพิ่มเติม"
 }

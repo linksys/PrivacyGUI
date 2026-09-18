@@ -111,10 +111,79 @@ void main() {
             'was well formed and simply went nowhere useful');
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RemoteReads — #1580 / epic #1575
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // THE DECISION GUARDED. That these paths are **optional**, not a fifth, sixth
+  // and seventh `required` field on `BridgeEndpoints`. They are the first group
+  // of endpoints that exists remotely and has no local counterpart at all — the
+  // router keeps no notification store — so giving local a placeholder would
+  // repeat exactly the mistake three docstrings spent a year repeating about
+  // `health` (#1576). `BridgeConfig.remoteReads == null` is how a local build
+  // says "these do not exist here", and the page reads that to render its
+  // not-available state instead of a red developer page.
+  group('the remote read table', () {
+    test('exact paths', () {
+      final reads = RemoteReads.forSession('sess-4711');
+      const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';
+
+      expect(reads.state, '$base/state');
+      expect(reads.notificationsHistory, '$base/notifications/history');
+      expect(reads.notification('msg-9'), '$base/notifications/msg-9');
+    });
+
+    test('the per-entry path is the history path with the id swapped in', () {
+      final reads = RemoteReads.forSession('sess-4711');
+
+      expect(
+        reads.notification('history'),
+        reads.notificationsHistory,
+        reason: 'not a bug to fix — the spec says the `history` route wins on '
+            'the server, so a msgId of that literal can never address an '
+            'entry. The equality is here so that a reader who wonders reaches '
+            'this note rather than filing it.',
+      );
+    });
+
+    test('every path is scoped to the session', () {
+      final reads = RemoteReads.forSession('sess-4711');
+
+      for (final path in [
+        reads.state,
+        reads.notificationsHistory,
+        reads.notification('msg-9'),
+      ]) {
+        expect(path, contains('sess-4711'));
+      }
+    });
+
+    test('a different session yields a different table', () {
+      expect(
+        RemoteReads.forSession('sess-a').notificationsHistory,
+        isNot(RemoteReads.forSession('sess-b').notificationsHistory),
+      );
+    });
+
+    test('shares no path with the local table', () {
+      final reads = RemoteReads.forSession('sess-4711');
+      final local = _paths(BridgeEndpoints.local).toSet();
+
+      expect(
+        local.intersection({reads.state, reads.notificationsHistory}),
+        isEmpty,
+      );
+    });
+  });
+
   test('every path is absolute', () {
+    final reads = RemoteReads.forSession('sess-4711');
     final all = [
       ..._paths(BridgeEndpoints.local),
       ..._paths(BridgeEndpoints.remote('sess-4711')),
+      reads.state,
+      reads.notificationsHistory,
+      reads.notification('msg-9'),
     ];
 
     for (final path in all) {

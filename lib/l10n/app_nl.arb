@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normaal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Pop-up",
-  "cardFormForNamed": "Kaartindeling voor {name}"
+  "cardFormForNamed": "Kaartindeling voor {name}",
+  "notificationHistory": "Meldingsgeschiedenis",
+  "menuNotificationHistoryDesc": "Meldingen die tijdens deze ondersteuningssessie zijn opgeslagen",
+  "notificationHistoryLastBoot": "Laatste keer opgestart",
+  "notificationHistoryLastActivity": "Laatste USP-activiteit",
+  "notificationHistoryEmpty": "Deze ondersteuningssessie heeft nog geen meldingen opgeleverd",
+  "notificationHistoryUnavailable": "Meldingsgeschiedenis is alleen beschikbaar tijdens een sessie voor hulp op afstand",
+  "notificationHistoryGone": "Deze melding is niet langer beschikbaar",
+  "notificationHistoryMessageId": "Bericht-ID",
+  "notificationHistoryCommandKey": "Opdrachtsleutel",
+  "notificationHistoryShowMore": "Meer weergeven"
 }

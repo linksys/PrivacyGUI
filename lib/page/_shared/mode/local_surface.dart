@@ -76,6 +76,12 @@ class LocalSurface implements SurfaceStrategy {
   Future<void> Function(BuildContext context, WidgetRef ref)?
       firstRunPresetFlow() => runFirstRunPresetFlow;
 
+  /// Nothing to read. The router publishes its notifies and keeps none of them;
+  /// the store this page reads belongs to Guardian and exists only for the
+  /// duration of a support session it scopes.
+  @override
+  T? notificationHistoryMenuEntry<T>(T Function() entry) => null;
+
   @override
   Widget firmwareManualEntry({required Widget Function() picker}) => picker();
 

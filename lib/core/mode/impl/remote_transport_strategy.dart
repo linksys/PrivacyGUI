@@ -42,6 +42,11 @@ class RemoteTransportStrategy implements TransportStrategy {
       authToken: config.temporaryAccessToken,
       clientTypeId: config.clientTypeId,
       authBehavior: credential.authBehavior,
+      // The three reads Guardian serves over its own notification store, which
+      // the router has no counterpart for. Non-null here and null in the local
+      // arm is the whole of how #1580's page learns whether it has anything to
+      // read; see [RemoteReads].
+      remoteReads: RemoteReads.forSession(config.sessionId),
     );
   }
 

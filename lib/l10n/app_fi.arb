@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normaali",
   "cardFormCompact": "Tiivis",
   "cardFormPopup": "Ponnahdus",
-  "cardFormForNamed": "Kortin muoto: {name}"
+  "cardFormForNamed": "Kortin muoto: {name}",
+  "notificationHistory": "Ilmoitushistoria",
+  "menuNotificationHistoryDesc": "Tämän tukisession aikana tallennetut ilmoitukset",
+  "notificationHistoryLastBoot": "Viimeinen käynnistys",
+  "notificationHistoryLastActivity": "Viimeisin USP-toiminta",
+  "notificationHistoryEmpty": "Tämä tukisessio ei ole vielä tuottanut ilmoituksia",
+  "notificationHistoryUnavailable": "Ilmoitushistoria on käytettävissä vain etätukisession aikana",
+  "notificationHistoryGone": "Tämä ilmoitus ei ole enää saatavilla",
+  "notificationHistoryMessageId": "Viestitunnus",
+  "notificationHistoryCommandKey": "Komentoavain",
+  "notificationHistoryShowMore": "Näytä lisää"
 }

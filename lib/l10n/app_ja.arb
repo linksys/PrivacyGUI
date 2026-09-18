@@ -1174,5 +1174,15 @@
   "cardFormNormal": "標準",
   "cardFormCompact": "コンパクト",
   "cardFormPopup": "ポップアップ",
-  "cardFormForNamed": "{name} のカード形式"
+  "cardFormForNamed": "{name} のカード形式",
+  "notificationHistory": "通知履歴",
+  "menuNotificationHistoryDesc": "このサポートセッション中に保存された通知",
+  "notificationHistoryLastBoot": "最終起動",
+  "notificationHistoryLastActivity": "最終 USP アクティビティ",
+  "notificationHistoryEmpty": "このサポートセッションではまだ通知が発生していません",
+  "notificationHistoryUnavailable": "通知履歴はリモートアシスタンスセッション中のみ利用できます",
+  "notificationHistoryGone": "この通知は利用できなくなりました",
+  "notificationHistoryMessageId": "メッセージ ID",
+  "notificationHistoryCommandKey": "コマンドキー",
+  "notificationHistoryShowMore": "さらに表示"
 }

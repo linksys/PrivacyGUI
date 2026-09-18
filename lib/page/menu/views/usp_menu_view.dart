@@ -8,6 +8,7 @@ import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/page/models/menu_badge.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -53,6 +54,21 @@ class UspMenuView extends ConsumerWidget {
     // Read from L1 providers for applied state (not page-level pending state)
     final lanData = ref.watch(lanDataProvider).valueOrNull;
     final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
+
+    // Notification history exists only where a notification store does, which is
+    // Guardian's and not the router's. `null` locally, and the surface builds
+    // nothing in that case — no `if` on the mode here, per constitution
+    // Article XVII. See `SurfaceStrategy.notificationHistoryMenuEntry` (#1580).
+    final historyEntry =
+        ref.watch(surfaceStrategyProvider).notificationHistoryMenuEntry(
+              () => AppSectionItemData(
+                identifier: 'menu-notification-history',
+                title: loc(context).notificationHistory,
+                description: loc(context).menuNotificationHistoryDesc,
+                iconData: Icons.notifications_none,
+                onTap: () => context.goNamed(RouteNamed.uspNotificationHistory),
+              ),
+            );
 
     // Instant Safety is enabled when DNS is set to OpenDNS
     final isSafetyEnabled = lanData != null &&
@@ -135,6 +151,7 @@ class UspMenuView extends ConsumerWidget {
       //   iconData: Icons.speed,
       //   onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
       // ), // disabled: blocked by FW support (#857)
+      if (historyEntry != null) historyEntry,
       AppSectionItemData(
         identifier: 'menu-network-diagnostics',
         title: loc(context).networkDiagnostics,

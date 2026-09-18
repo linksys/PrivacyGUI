@@ -106,6 +106,14 @@ class RemoteSurface implements SurfaceStrategy {
   /// does the install phase machine behind this card: an OTA install is allowed in
   /// every mode and reports its progress, its failure and its retry through those
   /// same phases. Dropping them here was #1497's own regression.
+  /// The one surface in the app that gains a page rather than losing one.
+  ///
+  /// #205 Item 7, and the only one of its nine items a user can see: an agent in
+  /// a support session could not read a single notification the cloud had stored
+  /// for that session.
+  @override
+  T? notificationHistoryMenuEntry<T>(T Function() entry) => entry();
+
   @override
   Widget firmwareManualEntry({required Widget Function() picker}) =>
       const SizedBox.shrink();

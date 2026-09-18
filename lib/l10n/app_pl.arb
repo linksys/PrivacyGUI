@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normalny",
   "cardFormCompact": "Kompaktowy",
   "cardFormPopup": "Wyskakujące okno",
-  "cardFormForNamed": "Format karty dla {name}"
+  "cardFormForNamed": "Format karty dla {name}",
+  "notificationHistory": "Historia powiadomień",
+  "menuNotificationHistoryDesc": "Powiadomienia zapisane podczas tej sesji pomocy",
+  "notificationHistoryLastBoot": "Ostatni rozruch",
+  "notificationHistoryLastActivity": "Ostatnia aktywność USP",
+  "notificationHistoryEmpty": "Ta sesja pomocy nie wygenerowała jeszcze żadnych powiadomień",
+  "notificationHistoryUnavailable": "Historia powiadomień jest dostępna tylko podczas sesji pomocy zdalnej",
+  "notificationHistoryGone": "To powiadomienie nie jest już dostępne",
+  "notificationHistoryMessageId": "Identyfikator wiadomości",
+  "notificationHistoryCommandKey": "Klucz polecenia",
+  "notificationHistoryShowMore": "Pokaż więcej"
 }

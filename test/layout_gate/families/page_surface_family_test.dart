@@ -57,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when fifty-one cases fit. It is *also*
-/// green when fifty-one cases never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when fifty-two cases fit. It is *also*
+/// green when fifty-two cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -77,8 +77,8 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is fifty-one cases over
-  // forty-four pages, because five of those pages are swept more than once. The two
+  // "Cases" and not "pages", corrected by #1489: this list is fifty-two cases over
+  // forty-five pages, because five of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
   // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
@@ -102,12 +102,13 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares fifty-one cases over forty-four pages, and which '
-      'fifty-one is a decision', () {
+      'the gate declares fifty-two cases over forty-five pages, and which '
+      'fifty-two is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
-        '#1549\'s split page and #1554\'s two fixture states', () {
+        '#1549\'s split page, #1554\'s two fixture states and #1580\'s '
+        'remote-only page', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -171,6 +172,15 @@ void main() {
           'statistics_devices',
           'statistics_system',
           'system_log',
+          // #1580: the first case in this family whose page the *remote* surface
+          // adds. Appended rather than slotted, because its page has one case and
+          // the declaration-locality rule above only applies to siblings. What is
+          // new about it is the fixture's job: the page's default state is
+          // "not available in this mode", so `notificationHistoryOverrides()` has
+          // to switch availability on before there is anything to measure — and
+          // `requires` names four types instead of the usual two because this page
+          // has four content states, three of which cannot overflow.
+          'notification_history',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.

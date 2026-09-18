@@ -1174,5 +1174,15 @@
   "cardFormNormal": "标准",
   "cardFormCompact": "精简",
   "cardFormPopup": "弹出式",
-  "cardFormForNamed": "{name} 的卡片样式"
+  "cardFormForNamed": "{name} 的卡片样式",
+  "notificationHistory": "通知历史",
+  "menuNotificationHistoryDesc": "本次支持会话期间存储的通知",
+  "notificationHistoryLastBoot": "上次启动",
+  "notificationHistoryLastActivity": "上次 USP 活动",
+  "notificationHistoryEmpty": "本次支持会话尚未产生任何通知",
+  "notificationHistoryUnavailable": "通知历史仅在远程协助会话期间可用",
+  "notificationHistoryGone": "此通知已不再可用",
+  "notificationHistoryMessageId": "消息 ID",
+  "notificationHistoryCommandKey": "命令键",
+  "notificationHistoryShowMore": "显示更多"
 }

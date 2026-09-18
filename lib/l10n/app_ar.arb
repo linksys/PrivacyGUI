@@ -1174,5 +1174,15 @@
   "cardFormNormal": "عادي",
   "cardFormCompact": "مضغوط",
   "cardFormPopup": "منبثق",
-  "cardFormForNamed": "تنسيق البطاقة لـ {name}"
+  "cardFormForNamed": "تنسيق البطاقة لـ {name}",
+  "notificationHistory": "سجل الإشعارات",
+  "menuNotificationHistoryDesc": "الإشعارات المخزَّنة خلال جلسة الدعم هذه",
+  "notificationHistoryLastBoot": "آخر تشغيل",
+  "notificationHistoryLastActivity": "آخر نشاط USP",
+  "notificationHistoryEmpty": "لم تُنتج جلسة الدعم هذه أي إشعارات بعد",
+  "notificationHistoryUnavailable": "سجل الإشعارات متاح فقط خلال جلسة المساعدة عن بُعد",
+  "notificationHistoryGone": "هذا الإشعار غير متاح بعد الآن",
+  "notificationHistoryMessageId": "معرّف الرسالة",
+  "notificationHistoryCommandKey": "مفتاح الأمر",
+  "notificationHistoryShowMore": "عرض المزيد"
 }

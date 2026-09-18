@@ -1174,5 +1174,15 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Popup",
-  "cardFormForNamed": "Kortformat for {name}"
+  "cardFormForNamed": "Kortformat for {name}",
+  "notificationHistory": "Varslingshistorikk",
+  "menuNotificationHistoryDesc": "Varsler lagret under denne støttesesjonen",
+  "notificationHistoryLastBoot": "Sist oppstart",
+  "notificationHistoryLastActivity": "Siste USP-aktivitet",
+  "notificationHistoryEmpty": "Denne støttesesjonen har ennå ikke produsert noen varsler",
+  "notificationHistoryUnavailable": "Varslingshistorikk er bare tilgjengelig under en fjernhjelpsesjon",
+  "notificationHistoryGone": "Dette varselet er ikke lenger tilgjengelig",
+  "notificationHistoryMessageId": "Meldings-ID",
+  "notificationHistoryCommandKey": "Kommandonøkkel",
+  "notificationHistoryShowMore": "Vis mer"
 }
