@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue_presentation.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_apply_dispatcher.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
@@ -2108,19 +2109,22 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   }
 
   void _handleAdvancedAutoIPoEIssue(AutoIPoEIssue issue) {
-    if (!mounted || _isFinalizingAutoIPoE) {
+    if (!mounted) {
+      return;
+    }
+    final decision = decideAdvancedAutoIPoEIssue(
+      issue,
+      isFinalizing: _isFinalizingAutoIPoE,
+      dialogVisible: _autoIPoETerminalDialogVisible,
+    );
+    if (!decision.handled) {
       return;
     }
     setState(() {
       _autoIPoEIssue = issue;
-      _awaitingAutoIPoECompletion =
-          issue.recoveryAction == AutoIPoERecoveryAction.continueChecking ||
-              issue.hasScheduledRecovery;
+      _awaitingAutoIPoECompletion = decision.keepAwaiting;
     });
-    if ((issue.isTerminal ||
-            issue.requiresFreshApply ||
-            issue.hasScheduledRecovery) &&
-        !_autoIPoETerminalDialogVisible) {
+    if (decision.announce) {
       unawaited(_showAdvancedAutoIPoETerminalDialog(issue));
     }
   }
