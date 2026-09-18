@@ -1004,9 +1004,32 @@ class UspClient {
     }
 
     final what = path ?? 'the command';
-    final why = (message == null || message.isEmpty)
+    // **The router's own message is requoted so it cannot be read as our suffix.**
+    //
+    // `parseUspError` recovers the fault code with `\(code:\s*(\d+)\)` over the whole
+    // string, and this method appends its suffix *after* the message — so a vendor
+    // message echoing an upstream `(code: N)` was being adopted as the code. Measured
+    // on head before this change: a refusal with **no** `errorCode` whose message read
+    // `upstream said (code: 9001)` parsed as fault code 9001 and mapped to
+    // `UspCompleteFailureError`, telling the user "request denied" about a refusal the
+    // router gave no code for. Inventing a specific wrong answer is worse than the
+    // generic one it replaced.
+    //
+    // Requoted rather than anchoring the consumer's pattern to end-of-string, which is
+    // what a reviewer proposed: **measured, that breaks the protocol path**, where the
+    // code legitimately sits mid-string (`… (code: 7004) for Device.X` must still
+    // parse as 7004). The producer owns this format, so the producer is where the
+    // ambiguity gets removed.
+    //
+    // Square brackets keep every character of what the router said while leaving
+    // exactly one parenthesised code in the string — ours.
+    final quoted = message?.replaceAllMapped(
+      RegExp(r'\(code:\s*(\d+)\)'),
+      (m) => '[code: ${m.group(1)}]',
+    );
+    final why = (quoted == null || quoted.isEmpty)
         ? 'the router gave no reason'
-        : message;
+        : quoted;
     // **Normalised to an integer literal, because the consumer reads it with a
     // regex.** `parseUspError` recovers the code with `\(code:\s*(\d+)\)`, and
     // `errorCode` arrives here untyped from a JS object: an integral JS number can

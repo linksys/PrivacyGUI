@@ -382,13 +382,18 @@ ServiceError _mapOperationError(UspError e) {
         UspErrorDetail(
           requestedPath: '',
           errorCode: refusalCode,
-          // The parsed summary, **not** the literal `'Command Failure'` this used to
-          // carry. That phrase is TR-369's name for 7022 alone, and once this arm
-          // covered every code it was being stamped onto 9005 and 7004 refusals as
-          // well — a wrong label, and a visible one: `usp_test_console_view.dart`
-          // renders `failures`. The summary is accurate for every code and says what
-          // the router actually said.
-          errorMessage: msg,
+          // Short and true for every code. Two wrong answers were tried here first:
+          // `'Command Failure'` is TR-369's name for **7022 alone** and was being
+          // stamped onto 9005 and 7004 refusals; the formatted summary that replaced
+          // it is the whole log line, in a field five other construction sites use
+          // for the agent's short message — `usp_test_console_view.dart` renders it
+          // right after `Code ${errorCode}`, so the code appeared twice on one line.
+          //
+          // The router's own fragment is not recoverable here without re-parsing a
+          // format built in `UspClient._operateRefusal`, which this mapper
+          // deliberately does not couple itself to. `summary` and `detail` already
+          // carry the full text for anyone who wants it.
+          errorMessage: 'Command refused',
         ),
       ],
       code: refusalCode,

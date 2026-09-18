@@ -289,19 +289,99 @@ void main() {
       // error map), which is why this is a guard rather than a branch.
       final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 9999)));
 
+      // The positive outcome, not just the negative: `isNot(isA<...>())` also passes
+      // for the inverse regression this guard exists to stop.
+      expect(error, isA<UnexpectedError>());
       expect(error, isNot(isA<UspCompleteFailureError>()));
     });
 
-    test('the failure detail carries the router message, not a 7022 label', () {
+    test('the failure detail is not labelled with 7022\'s own name', () {
       // `'Command Failure'` is TR-369's name for 7022 alone. Once the arm covered
       // every code it was being stamped onto 9005 and 7004 refusals too — a wrong
       // label, and a visible one: `usp_test_console_view.dart` renders `failures`.
+      //
+      // What the field carries *instead* moved once more in round 3 (the formatted
+      // summary was too long for a field five other sites use for a short message),
+      // so that half of the assertion lives in the round-3 group below and this one
+      // keeps only the claim it was opened for.
       final error = mapUspErrorToServiceError(
           _thrownFrom(refused(code: 9005, message: 'no such object')));
 
       final detail = (error as UspCompleteFailureError).failures.single;
       expect(detail.errorMessage, isNot('Command Failure'));
-      expect(detail.errorMessage, contains('no such object'));
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Round-3 remediation
+  // ══════════════════════════════════════════════════════════════════════════
+  group('a fault code comes from our suffix, never from the router prose', () {
+    test('a code-less refusal does not adopt a code from its message', () {
+      // The hole the round-2 `last`-match fix did **not** close, and the worst of the
+      // three because it invents a *specific* wrong answer: with no `errorCode` there
+      // is no suffix at all, so the only match in the string was the router's own
+      // `(code: 9001)` — adopted as the fault code and rendered to the user as
+      // "request denied" for a refusal the router gave no code for. Measured on head
+      // before the fix.
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {
+          'error': {
+            'Device.X()': {'errorMessage': 'upstream said (code: 9001)'},
+          },
+        },
+      });
+
+      expect(parseUspError(thrown)?.faultCode, isNull,
+          reason: 'the router named no code; ours is the only one that counts');
+      expect(mapUspErrorToServiceError(thrown), isA<UnexpectedError>());
+      // What it said is still readable — requoted, not discarded.
+      expect(thrown, contains('[code: 9001]'));
+    });
+
+    test('our suffix still wins when the message also carries one', () {
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {
+          'error': {
+            'Device.X()': {
+              'errorCode': 7022,
+              'errorMessage': 'upstream said (code: 9001)',
+            },
+          },
+        },
+      });
+
+      expect(parseUspError(thrown)?.faultCode, 7022);
+      expect(thrown, contains('[code: 9001]'));
+      expect(thrown, contains('(code: 7022)'));
+    });
+
+    test('a mid-string code on the protocol path still parses', () {
+      // Why the consumer's pattern was **not** anchored to end-of-string, which is
+      // what a reviewer proposed: measured, protocol errors carry the code mid-string
+      // and anchoring returns null for them. The producer removes the ambiguity
+      // instead.
+      expect(
+        parseUspError('Get failed: Protocol error: not writable (code: 7004) '
+                'for Device.X')
+            ?.faultCode,
+        7004,
+      );
+    });
+
+    test('the failure detail carries a short label, not the whole log line',
+        () {
+      // `usp_test_console_view.dart` prints `errorMessage` immediately after
+      // `Code ${errorCode}`, so the formatted summary put the code on the line twice.
+      final error = mapUspErrorToServiceError(
+          _thrownFrom(refused(code: 9005, message: 'no such object')));
+
+      final detail = (error as UspCompleteFailureError).failures.single;
+      expect(detail.errorMessage, 'Command refused');
+      expect(detail.errorMessage, isNot(contains('9005')));
+      // The full text is still reachable, on the fields meant for it.
+      expect(error.summary, contains('no such object'));
     });
   });
 
