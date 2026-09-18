@@ -12,7 +12,6 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
