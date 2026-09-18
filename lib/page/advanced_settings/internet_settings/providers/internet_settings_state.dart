@@ -207,6 +207,35 @@ class InternetSettingsState extends Equatable {
   }
 }
 
+/// The IPv4 connection types worth offering, canonicalized and de-duplicated.
+///
+/// IPoE needs both halves of its contract: the router has to list it, which is
+/// runtime configuration, and it has to advertise the AutoIPoE service, which
+/// reflects whether the module is in the build. A router can list IPoE without
+/// being able to do it, and offering it then shows an all-defaults pane that
+/// fails only at Save.
+List<String> effectiveSupportedIpv4ConnectionTypes({
+  required Iterable<String> supportedTypes,
+  required bool supportsAutoIPoEService,
+}) {
+  final normalized = <String>[];
+  final seen = <String>{};
+  for (final type in supportedTypes) {
+    final canonical = WanType.canonical(type) ?? type.trim();
+    if (canonical.isEmpty) {
+      continue;
+    }
+    if (WanType.resolve(canonical) == WanType.ipoe &&
+        !supportsAutoIPoEService) {
+      continue;
+    }
+    if (seen.add(canonical.toLowerCase())) {
+      normalized.add(canonical);
+    }
+  }
+  return normalized;
+}
+
 class Ipv4Setting extends Equatable {
   final String ipv4ConnectionType;
   final List<String> supportedIPv4ConnectionType;

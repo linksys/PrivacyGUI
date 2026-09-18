@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
@@ -316,22 +317,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
 
   List<String> _effectiveSupportedIpv4ConnectionTypes(
     InternetSettingsState state,
-  ) {
-    final normalizedTypes = <String>[];
-    final seen = <String>{};
-
-    for (final type in state.ipv4Setting.supportedIPv4ConnectionType) {
-      final canonicalType = WanType.canonical(type) ?? type.trim();
-      if (canonicalType.isEmpty) {
-        continue;
-      }
-      if (seen.add(canonicalType.toLowerCase())) {
-        normalizedTypes.add(canonicalType);
-      }
-    }
-
-    return normalizedTypes;
-  }
+  ) =>
+      effectiveSupportedIpv4ConnectionTypes(
+        supportedTypes: state.ipv4Setting.supportedIPv4ConnectionType,
+        supportsAutoIPoEService: serviceHelper.isSupportAutoIPoE(),
+      );
 
   @override
   Widget build(BuildContext context) {
