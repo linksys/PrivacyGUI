@@ -160,6 +160,14 @@ enum JNAPAction {
   // routerUpnp
   getUPnPSettings,
   setUPnPSettings,
+  // autoipoe
+  getAutoIPoECapabilities,
+  getAutoIPoESettings,
+  setAutoIPoESettings,
+  applyAutoIPoE,
+  getAutoIPoEStatus,
+  getAutoIPoELog,
+  resetAutoIPoE,
   // selectableWAN
   getPortConnectionStatus,
   getWANPort,

@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
 enum WanType {
   dhcp(type: 'DHCP'),
+  ipoe(type: 'IPoE'),
   pppoe(type: 'PPPoE'),
   pptp(type: 'PPTP'),
   l2tp(type: 'L2TP'),
@@ -25,8 +26,29 @@ enum WanType {
 
   final String type;
 
-  static WanType? resolve(String type) {
-    return WanType.values.firstWhereOrNull((element) => element.type == type);
+  static String? canonical(String? type) {
+    if (type == null) {
+      return null;
+    }
+    final normalizedType = type.trim();
+    if (normalizedType.isEmpty) {
+      return null;
+    }
+    return WanType.values
+        .firstWhereOrNull(
+          (element) =>
+              element.type.toLowerCase() == normalizedType.toLowerCase(),
+        )
+        ?.type;
+  }
+
+  static WanType? resolve(String? type) {
+    final canonicalType = canonical(type);
+    if (canonicalType == null) {
+      return null;
+    }
+    return WanType.values
+        .firstWhereOrNull((element) => element.type == canonicalType);
   }
 }
 

@@ -42,7 +42,8 @@ class _TestRemoteClientNotifier extends RemoteClientNotifier {
   RemoteClientState build() => _initial;
 
   @override
-  void startSessionInfoStream() {}
+  void startSessionInfoStream(
+      {int interval = RemoteClientNotifier.kPassiveSessionPollIntervalSec}) {}
 
   /// The real one reaches the cloud service to delete the session; the parts of
   /// it these tests care about are driven with [emit] instead.
