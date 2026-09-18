@@ -266,6 +266,20 @@ FirmwareUpdateState get otaUpdateAvailableState => const FirmwareUpdateState(
           FirmwareOtaCheckResult.updateAvailable(version: '2.0.1.26091009'),
     );
 
+/// Idle, with a check that ran and found nothing.
+///
+/// The third of the three verdicts, and the one that is *not* the resting state:
+/// [FirmwareOtaCheckVerdict.notChecked] is where a page opens and where a failed
+/// check lands, so a fixture pinning it cannot photograph the sentence a completed
+/// check produces. Pair it with [testThreeInstanceBanksDataNoImage] — the router
+/// still has the virtual row, so the check is still offered, and the row says no.
+FirmwareUpdateState get otaNoUpdateFoundState => const FirmwareUpdateState(
+      phase: FirmwareUpdatePhase.idle,
+      activeBank: testActiveBank,
+      targetBank: testAvailableBank,
+      otaCheck: FirmwareOtaCheckResult.noUpdateFound(),
+    );
+
 /// One `fwup_state` reading, in the `installing` phase the poll loop publishes.
 ///
 /// A helper rather than five more top-level finals: what the progress card renders

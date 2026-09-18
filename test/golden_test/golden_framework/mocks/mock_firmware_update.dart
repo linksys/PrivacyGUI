@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
@@ -161,6 +162,51 @@ class _LoadingBanksNotifier extends FirmwareBanksDataNotifier {
     state = const AsyncLoading();
     return const FirmwareBanksData(banks: []);
   }
+}
+
+/// [firmwareUpdateOverrides] with the banks read *failed* rather than answered.
+///
+/// The one shape the fixed notifier above cannot express, and the OTA page has a
+/// card that only this reaches: `_stateIsUnreadable` requires the banks read to have
+/// left support **unknown** — an `AsyncError` or a null value — as well as a
+/// `stateReadError` on the update state. A fixture that merely handed it empty banks
+/// would establish "this router has no ota row" and draw the check card's REQ-A1
+/// sentence instead, which is a different claim and a different picture.
+List<Override> firmwareUpdateOverridesWithBanksError({
+  required FirmwareUpdateState updateState,
+  required SystemInfoData systemInfoData,
+}) =>
+    [
+      firmwareUpdateNotifierProvider
+          .overrideWith(() => FixedFirmwareUpdateNotifier(updateState)),
+      firmwareBanksDataProvider
+          .overrideWith(() => FailingFirmwareBanksDataNotifier()),
+      systemInfoDataProvider
+          .overrideWith(() => FixedSystemInfoDataNotifier(systemInfoData)),
+    ];
+
+/// A banks provider whose read failed, i.e. `AsyncError`.
+///
+/// **Public, and shared with `test/page/firmware_update/`.** It began as a private copy
+/// in `firmware_state_unreadable_widget_test.dart` and was briefly duplicated here;
+/// both copies were private, so nothing could have detected them diverging — a later
+/// change to the failure shape would have landed in one while the other went on
+/// asserting the old one. That file already imports this one, so there is no cost to
+/// sharing.
+///
+/// [refresh] answers the same way as [build], and the two callers need that for
+/// different reasons. The widget test **taps Retry**, and a notifier that succeeded on
+/// the second read would leave it asserting a loaded page. The golden suite declares no
+/// interactions, so there the override is inert — kept because the class is one object
+/// with one behaviour, not because that suite exercises it.
+class FailingFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
+  @override
+  Future<FirmwareBanksData> build() async =>
+      throw const NetworkError(detail: 'bridge closed');
+
+  @override
+  Future<FirmwareBanksData> refresh() async =>
+      throw const NetworkError(detail: 'bridge closed');
 }
 
 class FixedAppConnectionStateNotifier extends AppConnectionStateNotifier {

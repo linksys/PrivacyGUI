@@ -71,7 +71,8 @@ library;
 // Shown rather than imported whole because this file resolves widget names
 // against ui_kit first, and a bare material import would quietly change which
 // `AppText`-adjacent name a future `requires` entry means.
-import 'package:flutter/material.dart' show GridView, SelectionArea;
+import 'package:flutter/material.dart'
+    show GridView, LinearProgressIndicator, SelectionArea;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
@@ -101,6 +102,8 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
     show DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_available_banner.dart';
@@ -789,6 +792,107 @@ final kPnpSetupPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
+/// `pnp_setup_view` again, in its **firmware stage** — the family's first second case
+/// for one page that is not a tab (#1554 §4, folded in from #1561 §2).
+///
+/// The wizard installs a newer firmware on first connection (#1553, REQ-B2), and that
+/// stage is a full-screen phase of `PnpSetupView` with nothing in common with the form
+/// the case above sweeps: no stepper, no fields, and a progress card where the form
+/// was. So it could not be reached by re-pointing that case's fixture — it fails both
+/// of its lists — and until now it had no width sweep at all. Its only coverage was
+/// `test/page/instant_setup/views/pnp_setup_view_firmware_test.dart`: nine cases at
+/// one surface (1200×2400) in `en`, which catches a `RenderFlex` at that size and says
+/// nothing about 320px or about the other 25 locales.
+///
+/// ## Why a second case rather than a relaxed first one
+///
+/// #1554 §4 posed the mechanism as a choice between letting the roster admit a second
+/// row per view file and letting `kPnpSetupPageCase`'s `forbids` admit a determinate
+/// loader. **Neither turned out to be the cost**, and the reason is worth keeping:
+///
+///   * **The roster needs no new row, and could not take one.** `PageRoster`'s
+///     `_rejectDuplicates` refuses a second row for one path, and it does not have to
+///     allow one — `page_roster_test.dart`'s third assertion joins cases to rows
+///     through `view().runtimeType`, which is `PnpSetupView` for both cases, so one
+///     `swept` row already accounts for both. #1489 established this shape with eight
+///     cases over three rows.
+///   * **`forbids` was never the obstacle either.** The lists are per case, so this
+///     case declares its own; the first one keeps `forbids: [AppLoader]` untouched.
+///
+/// What the second case *does* cost is the roster's `ms_per_cell` column, which has no
+/// slot for a second figure — see that file's `# tabs` and `# second-state` blocks. The
+/// figure is measured and recorded there in prose, exactly as the five tab cases are,
+/// because `page_sweep_suites_test.dart`'s "no suite weight is guessed" resolves this
+/// case through the same roster path and would otherwise hand it its sibling's number
+/// while reading as measured.
+///
+/// ## `AppLoader` is this page's *content*, which makes it the exemption's second entry
+///
+/// [kPagesWhoseLoaderIsContent] was a one-element set, and its own doc names the
+/// argument a second entry has to make: `auto_parent_first_login` is exempt because it
+/// "exists to say 'we are installing firmware, do not unplug the router' — the spinner
+/// is the subject of the screen". **This page is that sentence, in the wizard.** It
+/// draws `FirmwareInstallPhaseCard`, whose linear `AppLoader` carries the percentage —
+/// a real `LinearProgressIndicator` since ui_kit 3.3.2 — beside the version being
+/// installed and the shared do-not-power-off note. There is no loaded state behind it
+/// to wait for: the progress bar *is* the loaded state.
+///
+/// So `requires` names `AppLoader` rather than `forbids` naming it, which is the
+/// direction that can fail — a fixture that drifted off this phase would render the
+/// wizard's own `_ =>` spinner or the form, and either way lose the card.
+///
+/// ## `forbids: [AppStepper]` is the sibling guard
+///
+/// The mirror of the case above's `requires: [AppStepper]`, and the reason this case
+/// cannot silently sweep its sibling's tree: `WizardConfiguring` is the phase a
+/// `FixedPnpNotifier` would land on if this fixture lost its override, and it renders
+/// the three-step form. REQ-B0 is the same assertion from the other side — the flash is
+/// not a fourth step — but that belongs to the widget test, which can say *three* where
+/// a `forbids` list can only say *none*.
+///
+/// **Not `AppButton`, though it is absent and REQ-B2 requires it to be.** `forbids`
+/// reports as "this cell measured the loading or error path rather than the page", so a
+/// button legitimately added here would fail 234 cells with a diagnosis about fixtures.
+/// The lock has its own test, with its own reason string, in
+/// `pnp_setup_view_firmware_test.dart`.
+final kPnpSetupFirmwarePageCase = PageSurfaceCase(
+  id: 'pnp_setup_firmware',
+  view: () => const PnpSetupView(),
+  // Two overrides, and the second is not optional: the phase hands
+  // `firmwareUpdateNotifierProvider`'s state straight to W5's card, so without it a
+  // real notifier's `build()` runs and its `loadBanks` reaches the USP client — 234
+  // cells of a spinner behind an error, which `requires` is what turns red.
+  overrides: () => [
+    ...pnpOverrides(pnpWizardUpdatingFirmwareState),
+    ...firmwareUpdateOverrides(state: gatePnpFirmwareInstallingState),
+  ],
+  requires: const [
+    AppLoader,
+    // **The one entry that says *which* progress phase this is**, and the case is
+    // pointless without it. The other three are satisfied by `triggering`,
+    // `rebooting` and `verifying` as well — `FirmwareInstallPhaseCard` returns the
+    // same `_progressCard` for all of them — so a fixture that drifted off
+    // `installing` would keep 234 cells green while the thing this case exists to
+    // measure disappeared.
+    //
+    // `LinearProgressIndicator` is the discriminator because
+    // `FirmwareOtaInstallProgress.percent` is non-null in exactly two statuses
+    // (`downloading`, `installing`), the card passes `value: percent / 100`, and
+    // since ui_kit 3.3.2 `AppLoader` routes a **null** value to each visual
+    // language's own animation instead — so `value == null` puts no
+    // `LinearProgressIndicator` in the tree at all. That is a stronger premise than
+    // "there is a bar with a null value": it proves the determinate path was taken,
+    // which is the only path with a *width* that is a function of the number.
+    //
+    // Pinned by mutation, not by reading: with the fixture's phase moved to
+    // `rebooting` this case fails, and it fails on this line.
+    LinearProgressIndicator,
+    FirmwareInstallPhaseCard,
+    FirmwareUpdateWarningNote,
+  ],
+  forbids: const [AppStepper],
+);
+
 // ===========================================================================
 // Wave 3 (#1379) — the six entry surfaces
 // ===========================================================================
@@ -1262,6 +1366,50 @@ final kFirmwareUpdatePageCase = PageSurfaceCase(
 /// That last bullet is why this stays a note: the gap is in the coverage, not in the
 /// page. What would reopen it is a *third* control in that arm or a label that is no
 /// longer dominated, and either is a reason to pay for the tenth case then.
+/// `firmware_update_view` again, in its **`failed`** phase — and the case that found a
+/// live overflow rather than recording a coverage gap.
+///
+/// The second fixture-state case in this family after `pnp_setup_firmware`, and the
+/// mechanism is the one that case established: same view file, one roster row, its own
+/// `requires`/`forbids`. What is different is what it bought. `FirmwareInstallPhaseCard`
+/// is rendered by both firmware pages and by the setup wizard, in six of eleven phases,
+/// and **not one cell rendered the two arms that open with a title `Row`** — `_failed`
+/// and `_done`. Both were a bare `Row(Icon(24), AppGap.sm(), AppText.titleMedium(...))`
+/// with no `Expanded`, which at the 320px floor leaves the sentence about 198px.
+/// Measured on this state at nine widths in 26 locales: **`pl` +30.0px, `it` +21.0px,
+/// `es` +12.0px, `sv` +11.0px**, all four at 320px. Fixed in `lib/` first — §8's
+/// graduation rule — so this case arrives at zero and `known_overflows.json` stays empty.
+///
+/// **The manual page rather than the OTA page**, for two reasons that both cut the same
+/// way: the OTA case's fixture is pinned by two readability guards now (wave 4's
+/// `firmwareNoUpdateFound` and #1572's `notChecked` history line), so a third state was
+/// never going to live there; and `_failed`'s body is where #1572's seven error-code
+/// sentences land, which is the manual flow's own failure surface as much as the OTA
+/// one's.
+///
+/// ## What the premise can and cannot pin
+///
+/// `requires: [FirmwareInstallPhaseCard, AppButton]` with `forbids: [AppLoader]` rules
+/// out everything except the two title-`Row` arms:
+///
+///   * `idle` renders the upload card and no phase card at all — caught by `requires`.
+///   * `triggering`, `installing`, `rebooting`, `verifying` render the progress card's
+///     linear loader — caught by `forbids`.
+///   * `done` passes. **That one is a deliberate equivalence, not a hole**: the two arms
+///     are the same tree with a different icon, string and body, so a fixture drifting
+///     between them measures the same `Row` this case exists for. It is stated here
+///     because `pnp_setup_firmware` needed a type-unique premise
+///     (`LinearProgressIndicator`) and this one has none available — there is no widget
+///     type only `failed` renders. If the two arms ever diverge, that is the moment this
+///     case needs a real discriminator.
+final kFirmwareFailedPageCase = PageSurfaceCase(
+  id: 'firmware_failed',
+  view: () => const FirmwareUpdateView(),
+  overrides: () => firmwareUpdateOverrides(state: gateFirmwareFailedState),
+  requires: const [FirmwareInstallPhaseCard, AppButton],
+  forbids: const [AppLoader],
+);
+
 final kFirmwareOtaPageCase = PageSurfaceCase(
   id: 'firmware_ota',
   view: () => const FirmwareOtaView(),
@@ -1848,17 +1996,41 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// A second entry here should be argued hard. "This page always shows a spinner" is
 /// usually a fixture that has not been written yet, which is what a `-` in
 /// `test/fixtures/page_roster.tsv` is for.
-const kPagesWhoseLoaderIsContent = <String>{'auto_parent_first_login'};
+///
+/// **The second entry arrived on 2026-09-16 (#1554 §4), and it makes the same
+/// argument as the first rather than a new one.** `pnp_setup_firmware` is the setup
+/// wizard's firmware stage — literally the sentence this doc uses to justify
+/// `auto_parent_first_login`, "we are installing firmware, do not unplug the router",
+/// on the other of the two screens that says it. Both draw a progress bar as their
+/// subject; neither has a loaded state behind it to wait for. The test that fails a
+/// fixture is `requires: [AppLoader]` in both cases, which is why the set is worth
+/// having rather than merely counting: the pair now names *why* an entry is here, and
+/// a third page whose loader is a stand-in would have no such sentence to write.
+///
+/// Note what the second entry is **not**: it is not this page as a whole. The wizard's
+/// other case, `pnp_setup`, still forbids the loader, because on the form phase a
+/// spinner really is the stand-in this rule is about. The exemption is per case, not
+/// per view file.
+const kPagesWhoseLoaderIsContent = <String>{
+  'auto_parent_first_login',
+  'pnp_setup_firmware',
+};
 
-/// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five,
-/// then wave 2's nine, then wave 3's six, then wave 4's twenty-one — 43 in all, which
-/// is every page view under `lib/page/` except the two `page_roster.tsv` excludes as
-/// unreachable.
+/// Every case the gate sweeps: the pilot's two, then wave 1's five, then wave 2's nine,
+/// then wave 3's six, then wave 4's twenty-one — 43, which was every page view under
+/// `lib/page/` except the two `page_roster.tsv` excludes as unreachable — and then seven
+/// more that arrived one at a time rather than in a wave: #1489's five sibling tab cases,
+/// #1549's `firmware_ota` (the 44th page, split off `firmware_update`) and #1554's
+/// `pnp_setup_firmware` (a second fixture state of a page already swept). **50 cases over
+/// 44 pages**, and the two counts have been separate quantities since #1489.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
 ///
-/// The order is the order the pages were onboarded, and the oracle pins it exactly.
+/// The order was the order the pages were onboarded, and the oracle pins it exactly —
+/// but a second case for a page sits beside its sibling rather than at the end (#1489's
+/// choice, followed by #1554), so it is now onboarding order for *pages* and
+/// declaration locality within one.
 /// That pin is the epic's per-wave checkpoint: it goes red on every wave by design,
 /// and the reason string it carries is where the wave says which pages it added and
 /// why. A wave that empties the list to get green has deleted the checkpoint.
@@ -2179,6 +2351,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // list read as though wave 2 had declared nine pages in one go, which is the one
   // thing the record of this page should not say.
   kPnpSetupPageCase,
+  kPnpSetupFirmwarePageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
   // local-login pages, then the menu, then the first-login firmware screen. Unlike
   // wave 2 this order is also the onboarding order — none of the six waited on
@@ -2203,6 +2376,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kSupportPageCase,
   kUnifiedDiagnosticsPageCase,
   kFirmwareUpdatePageCase,
+  kFirmwareFailedPageCase,
   // #1549, and not wave 4 — it sits here for the reason the three statistics tabs sit
   // beside `statistics`: it is the other half of the page above it. The split moved
   // `_OtaCheckCard` out of `firmware_update_view.dart` whole, which took wave 4's widest

@@ -23,9 +23,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
@@ -48,19 +45,11 @@ void main() {
 
   /// The router is mid-flash: `installing` with progress on the wire.
   ///
-  /// The phase is a choice and the only safe one for this file. The card renders a
-  /// retry button on `failed`, and a retry *is* an affordance — so pinning `failed`
-  /// would make the "no affordances" assertion below fail for a reason that is not
-  /// a defect. A failure never reaches this screen anyway: `_runFirmwareStage`
-  /// catches it and finishes setup, which is REQ-B3.
-  const installing = FirmwareUpdateState(
-    phase: FirmwareUpdatePhase.installing,
-    otaProgress: FirmwareOtaInstallProgress(
-      status: FirmwareAutoUpdateStatus.downloading,
-      rawProgress: 42,
-      rawState: 'downloading',
-    ),
-  );
+  /// Shared with the wizard's golden state and its layout-gate cell (#1554 §4) rather
+  /// than declared here — `gatePnpFirmwareInstallingState` carries the reasoning for
+  /// the phase and the percentage, including why `failed` would break the
+  /// "no affordances" assertion below for a reason that is not a defect.
+  const installing = gatePnpFirmwareInstallingState;
 
   Widget host(PnpPhase phase, {FirmwareUpdateState firmware = installing}) =>
       pageSurfaceHost(

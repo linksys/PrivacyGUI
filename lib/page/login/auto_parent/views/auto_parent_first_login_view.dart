@@ -51,6 +51,15 @@ class _AutoParentFirstLoginViewState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(child: AppLoader()),
+                // The gap this screen was missing. Every other `AppLoader`-then-text
+                // pairing in `lib/page` has one — the wizard's own saving overlay and
+                // its reconnect poll both use `AppGap.lg()`, and five more sites agree —
+                // so this page was the single outlier, at exactly 0.0px: measured
+                // `title.top - loader.bottom == 0.0` at 320, 480 and 1280. No gate cell
+                // could report it, because nothing overflowed and nothing clipped; the
+                // golden added for this screen in #1554 is what showed the spinner
+                // sitting on the title's first line.
+                AppGap.lg(),
                 AppText.titleLarge(loc(context).pnpFwUpdateTitle),
                 AppGap.lg(),
                 AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
