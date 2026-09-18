@@ -62,6 +62,21 @@ class OperateResult {
   bool get isComplete => status == 'Complete';
   bool get isError => status == 'Error';
 
+  /// Whether the command completed and reported no output arguments at all.
+  ///
+  /// USP's third OperationComplete outcome, and the one that has no `status` of
+  /// its own to be read from: a notification carrying **neither** `output_args`
+  /// nor `cmd_failure` is a success that produced nothing. #1579 fixed [status]
+  /// reporting that case as `'Unknown'` — indistinguishable from "no status was
+  /// reported" — and this getter is the other half of the fix: a caller that has
+  /// to tell "completed and told us nothing" from "completed and told us
+  /// something" asks here rather than inferring it from an empty map.
+  ///
+  /// Derived rather than stored, because the two possible inputs answer the same
+  /// question. The spec says a no-output success carries no `output_args` member,
+  /// and a member present but empty means the same thing to every caller.
+  bool get completedWithoutOutput => !refused && outputArgs.isEmpty;
+
   /// Whether the router refused the command outright.
   ///
   /// Keyed on [refused] rather than on [status], because the two answer

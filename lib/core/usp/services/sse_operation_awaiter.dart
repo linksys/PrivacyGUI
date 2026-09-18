@@ -547,12 +547,25 @@ class SseOperationAwaiter {
     return OperateResult(
       commandName: operComplete['command_name']?.toString() ?? '',
       commandKey: operComplete['command_key']?.toString() ?? '',
+      // Three outcomes, and the *absence* of `cmd_failure` is what decides
+      // between them — never the absence of `output_args` (#1579).
+      //
       // A refusal reads as `Error` rather than as the `Unknown` it used to,
       // because `cmd_failure` carries no `Status` and a caller checking
       // `isError` was being told nothing. `isFailure` is the finer question.
+      //
+      // Everything else is a **success**, whether or not the router named a
+      // status: a diagnostic that completed with no output args at all carries
+      // neither key, and one that answered without a `Status` key carries the
+      // first but not that member. Both used to fall through to `'Unknown'`,
+      // which every `isComplete` caller reads as "not complete" — so a
+      // successful no-output diagnostic drew the error icon
+      // (`diagnostic_manual_tools_view.dart:375`). `OperateResult
+      // .completedWithoutOutput` is what keeps the two successes nameable now
+      // that they share a status.
       status: outputArgs['Status'] ??
           outputArgs['status'] ??
-          (failure != null ? 'Error' : 'Unknown'),
+          (failure != null ? 'Error' : 'Complete'),
       outputArgs: outputArgs,
       errorCode: errorCode,
       errorMessage: errorMessage,
