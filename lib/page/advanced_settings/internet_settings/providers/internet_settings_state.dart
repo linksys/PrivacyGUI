@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
 enum WanType {
   dhcp(type: 'DHCP'),
+  ipoe(type: 'IPoE'),
   pppoe(type: 'PPPoE'),
   pptp(type: 'PPTP'),
   l2tp(type: 'L2TP'),
@@ -25,8 +26,29 @@ enum WanType {
 
   final String type;
 
-  static WanType? resolve(String type) {
-    return WanType.values.firstWhereOrNull((element) => element.type == type);
+  static String? canonical(String? type) {
+    if (type == null) {
+      return null;
+    }
+    final normalizedType = type.trim();
+    if (normalizedType.isEmpty) {
+      return null;
+    }
+    return WanType.values
+        .firstWhereOrNull(
+          (element) =>
+              element.type.toLowerCase() == normalizedType.toLowerCase(),
+        )
+        ?.type;
+  }
+
+  static WanType? resolve(String? type) {
+    final canonicalType = canonical(type);
+    if (canonicalType == null) {
+      return null;
+    }
+    return WanType.values
+        .firstWhereOrNull((element) => element.type == canonicalType);
   }
 }
 
@@ -183,6 +205,35 @@ class InternetSettingsState extends Equatable {
           macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
     );
   }
+}
+
+/// The IPv4 connection types worth offering, canonicalized and de-duplicated.
+///
+/// IPoE needs both halves of its contract: the router has to list it, which is
+/// runtime configuration, and it has to advertise the AutoIPoE service, which
+/// reflects whether the module is in the build. A router can list IPoE without
+/// being able to do it, and offering it then shows an all-defaults pane that
+/// fails only at Save.
+List<String> effectiveSupportedIpv4ConnectionTypes({
+  required Iterable<String> supportedTypes,
+  required bool supportsAutoIPoEService,
+}) {
+  final normalized = <String>[];
+  final seen = <String>{};
+  for (final type in supportedTypes) {
+    final canonical = WanType.canonical(type) ?? type.trim();
+    if (canonical.isEmpty) {
+      continue;
+    }
+    if (WanType.resolve(canonical) == WanType.ipoe &&
+        !supportsAutoIPoEService) {
+      continue;
+    }
+    if (seen.add(canonical.toLowerCase())) {
+      normalized.add(canonical);
+    }
+  }
+  return normalized;
 }
 
 class Ipv4Setting extends Equatable {

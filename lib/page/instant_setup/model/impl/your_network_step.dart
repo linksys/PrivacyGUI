@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -77,8 +78,19 @@ class YourNetworkStep extends PnpStep {
             icon: LinksysIcons.add,
             onTap: () async {
               await context.pushNamed<bool?>(RouteNamed.addNodes, extra: {
-                'callback': () {
-                  saveChanges?.call();
+                'callback': () async {
+                  try {
+                    await saveChanges?.call();
+                  } catch (error, stackTrace) {
+                    // The save callback already reports the actionable error
+                    // in the PnP UI. Consume it here because Add Nodes accepts
+                    // a void callback and cannot await or route the failure.
+                    logger.e(
+                      '[PnP]: Failed to finalize setup after adding nodes',
+                      error: error,
+                      stackTrace: stackTrace,
+                    );
+                  }
                 }
               });
               await pnp.fetchDevices();

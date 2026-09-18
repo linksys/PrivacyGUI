@@ -26,6 +26,13 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart'
 /// See the documentation for Mockito's code generation for more information.
 class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
   @override
+  bool isSupportAutoIPoE([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(#isSupportAutoIPoE, [services]),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool isSupportVPN([List<String>? services]) => (super.noSuchMethod(
         Invocation.method(#isSupportVPN, [services]),
         returnValue: false,

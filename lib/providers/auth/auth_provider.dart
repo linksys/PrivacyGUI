@@ -319,18 +319,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final routerRepository = ref.read(routerRepositoryProvider);
+      final loginAction = pnp
+          ? JNAPAction.pnpCheckAdminPassword
+          : JNAPAction.checkAdminPassword;
       final response = await routerRepository.send(
-        pnp ? JNAPAction.pnpCheckAdminPassword : JNAPAction.checkAdminPassword,
-        // extraHeaders: pnp
-        //     ? {
-        //         kJNAPAuthorization:
-        //             'Basic ${Utils.stringBase64Encode('admin:$password')}'
-        //       }
-        //     : {},
-        extraHeaders: {
-          kJNAPAuthorization:
-              'Basic ${Utils.stringBase64Encode('admin:$password')}'
-        },
+        loginAction,
+        // No Basic header on the PnP path. `pnpCheckAdminPassword` resolves to
+        // CheckAdminPassword2/3, whose contract is that the candidate password
+        // arrives in the body: during PnP there is no session to authorize
+        // against, and presenting an unverified password as credentials asks the
+        // JNAP layer to reject the request before the action can answer whether
+        // the password was right. Do not add the header back without checking
+        // that against the minimum supported firmware.
+        extraHeaders: pnp
+            ? {}
+            : {
+                kJNAPAuthorization:
+                    'Basic ${Utils.stringBase64Encode('admin:$password')}'
+              },
         data: {
           'adminPassword': password,
         },

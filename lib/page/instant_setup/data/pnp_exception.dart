@@ -1,3 +1,13 @@
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+
+String describePnpSaveError(Object? error) {
+  if (error is JNAPError) {
+    final detail = error.error?.trim();
+    return detail?.isNotEmpty == true ? detail! : error.result;
+  }
+  return error?.toString() ?? 'Unknown error';
+}
+
 sealed class PnpException {
   final String? message;
 

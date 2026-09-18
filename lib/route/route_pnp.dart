@@ -117,6 +117,15 @@ final pnpTroubleshootingRoute = LinksysRoute(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
         ),
+        LinksysRoute(
+          name: RouteNamed.pnpIPoE,
+          path: RoutePath.pnpIPoE,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true),
+            noNaviRail: true,
+          ),
+          builder: (context, state) => const PnpIpoeView(),
+        ),
       ],
     ),
   ],
