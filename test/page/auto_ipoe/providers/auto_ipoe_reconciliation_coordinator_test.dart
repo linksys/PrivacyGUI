@@ -113,14 +113,8 @@ class _FakeBridge extends Fake implements AutoIPoEInternetSettingsBridge {
 }
 
 void main() {
-  AutoIPoEReconciliationCoordinator coordinator(
-    _FakeBridge bridge, {
-    Future<void> Function()? verifyInternet,
-  }) =>
-      AutoIPoEReconciliationCoordinator(
-        bridge: bridge,
-        verifyInternet: verifyInternet ?? () async {},
-      );
+  AutoIPoEReconciliationCoordinator coordinator(_FakeBridge bridge) =>
+      AutoIPoEReconciliationCoordinator(bridge: bridge);
 
   group('shouldRunLegacyPnpIPoEConnectivityProbe', () {
     test('runs for firmware without the structured contract', () {
@@ -142,9 +136,10 @@ void main() {
         runtimeStatus: _newFirmwareStatus(),
       );
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
+        verifyInternet: () async {},
       );
 
       expect(outcome, isA<AutoIPoEReconciliationCompleted>());
@@ -156,9 +151,10 @@ void main() {
       final bridge =
           _FakeBridge(waitOutcomes: [null], runtimeStatus: _legacyStatus());
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
+        verifyInternet: () async {},
       );
 
       expect(outcome, isA<AutoIPoEReconciliationCompleted>());
@@ -177,9 +173,10 @@ void main() {
       );
       final windowsEnded = <AutoIPoEIssue>[];
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
+        verifyInternet: () async {},
         onPollingWindowEnded: windowsEnded.add,
       );
 
@@ -199,10 +196,11 @@ void main() {
         ],
       );
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         // Goes stale the moment the first window reports back.
         isCurrent: () => current,
+        verifyInternet: () async {},
         onPollingWindowEnded: (_) => current = false,
       );
 
@@ -219,12 +217,10 @@ void main() {
         runtimeStatus: _newFirmwareStatus(),
       );
 
-      final outcome = await coordinator(
-        bridge,
-        verifyInternet: () async => current = false,
-      ).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => current,
+        verifyInternet: () async => current = false,
       );
 
       expect(outcome, isA<AutoIPoEReconciliationCancelled>());
@@ -243,9 +239,10 @@ void main() {
       final seen = <AutoIPoEReconciliationProgress>[];
       current = false;
 
-      await coordinator(bridge).follow(
+      await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => current,
+        verifyInternet: () async {},
         onProgress: seen.add,
       );
 
@@ -258,9 +255,10 @@ void main() {
             _issue(AutoIPoERecoveryAction.retrySetup, retryable: false)),
       ]);
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
+        verifyInternet: () async {},
       );
 
       expect(outcome, isA<AutoIPoEReconciliationFailed>());
@@ -272,9 +270,10 @@ void main() {
         AutoIPoERecoveryPending(_issue(AutoIPoERecoveryAction.retrySetup)),
       ]);
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
+        verifyInternet: () async {},
       );
 
       expect(outcome, isA<AutoIPoEReconciliationFailed>());
@@ -284,10 +283,11 @@ void main() {
     test('separates a reported no-internet from an expired budget', () async {
       final reported = _FakeBridge(
           waitOutcomes: [null], runtimeStatus: _newFirmwareStatus());
-      final reportedOutcome = await coordinator(
-        reported,
+      final reportedOutcome = await coordinator(reported).followPnpSetup(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
         verifyInternet: () async => throw ExceptionNoInternetConnection(),
-      ).follow(expectedMode: AutoIPoEMode.auto, isCurrent: () => true);
+      );
 
       expect(
         (reportedOutcome as AutoIPoEReconciliationNoInternet).cause,
@@ -296,10 +296,11 @@ void main() {
 
       final timedOut = _FakeBridge(
           waitOutcomes: [null], runtimeStatus: _newFirmwareStatus());
-      final timedOutOutcome = await coordinator(
-        timedOut,
+      final timedOutOutcome = await coordinator(timedOut).followPnpSetup(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
         verifyInternet: () async => throw TimeoutException('budget'),
-      ).follow(expectedMode: AutoIPoEMode.auto, isCurrent: () => true);
+      );
 
       expect(
         (timedOutOutcome as AutoIPoEReconciliationNoInternet).cause,
@@ -310,7 +311,68 @@ void main() {
     test('maps an unexpected error through the issue mapper', () async {
       final bridge = _FakeBridge(waitOutcomes: [StateError('boom')]);
 
-      final outcome = await coordinator(bridge).follow(
+      final outcome = await coordinator(bridge).followPnpSetup(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
+        verifyInternet: () async {},
+      );
+
+      expect(outcome, isA<AutoIPoEReconciliationFailed>());
+    });
+  });
+
+  // Advanced settings dispatches its own Apply and then stops at the tunnel: the
+  // user stays on the page, so there is no internet check and no fallback probe.
+  // These two differences are why it is a separate entry point.
+  group('followAdvancedApply', () {
+    test('never runs the legacy probe, even on firmware that would need it',
+        () async {
+      final bridge =
+          _FakeBridge(waitOutcomes: [null], runtimeStatus: _legacyStatus());
+
+      final outcome = await AutoIPoEReconciliationCoordinator(bridge: bridge)
+          .followAdvancedApply(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
+      );
+
+      expect(outcome, isA<AutoIPoEReconciliationCompleted>());
+      // The PnP entry point would have probed here.
+      expect(bridge.legacyProbeCalls, 0);
+    });
+
+    test('still follows the polling-window loop without re-applying', () async {
+      final bridge = _FakeBridge(
+        waitOutcomes: [
+          AutoIPoERecoveryPending(
+              _issue(AutoIPoERecoveryAction.continueChecking)),
+          null,
+        ],
+        runtimeStatus: _newFirmwareStatus(),
+      );
+
+      final outcome = await AutoIPoEReconciliationCoordinator(bridge: bridge)
+          .followAdvancedApply(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
+      );
+
+      expect(bridge.waitCalls, 2);
+      expect(outcome, isA<AutoIPoEReconciliationCompleted>());
+    });
+
+    test('classifies an unexpected error with the status it observed',
+        () async {
+      // The status reaches the mapper here and not on the PnP path, so the same
+      // error can produce a different issue. Pinning that it arrives at all is
+      // what keeps the two entry points from being collapsed back into one.
+      final bridge = _FakeBridge(
+        waitOutcomes: [StateError('boom')],
+        runtimeStatus: _newFirmwareStatus(),
+      );
+
+      final outcome = await AutoIPoEReconciliationCoordinator(bridge: bridge)
+          .followAdvancedApply(
         expectedMode: AutoIPoEMode.auto,
         isCurrent: () => true,
       );

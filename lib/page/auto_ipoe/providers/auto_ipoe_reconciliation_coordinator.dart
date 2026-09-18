@@ -1,10 +1,20 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
+
+/// The coordinator, so screens can follow an Apply without reaching into the
+/// service tier for the bridge themselves.
+final autoIPoEReconciliationCoordinatorProvider =
+    Provider<AutoIPoEReconciliationCoordinator>(
+  (ref) => AutoIPoEReconciliationCoordinator(
+    bridge: ref.read(autoIPoEInternetSettingsBridgeProvider),
+  ),
+);
 
 /// New Auto-IPoE runtimes perform their own multi-target connectivity check.
 /// Older firmware has no structured completion signal, so it keeps the
@@ -60,19 +70,67 @@ class AutoIPoEReconciliationCancelled extends AutoIPoEReconciliationOutcome {
 class AutoIPoEReconciliationCoordinator {
   AutoIPoEReconciliationCoordinator({
     required AutoIPoEInternetSettingsBridge bridge,
-    required Future<void> Function() verifyInternet,
-  })  : _bridge = bridge,
-        _verifyInternet = verifyInternet;
+  }) : _bridge = bridge;
 
   final AutoIPoEInternetSettingsBridge _bridge;
 
-  /// The native internet check the rest of the setup flow uses. Injected so the
-  /// coordinator does not have to know which flow it is serving.
-  final Future<void> Function() _verifyInternet;
-
-  Future<AutoIPoEReconciliationOutcome> follow({
+  /// Follows an Apply through to the point where PnP can hand the user back to
+  /// setup: the tunnel is up *and* the router reaches the internet.
+  ///
+  /// [verifyInternet] is the native check the rest of the setup flow uses, and
+  /// older firmware additionally needs the LinksysNow probe because it has no
+  /// structured completion signal of its own.
+  Future<AutoIPoEReconciliationOutcome> followPnpSetup({
     required AutoIPoEMode expectedMode,
     required bool Function() isCurrent,
+    required Future<void> Function() verifyInternet,
+    void Function(AutoIPoEReconciliationProgress progress)? onProgress,
+    void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
+    void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
+  }) =>
+      _follow(
+        expectedMode: expectedMode,
+        isCurrent: isCurrent,
+        verifyInternet: verifyInternet,
+        useLegacyConnectivityProbe: true,
+        classifyErrorsWithStatus: false,
+        onProgress: onProgress,
+        onRuntime: onRuntime,
+        onPollingWindowEnded: onPollingWindowEnded,
+      );
+
+  /// Follows an Apply dispatched from Advanced settings, which stops at the
+  /// tunnel.
+  ///
+  /// The user stays on the settings page, so there is no internet check and no
+  /// fallback probe: whether the result counts as Active is decided separately,
+  /// against the status. That status is also fed to the error classifier here,
+  /// which is what makes this a distinct entry point rather than a flag -- the
+  /// same transport error maps to a different issue with and without it.
+  Future<AutoIPoEReconciliationOutcome> followAdvancedApply({
+    required AutoIPoEMode expectedMode,
+    required bool Function() isCurrent,
+    void Function(AutoIPoEReconciliationProgress progress)? onProgress,
+    void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
+    void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
+  }) =>
+      _follow(
+        expectedMode: expectedMode,
+        isCurrent: isCurrent,
+        verifyInternet: null,
+        useLegacyConnectivityProbe: false,
+        classifyErrorsWithStatus: true,
+        onProgress: onProgress,
+        onRuntime: onRuntime,
+        onPollingWindowEnded: onPollingWindowEnded,
+      );
+
+  Future<AutoIPoEReconciliationOutcome> _follow({
+    required AutoIPoEMode expectedMode,
+    required bool Function() isCurrent,
+    required Future<void> Function()? verifyInternet,
+    required bool useLegacyConnectivityProbe,
+    required bool classifyErrorsWithStatus,
     void Function(AutoIPoEReconciliationProgress progress)? onProgress,
     void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
     void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
@@ -96,7 +154,8 @@ class AutoIPoEReconciliationCoordinator {
               }
             },
           );
-          if (shouldRunLegacyPnpIPoEConnectivityProbe(latestStatus)) {
+          if (useLegacyConnectivityProbe &&
+              shouldRunLegacyPnpIPoEConnectivityProbe(latestStatus)) {
             await _bridge.waitForPnpIPoEInternetConnectivity(
               shouldContinue: isCurrent,
               onReconciliationProgress: (progress) {
@@ -106,7 +165,7 @@ class AutoIPoEReconciliationCoordinator {
               },
             );
           }
-          await _verifyInternet();
+          await verifyInternet?.call();
           return isCurrent()
               ? const AutoIPoEReconciliationCompleted()
               : const AutoIPoEReconciliationCancelled();
@@ -152,7 +211,11 @@ class AutoIPoEReconciliationCoordinator {
           ? AutoIPoEReconciliationFailed(error.issue, terminal: false)
           : const AutoIPoEReconciliationCancelled();
     } catch (error) {
-      final issue = AutoIPoEIssueMapper.from(error: error, mode: expectedMode);
+      final issue = AutoIPoEIssueMapper.from(
+        status: classifyErrorsWithStatus ? latestStatus : null,
+        error: error,
+        mode: expectedMode,
+      );
       return isCurrent()
           ? AutoIPoEReconciliationFailed(issue, terminal: issue.isTerminal)
           : const AutoIPoEReconciliationCancelled();

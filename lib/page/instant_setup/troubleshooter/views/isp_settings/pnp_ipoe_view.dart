@@ -11,7 +11,6 @@ import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
-import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_internet_settings_bridge.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_optional_pane.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart';
@@ -152,17 +151,15 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     // screen, so a superseded run reports Cancelled instead of writing over what
     // replaced it.
     bool isCurrent() => mounted && generation == _recoveryGeneration;
-    final coordinator = AutoIPoEReconciliationCoordinator(
-      bridge: ref.read(autoIPoEInternetSettingsBridgeProvider),
-      // Same native status check and retry budget as DHCP/PPPoE. ICC refreshes
-      // asynchronously after tunnel hotplug events.
-      verifyInternet: () =>
-          ref.read(pnpProvider.notifier).checkInternetConnection(30),
-    );
+    final coordinator = ref.read(autoIPoEReconciliationCoordinatorProvider);
     try {
-      final outcome = await coordinator.follow(
+      final outcome = await coordinator.followPnpSetup(
         expectedMode: _settings.selectedMode,
         isCurrent: isCurrent,
+        // Same native status check and retry budget as DHCP/PPPoE. ICC refreshes
+        // asynchronously after tunnel hotplug events.
+        verifyInternet: () =>
+            ref.read(pnpProvider.notifier).checkInternetConnection(30),
         onProgress: (progress) => _updateProgress(progress, generation),
         onRuntime: (status, log) {
           if (!isCurrent()) {
