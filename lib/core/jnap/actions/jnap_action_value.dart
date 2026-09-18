@@ -280,6 +280,17 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/routermanagement/SetManagementSettings2'),
   getUPnPSettings(value: 'http://linksys.com/jnap/routerupnp/GetUPnPSettings'),
   setUPnPSettings(value: 'http://linksys.com/jnap/routerupnp/SetUPnPSettings'),
+  getAutoIPoECapabilities(
+      value: 'http://linksys.com/jnap/autoipoe/GetAutoIPoECapabilities'),
+  getAutoIPoESettings(
+      value: 'http://linksys.com/jnap/autoipoe/GetAutoIPoESettings'),
+  setAutoIPoESettings(
+      value: 'http://linksys.com/jnap/autoipoe/SetAutoIPoESettings'),
+  applyAutoIPoE(value: 'http://linksys.com/jnap/autoipoe/ApplyAutoIPoE'),
+  getAutoIPoEStatus(
+      value: 'http://linksys.com/jnap/autoipoe/GetAutoIPoEStatus'),
+  getAutoIPoELog(value: 'http://linksys.com/jnap/autoipoe/GetAutoIPoELog'),
+  resetAutoIPoE(value: 'http://linksys.com/jnap/autoipoe/ResetAutoIPoE'),
   isAdminPasswordSetByUser(
       value: 'http://linksys.com/jnap/nodes/setup/IsAdminPasswordSetByUser'),
   setupSetAdminPassword(
