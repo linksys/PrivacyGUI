@@ -103,6 +103,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   if (kIsWeb) {
                     version = '$version - ${BuildConfig.forceCommandType.name}';
                   }
+                  // Trimmed first: the cloud-env branch above appends a space
+                  // even when it appends nothing, which would double up here.
+                  version =
+                      '${version.trim()}${BuildConfig.sourceRevisionSuffix}';
                   return AppText.bodySmall(
                     version,
                   );

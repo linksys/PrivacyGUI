@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -147,18 +148,18 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                           _sessionExpireCounter(sessionInfo, expiredCountdown),
                       ],
                     ),
-                  // TODO: Disable remote assistance for now
-                  // if (loginType == LoginType.local)
-                  //   Padding(
-                  //     padding: EdgeInsets.all(4.0),
-                  //     child: AppIconButton.noPadding(
-                  //       icon: Icons.support_agent,
-                  //       color: Color(neutralTonal.get(100)),
-                  //       onTap: () {
-                  //         showRemoteAssistanceDialog(context, ref);
-                  //       },
-                  //     ),
-                  //   ),
+                  if (BuildConfig.enableRemoteAssistance &&
+                      loginType == LoginType.local)
+                    Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: AppIconButton.noPadding(
+                        icon: Icons.support_agent,
+                        color: Color(neutralTonal.get(100)),
+                        onTap: () {
+                          showRemoteAssistanceDialog(context, ref);
+                        },
+                      ),
+                    ),
                   const Padding(
                     padding: EdgeInsets.all(4.0),
                     child: GeneralSettingsWidget(),

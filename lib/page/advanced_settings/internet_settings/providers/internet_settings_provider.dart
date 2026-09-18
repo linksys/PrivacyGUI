@@ -69,6 +69,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final lanSettings =
         lanResult == null ? null : RouterLANSettings.fromMap(lanResult.output);
     _hostname = lanSettings?.hostName;
+    final wanType = WanType.canonical(wanSettings?.wanType) ?? '';
+    final supportedWanTypes =
+        _normalizeSupportedWanTypes(wanStatus?.supportedWANTypes ?? const []);
 
     // Default value
     const defaultConnectionBehavior = PPPConnectionBehavior.keepAlive;
@@ -76,7 +79,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     const defaultReconnectAfterSeconds = 30;
 
     InternetSettingsState newState = InternetSettingsState.init();
-    switch (WanType.resolve(wanSettings?.wanType ?? '')) {
+    switch (WanType.resolve(wanType)) {
       case WanType.dhcp:
         break;
       case WanType.pppoe:
@@ -182,7 +185,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     }
 
     // Remove redirection url
-    if (WanType.resolve(wanSettings?.wanType ?? '') != WanType.bridge) {
+    if (WanType.resolve(wanType) != WanType.bridge) {
       await SharedPreferences.getInstance().then((prefs) {
         prefs.remove(pRedirection);
       });
@@ -190,8 +193,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
 
     state = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
-        ipv4ConnectionType: wanSettings?.wanType ?? '',
-        supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
+        ipv4ConnectionType: wanType,
+        supportedIPv4ConnectionType: supportedWanTypes,
         supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
         mtu: wanSettings?.mtu ?? 0,
       ),
@@ -219,6 +222,18 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       macCloneAddress: () => macAddressCloneSettings?.macAddress,
     );
     return state;
+  }
+
+  List<String> _normalizeSupportedWanTypes(List<String> supportedWanTypes) {
+    final normalized = <String>[];
+    for (final wanType in supportedWanTypes) {
+      final canonicalWanType = WanType.canonical(wanType) ?? wanType.trim();
+      if (canonicalWanType.isEmpty || normalized.contains(canonicalWanType)) {
+        continue;
+      }
+      normalized.add(canonicalWanType);
+    }
+    return normalized;
   }
 
   Future saveInternetSettings(
