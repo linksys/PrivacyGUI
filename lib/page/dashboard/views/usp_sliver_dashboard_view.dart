@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
@@ -9,8 +10,6 @@ import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar
 import 'package:privacy_gui/page/dashboard/views/components/effects/edit_mode_affordance.dart';
 import 'package:privacy_gui/page/dashboard/views/components/package_widget_tile.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
@@ -21,13 +20,9 @@ import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.d
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -104,6 +99,51 @@ class _UspSliverDashboardViewState
   /// Whether a removal confirmation is already on screen — see [_confirmRemoval].
   bool _confirmingRemoval = false;
 
+  /// Where the grid was scrolled to, so the edit-mode toggle can put it back
+  /// (#1032).
+  ///
+  /// Entering or leaving edit mode remounts the scroll view, twice over. The
+  /// overlay is handed a non-null `gridStyle` and answers by inserting a
+  /// grid-background child at the *front* of its own `Stack`, so the content
+  /// child moves from index 0 to index 1 and — nothing there being keyed — is
+  /// matched by index and inflated again one slot down; independently,
+  /// [CardFormToolbarLayer] starts wrapping the grid, which changes the tree
+  /// shape above the same `Scrollable` (the note on the `ScrollController`
+  /// below is about that one). Either is enough on its own: a fresh `Scrollable`
+  /// is a fresh `ScrollPosition` at offset 0, so the grid silently jumped back
+  /// to the top. The top bar stayed hidden with it, because
+  /// `uspBarsVisibleProvider` is a latch fed only by scroll *direction* and a
+  /// remount emits no direction notification for it to read — that half is fixed
+  /// in `BarsVisibilityScrollListener`.
+  ///
+  /// So the position is remembered and handed to the next build's controller as
+  /// its `initialScrollOffset`, which the new `ScrollPosition` starts at. A plain
+  /// rebuild does not consult it — `ScrollableState.didUpdateWidget` re-attaches
+  /// the existing position to the new controller — so this only takes effect on
+  /// the remount it is here for.
+  ///
+  /// ## Why not a `GlobalKey` on the scroll view
+  ///
+  /// It looks like the right tool, and it works: a keyed element is *moved* to
+  /// its new slot instead of rebuilt, so one `ScrollPosition` survives. But
+  /// moving a subtree this size out from under the semantics tree trips a
+  /// framework assert on the next `flushSemantics`:
+  ///
+  /// ```
+  /// 'identical(childRenderObject, parentRenderObject)': is not true.
+  /// _SemanticsGeometry.computeChildGeometry
+  /// _RenderObjectSemantics._updateChildGeometry
+  /// PipelineOwner.flushSemantics
+  /// ```
+  ///
+  /// Found by the dashboard golden test, which pumps with semantics on:
+  /// `edit_mode - phone480` threw where it had passed, and no diff image was
+  /// written because it never got as far as comparing pixels. Debug-only as an
+  /// assert, but the geometry it is asserting about is what a screen reader is
+  /// handed, so it is not test-only. Remembering an offset asks the framework
+  /// for nothing it objects to.
+  double _gridScrollOffset = 0;
+
   @override
   void initState() {
     super.initState();
@@ -121,31 +161,14 @@ class _UspSliverDashboardViewState
     // open the dialog explicitly. (P0-2)
     if (BuildConfig.e2eMock) return;
 
-    // Skip preset dialog in remote mode — uses fixed remote preset
-    if (!GlobalConfig.remote.showPresetDialog) return;
-
-    final sharedPrefs = await SharedPreferences.getInstance();
-    if (sharedPrefs.getBool(pUspPresetDialogSeen) == true) return;
+    // Whether this surface personalises the dashboard at all — and, if it does,
+    // the whole flow, prefs check included (#1497). The remote surface hands back
+    // nothing because its preset is fixed, so there is no dialog to skip here.
+    final flow = ref.read(surfaceStrategyProvider).firstRunPresetFlow();
+    if (flow == null) return;
 
     if (!mounted) return;
-
-    final result = await showPresetSelectionDialog(context);
-    if (!mounted) return;
-
-    // Persist the flag BEFORE calling selectPreset — even if applyPreset
-    // throws, the user won't be asked again on next navigation.
-    await sharedPrefs.setBool(pUspPresetDialogSeen, true);
-
-    if (result != null) {
-      await ref
-          .read(uspLayoutPreferencesProvider.notifier)
-          .selectPreset(result);
-    } else {
-      // User cancelled — apply standard preset as default and don't ask again.
-      await ref
-          .read(uspLayoutPreferencesProvider.notifier)
-          .selectPreset(UspDashboardPreset.standard);
-    }
+    await flow(context, ref);
   }
 
   /// Ensures polling providers have completed at least one fetch cycle.
@@ -243,7 +266,6 @@ class _UspSliverDashboardViewState
     // decide which set of them applies (#1314).
     return DashboardHeaderBar(
       isEditMode: ref.watch(dashboardEditModeProvider).isEditing,
-      isRemoteMode: GlobalConfig.remote.isActive,
       onOptimizeLayout: () {
         // No save: `optimizeLayout` is a controller mutation, so the grid stores
         // it through the auto-persist hook (#1393). Saving here too would walk
@@ -279,7 +301,10 @@ class _UspSliverDashboardViewState
       },
       onRefresh: () =>
           ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
-      onEdit: _enterEditMode,
+      // `null` where the layout is not the viewer's to arrange, which is how the
+      // header bar learns to leave the `dashboard-edit` action out — it stays
+      // provider-free and mode-free either way (#1497).
+      onEdit: ref.watch(surfaceStrategyProvider).layoutEditor(_enterEditMode),
     );
   }
 
@@ -393,7 +418,23 @@ class _UspSliverDashboardViewState
     // is left with no positions and collected. What it costs is that nothing may
     // hold one across a build — see the same note on [CardFormToolbarLayer],
     // which is why the toolbar reads the offset from scroll notifications.
-    final scrollController = ScrollController();
+    // `initialScrollOffset` is what carries the position across the remounts
+    // described on [_gridScrollOffset]; the listener is what keeps it current.
+    // Both are safe on a per-build instance: only the controller the newest build
+    // handed the `Scrollable` holds the live position, because `didUpdateWidget`
+    // detaches it from the previous one, and a detached controller never fires
+    // again.
+    final scrollController =
+        ScrollController(initialScrollOffset: _gridScrollOffset);
+    scrollController.addListener(() {
+      // No `setState`: this is a memo for the next build, not something this one
+      // renders. `hasClients` because a controller with no position throws on
+      // `offset`, and during a remount the outgoing one is momentarily in that
+      // state.
+      if (scrollController.hasClients) {
+        _gridScrollOffset = scrollController.offset;
+      }
+    });
 
     final editModeGridStyle = GridStyle(
       lineColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
@@ -559,10 +600,10 @@ class _UspSliverDashboardViewState
   /// It does not, because opening the dialog is itself the cancel. The tile holds
   /// the primary focus for the whole drag; the dialog's modal route takes it; and
   /// the item loses focus while active, which is a case the package handles by
-  /// calling `cancelInteraction()` for us (`dashboard_item_widget.dart:577-583`).
-  /// By the time we are waiting on an answer the layout is already back at `0,1`
-  /// and `isDragging` is false, so the `onDragEnd` that follows returns at its
-  /// first line (`dashboard_controller_impl.dart:1660`) — no compaction, no
+  /// calling `cancelInteraction()` for us (`dashboard_item_widget.dart:588-594`
+  /// at 2.7.0). By the time we are waiting on an answer the layout is already
+  /// back at `0,1` and `isDragging` is false, so the `onDragEnd` that follows
+  /// returns at its first line (`dashboard_controller_impl.dart:1718`) — no compaction, no
   /// notify, no write. This also decides what a *confirm* deletes: the overlay
   /// captured `itemsToDelete` before the await, and `removeItems` then runs
   /// against the restored layout, so the card is removed from where it was

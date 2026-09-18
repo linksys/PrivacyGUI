@@ -5,11 +5,14 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
+import 'package:privacy_gui/framework/mode/session_request.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
@@ -82,10 +85,41 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  /// Open a session for whatever mode this build is in.
+  ///
+  /// **The entry funnel, mirroring [logout] as the exit funnel.** Both directions of
+  /// cause 3 are consumed here and nowhere else, which is what keeps the two
+  /// implementations of `SessionStrategy.start()` reachable from exactly one place
+  /// each without either call site knowing which mode it is in.
+  ///
+  /// This method exists rather than the callers reading the profile themselves for a
+  /// mechanical reason worth recording: `start` takes a riverpod `Ref`, and the
+  /// remote caller is a widget holding a `WidgetRef` — the two have no common
+  /// supertype in riverpod 2.x. A notifier is the nearest thing that has a real
+  /// `Ref`, and this notifier is the one whose state the operation ends up changing
+  /// in both modes (locally via [localLogin] below, remotely via the
+  /// [setLoginType] that `activate()` calls).
+  ///
+  /// Mode-agnostic on purpose: it takes a [SessionRequest] and forwards it. A second
+  /// method per mode here would put back exactly the branching #1474 removes.
+  Future<void> openSession(SessionRequest request) =>
+      ref.read(appModeProfileProvider).session.start(ref, request);
+
   /// Performs local login via USP.
   ///
   /// Password is used for authentication only — never stored.
   /// Session token is persisted by [UspAuthCoordinator] for page reload recovery.
+  ///
+  /// The two steps that *open* the session moved to `SessionStrategy.start()` in
+  /// #1474 phase 9 — USP login, then device info while auth stays in loading so
+  /// GoRouter cannot navigate before the fingerprint is ready. What stays here is
+  /// the part that is the same in every mode: the loading/data/error state machine,
+  /// the [guardError] escape hatch and the `ServiceError` translation.
+  ///
+  /// This method keeps its name and its local-only callers. It is not the remote
+  /// entry under another name: the agent's session is opened by the confirm view,
+  /// which has its own error surface and its own state machine, and reaches the
+  /// same contract through [openSession].
   Future localLogin(
     String password, {
     bool guardError = true,
@@ -93,15 +127,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
     try {
-      final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
-      await uspCoordinator.tryUspLogin(password);
-      logger.d('[Auth]: localLogin: USP login succeeded');
-
-      // Fetch device info and store fingerprint while auth stays in loading —
-      // prevents GoRouter from navigating before fingerprint is ready.
-      await ref
-          .read(sessionProvider.notifier)
-          .fetchDeviceInfoAndInitializeServices();
+      await openSession(OwnCredentialsRequest(password));
 
       state = AsyncValue.data(previousState.copyWith(
         loginType: LoginType.local,
@@ -193,11 +219,36 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   /// Performs logout, clearing credentials and resetting state.
-  Future logout() async {
-    logger.d('[Auth]: logout: starting');
+  ///
+  /// **The one funnel every session ending goes through**, which since #1323
+  /// (phase 5) includes the mode's own teardown: eleven call sites reach this
+  /// method and all of them now get `SessionStrategy.end` for free. Before that,
+  /// Remote Assistance teardown — releasing the Guardian session and clearing
+  /// `remoteAccessProvider` — lived in `remote_session_chip.dart`'s Disconnect
+  /// handler alone, so the other ten paths (idle timeout, 401 on the bridge, SSE
+  /// give-up, serial mismatch, factory reset, a failed relogin, …) left
+  /// `sessionInfo` and `sessionToken` populated. `router_provider.dart`'s `/usp*`
+  /// guard reads exactly those two and redirects to the confirm page with them,
+  /// so an RA logout bounced the user back into the session they had just left
+  /// (#1323 acceptance 3).
+  ///
+  /// [cause] defaults to [EndCause.sessionLost] because that is the majority — 8
+  /// of the 11 sites are automatic — and because the failure modes are asymmetric:
+  /// a missed `endSessionForCA` leaves a Guardian session to expire on its own
+  /// timer, whereas an *attempted* one on a rejected token is a guaranteed failure
+  /// on the commonest path. The three button handlers pass
+  /// [EndCause.userRequested] explicitly.
+  Future logout({EndCause cause = EndCause.sessionLost}) async {
+    logger.d('[Auth]: logout: starting (cause: ${cause.name})');
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
+      // The mode's own teardown goes FIRST: a Guardian call needs the token the
+      // rest of this method is about to invalidate. Contractually non-throwing —
+      // see SessionStrategy.end — because a throw inside this guard would leave
+      // authProvider in an error state with the credential still present.
+      await ref.read(appModeProfileProvider).session.end(ref, cause);
+
       // Disconnect SSE and unregister subscriptions BEFORE USP logout —
       // subscription cleanup uses authenticated requests, so the token
       // must still be valid.

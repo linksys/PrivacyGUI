@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -160,6 +161,125 @@ void main() {
         failures: [_detail(7026)],
       );
       expect(localizeServiceError(ctx, error), loc(ctx).errorResourceNotFound);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Characterization: the error object AS THE PROVIDER LAYER HANDS IT OVER.
+  //
+  // Every test above constructs the ServiceError inline, so they verify the
+  // mapper in isolation. They cannot see a change in what riverpod delivers.
+  // That matters because `localizeServiceError` opens with
+  //
+  //   if (error is! ServiceError) return l.errorUnexpected;
+  //   (lib/components/localizations/service_error_localizations.dart:29)
+  //
+  // so anything that wraps the error on its way out of a provider silently
+  // collapses all 13 specific messages to the generic one. Nothing would fail:
+  // the mapper still works, the UI still shows a dialog, and the dialog just
+  // stops telling the user what went wrong. Surface at risk: 23 `requireValue`
+  // sites, 59 `is XxxError` checks, 104 files referencing ServiceError.
+  //
+  // The tests below pin the passthrough on the four routes an error actually
+  // takes out of a provider, so a wrapping layer shows up as a red test rather
+  // than as degraded copy. See #1501.
+  // ---------------------------------------------------------------------------
+  group('ServiceError identity through a provider read', () {
+    /// Async provider whose build fails with a concrete ServiceError subtype.
+    ///
+    /// Declared once and shared by the four tests below. That is safe because a
+    /// provider object is only a descriptor — the state lives in the
+    /// `ProviderContainer`, and each test builds its own, so nothing crosses
+    /// between them.
+    final failingAsync = FutureProvider<int>(
+      (ref) async => throw const InvalidCredentialsError(),
+    );
+
+    /// Sync provider that throws — a different riverpod code path from the
+    /// async one, and the one behind `ref.read` in build methods.
+    final failingSync = Provider<int>(
+      (ref) => throw const TimeoutError(),
+    );
+
+    testWidgets('AsyncError.error is the raw subtype → specific message',
+        (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.listen(failingAsync, (_, __) {});
+      try {
+        await container.read(failingAsync.future);
+      } catch (_) {
+        // The state, not the throw, is what this test reads.
+      }
+
+      final error = container.read(failingAsync).error!;
+      expect(error, isA<InvalidCredentialsError>(),
+          reason: 'a wrapper here would defeat the `is! ServiceError` guard');
+      expect(localizeServiceError(ctx, error), l.errorInvalidCredentials);
+      expect(localizeServiceError(ctx, error), isNot(l.errorUnexpected),
+          reason: 'spelled out because errorUnexpected is exactly how a '
+              'wrapping layer would fail — quietly, with no exception');
+    });
+
+    testWidgets('awaiting `.future` throws the raw subtype → specific message',
+        (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      Object? caught;
+      try {
+        await container.read(failingAsync.future);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught, isA<InvalidCredentialsError>());
+      expect(localizeServiceError(ctx, caught!), l.errorInvalidCredentials);
+    });
+
+    testWidgets('`requireValue` throws the raw subtype → specific message',
+        (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.listen(failingAsync, (_, __) {});
+      try {
+        await container.read(failingAsync.future);
+      } catch (_) {}
+
+      Object? caught;
+      try {
+        container.read(failingAsync).requireValue;
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught, isA<InvalidCredentialsError>());
+      expect(localizeServiceError(ctx, caught!), l.errorInvalidCredentials);
+    });
+
+    testWidgets('a sync provider throw also arrives unwrapped', (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      Object? caught;
+      try {
+        container.read(failingSync);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught, isA<TimeoutError>());
+      expect(localizeServiceError(ctx, caught!), l.errorTimeout);
     });
   });
 }

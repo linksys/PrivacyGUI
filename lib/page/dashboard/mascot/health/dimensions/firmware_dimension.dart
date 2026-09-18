@@ -8,12 +8,15 @@ import '../health_dimension.dart';
 /// Health dimension for firmware status.
 ///
 /// Evaluates:
-/// - Whether firmware is up to date
-/// - Whether there's an available update bank
+/// - Whether the router reports a newer firmware version it can download
 ///
 /// Score mapping:
 /// - 100: Running latest or no update info available
 /// - 60: Update available (not critical but recommended)
+///
+/// "Update available" is the virtual OTA instance, never a free NAND bank: the
+/// spare bank reports `Available=1` on every healthy router, so reading it here
+/// pinned this dimension at 60 permanently.
 class FirmwareHealthDimension extends HealthDimension {
   @override
   HealthDimensionType get type => HealthDimensionType.firmware;
@@ -32,12 +35,12 @@ class FirmwareHealthDimension extends HealthDimension {
     final firmware = context.firmware;
     if (firmware == null) return 100;
 
-    final available = firmware.availableBank;
-    if (available != null) {
+    final ota = firmware.otaInstance;
+    if (ota != null && ota.available) {
       return 60; // Update available
     }
 
-    return 100; // Up to date
+    return 100; // Up to date, or the router reports no update information
   }
 
   @override
@@ -51,10 +54,11 @@ class FirmwareHealthDimension extends HealthDimension {
     }
 
     final active = firmware.activeBank;
-    final available = firmware.availableBank;
+    final ota = firmware.otaInstance;
+    final hasUpdate = ota != null && ota.available;
 
     String status;
-    if (available != null) {
+    if (hasUpdate) {
       status = 'Update Available';
     } else {
       status = 'Up to Date';
@@ -66,8 +70,8 @@ class FirmwareHealthDimension extends HealthDimension {
       items.add(SummaryItem('Current', active.version));
     }
 
-    if (available != null) {
-      items.add(SummaryItem('Available', available.version));
+    if (hasUpdate) {
+      items.add(SummaryItem('Available', ota.version));
     }
 
     return DimensionSummary(
@@ -84,7 +88,13 @@ class FirmwareHealthDimension extends HealthDimension {
         id: 'firmware_update',
         label: loc(context).firmwareUpdate,
         icon: Icons.system_update,
-        routeName: RouteNamed.uspFirmwareUpdate,
+        // The OTA page, not the manual one, since #1549 put the two flows on
+        // separate pages. This dimension is scored entirely on `otaInstance`, so
+        // the update it offers to act on is the one only that page can check for
+        // and start — the manual page has a file picker and no OTA path at all,
+        // and in remote assistance its picker is gated away too, which would land
+        // this action on a page with nothing on it.
+        routeName: RouteNamed.uspFirmwareOta,
       ),
     ];
   }

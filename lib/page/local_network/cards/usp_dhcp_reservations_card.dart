@@ -35,7 +35,9 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       title: 'DHCP',
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.add, size: 20),
-        onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
+        onTap: isLoading
+            ? null
+            : () => _showAddDhcpDialog(context, ref, reservations),
       ),
       // Reservations, not reservations plus leases. The card is two sections and
       // the footer counts both, but the tile has one number and the reservations
@@ -82,7 +84,12 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     return ToggleRow(
       value: reservation.enable,
       isLoading: isLoading,
-      onChanged: isLoading || reservation.instancePath == null
+      // `isLoading` is not part of this condition: a busy `AppSwitch` refuses
+      // input on its own (`_isInteractive = onChanged != null && !isLoading`), so
+      // nulling the callback too would only make the remaining guard ambiguous.
+      // A missing `instancePath` is the one that still means something — that row
+      // cannot be mutated at all.
+      onChanged: reservation.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,
@@ -178,13 +185,30 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
+  /// Opens the shared reservation dialog.
+  ///
+  /// [reservations] is what the card is currently rendering, and it is passed
+  /// through as `existingReservations` so the dialog can reject a duplicate
+  /// MAC/IP. It is taken as a parameter rather than re-read from
+  /// `dhcpDataProvider` here, so the list the dialog validates against is the
+  /// same one on screen.
+  ///
+  /// `existingReservations` used to default to `const []` — against which every
+  /// address is unique — so omitting it turned the dialog's duplicate check into
+  /// a silent no-op on this entry point, which is how #1070 shipped. It is now
+  /// `required`, so the same omission is a compile error rather than a live bug.
+  Future<void> _showAddDhcpDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<DhcpReservationUIModel> reservations,
+  ) async {
     final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;

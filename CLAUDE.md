@@ -76,6 +76,7 @@ flutter test path/to/test_file.dart
 - **Base infrastructure** in `lib/framework/`: `FeatureState<TSettings, TStatus>`, `Preservable`, `PreservableContract`, `PreservableAutoDisposeNotifierMixin` — used by all Type A (Form) / Type B (CRUD List) USP feature pages for dirty-guard save/revert flows
 - **Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
 - **Rule**: `PreservableContract` has exactly one canonical definition in `lib/framework/preservable_contract.dart` — duplicating it silently breaks `LinksysRoute` dirty check at runtime (constitution Article IV Rule 4)
+- **Mode strategies** in `lib/framework/mode/`: five contracts (`TransportStrategy`, `CredentialStrategy`, `SessionStrategy`, `ProximityStrategy`, `SurfaceStrategy`) composed by two exhaustive `switch`es over `AppMode` — `appModeProfileProvider` (`lib/core/mode/`) and `surfaceStrategyProvider` (`lib/page/_shared/mode/`). Mode-dependent behaviour is a member on the contract for its **cause**; never a new `if (GlobalConfig.remote.isActive)` and never a per-mode flag. Tests select a mode by overriding a provider, never by assigning `BuildConfig.forceCommandType`. Guide: `doc/mode_strategy/mode_strategy_guide.md`; governed by constitution Article XVII
 
 ### Feature Organization
 ```

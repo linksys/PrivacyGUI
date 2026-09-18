@@ -92,10 +92,9 @@ class CardFormChoice extends Equatable {
   /// The pick carried by an item's `extra` payload, or null when it carries
   /// none.
   ///
-  /// Takes [Object?] rather than a typed map because the same call reads both a
-  /// live `LayoutItem.extra` and the serialised item maps `exportLayout()`
-  /// produces and `jsonDecode` hands back, and those arrive as three different
-  /// map types.
+  /// Takes [Object?] rather than a typed map because a live `LayoutItem.extra`
+  /// and the same payload after a trip through `jsonDecode` are different map
+  /// types, and a stored `extra` can hold anything a previous version wrote.
   static CardFormChoice? readFrom(Object? extra) =>
       extra is Map ? tryFromJson(extra[extraKey]) : null;
 

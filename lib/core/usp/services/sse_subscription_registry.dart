@@ -78,6 +78,13 @@ class SseSubscriptionRegistry {
     logger.d('[SSE]: Unregistered all ${ids.length} subscriptions');
   }
 
+  /// Called when the SSE stream opens, before any event has arrived. Delegates to
+  /// strategy — the remote arm re-registers here because it cannot rely on
+  /// [onSseConnected] being reached at all.
+  Future<void> onSseStreamOpened() async {
+    await _strategy.onSseStreamOpened(records);
+  }
+
   /// Called when SSE connects. Delegates to strategy for reconnect handling.
   Future<void> onSseConnected() async {
     await _strategy.onSseConnected(records);

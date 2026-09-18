@@ -13,7 +13,11 @@ class RemoteAssistanceTestData {
 
   static const testSerialNumber = '65G10M27E03053';
   static const testMacAddress = 'AA:BB:CC:DD:EE:FF';
-  static const testDeviceUUID = 'device-uuid-12345';
+
+  /// A real 8-4-4-4-12 UUID, not a readable placeholder: since PrivacyGUI#1582
+  /// `deviceCredentialsProvider` refuses anything that is not shaped like one, so a
+  /// placeholder here would build a fixture the app itself would reject.
+  static const testDeviceUUID = '3E68DD2F-CF4F-4E47-A99B-741213215502';
   static const testDeviceToken = 'device-token-abc123';
   static const testSessionToken = 'session-token-xyz789';
   static const testSessionId = '3683AC72-A4F9-40DC-9CA5-CD5D53F815A9';

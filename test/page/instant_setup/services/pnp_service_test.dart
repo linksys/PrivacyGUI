@@ -11,8 +11,6 @@ void main() {
   late PnpService service;
 
   // Standard WAN response (DHCP mode)
-  // Note: WanSettings.fetch() requests PPP.Interface.1.Username/Password
-  // even though they're logically PPP fields — codegen bundles them together.
   const wanResponse = <String, dynamic>{
     'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
     'Device.IP.Interface.2.MaxMTUSize': '1500',
@@ -20,8 +18,6 @@ void main() {
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '',
-    'Device.PPP.Interface.1.Username': '',
-    'Device.PPP.Interface.1.Password': '',
     'Device.Bridging.Bridge.1.Enable': false,
     'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
   };

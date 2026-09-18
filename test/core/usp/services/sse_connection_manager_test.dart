@@ -125,6 +125,120 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // onStreamOpened
+  // ---------------------------------------------------------------------------
+  // The seam exists because this class infers `connected` from *traffic* — the
+  // first non-`_debug` event — so "the stream is open" and "the stream is
+  // delivering" are two different facts, and only the first one is under this
+  // class's control. Whether the second follows is a property of the backend: the
+  // local bridge heartbeats every 30s regardless of subscriptions, Guardian does
+  // not heartbeat at all, so on a remote stream the only traffic is a
+  // subscription notification.
+  //
+  // That is what makes these three tests the level the #1497 defect was visible
+  // at. The remote re-registration walk was first hung off `onConnected`, and
+  // every strategy-level unit test of it passed — a strategy cannot see which
+  // edge it was wired to. In RA the edge was unreachable: no subscriptions ⇒ no
+  // notifications ⇒ no `connected` ⇒ the walk that would have created the
+  // subscriptions never ran, and the manager sat in `connecting` where even
+  // `tryReconnect()` refuses to act. Test 2 below is that exact scenario.
+  group('onStreamOpened', () {
+    test('fires on connect(), before any event and before connected', () async {
+      final manager = SseConnectionManager(mockBridge);
+      int opened = 0;
+      manager.onStreamOpened = () => opened++;
+
+      await manager.connect();
+
+      // Nothing has been added to the controller. A listener that has to put
+      // something *on* the stream for traffic to exist can only run here.
+      expect(opened, 1);
+      expect(manager.connectionState.value, SseConnectionState.connecting);
+
+      manager.dispose();
+    });
+
+    test(
+        'fires again when the stream is reopened and stays silent, '
+        'where onConnected does not', () async {
+      final manager = SseConnectionManager(
+        mockBridge,
+        initialBackoff: const Duration(milliseconds: 10),
+        maxBackoff: const Duration(milliseconds: 20),
+      );
+      int opened = 0;
+      int connected = 0;
+      manager.onStreamOpened = () => opened++;
+      manager.onConnected = () => connected++;
+
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(Duration.zero);
+      expect(opened, 1);
+      expect(connected, 1);
+
+      // The replacement stream never emits — which is precisely what a Guardian
+      // stream carrying no subscriptions does after the ~10-minute force close.
+      final reopened = StreamController<SseEvent>();
+      when(() => mockBridge.notifications()).thenAnswer((_) => reopened.stream);
+
+      await streamController.close();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      expect(opened, 2,
+          reason: 'the reconnect must be observable without traffic, because '
+              'restoring traffic is the listener\'s whole job');
+      expect(connected, 1,
+          reason: 'onConnected cannot fire on a silent stream — wiring the '
+              'remote re-registration here is what made it unreachable');
+
+      await reopened.close();
+      manager.dispose();
+    });
+
+    test('fires on the manual tryReconnect() path out of suspended', () async {
+      // The banner's "Reconnect" button reaches connect() through tryReconnect(),
+      // and #1497 acceptance 7b requires that press to put the subscriptions
+      // back. It does so via this callback, not via a separate path.
+      final manager = SseConnectionManager(
+        mockBridge,
+        initialBackoff: const Duration(milliseconds: 10),
+        maxBackoff: const Duration(milliseconds: 100),
+        maxRetries: 5,
+      );
+      int opened = 0;
+      manager.onStreamOpened = () => opened++;
+
+      when(() => mockBridge.notifications()).thenAnswer((_) {
+        final sc = StreamController<SseEvent>();
+        Future.microtask(() => sc.close());
+        return sc.stream;
+      });
+
+      await manager.connect();
+      for (int i = 0; i < 20; i++) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (manager.connectionState.value == SseConnectionState.suspended) {
+          break;
+        }
+      }
+      expect(manager.connectionState.value, SseConnectionState.suspended);
+
+      // Discard the opens from the failed attempts; only the manual one is
+      // under test.
+      opened = 0;
+      final reopened = StreamController<SseEvent>();
+      when(() => mockBridge.notifications()).thenAnswer((_) => reopened.stream);
+
+      expect(await manager.tryReconnect(), isTrue);
+      expect(opened, 1);
+
+      await reopened.close();
+      manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // disconnect
   // ---------------------------------------------------------------------------
   group('disconnect', () {

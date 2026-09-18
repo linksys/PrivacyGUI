@@ -144,25 +144,133 @@ void main() {
     });
   });
 
+  // #1497 acceptance 7b. The remote arm used to be a no-op documented as
+  // "orchestrator controls", and that was true of the code and wrong about
+  // Guardian: it force-closes the proxied stream at roughly ten minutes, which
+  // makes a reconnect the most routine event in a support session rather than a
+  // fault, and the *new* stream carries no subscriptions, so the dashboard stopped
+  // updating for the rest of the session while the banner said "connected". The
+  // orchestrator does not cover it — it registers on the first connect only.
+  //
+  // WHICH EDGE, AND WHY IT IS NOT `onSseConnected`. The first fix put this on the
+  // `connected` transition, and review found the hook could not fire in the one
+  // mode it was for. `SseConnectionManager` infers `connected` from traffic — the
+  // first non-`_debug` event — and `HeartbeatConfig.remote` reflects a Guardian
+  // that sends no heartbeats, so the only traffic on a remote stream is a
+  // subscription notification. No subscriptions ⇒ no notifications ⇒ no
+  // `connected` ⇒ the re-registration never runs, and the manager settles in
+  // `connecting` where even `tryReconnect()` refuses to act. The two tests below
+  // are a pair for that reason: one asserts the work happens on stream-open, the
+  // other asserts it does *not* also happen on `connected`, where it would churn
+  // a stream that is by definition already delivering.
+  //
+  // The `existingRecords.isEmpty` case keeps the old comment's point intact — the
+  // first connect still belongs to the orchestrator, and it is recognisable
+  // because the registry has nothing recorded yet.
+  group('onSseStreamOpened', () {
+    SseSubscriptionRecord record(String id, String path) =>
+        SseSubscriptionRecord(
+          subscriptionId: id,
+          notifType: 'ValueChange',
+          referenceList: path,
+          createdAt: DateTime.now(),
+        );
+
+    test('re-registers existing subscriptions on reconnect', () async {
+      await strategy.onSseStreamOpened([record('sub-1', 'Device.WiFi.')]);
+
+      // Through registerSubscriptions, so the prefix and the mandatory
+      // unregister → register dance both still apply: a bare `subscribe` would be
+      // rejected by Guardian as a duplicate ID.
+      verifyInOrder([
+        () => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'),
+        () => mockBridge.subscribe(
+              subscriptionId: 'remote-sub-1',
+              path: 'Device.WiFi.',
+              notifType: 1,
+            ),
+      ]);
+    });
+
+    test('re-registers every record, not just the first', () async {
+      await strategy.onSseStreamOpened([
+        record('sub-1', 'Device.WiFi.'),
+        record('sub-2', 'Device.Ethernet.'),
+      ]);
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'remote-sub-1',
+            path: 'Device.WiFi.',
+            notifType: 1,
+          )).called(1);
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'remote-sub-2',
+            path: 'Device.Ethernet.',
+            notifType: 1,
+          )).called(1);
+    });
+
+    test('first connect stays the orchestrator\'s: no records, no calls',
+        () async {
+      await strategy.onSseStreamOpened([]);
+
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          ));
+      verifyNever(() =>
+          mockBridge.unsubscribe(subscriptionId: any(named: 'subscriptionId')));
+    });
+
+    test('a second open while the first walk is still running is skipped',
+        () async {
+      // The walk is ~1s for six subscriptions and `SseManager` invokes it
+      // fire-and-forget, so a flapping stream can start a second one over the same
+      // records. Interleaved, walk B subscribes an id and walk A's loop then
+      // unsubscribes it — the subscription is absent for the rest of the session
+      // and the only trace is a swallowed logger.w.
+      //
+      // Deliberately not awaited: awaiting the first call is precisely the
+      // condition under which the bug cannot occur, so the test would pass against
+      // the unguarded code.
+      final first =
+          strategy.onSseStreamOpened([record('sub-1', 'Device.WiFi.')]);
+      await strategy.onSseStreamOpened([record('sub-1', 'Device.WiFi.')]);
+      await first;
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'remote-sub-1',
+            path: 'Device.WiFi.',
+            notifType: 1,
+          )).called(1);
+    });
+  });
+
   group('onSseConnected', () {
-    test('does NOT auto resubscribe (orchestrator controls)', () async {
-      final records = [
+    test('does nothing — the reconnect work is on stream-open', () async {
+      await strategy.onSseConnected([
         SseSubscriptionRecord(
           subscriptionId: 'sub-1',
           notifType: 'ValueChange',
           referenceList: 'Device.WiFi.',
           createdAt: DateTime.now(),
         ),
-      ];
+      ]);
 
-      await strategy.onSseConnected(records);
-
-      // Remote strategy does NOT auto resubscribe on connect
+      // Not vacuous by omission: records are passed in, and the local arm does
+      // resubscribe on exactly this edge with exactly this input. Asserting
+      // silence here is asserting that the remote arm has been moved rather than
+      // duplicated — a copy left behind would unsubscribe and re-subscribe a
+      // stream that is currently delivering, which is a blackout window bought
+      // for nothing.
       verifyNever(() => mockBridge.subscribe(
             subscriptionId: any(named: 'subscriptionId'),
             path: any(named: 'path'),
             notifType: any(named: 'notifType'),
           ));
+      verifyNever(() =>
+          mockBridge.unsubscribe(subscriptionId: any(named: 'subscriptionId')));
     });
   });
 

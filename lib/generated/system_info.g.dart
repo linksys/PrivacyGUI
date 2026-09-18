@@ -9,12 +9,14 @@ class SystemInfo {
   final String manufacturer;
   final String modelName;
   final String serialNumber;
+  final String? baseMacAddress;
   final String hardwareVersion;
   final String softwareVersion;
   final int uptime;
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
+  final int? firmwareImageNumberOfEntries;
   final String activeFirmwareImage;
   final String bootFirmwareImage;
 
@@ -22,12 +24,14 @@ class SystemInfo {
     required this.manufacturer,
     required this.modelName,
     required this.serialNumber,
+    this.baseMacAddress,
     required this.hardwareVersion,
     required this.softwareVersion,
     required this.uptime,
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
+    this.firmwareImageNumberOfEntries,
     required this.activeFirmwareImage,
     required this.bootFirmwareImage,
   });
@@ -36,12 +40,14 @@ class SystemInfo {
     'Device.DeviceInfo.Manufacturer',
     'Device.DeviceInfo.ModelName',
     'Device.DeviceInfo.SerialNumber',
+    'Device.DeviceInfo.X_LINKSYS_BaseMACAddress',
     'Device.DeviceInfo.HardwareVersion',
     'Device.DeviceInfo.SoftwareVersion',
     'Device.DeviceInfo.UpTime',
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
+    'Device.DeviceInfo.FirmwareImageNumberOfEntries',
     'Device.DeviceInfo.ActiveFirmwareImage',
     'Device.DeviceInfo.BootFirmwareImage',
   ];
@@ -96,6 +102,10 @@ class SystemInfo {
       modelName: (response['Device.DeviceInfo.ModelName'] ?? '') as String,
       serialNumber:
           (response['Device.DeviceInfo.SerialNumber'] ?? '') as String,
+      baseMacAddress:
+          response.containsKey('Device.DeviceInfo.X_LINKSYS_BaseMACAddress')
+              ? response['Device.DeviceInfo.X_LINKSYS_BaseMACAddress'] as String
+              : null,
       hardwareVersion:
           (response['Device.DeviceInfo.HardwareVersion'] ?? '') as String,
       softwareVersion:
@@ -116,6 +126,13 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
+      firmwareImageNumberOfEntries:
+          response.containsKey('Device.DeviceInfo.FirmwareImageNumberOfEntries')
+              ? int.tryParse(
+                  response['Device.DeviceInfo.FirmwareImageNumberOfEntries']
+                          ?.toString() ??
+                      '')
+              : null,
       activeFirmwareImage:
           (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
       bootFirmwareImage:
@@ -129,12 +146,14 @@ class SystemInfo {
         'manufacturer: $manufacturer, '
         'modelName: $modelName, '
         'serialNumber: $serialNumber, '
+        'baseMacAddress: $baseMacAddress, '
         'hardwareVersion: $hardwareVersion, '
         'softwareVersion: $softwareVersion, '
         'uptime: $uptime, '
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
         'cpuUsage: $cpuUsage, '
+        'firmwareImageNumberOfEntries: $firmwareImageNumberOfEntries, '
         'activeFirmwareImage: $activeFirmwareImage, '
         'bootFirmwareImage: $bootFirmwareImage'
         ')';

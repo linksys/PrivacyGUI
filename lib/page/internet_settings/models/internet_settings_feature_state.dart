@@ -50,6 +50,9 @@ class InternetSettingsFeatureState
   /// Whether the device is in bridge mode.
   bool get isBridgeMode => connectionType == UspWanConnectionType.bridge;
 
+  /// Whether the device exposes `X_LINKSYS_MTUMode` — gates the Auto MTU toggle.
+  bool get mtuModeSupported => status.mtuModeSupported;
+
   // --- Read-only convenience getters ---
   String get currentMacAddress => readOnlyInfo.currentMacAddress;
   String get pppConnectionStatus => readOnlyInfo.pppConnectionStatus;

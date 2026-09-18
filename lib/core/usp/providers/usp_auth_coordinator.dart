@@ -159,6 +159,38 @@ class UspAuthCoordinator {
     }
   }
 
+  /// Forget everything this object knows about the *current* session, keeping
+  /// the object itself.
+  ///
+  /// Acceptance 9 of #1323. All five fields below are per-session bookkeeping,
+  /// and this coordinator outlives a session: it is a non-autoDispose singleton
+  /// whose only `ref.watch` is on `uspClientProvider`, and #1322 made that
+  /// provider's value stable across a re-`activate()` (the façade is re-pointed,
+  /// not replaced), so nothing rebuilds it. A second Remote Assistance session
+  /// therefore started with the first one's history:
+  ///
+  ///  * `_lastRestoreResult == false` plus `_lastRestoreAttempt` inside the
+  ///    1-second cooldown makes the next `restoreSession()` return the *previous*
+  ///    session's failure without trying.
+  ///  * `_lastTokenRefresh` from the old token defers the first proactive refresh
+  ///    by up to 12 minutes on a token that is not the same token.
+  ///  * a non-null `_restoreInProgress` or `_refreshInProgress` left by a call
+  ///    that was cut off mid-flight coalesces every future caller onto a
+  ///    `Completer` that will never complete.
+  ///
+  /// **Who calls this is the mode's decision, not this class's.** See
+  /// `CredentialStrategy.onCredentialRebound`: locally a re-login is the same
+  /// authority as before and clearing the timestamps would discard a valid
+  /// refresh window, so only `RemoteCredentialStrategy` reaches this.
+  void resetSessionState() {
+    logger.d('[USP][Auth]: resetSessionState — dropping per-session state');
+    _lastTokenRefresh = null;
+    _refreshInProgress = null;
+    _restoreInProgress = null;
+    _lastRestoreAttempt = null;
+    _lastRestoreResult = null;
+  }
+
   /// Implementation of session restore with token-only strategy.
   Future<bool> _restoreSessionImpl({required bool isRecovering}) async {
     // Step 1: If WASM client already has a token, try refreshing it

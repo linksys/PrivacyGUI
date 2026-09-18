@@ -37,3 +37,10 @@ const pUsername = 'Username';
 const pBiometrics = 'Biometrics';
 const pLinksysToken = 'LinksysToken';
 const pLinksysTokenTs = 'LinksysTokenTs';
+
+/// The serial number the cached [pLinksysToken] was issued for.
+///
+/// Without it the cache is keyed on nothing but time, so swapping the router
+/// behind the same LAN address hands the new device the previous device's token
+/// — see `GuardianApiClient.fetchDeviceToken` (PrivacyGUI#1582).
+const pLinksysTokenSn = 'LinksysTokenSn';

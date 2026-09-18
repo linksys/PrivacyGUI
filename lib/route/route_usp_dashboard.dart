@@ -2,6 +2,53 @@ part of 'router_provider.dart';
 
 final uspShellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// `?tab=N` for the three tab-carrying USP pages, defaulting to the first tab.
+///
+/// One spelling on purpose. Each view clamps this against its own `tabCount`, so
+/// an unparseable or out-of-range value opens tab 0 instead of throwing — which
+/// also means a typo here (`'tabs'`, or a stale clamp bound) degrades silently to
+/// tab 0 for real users while every layout-gate cell stays green, because the
+/// sweep passes `initialTab:` to the constructor and never goes through this file.
+/// A defect with no test to catch it should at least have only one place to be.
+int _uspTabQueryParam(GoRouterState state) =>
+    int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+
+/// Refuses to leave either firmware page while an install is running.
+///
+/// One function referenced by both routes rather than the same closure written
+/// twice. #1549 gave one install two entry points — the OTA page fetches an image
+/// and the manual page uploads one — and "can I navigate away mid-flash" must not
+/// depend on which of them started it. Two byte-identical copies are exactly what
+/// lets a later change tighten one and forget the other, and the per-route matrix
+/// in `test/route/usp_firmware_exit_guard_test.dart` would not catch that: it
+/// pulls each route's own `onExit` out of the real tree, so two guards that
+/// disagree are two guards it faithfully reports as disagreeing, one case at a
+/// time, only if someone reads which case failed.
+///
+/// `pop` is what reaches this (`_handlePopPageWithRouteMatch` consults `onExit`
+/// and vetoes the Navigator pop on `false`), which is the back arrow and the
+/// browser's Back button. A `pushNamed` over the top does not — the pushed-over
+/// match stays in the list, so the guard is deferred rather than skipped.
+///
+/// **A session that is over is not a navigation to argue with.** `go` consults
+/// `onExit` for every match that is leaving, and the sign-out path is a `go`: the
+/// router's `redirect` sends a signed-out user to the login page and the leaving
+/// match is this one. Vetoing that leaves the app on a firmware page it has no
+/// session to talk to, until the install phase happens to end. So
+/// [AppConnectionState.loggedOut] releases the guard — it covers every sign-out,
+/// the core-reported ones and auth's own (an idle timeout, a 401, the account
+/// menu), which is the same reason `session_exit_sink.dart` keys on the cause
+/// rather than on this state.
+Future<bool> _firmwareExitGuard(
+    BuildContext context, GoRouterState state) async {
+  final container = ProviderScope.containerOf(context);
+  if (container.read(appConnectionStateProvider) ==
+      AppConnectionState.loggedOut) {
+    return true;
+  }
+  return !container.read(firmwareUpdateNotifierProvider).isUpdating;
+}
+
 final uspDashboardRoute = ShellRoute(
   navigatorKey: uspShellNavigatorKey,
   builder: (BuildContext context, GoRouterState state, Widget child) =>
@@ -115,10 +162,15 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspFirmwareUpdate,
       path: RoutePath.uspFirmwareUpdate,
       builder: (context, state) => const FirmwareUpdateView(),
-      onExit: (context, state) async {
-        final container = ProviderScope.containerOf(context);
-        return !container.read(firmwareUpdateNotifierProvider).isUpdating;
-      },
+      onExit: _firmwareExitGuard,
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspFirmwareOta,
+      path: RoutePath.uspFirmwareOta,
+      builder: (context, state) => const FirmwareOtaView(),
+      // The same guard object as the manual page above, not a second copy of it —
+      // see `_firmwareExitGuard`.
+      onExit: _firmwareExitGuard,
     ),
     LinksysRoute(
       name: RouteNamed.uspDhcpDetail,
@@ -135,11 +187,8 @@ final uspDashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.uspStatistics,
       path: RoutePath.uspStatistics,
-      builder: (context, state) {
-        final tabParam = state.uri.queryParameters['tab'];
-        final initialTab = int.tryParse(tabParam ?? '') ?? 0;
-        return UspStatisticsView(initialTab: initialTab);
-      },
+      builder: (context, state) =>
+          UspStatisticsView(initialTab: _uspTabQueryParam(state)),
     ),
     LinksysRoute(
       name: RouteNamed.uspAdvancedSettings,
@@ -178,7 +227,9 @@ final uspDashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,
           path: RoutePath.uspPortForwardingDetail,
-          builder: (context, state) => const UspPortForwardingDetailView(),
+          builder: (context, state) => UspPortForwardingDetailView(
+            initialTab: _uspTabQueryParam(state),
+          ),
           enableDirtyCheck: true,
           preservableProvider: preservableUspPortForwardingPageProvider,
         ),
@@ -209,7 +260,8 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspWifiSettings,
       preservableProvider: preservableUspWifiPageProvider,
       enableDirtyCheck: true,
-      builder: (context, state) => const UspWifiSettingsView(),
+      builder: (context, state) =>
+          UspWifiSettingsView(initialTab: _uspTabQueryParam(state)),
     ),
     LinksysRoute(
       name: RouteNamed.uspApps,

@@ -20,9 +20,9 @@ import '../../../util/settle.dart';
 /// `_buildBackhaulCard` branched on two states — `if (backhaul.isWifi)` /
 /// `else if (backhaul.isEthernet)` — and `BackhaulInfo` has three: `hasInfo`
 /// false is neither. In that third state every block in the card was gated off
-/// (no parent row, no upload/download because both rates are null, no PHY-rate or
-/// last-contact row because `phyRate` is 0 and `lastContactTime` is null), so the
-/// card rendered as a title and nothing else, with nothing on screen saying why.
+/// (no parent row, no upload/download because both rates are null, no
+/// last-contact block because `lastContactTime` is null), so the card rendered as
+/// a title and nothing else, with nothing on screen saying why.
 ///
 /// It is not a hypothetical state. #1430's liveness change makes a node whose
 /// DataElements subtree never arrived stay **online** and therefore navigable
@@ -94,7 +94,6 @@ void main() {
     expect(state.parentNode, isNull);
     expect(node.backhaul.uplinkRate, isNull);
     expect(node.backhaul.downlinkRate, isNull);
-    expect(node.backhaul.phyRate, 0);
     expect(node.backhaul.lastContactTime, isNull);
 
     // Why the page is reachable at all in this state (#1430 review, C1).

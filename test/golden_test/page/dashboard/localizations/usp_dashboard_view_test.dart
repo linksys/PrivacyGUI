@@ -3,10 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_update_banner_provider.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_dashboard.dart';
+// The three pins the layout gate uses to raise the firmware banner, taken by `show` so
+// this file does not also import the gate's `dashboardPageOverrides` — one page, two
+// override builders, and mixing them would be the fork this repo already owes #1361.
+import '../../../../mocks/provider_overrides/mock_firmware_update.dart'
+    show
+        FixedFirmwareAutoUpdateNotifier,
+        FixedFirmwareBanksDataNotifier,
+        gateFirmwareAutoUpdateOn,
+        gateFirmwareBanksWithOta;
 
 void main() {
   initDashboardSharedPreferences();
@@ -19,6 +31,25 @@ void main() {
       height: 1800,
       states: {
         'normal': (overrides) => overrides.addAll(dashboardOverrides()),
+        // The firmware-available banner, which the layout gate has swept at nine widths
+        // since #1552 and which no picture has ever shown. The gate proves the box holds;
+        // what it cannot say is whether the sentence and the version read as one offer at
+        // the top of a dashboard, in 26 languages — and this banner is *unsolicited*, so
+        // it is the one firmware surface a user meets without asking for it.
+        //
+        // The same three pins the gate case uses. **`firmwareUpdateBannerVisibleProvider`
+        // overridden means the predicate is not evaluated** — invert its conditions and
+        // this state still draws a banner. That is deliberate here (the picture's subject
+        // is the banner) and it is why `firmware_update_banner_provider_test.dart` remains
+        // the only place those conditions are checked.
+        'firmware_banner': (overrides) => overrides.addAll([
+              ...dashboardOverrides(),
+              firmwareBanksDataProvider.overrideWith(() =>
+                  FixedFirmwareBanksDataNotifier(gateFirmwareBanksWithOta)),
+              firmwareAutoUpdateDataProvider.overrideWith(() =>
+                  FixedFirmwareAutoUpdateNotifier(gateFirmwareAutoUpdateOn)),
+              firmwareUpdateBannerVisibleProvider.overrideWithValue(true),
+            ]),
       },
       interactions: {
         'edit_mode': Interaction(

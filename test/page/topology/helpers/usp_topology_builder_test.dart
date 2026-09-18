@@ -764,11 +764,11 @@ void main() {
           'an online WiFi slave whose backhaul carries no RSSI keeps a neutral '
           'level, not zero', () {
         // Firmware ships RCPI 0 for a backhaul whose BackhaulStats are not
-        // populated yet; rcpiToRssi maps that to null while mediaType stays set,
-        // so hasInfo is true. Reading 0.0 there paints a healthy node's water
-        // level empty — visually identical to a dead node. AC4's "no fabricated
-        // 0.5" is about an ABSENT backhaul (asserted 0.0 in the test above),
-        // not about a real backhaul with a missing reading.
+        // populated yet; rcpiToRssi maps that to null while the medium and the
+        // parent stay set, so hasInfo is true. Reading 0.0 there paints a healthy
+        // node's water level empty — visually identical to a dead node. AC4's "no
+        // fabricated 0.5" is about an ABSENT backhaul (asserted 0.0 in the test
+        // above), not about a real backhaul with a missing reading.
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
           slaves: [
@@ -858,14 +858,31 @@ void main() {
       });
     });
 
-    // The backhaul level's inputs are two independent strings and one nullable
-    // int, and nothing in `BackhaulInfo` couples them: `isEthernet` reads
-    // `linkType`, `hasInfo` reads `mediaType`. So the four states are a table,
-    // not a ladder, and the row that matters is the one the field-by-field
-    // fixtures never produce — `linkType:'Ethernet'` with an empty `mediaType`.
-    // A guard order that answered that row differently from the link's
-    // `connectionType` and from the node-detail card's arm chain is what this
-    // table exists to pin (#1449 review).
+    // The backhaul level's inputs used to be two independent strings and one
+    // nullable int with nothing coupling them — `isEthernet` read `linkType`,
+    // `hasInfo` read `mediaType` — so the table's whole point was the row the
+    // field-by-field fixtures never produce: `linkType:'Ethernet'` with an empty
+    // `mediaType`, which one guard order painted dead while two other sites
+    // called the same node wired (#1449 review).
+    //
+    // #1555 deleted `mediaType`: prplMesh has no `BackhaulMediaType` and no
+    // replacement for it, so `isEthernet` and the medium half of `hasInfo` now
+    // read the same `linkType` and that row is no longer constructible. The table
+    // stays for the cross-check below — the failure it caught was never a wrong
+    // level on its own but one build answering the same field two ways, which is
+    // still possible whenever `_backhaulLevel` and the link's `connectionType`
+    // are written apart.
+    //
+    // What #1555 adds in its place is the *other* half of `hasInfo`: a row with
+    // an empty `LinkType` but a known `BackhaulDeviceID`. That is not a
+    // hand-built edge case — `LinkType` is nullable in the new definition — and
+    // it is where the same disagreement had moved to, this time between this
+    // builder and `UnifiedDiagnosticsService`. The last two rows are that state.
+    //
+    // `linkType:'None'` is absent on purpose: `meshBackhaulLinkType` maps
+    // firmware's `None` to null before a `BackhaulInfo` is built, so it arrives
+    // here as the absent row. That mapping is pinned in
+    // `mesh_topology_builder_test.dart`, which is where the wire string lives.
     group('backhaul level decision table', () {
       double levelFor(BackhaulInfo backhaul) {
         final topology = UspTopologyBuilder.buildFromMeshNetwork(
@@ -904,31 +921,32 @@ void main() {
       }
 
       const cases = <String, (BackhaulInfo, double)>{
-        'absent (no mediaType, no linkType) → 0.0': (
-          BackhaulInfo(mediaType: ''),
-          0.0,
-        ),
-        'Ethernet, both fields set → 1.0': (
-          BackhaulInfo(mediaType: 'Ethernet', linkType: 'Ethernet'),
-          1.0,
-        ),
+        'absent (no linkType) → 0.0': (BackhaulInfo.none, 0.0),
+        'Ethernet → 1.0': (BackhaulInfo(linkType: 'Ethernet'), 1.0),
         'Wi-Fi with a reading → the RSSI level': (
-          BackhaulInfo(
-            mediaType: 'IEEE 802.11ax',
-            linkType: 'Wi-Fi',
-            signalStrength: -50,
-          ),
+          BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
           0.9,
         ),
         'Wi-Fi with no reading → neutral 0.5': (
-          BackhaulInfo(mediaType: 'IEEE 802.11ax', linkType: 'Wi-Fi'),
+          BackhaulInfo(linkType: 'Wi-Fi'),
           0.5,
         ),
-        // The uncoupled row. `linkType` is a positive statement and
-        // `mediaType` is merely missing, so the positive one wins.
-        'linkType Ethernet with an empty mediaType → 1.0, not 0.0': (
-          BackhaulInfo(mediaType: '', linkType: 'Ethernet'),
-          1.0,
+        // #1555. `LinkType` is nullable in the prplMesh definition and arrives
+        // empty on rows that still carry a `BackhaulDeviceID`, so these two rows
+        // are firmware states, not constructed ones. They are 0.5/RSSI and not
+        // 0.0 because `hasInfo` counts the parent: grading them dead here while
+        // `UnifiedDiagnosticsService` defaults the medium to Wi-Fi and grades
+        // them on RSSI is the disagreement the getter was rewritten to close.
+        'parent known, medium unnamed, no reading → neutral 0.5': (
+          BackhaulInfo(parentNodeId: DevicesTestData.masterMac),
+          0.5,
+        ),
+        'parent known, medium unnamed, with a reading → the RSSI level': (
+          BackhaulInfo(
+            parentNodeId: DevicesTestData.masterMac,
+            signalStrength: -50,
+          ),
+          0.9,
         ),
       };
 

@@ -127,29 +127,246 @@
 # unblocked test/page/instant_setup/views/pnp_setup_view_test.dart went red with an empty incident list
 # unblocked on the bump, which is the signal it was written to give, and was then deleted. Swept the
 # unblocked same day, so this row's disposition is the shorter half of its story.
+# tabs THREE rows map to more than one gate case each because of TABS, and the ms_per_cell column has
+# tabs no slot for the difference. Two more rows do so for a reason that is not a tab - see
+# tabs `# second-state` below - so "three" here counts the tab rows and not the
+# tabs rows-with-two-cases, which are now five.
+# tabs #1489 and its follow-up sweep those pages once per tab - 8 cases over 3 rows -
+# tabs while this register's key is the page view FILE and PageRoster._rejectDuplicates refuses a
+# tabs second row for one path. So the per-tab figures live here, on the column's own basis
+# tabs (--plain-name, --reporter json per-test durations over the coordinate tests only, / 234, three
+# tabs runs, median), all measured 2026-09-09:
+# tabs
+# tabs   usp_statistics_view.dart          row 45.3   tab 1 Devices  28.2 (32.9 / 27.5 / 28.2)
+# tabs                                                tab 2 System   28.0 (28.0 / 31.1 / 27.0)
+# tabs   usp_wifi_settings_view.dart       row 29.2   tab 1 Advanced 17.6 (17.6 / 20.6 / 16.2)
+# tabs   usp_port_forwarding_detail...     row 21.6   tab 1 Range    23.3 (23.9 / 21.9 / 23.3)
+# tabs                                                tab 2 Trigger  21.2 (24.5 / 21.2 / 21.1)
+# tabs
+# tabs Every row figure STAYS: re-read the same day, statistics gave 47.5 (48.4 / 47.5 / 46.5) against
+# tabs 45.3, wifi_settings 31.1 (32.0 / 28.4 / 31.1) against 29.2, port_forwarding 22.1
+# tabs (22.6 / 22.1 / 21.8) against 21.6 - +4.9%, +6.5% and +2.3%, all inside #1377's +/-7% floor.
+# tabs What the second page's worth of tabs adds is that the inheritance error has NO consistent
+# tabs direction or size. Sibling tabs of port_forwarding land within 8% of tab 0 either way, because
+# tabs all three render the same tree - a header and rule rows. wifi_settings' Advanced tab is 40%
+# tabs CHEAPER than its tab 0, i.e. tab 0 over-projects it by 66%, because the two tabs render
+# tabs unrelated trees: a list of network cards against a single card holding one switch. So the size
+# tabs of the error tracks how alike the tabs are, which is not something a register keyed on the file
+# tabs can know. Anchoring any projection on a sibling tab is the mistake; the direction it fails in
+# tabs is not predictable enough to correct for.
+# tabs Why these are written out rather than left to be derived: page_sweep_suites_test.dart's "no
+# tabs suite weight is guessed" resolves all eight cases through this one path, so it hands each
+# tabs sibling tab its tab 0 figure and passes - a number that reads as measured while being inherited,
+# tabs and wrong by anything from -8% to +66%. The budget projection cannot catch it either: it sums
+# tabs roster ROWS x cellsPerPage, gains no rows from a new tab, and asserts greaterThan a floor, so
+# tabs 1,170 uncounted cells can only make it more true. Neither number is load-bearing today; both
+# tabs would be wrong the first time someone planned a shard on one, which is what this block is for.
+# tabs Read the distribution block above as arithmetic over ROWS: its "43 x 234 = 10,062 cells" is 43
+# tabs rows, and the sweep those rows describe is now 50 cases = 11,700 cells (49 = 11,466 until
+# tabs #1554 section 4; 48 = 11,232 until #1549 split firmware_ota out). page.tsv's own `# cells`
+# tabs header is the sweep's count and moves with the cases; this file's counts do not.
+# tabs Real pump cost of the five tab cases: 234 x (28.2 + 28.0 + 17.6 + 23.3 + 21.2) = 27.7s, against
+# tabs the 38.1s their rows project - 234 x (45.3 + 45.3 + 29.2 + 21.6 + 21.6), i.e. 10.4s of the budget
+# tabs bought nothing, which is the "~10.5s high" page_sweep_suites_test.dart prints. Both registers say
+# tabs the same number on purpose; the first draft of this line said 33.7s, having summed four of the
+# tabs five rows, and nothing could have failed on it. #1489's first two alone measured 13.2s against a
+# tabs ~21s projection.
+# tabs One practical consequence: `--plain-name page.statistics` matches all three of its groups and
+# tabs `page.wifi_settings` would match its Advanced case too, so re-measuring a tab 0 in isolation
+# tabs takes the coordinate suffix: `--plain-name 'page.statistics screen_px'`.
+# tabs Whether one row per FILE is still the right key is a real question, deliberately not answered
+# tabs here: the alternative is a per-case register, which is a redesign of this file and needs its own
+# tabs ticket. #1489 chose to measure and record rather than redesign, and this block is that record.
+# split The 44th swept row, and the first one this register has gained from a page being SPLIT rather
+# split than from a wave, a tab or an onboarding: #1549 divided one firmware entry point in two, so
+# split firmware_ota_view.dart is a view file that did not exist when the epic closed. It went straight
+# split to `swept` with no queued stop — the fixture it needs is the one its sibling already had.
+# split Measured on this column's own basis (--plain-name page.firmware_ota, --reporter json, the nine
+# split coordinate tests' durations summed / 234, three runs, median), 2026-09-14: 18.3 (18.3 / 19.2 /
+# split 15.4). Deliberately NOT inherited, and the reason is the `# tabs` block's finding: the two
+# split candidates to inherit from were firmware_update_view.dart at 19.4 (the page it was split out
+# split of, sharing a fixture and a card list) and usp_admin_view.dart at 22.2, i.e. +6% and +21% away
+# split from the truth in the same direction the tabs measurement says has no reliable direction. A
+# split sibling's figure is not this page's figure even when the sibling is where the code came from.
+# split The spread here is -16%/+5% around the median, inside the +/-40% band this file tells you to
+# split read a sub-20ms row with, and the row is a floor on cost like every other (see basis-note).
+# remeasure #1549 also re-measured the two rows it CHANGED THE SHAPE OF, same basis, same day, three
+# remeasure runs each: usp_admin_view.dart 22.2 -> 23.4 (23.6 / 23.4 / 22.5, +5.4%) after gaining a
+# remeasure fifth card that lays out through a LayoutBuilder, and firmware_update_view.dart
+# remeasure 19.4 -> 18.6 (18.6 / 20.1 / 17.9, -4.1%) after losing the OTA check card to the split.
+# remeasure firmware_ota_view.dart's own figure was then re-taken and moved further than either,
+# remeasure 18.3 -> 15.3 (15.3 / 16.0 / 14.4, -16.4%): its first reading was taken hours earlier,
+# remeasure before a code review moved the phase Semantics boundary and dropped an always-empty slot
+# remeasure from the idle body, and it is the reading on the code that actually ships.
+# remeasure Why re-measure at all when all three moves are inside the +/-40% band a sub-20ms row is
+# remeasure read with: the band is how to READ a figure, not a licence to keep one. A row that is
+# remeasure not re-measured after its page changes shape is an INHERITED figure, which is the one
+# remeasure thing the `# split` block above refused to do — and inheriting from a page's own past
+# remeasure is the same error as inheriting from a sibling, with less to warn you. The direction is
+# remeasure also worth noting against `# tabs`: admin grew a card and read dearer, firmware_update
+# remeasure lost one and read cheaper, both by ~5% while the guard the same commit added costs 16s.
+# remeasure The column is a per-page rate, so it does not see a readability guard at all.
+# remeasure2 #1552 changed the shape of two more rows and re-measured both on this basis, three runs
+# remeasure2 each, 2026-09-14: usp_admin_view.dart 23.4 -> 27.4 (24.8 / 28.7 / 27.4, +17.1%) after the
+# remeasure2 OTA card gained an auto-update switch row, and usp_dashboard_view.dart 63.5 -> 52.0
+# remeasure2 (50.6 / 52.0 / 52.2, -18.1%) after gaining the firmware banner above the scroll view.
+# remeasure2 The two figures are NOT comparable to each other's confidence. admin's 23.4 was taken
+# remeasure2 the same day by #1549's block above, on the same machine in the same session, so +17.1%
+# remeasure2 is a shape effect and the largest one either firmware ticket has produced — a switch row
+# remeasure2 costs more than the LayoutBuilder card that carries it. usp_dashboard's 63.5 is from
+# remeasure2 2026-08-25/26, twenty days earlier, so -18.1% mixes a shape change with a stale-date
+# remeasure2 comparison and CANNOT be attributed to #1552: the page gained a widget and read cheaper,
+# remeasure2 which is the basis-note's warning about mixing dates rather than bases showing up in a
+# remeasure2 row over 20ms/cell. The committed figure is the fresh reading either way; what is not
+# remeasure2 claimed is a direction for it.
+# remeasure2 Note also what did NOT need re-measuring, so the omissions are not read as oversights:
+# remeasure2 usp_sliver_dashboard_view.dart (58.6) renders no banner — it is the child the frame wraps
+# remeasure2 — and firmware_ota_view.dart (15.3) does not build FirmwareOtaCard; the switch row lands
+# remeasure2 on Administration only. Both share a fixture with a page that changed, and a fixture is
+# remeasure2 not a shape.
+# remeasure3 The sliver_dashboard row (58.6) was NOT re-measured, and the attempt is recorded because
+# remeasure3 the reason is about this column rather than about that page. #1552's review asked for it:
+# remeasure3 usp_dashboard_view.dart now reads 52.0, cheaper than the child it wraps, and the pair is
+# remeasure3 only comparable if both are on today's basis. Three runs of page.sliver_dashboard on the
+# remeasure3 documented basis (--plain-name, --reporter json, coordinate-test durations / 234) read
+# remeasure3 237.1 / 204.6 / 151.6 ms/cell -- a 56% spread against #1377's +/-7% band, so the figures
+# remeasure3 are the machine, not the page. The control settles it: page.admin, whose 27.4 was taken
+# remeasure3 hours earlier the same day on the same command, re-read 68.1 in the same session (load
+# remeasure3 average 11-14, a flutter_tester still at 145% CPU). A box that no longer reproduces its
+# remeasure3 own morning reading cannot certify a new one, so 58.6 stands and the anomaly stays open.
+# remeasure3 What is now known and was not before: this column is not robust to whatever the box is
+# remeasure3 doing, at any figure, and the 2.5x drift on admin is larger than every shape effect this
+# remeasure3 file has ever recorded. Read 52.0 < 58.6 as two readings taken 20 days apart on a rate
+# remeasure3 that moves 2.5x with load -- not as a frame being cheaper than the page inside it.
+# remeasure4 usp_admin_view.dart 27.4 -> 21.9 (22.89 / 21.94 / 21.30, -19.9%), three runs on the
+# remeasure4 documented basis, 2026-09-16. This closes TWO shape changes, not one: the row was
+# remeasure4 inherited across 92bf02a9, which deleted the OTA card's check button and the
+# remeasure4 LayoutBuilder that reflowed it, and today's commit deleted the manual card's button and
+# remeasure4 its LayoutBuilder as well. So the page now lays out five cards with no LayoutBuilder in
+# remeasure4 either firmware card, where 27.4 was measured with two.
+# remeasure4 Read against remeasure2 and remeasure3 together, because those two are what make this
+# remeasure4 reading interpretable at all. remeasure2 attributed +17.1% to a switch row costing more
+# remeasure4 than "the LayoutBuilder card that carries it"; -19.9% on removing both LayoutBuilders is
+# remeasure4 the same effect with its sign the other way and of the same size, and the switch row is
+# remeasure4 still there. remeasure3 is the reason that is worth stating rather than assuming: this
+# remeasure4 column moved 2.5x on admin under load (27.4 -> 68.1 in one day), so a figure that drops
+# remeasure4 has to be shown not to be the box being quiet. Two things say it is not. The spread is
+# remeasure4 7.5%, inside #1377's band and nothing like remeasure3's 56%; and load drives this column
+# remeasure4 UP, so a quiet box cannot manufacture a decrease against a reading taken on a loaded one
+# remeasure4 - if anything 27.4 was already inflated, which would make the shape effect smaller than
+# remeasure4 -19.9% rather than larger. What is claimed: 21.9 is a fresh reading on a page whose shape
+# remeasure4 changed twice. What is not: that -19.9% is all shape.
+# second-state THE FIRST SECOND CASE FOR ONE PAGE THAT IS NOT A TAB (#1554 section 4, 2026-09-16).
+# second-state pnp_setup_view.dart is now swept twice: kPnpSetupPageCase on WizardConfiguring (the
+# second-state three-step form) and kPnpSetupFirmwarePageCase on WizardUpdatingFirmware (the locked
+# second-state firmware stage #1553 added). Same view FILE, same tab - there is no tab - and two
+# second-state page-sized trees with nothing in common, which is why re-pointing the first case's
+# second-state fixture was not an option: the firmware phase fails both of its lists.
+# second-state This row therefore reads 34.3 while accounting for two cases, exactly as the three
+# second-state `# tabs` rows do, and for the same reason: PageRoster._rejectDuplicates refuses a
+# second-state second row for one path, and does not need to allow one - page_roster_test.dart's
+# second-state third assertion joins cases to rows through view().runtimeType, which is PnpSetupView
+# second-state for both. So the ONLY thing a second case costs this file is the ms_per_cell column,
+# second-state which has no slot for the difference. The figure, on this column's own basis
+# second-state (--plain-name page.pnp_setup_firmware, --reporter json, the nine coordinate tests'
+# second-state durations summed / 234, three runs, median), 2026-09-16:
+# second-state
+# second-state   pnp_setup_view.dart   row 34.3   firmware stage  9.9 (9.6 / 10.0 / 9.9)
+# second-state
+# second-state 9.9 would be the cheapest figure in this file - the committed range is 11.0 to 104.7 -
+# second-state and the shape says why: the firmware stage is one centred card holding a title, two
+# second-state lines of prose and a progress bar, against a three-band form with six input fields and
+# second-state three rule lists. So the row OVER-projects this case by 3.5x, which is the largest
+# second-state inheritance error this file has recorded; the `# tabs` block's worst was tab 0
+# second-state over-projecting a sibling by 66%.
+# second-state WHAT WAS MEASURED AS A CONTROL, AND WHY THE ROW IS NOT EDITED. The same three-run
+# second-state protocol on the sibling read 26.3 (25.9 / 26.3 / 26.4, spread 1.9%) against the
+# second-state committed 34.3 - a -23.3% disagreement on a fixture whose tree did not change. #1553
+# second-state added phases to this view's switch, but the swept case still pumps WizardConfiguring
+# second-state and every added arm is unreached, so there is no shape change here to attribute it to
+# second-state and the honest reading is the box. Left at 34.3 deliberately: a re-measure that
+# second-state records one machine against another machine's number is how this column stops meaning
+# second-state anything, and remeasure4's rule cuts the other way here - it accepted a decrease
+# second-state BECAUSE a shape had changed twice. The control is recorded rather than dropped because
+# second-state it is what makes 9.9 comparable to anything: 9.9 and 26.3 were taken minutes apart on
+# second-state one box, so the RATIO (0.38) is the measured claim, and 9.9-against-34.3 is not.
+# second-state A SECOND ONE, ON A DIFFERENT PAGE, AND IT MEASURED THE OPPOSITE (#1554 after #1572,
+# second-state 2026-09-17). firmware_update_view.dart is now swept twice as well: kFirmwareUpdatePageCase
+# second-state on idle and kFirmwareFailedPageCase on the `failed` phase. Same mechanism as the pnp pair
+# second-state above - one row, two cases, its own requires/forbids - and it arrived for a different
+# second-state reason: not a coverage gap but a live overflow. Six of eleven phases render
+# second-state FirmwareInstallPhaseCard and NO cell rendered either of the two arms that open with a
+# second-state title Row (_failed, _done); both were a bare Row of a 24px icon, a gap and an
+# second-state AppText.titleMedium with no Expanded, and at the 320px floor pl overflowed by 30.0px,
+# second-state it by 21.0, es by 12.0 and sv by 11.0. Fixed in lib/ first, so the case entered at zero.
+# second-state Figure, same basis, three runs, median: 23.0 (21.6 / 23.8 / 23.0), spread 9.6%.
+# second-state
+# second-state   firmware_update_view.dart   row 18.6   failed phase  23.0 (21.6 / 23.8 / 23.0)
+# second-state
+# second-state THE INTERESTING PART IS THE COMPARISON WITH THE PNP PAIR, because it confirms the
+# second-state `# tabs` block's finding on a case type that block never saw. There the row
+# second-state over-projected its second case by 3.5x; here the two cases cost the SAME (23.0 against a
+# second-state 20.7 control on the same box, inside this file's own noise). The difference is how alike
+# second-state the two trees are, exactly as the tabs measurement said: pnp's two states are a
+# second-state three-band form against one centred card, while these two are both a card list on one
+# second-state page with one card swapped. So the inheritance error is not a property of "a second
+# second-state fixture-state case" - it is a property of the two trees, and it cannot be read off the
+# second-state mechanism.
+# second-state WHY NEITHER ROW MOVED, AND THE FINDING THAT SETTLED IT. #1572 changed
+# second-state firmware_update_view.dart's shape without re-measuring its row, so by this file's own
+# second-state rule the 18.6 is an inherited figure and a re-measure was owed. Three runs read 20.7
+# second-state (20.4 / 21.7 / 20.7, spread 6.4%), i.e. +11.3% - above #1377's floor, so it looked like
+# second-state a shape effect. A control on a page 1572 does NOT touch agreed: usp_admin_view.dart read
+# second-state 22.1 (23.7 / 22.0 / 22.1) against its committed 21.9, +0.9%, taken with the box at
+# second-state 20.1 GB of 21.5 GB swap. On that pair the move looked licensed.
+# second-state IT IS NOT. Re-measuring pnp_setup_view.dart the same session read 31.2
+# second-state (29.4 / 31.8 / 31.2) where the SAME page, the SAME fixture and an unchanged tree had
+# second-state read 26.3 (25.9 / 26.3 / 26.4) one day earlier - a +18.6% swing across sessions with no
+# second-state shape change at all, and larger than the +11.3% it would be used to attribute. So the
+# second-state effect this column can resolve is bounded by a between-session variance that exceeds
+# second-state it, and a single in-session control does not establish comparability with a figure
+# second-state taken on another day - admin's +0.9% is one page agreeing, not the column being stable.
+# second-state THE RULE THAT FALLS OUT, and it is stronger than the three-run median: comparisons in
+# second-state this column are only valid WITHIN one session. A committed figure and a fresh reading
+# second-state were taken on different days, so their difference carries that variance whatever the
+# second-state spread of either says. To attribute a page's cost change to its SHAPE, measure both
+# second-state shapes in one session - check out the old commit and the new one and read them
+# second-state back to back - rather than reading today against the committed number. Nothing in this
+# second-state file has ever been measured that way; every drift it records, including remeasure2's
+# second-state +17.1% and remeasure4's -19.9%, rests on a cross-session comparison this reading says
+# second-state is under-powered. That is not a claim those figures are wrong. It is a claim that this
+# second-state file cannot currently tell.
+# second-state A FIRST-READING NOTE, kept because it is the smaller version of the same lesson: a
+# second-state single control run read 22.8 and would have made the row look +22.6% out. Three runs
+# second-state put it at 20.7. The three-run rule is not ceremony - it is just not sufficient either.
+# second-state ONE PRACTICAL CONSEQUENCE, the same one `# tabs` records for statistics: page.pnp_setup
+# second-state is now a PREFIX of page.pnp_setup_firmware, so --plain-name 'page.pnp_setup' matches
+# second-state both groups. Re-measuring the form case in isolation takes the trailing space -
+# second-state --plain-name 'page.pnp_setup ' - or the coordinate suffix.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 45
-# swept 43
+# pages 46
+# swept 44
 # queued 0
-# measured 43
+# measured 44
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
-lib/page/admin/views/usp_admin_view.dart	swept	22.2
+lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
 lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
 lib/page/apps/views/usp_apps_view.dart	swept	21.5
-lib/page/dashboard/views/usp_dashboard_view.dart	swept	63.5
+lib/page/dashboard/views/usp_dashboard_view.dart	swept	52.0
 lib/page/dashboard/views/usp_sliver_dashboard_view.dart	swept	58.6
 lib/page/devices/views/usp_device_detail_view.dart	swept	33.4
 lib/page/devices/views/usp_device_list_view.dart	swept	44.0
 lib/page/dhcp/views/usp_dhcp_detail_view.dart	swept	44.8
 lib/page/dmz/views/usp_dmz_view.dart	swept	32.3
 lib/page/firewall/views/usp_firewall_view.dart	swept	18.5
-lib/page/firmware_update/views/firmware_update_view.dart	swept	19.4
+lib/page/firmware_update/views/firmware_ota_view.dart	swept	15.3
+lib/page/firmware_update/views/firmware_update_view.dart	swept	18.6
 lib/page/instant_privacy/views/instant_privacy_view.dart	swept	19.3
 lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-

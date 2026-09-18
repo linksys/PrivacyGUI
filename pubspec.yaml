@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.7.0+100000
+version: 2.7.1+100000
 
 environment:
   # Deliberately below the toolchain we build with: the language version this
@@ -41,6 +41,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Pinned to 9.6.0 deliberately. objective_c 9.6.1 (published 2026-09-15
+  # 00:38Z) references `Architecture.arm64e`, but its own constraint is
+  # `code_assets: ^2.0.0` and code_assets 2.0.0 declares no such member
+  # (arm / arm64 / ia32 / riscv32 / riscv64 / x64 only). Its native-assets
+  # build hook therefore fails to compile — "Member not found: 'arm64e'" —
+  # and that takes `flutter build web` down with it, so CI dies before a
+  # single test runs. Transitive via path_provider_foundation; nothing here
+  # imports it directly. pubspec.lock is not committed, so every CI run
+  # re-resolves and picks the bad version up immediately.
+  # Verified locally on 3.47.2: with this pin `pub get` resolves 9.6.0 with no
+  # solving conflict and `flutter build web --release` succeeds.
+  # Drop the pin once a fixed objective_c ships (9.6.1 is not retracted).
+  objective_c: 9.6.0
   flutter_localizations:
     sdk: flutter
   flutter_web_plugins:
@@ -74,11 +88,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v3.2.0
+      ref: v3.3.2
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v3.2.0
+      ref: v3.3.2
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -96,7 +110,7 @@ dependencies:
   web: ^1.1.1
   file_picker: ^8.0.7
   flutter_staggered_grid_view: ^0.7.0
-  sliver_dashboard: ^2.6.0
+  sliver_dashboard: ^2.7.0
   async: ^2.11.0
   path: ^1.9.0
   flutter_dotenv: ^5.0.2

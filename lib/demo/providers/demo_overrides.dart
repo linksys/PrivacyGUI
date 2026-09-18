@@ -7,11 +7,13 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/mode/app_mode.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_service.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -66,6 +68,17 @@ class DemoProviders {
 
       // 9. Package Widget Loader: Use demo templates from assets
       packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),
+
+      // 10. App mode: demo.
+      //
+      // Behaviour-neutral — demo composes the local strategies (see
+      // `LocalModeProfile.aliasedAs`) and overrides 6, 7 and 5 above mean it never
+      // reaches a transport anyway. This override exists so `AppMode.demo` is
+      // *reachable*: `AppMode.resolve()` reads `ForceCommand`, which has no demo
+      // value because demo is an entry point rather than a build flag. Without
+      // this line the exhaustive `switch` in `appModeProfileProvider` — the guard
+      // the whole of #1474 rests on — would carry an arm nothing could produce.
+      appModeProvider.overrideWithValue(AppMode.demo),
     ];
   }
 }
@@ -122,9 +135,13 @@ class _DemoAuthNotifier extends AuthNotifier {
     state = AsyncValue.data(AuthState(loginType: LoginType.local));
   }
 
+  /// [cause] is accepted and ignored: demo mode has no session to release and no
+  /// Guardian to tell. It is on the signature because the real `logout()` takes it
+  /// — demo aliases the local profile, whose `SessionStrategy.end` is also a no-op,
+  /// so ignoring it here matches rather than diverges.
   @override
-  Future<void> logout() async {
-    debugPrint('Demo: Logout called');
+  Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
+    debugPrint('Demo: Logout called (cause: ${cause.name})');
     state = AsyncValue.data(AuthState(loginType: LoginType.none));
   }
 }

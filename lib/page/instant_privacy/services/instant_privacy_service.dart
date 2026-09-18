@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
@@ -97,6 +98,10 @@ class UspInstantPrivacyService {
         mac: mac,
         displayName: d.hostName.isNotEmpty ? d.hostName : mac,
         isPrivateMac: OuiLookup.isRandomizedMac(mac),
+        // `Device.Hosts.Host.{i}.IPAddress`, already in the paths this fetch
+        // requests — the Add-device search gets the address for free rather than
+        // for a second round trip.
+        ipAddress: d.ipAddress,
       );
     }).toList();
   }
@@ -145,22 +150,31 @@ class UspInstantPrivacyService {
   /// out, which is exactly what REQ-10a forbids. 1.x avoids this by unioning
   /// `getSTABSSIDs` into the written list; this is the 2.x equivalent.
   ///
-  /// Both fields firmware exposes the value in are read, since they carry the
-  /// same address and populating only one is a plausible firmware variation.
-  /// The gateway reports both as empty (it has no upstream backhaul), so it
-  /// drops out here and enters the allow-list through [meshNodeMacs] instead.
-  /// `LinkType` / `BackhaulMediaType` are deliberately not consulted: an
-  /// Ethernet-backhauled node's MAC on the allow-list costs nothing, whereas a
-  /// node that switches to a wireless backhaul after this read needs it there.
+  /// **Every field that can carry the address is read, and the redundancy is the
+  /// design.** This is a union: a MAC that turns out not to be a backhaul costs
+  /// nothing on an allow-list, while a missing one locks a node out. So the loop
+  /// takes candidates rather than picking a winner, and no medium check narrows
+  /// it — an Ethernet-backhauled node that later switches to wireless needs its
+  /// station MAC already listed.
+  ///
+  /// Two sources today. `Device.{i}.BackhaulMACAddress` was a third until
+  /// FL-WRT 2.0 dropped it from the schema (#1555); `Radio.{i}.BackhaulSta`
+  /// is the TR-181 2.20 near-end address that replaces it, per-radio and
+  /// all-zero on radios with no station. The gateway reports none of them (it
+  /// has no upstream backhaul), so it drops out here and enters the allow-list
+  /// through [meshNodeMacs] instead.
   List<String> meshBackhaulMacs(DataElementsNetwork data) {
     final macs = <String>{};
     for (final node in data.items) {
-      for (final mac in [
+      final candidates = <String?>[
         node.backhaulBackhaulMacAddress,
-        node.backhaulMacAddress,
-      ]) {
-        if (mac.trim().isEmpty) continue;
-        macs.add(normalizeMac(mac));
+        for (final radio in node.radios) radio.backhaulStaMacAddress,
+      ];
+      for (final mac in candidates) {
+        final trimmed = mac?.trim() ?? '';
+        if (trimmed.isEmpty) continue;
+        if (isUnsetMac(trimmed)) continue;
+        macs.add(normalizeMac(trimmed));
       }
     }
     return macs.toList();

@@ -46,6 +46,21 @@ class BuildConfig {
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
+
+  /// The source this build was compiled from, stamped by `build_web.sh` (#1573).
+  ///
+  /// Not another version string. `local` and `remote` are built from the same
+  /// source but are given different build numbers by the build job, so the
+  /// version a build reports cannot tell "same source, different build" from
+  /// "different source" — which is the question a support log most often has to
+  /// answer, and the one that cost #1566 an investigation to answer by hand.
+  ///
+  /// `unknown` is the honest answer for every build that does not go through
+  /// `build_web.sh`: `flutter run`, `flutter test`, and CI's own smoke build,
+  /// which calls `flutter build web` directly.
+  static const String sourceRevision =
+      String.fromEnvironment('source_revision', defaultValue: 'unknown');
+
   static const bool customLayout =
       bool.fromEnvironment('custom_layout', defaultValue: false);
 

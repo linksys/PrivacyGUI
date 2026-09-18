@@ -9,6 +9,8 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv6_section.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
@@ -22,6 +24,8 @@ import '../../layout_gate/locale_tag.dart';
 import '../../layout_gate/surface.dart';
 import '../../layout_gate/sweep.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
+import '../../mocks/provider_overrides/mock_firmware_update.dart';
+import '../../mocks/test_data/scenes/admin_scene_data.dart';
 import '../../mocks/test_data/scenes/apps_scene_data.dart';
 import '../../mocks/test_data/scenes/instant_privacy_scene_data.dart';
 import '../../mocks/test_data/scenes/system_log_scene_data.dart';
@@ -29,13 +33,21 @@ import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2,
-/// #1379's wave 3 and #1380's wave 4.
+/// #1379's wave 3, #1380's wave 4, then three later additions that are not waves
+/// because none of them was an onboarding round: #1489's five extra tab cases (no new
+/// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
+/// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-three whole pages** × 9 screen widths × 26 locales = **10,062 cells**,
-/// declared through the shared runner. Everything about *which* cells exist and *how*
+/// **Forty-four whole pages, declared as fifty-one cases** — five pages are swept more
+/// than once, by two different mechanisms. Three are tabs: `statistics` as three cases,
+/// `port_forwarding` as three, `wifi_settings` as two (all #1489). Two are *fixture
+/// states* of one page: `pnp_setup`/`pnp_setup_firmware` and
+/// `firmware_update`/`firmware_failed` (both #1554). So the two counts are different
+/// quantities rather than one of them being stale — × 9 screen widths × 26 locales =
+/// **11,934 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
-/// forty-three pages, and why those, lives in `page_surface_cases.dart`. This file is
-/// the declaration, the forty-three pins, and the readability guards that sit beside
+/// pages, and why those, lives in `page_surface_cases.dart`. This file is
+/// the declaration, the fifty-one pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
 /// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
@@ -49,8 +61,9 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// `test/layout_gate/page_sweep_suites.dart` is what pins that mapping, one entry per
 /// group title.
 ///
-/// **Nothing remains.** #1380 was the epic's last wave, and 43 swept + 2 excluded is
-/// all 45 page views under `lib/page/`. `test/fixtures/page_roster.tsv` is the register
+/// **Nothing remains.** #1380 was the epic's last wave, and 44 swept + 2 excluded is
+/// all 46 page views under `lib/page/` — 43 and 45 until #1549's split added a view
+/// file, which is the only way that arithmetic has moved since. `test/fixtures/page_roster.tsv` is the register
 /// that does that arithmetic, holds the two exclusions' reasons and the per-page cost,
 /// and is still the file to read before assuming a page absent from this list is a page
 /// with nothing wrong with it — because the two absent ones are absent on a *verdict*,
@@ -69,9 +82,12 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// renders a content box wider than 977px. Fifteen literals moved in one edit,
 /// which is the shape the ticket wanted: a coverage change nobody can make while
 /// looking away. `pnp_setup` brought the sixteenth later the same day, wave 3's six
-/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three —
-/// so the literal is now written out forty-three times, and #1372's argument for the
-/// repetition is the argument that survived the list doubling.
+/// brought the count to twenty-two, and wave 4's twenty-one closed it at forty-three.
+/// #1489 then added five without adding a page — the sibling tabs of the three tabbed
+/// pages — #1549's split added the forty-ninth, and #1554 two more that are fixture
+/// states rather than tabs, so the literal is now written out **fifty-one** times,
+/// and #1372's argument for the repetition is the argument that survived the list
+/// doubling.
 ///
 /// ## Where this file sits in the gate
 ///
@@ -132,6 +148,15 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // The Advanced tab, entered by `initialTab: 1` rather than by a tap. Both this
+  // and the two `port_*` sweeps below are #1489's follow-up: three tabs that no
+  // cell had ever laid out because their views took no tab argument, not because
+  // the gate could not reach them.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kWifiSettingsAdvancedPageCase),
+    expectedCellCount: 234,
+  );
+
   // Wave 1 (#1377): five pages whose fixture was already written. See
   // `page_surface_cases.dart` for why these five, and `test/fixtures/page_roster.tsv`
   // for what is still queued.
@@ -157,6 +182,19 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kPortForwardingPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Tab 1 measures a header fix that had only ever been inspected — see
+  // `kPortRangePageCase`. Tab 2 measures `MapsToRow`, the widest rule row on the
+  // page and the one shape on it no cell had laid out.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortRangePageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortTriggeringPageCase),
     expectedCellCount: 234,
   );
 
@@ -213,6 +251,18 @@ void main() {
   // graduation rule asks for: fix to zero, then declare, then capture.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpSetupPageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same view's firmware stage (#1554 §4) — the family's first second case for one
+  // page that is not a tab. #1553 gave the wizard a locked, full-screen firmware phase
+  // and it went out with no width sweep: nine `en` cases at 1200×2400 were all of it.
+  // Beside its sibling rather than with wave 4, for the reason the split cases upstream
+  // are: the two measure one view file, and a reader looking at either wants the other
+  // in the same screenful. `page_surface_cases.dart` carries why it is a second case
+  // rather than a relaxed first one, and why it is the loader exemption's second entry.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpSetupFirmwarePageCase),
     expectedCellCount: 234,
   );
 
@@ -276,6 +326,25 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kFirmwareUpdatePageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same view's `failed` phase — the family's second fixture-state case, and the
+  // first one that arrived because of a defect rather than a gap. Six of eleven phases
+  // render `FirmwareInstallPhaseCard`, and the two arms that open with a title `Row`
+  // (`_failed`, `_done`) had no cell at all: `pl` overflowed by 30px at 320px, in a
+  // widget both firmware pages and the setup wizard draw. Fixed in `lib/` first, so
+  // this arrives at zero.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kFirmwareFailedPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Beside its sibling on purpose: #1549 split one firmware entry point into two
+  // pages, and the card wave 4 measured widest went to this one. A `lib/` fix that
+  // moves to a page with no sweep is a fix nobody measures again.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kFirmwareOtaPageCase),
     expectedCellCount: 234,
   );
 
@@ -356,14 +425,36 @@ void main() {
     expectedCellCount: 234,
   );
 
-  // `statistics` — tab 0, and of tab 0 only what the viewport lays out;
-  // `kStatisticsPageCase` states both limits and names the suites that cover the rest.
+  // `statistics` — one page, three cases, one per tab (#1489). Each sweeps what its
+  // tab's sliver lays out at `kPageSweepHeight` and no more: 4 of tab 0's 9 sections,
+  // 4 of tab 1's 7, and all 4 of tab 2's. The earlier "tab 0 only" note here repeated
+  // `kStatisticsPageCase`'s reason for stopping at the first tab, which turned out to
+  // be false of this page — `initialTab` is a constructor argument the app supplies
+  // from `?tab=N`, so a cell opens tab 1 or 2 with no tap. That case doc carries the
+  // whole correction, the eight sections that still never build — tab 0's last five
+  // and tab 1's last three — and the section suites that cover what these 702 cells
+  // do not.
   runOverflowSweep(
     family: PageSurfaceFamily(kStatisticsPageCase),
     expectedCellCount: 234,
   );
 
-  // `system_log` — the 45th page, and the last one this epic had to account for.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsDevicesPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kStatisticsSystemPageCase),
+    expectedCellCount: 234,
+  );
+
+  // `system_log` — the 45th page *view file* under `lib/page/`, and the last one this
+  // epic had to account for. That 45 was the roster's count when the epic closed, and
+  // it has nothing to do with the 49 cases this file now declares: the roster keys on
+  // the view file, so a page swept per tab adds cases without adding rows. It is 46
+  // rows now — #1549 added a view file rather than a tab, which is the one thing that
+  // moves both counts at once.
   runOverflowSweep(
     family: PageSurfaceFamily(kSystemLogPageCase),
     expectedCellCount: 234,
@@ -900,12 +991,21 @@ void main() {
     });
   });
 
-  group('readability at the site wave 4 fixed in firmware_update', () {
-    // The wave's third fix and its widest site: `firmware_update_view.dart:546`
-    // overflowed 50 of 234 cells — all 26 locales at 320px, 19 at 480px, 5 at 601px,
-    // worst `ru` at +357px and `en` itself at +160px. The `Row` held a button and an
-    // up-to-date line, and neither could give: the button's width is its label, and
-    // the line was `MainAxisSize.min` around a whole sentence.
+  group('readability at the site wave 4 fixed in firmware_ota', () {
+    // The wave's third fix and its widest site. It overflowed 50 of 234 cells — all 26
+    // locales at 320px, 19 at 480px, 5 at 601px, worst `ru` at +357px and `en` itself
+    // at +160px. The `Row` held a button and an up-to-date line, and neither could
+    // give: the button's width is its label, and the line was `MainAxisSize.min`
+    // around a whole sentence.
+    //
+    // **Retargeted by #1549, which is why the group is now named after a page that did
+    // not exist in wave 4.** The site was `firmware_update_view.dart:546`; the split
+    // moved `_OtaCheckCard` whole to `firmware_ota_view.dart:305`, so this guard now
+    // pumps [kFirmwareOtaPageCase]. The rename is deliberate rather than cosmetic:
+    // `kReadabilityGuardPages` keys on this title and bills the group's 6.9s to
+    // whichever suite holds the page, so a title still saying `firmware_update` would
+    // charge the cost to the wrong page the day the sweep is sharded. Nothing about
+    // what is asserted below changed — same card, same widths, same locales.
     //
     // The fix stacks them below 600px of card content and lets the sentence wrap.
     // That leaves two things the overflow sweep cannot see, and this guard is both:
@@ -917,13 +1017,102 @@ void main() {
     // 2. **A sentence that wraps too far or breaks mid-word.** It is now `Expanded`,
     //    so it can never overflow again; what it can do instead is become four lines
     //    of two syllables, which is the trade rule 4 exists to keep honest.
+    // #1572 put two more sentences in that same slot, and the sweep cannot see
+    // either: the page cell leaves `firmwareAutoUpdateDataProvider` unoverridden, so
+    // the provider lands in `AsyncError` and the card draws no history line at all.
+    // A cell measuring a rendering the product does not have is the blind spot rule 5
+    // exists for, so the two states get measured here instead.
+    //
+    // **This test is why the copy is what it is.** The first draft read "The router
+    // has not checked for updates since it started." and "The router's last update
+    // check did not finish." — measured at 5 lines in `en`, 6 in `da`/`el`/`nb`/`nl`/
+    // `sv` and 7 in `el` for the second, against the three-line ceiling above. They
+    // were shortened until they fit, rather than the ceiling being raised: this slot
+    // is 204px beside a button that cannot shrink, and it is the site #1380 measured
+    // overflowing in all 26 locales.
+    //
+    // It also pins why the *reason* is not on the card. The seven
+    // `localizeFirmwareErrorCode` sentences measured four to seven lines here, so the
+    // history line carries the label only and the reason goes to the snack bar, where
+    // there is a full-width surface for it.
+    testWidgets('the router history lines fit the slot the verdict fits',
+        (tester) async {
+      const kOtaStatusLineCeiling = 3;
+      final failures = <String>[];
+
+      for (final entry in {
+        'not checked since boot': gateFirmwareNotCheckedAfterBoot,
+        'last check did not finish': gateFirmwareLastCheckFailed,
+      }.entries) {
+        for (final locale in AppLocalizations.supportedLocales) {
+          final tag = localeTag(locale);
+          await setLayoutSurface(tester, const Size(320.0, kPageSweepHeight));
+          await tester.pumpWidget(KeyedSubtree(
+            key: ValueKey('ota-history-${entry.key}-$tag'),
+            child: pageSurfaceHost(
+              view: kFirmwareOtaPageCase.view(),
+              locale: locale,
+              // `notChecked` is the only verdict the history line renders under — a
+              // check that ran in this session is a later answer and outranks it.
+              overrides: firmwareUpdateOverrides(
+                state: const FirmwareUpdateState(),
+                banks: gateFirmwareBanksWithOta,
+                autoUpdate: entry.value,
+              ),
+            ),
+          ));
+          await settleIgnoringAnimations(tester);
+
+          final loc = localizationsByTag[tag]!;
+          final line = find.text(entry.value.checkedAfterBoot == false
+              ? loc.firmwareNotCheckedYet
+              : loc.firmwareLastCheckDidNotFinish);
+          if (line.evaluate().length != 1) {
+            failures.add('$tag: "${entry.key}" rendered '
+                '${line.evaluate().length} history line(s) — the fixture pins a '
+                'notChecked verdict and an ota row, so nothing was measured');
+            continue;
+          }
+
+          final lines = tester.textLineCount(line);
+          final numbers = 'granted '
+              '${tester.paragraphOf(line).size.width.toStringAsFixed(1)}px on '
+              '$lines line(s), widest token '
+              '${tester.widestTokenWidth(line).toStringAsFixed(1)}px';
+          if (lines > kOtaStatusLineCeiling) {
+            failures.add('$tag: "${entry.key}" wrapped onto $lines lines, past '
+                'the $kOtaStatusLineCeiling-line ceiling — $numbers. Shorten the '
+                'copy; this slot is 204px and the ceiling is the verdict line\'s.');
+          }
+          if (tester.isTextClipped(line)) {
+            failures.add('$tag: "${entry.key}" ellipsized — $numbers');
+          }
+          // The reason must not be on the card: it does not fit, and the snack bar is
+          // where it goes. Asserted as an absence so a future edit that reinstates it
+          // has to come back through this measurement.
+          expect(find.text(loc.firmwareErrorServerUnreachable), findsNothing,
+              reason: 'the reason sentence measured 4-7 lines in this slot');
+        }
+      }
+
+      expect(failures, isEmpty, reason: failures.join('\n'));
+    });
+
     testWidgets('the OTA check card stacks below 600px with both strings whole',
         (tester) async {
-      // Three, because two is what the deepest locales measure at 320px: nine of
-      // them — `de`, `el`, `fi`, `id`, `pl`, `ru`, `sv`, `th`, `vi` — take two lines
-      // in the 204px the stacked card grants, every other locale takes one, and no
-      // coordinate above 320px wraps at all. A sentence on two lines is still a
+      // Three, because two is what the deepest locales measure at 320px. Re-measured
+      // for #1550's sentence, which is a different string from `firmwareUpToDate` and
+      // wraps a different set: ten locales — `da`, `fi`, `fr`, `fr_CA`, `ja`, `nl`,
+      // `pl`, `pt`, `pt_PT`, `sv` — take two lines in the 204px the stacked card
+      // grants, every other locale takes one, and `ru`, the locale carried through the
+      // other eight widths, wraps at none of them. A sentence on two lines is still a
       // sentence; the ceiling is here to catch the sixth line, not the second.
+      //
+      // The nine named here before #1550 (`de`, `el`, `fi`, `id`, `pl`, `ru`, `sv`,
+      // `th`, `vi`) were the old string's set and only `fi`, `pl` and `sv` are in both,
+      // which is the reason this number is re-derived on a copy change rather than
+      // inherited: `ru` went from wrapping to fitting and `ja` from fitting to a
+      // 292.5px unbroken run in a 204px line.
       const kOtaStatusLineCeiling = 3;
       final failures = <String>[];
       final wrapped = <String>[];
@@ -948,28 +1137,33 @@ void main() {
           await tester.pumpWidget(KeyedSubtree(
             key: ValueKey('ota-card-$tag-${width.toInt()}'),
             child: pageSurfaceHost(
-              view: kFirmwareUpdatePageCase.view(),
+              view: kFirmwareOtaPageCase.view(),
               locale: locale,
-              overrides: kFirmwareUpdatePageCase.overrides(),
+              overrides: kFirmwareOtaPageCase.overrides(),
             ),
           ));
           await settleIgnoringAnimations(tester);
 
           final loc = localizationsByTag[tag]!;
-          // `checkForUpdates` is on exactly one button on this page — the idle card's
-          // is `chooseFirmwareFile` — so the label doubles as the scope.
+          // `checkForUpdates` is on exactly one button on this page, and since #1549 it
+          // is on the *only* button on this page — the action card below is
+          // `SizedBox.shrink()` in `idle`. So the label doubles as the scope.
           final button = find.widgetWithText(AppButton, loc.checkForUpdates);
           final buttonLabel = find.descendant(
             of: button,
             matching: find.text(loc.checkForUpdates),
           );
-          final status = find.text(loc.firmwareUpToDate);
+          // #1550 replaced `firmwareUpToDate` with a verdict the check can
+          // actually establish. Same line in the same slot, and still the wider of
+          // the two verdicts this row renders — see
+          // `gateFirmwareNoUpdateFoundState`.
+          final status = find.text(loc.firmwareNoUpdateFound);
           if (button.evaluate().length != 1 || status.evaluate().length != 1) {
             failures.add('$tag @${width.toInt()}px: found '
                 '${button.evaluate().length} check button(s) and '
-                '${status.evaluate().length} up-to-date line(s) — the fixture '
-                'pins otaUpToDate: true, so both must be present or nothing '
-                'here was measured');
+                '${status.evaluate().length} verdict line(s) — the fixture pins '
+                'a noUpdateFound verdict and an ota row, so both must be present '
+                'or nothing here was measured');
             continue;
           }
 
@@ -977,7 +1171,7 @@ void main() {
           final statusRect = tester.getRect(status);
           final stacked = statusRect.top >= buttonRect.bottom;
           if (stacked != stackExpected) {
-            failures.add('$tag @${width.toInt()}px: expected the up-to-date '
+            failures.add('$tag @${width.toInt()}px: expected the verdict '
                 'line ${stackExpected ? 'below' : 'beside'} the button but it '
                 'was ${stacked ? 'below' : 'beside'} it');
           }
@@ -1002,24 +1196,25 @@ void main() {
               '${tester.paragraphOf(status).size.width.toStringAsFixed(1)}px on '
               '$statusLines line(s), widest token '
               '${tester.widestTokenWidth(status).toStringAsFixed(1)}px — '
-              '"${loc.firmwareUpToDate}"';
+              '"${loc.firmwareNoUpdateFound}"';
           if (statusLines > kOtaStatusLineCeiling) {
-            failures.add(
-                '$tag @${width.toInt()}px: the up-to-date line wrapped '
+            failures.add('$tag @${width.toInt()}px: the verdict line wrapped '
                 'onto $statusLines lines, past the $kOtaStatusLineCeiling-line '
                 'ceiling — $numbers');
           }
           if (tester.isTextClipped(status)) {
-            failures.add('$tag @${width.toInt()}px: the up-to-date line '
+            failures.add('$tag @${width.toInt()}px: the verdict line '
                 'ellipsized — $numbers');
           } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
               tester.hasSplitToken(status)) {
             // The four space-less scripts are excluded from this one assertion and
             // from nothing else — see `kLocalesWithoutWordSpaces` for why a whole
             // Thai sentence is one token and therefore trips the check by
-            // construction. `th` is the locale that made it matter here: 211px of
-            // unbroken run in a 204px line.
-            failures.add('$tag @${width.toInt()}px: the up-to-date line broke '
+            // construction. `th` is the locale that made it matter for the old
+            // string; on #1550's it is `ja`, with 292.5px of unbroken run in a
+            // 204px line. Which of the four it is does not change the exclusion,
+            // and that is the point: the wide one moves with the copy.
+            failures.add('$tag @${width.toInt()}px: the verdict line broke '
                 'mid-word — $numbers');
           }
         }
@@ -1031,8 +1226,7 @@ void main() {
       expect(
         wrapped,
         isNotEmpty,
-        reason:
-            'no locale wrapped the up-to-date line at any width, so nothing '
+        reason: 'no locale wrapped the verdict line at any width, so nothing '
             'here measured the wrap the #1380 fix introduced:\n'
             '${wrapped.join(', ')}',
       );
@@ -1040,7 +1234,8 @@ void main() {
       expect(
         failures,
         isEmpty,
-        reason: 'the #1380 fix at firmware_update_view.dart:546 stacks the OTA '
+        reason: 'the #1380 fix at firmware_ota_view.dart:305 (moved there from '
+            'firmware_update_view.dart:546 by #1549) stacks the OTA '
             'row below 600px of card content and lets its sentence wrap; a '
             'stretched button with a cut label, or a sentence wrapped to '
             'shreds, is the same defect in a shape the sweep reports as '
@@ -1324,18 +1519,23 @@ void main() {
     });
   });
 
-  group('readability at the site wave 4 fixed in admin', () {
+  group('readability at the sites wave 4 and #1549 fixed in admin', () {
     // The wave's sixth and seventh fixes, and the pair that shows why a page-level
     // sweep is not a card-level sweep with more cells. `usp_timezone_card.dart:71`
-    // overflowed 30 of 234 cells and `firmware_update_card.dart:77` all 234 — but
+    // overflowed 30 of 234 cells and the firmware card's loading skeleton all 234 —
+    // but
     // the shape of *where* is the finding: 4 locales at 320px and 15 at 601px for
     // the header, and a 601px screen that was worse than a 320px one at both sites.
+    // The fifth part below was reported by nothing at all.
     //
     // Because `AppResponsiveLayout` defaults its tablet band to `desktop`, and two
     // `colWidth(6)` columns of a 601px screen are ~253px each against the 288px a
     // 320px phone gives the same card. At 601px `en`'s one-word `Timezone` heading
     // was granted 75.4px for a 77.5px word. So the fix is in three parts, and this
-    // group guards all three:
+    // group guards all three — plus a fourth that arrived later, which is why the
+    // group is no longer named after one wave. Five tests in one group rather than
+    // two groups for one page: `kReadabilityGuardPages` bills one fixture per group
+    // title, so splitting would charge this page's fixture twice.
     //
     // 1. **`usp_admin_view` keeps one column through the tablet band.** A box that
     //    cannot hold one word of a heading is a container being wrong, and no
@@ -1347,8 +1547,42 @@ void main() {
     //    still needed at 320px, where 4 locales were over by up to +19px and the
     //    tablet band is not involved. That turns an overflow into a wrap, so its
     //    companion is rule 4's usual text pair.
-    // 3. **The skeleton's caption is expanded and the `Update` button leaves the
-    //    row while the version is unknown** (`firmware_update_card.dart:77`).
+    // 3. **The skeleton's caption is expanded, and nothing else shares its row while
+    //    the version is unknown** (`firmware_ota_card.dart:343`, which was
+    //    `firmware_update_card.dart:77` until #1549 moved the version block — and the
+    //    skeleton that stands in for it — to the OTA card). The "nothing else" used
+    //    to be "the `Update` button leaves the row"; since 2026-09-16 the trailing
+    //    affordance is gated on `isLoading` instead, which is the same trade bought
+    //    with a chevron rather than a threshold.
+    //
+    // 4. **The OTA card's version row is the entry, and carries no CTA at all**
+    //    (`firmware_ota_card.dart:99`). This was #1549's own reflow fix — stack the
+    //    check button below 400px of row width — on #1549's own new widget, and the
+    //    one part of this group the epic never saw. The button and the threshold were
+    //    both deleted on 2026-09-16; the guard for it stayed, for the reason given
+    //    above part 5's test. It is here rather than in a group of its own for the
+    //    billing reason above.
+    // 5. **The manual card's row is a whole-block tap too, and its CTA is gone with
+    //    the reflow that carried it** (`firmware_update_card.dart:77`). This started
+    //    as a second threshold — 300px rather than 400px, because a different pair of
+    //    strings shared the row — and both are deleted now: the two cards were
+    //    aligned on the same day for the same reason, that `checkForUpdates` promised
+    //    a read and `Update` promised a flash while each only pushed a page. What is
+    //    left of part 5 is the half that was never reported by anything: a sentence
+    //    handed less than its own longest word, which is now the *only* localized
+    //    thing in the row.
+    //
+    // Part 4 is also the clearest case in the file of a fix whose *reported* half was
+    // the small half. The sweep saw 9 of 234 cells — the check button hanging past
+    // the row's right edge, all at 320px, `fr`/`fr_CA` worst at +37px. What it could
+    // not see is that `Expanded` beside that button was being handed a negative
+    // remainder, clamped to zero, and wrapping the version label one character per
+    // line: `el` rendered that row 484px tall inside a 571px card. A
+    // `RenderParagraph` given 0px does not overflow, it wraps, so 26 locales were
+    // silently unreadable behind 9 red cells. The fourth test below is what keeps that
+    // half measured now that the button which caused it is gone: it asserts the
+    // crushed half rather than the reported one — a line count and a token width on
+    // the version, not an overflow count.
     //
     // Part 3 is the one the sweep found by luck: an `AsyncNotifier`'s `build` is a
     // `Future` even when the fixture already holds the value, so every cell renders
@@ -1387,7 +1621,14 @@ void main() {
         await settleIgnoringAnimations(tester);
 
         final timezone = find.byType(UspTimezoneCard);
-        final firmware = find.byType(FirmwareUpdateCard);
+        // `FirmwareOtaCard` rather than `FirmwareUpdateCard` since #1549: both sit
+        // in the right column, but the manual one is behind
+        // `surfaceStrategyProvider.firmwareManualEntry` and is absent in remote
+        // assistance. A column-count guard must not be able to fail for a reason
+        // that is about *which mode* is being rendered — that belongs to
+        // `surface_consumers_test.dart`, and the sweep's `requires` is what keeps
+        // the manual card on the page in the mode this host renders.
+        final firmware = find.byType(FirmwareOtaCard);
         if (timezone.evaluate().length != 1 ||
             firmware.evaluate().length != 1) {
           failures.add('@${width.toInt()}px: found '
@@ -1536,7 +1777,7 @@ void main() {
     });
 
     // Part 3, and the reason it needs a guard of its own rather than a line in the
-    // one above: `firmware_update_card.dart:77` overflowed at all nine widths — 26
+    // one above: this skeleton overflowed at all nine widths — 26
     // locales at 320px (`de` +234px worst, `en` +70), 12 at 480px, 26 at 601px, 13
     // at 905px and 6 at each of the five wide widths (`fr_CA` +118px at 1681px). So
     // the tablet-band fix cannot be what closes it and the sweep going green does
@@ -1546,19 +1787,26 @@ void main() {
     // that resolves is `AsyncLoading` for exactly one frame, which is enough for the
     // collector and not enough for a guard to read.
     //
-    // The remaining wide widths are why the caption also needed the `Update` button
-    // out of the row. This row sits inside the card's `Expanded` column beside a
-    // fixed icon *and* that button, so its box is a fraction of a `colWidth(6)`
-    // column and grows far more slowly than the screen does — 1681px is in the loop
-    // below for that reason alone, and it is the width that would go red first if
-    // the button came back.
+    // The remaining wide widths are why the caption also needed the *trailing*
+    // affordance out of the row. This row sits inside the card's `Expanded` column
+    // beside a fixed icon, so its box is a fraction of a `colWidth(6)` column and
+    // grows far more slowly than the screen does — 1681px is in the loop below for
+    // that reason alone, and it is the width that would go red first if the
+    // affordance came back.
+    //
+    // What is withheld changed on 2026-09-15 and the guard did not: #1380 hid a
+    // localized `checkForUpdates` button, and the same `if (!isLoading)` now holds
+    // back the 20px chevron that replaced it (`firmware_ota_card.dart:185`). The
+    // chevron is the cheaper of the two, so the coordinates below are no longer the
+    // tightest this row has ever been — they are the ones the numbers in this comment
+    // were measured at, which is what makes a regression here legible.
     testWidgets('the firmware skeleton caption stays whole while it loads',
         (tester) async {
       /// The caption is a full sentence rather than a heading, so it sits one line
       /// above [kCardHeadingLineCeiling] — and, by the same rule, one over its own
       /// deepest coordinate: `fr`, `fr_CA` and `pl` take three lines of the 178.0px
       /// this row grants at 320px. Nineteen of the 78 coordinates wrap, every one of
-      /// them at 320px, which is the width the `Update` button was hidden for.
+      /// them at 320px, which is the width the trailing affordance was hidden for.
       const kSkeletonCaptionLineCeiling = 4;
 
       final failures = <String>[];
@@ -1592,7 +1840,7 @@ void main() {
           // — which is #1366's F11 finding, and the reason the count is checked
           // rather than the finder being used as found.
           final caption = find.descendant(
-            of: find.byType(FirmwareUpdateCard),
+            of: find.byType(FirmwareOtaCard),
             matching: find.text(loc.loadingFirmwareInfo),
           );
           if (caption.evaluate().length != 1) {
@@ -1636,17 +1884,442 @@ void main() {
         isNotEmpty,
         reason: 'no locale used a second caption line at any of the three '
             'widths, so nothing here measured the wrap the #1380 fix at '
-            'firmware_update_card.dart:77 introduced:\n${wrapped.join(', ')}',
+            'firmware_ota_card.dart:185 introduced:\n${wrapped.join(', ')}',
       );
 
       expect(
         failures,
         isEmpty,
-        reason: 'the #1380 fix at firmware_update_card.dart:77 expands the '
+        reason: 'the #1380 fix at firmware_ota_card.dart:185 expands the '
             "skeleton's caption so a spinner's own label stops pushing the row "
             'past its box; a caption that fits by ellipsis has lost what the '
             'wrap was for, and a caption that is absent means this guard stopped '
             'measuring a loading state at all:\n${failures.join('\n')}',
+      );
+    });
+
+    // Part 4's companion, **rewritten on 2026-09-15** when the reflow it guarded was
+    // deleted. The `checkForUpdates` button whose localized width could not fit is
+    // gone — it promised a check and only navigated — and the row now ends in a
+    // fixed 20px chevron with the whole block tappable. A threshold is no longer
+    // needed, so the two-directional shape premise this guard used to carry is gone
+    // with it.
+    //
+    // What survives is the half of #1549's bug the sweep could not see, and it
+    // survives for a new reason: the same version block is now squeezed by a chevron
+    // instead of a button, and the offer line put **two more localized strings** in
+    // the same column. Crushed text does not overflow — a `RenderParagraph` given
+    // too little width wraps — so the only way any of this fails visibly is if a
+    // guard measures the boxes. That is this test.
+    testWidgets('the OTA card version block and offer stay readable',
+        (tester) async {
+      // The version block holds a label over a build number. The number is a fixed
+      // 80.5px string in every locale, so it is the label that can wrap — and with
+      // the chevron in the row where the button used to be, measured across all 234
+      // cells, it no longer does: one line in every locale at every width, widest
+      // `da` at 112.2px inside the 178.0px this column grants at 320px. The ceiling
+      // stays at 2 rather than tightening to 1, which is one line of slack over the
+      // deepest coordinate, the rule `kSkeletonCaptionLineCeiling` uses.
+      const kVersionLabelLineCeiling = 2;
+
+      // The offer line's two strings are prose, so they wrap and that is intended;
+      // what is not intended is a column narrow enough to turn either into a
+      // paragraph. Measured across all 234 cells the deepest is 2 lines —
+      // `updateAvailable` in `el`, `ja` and `nb` at 320px, and nothing else anywhere
+      // — so 3 by the same one-line-of-slack rule.
+      const kOfferLineCeiling = 3;
+
+      // The build number the fixture's active bank carries, read from the fixture
+      // rather than spelled again here: it is this string's own width that decides
+      // whether the block was granted enough, so a copy that drifted from the
+      // fixture would move the floor without anyone noticing.
+      final versionString =
+          gateAdminSystemInfo.model.firmwareImages.first.version;
+      // The *offered* version, from the other fixture the admin case pins. Two
+      // different strings on purpose: a card that printed the current version in
+      // the offer line would satisfy every readability assertion below while
+      // telling the user the update is the firmware they already run.
+      final offeredVersion = gateFirmwareBanksWithOta.otaInstance!.version;
+
+      final failures = <String>[];
+      final wrapped = <String>[];
+
+      // All nine widths in all 26 locales, which is more than the usual guard pays
+      // for and is what this site is worth: the card is laid out at nine distinct
+      // row widths (238, 360.5, 380, 398, 404.5, 428.5, 454, 487, 791) that do not
+      // sort the same way the screen widths do, and four localized strings now share
+      // the narrowest of them. A two-width guard would have to name which of those
+      // it believed was tightest, which is the arithmetic this test exists to stop
+      // trusting.
+      for (final width in kPageSweepWidths) {
+        for (final locale in AppLocalizations.supportedLocales) {
+          final tag = localeTag(locale);
+          await setLayoutSurface(tester, Size(width, kPageSweepHeight));
+          await tester.pumpWidget(KeyedSubtree(
+            key: ValueKey('admin-ota-version-$tag-${width.toInt()}'),
+            child: pageSurfaceHost(
+              view: kAdminPageCase.view(),
+              locale: locale,
+              overrides: kAdminPageCase.overrides(),
+            ),
+          ));
+          await settleIgnoringAnimations(tester);
+
+          final cell = '$tag @${width.toInt()}px';
+          final loc = localizationsByTag[tag]!;
+          final card = find.byType(FirmwareOtaCard);
+          final versionLabel = find.descendant(
+            of: card,
+            matching: find.text(loc.currentVersionShort),
+          );
+          final versionValue = find.descendant(
+            of: card,
+            matching: find.text(versionString),
+          );
+          final icon = find.descendant(
+            of: card,
+            matching: find.byIcon(Icons.cloud_download_outlined),
+          );
+          // The affordance that replaced the button. Counted like every other
+          // element here, because it is the one thing on this row that is *not*
+          // localized: if it went missing the row would get wider and every
+          // readability assertion below would pass more easily.
+          final chevron = find.descendant(
+            of: card,
+            matching: find.byIcon(AppFontIcons.chevronRight),
+          );
+          final offerHeadline = find.descendant(
+            of: card,
+            matching: find.text(loc.updateAvailable),
+          );
+          final offerVersion = find.descendant(
+            of: card,
+            matching: find.text(loc.availableVersionLabel(offeredVersion)),
+          );
+          if (card.evaluate().length != 1 ||
+              versionLabel.evaluate().length != 1 ||
+              versionValue.evaluate().length != 1 ||
+              icon.evaluate().length != 1 ||
+              chevron.evaluate().length != 1 ||
+              offerHeadline.evaluate().length != 1 ||
+              offerVersion.evaluate().length != 1) {
+            failures.add('$cell: found ${card.evaluate().length} card(s), '
+                '${versionLabel.evaluate().length} version label(s), '
+                '${versionValue.evaluate().length} build number(s), '
+                '${icon.evaluate().length} icon(s), '
+                '${chevron.evaluate().length} chevron(s), '
+                '${offerHeadline.evaluate().length} offer headline(s) and '
+                '${offerVersion.evaluate().length} offered version(s) — nothing '
+                'here was measured');
+            continue;
+          }
+
+          // The chevron is a *trailing* affordance, and that is a claim about
+          // geometry rather than about source order: a chevron that ended up above
+          // or inside the text column is still one chevron, and would still be
+          // found.
+          //
+          // Trailing, not "right": `ar` mirrors the whole row, so an LTR-only
+          // comparison fails in exactly one of the 26 locales — measured, which is
+          // why this reads `Directionality` off the card instead of the axis off the
+          // screen.
+          final rtl =
+              Directionality.of(tester.element(card)) == TextDirection.rtl;
+          final chevronRect = tester.getRect(chevron);
+          final labelRect = tester.getRect(versionLabel);
+          final iconRect = tester.getRect(icon);
+          final trailingOk = rtl
+              ? chevronRect.right - 0.5 <= labelRect.left &&
+                  chevronRect.right < iconRect.right
+              : chevronRect.left + 0.5 >= labelRect.right &&
+                  chevronRect.left > iconRect.left;
+          if (!trailingOk) {
+            failures.add('$cell: the chevron occupies '
+                '${chevronRect.left.toStringAsFixed(1)}–'
+                '${chevronRect.right.toStringAsFixed(1)}px, which is not the '
+                '${rtl ? 'leading (RTL)' : 'trailing'} side of the version block '
+                '(label ${labelRect.left.toStringAsFixed(1)}–'
+                '${labelRect.right.toStringAsFixed(1)}px, leading icon '
+                '${iconRect.left.toStringAsFixed(1)}–'
+                '${iconRect.right.toStringAsFixed(1)}px)');
+          }
+
+          for (final probe in <(String, Finder)>[
+            ('the version label', versionLabel),
+            ('the build number', versionValue),
+            ('the offer headline', offerHeadline),
+            ('the offered version', offerVersion),
+          ]) {
+            final (what, finder) = probe;
+            final paragraph = tester.paragraphOf(finder);
+            final lines = tester.textLineCount(finder);
+            final widest = tester.widestTokenWidth(finder);
+            final numbers = 'granted '
+                '${paragraph.size.width.toStringAsFixed(1)}px on $lines line(s), '
+                'widest token ${widest.toStringAsFixed(1)}px, whole '
+                'string '
+                '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px';
+            if (lines > 1) {
+              wrapped.add('$tag@${width.toInt()}px:$what:${lines}L');
+            }
+            if (tester.isTextClipped(finder)) {
+              failures.add('$cell: $what ellipsized — $numbers');
+            } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
+                tester.hasSplitToken(finder)) {
+              failures.add('$cell: $what broke mid-word — $numbers');
+            }
+            if (what == 'the version label' &&
+                lines > kVersionLabelLineCeiling) {
+              failures.add('$cell: $what wrapped onto $lines lines, past the '
+                  '$kVersionLabelLineCeiling-line ceiling — $numbers');
+            }
+            if ((what == 'the offer headline' ||
+                    what == 'the offered version') &&
+                lines > kOfferLineCeiling) {
+              failures.add('$cell: $what wrapped onto $lines lines, past the '
+                  '$kOfferLineCeiling-line ceiling — $numbers');
+            }
+            if (what == 'the build number') {
+              // This is the crush the deleted threshold existed to prevent, and
+              // the whole reason this test measures boxes instead of counting red
+              // cells: `1.0.16.213451` is one unbreakable 80.5px token in all 26
+              // locales, so if the block was handed less than that the number
+              // wraps — and a `RenderParagraph` given too little width does not
+              // overflow, it wraps. Compared against its own intrinsic width
+              // rather than against a literal 80.5, so a fixture with a longer
+              // build number stays honest. Not asserted on the *label*: that
+              // string is localized, and `ko` painting 45.6px is a short noun
+              // phrase, not a squeeze.
+              final whole = paragraph.getMaxIntrinsicWidth(double.infinity);
+              if (lines > 1 || paragraph.size.width + 0.5 < whole) {
+                failures.add('$cell: $what was granted '
+                    '${paragraph.size.width.toStringAsFixed(1)}px of the '
+                    '${whole.toStringAsFixed(1)}px it cannot break under, and '
+                    'wrapped onto $lines line(s) — the version block is being '
+                    'squeezed and reports no overflow');
+              }
+            }
+            if (what == 'the offered version' &&
+                !kLocalesWithoutWordSpaces.contains(tag) &&
+                paragraph.size.width + 0.5 < widest) {
+              // The same crush, one string further along, and the token oracle
+              // rather than the whole-string one because this sentence *is*
+              // allowed to wrap: "Available:" plus an unbreakable build number
+              // means its widest token is the number, in every locale.
+              failures.add('$cell: $what was granted '
+                  '${paragraph.size.width.toStringAsFixed(1)}px for a '
+                  '${widest.toStringAsFixed(1)}px token it cannot break — '
+                  '$numbers');
+            }
+          }
+        }
+      }
+
+      // The floor premise, and it replaces the reflow's two-directional one: with no
+      // threshold left to straddle, what has to be true for the assertions above to
+      // mean anything is that some coordinate actually squeezed one of the four
+      // strings. If nothing ever wrapped, this guard is 234 cells of a card with
+      // room to spare and would go on passing after the column was handed to
+      // something else.
+      //
+      // It clears the floor by **3 cells of 234** — `el`, `ja` and `nb` at 320px,
+      // all of them the offer headline — so this is a thin premise and it is thin on
+      // purpose: the whole point of deleting the localized button was that the column
+      // stopped being tight. The number is here so that a future change which makes
+      // it 0 is read as "the squeeze is gone, re-measure the ceilings" rather than as
+      // a flake.
+      expect(
+        wrapped,
+        isNotEmpty,
+        reason: 'no locale wrapped any of the four strings at any of the nine '
+            'widths, so nothing here measured a squeeze:\n${wrapped.join(', ')}',
+      );
+
+      expect(
+        failures,
+        isEmpty,
+        reason: 'the OTA card shares one column between a version block and an '
+            'offer line, with a 20px chevron beside them; a string granted less '
+            'than its own unbreakable token wraps and reports no overflow at all, '
+            'which is why this guard measures widths rather than counting red '
+            'cells:\n${failures.join('\n')}',
+      );
+    });
+
+    // Part 5's companion, and the one guard in this group that was written for a
+    // site the sweep never reported at all. `page.admin` is 234 clean cells before
+    // and after this fix; what was wrong is that `Expanded` beside an inflexible
+    // localized CTA hands a sentence whatever is left, and 11 of 26 locales at
+    // 238px were left less than their own longest word — so the word broke in the
+    // middle. That is unreadable and green, which is the whole failure mode this
+    // group exists to disbelieve.
+    //
+    // The button is gone as of 2026-09-16 and the guard did **not** go with it. What
+    // it asserts is unchanged — the sentence must keep its widest token whole — and
+    // what changed is the reason it can: the row's other occupant is now a 20px
+    // chevron in every locale instead of a CTA that wanted 105.7px in `de` and
+    // 146.0px in `fi`. So the guard's job flipped from holding a threshold to
+    // holding the *absence* of one, and it keeps measuring the sentence because a
+    // future card that puts anything localized back in this row reintroduces the
+    // defect without reintroducing the reflow. The chevron is counted and located
+    // for the same reason: it is the only thing here that cannot grow, and losing
+    // it would hand the sentence more width and make every assertion pass more
+    // easily.
+    //
+    // The oracle is therefore the widest *token*, not the whole string: prose is
+    // allowed to wrap, and asserting otherwise would demand a card wide enough for
+    // a sentence in every locale. `getMinIntrinsicWidth` would give the same
+    // number, but `widestTokenWidth` is what the other guards in this file already
+    // print, so the failure message and the assertion agree.
+    //
+    // Skipped for the five locales in `kLocalesWithoutWordSpaces`, and that is a
+    // measurement rather than a convention: `ja`'s sentence is one whitespace
+    // token of 416.5px, so the token oracle called it broken at *every* width,
+    // including 1681px where it renders on two clean lines. CJK breaks between
+    // characters; a token count means nothing there, exactly as it means nothing
+    // for `hasSplitToken` above.
+    testWidgets('the manual card description keeps its widest word whole',
+        (tester) async {
+      // Measured, not chosen. The description wraps in **79 of 234 cells** and
+      // the deepest is **3 lines** — 13 locales at 320px, `de`/`el`/`es`/`es_AR`/
+      // `fi`/`fr`/`fr_CA`/`it`/`ja`/`pl`/`pt_PT`/`ru`/`sv`. The ceiling is that
+      // plus one line of headroom, so ordinary l10n churn does not red the gate
+      // while the crush this guard exists for — a sentence broken to a word or
+      // two per line — does.
+      //
+      // The distribution is worth reading before changing a breakpoint: 320px is
+      // the deep end, 601px and 905px wrap almost nothing, and 1241px–1441px wrap
+      // *more* than 601px does. That is not a paradox, it is this group's part 1 —
+      // the page holds one column through the tablet band and splits into columns
+      // at the desktop breakpoint, so a 1241px screen hands this card a narrower
+      // box than a 601px one.
+      const kDescriptionLineCeiling = 4;
+
+      final failures = <String>[];
+      final wrapped = <String>[];
+
+      for (final width in kPageSweepWidths) {
+        for (final locale in AppLocalizations.supportedLocales) {
+          final tag = localeTag(locale);
+          await setLayoutSurface(tester, Size(width, kPageSweepHeight));
+          await tester.pumpWidget(KeyedSubtree(
+            key: ValueKey('admin-manual-desc-$tag-${width.toInt()}'),
+            child: pageSurfaceHost(
+              view: kAdminPageCase.view(),
+              locale: locale,
+              overrides: kAdminPageCase.overrides(),
+            ),
+          ));
+          await settleIgnoringAnimations(tester);
+
+          final cell = '$tag @${width.toInt()}px';
+          final loc = localizationsByTag[tag]!;
+          final card = find.byType(FirmwareUpdateCard);
+          final description = find.descendant(
+            of: card,
+            matching: find.text(loc.manualUpdateDesc),
+          );
+          final icon = find.descendant(
+            of: card,
+            matching: find.byIcon(Icons.system_update),
+          );
+          // The affordance that replaced the button, counted for the same reason
+          // its sibling on the OTA card is: it is the one thing left on this row
+          // that is not localized, so if it went missing the sentence would be
+          // handed *more* width and every assertion below would pass more easily.
+          final chevron = find.descendant(
+            of: card,
+            matching: find.byIcon(AppFontIcons.chevronRight),
+          );
+          if (card.evaluate().length != 1 ||
+              description.evaluate().length != 1 ||
+              icon.evaluate().length != 1 ||
+              chevron.evaluate().length != 1) {
+            failures.add('$cell: found ${card.evaluate().length} card(s), '
+                '${description.evaluate().length} description(s), '
+                '${icon.evaluate().length} icon(s) and '
+                '${chevron.evaluate().length} chevron(s) — nothing here was '
+                'measured');
+            continue;
+          }
+
+          // Trailing, and read off `Directionality` rather than off the screen
+          // axis: `ar` mirrors the row, and an LTR-only comparison fails in
+          // exactly that one locale at all nine widths. That is a measurement
+          // from the OTA card's guard, paid for once.
+          final rtl =
+              Directionality.of(tester.element(card)) == TextDirection.rtl;
+          final chevronRect = tester.getRect(chevron);
+          final descRect = tester.getRect(description);
+          final iconRect = tester.getRect(icon);
+          final trailingOk = rtl
+              ? chevronRect.right - 0.5 <= descRect.left &&
+                  chevronRect.right < iconRect.right
+              : chevronRect.left + 0.5 >= descRect.right &&
+                  chevronRect.left > iconRect.left;
+          if (!trailingOk) {
+            failures.add('$cell: the chevron occupies '
+                '${chevronRect.left.toStringAsFixed(1)}–'
+                '${chevronRect.right.toStringAsFixed(1)}px, which is not the '
+                '${rtl ? 'leading (RTL)' : 'trailing'} side of the description '
+                '(${descRect.left.toStringAsFixed(1)}–'
+                '${descRect.right.toStringAsFixed(1)}px, leading icon '
+                '${iconRect.left.toStringAsFixed(1)}–'
+                '${iconRect.right.toStringAsFixed(1)}px)');
+          }
+
+          const what = 'the description';
+          final paragraph = tester.paragraphOf(description);
+          final lines = tester.textLineCount(description);
+          final widest = tester.widestTokenWidth(description);
+          final numbers = 'granted '
+              '${paragraph.size.width.toStringAsFixed(1)}px on $lines line(s), '
+              'widest token ${widest.toStringAsFixed(1)}px, whole string '
+              '${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px';
+          if (lines > 1) {
+            wrapped.add('$tag@${width.toInt()}px:${lines}L');
+          }
+          if (tester.isTextClipped(description)) {
+            failures.add('$cell: $what ellipsized — $numbers');
+          } else if (!kLocalesWithoutWordSpaces.contains(tag) &&
+              tester.hasSplitToken(description)) {
+            failures.add('$cell: $what broke mid-word — $numbers');
+          }
+          if (!kLocalesWithoutWordSpaces.contains(tag) &&
+              paragraph.size.width + 0.5 < widest) {
+            failures.add('$cell: $what was granted '
+                '${paragraph.size.width.toStringAsFixed(1)}px for a '
+                '${widest.toStringAsFixed(1)}px word it cannot break — '
+                '$numbers');
+          }
+          if (lines > kDescriptionLineCeiling) {
+            failures.add('$cell: $what wrapped onto $lines lines, past the '
+                '$kDescriptionLineCeiling-line ceiling — $numbers');
+          }
+        }
+      }
+
+      // The floor premise, replacing the reflow's two-directional one: with the
+      // threshold deleted there is nothing left to straddle, so what has to be
+      // true for the assertions above to mean anything is that some coordinate
+      // actually squeezed the sentence. Unlike its sibling on the OTA card this
+      // one is not thin — 79 of 234 — because a sentence in a shared column wraps
+      // long before an unbreakable build number does.
+      expect(
+        wrapped,
+        isNotEmpty,
+        reason: 'no locale wrapped the description at any of the nine widths, '
+            'so nothing here measured a squeeze',
+      );
+
+      expect(
+        failures,
+        isEmpty,
+        reason: 'the manual card shares its row between a localized sentence '
+            'and a 20px chevron; a description granted less than its own '
+            'longest word breaks mid-word and reports no overflow at all, '
+            'which is why this guard measures tokens rather than counting red '
+            'cells:\n${failures.join('\n')}',
       );
     });
   });

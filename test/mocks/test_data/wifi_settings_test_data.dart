@@ -2,11 +2,15 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
 /// Test data builder for WiFi Settings tests.
 ///
@@ -419,14 +423,96 @@ class WifiSettingsTestData {
       );
 
   // ---------------------------------------------------------------------------
+  // Radio UI models
+  // ---------------------------------------------------------------------------
+
+  static WifiRadioUIModel createRadioUIModel({
+    String instancePath = 'Device.WiFi.Radio.1.',
+    String band = '2.4GHz',
+    bool enable = true,
+    int transmitPower = -1,
+    int maxBitRate = 300,
+    int channel = 6,
+    bool autoChannelEnable = true,
+    String channelBandwidth = '20MHz',
+    String supportedStandards = 'b,g,n',
+    List<int> possibleChannels = const [1, 6, 11],
+    bool isDfsEnabled = false,
+    List<WifiAccessPointUIModel> accessPoints = const [],
+  }) =>
+      WifiRadioUIModel(
+        instancePath: instancePath,
+        band: band,
+        enable: enable,
+        transmitPower: transmitPower,
+        maxBitRate: maxBitRate,
+        channel: channel,
+        autoChannelEnable: autoChannelEnable,
+        channelBandwidth: channelBandwidth,
+        supportedStandards: supportedStandards,
+        possibleChannels: possibleChannels,
+        isDfsEnabled: isDfsEnabled,
+        accessPoints: accessPoints,
+      );
+
+  /// Dual-band radio UI models matching [createRadios].
+  ///
+  /// [is5GhzEnabled] flips only the 5 GHz radio, which is what
+  /// "a radio was just disabled" looks like to consumers keyed on
+  /// `radioModels.where((r) => !r.enable)`.
+  static List<WifiRadioUIModel> createRadioUIModels({
+    bool is24GhzEnabled = true,
+    bool is5GhzEnabled = true,
+  }) =>
+      [
+        createRadioUIModel(enable: is24GhzEnabled),
+        createRadioUIModel(
+          instancePath: 'Device.WiFi.Radio.2.',
+          band: '5GHz',
+          enable: is5GhzEnabled,
+          maxBitRate: 1200,
+          channel: 36,
+          autoChannelEnable: false,
+          channelBandwidth: '80MHz',
+          supportedStandards: 'a,n,ac,ax',
+          possibleChannels: const [36, 40, 44, 48],
+        ),
+      ];
+
+  // ---------------------------------------------------------------------------
   // WifiData (L1)
   // ---------------------------------------------------------------------------
 
-  static WifiData createWifiData() => WifiData(
+  static WifiData createWifiData({
+    List<WifiRadioUIModel> radioModels = const [],
+  }) =>
+      WifiData(
         codegenContext: WifiCodegenContext(
           createRadios(),
           createSsids(),
           createAccessPoints(),
         ),
+        radioModels: radioModels,
+      );
+
+  /// Result returned by a mocked [UspWifiDataService.fetch].
+  ///
+  /// The enrichment maps and [radioModels] default to empty — the data provider
+  /// passes all three straight through, so a test only populates the one it
+  /// asserts on.
+  static WifiDataFetchResult createWifiDataFetchResult({
+    Map<String, WifiClientUIModel> wifiClientMap = const {},
+    Map<String, ClientConnectionDetail> connectionDetailMap = const {},
+    List<WifiRadioUIModel> radioModels = const [],
+  }) =>
+      WifiDataFetchResult(
+        codegenContext: WifiCodegenContext(
+          createRadios(),
+          createSsids(),
+          createAccessPoints(),
+        ),
+        wifiClientMap: wifiClientMap,
+        connectionDetailMap: connectionDetailMap,
+        radioModels: radioModels,
       );
 }

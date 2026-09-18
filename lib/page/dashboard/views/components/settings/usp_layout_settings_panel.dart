@@ -122,9 +122,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
 
   Widget _buildAvailableWidgets(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);
-    final currentLayout = controller.exportLayout();
-    final currentIds =
-        currentLayout.map((e) => (e as Map)['id'] as String).toSet();
+    final currentIds = controller.layout.value.map((e) => e.id).toSet();
 
     final allSpecs = ref.watch(allWidgetSpecsProvider);
 

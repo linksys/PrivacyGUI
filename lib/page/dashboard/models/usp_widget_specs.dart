@@ -704,8 +704,8 @@ abstract class UspWidgetSpecs {
   /// however many there are, so scaling a pinned tile 12 → 8 gives it one, and
   /// scaling one 12 → 4 gives it nothing to be full-width *of*. Both are cases the
   /// user never chose and never would.
-  static List<dynamic> scaleLayout(
-    List<dynamic> layout,
+  static List<LayoutItem> scaleLayout(
+    List<LayoutItem> layout,
     int fromCols,
     int toCols,
   ) {
@@ -716,32 +716,36 @@ abstract class UspWidgetSpecs {
     }
 
     final scaled = layout.map((item) {
-      final map = Map<String, dynamic>.from(item as Map);
-      final x = map['x'] as int;
-      final w = map['w'] as int;
-      final minW = map['minW'] as int? ?? 1;
-      final maxW = (map['maxW'] as num?)?.toInt() ?? fromCols;
+      // An unbounded cap scales to the whole target grid. Reading it off the
+      // typed field is the #1310 fix for the trap this line used to hold: the
+      // map form was `(map['maxW'] as num?)?.toInt() ?? fromCols`, which was
+      // correct only because `toMap()` writes an infinite bound as `null` for
+      // JSON validity. Handed a map that had not been through `toMap()` — which
+      // `addWidget` did, with a spec declaring no constraints — the `as num?`
+      // matched the `double.infinity` and `toInt()` threw `Unsupported
+      // operation: Infinity or NaN toInt`. `isFinite` asks the question the
+      // `??` was standing in for.
+      final maxW = item.maxW.isFinite ? item.maxW.toInt() : fromCols;
 
       // Proportional scaling
-      var newW = scaleSpan(w, fromCols: fromCols, toCols: toCols);
-      var newX = (x * toCols / fromCols).round();
+      var newW = scaleSpan(item.w, fromCols: fromCols, toCols: toCols);
+      var newX = (item.x * toCols / fromCols).round();
       if (newX + newW > toCols) newX = toCols - newW;
       if (newX < 0) {
         newX = 0;
         newW = toCols;
       }
 
-      final newMinW = scaleSpan(minW, fromCols: fromCols, toCols: toCols);
+      final newMinW = scaleSpan(item.minW, fromCols: fromCols, toCols: toCols);
       final newMaxW = scaleSpan(maxW, fromCols: fromCols, toCols: toCols)
           .clamp(newMinW, toCols);
 
-      return {
-        ...map,
-        'x': newX,
-        'w': newW,
-        'minW': newMinW,
-        'maxW': newMaxW.toDouble(),
-      };
+      return item.copyWith(
+        x: newX,
+        w: newW,
+        minW: newMinW,
+        maxW: newMaxW.toDouble(),
+      );
     }).toList();
 
     return applyPickedForms(scaled, toCols);
@@ -755,9 +759,10 @@ abstract class UspWidgetSpecs {
   /// whole of what enforces that, as of `sliver_dashboard` 2.6.0 (#1399): the
   /// resolver clamps the new width to `[minW, maxW]` *and then* clamps `x` into
   /// `[originalRight - maxW, originalRight - minW]`
-  /// (`dashboard_controller_impl.dart:1828-1842`), which for a card pinned at
-  /// both caps is the single value it already has. The left-hand handles are held
-  /// by the second clamp and the right-hand ones by the first.
+  /// (`dashboard_controller_impl.dart:1932-1946` at 2.7.0; the same block was
+  /// `:1828-1842` at 2.6.0 and is byte-identical between the two), which for a
+  /// card pinned at both caps is the single value it already has. The left-hand
+  /// handles are held by the second clamp and the right-hand ones by the first.
   ///
   /// 0.9.1 had only the first, so the left-hand handles moved `x` and the package
   /// trimmed the width to what was left of the row — `x: 1, w: 3` dragged inwards
@@ -783,16 +788,15 @@ abstract class UspWidgetSpecs {
   /// whole phone grid, which is not a mis-size but a crash: the engine asserts
   /// `currentL.minW <= cols` (`layout_engine.dart:963`) while the page is
   /// building.
-  static List<dynamic> lockToFullWidth(List<dynamic> layout, int cols) {
-    return layout.map((item) {
-      return {
-        ...Map<String, dynamic>.from(item as Map),
-        'x': 0,
-        'w': cols,
-        'minW': cols,
-        'maxW': cols.toDouble(),
-      };
-    }).toList();
+  static List<LayoutItem> lockToFullWidth(List<LayoutItem> layout, int cols) {
+    return layout
+        .map((item) => item.copyWith(
+              x: 0,
+              w: cols,
+              minW: cols,
+              maxW: cols.toDouble(),
+            ))
+        .toList();
   }
 
   // ---------------------------------------------------------------------------
@@ -897,19 +901,21 @@ abstract class UspWidgetSpecs {
   ///
   /// Every card other than [cardId] is returned untouched, including its own pick:
   /// a form is picked for one card on one grid.
-  static List<dynamic> withCardForm(
-    List<dynamic> layout,
+  static List<LayoutItem> withCardForm(
+    List<LayoutItem> layout,
     String cardId,
     CardFormChoice choice, {
     required int cols,
   }) =>
-      layout.map((item) {
-        if ((item as Map)['id'] != cardId) return item;
-        final map = Map<String, dynamic>.from(item);
-        map['extra'] = choice.writeInto(map['extra']);
-        _applyCardForm(map, cols: cols, choice: choice);
-        return map;
-      }).toList();
+      layout
+          .map((item) => item.id != cardId
+              ? item
+              : _applyCardForm(
+                  item.copyWith(extra: choice.writeInto(item.extra)),
+                  cols: cols,
+                  choice: choice,
+                ))
+          .toList();
 
   /// Re-derives the geometry every pick in [layout] makes legal, for a grid that
   /// is [cols] wide.
@@ -930,16 +936,14 @@ abstract class UspWidgetSpecs {
   ///
   /// Returns [layout] itself when no item carries a pick, which is how an install
   /// that never used the control stays byte-identical to one from before #1299.
-  static List<dynamic> applyPickedForms(List<dynamic> layout, int cols) {
-    List<dynamic>? formed;
+  static List<LayoutItem> applyPickedForms(List<LayoutItem> layout, int cols) {
+    List<LayoutItem>? formed;
     for (var i = 0; i < layout.length; i++) {
-      final item = layout[i] as Map;
-      final choice = CardFormChoice.readFrom(item['extra']);
+      final item = layout[i];
+      final choice = CardFormChoice.readFrom(item.extra);
       if (choice == null) continue;
-      formed ??= List<dynamic>.of(layout);
-      final map = Map<String, dynamic>.from(item);
-      _applyCardForm(map, cols: cols, choice: choice);
-      formed[i] = map;
+      formed ??= List<LayoutItem>.of(layout);
+      formed[i] = _applyCardForm(item, cols: cols, choice: choice);
     }
     return formed ?? layout;
   }
@@ -970,13 +974,19 @@ abstract class UspWidgetSpecs {
   /// It does not re-promote a card whose width grew back past `normalAbove`. A
   /// chosen density is what renders or the choice does not stick, and a wide
   /// compact card is sparse, not broken.
-  static void _applyCardForm(
-    Map<String, dynamic> map, {
+  /// Returns [item] with the sizes [choice] makes legal on a [cols]-wide grid.
+  ///
+  /// Returns rather than mutates since #1310: the three helpers below wrote into
+  /// a shared map, and their order mattered — the comment on the `compact` arm is
+  /// about exactly that. A `LayoutItem` cannot be written into, so each helper now
+  /// takes the previous one's result, which makes that sequence visible in the
+  /// code instead of being a property of the argument.
+  static LayoutItem _applyCardForm(
+    LayoutItem item, {
     required int cols,
     required CardFormChoice choice,
   }) {
-    final constraints =
-        getById('${map['id']}')?.constraints[DisplayMode.normal];
+    final constraints = getById(item.id)?.constraints[DisplayMode.normal];
 
     switch (choice.density) {
       case CardDensity.popup:
@@ -988,8 +998,8 @@ abstract class UspWidgetSpecs {
         final w = cols <= UspLayoutEnvelope.mobileSlotCount
             ? cols
             : popupColumns.clamp(1, cols);
-        _pinSpan(map, cols: cols, w: w, h: popupHeightRows);
-        map['isResizable'] = false;
+        return _pinSpan(item, cols: cols, w: w, h: popupHeightRows)
+            .copyWith(isResizable: false);
 
       case CardDensity.compact:
         // The spec's bounds back first, then the floor on top of them. Compact
@@ -999,15 +1009,13 @@ abstract class UspWidgetSpecs {
         // own new floor with no gesture able to widen it again. Restoring first
         // is what makes this arm independent of the arm before it, which is the
         // property the `normal` arm below states for itself.
-        _applySpecBounds(map, cols: cols, constraints: constraints);
-        _applyFloors(
-          map,
+        return _applyFloors(
+          _applySpecBounds(item, cols: cols, constraints: constraints),
           cols: cols,
           constraints: constraints,
           floorColumns: compactMinColumns,
           floorHeightRows: compactMinHeightRows,
-        );
-        map['isResizable'] = true;
+        ).copyWith(isResizable: true);
 
       case CardDensity.normal:
         // Not a pin: normal *removes* a constraint, so it puts back exactly the
@@ -1015,30 +1023,33 @@ abstract class UspWidgetSpecs {
         // has to be a restore rather than a floor — popup wrote `maxW`/`maxH`
         // down to pin the tile, and a rule that only ever raises minima would
         // leave the card un-widenable after it expanded again.
-        _applySpecBounds(map, cols: cols, constraints: constraints);
-        map['isResizable'] = true;
+        return _applySpecBounds(item, cols: cols, constraints: constraints)
+            .copyWith(isResizable: true);
     }
   }
 
-  /// Pins [map]'s box to exactly [w] × [h] on a [cols]-wide grid, caps included.
-  static void _pinSpan(
-    Map<String, dynamic> map, {
+  /// [item] with its box pinned to exactly [w] × [h] on a [cols]-wide grid, caps
+  /// included.
+  static LayoutItem _pinSpan(
+    LayoutItem item, {
     required int cols,
     required int w,
     required int h,
-  }) {
-    map['w'] = w;
-    map['minW'] = w;
-    map['maxW'] = w.toDouble();
-    map['h'] = h;
-    map['minH'] = h;
-    map['maxH'] = h.toDouble();
-    // Shrinking cannot push a card off the right edge, but a stored layout can
-    // arrive already overhanging — the pin is applied to whatever is on disk, not
-    // only to a card the user just picked.
-    final x = map['x'];
-    if (x is! int || x + w > cols) map['x'] = 0;
-  }
+  }) =>
+      item.copyWith(
+        w: w,
+        minW: w,
+        maxW: w.toDouble(),
+        h: h,
+        minH: h,
+        maxH: h.toDouble(),
+        // Shrinking cannot push a card off the right edge, but a stored layout can
+        // arrive already overhanging — the pin is applied to whatever is on disk,
+        // not only to a card the user just picked. The `x is! int` half of this
+        // test is gone with the map: the field is typed now, so "not an int" is
+        // not a state that can arrive (#1310).
+        x: item.x + w > cols ? 0 : item.x,
+      );
 
   /// Puts back the bounds [constraints] declares, scaled to a [cols]-wide grid,
   /// and pulls the card's own size inside them.
@@ -1049,22 +1060,25 @@ abstract class UspWidgetSpecs {
   /// (package widgets, or ids this build does not ship) are left exactly as they
   /// are — there is nothing to restore them *to*, and inventing bounds for a card
   /// we cannot describe is how a layout we did not author gets rewritten.
-  static void _applySpecBounds(
-    Map<String, dynamic> map, {
+  static LayoutItem _applySpecBounds(
+    LayoutItem item, {
     required int cols,
     required WidgetGridConstraints? constraints,
   }) {
-    if (constraints == null) return;
+    if (constraints == null) return item;
+
+    var next = item;
 
     // Mobile widths are left to [lockToFullWidth], as in [_applyFloors].
     if (cols > UspLayoutEnvelope.mobileSlotCount) {
       final minW = _scaleFromTwelfths(constraints.minColumns, toCols: cols);
       final maxW = _scaleFromTwelfths(constraints.maxColumns, toCols: cols)
           .clamp(minW, cols);
-      map['minW'] = minW;
-      map['maxW'] = maxW.toDouble();
-      final w = map['w'];
-      if (w is int) map['w'] = w.clamp(minW, maxW);
+      next = next.copyWith(
+        minW: minW,
+        maxW: maxW.toDouble(),
+        w: next.w.clamp(minW, maxW),
+      );
     }
 
     // Rows are absolute — a row is the same height on every grid — so they are
@@ -1072,21 +1086,24 @@ abstract class UspWidgetSpecs {
     final minH = constraints.minHeightRows;
     final maxH =
         constraints.maxHeightRows < minH ? minH : constraints.maxHeightRows;
-    map['minH'] = minH;
-    map['maxH'] = maxH.toDouble();
-    final h = map['h'];
-    if (h is int) map['h'] = h.clamp(minH, maxH);
+    return next.copyWith(
+      minH: minH,
+      maxH: maxH.toDouble(),
+      h: next.h.clamp(minH, maxH),
+    );
   }
 
-  /// Raises [map]'s floors to the greater of its spec's bounds and the given
-  /// floor, growing the card if it was already under the result.
-  static void _applyFloors(
-    Map<String, dynamic> map, {
+  /// [item] with its floors raised to the greater of its spec's bounds and the
+  /// given floor, grown if it was already under the result.
+  static LayoutItem _applyFloors(
+    LayoutItem item, {
     required int cols,
     required WidgetGridConstraints? constraints,
     required int floorColumns,
     required int floorHeightRows,
   }) {
+    var next = item;
+
     // Mobile widths are not scaled for the same reason [correctedSize] leaves
     // them alone: there the width is pinned by [lockToFullWidth], so anything
     // written here could only fight the lock.
@@ -1095,22 +1112,28 @@ abstract class UspWidgetSpecs {
           _scaleFromTwelfths(constraints?.minColumns ?? 1, toCols: cols);
       final floorW = _scaleFromTwelfths(floorColumns, toCols: cols);
       final minW = (specMinW > floorW ? specMinW : floorW).clamp(1, cols);
-      map['minW'] = minW;
-      final w = map['w'];
-      if (w is int && w < minW) map['w'] = minW;
-      final maxW = (map['maxW'] as num?)?.toDouble() ?? cols.toDouble();
-      if (maxW < minW) map['maxW'] = minW.toDouble();
+      next = next.copyWith(
+        minW: minW,
+        w: next.w < minW ? minW : next.w,
+        // A cap is lifted only when the floor has overtaken it, which is what
+        // makes this a floor and not a pin. The map form spelled the absent-key
+        // case out — `(map['maxW'] as num?)?.toDouble() ?? cols` — and then never
+        // used it: `minW` is clamped to `cols`, so the fallback could not be below
+        // the floor. On the typed field the comparison answers it directly,
+        // because `double.infinity < minW` is false (#1310).
+        maxW: next.maxW < minW ? minW.toDouble() : next.maxW,
+      );
     }
 
     // Row counts are absolute — a row is the same height on every grid — so they
     // are used as they are, exactly as [correctedSize] does.
     final specMinH = constraints?.minHeightRows ?? 1;
     final minH = specMinH > floorHeightRows ? specMinH : floorHeightRows;
-    map['minH'] = minH;
-    final h = map['h'];
-    if (h is int && h < minH) map['h'] = minH;
-    final maxH = (map['maxH'] as num?)?.toDouble() ?? minH.toDouble();
-    if (maxH < minH) map['maxH'] = minH.toDouble();
+    return next.copyWith(
+      minH: minH,
+      h: next.h < minH ? minH : next.h,
+      maxH: next.maxH < minH ? minH.toDouble() : next.maxH,
+    );
   }
 
   /// Rewrites [layout] to hold exactly the cards in [reference], in that order,
@@ -1124,20 +1147,19 @@ abstract class UspWidgetSpecs {
   /// `DashboardController.setSlotCount` treats the layout it is leaving as the
   /// truth about membership, so the stale grid's missing card would be
   /// reconciled *out* of every other breakpoint on the way back.
-  static List<dynamic> alignMembership(
-    List<dynamic> layout,
-    List<dynamic> reference, {
+  static List<LayoutItem> alignMembership(
+    List<LayoutItem> layout,
+    List<LayoutItem> reference, {
     required int fromCols,
     required int toCols,
   }) {
-    final stored = <String, dynamic>{
-      for (final item in layout) (item as Map)['id'] as String: item,
-    };
+    final stored = {for (final item in layout) item.id: item};
 
-    return reference.map((refItem) {
-      final id = (refItem as Map)['id'] as String;
-      return stored[id] ?? scaleLayout([refItem], fromCols, toCols).single;
-    }).toList();
+    return reference
+        .map((refItem) =>
+            stored[refItem.id] ??
+            scaleLayout([refItem], fromCols, toCols).single)
+        .toList();
   }
 
   // ---------------------------------------------------------------------------

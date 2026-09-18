@@ -5,12 +5,14 @@
 export 'wi_fi_radios.g.dart';
 export 'wi_fi_access_points.g.dart';
 export 'wi_fi_ssids.g.dart';
+export 'data_elements_network_info.g.dart';
 export 'data_elements_network.g.dart';
 export 'mac_filter_access_points.g.dart';
 export 'system_info.g.dart';
 export 'setup_operations.g.dart';
 export 'vendor_log_files.g.dart';
 export 'device_operations.g.dart';
+export 'firmware_auto_update.g.dart';
 export 'firmware_images.g.dart';
 export 'firmware_operations.g.dart';
 export 'time_settings.g.dart';

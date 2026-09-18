@@ -22,12 +22,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///    600-line view.
 ///
 /// Deliberately takes no `WidgetRef` and reads no provider: every input is a
-/// value or a callback the view supplies.
+/// value or a callback the view supplies — including *which* mode's actions
+/// apply. Since #1497 the mode reaches this widget only as the presence or
+/// absence of [onEdit]; there is no `isRemoteMode` to keep in sync, and the
+/// nullability is the whole vocabulary.
 class DashboardHeaderBar extends StatelessWidget {
   const DashboardHeaderBar({
     super.key,
     required this.isEditMode,
-    required this.isRemoteMode,
     required this.onPrint,
     required this.onRefresh,
     required this.onEdit,
@@ -41,13 +43,15 @@ class DashboardHeaderBar extends StatelessWidget {
   /// set (optimize / settings / cancel / done) for the viewing one.
   final bool isEditMode;
 
-  /// Remote (cloud) sessions cannot edit the layout, so the edit action is
-  /// dropped entirely rather than disabled.
-  final bool isRemoteMode;
-
   final VoidCallback onPrint;
   final VoidCallback onRefresh;
-  final VoidCallback onEdit;
+
+  /// Enters layout-edit mode, or `null` on a surface where the layout is not the
+  /// viewer's to arrange — a Remote Assistance session, today. `null` drops the
+  /// `dashboard-edit` action entirely rather than disabling it, which is what the
+  /// `isRemoteMode` flag used to do one level less directly: the caller passed
+  /// both a mode and a callback for that mode to ignore.
+  final VoidCallback? onEdit;
   final VoidCallback onOptimizeLayout;
   final VoidCallback onLayoutSettings;
   final VoidCallback onCancelEdit;
@@ -119,7 +123,7 @@ class DashboardHeaderBar extends StatelessWidget {
   /// at all. Until #1356 it was a flag plus a comment, and the collapsed form
   /// searched for it with `firstWhere((a) => a.isPrimary)` — so a mode that
   /// shipped without one (a conditional action list dropping the flagged
-  /// action, say, the way `isRemoteMode` already drops `dashboard-edit`) threw
+  /// action, say, the way a null [onEdit] already drops `dashboard-edit`) threw
   /// `Bad state: No element` at widths <=600px and nowhere else. No
   /// desktop-width test or screenshot could see it, and neither could the
   /// overflow gate, which measures rows that laid out rather than rows that
@@ -166,6 +170,8 @@ class DashboardHeaderBar extends StatelessWidget {
       icon: Icons.refresh,
       onTap: onRefresh,
     );
+    // Local, so the `null` check below promotes it — a public field does not.
+    final edit = onEdit;
     return _HeaderActions(
       inOrder: [
         _HeaderAction(
@@ -175,12 +181,12 @@ class DashboardHeaderBar extends StatelessWidget {
           onTap: onPrint,
         ),
         refresh,
-        if (!isRemoteMode)
+        if (edit != null)
           _HeaderAction(
             identifier: 'dashboard-edit',
             label: loc(context).edit,
             icon: Icons.edit,
-            onTap: onEdit,
+            onTap: edit,
           ),
       ],
       // Refreshing is the only one of the three a reader might repeat, and the

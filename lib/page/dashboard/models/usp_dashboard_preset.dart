@@ -14,10 +14,55 @@ enum UspDashboardPreset {
   standard,
   professional,
   monitoring,
-  remote,
+  remote;
+
+  /// The presets a user may choose from, in every mode (#1492).
+  ///
+  /// Computed once from [UspDashboardPresetX.isUserSelectable], which is an
+  /// exhaustive `switch` — so adding a value to this enum is a compile error
+  /// until somebody decides whether users may pick it. That direction matters:
+  /// the bug this fixes is a *mode-forced* preset leaking into the picker, and a
+  /// `values.where(!= remote)` deny-list would have offered the next such preset
+  /// automatically. Fail closed.
+  ///
+  /// **#1474 phase 7 measured this and left it alone**, which is the outcome the
+  /// design doc's `selectablePresets()` member did not expect. Both entry points
+  /// to the picker are unreachable under the remote profile — `firstRunPresetFlow()`
+  /// is `null` there, and the Settings → "Change" entry lives inside
+  /// `if (isEditMode)`, which `layoutEditor()` returning `null` makes unenterable —
+  /// so a per-surface list would have had no observable consumer in either mode,
+  /// and falsification criterion 4 deletes a member like that. A per-surface list
+  /// would also fail *open*: the exhaustive `switch` below is what makes a new
+  /// preset a compile error rather than an offer.
+  static final List<UspDashboardPreset> selectable =
+      values.where((preset) => preset.isUserSelectable).toList(growable: false);
 }
 
 extension UspDashboardPresetX on UspDashboardPreset {
+  /// Whether a user may pick this preset from the style picker (#1492).
+  ///
+  /// Exhaustive, so a new preset does not become user-selectable by default —
+  /// see [UspDashboardPreset.selectable] for why that direction is the point.
+  ///
+  /// [UspDashboardPreset.remote] is the only `false` today. It is not a style
+  /// anyone chooses; it is the layout Remote Assistance *forces*
+  /// (`RemoteSurface.fixedDashboardLayout()` is where it is now applied, and the
+  /// same `null` from `firstRunPresetFlow()` is what suppresses the picker in that
+  /// build). Offering it locally was the defect: its [description] promises
+  /// "View-only mode", and a preset is a list of cards and their geometry — it
+  /// carries no permission at all. What restraint Remote Assistance has comes from
+  /// two other places: `OperationGuard` refuses the operations whose
+  /// `DisruptionClass` that mode cannot recover from, and `SurfaceStrategy` hides
+  /// the affordances for the rest. So a local user who picked this got an 8-card
+  /// layout that was fully editable, with neither guard in play.
+  bool get isUserSelectable => switch (this) {
+        UspDashboardPreset.essential => true,
+        UspDashboardPreset.standard => true,
+        UspDashboardPreset.professional => true,
+        UspDashboardPreset.monitoring => true,
+        UspDashboardPreset.remote => false,
+      };
+
   String get displayName => switch (this) {
         UspDashboardPreset.essential => 'Essential',
         UspDashboardPreset.standard => 'Standard',

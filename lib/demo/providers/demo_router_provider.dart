@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -12,7 +13,7 @@ const _demoPnpLauncher = '/demoPnpLauncher';
 
 /// Overrides the main routerProvider for the Demo Application.
 ///
-/// This custom router wraps all existing application routes [appRoutes] in a
+/// This custom router wraps all of this surface's application routes in a
 /// [ShellRoute]. This allows the persistent Theme Studio Panel and FAB
 /// to overlay the application content while sharing the same navigation context.
 ///
@@ -41,7 +42,11 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
             path: _demoPnpLauncher,
             builder: (context, state) => const PnpDemoLauncher(),
           ),
-          ...appRoutes, // Reuse the standard app routes
+          // The same table production builds get, composed the same way.
+          // Demo maps to `LocalSurface`, so this is `sharedAppRoutes` — asking
+          // the surface rather than spreading the list keeps the demo from
+          // drifting into registering a route production does not.
+          ...ref.watch(surfaceStrategyProvider).routes(),
         ],
       ),
     ],

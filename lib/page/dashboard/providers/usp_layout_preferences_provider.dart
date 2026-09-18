@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/usp_dashboard_preset.dart';
@@ -25,21 +25,49 @@ final uspLayoutPreferencesProvider =
 class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   final Completer<void> _initCompleter = Completer<void>();
 
+  /// Whether this surface's layout was chosen for the viewer, set in [build].
+  ///
+  /// Named to match `UspLayoutController._layoutIsFixed`, because the two are one
+  /// decision and grepping the pair is how the next reader finds that out. Same
+  /// asymmetry, too: the read side is the `if` in [build], and this is the write
+  /// side, which needs a *funnel* rather than a flag at the entry points —
+  /// [toggleCustomLayout], [setVisibility], [restoreSnapshot], [selectPreset] and
+  /// [markPresetDialogSeen] all reach storage through [_saveToPrefs], and
+  /// [resetToDefaults] reaches it directly.
+  bool _layoutIsFixed = false;
+
   /// Completes when the initial load from SharedPreferences is done.
   /// Await this before capturing snapshots to avoid race conditions
   /// where the default state (preset = null) is captured before the
   /// persisted state is loaded.
   Future<void> get initialized => _initCompleter.future;
 
+  /// A surface whose layout is fixed has no preferences to load, so the defaults
+  /// stand and [initialized] completes without ever touching the store — see
+  /// `SurfaceStrategy.fixedDashboardLayout`, which answers the same question for
+  /// the grid itself.
+  ///
+  /// Not "the remote preset is selected": until #1497 this returned
+  /// `UspLayoutPreferences(selectedPreset: UspDashboardPreset.remote)`, which
+  /// recorded a pick nobody made. The one thing that reads [selectedPreset] is the
+  /// edit-mode-only settings panel, and a surface with a fixed layout has no edit
+  /// mode to open it from.
+  ///
+  /// `watch`, not `read`. Nothing rebuilds in production — `appModeProvider` has no
+  /// dependencies and is computed once per container — so the two are equivalent
+  /// today and `watch` is the one that stays correct if that changes. It is also
+  /// what makes the completer guard below honest: `read` forecloses a second
+  /// `build()` on this instance, so a guard against double-completion would be
+  /// documenting a situation its own dependency edge prevented.
   @override
   UspLayoutPreferences build() {
-    // In remote mode, always use remote preset (ignore persisted preferences)
-    final forcedPreset = GlobalConfig.remote.forcedPreset;
-    if (forcedPreset != null) {
+    _layoutIsFixed =
+        ref.watch(surfaceStrategyProvider).fixedDashboardLayout() != null;
+    if (_layoutIsFixed) {
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }
-      return UspLayoutPreferences(selectedPreset: forcedPreset);
+      return const UspLayoutPreferences();
     }
 
     _loadFromPrefs();
@@ -107,13 +135,24 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// Sets [useCustomLayout] to false, clears widget configs,
   /// and resets the grid layout.
   Future<void> resetToDefaults() async {
+    if (_layoutIsFixed) return;
     state = const UspLayoutPreferences();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(pUspLayoutPreferences);
     await ref.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
   }
 
+  /// The write funnel, and the only place the fixed-surface guard is needed for
+  /// the five mutators above — see [_layoutIsFixed].
+  ///
+  /// Storage in both directions, not in-memory state: a mutator called on a fixed
+  /// surface still updates [state], because what the guard is for is the *next*
+  /// session in this browser, not this one. Under Remote Assistance every entry
+  /// point to all six is behind an edit mode `layoutEditor()` closes, so the
+  /// in-memory half has no way to be observed; the stored half would outlive the
+  /// session and be read by the next one.
   Future<void> _saveToPrefs() async {
+    if (_layoutIsFixed) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(pUspLayoutPreferences, state.toJsonString());
   }

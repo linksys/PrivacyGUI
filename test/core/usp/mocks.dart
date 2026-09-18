@@ -58,6 +58,13 @@ class FakeSseOperationStrategy implements SseOperationStrategy {
   }
 
   @override
+  Future<void> onSseStreamOpened(
+      List<SseSubscriptionRecord> existingRecords) async {
+    // No-op, like LocalSseStrategy: this fake stands in for the local arm, which
+    // resubscribes on the `connected` edge below because its bridge heartbeats.
+  }
+
+  @override
   Future<void> onSseConnected(
       List<SseSubscriptionRecord> existingRecords) async {
     for (final record in existingRecords) {

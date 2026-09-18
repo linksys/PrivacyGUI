@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -236,7 +237,7 @@ void main() {
 
     test('SSE connectedDevices domain triggers debounced re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -254,7 +255,8 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockDevicesSvc);
 
-        sseController.add(InvalidationDomain.connectedDevices);
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 0));
         async.flushMicrotasks();
 
         // Timer pending — no re-fetch yet
@@ -282,7 +284,7 @@ void main() {
 
     test('SSE unrelated domain does not trigger re-fetch', () {
       fakeAsync((async) {
-        final sseController = StreamController<InvalidationDomain>.broadcast();
+        final sseController = StreamController<InvalidationEvent>.broadcast();
 
         final container = ProviderContainer(
           overrides: [
@@ -300,7 +302,7 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockDevicesSvc);
 
-        sseController.add(InvalidationDomain.dmz);
+        sseController.add((domain: InvalidationDomain.dmz, seq: 0));
         async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
@@ -311,6 +313,67 @@ void main() {
               gatewayName: any(named: 'gatewayName'),
               systemInfo: any(named: 'systemInfo'),
             ));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    // The two tests above emit one event each, so neither can see a same-domain
+    // repeat being collapsed. That collapse is what riverpod 3.x's `==`-based
+    // updateShouldNotify would cause without the `seq` tag on
+    // `InvalidationEvent` (#1501 AC-B1), and it is what this test pins.
+    //
+    // The two events are spaced past the 500ms debounce window on purpose:
+    // inside it they are *meant* to merge into one refresh, so a repeat asserted
+    // there could not tell a real collapse from the debouncer doing its job.
+    test('two connectedDevices events past the debounce window re-fetch twice',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspClientProvider.overrideWithValue(mockUsp),
+            uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockDevicesSvc);
+
+        void expectOneFetch() {
+          verify(() => mockDevicesSvc.fetch(
+                wifiClientMap: any(named: 'wifiClientMap'),
+                connectionDetailMap: any(named: 'connectionDetailMap'),
+                gatewayName: any(named: 'gatewayName'),
+                systemInfo: any(named: 'systemInfo'),
+              )).called(1);
+        }
+
+        // A device joins.
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expectOneFetch();
+
+        // Another one joins, well after the first refresh settled. Same domain,
+        // so `seq` is the only thing that differs between the two events — and
+        // if the second is dropped the new device never appears in the list.
+        sseController
+            .add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expectOneFetch();
 
         sseController.close();
         container.dispose();
@@ -343,6 +406,76 @@ void main() {
           )).captured;
       expect(captured.first, 'M60TB');
       container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // The wifiDataProvider listener rebuilds the mesh once per upstream settle,
+  // not once per notification.
+  //
+  // Re-running an AsyncNotifier that already holds a value emits
+  // AsyncData(isLoading: true, value: prev) via copyWithPrevious before the
+  // fresh value. Without the isLoading guard the listener rebuilt the mesh from
+  // that stale WifiData and assigned an extra state — an emission this
+  // provider's own downstream listeners then saw as well. See
+  // doc/riverpod/listen_site_audit.md (#1502 AC-4).
+  // -------------------------------------------------------------------------
+  group('DevicesDataNotifier — wifi data re-notification', () {
+    test('a wifi refetch rebuilds the mesh exactly once', () async {
+      // The listener early-returns on DevicesCodegenContext.empty, so the fetch
+      // result must carry a non-empty context.
+      sampleFetchResult = DevicesDataFetchResult(
+        codegenContext: DevicesCodegenContext(ConnectedDevices(items: [
+          ConnectedDevice(
+            instancePath: 'Device.Hosts.Host.1.',
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            ipAddress: '192.168.1.101',
+            hostName: 'MyLaptop',
+            isActive: true,
+            interface_: 'Device.WiFi.SSID.1.',
+            ipv4Addresses: const [],
+            ipv6Addresses: const [],
+          ),
+        ])),
+        hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+        meshNetwork: sampleMeshNetwork,
+      );
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      // A permanent subscription keeps the notifier — and therefore its
+      // ref.listen on wifiDataProvider — alive, so the invalidate below
+      // rebuilds eagerly instead of being deferred to the next read.
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+
+      // Boot goes through fetch(), not the wifi listener: at the listener's
+      // first firing the notifier has no state yet, so it early-returns. That
+      // makes the count below attributable entirely to the refetch.
+      verifyNever(() => mockDevicesSvc.rebuildWithWifiData(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+
+      container.invalidate(wifiDataProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one mesh rebuild. Without the isLoading guard this is 2.
+      verify(() => mockDevicesSvc.rebuildWithWifiData(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).called(1);
     });
   });
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/device_credentials_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
@@ -33,11 +32,11 @@ class _RemoteAssistanceSessionGuardState
 
   @override
   Widget build(BuildContext context) {
-    // Skip in Remote Assistance mode (CA side)
-    if (GlobalConfig.remote.isActive) {
-      return widget.child;
-    }
-
+    // No mode check here. Since #1497 only `LocalSurface.sessionGuard()` wraps
+    // anything in this widget, so being built at all is the answer the early
+    // `return widget.child` used to compute — and the shell no longer has to
+    // agree with it separately.
+    //
     // Listen to dashboard ready to trigger session check
     ref.listen(dashboardDomainReadyProvider, (prev, next) {
       if (prev?.isLoading == true && next.hasValue && !_checkDone) {

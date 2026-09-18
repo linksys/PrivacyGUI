@@ -34,10 +34,12 @@ class UspSinglePortTab extends ConsumerWidget {
             // natural width and pushed the add button off the right edge in 9 of
             // the page sweep's 208 cells — all at the 320px product floor, worst
             // `pl` +70px, and `pt_PT` `ru` `pt` `fr` `da` `fi` `nb` `de` behind it
-            // (#1370's finding, fixed for #1377). The gate's page sweep measures
-            // this tab only; `usp_port_range_tab` and `usp_port_triggering_tab`
-            // carry the same header shape behind a `TabController` the sweep does
-            // not tap, and were given the same constraint by inspection.
+            // (#1370's finding, fixed for #1377). `usp_port_range_tab` and
+            // `usp_port_triggering_tab` carry the same header shape and took the
+            // same constraint by inspection at the time, because the sweep reached
+            // tab 0 only. Since #1489 it reaches all three — `page.port_range` and
+            // `page.port_triggering` construct them via `initialTab:` — so the two
+            // copies are measured now, not asserted.
             Expanded(
               child: AppText.titleMedium(
                   '${loc(context).singlePortForwarding} (${rules.length})'),
@@ -73,6 +75,15 @@ class UspSinglePortTab extends ConsumerWidget {
               identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
+              // Nulling `onChanged` alone dimmed the track, which is also how the
+              // kit draws a switch you may simply never use — so a write in
+              // flight and an unavailable control were the same picture, and
+              // silence to a screen reader. `isLoading` draws the busy figure
+              // over the track without moving it, and the label is the app's
+              // localised string rather than the kit's English-only `Busy`
+              // fallback (#1542). Same idiom as `ToggleRow`.
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
               onChanged: isSaving
                   ? null
                   : (value) => ref

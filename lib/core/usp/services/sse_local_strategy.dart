@@ -71,6 +71,17 @@ class LocalSseStrategy implements SseOperationStrategy {
   }
 
   @override
+  Future<void> onSseStreamOpened(
+      List<SseSubscriptionRecord> existingRecords) async {
+    // Nothing to do, and the reason is a property of the local bridge rather
+    // than a preference: it heartbeats every 30s whether or not anything is
+    // subscribed, so a reopened stream always produces an event, always reaches
+    // `connected`, and always fires `onSseConnected` below. Resubscribing here
+    // as well would only mean doing it twice. The remote arm cannot rely on any
+    // of that — see `RemoteSseStrategy.onSseStreamOpened`.
+  }
+
+  @override
   Future<void> onSseConnected(
       List<SseSubscriptionRecord> existingRecords) async {
     if (existingRecords.isEmpty) {

@@ -40,8 +40,13 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
 
     const defaultInterval = Duration(seconds: 10);
 
-    // Listen for future state changes
+    // Listen for future state changes.
+    // The isLoading guard excludes the re-run frame, which also satisfies
+    // `is AsyncData`. Without it the timer restarts twice per invalidate and the
+    // extra _fetchAndAppend() lands a sample computed over the inter-frame gap
+    // rather than the configured cadence. See doc/riverpod/listen_site_audit.md.
     ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next.isLoading) return;
       if (next is AsyncData) {
         _startTimerIfAuthenticated(defaultInterval);
       }

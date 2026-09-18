@@ -14,6 +14,7 @@ void main() {
       expect(status.activeMutation, isNull);
       expect(status.pppInstancePath, isNull);
       expect(status.vlanInstancePath, isNull);
+      expect(status.mtuModeSupported, isFalse);
     });
 
     group('copyWith', () {
@@ -27,6 +28,7 @@ void main() {
           activeMutation: 'save',
           pppInstancePath: 'Device.PPP.Interface.1.',
           vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
+          mtuModeSupported: true,
         );
 
         expect(updated.isLoading, false);
@@ -36,6 +38,7 @@ void main() {
         expect(updated.activeMutation, 'save');
         expect(updated.pppInstancePath, 'Device.PPP.Interface.1.');
         expect(updated.vlanInstancePath, 'Device.Ethernet.VLANTermination.1.');
+        expect(updated.mtuModeSupported, isTrue);
       });
 
       test('preserves unchanged fields', () {
@@ -102,6 +105,12 @@ void main() {
       test('different instances', () {
         const a = InternetSettingsStatus(isLoading: false);
         const b = InternetSettingsStatus(isLoading: true);
+        expect(a, isNot(equals(b)));
+      });
+
+      test('mtuModeSupported is part of equality', () {
+        const a = InternetSettingsStatus(mtuModeSupported: true);
+        const b = InternetSettingsStatus(mtuModeSupported: false);
         expect(a, isNot(equals(b)));
       });
 

@@ -10,6 +10,16 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// USP Statistics / Monitoring page — consolidates all dashboard chart views
 /// into 3 scrollable category tabs: Network, Devices, System.
 class UspStatisticsView extends ConsumerStatefulWidget {
+  /// How many tabs this page has. Shared with the `clamp` below so the two
+  /// cannot drift, and read by the layout gate to reject an `initialTab` that
+  /// would clamp onto an already-swept tab.
+  static const tabCount = 3;
+
+  /// Which tab this page opens on: 0 = Network, 1 = Devices, 2 = System.
+  ///
+  /// Supplied by the route from `?tab=N`. Read **once, at mount** — a second
+  /// navigation to this route with a different `?tab=` reuses this `State`, so
+  /// `initState` does not run again and the tab does not move.
   final int initialTab;
 
   const UspStatisticsView({super.key, this.initialTab = 0});
@@ -26,9 +36,9 @@ class _UspStatisticsViewState extends ConsumerState<UspStatisticsView>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: UspStatisticsView.tabCount,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 2),
+      initialIndex: widget.initialTab.clamp(0, UspStatisticsView.tabCount - 1),
     );
   }
 

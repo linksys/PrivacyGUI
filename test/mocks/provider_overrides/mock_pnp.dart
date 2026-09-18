@@ -60,6 +60,9 @@ class FixedPnpNotifier extends PnpNotifier {
   // ── Wizard (PnpSetupView's save, and its per-field edits) ──
   @override
   Future<void> saveChanges() async {}
+
+  @override
+  Future<void> testReconnect() async {}
 }
 
 /// Returns provider overrides pinning the PnP state machine to [state].

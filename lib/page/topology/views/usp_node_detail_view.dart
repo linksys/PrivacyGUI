@@ -19,7 +19,6 @@ import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
-import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Node detail page — displays mesh node info and connected devices.
@@ -410,8 +409,15 @@ class UspNodeDetailView extends ConsumerWidget {
                           ],
                         ),
                         AppGap.xs(),
+                        // Reachable null, and load-bearing: since #1555
+                        // `hasInfo` is true for a link known only by its parent
+                        // ID, so this arm renders for a node whose medium
+                        // firmware left empty. `unknown` is the honest word for
+                        // it — the alternative was fabricating "Wi-Fi" into the
+                        // model to keep the two graders agreeing, which would
+                        // print a medium nothing measured.
                         AppText.bodyMedium(
-                            backhaul.linkType ?? backhaul.mediaType),
+                            backhaul.linkType ?? loc(context).unknown),
                       ],
                     ),
                   ),
@@ -443,7 +449,7 @@ class UspNodeDetailView extends ConsumerWidget {
                     ],
                   ),
                   AppGap.xs(),
-                  AppText.bodyMedium(backhaul.linkType ?? backhaul.mediaType),
+                  AppText.bodyMedium(backhaul.linkType ?? loc(context).unknown),
                 ],
               ),
             ),
@@ -452,8 +458,8 @@ class UspNodeDetailView extends ConsumerWidget {
             // Backhaul present in the topology but with no medium reported
             // (`hasInfo` false): neither Wi-Fi nor Ethernet. Without this arm
             // the card renders as a bare header — every block below is also
-            // gated on data this state does not have (no rates, `phyRate` 0,
-            // no `lastContactTime`), so the user gets a titled empty card with
+            // gated on data this state does not have (no rates, no
+            // `lastContactTime`), so the user gets a titled empty card with
             // nothing saying why.
             //
             // Reachable since #1430's liveness change: a node whose
@@ -512,75 +518,43 @@ class UspNodeDetailView extends ConsumerWidget {
             ),
             AppGap.sm(),
           ],
-          // PHY Rate + Last Contact row
-          if (backhaul.phyRate > 0 || backhaul.lastContactTime != null)
-            Row(
-              children: [
-                if (backhaul.phyRate > 0)
-                  Expanded(
-                    child: LayoutBlock(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.speed,
-                                  size: 16,
-                                  color: colorScheme.onSurfaceVariant),
-                              AppGap.xs(),
-                              AppText.labelSmall('PHY Rate',
-                                  color: colorScheme.onSurfaceVariant),
-                            ],
-                          ),
-                          AppGap.xs(),
-                          AppText.bodyMedium(NetworkUtils.formatSpeed(
-                              backhaul.phyRate * 1000)),
-                        ],
+          // Last Contact row
+          //
+          // A PHY Rate tile used to share this row. `BackhaulPHYRate` is not in
+          // the prplMesh schema and has no replacement in it (#1555), so the
+          // tile could only ever have rendered its `phyRate > 0` guard as false.
+          // Its going leaves this tile full-width, which is a strict improvement
+          // for the caption below: at half width `lastContact` overflows the
+          // 99dp row in 21 locales.
+          if (backhaul.lastContactTime != null)
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.access_time,
+                          size: 16, color: colorScheme.onSurfaceVariant),
+                      AppGap.xs(),
+                      // Kept ellipsising even at full width: the guard costs
+                      // nothing and the row is still narrow at the 360px
+                      // breakpoint (#1302).
+                      Expanded(
+                        child: AppText.labelSmall(
+                          loc(context).lastContact,
+                          color: colorScheme.onSurfaceVariant,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                if (backhaul.phyRate > 0 && backhaul.lastContactTime != null)
-                  AppGap.sm(),
-                if (backhaul.lastContactTime != null)
-                  Expanded(
-                    child: LayoutBlock(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.access_time,
-                                  size: 16,
-                                  color: colorScheme.onSurfaceVariant),
-                              AppGap.xs(),
-                              // Same half-width tile, same treatment as the
-                              // interface caption above — and this one does not
-                              // even fit in English: 21 locales overflow the
-                              // 99dp row, `en` by 2.4dp at 1241px and `ru` by
-                              // 39dp. It went unreported in #1302 because no
-                              // fixture set lastContactTime, so the golden
-                              // suite never rendered this row; the
-                              // `slave_backhaul_timing` state now does.
-                              Expanded(
-                                child: AppText.labelSmall(
-                                  loc(context).lastContact,
-                                  color: colorScheme.onSurfaceVariant,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          AppGap.xs(),
-                          AppText.bodyMedium(DateFormatUtils.formatRelativeTime(
-                              backhaul.lastContactTime)),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+                  AppGap.xs(),
+                  AppText.bodyMedium(DateFormatUtils.formatRelativeTime(
+                      backhaul.lastContactTime)),
+                ],
+              ),
             ),
         ],
       ),

@@ -14,13 +14,13 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/framework/mode/session_request.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
-import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -196,21 +196,25 @@ class _RemoteAssistanceConfirmViewState
     }
   }
 
+  /// Open the session. The *how* belongs to cause 3, not to this view.
+  ///
+  /// #1474 phase 9 moved the transport config, `activate()` and the
+  /// `updateSessionInfo()` bookkeeping into `RemoteSessionStrategy.start()`, which
+  /// is the remote half of the same member `AuthNotifier.localLogin` reaches for the
+  /// local half. This view keeps what is genuinely its own: the validated
+  /// [_sessionInfo] and countdown it learned from Guardian, the spinner, and the
+  /// "Connection failed" surface in [_connect] that catches whatever `start` throws.
+  ///
+  /// Via `AuthNotifier.openSession` because `start` takes a `Ref` and a widget holds
+  /// a `WidgetRef`; see that method for why the funnel lives there.
   Future<void> _doConnect() async {
-    final config = RemoteAssistanceConfig(
-      guardianBaseUrl: cloudEnvironmentConfig[kCloudBase] as String,
-      sessionId: widget.sessionId,
-      temporaryAccessToken: widget.token,
-      clientTypeId: kClientTypeId,
-    );
-
-    await ref.read(remoteAssistanceProvider.notifier).activate(config);
-
-    // Update remote access state with session info for UI restrictions
-    ref.read(remoteAccessProvider.notifier).updateSessionInfo(
-          _sessionInfo,
-          _remainingSeconds,
-          sessionToken: widget.token,
+    await ref.read(authProvider.notifier).openSession(
+          SupportSessionRequest(
+            sessionId: widget.sessionId,
+            token: widget.token,
+            sessionInfo: _sessionInfo,
+            remainingSeconds: _remainingSeconds,
+          ),
         );
   }
 

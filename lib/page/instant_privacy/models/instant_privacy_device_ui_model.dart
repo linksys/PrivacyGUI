@@ -19,12 +19,25 @@ class InstantPrivacyDeviceUIModel extends Equatable {
   /// surfaces a warning for these before enabling the feature.
   final bool isPrivateMac;
 
+  /// Current LAN address, or empty when firmware reports none.
+  ///
+  /// Carried for the Add-device search only: it is what makes the field's
+  /// "search by name, MAC, or IP" hint true. A device is identified by its [mac]
+  /// — a DHCP lease can hand the same host a different address tomorrow, so
+  /// nothing looks a device up by this one — but it is still part of [props],
+  /// because a renewed lease has to reach the suggestion that renders it.
+  ///
+  /// Deliberately absent from the allowed-devices list, whose rows are stored
+  /// MACs rather than hosts currently seen on the network.
+  final String ipAddress;
+
   const InstantPrivacyDeviceUIModel({
     required this.mac,
     required this.displayName,
     this.isPrivateMac = false,
+    this.ipAddress = '',
   });
 
   @override
-  List<Object?> get props => [mac, displayName, isPrivateMac];
+  List<Object?> get props => [mac, displayName, isPrivateMac, ipAddress];
 }

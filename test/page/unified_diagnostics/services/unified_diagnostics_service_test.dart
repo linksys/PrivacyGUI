@@ -1071,45 +1071,53 @@ void main() {
   // Mesh / Backhaul fixtures
   // ────────────────────────────────────────────────────────────────────────
 
+  /// One node's raw `DataElements.Network.Device.{idx}.` paths — the codegen
+  /// parser's actual input.
+  ///
+  /// This is the file's only fixture that has to agree with the **schema**
+  /// rather than with an app model, which is why #1555 is visible here at all.
+  /// It deliberately writes no `BackhaulMediaType`, `BackhaulPHYRate`,
+  /// `BackhaulALID`, `BackhaulMACAddress` or
+  /// `MultiAPDevice.AssocIEEE1905DeviceRef`: FL-WRT 2.0's prplMesh defines none
+  /// of them, so a fixture that supplies them describes a router that does not
+  /// exist and can never reproduce what the field reports.
+  ///
+  /// [linkType] is the single field that makes a node an agent. Empty (or
+  /// `'None'`) means "no backhaul of my own" — the controller — which is exactly
+  /// what `hasMeshBackhaulLink` reads in production.
+  ///
+  /// [rateMbps] feeds `LastData{Up,Down}linkRate` in kbps. It used to be
+  /// `phyRate` and to feed `BackhaulPHYRate` as well; grading reads only the
+  /// downlink rate, so dropping the PHY path changed no verdict.
   Map<String, dynamic> meshNodeFields(
     int idx, {
     required String id,
-    required String mediaType,
-    required int phyRate,
+    required String linkType,
+    required int rateMbps,
     required int signalStrength,
-    required String operationMode,
-    required String assocRef,
+    String operationMode = 'Agent',
     String manufacturerModel = 'Linksys M60TB',
-    String? linkType,
     String? backhaulDeviceId,
   }) {
     final p = 'Device.WiFi.DataElements.Network.Device.$idx.';
-    // Controller has no upstream link — mirror firmware behavior where
-    // BackhaulALID/MAC are empty when MediaType is empty.
-    final hasBackhaul = mediaType.isNotEmpty || phyRate > 0;
-    // Derive linkType from mediaType if not provided
-    final derivedLinkType =
-        linkType ?? (mediaType.contains('Ethernet') ? 'Ethernet' : 'Wi-Fi');
+    // Mirrors firmware: a node with no upstream link reports the whole Backhaul
+    // group empty, not just LinkType.
+    final hasBackhaul = linkType.isNotEmpty && linkType != 'None';
     return <String, dynamic>{
       '${p}ID': id,
       '${p}ManufacturerModel': manufacturerModel,
       '${p}Manufacturer': 'Linksys',
       '${p}SerialNumber': 'SN-$idx',
       '${p}SoftwareVersion': '1.0.16',
-      '${p}BackhaulALID': hasBackhaul ? 'al-$idx' : '',
-      '${p}BackhaulMACAddress': hasBackhaul ? 'AA:BB:CC:DD:EE:0$idx' : '',
-      '${p}BackhaulMediaType': mediaType,
-      '${p}BackhaulPHYRate': phyRate.toString(),
       // Use a recent timestamp to avoid stale detection (within 5 minutes)
       '${p}MultiAPDevice.LastContactTime':
           DateTime.now().toUtc().toIso8601String(),
-      '${p}MultiAPDevice.AssocIEEE1905DeviceRef': assocRef,
       '${p}MultiAPDevice.EasyMeshAgentOperationMode': operationMode,
       '${p}MultiAPDevice.Backhaul.BackhaulDeviceID':
           backhaulDeviceId ?? (hasBackhaul ? 'parent-$idx' : ''),
       '${p}MultiAPDevice.Backhaul.BackhaulMACAddress':
           hasBackhaul ? 'BB:CC:DD:EE:FF:0$idx' : '',
-      '${p}MultiAPDevice.Backhaul.LinkType': hasBackhaul ? derivedLinkType : '',
+      '${p}MultiAPDevice.Backhaul.LinkType': linkType,
       '${p}MultiAPDevice.Backhaul.MACAddress':
           hasBackhaul ? 'CC:DD:EE:FF:00:0$idx' : '',
       '${p}MultiAPDevice.Backhaul.Stats.PacketsSent': '1000',
@@ -1117,11 +1125,11 @@ void main() {
       '${p}MultiAPDevice.Backhaul.Stats.ErrorsSent': '0',
       '${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived': '0',
       '${p}MultiAPDevice.Backhaul.Stats.TimeStamp': '2026-05-21T00:00:00Z',
-      // phyRate is in Mbps, but LastDataUplinkRate/DownlinkRate are in kbps
+      // rateMbps is in Mbps, but LastDataUplinkRate/DownlinkRate are in kbps
       '${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate':
-          (phyRate * 1000).toString(),
+          (rateMbps * 1000).toString(),
       '${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate':
-          (phyRate * 1000).toString(),
+          (rateMbps * 1000).toString(),
       // signalStrength param is RSSI (dBm), convert to RCPI for firmware format
       '${p}MultiAPDevice.Backhaul.Stats.SignalStrength':
           rssiToRcpi(signalStrength).toString(),
@@ -1134,11 +1142,10 @@ void main() {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
@@ -1162,18 +1169,15 @@ void main() {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
         ...meshNodeFields(2,
             id: 'agent-A',
-            mediaType: 'IEEE_802_3ab_Ethernet',
-            phyRate: 1000,
-            signalStrength: 0, // wired — RSSI not meaningful
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Ethernet',
+            rateMbps: 1000,
+            signalStrength: 0), // wired — RSSI not meaningful
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
@@ -1183,25 +1187,52 @@ void main() {
       final node = result.single;
       expect(node.nodeId, 'agent-A');
       expect(node.severity, MeshBackhaulSeverity.healthy);
-      expect(node.mediaType, contains('Ethernet'));
+      expect(node.linkType, 'Ethernet');
+    });
+
+    test('the wired test is case-insensitive, and keeps firmware spelling',
+        () async {
+      // Since #1555 the four medium tests in the app share one predicate
+      // (`isMeshBackhaulEthernet`), which case-folds. The RSSI below is what makes
+      // this row worth having: a wired link is healthy whatever it reads, but a
+      // node misread as wireless is graded on it — and −85 dBm grades **poor**. So
+      // a build spelling the value `ethernet` would report a failing extender on a
+      // healthy cable, and recommend moving it.
+      //
+      // Only the classification folds case: the record keeps what firmware sent,
+      // because that string is what the tile prints.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: 'ethernet',
+                rateMbps: 1000,
+                signalStrength: -85),
+          });
+
+      final node = (await service.checkMeshBackhaul()).single;
+      expect(node.severity, MeshBackhaulSeverity.healthy);
+      expect(node.linkType, 'ethernet');
     });
 
     test('classifies low-PHY wireless backhaul as poor', () async {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
         ...meshNodeFields(2,
             id: 'agent-A',
-            mediaType: 'IEEE_802_11ax',
-            phyRate: 50,
-            signalStrength: -80, // poor RSSI
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Wi-Fi',
+            rateMbps: 50,
+            signalStrength: -80), // poor RSSI
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
@@ -1213,18 +1244,15 @@ void main() {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
         ...meshNodeFields(2,
             id: 'agent-A',
-            mediaType: 'IEEE_802_11ax',
-            phyRate: 200,
-            signalStrength: -70, // marginal RSSI
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Wi-Fi',
+            rateMbps: 200,
+            signalStrength: -70), // marginal RSSI
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
@@ -1236,18 +1264,15 @@ void main() {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
         ...meshNodeFields(2,
             id: 'agent-A',
-            mediaType: 'IEEE_802_11ax',
-            phyRate: 900,
-            signalStrength: -55, // good RSSI
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Wi-Fi',
+            rateMbps: 900,
+            signalStrength: -55), // good RSSI
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
@@ -1259,31 +1284,200 @@ void main() {
       final response = <String, dynamic>{
         ...meshNodeFields(1,
             id: 'controller',
-            mediaType: '',
-            phyRate: 0,
+            linkType: '',
+            rateMbps: 0,
             signalStrength: 0,
-            operationMode: 'Controller',
-            assocRef: ''),
+            operationMode: 'Controller'),
         ...meshNodeFields(2,
             id: 'agent-A',
-            mediaType: 'IEEE_802_11ax',
-            phyRate: 800,
-            signalStrength: -50, // excellent RSSI
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Wi-Fi',
+            rateMbps: 800,
+            signalStrength: -50), // excellent RSSI
         ...meshNodeFields(3,
             id: 'agent-B',
-            mediaType: 'IEEE_802_3ab_Ethernet',
-            phyRate: 1000,
-            signalStrength: 0,
-            operationMode: 'Agent',
-            assocRef: 'controller'),
+            linkType: 'Ethernet',
+            rateMbps: 1000,
+            signalStrength: 0),
       };
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
       final result = await service.checkMeshBackhaul();
       expect(result.map((n) => n.nodeId), ['agent-A', 'agent-B']);
       expect(result.every((n) => !n.isController), isTrue);
+    });
+
+    // -----------------------------------------------------------------------
+    // #1555 — which field decides "controller"
+    // -----------------------------------------------------------------------
+    //
+    // The old answer was `BackhaulMediaType`/`BackhaulALID`/`BackhaulPHYRate`,
+    // none of which prplMesh defines. These three cases are the same table
+    // `mesh_backhaul_link_test.dart` asserts against `hasMeshBackhaulLink`
+    // directly, pumped through the real service so the two cannot drift: the
+    // topology builder and diagnostics calling different nodes "the controller"
+    // is how one node became an extender on one screen and the gateway on the
+    // other.
+
+    test('LinkType None with no parent is the controller, not an agent',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: 'None',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller',
+                backhaulDeviceId: ''),
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: 'Wi-Fi',
+                rateMbps: 800,
+                signalStrength: -50),
+          });
+
+      final result = await service.checkMeshBackhaul();
+      expect(
+        result.map((n) => n.nodeId),
+        ['agent-A'],
+        reason: 'firmware spells "I have no backhaul" as LinkType=None, and a '
+            'literal match on it is what keeps the controller out of the '
+            'results',
+      );
+    });
+
+    test(
+        'a non-empty BackhaulDeviceID makes a node an agent even with no '
+        'LinkType', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            // The medium is unreported but the parent is not: positive evidence
+            // of an uplink outranks a missing medium string.
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: '',
+                rateMbps: 800,
+                signalStrength: -50,
+                backhaulDeviceId: 'controller'),
+          });
+
+      final result = await service.checkMeshBackhaul();
+      expect(result.map((n) => n.nodeId), ['agent-A']);
+      expect(result.single.linkType, isNull,
+          reason: 'the link is real but its medium is not reported, and the '
+              'record must not name one: an earlier revision defaulted this to '
+              '"Wi-Fi", which both diagnostics surfaces then printed as fact for '
+              'a node whose medium firmware never sent. Null is what lets the '
+              'views render `unknown`');
+      expect(result.single.parentLabel, isNotNull,
+          reason:
+              'the parent it was identified by must also resolve to a label');
+    });
+
+    test('two nodes reporting neither LinkType nor a parent yield no agents',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'node-1',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            ...meshNodeFields(2,
+                id: 'node-2',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+          });
+
+      final result = await service.checkMeshBackhaul();
+      expect(
+        result,
+        isEmpty,
+        reason: 'absent evidence is not evidence of a backhaul — grading a '
+            'node whose uplink was never reported invents a verdict',
+      );
+    });
+
+    test('blank string fields read as absent, not as blank values (#1555)',
+        () async {
+      // A DataElements string leaf that was never set arrives as `""`, not as a
+      // missing key, so the two places this service reads one need the same
+      // guard `MeshTopologyBuilder` uses on the very same field — `nonEmpty`,
+      // shared, because a `parentNodeId` of `''` here and null there is the two
+      // graders disagreeing about whether the node has a parent.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            ...meshNodeFields(1,
+                id: 'controller',
+                linkType: '',
+                rateMbps: 0,
+                signalStrength: 0,
+                operationMode: 'Controller'),
+            ...meshNodeFields(2,
+                id: 'agent-A',
+                linkType: 'Wi-Fi',
+                rateMbps: 800,
+                signalStrength: -50,
+                backhaulDeviceId: '   ',
+                manufacturerModel: '  '),
+          });
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result, hasLength(1));
+      expect(result.single.parentNodeId, isNull,
+          reason: 'a blank parent is no parent — a `""` here becomes a parent '
+              'lookup that can never resolve');
+      expect(result.single.parentLabel, isNull);
+      expect(result.single.label, 'agent-A',
+          reason: 'a blank model must fall through to the node ID, not become '
+              'a whitespace label');
+    });
+
+    test('a response carrying none of the four removed paths still parses',
+        () async {
+      // The regression #1555 is: pre-fix, `DataElementsNetwork.fetch` declared
+      // BackhaulALID / BackhaulMACAddress / BackhaulMediaType / BackhaulPHYRate
+      // required, so a FL-WRT 2.0 response threw `9998` before a single record
+      // was built and every mesh surface read as "not a mesh". The fixture above
+      // writes none of the four, so this asserts the parse itself.
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            linkType: 'None',
+            rateMbps: 0,
+            signalStrength: 0,
+            operationMode: 'Controller'),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            linkType: 'Wi-Fi',
+            rateMbps: 800,
+            signalStrength: -50),
+      };
+      expect(
+        response.keys.where((k) =>
+            k.endsWith('.BackhaulALID') ||
+            k.endsWith('.Device.1.BackhaulMACAddress') ||
+            k.endsWith('.Device.2.BackhaulMACAddress') ||
+            k.endsWith('.BackhaulMediaType') ||
+            k.endsWith('.BackhaulPHYRate')),
+        isEmpty,
+        reason: 'the fixture must not resupply the paths prplMesh deleted, or '
+            'this test passes for a router nobody ships',
+      );
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+      expect(result, hasLength(1),
+          reason: 'the agent must survive the parse — a required-field throw '
+              'here is the whole bug');
+      expect(result.single.label, 'Linksys M60TB',
+          reason: 'and the row must be populated, not merely present');
     });
   });
 

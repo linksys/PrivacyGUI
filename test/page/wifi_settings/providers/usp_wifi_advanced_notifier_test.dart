@@ -456,6 +456,44 @@ void main() {
       container.dispose();
     });
   });
+
+  // -------------------------------------------------------------------------
+  // The wifiDataProvider listener drives onSseInvalidation() once per upstream
+  // settle, not once per notification.
+  //
+  // `hasValue` alone is not an edge trigger: re-running an AsyncNotifier that
+  // already holds a value emits AsyncData(isLoading: true, value: prev) via
+  // copyWithPrevious before the fresh value, and that frame has hasValue true
+  // too. onSseInvalidation() calls unawaited(fetch(forceRemote: true)), which
+  // does NOT coalesce the way invalidateSelf() does — so the unguarded listener
+  // ran two full fetches per upstream refetch, the first against the stale
+  // value. See doc/riverpod/listen_site_audit.md (#1502 AC-4).
+  // -------------------------------------------------------------------------
+  group('UspWifiAdvancedNotifier — data provider re-notification', () {
+    test('an upstream refetch triggers exactly one extra fetch', () async {
+      when(() => mockService.fetchIeee80211h())
+          .thenAnswer((_) async => {'Device.WiFi.Radio.1.': true});
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Consume the boot fetches (build()'s own fetch, plus the listener firing
+      // on the data provider's first loading→data settle) so the verify below
+      // counts only what the refetch caused.
+      verify(() => mockService.fetchIeee80211h())
+          .called(greaterThanOrEqualTo(1));
+
+      container.invalidate(wifiDataProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one fetch. Without the isLoading guard this is 2.
+      verify(() => mockService.fetchIeee80211h()).called(1);
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

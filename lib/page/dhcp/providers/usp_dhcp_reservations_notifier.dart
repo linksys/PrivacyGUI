@@ -53,7 +53,7 @@ class UspDhcpReservationsNotifier
   DhcpReservationsFeatureState build() {
     // SSE invalidation: re-fetch when DHCP reservations change externally.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull == InvalidationDomain.dhcpReservations) {
+      if (next.valueOrNull?.domain == InvalidationDomain.dhcpReservations) {
         onSseInvalidation();
       }
     });

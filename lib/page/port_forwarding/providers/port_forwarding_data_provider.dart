@@ -36,7 +36,7 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   @override
   Future<PortForwardingData> build() async {
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.portForwarding) {
         _debounce?.cancel();
         _debounce = Timer(const Duration(milliseconds: 500), () {

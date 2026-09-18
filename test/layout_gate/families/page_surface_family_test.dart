@@ -16,11 +16,17 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_det
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribution_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
+import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
+import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -51,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when forty-three pages fit. It is *also*
-/// green when forty-three pages never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when fifty-one cases fit. It is *also*
+/// green when fifty-one cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -71,22 +77,50 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
+  // "Cases" and not "pages", corrected by #1489: this list is fifty-one cases over
+  // forty-four pages, because five of those pages are swept more than once. The two
+  // counts were equal for the whole of #1369 and the group title read "pages"
+  // throughout, which is exactly the kind of coincidence a name should not be built on
+  // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
+  // can move), and it is equal to neither.
+  //
+  // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
+  // title read "forty-eight over forty-three" — #1489's numbers — through #1549, which
+  // split one firmware page in two and added `firmware_ota` to the list below without
+  // touching the sentence above it. Re-measured 2026-09-17 after #1554 gained a second
+  // fixture-state case on top of #1572: `kPageSurfaceCases` holds 51 and the roster
+  // holds 44 `swept` rows of 46. **Three of the five multiply-swept pages are tabs and
+  // two are fixture states** — `pnp_setup`/`pnp_setup_firmware` and
+  // `firmware_update`/`firmware_failed` — so "swept more than once" now has two
+  // mechanisms behind it, not one.
+  //
+  // These counts are written out in **five** places — this group, the page sweep file's
+  // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
+  // doc — and every one of them had drifted, because none of them is read by an
+  // assertion. The list below is; that is the whole difference, and it is why the list
+  // was right while five sentences about it were wrong. Writing a number in prose beside
+  // an assertion that does not read it is the failure mode, and copying it to a fifth
+  // place is how it becomes hard to notice.
   group(
-      'the gate sweeps forty-three pages, and which forty-three is a decision',
-      () {
+      'the gate declares fifty-one cases over forty-four pages, and which '
+      'fifty-one is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
-        'wave 3\'s six and wave 4\'s twenty-one', () {
+        'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
+        '#1549\'s split page and #1554\'s two fixture states', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
           'dhcp',
           'wifi_settings',
+          'wifi_settings_advanced',
           'device_list',
           'device_detail',
           'topology',
           'node_detail',
           'port_forwarding',
+          'port_range',
+          'port_triggering',
           'pnp_entry',
           'pnp_no_internet',
           'pnp_isp_settings',
@@ -96,6 +130,12 @@ void main() {
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
           'pnp_setup',
+          // #1554 §4: the same view file's firmware stage. Beside its sibling rather
+          // than appended, which is the placement #1489 established for the five tab
+          // cases — this list stopped being strictly onboarding-ordered then, and
+          // declaration locality is the more useful of the two orders for a reader
+          // asking "what else sweeps this page".
+          'pnp_setup_firmware',
           'home',
           'login_local',
           'local_router_recovery',
@@ -107,6 +147,12 @@ void main() {
           'support',
           'unified_diagnostics',
           'firmware_update',
+          // #1554, added after #1572: the same view file's `failed` phase. The first
+          // case in this family that arrived because of a *defect* rather than a gap —
+          // the two title `Row`s in `FirmwareInstallPhaseCard` had no cell at all, and
+          // `pl` overflowed by 30px at 320px.
+          'firmware_failed',
+          'firmware_ota',
           'router_assistant',
           'test_console',
           'sliver_dashboard',
@@ -122,6 +168,8 @@ void main() {
           'local_network',
           'static_routing',
           'statistics',
+          'statistics_devices',
+          'statistics_system',
           'system_log',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
@@ -201,7 +249,10 @@ void main() {
         // then grew from 2 declarations to 6), ten fixture files moved, six were
         // authored from nothing, and one superset wrapper was authored beside a
         // builder that already worked — `statistics`, whose golden fixtures exist but
-        // split across three tab states the gate cannot tap between. So the split is
+        // split one per tab state, which is a fact about the *fixtures* and not about
+        // the tabs: #1489 sweeps all three tabs off one wrapper. This clause used to
+        // read "three tab states the gate cannot tap between", which was the same
+        // falsified limit as the case doc's. So the split is
         // roughly half relocation, half authoring. Architecture doc §11.12 and
         // `page_roster_test.dart` carry why the roster's column read 13.
         //
@@ -226,6 +277,55 @@ void main() {
         // Nothing remains. The 2 that are not here are excluded as unreachable, with
         // their reasons in `test/fixtures/page_roster.tsv` — so this list and that file
         // now account for all 45, which is the whole of what #1369 was opened to do.
+        // (45 was the roster's length when the epic closed. It is 46 now; see #1549 at
+        // the bottom of this comment.)
+        //
+        // **#1489's five, which are not a fifth wave.** `statistics_devices`,
+        // `statistics_system`, `wifi_settings_advanced`, `port_range` and
+        // `port_triggering` add no page — they are the non-default tabs of three pages
+        // already here. Their grounds are not "one more wave" but "a stated limit was
+        // re-read and did not hold": every one of those three cases carried a doc saying
+        // the sibling tabs are behind a `TabController` and would need a tap per cell.
+        // On `statistics` that was false when written, and the 11 sections it left
+        // unswept were hiding four overflowing legend rows (#1488: 35 red cells the
+        // moment those two cases existed).
+        //
+        // The first two landed saying the limit "holds for `wifi_settings` and
+        // `port_forwarding`", which was this checkpoint repeating a claim from the very
+        // docs it had just falsified. It did not hold there either. A tap was never the
+        // only way in — constructing the page on the tab is — and what actually blocked
+        // those two was that neither view took an `initialTab`. That is a missing
+        // parameter, not a second axis, and the parameter is four lines per view. Both
+        // now take one, from `?tab=N`, the way `statistics` always did.
+        //
+        // Those three tabs measured **702 cells at zero incidents**, so unlike #1488
+        // nothing in `lib/` needed fixing — but two of them were not free of findings:
+        // `usp_port_range_tab.dart:32` carried #1370's `Expanded` fix copied across "by
+        // inspection rather than by a red cell", by its own comment, and `port_range` is
+        // what finally measured it. A fix nobody has seen work is the thing this gate is
+        // for, and it sat one constructor argument away for four months.
+        //
+        // So this list stops being one row per page here, and the wave arithmetic above
+        // stops adding up to its length: 2 + 5 + 9 + 6 + 21 = 43 pages, 48 cases.
+        //
+        // **#1549's one, which is a page the epic never saw.** `firmware_ota` is not a
+        // wave, not a tab and not a re-read limit: it is a view file that did not exist
+        // when the epic closed. #1549 split one firmware entry point into two pages, so
+        // `firmware_update_view.dart` lost `_OtaCheckCard` to a new
+        // `firmware_ota_view.dart` and the roster gained a 46th file.
+        //
+        // It is here rather than deferred because the card it is built around is the one
+        // wave 4 measured widest — 50 of 234 cells, all 26 locales at 320px, worst `ru`
+        // at +357px — and a fix that moves to a page with no case is a fix nobody
+        // measures again. The numbers carry (identical widget, identical card padding,
+        // identical breakpoints) but the *cells* do not: this page's card list is one
+        // card shorter than its sibling's, so its baseline group is generated against it
+        // rather than copied. That is the same rule the roster row applies to ms/cell,
+        // for the same reason — an inherited number has no error bar.
+        //
+        // A page split is therefore the fourth way this list grows, after a wave, a tab
+        // and a falsified limit. It is also the only one of the four where the count of
+        // *pages* goes up without any page being newly reachable: 44 pages, 49 cases.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -303,20 +403,34 @@ void main() {
       });
     }
 
-    test('exactly one page is exempt from the loader rule, and it is named',
+    test(
+        'exactly two pages are exempt from the loader rule, and both are named',
         () {
       // The membership pin. The two-branch test above is satisfied by *any*
       // exemption set — including one that grew an entry because a fixture was hard
       // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
       // warns about. A page that always shows a spinner is usually a page whose
       // fixture does not exist yet, and that belongs in the roster as a `-`.
+      //
+      // **One entry until #1554 §4, and the second one makes the first one's
+      // argument rather than a new one** — which is the bar this pin exists to hold.
+      // Both exempt cases are a router being flashed with the user told not to
+      // unplug it, and both draw the progress bar as the subject of the screen. The
+      // set growing by a page that says the same sentence is evidence the rule names
+      // a *kind* of screen; it would not have been evidence of anything if the second
+      // entry had arrived with a fixture excuse.
+      //
+      // Note it is two *cases*, not two views: `pnp_setup` — the same view file in its
+      // form phase — still forbids the loader, because there a spinner really is the
+      // stand-in this rule is about.
       expect(
         kPagesWhoseLoaderIsContent,
-        const {'auto_parent_first_login'},
+        const {'auto_parent_first_login', 'pnp_setup_firmware'},
         reason: 'auto_parent_first_login exists to say "we are installing '
             'firmware, do not unplug the router" — the spinner is the subject of '
-            'the screen. A second entry here needs the same argument made in the '
-            'case doc, not just a passing sweep.',
+            'the screen — and pnp_setup_firmware is the setup wizard saying it. A '
+            'third entry needs that same argument made in the case doc, not just a '
+            'passing sweep.',
       );
       expect(
         kPageSurfaceCases.map((c) => c.id),
@@ -479,11 +593,14 @@ void main() {
       expect(
         kPortForwardingPageCase.requires,
         contains(UspSinglePortTab),
-        reason: 'tab 0 is the only tab the sweep measures — the other two are '
-            'behind a `TabController` and would each need a tap per cell. So this '
-            'is both the premise and the surface under measurement, and it is on '
-            'the loaded path only: `_buildTabContent` returns an `AppLoader` '
-            'while loading and a `ServiceErrorView` on error.',
+        reason: 'this case measures tab 0, so the single-port tab is both its '
+            'premise and its surface under measurement — and it is on the loaded '
+            'path only: `_buildTabContent` returns an `AppLoader` while loading '
+            'and a `ServiceErrorView` on error. The other two tabs are measured '
+            'by `page.port_range` and `page.port_triggering`, which reach them '
+            'through `initialTab` rather than a tap; the earlier version of this '
+            'reason said a tap per cell was the only way in, which was the claim '
+            '#1489 falsified.',
       );
     });
 
@@ -878,19 +995,293 @@ void main() {
       );
     });
 
+    // The three cases over one page (#1489), each pinned separately rather than in a
+    // loop. The premise is the same widget in all three, but what a lost premise
+    // *costs* is a different number per tab — 4 of 9, 4 of 7, 4 of 4 — and that number
+    // is the whole argument for the assertion, so it is stated where it can be read.
+    // The three counts are also how this file records that entering a tab needs no tap
+    // here: a case doc can claim coverage, a pinned per-tab premise is what makes the
+    // claim falsifiable.
     test('page.statistics requires a section card, not just its tab bar', () {
-      // The page whose case doc carries the wave's narrowest coverage claim: tab 0 of
-      // 3, and four of tab 0's nine sections, because `kPageSweepHeight` decides how
-      // far the sliver builds. A tab bar over an empty viewport is exactly what a
+      // Tab 0, Network: four of its nine sections, because `kPageSweepHeight` decides
+      // how far the sliver builds. A tab bar over an empty viewport is exactly what a
       // fixture-less scene produces here, and it fits at every width.
+      //
+      // This comment used to read "tab 0 of 3, and four of tab 0's nine sections". The
+      // second half stands; the first was a limit inherited from a case about another
+      // page and is gone — see `kStatisticsPageCase` for the correction.
       expect(
         kStatisticsPageCase.requires,
         contains(StatsSectionCard),
         reason: 'every section on this page is wrapped in one, so the card is '
             'the difference between "the sliver laid out content" and "the tab '
-            'bar rendered". Since the case already covers only four of nine '
-            'sections, losing the premise would leave it covering none.',
+            'bar rendered". Since the case already covers only four of tab 0\'s '
+            'nine sections, losing the premise would leave it covering none.',
       );
+      expect(
+        kStatisticsPageCase.requires,
+        contains(StatsTrafficMonitorSection),
+        reason: 'the section card is on all three tabs, so it cannot say which '
+            'one a cell opened. This one is on tab 0 only, and it is tab 0\'s '
+            'first section, so the depth limit cannot drop it.',
+      );
+      expect(
+        kStatisticsPageCase.requires,
+        contains(StatsLegendDot),
+        reason: 'a section renders its "waiting for data" placeholder inside '
+            'its own card, so the two premises above survive a scene thinned '
+            'to placeholders. The legend dot is on the populated path only — '
+            'and a legend row is the thing #1488 fixed, so a cell that cannot '
+            'find one is not measuring what this page was swept for.',
+      );
+    });
+
+    test('page.statistics_devices requires a section card on the tab it opens',
+        () {
+      // Tab 1, Devices: four of seven, measured — `DeviceDistribution`,
+      // `ConnectionTrends`, `ActivityHeatmap`, `SignalQuality`. The premise does one
+      // more job here than on tab 0: `initialTab` is a *number*, so a case that
+      // silently fell back to tab 0 would still render a tab bar and section cards.
+      // What separates the two is which sections are on screen, and this suite's
+      // section-level assertion is the card being required at all.
+      expect(
+        kStatisticsDevicesPageCase.requires,
+        contains(StatsSectionCard),
+        reason: 'the 1st and 4th sections of this tab are two of the four '
+            'legend rows #1488 fixed, and both are inside the depth limit. A '
+            'lost premise turns those 234 cells back into what they were '
+            'before this case existed: a measurement with those rows absent.',
+      );
+      expect(
+        kStatisticsDevicesPageCase.requires,
+        contains(StatsDeviceDistributionSection),
+        reason: 'this is the entry that makes `initialTab: 1` a per-cell fact. '
+            'It is on tab 1 and no other, and `TabBarView` builds only the '
+            'selected page, so a cell that fell back to tab 0 — by a '
+            'copy-pasted literal here, or by `initialIndex:` going missing in '
+            'usp_statistics_view.dart — cannot find it. Without this entry '
+            'that mutation leaves all 702 statistics cells green while two '
+            'thirds of them measure the same tab.',
+      );
+    });
+
+    test('page.statistics_system requires a section card on the tab it opens',
+        () {
+      // Tab 2, System: four of four — the one *statistics* tab with no depth limit
+      // left, so it is the only one of the three whose green sweep means the tab
+      // rather than the top of it. (Three of #1489's other tab cases are also
+      // whole-tab; this is a statement about statistics, not about the family.)
+      // That makes the premise the *only* thing standing between that claim and an
+      // empty viewport.
+      expect(
+        kStatisticsSystemPageCase.requires,
+        contains(StatsSectionCard),
+        reason:
+            'this is the family\'s one fully-covered tab, and full coverage '
+            'of nothing is what an emptied premise would report. Its 2nd and '
+            '3rd sections are the other two of #1488\'s four legend rows.',
+      );
+      expect(
+        kStatisticsSystemPageCase.requires,
+        contains(StatsSystemGaugesSection),
+        reason:
+            'and this is what makes "fully covered" checkable. The claim on '
+            'this case is the strongest of the three — four of four — so it is '
+            'the one that most needs a cell to prove it opened tab 2 rather '
+            'than reporting tab 0\'s first four sections a third time.',
+      );
+    });
+
+    test('the three statistics cases differ only in the tab they open', () {
+      // The premise of the two above, pinned as a fact rather than left to the reader
+      // of three declarations: one page, one fixture, three tabs. If a later edit gives
+      // one of them a different scene or drops part of the shared premise, the three
+      // sweeps stop being comparable — and "tab 1 is green" would no longer mean the
+      // same thing as "tab 0 is green", which is the only reason to declare them this
+      // way instead of as three pages.
+      //
+      // "Differ only in the tab" is deliberately not "carry an identical `requires`".
+      // An identical premise would forbid the one entry that makes the tab claim
+      // checkable, so what is pinned is the shape: a shared premise every case carries,
+      // plus exactly one entry that is the tab, and the three of those all different.
+      //
+      // Two of those properties — distinct tabs, distinct discriminators — are also
+      // asserted generically below, for every per-tab page. The overlap is deliberate
+      // and its cost is known: an edit to the statistics cases reds both tests, with
+      // two different messages. What only this test says is that the three sweeps are
+      // *comparable* — one fixture, one shared premise, exactly one extra type — which
+      // is the whole reason to declare them as three cases of one page instead of as
+      // three pages. The generic one says only that each case can tell which tab it
+      // opened.
+      final statisticsCases = kPageSurfaceCases
+          .where((c) => c.view().runtimeType == UspStatisticsView)
+          .toList();
+      expect(
+        statisticsCases.map((c) => c.id),
+        ['statistics', 'statistics_devices', 'statistics_system'],
+        reason: 'the tab cases are found by the class they pump, not by their '
+            'ids, so this also catches a fourth tab arriving without a doc.',
+      );
+      expect(
+        statisticsCases
+            .map((c) => (c.view() as UspStatisticsView).initialTab)
+            .toList(),
+        [0, 1, 2],
+        reason: 'the tab is a plain `int` with a `clamp(0, 2)` behind it, so '
+            'every wrong value here is a legal one: 1 typed twice, or a 3 that '
+            'clamps to 2, both sweep a tab twice and report 702 cells. This is '
+            'the assertion that a copy-paste cannot pass.',
+      );
+
+      // The three entries every case must have, and the reason each is shared: the
+      // frame, the fact that the sliver laid out content, and the fact that the fixture
+      // populated it. Only the tab's own section is allowed to vary.
+      const sharedPremise = <Type>[UspTopBar, StatsSectionCard, StatsLegendDot];
+      final tabDiscriminators = <Type>[];
+      for (final page in statisticsCases) {
+        expect(
+          page.requires,
+          containsAll(sharedPremise),
+          reason: 'page.${page.id} must carry the whole shared premise: three '
+              'sweeps of one page are only worth having if a green cell means '
+              'the same thing in all three.',
+        );
+        expect(
+          page.forbids,
+          kStatisticsPageCase.forbids,
+          reason: 'page.${page.id} must exclude the same loading and error '
+              'trees tab 0 does.',
+        );
+        final own =
+            page.requires.where((t) => !sharedPremise.contains(t)).toList();
+        expect(
+          own,
+          hasLength(1),
+          reason: 'page.${page.id} may add exactly one type to the shared '
+              'premise, the first section of the tab it opens. Two would mean '
+              'the cases are drifting apart on something other than the tab; '
+              'none would mean this case cannot tell which tab it measured.',
+        );
+        tabDiscriminators.add(own.single);
+      }
+      expect(
+        tabDiscriminators.toSet(),
+        hasLength(3),
+        reason: 'and the three must be different types. Two cases sharing a '
+            'discriminator is exactly the failure the `initialTab` assertion '
+            'above catches on the other side — one tab swept twice — reached '
+            'from the premise instead of from the view.',
+      );
+    });
+
+    test('every page swept per-tab opens a distinct tab and can prove which',
+        () {
+      // The test above is the statistics trio's own, tighter, contract: one fixture,
+      // one shared premise, one section each. This one is the rule that outlives it,
+      // and applies to all three pages the family now sweeps per tab.
+      //
+      // The rule is not "the cases look alike" — `wifi_settings`' two do not, and
+      // should not: its tabs render unrelated trees, so they have no premise to
+      // share. What every per-tab case must have is a required type **no sibling
+      // requires**. That is the whole mechanism by which a cell knows which tab it
+      // measured, and without it a case that opened the wrong tab reports its 234
+      // cells green — which is the defect #1489 found on `statistics` and its
+      // follow-up found waiting on these two.
+      //
+      // What that check can and cannot see, since it is the load-bearing one: it
+      // compares *declarations*, so it proves each case named something its siblings
+      // did not. It does not prove that type renders only on this tab — `MapsToRow`
+      // is on all three `port_forwarding` tabs, so a case declaring it would satisfy
+      // this test and still be satisfiable on the wrong tab. Only pumping shows that,
+      // which is what the mutation recorded in #1489 did by hand.
+      //
+      // `(int, int)` per tab-carrying view: the tab this case opens, and how many
+      // that page has. The count comes off the view's own `tabCount`, so a case
+      // declaring a tab the page does not have — which `clamp` would silently fold
+      // onto an already-swept tab — is a red here rather than 234 duplicate cells.
+      (int, int)? tabOf(Widget view) => switch (view) {
+            UspStatisticsView(:final initialTab) => (
+                initialTab,
+                UspStatisticsView.tabCount
+              ),
+            UspWifiSettingsView(:final initialTab) => (
+                initialTab,
+                UspWifiSettingsView.tabCount
+              ),
+            UspPortForwardingDetailView(:final initialTab) => (
+                initialTab,
+                UspPortForwardingDetailView.tabCount
+              ),
+            // `null`, not 0: "this page has no tabs as far as this test knows" is a
+            // different fact from "this case opens tab 0", and conflating them is
+            // what would make a *fixture-state* second case read as a tab case.
+            _ => null,
+          };
+
+      // Grouped by view class, but selected by "some case declares a non-zero tab"
+      // rather than by "this page has two cases". The family's next planned coverage
+      // step is a second *fixture state* for an existing page — two cases, one tab —
+      // and keying on the count would red this test with a diagnosis about tabs.
+      final byPage = <Type, List<PageSurfaceCase>>{};
+      for (final page in kPageSurfaceCases) {
+        byPage.putIfAbsent(page.view().runtimeType, () => []).add(page);
+      }
+      final perTab = Map.of(byPage)
+        ..removeWhere(
+            (_, cases) => cases.every((c) => (tabOf(c.view())?.$1 ?? 0) == 0));
+
+      expect(
+        perTab.keys.toSet(),
+        {UspStatisticsView, UspWifiSettingsView, UspPortForwardingDetailView},
+        reason:
+            'the three pages swept per tab, found by the tab their cases declare '
+            'rather than by reading ids. A fourth page joining them lands here '
+            'first — this assertion runs before the per-page ones below — which is '
+            'the prompt to give it a `tabOf` arm and a doc on its case.',
+      );
+
+      perTab.forEach((viewClass, cases) {
+        final tabs = cases.map((c) => tabOf(c.view())!).toList();
+        final shown =
+            cases.map((c) => '${c.id}=${tabOf(c.view())!.$1}').join(', ');
+        expect(
+          tabs.map((t) => t.$1).toSet(),
+          hasLength(cases.length),
+          reason: '$viewClass\'s cases must each open a *different* tab. Every '
+              '`initialTab` is an `int` behind a `clamp`, so a duplicated literal '
+              'is legal at runtime and sweeps an already-swept tab twice while '
+              'still reporting 234 cells each: $shown.',
+        );
+        for (final (tab, count) in tabs) {
+          expect(
+            tab,
+            allOf(greaterThanOrEqualTo(0), lessThan(count)),
+            reason: '$viewClass has $count tabs, so a case declaring tab $tab '
+                'clamps onto another case\'s tab and sweeps it twice: $shown. '
+                'Distinctness above cannot catch this one, because the clamp '
+                'happens inside the view and the declarations still differ.',
+          );
+        }
+        // Deliberately not "tabs 0..n-1, one each": a page may be swept on a
+        // non-contiguous subset of its tabs. #1370 recorded exactly that shape —
+        // a tab whose fixture cannot get past its loader — and contiguity would
+        // report the honest {0, 2, 3} as a duplicate-tab error.
+
+        for (final page in cases) {
+          final siblings = cases.where((c) => c.id != page.id);
+          final shared = siblings.expand((c) => c.requires).toSet();
+          expect(
+            page.requires.where((t) => !shared.contains(t)),
+            isNotEmpty,
+            reason: 'page.${page.id} requires nothing its siblings do not, so '
+                'no cell of it can tell that it opened tab '
+                '${tabOf(page.view())!.$1} rather than a sibling tab. Add the '
+                'tab\'s own widget type to `requires` — `TabBarView` builds the '
+                'selected page only, which is what makes such a type a per-cell '
+                'fact.',
+          );
+        }
+      });
     });
 
     test(

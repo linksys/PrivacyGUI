@@ -82,6 +82,7 @@ function buildWebApp() {
     --dart-define=cloud_env="${cloud}" \
     --dart-define=enable_env_picker="${picker}" \
     --dart-define=ca="${ca}" \
+    --dart-define=source_revision="${sourceRevision}" \
     $themeSourceFlag $themeJsonFlag $themeStudioFlag
 }
 
@@ -293,13 +294,35 @@ if [ "$themeStudio" == "true" ]; then
     themeStudioFlag="--dart-define=theme_studio=true"
 fi
 
+# The commit this build was compiled from, so a support log or a screenshot can be
+# tied back to a source revision rather than to a build number (#1573). `local` and
+# `remote` are built from the same source and given different build numbers, so the
+# version alone cannot tell "same source, different build" from "different source".
+#
+# Derived here rather than taken as a parameter, and deliberately not read from the
+# environment either: one build job serves both the 1.x and the 2.x line, so a new
+# parameter would have to be configured for both before either could use it, while
+# the command below needs no configuration at all. That is also why nothing was
+# added to the Environment section of this file's header — this reads no new
+# variable, so the contract with the job is unchanged.
+#
+# Falls back to "unknown" instead of failing: a source tree without version-control
+# metadata still builds something worth shipping, and a missing revision is a
+# diagnostic loss, not a defect. The locale strip below dirties the working tree but
+# never moves HEAD, so the value does not depend on where in this script it is taken.
+sourceRevision=$(git rev-parse --short HEAD 2> /dev/null || echo unknown)
+echo "===== source revision: ${sourceRevision} ====="
+
 locales=${LOCALES:-all}
 echo "===== language packs: LOCALES=${LOCALES:-<unset>} -> ${locales} ====="
 if [ "$locales" != "all" ]; then
     # Logged before the strip because the strip's own gate reads git status, and
     # a dirty workspace is the failure that is impossible to diagnose without it.
     echo "workspace state before stripping:"
-    echo "  HEAD:   $(git rev-parse --short HEAD 2> /dev/null || echo unknown)"
+    # Same value the build is stamped with, read from the variable rather than
+    # asked for a second time: two calls could not disagree, but a reader has to
+    # check that before believing the log line.
+    echo "  HEAD:   ${sourceRevision}"
     echo "  branch: $(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo unknown)"
     echo "  git status --porcelain:"
     git status --porcelain | sed 's/^/    /'

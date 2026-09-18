@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/page/port_forwarding/views/dialogs/port_range_forwarding_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -30,9 +31,10 @@ class UspPortRangeTab extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Same unconstrained header the page sweep caught on
-            // `usp_single_port_tab.dart:30` — see the comment there. This tab sits
-            // behind a `TabController` the sweep does not tap, so the constraint is
-            // here by inspection rather than by a red cell.
+            // `usp_single_port_tab.dart:30` — see the comment there. The constraint
+            // arrived here by inspection rather than by a red cell, because the
+            // sweep only reached tab 0. `page.port_range` sweeps this tab since #1489, so
+            // it is measured now.
             Expanded(
               child: AppText.titleMedium(
                   '${loc(context).portRangeForwarding} (${rules.length})'),
@@ -68,6 +70,10 @@ class UspPortRangeTab extends ConsumerWidget {
               identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
+              // Same busy treatment as `usp_single_port_tab.dart` — see the note
+              // there for why a null `onChanged` was not one (#1542).
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
               onChanged: isSaving
                   ? null
                   : (value) => ref
@@ -110,10 +116,28 @@ class UspPortRangeTab extends ConsumerWidget {
     );
   }
 
+  /// Same shape as `usp_single_port_tab`'s: each tab builds its own list because
+  /// a tab is where `ref` is available at dialog-open time, and the five other
+  /// pages that offer a device picker each do the same.
+  List<AppAutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
+    final devices =
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
+    return devices
+        .where((d) => d.ip.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.displayName,
+              value: d.ip,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            ))
+        .toList();
+  }
+
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortRangeForwardingDialogResult>(
       context: context,
-      builder: (_) => const PortRangeForwardingDialog(),
+      builder: (_) => PortRangeForwardingDialog(deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).addForwardingRule(
@@ -131,9 +155,11 @@ class UspPortRangeTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
+    final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortRangeForwardingDialogResult>(
       context: context,
-      builder: (_) => PortRangeForwardingDialog(rule: rule),
+      builder: (_) =>
+          PortRangeForwardingDialog(rule: rule, deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).editForwardingRule(

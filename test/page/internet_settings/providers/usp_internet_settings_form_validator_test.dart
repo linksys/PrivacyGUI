@@ -467,6 +467,41 @@ void main() {
         );
         expect(validateForm(form), isFalse);
       });
+
+      group('auto mode', () {
+        // In auto mode [mtu] is whatever the device reported, so the range check
+        // must not apply — otherwise a device sitting on an out-of-range
+        // effective MTU would make the page unsaveable with nothing to fix.
+        test('valid with an out-of-range MTU below the minimum', () {
+          final form = UspInternetSettingsForm(
+            connectionType: UspWanConnectionType.dhcp,
+            mtu: 500,
+            mtuAuto: true,
+          );
+          expect(validateForm(form), isTrue);
+        });
+
+        test('valid with an MTU above the type maximum', () {
+          final form = UspInternetSettingsForm(
+            connectionType: UspWanConnectionType.pppoe,
+            pppUsername: 'user',
+            pppPassword: 'pass',
+            mtu: 1500, // exceeds PPPoE's 1492 — irrelevant in auto mode
+            mtuAuto: true,
+          );
+          expect(validateForm(form), isTrue);
+        });
+
+        test('still enforces the other optional fields', () {
+          final form = UspInternetSettingsForm(
+            connectionType: UspWanConnectionType.dhcp,
+            mtu: 1500,
+            mtuAuto: true,
+            wanMacAddress: 'not-a-mac',
+          );
+          expect(validateForm(form), isFalse);
+        });
+      });
     });
 
     group('MAC address validation', () {

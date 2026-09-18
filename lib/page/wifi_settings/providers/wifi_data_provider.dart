@@ -80,7 +80,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   Future<WifiData> build() async {
     // SSE: listen for WiFi domain changes → debounce → re-fetch
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.wifiRadios ||
           domain == InvalidationDomain.wifiSsids ||
           domain == InvalidationDomain.wifiAccessPoints ||

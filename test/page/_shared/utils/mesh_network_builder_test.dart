@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 
@@ -52,13 +53,35 @@ void main() {
   MasterNode buildMasterNode({
     required String deviceId,
     String model = 'TestRouter',
+    String manufacturer = 'Test',
+    String serialNumber = 'SN123',
+    String softwareVersion = '1.0.0',
   }) {
     return MasterNode(
       deviceId: deviceId,
       model: model,
-      manufacturer: 'Test',
-      serialNumber: 'SN123',
-      softwareVersion: '1.0.0',
+      manufacturer: manufacturer,
+      serialNumber: serialNumber,
+      softwareVersion: softwareVersion,
+    );
+  }
+
+  SystemInfoUIModel buildSystemInfo({
+    String modelName = 'MR7500',
+    String manufacturer = 'Linksys',
+    String serialNumber = 'SN-REAL-12345',
+    String softwareVersion = '2.0.1.216125',
+  }) {
+    return SystemInfoUIModel(
+      manufacturer: manufacturer,
+      modelName: modelName,
+      serialNumber: serialNumber,
+      hardwareVersion: '1.0',
+      softwareVersion: softwareVersion,
+      uptime: 0,
+      totalMemory: 0,
+      freeMemory: 0,
+      cpuUsage: 0,
     );
   }
 
@@ -73,7 +96,7 @@ void main() {
       manufacturer: 'Test',
       serialNumber: 'SN456',
       softwareVersion: '1.0.0',
-      backhaul: backhaul ?? const BackhaulInfo(mediaType: 'Wi-Fi'),
+      backhaul: backhaul ?? const BackhaulInfo(linkType: 'Wi-Fi'),
     );
   }
 
@@ -379,6 +402,87 @@ void main() {
       final client = result.master.connectedClients.first;
       expect(client.band, '5GHz'); // Fell back to clientBandSsidMap
       expect(client.wifi?.ssidName, 'ResolvedSSID'); // Fell back
+    });
+
+    test('a padded SSID keeps its spaces and does not fall back (#1555)', () {
+      // Why this one chain keeps a non-trimming guard while the four identity
+      // chains moved to the shared, trimming `nonEmpty`. An SSID may legitimately
+      // begin or end with a space — trimming would both change what is displayed
+      // and let a real single-space SSID lose the `??` to another source.
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'MasterClient',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {
+          '11:22:33:44:55:01':
+              ClientConnectionDetail(band: '5GHz', ssidName: ' Home Wi-Fi '),
+        },
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: {
+            '11:22:33:44:55:01': (band: '2.4GHz', ssid: 'OtherSSID'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.wifi?.ssidName, ' Home Wi-Fi ',
+          reason: 'the spaces are part of the SSID, not padding to strip');
+    });
+
+    test('an all-whitespace SSID is a value, not absence (#1555)', () {
+      // The single-space SSID the chain must not trim away. A trimming guard
+      // would read it as absent and substitute the DataElements value, showing
+      // the client on an SSID it is not associated with.
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'MasterClient',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        ),
+      ]);
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {
+          '11:22:33:44:55:01':
+              ClientConnectionDetail(band: '5GHz', ssidName: ' '),
+        },
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: {
+            '11:22:33:44:55:01': (band: '2.4GHz', ssid: 'OtherSSID'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.master.connectedClients.first.wifi?.ssidName, ' ');
     });
 
     test('merges multi-interface devices by hostname', () {
@@ -1224,6 +1328,228 @@ void main() {
         expect(slave.dataElementsId, isNull);
         expect(slave.isOnline, isFalse,
             reason: 'the powered-off extender #1430 exists to catch');
+      });
+    });
+
+    // #1555 AC4 — the controller row's identity fields describe prplMesh, not
+    // the product.
+    //
+    // Measured on the bench, `Device.WiFi.DataElements.Network.Device.1.` (the
+    // controller's own row) reports the four strings asserted below. They are
+    // not wrong data to be fixed upstream; they are prplMesh answering
+    // truthfully about itself. `system_info` is the router describing the
+    // *product* over the same session, so it wins for the master — and only for
+    // the master, since a remote agent has no `system_info` to check against
+    // (`_buildSlaveNode` deliberately keeps DataElements first).
+    //
+    // This was latent before #1555: `DataElementsNetwork.fetch()` threw on this
+    // firmware, so `masterMeshInfo` was always null and nobody ever saw the
+    // placeholders. Regenerating the definition is what makes the ordering
+    // load-bearing, which is why it is pinned in the same change.
+    group('master identity fields prefer system_info (#1555 AC4)', () {
+      // Verbatim from the bench. `SoftwareVersion` is the prplMesh release
+      // (2026.6.4), not the firmware build — the most misleading of the four,
+      // since it looks like a plausible version number in the UI.
+      const prplManufacturer = 'qcom';
+      const prplModel = 'Qualcomm Technologies, Inc. IP';
+      const prplSerial = 'prplmesh12345';
+      const prplSoftware = '2026.6.4';
+
+      ConnectedDevices masterOnly() => ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:01',
+              deviceRole: 'master',
+              hostName: 'Router',
+            ),
+          ]);
+
+      MeshTopologyInfo topologyWithPlaceholders() => MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(
+                deviceId: 'AA:BB:CC:DD:EE:01',
+                model: prplModel,
+                manufacturer: prplManufacturer,
+                serialNumber: prplSerial,
+                softwareVersion: prplSoftware,
+              ),
+            ],
+            clientToNodeMap: const {},
+          );
+
+      test('system_info wins over the DataElements placeholders', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(),
+        );
+
+        expect(result.master.model, 'MR7500');
+        expect(result.master.manufacturer, 'Linksys');
+        expect(result.master.serialNumber, 'SN-REAL-12345');
+        expect(result.master.softwareVersion, '2.0.1.216125');
+      });
+
+      test('none of the four placeholders reaches the master', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(),
+        );
+
+        // Asserted as a set rather than field-by-field so that adding a fifth
+        // identity field without ordering it correctly reds this test too.
+        final shown = {
+          result.master.model,
+          result.master.manufacturer,
+          result.master.serialNumber,
+          result.master.softwareVersion,
+        };
+        for (final placeholder in [
+          prplManufacturer,
+          prplModel,
+          prplSerial,
+          prplSoftware,
+        ]) {
+          expect(shown, isNot(contains(placeholder)),
+              reason: '"$placeholder" is prplMesh describing itself and must '
+                  'never reach node detail');
+        }
+      });
+
+      // The reason the chain is `nonEmpty(...) ?? nonEmpty(...)` and not a bare
+      // `??`. `system_info` fields are non-nullable Strings that are '' on a
+      // router that did not answer them, and '' is a perfectly good value to
+      // `??`, so a bare chain would show an empty model instead of falling
+      // through — and an empty string is indistinguishable from "no data" on
+      // screen, which is how this would ship unnoticed.
+      test('an empty system_info field falls through to DataElements', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(
+            modelName: '',
+            manufacturer: '',
+            serialNumber: '',
+            softwareVersion: '',
+          ),
+        );
+
+        // Placeholders are the wrong answer, but they are the only answer left;
+        // the point here is that the `??` hole is closed, not that the values
+        // are good.
+        expect(result.master.model, prplModel);
+        expect(result.master.manufacturer, prplManufacturer);
+        expect(result.master.serialNumber, prplSerial);
+        expect(result.master.softwareVersion, prplSoftware);
+      });
+
+      // And the reason the shared `nonEmpty` trims. A whitespace-only value is
+      // non-empty, so it *wins* the `??` and lands a blank-looking model on the
+      // master while the real value from DataElements is never consulted — the
+      // same silent failure as the row above, one space further along. The
+      // builder's own non-trimming copy of this guard let it through until #1555
+      // replaced it with the shared one.
+      test('a whitespace-only system_info field falls through too', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(
+            modelName: ' ',
+            manufacturer: '\t',
+            serialNumber: '   ',
+            softwareVersion: '\n',
+          ),
+        );
+
+        expect(result.master.model, prplModel);
+        expect(result.master.manufacturer, prplManufacturer);
+        expect(result.master.serialNumber, prplSerial);
+        expect(result.master.softwareVersion, prplSoftware);
+      });
+
+      // A real value keeps winning, padding and all — trimming is what the chain
+      // decides on, not what it stores.
+      test('a padded system_info field still wins, trimmed', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: topologyWithPlaceholders(),
+          gatewayName: 'Router',
+          systemInfo: buildSystemInfo(modelName: '  MR7500 '),
+        );
+
+        expect(result.master.model, 'MR7500');
+      });
+
+      test('with neither source the fields are empty, never null', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: masterOnly(),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        );
+
+        expect(result.master.model, isEmpty);
+        expect(result.master.manufacturer, isEmpty);
+        expect(result.master.serialNumber, isEmpty);
+        expect(result.master.softwareVersion, isEmpty);
+      });
+
+      // The mirror image, and the reason the two builders differ. A slave has
+      // no `system_info` of its own, so DataElements is the only source it has
+      // — swapping `_buildSlaveNode`'s order to match the master's would leave
+      // every extender's model blank.
+      test('a slave still takes its model from DataElements', () {
+        final connectedDevices = ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            deviceRole: 'master',
+            hostName: 'Router',
+          ),
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            deviceRole: 'slave',
+            hostName: 'Extender',
+            deviceId: 'AABBCCDDEE02',
+          ),
+        ]);
+
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: connectedDevices,
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(
+                deviceId: 'AA:BB:CC:DD:EE:02',
+                model: 'MX5500',
+              ),
+            ],
+            clientToNodeMap: const {},
+          ),
+          gatewayName: 'Router',
+          // Present, and describing the *router* — it must not leak onto the
+          // extender.
+          systemInfo: buildSystemInfo(),
+        );
+
+        expect(result.slaves.single.model, 'MX5500');
+        expect(result.master.model, 'MR7500');
       });
     });
   });

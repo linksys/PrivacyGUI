@@ -22,6 +22,7 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_ready_band.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 
@@ -172,7 +173,7 @@ final pnpMeshNodes = <NodeEntity>[
     manufacturer: 'Linksys',
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
-    backhaul: const BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+    backhaul: const BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
   ),
 ];
 
@@ -263,6 +264,153 @@ final pnpWizardConfiguringState = PnpState(
   phase: WizardConfiguring(
     wifiConfig: pnpSplitWifiConfig,
     meshNodes: pnpMeshNodes,
+  ),
+  serialNumber: 'SN-TEST',
+);
+
+// ---------------------------------------------------------------------------
+// The rest of `PnpSetupView`'s phases (#1554 §4)
+// ---------------------------------------------------------------------------
+//
+// The wizard's other screens, added when it got its first golden suite. Everything
+// above this line was written for the layout gate, where only the widest branch of
+// each view is worth a fixture; a golden suite wants one per *picture*, which is a
+// different set. Both now read from this file, which is the point — #1554 §4 folded
+// the missing sweep cell in with the goldens precisely so the firmware phase's
+// fixture is written once and used by both.
+//
+// **`PnpSetupView` renders nine phases through seven builders**, and the mapping is
+// what decides how many scenes belong here rather than how many phases exist:
+// `WizardSaving`, `WizardSaved` and `WizardCheckingFirmware` all reach
+// `_buildSavingOverlay` and are pixel-identical, so one scene stands for three.
+// `WizardWifiReady` is the opposite — one phase, two builders, chosen on
+// `isSplitMode` — so it takes two.
+
+/// `WizardSaving` — the overlay three phases share.
+///
+/// Stands in for `WizardSaved` and `WizardCheckingFirmware` too: all three land on
+/// `_buildSavingOverlay`, which takes no arguments, so the three are the same tree
+/// and the same picture. A scene each would be three identical goldens whose only
+/// difference is a name — and the *reason* they are identical is worth stating
+/// somewhere, because the day one of them grows its own copy is the day this scene
+/// stops covering it.
+const pnpWizardSavingState = PnpState(
+  phase: WizardSaving(),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardNeedsReconnect` — the one screen that asks the user to leave the app.
+///
+/// The SSID is on screen (`_buildReconnectView` prints it under the instruction), so
+/// it is the field this scene exists to carry. `newPassword` is required by the model
+/// and is *not* rendered here — the user is being asked to join a network they just
+/// named, not shown its passphrase again.
+const pnpWizardNeedsReconnectState = PnpState(
+  phase: WizardNeedsReconnect(
+    newSsid: 'Linksys-2.4G',
+    newPassword: 'band-password-24',
+  ),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardTestingReconnect` — the poll, with its attempt counter on screen.
+///
+/// **`5/5`, and the cap is measured rather than picked.** This phase has exactly one
+/// producer — `PnpNotifier.testReconnect()`, whose `const maxAttempts = 5` — so
+/// `attemptCount` is 1..5 and nothing else is reachable. The first draft of this
+/// fixture said `7/10`, which is not a state this screen can be in: 10 is not the cap
+/// (30 is, but that belongs to `ModemRestartCheckingInternet`, a different phase on a
+/// different view) and 7 is past the end of the loop.
+///
+/// The last attempt rather than a middle one, because it is the only distinguished
+/// value: the counter is interpolated in `lib`
+/// (`'${checkingForInternet} ($attempt/$maxAttempts)'`), and with a single-digit cap
+/// every one of the five renders the same width — so there is no "widest" to choose
+/// and the thing worth photographing is a real reading of the sentence.
+const pnpWizardTestingReconnectState = PnpState(
+  phase: WizardTestingReconnect(attemptCount: 5, maxAttempts: 5),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardUpdatingFirmware` — the locked firmware stage (REQ-B2).
+///
+/// **Shared by the golden suite and the layout-gate case**, which is why it is here
+/// and not in either. The screen renders `FirmwareInstallPhaseCard` — a linear
+/// `AppLoader` with a percentage, which since ui_kit 3.3.2 is a real
+/// `LinearProgressIndicator` — plus the version line and the shared 5–8 minute
+/// warning note, and no button of any kind.
+///
+/// A **named** version: the empty-version variant drops one line and is pinned by
+/// assertion in `pnp_setup_view_firmware_test.dart`, so a fixture for it here would
+/// buy a picture of the line above it.
+///
+/// The literal is deliberately not one the firmware fixtures use — `testActiveBank`'s
+/// `1.0.16.26013014` or `testOtaInstance`'s `2.0.1.26091009`, in
+/// `test/golden_test/page/firmware_update/fixtures/` — because nothing joins those to
+/// this phase and a shared literal would read as if something did. (An earlier draft
+/// also cited [pnpCurrentWanSettings] here, which carries no version at all: it is a
+/// WAN form, so there was never anything to collide with.)
+const pnpWizardUpdatingFirmwareState = PnpState(
+  phase: WizardUpdatingFirmware(version: '1.0.17.220118'),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardWifiReady` in unified mode — one SSID and one passphrase.
+///
+/// `bands` empty is what selects `_buildCompleteUnifiedMode`: `isSplitMode` is
+/// `bands.length > 1` rather than a stored flag, so this is not a field to set but a
+/// list to leave alone.
+const pnpWizardWifiReadyUnifiedState = PnpState(
+  phase: WizardWifiReady(
+    ssid: 'Linksys-Home',
+    password: 'unified-password',
+  ),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardWifiReady` in split mode — one credential row per band.
+///
+/// Three bands, matching [pnpSplitWifiConfig], because that is the configuration the
+/// wizard would have just written and `_buildCompleteSplitMode` draws one
+/// `_buildCredentialRow` per entry: three rows of a label, an SSID and a passphrase
+/// is the taller of the two completion screens and the one that can run out of width.
+///
+/// `ssid`/`password` still carry the 2.4 GHz values rather than being blank. They are
+/// unread in this branch, and a scene whose unread fields are empty is a scene that
+/// cannot be re-pointed at the other branch to find out what reads them.
+const pnpWizardWifiReadySplitState = PnpState(
+  phase: WizardWifiReady(
+    ssid: 'Linksys-2.4G',
+    password: 'band-password-24',
+    bands: [
+      PnpWifiReadyBand(
+        bandName: '2.4 GHz',
+        ssid: 'Linksys-2.4G',
+        password: 'band-password-24',
+      ),
+      PnpWifiReadyBand(
+        bandName: '5 GHz',
+        ssid: 'Linksys-5G',
+        password: 'band-password-5',
+      ),
+      PnpWifiReadyBand(
+        bandName: '6 GHz',
+        ssid: 'Linksys-6G',
+        password: 'band-password-6',
+      ),
+    ],
+  ),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardError` — the recoverable failure, with the message the view prints.
+///
+/// A `ServiceError`-shaped sentence rather than a placeholder: this phase's `message`
+/// reaches the screen verbatim, so a fixture saying `'error'` would photograph a
+/// layout no real failure produces.
+const pnpWizardErrorState = PnpState(
+  phase: WizardError(
+    message: 'The router did not respond while saving your Wi-Fi settings.',
   ),
   serialNumber: 'SN-TEST',
 );

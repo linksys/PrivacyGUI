@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
@@ -59,8 +58,10 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
   Widget build(BuildContext context) {
     final state = ref.watch(remoteAccessProvider);
 
-    // Only show in remote mode with valid session
-    if (!GlobalConfig.remote.isActive || state.sessionInfo == null) {
+    // Only the surface that *is* a session mounts this chip (#1497), so what is
+    // left to check is whether that session has arrived yet — `sessionInfo` is
+    // null between the shell rendering and the RA state being restored.
+    if (state.sessionInfo == null) {
       return const SizedBox.shrink();
     }
 
@@ -201,59 +202,49 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
     Overlay.of(context).insert(_popupEntry!);
   }
 
-  Future<void> _disconnect(BuildContext context, WidgetRef ref) async {
+  /// End the session because the user pressed Disconnect.
+  ///
+  /// Since #1323 the *teardown* — releasing the Guardian session, clearing
+  /// `remoteAccessProvider` and its `sessionStorage` copy — is
+  /// `RemoteSessionStrategy.end`, reached through `logout()`. What is left here is
+  /// the part that is genuinely this widget's: closing the popup and navigating,
+  /// because only a widget has a [BuildContext] and only this affordance knows the
+  /// user chose to leave rather than being thrown out.
+  ///
+  /// Navigation still comes *before* `logout()`, and still post-frames the logout.
+  /// The order is not cosmetic: `logout()` flips `loginType`, which makes
+  /// `RouterNotifier` re-run the redirect, and the `/usp*` guard's answer for a
+  /// session-less RA build is the bare confirm page — so navigating afterwards
+  /// races that redirect and loses `?ended=true`. Going first puts the app on
+  /// `/remoteAssistance...`, which the RA branch of the guard returns unchanged.
+  void _disconnect(BuildContext context, WidgetRef ref) {
     _removePopup();
 
-    // Capture all refs BEFORE async gap — context/ref may become invalid after await
+    // Captured before the frame callback: `ref` and `context` may be gone by then,
+    // and the chip in particular is *expected* to be — clearSession() removes it.
     final router = GoRouter.of(context);
-    final state = ref.read(remoteAccessProvider);
-    final notifier = ref.read(remoteAccessProvider.notifier);
     final authNotifier = ref.read(authProvider.notifier);
-    final service = ref.read(remoteAssistanceServiceProvider);
 
-    final sessionId = state.sessionInfo?.id;
-    final sessionToken = state.sessionToken;
-
-    // Call API to end session (best effort — don't block on failure)
-    if (sessionId != null && sessionToken != null) {
-      try {
-        await service.endSessionForCA(
-          sessionToken: sessionToken,
-          sessionId: sessionId,
-        );
-        logger.d('[RA] Session ended via API');
-      } catch (e) {
-        logger.w('[RA] Failed to end session via API: $e');
-      }
-    }
-
-    // Clear session state (triggers chip to disappear)
-    notifier.clearSession();
-
-    // Navigate using captured router, then logout after frame completes
     router.go('${RoutePath.remoteAssistanceConfirm}?ended=true');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      authNotifier.logout();
+      authNotifier.logout(cause: EndCause.userRequested);
     });
   }
 
-  /// Handle force disconnect when session becomes invalid (e.g., 401).
+  /// Handle force disconnect when the session becomes invalid (e.g. 401).
   ///
-  /// Unlike manual disconnect, we don't call the API (it already failed)
-  /// and we use a different query param to show appropriate message.
+  /// Same shape as [_disconnect] with two differences, and both are now carried by
+  /// [EndCause.sessionLost] rather than by duplicated code: no `endSessionForCA`
+  /// (the token it would use is the one that just got rejected) and a different
+  /// query param, so the terminal surface says "expired" rather than "ended".
   void _handleForceDisconnect(BuildContext context, WidgetRef ref) {
     _removePopup();
 
     final router = GoRouter.of(context);
-    final notifier = ref.read(remoteAccessProvider.notifier);
     final authNotifier = ref.read(authProvider.notifier);
 
     logger.d('[RA] Force disconnect due to session invalidation');
 
-    // Clear session state
-    notifier.clearSession();
-
-    // Navigate with expired param (different message than manual end)
     router.go('${RoutePath.remoteAssistanceConfirm}?expired=true');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       authNotifier.logout();

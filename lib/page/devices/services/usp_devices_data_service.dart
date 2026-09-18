@@ -145,8 +145,15 @@ class UspDevicesDataService {
       }
       return _buildTopologyInfo(network, bssidToBandMap);
     } catch (e) {
-      logger.d(
-          '[USP][Dashboard]: DataElements not supported or fetch failed: $e');
+      // `w`, not `d`. An empty subtree (above) is an expected single-router
+      // result; a *fault* means the request did not answer the question, and the
+      // two used to be one `d` line apart. That is how a schema mismatch went
+      // unnoticed for a whole firmware generation: pre-#1555 this fetch threw
+      // `9998` on every call against FL-WRT 2.0 — four required parameters had
+      // been removed from the data model — and the entire mesh surface silently
+      // degraded to "not a mesh" behind a debug line nobody reads.
+      logger.w('[USP][Dashboard]: DataElements fetch faulted, treating the '
+          'network as non-mesh: $e');
       return MeshTopologyInfo.empty;
     }
   }

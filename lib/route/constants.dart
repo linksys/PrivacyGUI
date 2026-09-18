@@ -49,6 +49,7 @@ class RoutePath {
   static const uspApps = '/uspApps';
   static const uspSpeedTest = '/uspSpeedTest';
   static const uspFirmwareUpdate = '/uspFirmwareUpdate';
+  static const uspFirmwareOta = '/uspFirmwareOta';
   static const uspAiAssistant = '/uspAiAssistant';
 
   /// Nested USP children — relative, so the parent supplies the prefix.
@@ -222,6 +223,7 @@ class RouteNamed {
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
   static const uspSpeedTest = 'uspSpeedTest';
   static const uspFirmwareUpdate = 'uspFirmwareUpdate';
+  static const uspFirmwareOta = 'uspFirmwareOta';
   static const uspAiAssistant = 'uspAiAssistant';
 
   static const menuInstantVerify = 'menuInstantVerify';

@@ -44,7 +44,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   @override
   Future<DhcpData> build() async {
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.dhcpReservations ||
           domain == InvalidationDomain.dhcpClients) {
         _debouncedInvalidate();

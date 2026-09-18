@@ -1,12 +1,19 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 
-/// The persisted form of the USP dashboard layout: one serialised grid per
-/// breakpoint, keyed by slot count.
+/// The persisted form of the USP dashboard layout: one grid per breakpoint,
+/// keyed by slot count.
+///
+/// The grids are [LayoutItem]s since #1310, and [encode] is the one place they
+/// become JSON. What is "persisted" about this class is therefore the shape it
+/// writes, not the type it holds — the pref's bytes are unchanged, because the
+/// maps this used to hold were `toMap()`'s output spelled out by hand.
 ///
 /// ## Why the slot count has to be recorded
 ///
@@ -77,13 +84,19 @@ class UspLayoutEnvelope extends Equatable {
 
   const UspLayoutEnvelope(this.layouts, {this.migratedPicks = false});
 
-  /// Serialised layouts by slot count. Keys outside [persistedSlotCounts] are
-  /// preserved on decode so a build that renders fewer breakpoints cannot
-  /// silently discard a layout a newer build wrote.
+  /// Layouts by slot count. Keys outside [persistedSlotCounts] are preserved on
+  /// decode so a build that renders fewer breakpoints cannot silently discard a
+  /// layout a newer build wrote.
+  ///
+  /// [LayoutItem], not `Map<String, dynamic>`, since #1310: this class is the
+  /// *typed* form of the layout and [encode] is the one place it becomes JSON.
+  /// The pref's own shape did not change — `toMap()` is what the maps here were
+  /// hand-spelling — but the field's type now says which side of that line it is
+  /// on, so a reader does not have to know the string keys to know what is here.
   ///
   /// Each item may carry a card-form pick under `extra` (#1400) — see
   /// [CardFormChoice.readFrom].
-  final Map<int, List<dynamic>> layouts;
+  final Map<int, List<LayoutItem>> layouts;
 
   /// Whether [tryDecode] moved a v3 `forms` map onto the items it described.
   ///
@@ -105,7 +118,7 @@ class UspLayoutEnvelope extends Equatable {
   @override
   List<Object?> get props => [layouts];
 
-  List<dynamic>? operator [](int slotCount) => layouts[slotCount];
+  List<LayoutItem>? operator [](int slotCount) => layouts[slotCount];
 
   List<int> get slotCounts => layouts.keys.toList();
 
@@ -116,7 +129,7 @@ class UspLayoutEnvelope extends Equatable {
   /// migration — an envelope that reported `false` there would leave the flag
   /// readable only off the object the transform was applied to, which is a trap
   /// for the next reader who quite reasonably asks the result.
-  UspLayoutEnvelope withLayout(int slotCount, List<dynamic> layout) =>
+  UspLayoutEnvelope withLayout(int slotCount, List<LayoutItem> layout) =>
       UspLayoutEnvelope({...layouts, slotCount: layout},
           migratedPicks: migratedPicks);
 
@@ -126,7 +139,7 @@ class UspLayoutEnvelope extends Equatable {
   /// rule about how wide that grid is; a transform that did not get told would
   /// have to guess, and the guess that was wrong is #1293.
   UspLayoutEnvelope mapLayouts(
-    List<dynamic> Function(int slotCount, List<dynamic> layout) transform,
+    List<LayoutItem> Function(int slotCount, List<LayoutItem> layout) transform,
   ) =>
       UspLayoutEnvelope({
         for (final entry in layouts.entries)
@@ -168,24 +181,33 @@ class UspLayoutEnvelope extends Equatable {
   /// exactly what a pre-#1299 build writes for itself, so a payload whose only
   /// picks are normal is still readable as one of those.
   ///
-  /// Reads an item defensively rather than casting it, because [version] is on
-  /// the *encode* path: it runs inside `_writeLayout`, behind the persistence
-  /// queue, where a throw is logged and swallowed — so one non-map entry would
-  /// quietly stop the dashboard saving for the rest of the session. [tryDecode]
-  /// validates through `_isItemList` for the same reason, and only what it built
-  /// is guaranteed to hold maps.
-  bool get _hasFormBeyondNormal =>
-      layouts.values.any((layout) => layout.any((item) =>
-          switch (item is Map ? CardFormChoice.readFrom(item['extra']) : null) {
+  /// This used to read each item defensively — `item is Map ? ... : null` — because
+  /// [version] runs on the *encode* path, inside `_writeLayout`, behind the
+  /// persistence queue, where a throw is logged and swallowed: one non-map entry
+  /// would have quietly stopped the dashboard saving for the rest of the session.
+  /// #1310 retired the guard by making the entry impossible instead, which is why
+  /// the field's type is the fix and not a nicety: the failure it was guarding
+  /// against was silent, and a guard against a silent failure can only ever be
+  /// believed.
+  bool get _hasFormBeyondNormal => layouts.values.any((layout) =>
+      layout.any((item) => switch (CardFormChoice.readFrom(item.extra)) {
             null => false,
             final choice => choice.density != CardDensity.normal,
           }));
 
+  /// The bytes the pref holds, and the one place this class becomes JSON.
+  ///
+  /// `toMap()` is the package's own serialiser, so the shape written here is the
+  /// shape [LayoutItem.fromMap] reads back — which is what makes the round-trip
+  /// in the tests an assertion about this class rather than about a key list
+  /// maintained in two places (#1310).
   String encode() => jsonEncode({
         'version': version,
         'layouts': {
           for (final entry in layouts.entries)
-            entry.key.toString(): entry.value,
+            entry.key.toString(): [
+              for (final item in entry.value) item.toMap()
+            ],
         },
       });
 
@@ -209,10 +231,11 @@ class UspLayoutEnvelope extends Equatable {
 
     // Legacy: a bare list of 12-column items.
     if (decoded is List) {
-      if (!_isItemList(decoded)) {
-        return _reject('legacy bare list holds a non-map item');
+      final items = _parseItems(decoded);
+      if (items == null) {
+        return _reject('legacy bare list holds an item the grid cannot import');
       }
-      return UspLayoutEnvelope({desktopSlotCount: decoded});
+      return UspLayoutEnvelope({desktopSlotCount: items});
     }
 
     if (decoded is! Map) {
@@ -229,17 +252,19 @@ class UspLayoutEnvelope extends Equatable {
       return _reject('"layouts" is ${rawLayouts.runtimeType}, not a map');
     }
 
-    final layouts = <int, List<dynamic>>{};
+    final layouts = <int, List<LayoutItem>>{};
     for (final entry in rawLayouts.entries) {
       final slotCount = int.tryParse('${entry.key}');
       if (slotCount == null || slotCount < 1) {
         return _reject('slot count "${entry.key}" is not a positive integer');
       }
       final layout = entry.value;
-      if (layout is! List || !_isItemList(layout)) {
-        return _reject('layout at slot count $slotCount is not a list of maps');
+      final items = layout is List ? _parseItems(layout) : null;
+      if (items == null) {
+        return _reject('layout at slot count $slotCount is not a list of '
+            'importable items');
       }
-      layouts[slotCount] = layout;
+      layouts[slotCount] = items;
     }
 
     // Absent for every payload written before v3 and after it (#1400), where the
@@ -266,28 +291,24 @@ class UspLayoutEnvelope extends Equatable {
   /// count of what was placed is logged against the count that was read, because
   /// this runs once per install and a silent shortfall would be invisible
   /// afterwards.
-  static Map<int, List<dynamic>>? _foldLegacyPicks(
-    Map<int, List<dynamic>> layouts,
+  static Map<int, List<LayoutItem>>? _foldLegacyPicks(
+    Map<int, List<LayoutItem>> layouts,
     Object? rawForms,
   ) {
     if (rawForms is! Map || rawForms.isEmpty) return null;
 
     var placed = 0;
-    final folded = <int, List<dynamic>>{};
+    final folded = <int, List<LayoutItem>>{};
 
     for (final entry in layouts.entries) {
       final choices = rawForms['${entry.key}'];
       if (choices is! Map || choices.isEmpty) continue;
 
       folded[entry.key] = entry.value.map((item) {
-        final id = '${(item as Map)['id']}';
-        final choice = CardFormChoice.tryFromJson(choices[id]);
+        final choice = CardFormChoice.tryFromJson(choices[item.id]);
         if (choice == null) return item;
         placed++;
-        return {
-          ...item.cast<String, dynamic>(),
-          'extra': choice.writeInto(item['extra']),
-        };
+        return item.copyWith(extra: choice.writeInto(item.extra));
       }).toList();
     }
 
@@ -322,6 +343,42 @@ class UspLayoutEnvelope extends Equatable {
     return null;
   }
 
-  static bool _isItemList(List<dynamic> layout) =>
-      layout.every((item) => item is Map);
+  /// [layout] as typed items, or null when any entry is one the grid cannot
+  /// import.
+  ///
+  /// "Is a `Map`" was the whole test until #1310, and it is not enough: the
+  /// import path ends in `LayoutItem.fromMap`, which reads `map['id'] as String`
+  /// and *throws* on a map without one rather than returning null. A map missing
+  /// `id` satisfied `every((item) => item is Map)`, so [tryDecode] accepted a
+  /// payload that then threw two frames later, out of `_initializeLayout`'s
+  /// unawaited call — where nothing catches it. Measured: one uncaught
+  /// `'Null' is not a subtype of 'String'`, the grid left on the constructor's
+  /// default rather than a reseed, and the corrupt value still in the pref, so
+  /// the throw repeated on every boot for the life of the install.
+  ///
+  /// Answering it with `fromMap` itself, rather than by checking for `id` here,
+  /// is deliberate: the question is "would the import throw", and the only
+  /// authority on that is the constructor the import calls. A hand-written field
+  /// check would drift the moment the package required a second field.
+  ///
+  /// Validating and parsing are the same act, so this returns what it built
+  /// rather than a bool about it. As a predicate it threw a `LayoutItem` per item
+  /// away and then handed the caller the maps it had just proved were items —
+  /// which is the shape #1310 is about: the check knew the type and the field did
+  /// not.
+  ///
+  /// This is also the class's stated contract finally being kept: "what is
+  /// rejected is only what cannot be placed at all".
+  static List<LayoutItem>? _parseItems(List<dynamic> layout) {
+    final items = <LayoutItem>[];
+    for (final item in layout) {
+      if (item is! Map) return null;
+      try {
+        items.add(LayoutItem.fromMap(item.cast<String, dynamic>()));
+      } catch (_) {
+        return null;
+      }
+    }
+    return items;
+  }
 }

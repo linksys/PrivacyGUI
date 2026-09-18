@@ -71,7 +71,8 @@ library;
 // Shown rather than imported whole because this file resolves widget names
 // against ui_kit first, and a bare material import would quietly change which
 // `AppText`-adjacent name a future `requires` entry means.
-import 'package:flutter/material.dart' show GridView, SelectionArea;
+import 'package:flutter/material.dart'
+    show GridView, LinearProgressIndicator, SelectionArea;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
@@ -101,6 +102,11 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
     show DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_available_banner.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
@@ -129,12 +135,21 @@ import 'package:privacy_gui/page/login/views/local_reset_router_password_view.da
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confirm_view.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
+// One section per statistics tab, imported for a premise and nothing else: an
+// unselected `TabBarView` page has no elements, so the first section of a tab is the
+// only widget that can tell a cell which tab it actually opened. See
+// `kStatisticsDevicesPageCase`.
+import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribution_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
+import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
@@ -146,6 +161,7 @@ import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_start_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
+import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart'
@@ -245,11 +261,17 @@ final kDhcpPageCase = PageSurfaceCase(
 /// more of the page. Paired with `defaultAdvancedState` because the view watches
 /// both providers on every build regardless of which tab is showing.
 ///
-/// Only the WiFi tab is measured. `UspWifiAdvancedTab` is behind a `TabController`
-/// and would need a tap per cell — a second axis, and one the pilot deliberately
-/// does not buy: the point of these two pages is a cost number, and doubling the
-/// expensive page's cells before that number exists would be deciding the question
-/// the sweep is meant to answer.
+/// This case measures **tab 0 only**; [kWifiSettingsAdvancedPageCase] is the other
+/// tab. Until #1489's follow-up they were one case and this doc said the second tab
+/// "would need a tap per cell — a second axis, and one the pilot deliberately does
+/// not buy". The cost half of that was true and is now paid at a known price. The
+/// mechanism half was not: a tap was never the only way in, and the pilot's own page
+/// proved it — `usp_statistics_view` already took an `initialTab` the app supplies
+/// from `?tab=N`. What kept this tab unmeasured was that this view had no such
+/// argument, which is a missing parameter rather than a second axis. It has one now.
+///
+/// The lesson worth keeping is the one #1489 states: a limit inherited from another
+/// case is a measurement nobody took. This paragraph was that, for four months.
 ///
 /// `DetailSpeedCard` is not here and would be wrong here: it belongs to the device
 /// and node detail pages, which are two of the areas §8's rule excludes.
@@ -262,6 +284,57 @@ final kWifiSettingsPageCase = PageSurfaceCase(
   ),
   requires: const [WifiNetworkCard],
   forbids: const [AppLoader],
+);
+
+/// `usp_wifi_settings_view` at **tab 1 — Advanced**, the tab [kWifiSettingsPageCase]'s
+/// doc spent four months explaining why nobody measured.
+///
+/// Same view class, same fixture, 234 more cells. It enters the tab the way a deep
+/// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
+/// pages now share one mechanism rather than one excuse.
+///
+/// ## Coverage: the whole tab, because the tab is one card
+///
+/// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
+/// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
+/// width — this one's green means *the tab*, not a prefix of it. Four of the five tab
+/// cases are like that ([kStatisticsSystemPageCase], [kPortRangePageCase] and
+/// [kPortTriggeringPageCase] are the others); `page.statistics` and
+/// `page.statistics_devices` are the two that stop at [kPageSweepHeight].
+///
+/// That also makes it the cheapest tab in the family and the one least likely to find
+/// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
+/// of this file keeps arriving at as the *fix*. Swept anyway, and worth saying why —
+/// "it looks safe" is the claim a gate exists to stop anyone from having to make. The
+/// 234 cells are the receipt, and a future card added to this tab inherits them.
+///
+/// ## The premise, and the one thing it has to rule out
+///
+/// [UspWifiAdvancedTab] is on this tab and no other, so it is what makes `initialTab: 1`
+/// a per-cell fact rather than a literal nobody checks — the same role
+/// [StatsDeviceDistributionSection] plays for `page.statistics_devices`, and needed here
+/// for the same reason: `initialTab` is an `int` behind a `clamp(0, 1)`, so every wrong
+/// value is a legal one.
+///
+/// [AppSwitch] is the second entry because this tab has a *third* rendering that is
+/// neither loader nor error: `wifi_advanced_tab.dart:55` returns a centred
+/// `noAdvancedWifiSettings` string when `ieee80211hByRadio` is empty. That arm is inside
+/// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
+/// text where the card lays out a row — a fixture thinned to an empty map would sweep
+/// 234 cells of an empty-state message and report them as this tab's coverage.
+/// `defaultAdvancedState` — an alias for `advancedDfsOnState`, which is the name
+/// [kWifiSettingsPageCase]'s doc uses for the same object — carries two radios, and
+/// [AppSwitch] is what fails if it stops. Whichever name the alias points at is what
+/// this case actually sweeps, which is the reason to say both here.
+final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
+  id: 'wifi_settings_advanced',
+  view: () => const UspWifiSettingsView(initialTab: 1),
+  overrides: () => wifiSettingsOverrides(
+    wifiState: quickSetupOffState,
+    advancedState: defaultAdvancedState,
+  ),
+  requires: const [UspWifiAdvancedTab, AppSwitch],
+  forbids: const [AppLoader, ServiceErrorView],
 );
 
 // ===========================================================================
@@ -405,9 +478,11 @@ final kNodeDetailPageCase = PageSurfaceCase(
 /// Not `dirtyState()` — a dirty page also renders the bottom save bar, which is
 /// page chrome the #1314/#1328 sweep already owns.
 ///
-/// Only tab 0 is measured, for the reason `kWifiSettingsPageCase` gives about its
-/// own second tab: the other two tabs are behind a `TabController` and would each
-/// need a tap per cell, which is a second axis this wave does not buy.
+/// This case measures **tab 0**; [kPortRangePageCase] and [kPortTriggeringPageCase] are
+/// the other two. All three arrived together with `initialTab`, replacing this doc's old
+/// claim that the sibling tabs "would each need a tap per cell" — see
+/// [kWifiSettingsPageCase] for what was wrong with that and what stays true about it.
+///
 /// [UspSinglePortTab] is therefore both the premise and the tab under measurement,
 /// and it is on the loaded path only — `_buildTabContent` returns an [AppLoader]
 /// while `status.isLoading` and a `ServiceErrorView` on error.
@@ -417,6 +492,90 @@ final kPortForwardingPageCase = PageSurfaceCase(
   overrides: () => portForwardingOverrides(pf.dataState()),
   requires: const [UspSinglePortTab],
   forbids: const [AppLoader],
+);
+
+/// `usp_port_forwarding_detail_view` at **tab 1 — Port Range**, and the case with the
+/// sharpest reason to exist in this file: the widget it measures carries a fix that was
+/// never verified.
+///
+/// `usp_port_range_tab.dart:32` says it, in a comment written when the fix landed: the
+/// header `Row` has the same shape #1370 caught overflowing by up to 70px on
+/// [UspSinglePortTab], so it was given the same `Expanded`, and the comment recorded
+/// that the constraint was there "**by inspection rather than by a red cell**" because
+/// the sweep reached tab 0 only. An honest note and a standing liability — a fix copied
+/// to a surface no cell measures is a fix nobody has seen work. These 234 cells are what
+/// settle it, and if the copy was wrong they are where that shows up. The comment has
+/// been updated in place to point here, so it no longer reads as a live exemption.
+///
+/// ## Coverage
+///
+/// Whole tab, no depth limit: `dataState()`'s two range rules make a header plus two
+/// rule rows, well inside [kPageSweepHeight] at every width. Entering the tab needs no
+/// tap — see [kStatisticsDevicesPageCase].
+///
+/// ## The premise
+///
+/// [UspPortRangeTab] is on this tab and no other, which is what makes `initialTab: 1`
+/// per-cell rather than a literal — `initialTab` is an `int` behind a `clamp(0, 2)`, so
+/// a 0 typed here, or a 3, sweeps a tab that is already swept and still reports 234
+/// cells.
+///
+/// [DetailEmptyBlock] is *forbidden* rather than a second required type, because this
+/// tab's thin rendering is not a different widget but the same one with `rules.isEmpty`:
+/// `usp_port_range_tab.dart:50` puts an empty block where the rows go, inside
+/// [UspPortRangeTab], where the first entry cannot see it. A fixture that stopped
+/// carrying range rules — `dataState()` filters by `isPortRange`, so dropping
+/// `gameServerRangeRule` and `mediaStreamingRangeRule` from a *shared* default is
+/// enough — would sweep a header and an icon and call it this tab's coverage.
+final kPortRangePageCase = PageSurfaceCase(
+  id: 'port_range',
+  view: () => const UspPortForwardingDetailView(initialTab: 1),
+  overrides: () => portForwardingOverrides(pf.dataState()),
+  requires: const [UspPortRangeTab],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
+/// `usp_port_forwarding_detail_view` at **tab 2 — Port Triggering**, the deepest rule
+/// row on the page and the reason this tab is worth its 234 cells.
+///
+/// The widget is the same [MapsToRow] all three tabs use
+/// (`usp_port_triggering_tab.dart:84`); what differs is what goes into it, and that is
+/// the width. Tab 0 and tab 1 put a port range on the left and a single internal target
+/// on the right. This tab labels *both* halves and lets either be a range:
+/// `"Trigger: 21 TCP"` → `"Forward: 1024-1030 TCP"`
+/// (`port_triggering_rule_ui_model.dart:110` and `:114`). Two prefixes and a second
+/// protocol is the widest row on the page, and it had never been laid out at 320px in
+/// any locale.
+///
+/// Not the widest it *can* be, though, and the fixture is the limit: `ftpTriggerRule` is
+/// single → range and `ircTriggerRule` is range → single (`port_forwarding_scene_data.dart:81`
+/// and `:98`), so a range on both sides at once — the genuine worst case — is still
+/// unswept. Adding it means widening a fixture three cases share, so it is measured as it
+/// stands and the gap is written down rather than papered over.
+///
+/// One caveat these 234 cells cannot cover, recorded because it changes what a green
+/// means here: both halves are built from hardcoded English prefixes, not `loc(context)`,
+/// so this row's width does not vary with locale the way the rest of the page's does.
+/// These cells sweep nine widths of one string, not nine widths of 26. Localizing those
+/// two prefixes would widen this row in exactly the locales that are longest elsewhere,
+/// so it is the one place on this page where a green cell is not evidence about the
+/// other 25.
+///
+/// Coverage is the whole tab: `dataState()`'s `ftpTriggerRule` and `ircTriggerRule` make
+/// a header plus two rows, each with a range on one side of the arrow and a single port
+/// on the other. No depth limit, and no tap — see [kStatisticsDevicesPageCase].
+///
+/// Premise and `forbids` are [kPortRangePageCase]'s, for its reasons: [UspPortTriggeringTab]
+/// is this tab's discriminator, and [DetailEmptyBlock] is forbidden because
+/// `usp_port_triggering_tab.dart:50` renders one *inside* that type when
+/// `triggeringRules` is empty — and `triggeringRules` is a separate list from the
+/// forwarding rules, so this tab can be emptied without either sibling case noticing.
+final kPortTriggeringPageCase = PageSurfaceCase(
+  id: 'port_triggering',
+  view: () => const UspPortForwardingDetailView(initialTab: 2),
+  overrides: () => portForwardingOverrides(pf.dataState()),
+  requires: const [UspPortTriggeringTab],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
 // ===========================================================================
@@ -631,6 +790,107 @@ final kPnpSetupPageCase = PageSurfaceCase(
   overrides: () => pnpOverrides(pnpWizardConfiguringState),
   requires: const [AppStepper, AppTextField, AppPasswordInput],
   forbids: const [AppLoader],
+);
+
+/// `pnp_setup_view` again, in its **firmware stage** — the family's first second case
+/// for one page that is not a tab (#1554 §4, folded in from #1561 §2).
+///
+/// The wizard installs a newer firmware on first connection (#1553, REQ-B2), and that
+/// stage is a full-screen phase of `PnpSetupView` with nothing in common with the form
+/// the case above sweeps: no stepper, no fields, and a progress card where the form
+/// was. So it could not be reached by re-pointing that case's fixture — it fails both
+/// of its lists — and until now it had no width sweep at all. Its only coverage was
+/// `test/page/instant_setup/views/pnp_setup_view_firmware_test.dart`: nine cases at
+/// one surface (1200×2400) in `en`, which catches a `RenderFlex` at that size and says
+/// nothing about 320px or about the other 25 locales.
+///
+/// ## Why a second case rather than a relaxed first one
+///
+/// #1554 §4 posed the mechanism as a choice between letting the roster admit a second
+/// row per view file and letting `kPnpSetupPageCase`'s `forbids` admit a determinate
+/// loader. **Neither turned out to be the cost**, and the reason is worth keeping:
+///
+///   * **The roster needs no new row, and could not take one.** `PageRoster`'s
+///     `_rejectDuplicates` refuses a second row for one path, and it does not have to
+///     allow one — `page_roster_test.dart`'s third assertion joins cases to rows
+///     through `view().runtimeType`, which is `PnpSetupView` for both cases, so one
+///     `swept` row already accounts for both. #1489 established this shape with eight
+///     cases over three rows.
+///   * **`forbids` was never the obstacle either.** The lists are per case, so this
+///     case declares its own; the first one keeps `forbids: [AppLoader]` untouched.
+///
+/// What the second case *does* cost is the roster's `ms_per_cell` column, which has no
+/// slot for a second figure — see that file's `# tabs` and `# second-state` blocks. The
+/// figure is measured and recorded there in prose, exactly as the five tab cases are,
+/// because `page_sweep_suites_test.dart`'s "no suite weight is guessed" resolves this
+/// case through the same roster path and would otherwise hand it its sibling's number
+/// while reading as measured.
+///
+/// ## `AppLoader` is this page's *content*, which makes it the exemption's second entry
+///
+/// [kPagesWhoseLoaderIsContent] was a one-element set, and its own doc names the
+/// argument a second entry has to make: `auto_parent_first_login` is exempt because it
+/// "exists to say 'we are installing firmware, do not unplug the router' — the spinner
+/// is the subject of the screen". **This page is that sentence, in the wizard.** It
+/// draws `FirmwareInstallPhaseCard`, whose linear `AppLoader` carries the percentage —
+/// a real `LinearProgressIndicator` since ui_kit 3.3.2 — beside the version being
+/// installed and the shared do-not-power-off note. There is no loaded state behind it
+/// to wait for: the progress bar *is* the loaded state.
+///
+/// So `requires` names `AppLoader` rather than `forbids` naming it, which is the
+/// direction that can fail — a fixture that drifted off this phase would render the
+/// wizard's own `_ =>` spinner or the form, and either way lose the card.
+///
+/// ## `forbids: [AppStepper]` is the sibling guard
+///
+/// The mirror of the case above's `requires: [AppStepper]`, and the reason this case
+/// cannot silently sweep its sibling's tree: `WizardConfiguring` is the phase a
+/// `FixedPnpNotifier` would land on if this fixture lost its override, and it renders
+/// the three-step form. REQ-B0 is the same assertion from the other side — the flash is
+/// not a fourth step — but that belongs to the widget test, which can say *three* where
+/// a `forbids` list can only say *none*.
+///
+/// **Not `AppButton`, though it is absent and REQ-B2 requires it to be.** `forbids`
+/// reports as "this cell measured the loading or error path rather than the page", so a
+/// button legitimately added here would fail 234 cells with a diagnosis about fixtures.
+/// The lock has its own test, with its own reason string, in
+/// `pnp_setup_view_firmware_test.dart`.
+final kPnpSetupFirmwarePageCase = PageSurfaceCase(
+  id: 'pnp_setup_firmware',
+  view: () => const PnpSetupView(),
+  // Two overrides, and the second is not optional: the phase hands
+  // `firmwareUpdateNotifierProvider`'s state straight to W5's card, so without it a
+  // real notifier's `build()` runs and its `loadBanks` reaches the USP client — 234
+  // cells of a spinner behind an error, which `requires` is what turns red.
+  overrides: () => [
+    ...pnpOverrides(pnpWizardUpdatingFirmwareState),
+    ...firmwareUpdateOverrides(state: gatePnpFirmwareInstallingState),
+  ],
+  requires: const [
+    AppLoader,
+    // **The one entry that says *which* progress phase this is**, and the case is
+    // pointless without it. The other three are satisfied by `triggering`,
+    // `rebooting` and `verifying` as well — `FirmwareInstallPhaseCard` returns the
+    // same `_progressCard` for all of them — so a fixture that drifted off
+    // `installing` would keep 234 cells green while the thing this case exists to
+    // measure disappeared.
+    //
+    // `LinearProgressIndicator` is the discriminator because
+    // `FirmwareOtaInstallProgress.percent` is non-null in exactly two statuses
+    // (`downloading`, `installing`), the card passes `value: percent / 100`, and
+    // since ui_kit 3.3.2 `AppLoader` routes a **null** value to each visual
+    // language's own animation instead — so `value == null` puts no
+    // `LinearProgressIndicator` in the tree at all. That is a stronger premise than
+    // "there is a bar with a null value": it proves the determinate path was taken,
+    // which is the only path with a *width* that is a function of the number.
+    //
+    // Pinned by mutation, not by reading: with the fixture's phase moved to
+    // `rebooting` this case fails, and it fails on this line.
+    LinearProgressIndicator,
+    FirmwareInstallPhaseCard,
+    FirmwareUpdateWarningNote,
+  ],
+  forbids: const [AppStepper],
 );
 
 // ===========================================================================
@@ -983,36 +1243,177 @@ final kUnifiedDiagnosticsPageCase = PageSurfaceCase(
 
 /// `firmware_update_view` — the manual firmware flow's landing phase.
 ///
-/// Three stacked cards and a footnote: a router status card (56px image, model and
-/// serial in an `Expanded` column, then a list of firmware banks), the OTA check card,
-/// the phase-driven action card, and an icon-plus-`Expanded`-text warning note. Every
-/// one of those is a `Row` whose fixed child is an icon or an image and whose flexible
-/// child is a localized string, which is the shape this whole wave has been fixing.
+/// Two stacked cards and a footnote: a router status card (56px image, model and
+/// serial in an `Expanded` column, then a list of firmware banks), the phase-driven
+/// action card, and an icon-plus-`Expanded`-text warning note. Both cards are a `Row`
+/// whose fixed child is an icon or an image and whose flexible child is a localized
+/// string, which is the shape this whole wave has been fixing.
+///
+/// **#1549 took the third card off this page.** `_OtaCheckCard` — and the fix wave 4
+/// landed in it — moved whole to [kFirmwareOtaPageCase], which is why this doc is
+/// shorter than it was and why that case exists rather than this one growing a second
+/// fixture. The two pages are now two surfaces with two card lists, and one case each
+/// is what keeps a cell's coordinates meaning one thing.
 ///
 /// **`forbids: [AppLoader]` earns its keep here**, which is worth saying because on
-/// five of wave 3's six pages it was inert (§11.11). This page has *six* reachable
-/// loaders: `_buildLoadingBanks` renders one whenever the banks list is empty and still
-/// fetching, and five of the nine phases render a linear one. So a fixture that lost
-/// either the banks override or the notifier override would land on a spinner, and the
-/// `forbids` is what turns that into a failure instead of 234 green cells.
+/// five of wave 3's six pages it was inert (§11.11). `_buildLoadingBanks` renders one
+/// whenever the banks list is empty and still fetching, and seven of the eleven phases
+/// render a linear one. So a fixture that lost either the banks override or the notifier
+/// override would land on a spinner, and the `forbids` is what turns that into a failure
+/// instead of 234 green cells.
+///
+/// #1549's split briefly made that an asymmetry with `firmware_ota` — the banks list
+/// stayed here — and #1551 ended it: the status card is now
+/// [FirmwareRouterStatusCard], shared by both pages, so both carry the same tripwire.
+/// What is still asymmetric is the fixture, and deliberately: this case keeps the
+/// default banks because its banks list is what it measures.
 ///
 /// **The fixture pins the notifier, not just the data** — `mock_firmware_update.dart`
 /// says why: `initState` posts a frame callback that calls `loadBanks()`, so without
 /// that override the state a cell measures is decided by which frame the sweep settles
 /// on.
-///
-/// **The fix that landed with it** is `firmware_update_view.dart:546`, the `Row` in
-/// `_OtaCheckCard` and the wave's widest site: **50 of 234 cells**, all 26 locales at
-/// 320px, worst `ru` at +357px and `en` itself at +160px. It is also the one site
-/// where the obvious fix was wrong — the sibling card twenty lines up lays two buttons
-/// out in a `Wrap`, but neither of *these* two children fits a 256px line alone, and
-/// `RenderWrap` reports nothing when a child does not fit. Copying the sibling would
-/// have turned a reported overflow into an unreported one. The view says what landed
-/// instead and why the button changes size when it stacks.
 final kFirmwareUpdatePageCase = PageSurfaceCase(
   id: 'firmware_update',
   view: () => const FirmwareUpdateView(),
   overrides: () => firmwareUpdateOverrides(),
+  requires: const [AppCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+/// `firmware_ota_view` — the cloud firmware flow, split off the page above by #1549.
+///
+/// **Two cards and a footnote in the state it is swept in**, and it used to be one:
+/// the shared router status card (#1551) above, then the check card, then the
+/// phase-driven action card — which is `SizedBox.shrink()` in `idle` and `checkingOta`,
+/// because on this page the entry point *is* the check card — then the warning note.
+/// The nine widths were already worth paying for the check card alone, which is the
+/// widest thing wave 4 measured.
+///
+/// **The status card arrives here already swept, and is re-measured anyway.** It is
+/// [FirmwareRouterStatusCard], the same widget and the same 56px-image-plus-`Expanded`
+/// row [kFirmwareUpdatePageCase] has always measured — but the banks fixture differs
+/// (`gateFirmwareBanksWithOta`, whose two rows carry versions and whose third row must
+/// not become a slot) and so does everything laid out beside it. A shared widget under
+/// a different card list is a different measurement.
+///
+/// **This case inherits a measured site, not an assumption.** `_OtaCheckCard` was
+/// wave 4's widest: **50 of 234 cells**, all 26 locales at 320px, worst `ru` at
+/// +357px and `en` itself at +160px. It is also the one site where the obvious fix was
+/// wrong — the sibling card twenty lines up lays two buttons out in a `Wrap`, but
+/// neither of *these* two children fits a 256px line alone, and `RenderWrap` reports
+/// nothing when a child does not fit. Copying the sibling would have turned a reported
+/// overflow into an unreported one. The card carries its own `_stackBelow = 600.0` and
+/// the measurement behind it, and it moved here unchanged, under the same card padding
+/// at the same breakpoints.
+///
+/// **So the numbers carry, and the cells are still re-measured.** A moved widget under
+/// identical constraints lays out identically — but "identical" is a claim about this
+/// page's card list, not about the widget, and the card list is what changed. The
+/// baseline rows for this group are generated against this page rather than copied
+/// from `firmware_update`'s, for the same reason #1549's roster row forbids inheriting
+/// a sibling's ms/cell: an inherited number has no error bar.
+///
+/// **`forbids: [AppLoader]` stopped being inert here when the status card arrived.**
+/// It was, and was stated to be — the same honesty §11.11 owes for five of wave 3's
+/// pages — because the check card expresses its busy state through
+/// `AppButton.isLoading`, a figure layer over the button rather than a loader beside
+/// it. The status card brought `_buildLoadingBanks` with it, which renders one whenever
+/// the banks list is empty and still fetching, so this page now has the same tripwire
+/// its sibling has always had: a fixture that lost the banks override or the notifier
+/// override lands on a spinner and fails, instead of measuring 234 green cells of
+/// placeholder. The tripwire that was already here is unchanged — four of the eleven
+/// phases render `FirmwareInstallPhaseCard`'s linear loader, so a fixture that drifted
+/// off the landing state fails rather than sweeping a progress card.
+///
+/// `gateFirmwareNoUpdateFoundState` pins a returned verdict, which is the widest
+/// reachable form of the row — `mock_firmware_update.dart` says why that verdict is a
+/// choice, and it is now a choice about *this* page.
+///
+/// **The banks fixture is the one this case cannot take the default of.** #1550 hides
+/// the check button entirely on a router with no virtual `ota` row (REQ-A1), and
+/// `gateFirmwareBanks` is exactly that router — two NAND banks and nothing else. The
+/// default would therefore sweep a card holding one wrapping sentence, which is the
+/// one state on this page that *cannot* overflow, at nine widths. `requires:
+/// [AppButton]` is what makes that a failure rather than 234 green cells: the sibling
+/// case above keeps the default because its banks list is what it measures, so the two
+/// fixtures stay apart and each says why.
+///
+/// **What #1551 added to this page and this case does not sweep: the install button.**
+/// `updateAvailable` renders a second, full-width [AppButton] (`firmware-ota-install`)
+/// under the verdict, and no cell anywhere renders it — the fixture pins
+/// `noUpdateFound`, which is a verdict with no offer attached. Recorded as a gap rather
+/// than closed, and the reason is not cost:
+///
+///   * **swapping this fixture's verdict would break a measured guard.** The
+///     readability group `'readability at the site wave 4 fixed in firmware_ota'`
+///     (`page_surface_overflow_test.dart`) pumps `overrides()` from this case and
+///     hard-requires `loc.firmwareNoUpdateFound` present exactly once, with a
+///     re-derived `kOtaStatusLineCeiling` and its clip, wrap and split-token
+///     assertions all built on that sentence. It is the guard standing over wave 4's
+///     50 red cells; trading it for the offer state is a net loss.
+///   * **adding a tenth case, or a second group, costs the gate bookkeeping** —
+///     `kReadabilityGuardWeightMs` and its prose derivation, the roster row, the
+///     baseline rows — which on this seam has repeatedly dwarfed the change itself.
+///   * **and the risk it would be buying is measured at zero.** A throwaway probe
+///     pumped this page in the `updateAvailable` state at all nine widths in all 26
+///     locales — the same 234 coordinates a cell would add — under real fonts, and
+///     found no overflow exception, no clipped label, and no negative slack on either
+///     button. `updateNow`'s intrinsic width is below `checkForUpdates`'s in **every**
+///     locale (worst `de` 117.2px vs `fr` 177.9px), and the install button is granted
+///     the full content box rather than the check button's share of a `Row` — so the
+///     already-swept button dominates it on both terms of the comparison.
+///
+/// That last bullet is why this stays a note: the gap is in the coverage, not in the
+/// page. What would reopen it is a *third* control in that arm or a label that is no
+/// longer dominated, and either is a reason to pay for the tenth case then.
+/// `firmware_update_view` again, in its **`failed`** phase — and the case that found a
+/// live overflow rather than recording a coverage gap.
+///
+/// The second fixture-state case in this family after `pnp_setup_firmware`, and the
+/// mechanism is the one that case established: same view file, one roster row, its own
+/// `requires`/`forbids`. What is different is what it bought. `FirmwareInstallPhaseCard`
+/// is rendered by both firmware pages and by the setup wizard, in six of eleven phases,
+/// and **not one cell rendered the two arms that open with a title `Row`** — `_failed`
+/// and `_done`. Both were a bare `Row(Icon(24), AppGap.sm(), AppText.titleMedium(...))`
+/// with no `Expanded`, which at the 320px floor leaves the sentence about 198px.
+/// Measured on this state at nine widths in 26 locales: **`pl` +30.0px, `it` +21.0px,
+/// `es` +12.0px, `sv` +11.0px**, all four at 320px. Fixed in `lib/` first — §8's
+/// graduation rule — so this case arrives at zero and `known_overflows.json` stays empty.
+///
+/// **The manual page rather than the OTA page**, for two reasons that both cut the same
+/// way: the OTA case's fixture is pinned by two readability guards now (wave 4's
+/// `firmwareNoUpdateFound` and #1572's `notChecked` history line), so a third state was
+/// never going to live there; and `_failed`'s body is where #1572's seven error-code
+/// sentences land, which is the manual flow's own failure surface as much as the OTA
+/// one's.
+///
+/// ## What the premise can and cannot pin
+///
+/// `requires: [FirmwareInstallPhaseCard, AppButton]` with `forbids: [AppLoader]` rules
+/// out everything except the two title-`Row` arms:
+///
+///   * `idle` renders the upload card and no phase card at all — caught by `requires`.
+///   * `triggering`, `installing`, `rebooting`, `verifying` render the progress card's
+///     linear loader — caught by `forbids`.
+///   * `done` passes. **That one is a deliberate equivalence, not a hole**: the two arms
+///     are the same tree with a different icon, string and body, so a fixture drifting
+///     between them measures the same `Row` this case exists for. It is stated here
+///     because `pnp_setup_firmware` needed a type-unique premise
+///     (`LinearProgressIndicator`) and this one has none available — there is no widget
+///     type only `failed` renders. If the two arms ever diverge, that is the moment this
+///     case needs a real discriminator.
+final kFirmwareFailedPageCase = PageSurfaceCase(
+  id: 'firmware_failed',
+  view: () => const FirmwareUpdateView(),
+  overrides: () => firmwareUpdateOverrides(state: gateFirmwareFailedState),
+  requires: const [FirmwareInstallPhaseCard, AppButton],
+  forbids: const [AppLoader],
+);
+
+final kFirmwareOtaPageCase = PageSurfaceCase(
+  id: 'firmware_ota',
+  view: () => const FirmwareOtaView(),
+  overrides: () => firmwareUpdateOverrides(banks: gateFirmwareBanksWithOta),
   requires: const [AppCard, AppButton],
   forbids: const [AppLoader],
 );
@@ -1211,24 +1612,67 @@ final kSliverDashboardPageCase = PageSurfaceCase(
 /// The second and last [PageSurfaceCase.needsMaterialAncestor] page, for the same reason
 /// as the case above and by the same route: the shell it delegates to is where its
 /// `Material` comes from in the app, and its body is that page's grid of [AppCard]s.
+///
+/// **[FirmwareUpdateAvailableBanner] is #1552's, and it is the third coordinate this
+/// page now has of its own.** It is an `AppCard` between the 64px bar and the grid,
+/// inset to `context.pageMargin` so it lines up with the grid under it: one sentence —
+/// widest in `fr`/`fr_ca`, 72 characters and 455.9px unwrapped — beside or above two
+/// localized buttons in a `Wrap`.
+///
+/// **Both of its arms are in this sweep, which is the point of requiring it here.** It
+/// stacks below 780px of content width (the widget's `_stackBelow`, measured), and the
+/// nine widths land on both sides: 320/480/601 stack, 905 and up are a single row. The
+/// stacked arm is the one that matters — it exists so the 320px column cannot crush the
+/// sentence the way #1549's version row was crushed, and a `RenderParagraph` handed too
+/// little width wraps rather than overflowing, so this cell is the only thing that says
+/// in pixels which arm each width actually got. Requiring it also
+/// pins the fixture: the banner reads two providers `mock_dashboard_page.dart` pins to
+/// a router-has-an-update reading, and unpinned it renders `SizedBox.shrink` in all 234
+/// cells while the case stays green.
+///
+/// The banner is opt-in — `dashboardPageOverrides(firmwareBanner: true)` — and this is
+/// the only caller that opts in. Off, the fixture's banks have no ota row and the real
+/// predicate hides the strip; that is what [kSliverDashboardPageCase] and the seven
+/// `dashboard_page_harness.dart` tests get, so none of them measures a grid this page's
+/// notice has pushed down.
+///
+/// On, that fixture also pins a third provider — the banner's visibility flag — so the
+/// banner has its height on frame one rather than on frame two. That is not a
+/// convenience: unpinned, `screen_px=601` fails in every locale inside ui_kit, on a
+/// defect this repo cannot fix. The fixture's own header is where that is written down,
+/// and it is worth reading before changing either file.
 final kUspDashboardPageCase = PageSurfaceCase(
   id: 'usp_dashboard',
   view: () => const UspDashboardView(),
   needsMaterialAncestor: true,
-  overrides: () => dashboardPageOverrides(),
-  requires: const [UspTopBar, DashboardHeaderBar, SliverDashboard],
+  overrides: () => dashboardPageOverrides(firmwareBanner: true),
+  requires: const [
+    UspTopBar,
+    DashboardHeaderBar,
+    SliverDashboard,
+    FirmwareUpdateAvailableBanner,
+  ],
   forbids: const [AppLoader, ServiceErrorView],
 );
 
 /// `usp_admin_view` — timezone, password, firmware entry and the two destructive
 /// actions, in one column through 905px and two above it.
 ///
-/// **The `AppResponsiveLayout` is why this page is worth nine widths.** Four cards in one
+/// **The `AppResponsiveLayout` is why this page is worth nine widths.** Five cards in one
 /// column become two `SizedBox(width: context.colWidth(6))` columns on desktop
-/// (`usp_admin_view.dart:112`–`:151`), so the widest card is measured at the full page
+/// (`usp_admin_view.dart:145`–`:180`), so the widest card is measured at the full page
 /// width in four of the nine widths (320, 480, 601, 905) and at half of it in five
-/// (1080 up) — a difference no card suite reproduces, because the card in question is
-/// `FirmwareUpdateCard` and it is not a dashboard card.
+/// (1080 up) — a difference no card suite reproduces, because the cards in question are
+/// the two firmware cards and neither is a dashboard card.
+///
+/// **Five, not four, since #1549 split the firmware entry point in two.** The fifth is
+/// `FirmwareUpdateCard`, and it is the one card on this page that is not always here:
+/// `_manualUpdateEntry` routes it through `surfaceStrategyProvider.firmwareManualEntry`,
+/// so local mode gets five cards and remote assistance four. This case measures the
+/// five-card layout, which is the taller of the two and the only one where both firmware
+/// cards share a column — the mode-dependent absence itself is behaviour, pinned in
+/// `test/page/_shared/mode/surface_consumers_test.dart` rather than measured in pixels
+/// here.
 ///
 /// That split is four-and-five rather than two-and-seven because of this wave. The page
 /// left `AppResponsiveLayout.tablet` unset, which falls back to `desktop`, so 601px and
@@ -1238,11 +1682,49 @@ final kUspDashboardPageCase = PageSurfaceCase(
 /// name the band. Nothing about the desktop layout moved; four widths changed which
 /// builder they reach.
 ///
-/// All four cards are required. They are four independent presentations of four
+/// All five cards are required. They are five independent presentations of four
 /// different sources — `state.timeSettings`, `state.adminUser`,
-/// `systemInfoDataProvider`, and nothing at all for the actions card — so requiring one
-/// would leave the others free to fall back to a spinner or an `N/A` unnoticed.
-/// `mock_admin.dart`'s [adminPageOverrides] says what the fourth one needed.
+/// `systemInfoDataProvider` for `FirmwareOtaCard`, and nothing at all for the actions
+/// card or the manual card — so requiring one would leave the others free to fall back
+/// to a spinner or an `N/A` unnoticed. `mock_admin.dart`'s [adminPageOverrides] says
+/// what the firmware one needed.
+///
+/// **The OTA card is now the tallest thing in its column, and by choice** (2026-09-15).
+/// Its `checkForUpdates` button is gone — the label promised a check and only navigated
+/// — so the whole version block is the tappable row and ends in a 20px chevron, and the
+/// width pressure that made this the wave's hardest card went with it. What replaced it
+/// is height: when the router offers an image, a second two-line block appears under the
+/// version, from a *third* provider (`firmwareBanksDataProvider`, pinned by
+/// [adminPageOverrides] to the offering shape). Both of those strings are localized and
+/// absent unless that provider is pinned, which is the same half-a-guard problem
+/// [FirmwareAutoUpdateToggleRow] has below — the difference is that this one is measured
+/// by name in `page_surface_overflow_test.dart` rather than by `requires:` here, because
+/// what matters about it is the width its column grants, not its presence.
+///
+/// **The manual card followed a day later** (2026-09-16), for the sharper version of the
+/// same reason: `Update` promised a flash and a reboot where `checkForUpdates` only
+/// over-promised a read. So neither firmware card holds a localized button any more, and
+/// this column's width pressure is now entirely prose — the manual card's one sentence
+/// wraps in 79 of the 234 cells, three lines deep at 320px. That is measured in
+/// `page_surface_overflow_test.dart` rather than here for the same reason the OTA card's
+/// is: what matters is the width the column grants it, not its presence.
+///
+/// Requiring `FirmwareUpdateCard` is also what makes this case fail if the surface gate
+/// ever hides the manual card in local mode: the gate host does not override
+/// `appModeProfileProvider`, so it renders whatever the default profile is, and a gate
+/// that inverted would silently drop a card from every one of the 234 cells.
+///
+/// **[FirmwareAutoUpdateToggleRow] is required for a sharper reason than the cards**, and
+/// it is the one entry here that is not a card at all. #1552 put the auto-update switch
+/// inside `FirmwareOtaCard`, and that row *hides itself* — `SizedBox.shrink` — when its
+/// `autoupdate_flags` read failed, because a switch drawn from a failed read states a
+/// policy nobody knows. [adminPageOverrides] pins the provider so the row renders, and
+/// that pin is only half a guard: a code-side regression (an inverted `hasError`, an
+/// exception moved into the mapping, an early return on a null policy) deletes the row
+/// from all 234 cells in all 26 locales and every one of them still passes, because a
+/// page with one fewer row cannot overflow. Naming the row is what turns the fixture's
+/// intent into something the gate checks. It is also why that widget is public while the
+/// card's other two parts are not.
 ///
 /// What stays unmeasured is the five dialogs: timezone edit, password change, reboot
 /// and factory-reset confirmations, and the password-invalid state. #1380 puts dialogs
@@ -1254,6 +1736,8 @@ final kAdminPageCase = PageSurfaceCase(
   requires: const [
     UspTimezoneCard,
     UspPasswordCard,
+    FirmwareOtaCard,
+    FirmwareAutoUpdateToggleRow,
     FirmwareUpdateCard,
     UspSystemActionsCard,
   ],
@@ -1512,17 +1996,41 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// A second entry here should be argued hard. "This page always shows a spinner" is
 /// usually a fixture that has not been written yet, which is what a `-` in
 /// `test/fixtures/page_roster.tsv` is for.
-const kPagesWhoseLoaderIsContent = <String>{'auto_parent_first_login'};
+///
+/// **The second entry arrived on 2026-09-16 (#1554 §4), and it makes the same
+/// argument as the first rather than a new one.** `pnp_setup_firmware` is the setup
+/// wizard's firmware stage — literally the sentence this doc uses to justify
+/// `auto_parent_first_login`, "we are installing firmware, do not unplug the router",
+/// on the other of the two screens that says it. Both draw a progress bar as their
+/// subject; neither has a loaded state behind it to wait for. The test that fails a
+/// fixture is `requires: [AppLoader]` in both cases, which is why the set is worth
+/// having rather than merely counting: the pair now names *why* an entry is here, and
+/// a third page whose loader is a stand-in would have no such sentence to write.
+///
+/// Note what the second entry is **not**: it is not this page as a whole. The wizard's
+/// other case, `pnp_setup`, still forbids the loader, because on the form phase a
+/// spinner really is the stand-in this rule is about. The exemption is per case, not
+/// per view file.
+const kPagesWhoseLoaderIsContent = <String>{
+  'auto_parent_first_login',
+  'pnp_setup_firmware',
+};
 
-/// Every case the gate sweeps, in sweep order: the pilot's two, then wave 1's five,
-/// then wave 2's nine, then wave 3's six, then wave 4's twenty-one — 43 in all, which
-/// is every page view under `lib/page/` except the two `page_roster.tsv` excludes as
-/// unreachable.
+/// Every case the gate sweeps: the pilot's two, then wave 1's five, then wave 2's nine,
+/// then wave 3's six, then wave 4's twenty-one — 43, which was every page view under
+/// `lib/page/` except the two `page_roster.tsv` excludes as unreachable — and then seven
+/// more that arrived one at a time rather than in a wave: #1489's five sibling tab cases,
+/// #1549's `firmware_ota` (the 44th page, split off `firmware_update`) and #1554's
+/// `pnp_setup_firmware` (a second fixture state of a page already swept). **50 cases over
+/// 44 pages**, and the two counts have been separate quantities since #1489.
 ///
 /// One list, so `page_surface_family_test.dart` can pin the premises of all of
 /// them without naming each — a case added here without a premise fails there.
 ///
-/// The order is the order the pages were onboarded, and the oracle pins it exactly.
+/// The order was the order the pages were onboarded, and the oracle pins it exactly —
+/// but a second case for a page sits beside its sibling rather than at the end (#1489's
+/// choice, followed by #1554), so it is now onboarding order for *pages* and
+/// declaration locality within one.
 /// That pin is the epic's per-wave checkpoint: it goes red on every wave by design,
 /// and the reason string it carries is where the wave says which pages it added and
 /// why. A wave that empties the list to get green has deleted the checkpoint.
@@ -1595,47 +2103,199 @@ final kStaticRoutingPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
-/// `usp_statistics_view` — twenty chart sections behind three tabs, and the case in
-/// this family whose coverage claim is the smallest relative to its page. Both limits
-/// are by construction and neither is fixable here, so both are stated as numbers.
+/// `usp_statistics_view` — twenty chart sections behind three tabs, and the one page
+/// in this family swept by **three cases**: this one, [kStatisticsDevicesPageCase]
+/// and [kStatisticsSystemPageCase], differing only in `initialTab`. Why one page can
+/// be three cases here where `wifi_settings` and `port_forwarding` stop at their
+/// first tab is argued at [kStatisticsDevicesPageCase]. This doc covers tab 0 and the
+/// depth limit all three share.
 ///
-/// 1. **Tab 0 of 3**, for the reason `kWifiSettingsPageCase` and
-///    `kPortForwardingPageCase` give about their own second tabs: the others are
-///    behind a `TabController` and would need a tap per cell.
-/// 2. **Four of tab 0's nine sections.** Every other page in this family hands its
-///    scroll view a `Column`, which lays out all of its children whatever the
-///    height. This one hands it a `CustomScrollView` + `SliverList`, which lays out
-///    the viewport plus the cache extent and no more. Measured rather than assumed:
-///    at [kPageSweepHeight] exactly `Traffic Monitor`, `Traffic Comparison`,
-///    `Traffic Distribution` and `Traffic Trends` build — and the count is **4 at
-///    all nine swept widths**, and 4 in `en`, `ru` and `zh` alike, because what
-///    decides it is the sliver's extent and not the text. The other five
-///    (`HealthScore`, `ErrorRates`, `PacketLoss`, `FirewallRules`, `PortMapping`)
-///    never build, so this sweep says nothing about them at any width.
+/// **Tab 0 is Network, and these 234 cells cover four of its nine sections.** Every
+/// other page in this family hands its scroll view a `Column`, which lays out all of
+/// its children whatever the height. This one hands it a `CustomScrollView` +
+/// `SliverList`, which lays out the viewport plus the cache extent and no more.
+/// Measured rather than assumed: at [kPageSweepHeight] exactly `Traffic Monitor`,
+/// `Traffic Comparison`, `Traffic Distribution` and `Traffic Trends` build — and the
+/// count is **4 at all nine swept widths**, and 4 in `en`, `ru` and `zh` alike,
+/// because what decides it is the sliver's extent and not the text. The other five
+/// (`HealthScore`, `ErrorRates`, `PacketLoss`, `FirewallRules`, `PortMapping`) never
+/// build, so this sweep says nothing about them at any width.
 ///
 /// So 234 green cells here mean: the page frame — top bar, tab bar, the sliver
-/// padding arithmetic — plus the four sections a phone opens on. Raising
-/// [kPageSweepHeight] would measure more and would cost every other page in the
-/// family the same multiple; that trade belongs to whoever wants the coverage, and
-/// #1380 declined to take it silently.
+/// padding arithmetic — plus the four sections a phone opens the Network tab on.
+/// Raising [kPageSweepHeight] would measure more and would cost every other page in
+/// the family the same multiple; that trade belongs to whoever wants the coverage,
+/// and #1380 declined to take it silently.
 ///
-/// **What already covers the rest, and did before this wave.**
-/// `stats_traffic_monitor_legend_test.dart` and `stats_wifi_channels_section_test.dart`
-/// pump single sections through `test/util/statistics/stats_section_probe.dart`, which
-/// models this page's two different paddings on purpose — its header explains why the
-/// Devices tab is measured narrower than production. This case does not replace them
-/// and must not be read as covering what they cover: a section suite is how a section
-/// below the fold gets measured at all.
+/// ## The tab limit this doc used to state, and why it was wrong (#1489)
 ///
-/// [StatsSectionCard] is the premise because it is every section's own container, so
-/// it separates "the tab's sliver laid out content" from "the tab bar rendered above
-/// an empty viewport" — which is exactly what a fixture-less scene produces here, and
-/// `gateStatisticsOverrides()` says why this scene populates every provider.
+/// Until the two sibling cases landed, limit 1 here read: "**Tab 0 of 3**, for the
+/// reason `kWifiSettingsPageCase` and `kPortForwardingPageCase` give about their own
+/// second tabs: the others are behind a `TabController` and would need a tap per
+/// cell." That reason is true of those two pages and was **false of this one**. It
+/// was inherited from a case about a different page and never re-checked here:
+/// `UspStatisticsView` takes an `initialTab` argument
+/// (`usp_statistics_view.dart:15`), clamps it into the controller at :31, and the app
+/// itself supplies it from a route parameter — `?tab=N` at
+/// `route_usp_dashboard.dart:139-140`. A cell therefore opens tab 1 or tab 2 by
+/// construction, with no tap, and the tree it measures is one the app really serves.
+///
+/// What believing it cost is the argument for re-reading an inherited limit instead of
+/// copying it: 11 of this page's 20 sections were never laid out at any width in any
+/// locale, and four legend `Row`s inside them overflowed a 288px section in up to 26
+/// locales — **35 red cells that appeared the instant the two cases existed**, fixed
+/// under #1488. The 234 cells here were honest the whole time. They were green because
+/// those rows were absent from the measurement, not because they fit.
+///
+/// ## What already covers the rest, and did before this wave
+///
+/// `stats_traffic_monitor_legend_test.dart`, `stats_legend_rows_test.dart` and
+/// `stats_wifi_channels_section_test.dart` pump single sections through
+/// `test/util/statistics/stats_section_probe.dart`, which models this page's two
+/// different paddings on purpose — its header explains why the Devices tab is measured
+/// narrower than production. The three cases do not replace them and must not be read
+/// as covering what they cover: a section suite is how a section below the fold gets
+/// measured at all, and after #1489 that is still **8 of the page's 20** — five on
+/// tab 0, three on tab 1, none on tab 2.
+///
+/// ## The premise, which is four types and not one, and why each is there
+///
+/// [PageSurfaceCase.requires] is checked per cell, so every entry has to be a widget a
+/// *wrong* cell would lack. All three cases carry the same four-part shape, and only
+/// entry 3 differs per tab:
+///
+/// 1. [UspTopBar] — the page frame rendered at all.
+/// 2. [StatsSectionCard] — every section's own container, so it separates "the tab's
+///    sliver laid out content" from "the tab bar rendered above an empty viewport",
+///    which is exactly what a fixture-less scene produces here.
+/// 3. **The first section of this case's tab** — [StatsTrafficMonitorSection] here,
+///    [StatsDeviceDistributionSection] and [StatsSystemGaugesSection] on the siblings.
+///    This is the entry that makes the tab claim falsifiable, and it exists because of
+///    the one thing `initialTab` cannot do: it is a *number*, so a case that fell back
+///    to tab 0 — a copy-pasted literal, or `initialIndex:` dropped from
+///    `usp_statistics_view.dart:31` — would still render a top bar, a tab bar and four
+///    section cards, and all 702 cells would stay green while two thirds of them
+///    measured the same tab. `TabBarView` builds only the selected page, so a section
+///    that belongs to another tab is absent from the element tree, which makes "which
+///    tab is this" a `find.byType` away. Every other tabbed case in this family states
+///    its tab in prose; these three assert it, once per cell.
+/// 4. [StatsLegendDot] — the entry that proves the fixture, not the layout. Every
+///    section renders its placeholder *inside* its [StatsSectionCard] (`state.current ==
+///    null ? Center(waitingForDeviceData) : _buildChart(...)`), so entries 2 and 3
+///    survive a scene thinned down to placeholders — and a placeholder has no legend
+///    row, which is precisely the widget #1488's 35 red cells lived in. The dot is
+///    rendered only on the populated path, by sections on all three tabs, so requiring
+///    it turns "someone dropped a provider from `gateStatisticsOverrides()`" from a
+///    silent narrowing into 234 red cells. `mock_statistics.dart` says which providers
+///    those are.
 final kStatisticsPageCase = PageSurfaceCase(
   id: 'statistics',
   view: () => const UspStatisticsView(),
   overrides: () => gateStatisticsOverrides(),
-  requires: const [UspTopBar, StatsSectionCard],
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsTrafficMonitorSection,
+    StatsLegendDot,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_statistics_view` at **tab 1 — Devices** (#1489). Identical to
+/// [kStatisticsPageCase] but for `initialTab: 1`: same view class, same fixture, same
+/// premise, same 234 cells.
+///
+/// ## Why a case per tab costs no interaction
+///
+/// `TabBarView` builds the selected page only — `UiKitPageView.withSliver`'s
+/// `tabContentViews` reach it at `ui_kit_library`'s
+/// `lib/src/layout/app_page_view.dart:671`, note the file is in the package and not in
+/// this repo — so an unselected tab has no elements, no `RenderFlex`es, and nothing the
+/// overflow collector can receive. It is handed
+/// `physics: NeverScrollableScrollPhysics()` there, so not even a drag reaches a
+/// sibling tab: tapping the tab bar is the only interaction that does, and it costs an
+/// interaction per cell and pumps a tree [pageSurfaceHost] does not model. The other
+/// way in is to **construct the page on it**: `initialTab` is a constructor argument
+/// the app itself supplies from `?tab=N`, so this case enters the tab the same way a
+/// deep link does. Nothing is tapped and nothing about the tree is synthesised for the
+/// test.
+///
+/// When this case landed, this was the only page in the family where that second way
+/// existed, and the paragraph here said so. It is no longer a property of this page:
+/// the follow-up gave [UspWifiSettingsView] and [UspPortForwardingDetailView] the same
+/// argument — four lines each — and their sibling tabs entered as ordinary cases too.
+/// So all three tabbed pages now get a case per tab, by the same mechanism, and what
+/// was once this page's distinguishing feature is just the family's way of reaching a
+/// tab. See [kWifiSettingsPageCase] for the claim that kept the other two waiting.
+///
+/// ## Coverage in numbers: 4 of this tab's 7 sections
+///
+/// [kStatisticsPageCase]'s depth limit applies here unchanged, and was measured the
+/// same way. At [kPageSweepHeight], at all nine swept widths, in `en`, `ru` and `zh`,
+/// this tab builds its first four: `DeviceDistribution`, `ConnectionTrends`,
+/// `ActivityHeatmap`, `SignalQuality`.
+///
+/// **`WifiSignal`, `WifiSpeed` and `WifiChannels` never build.** They are named here
+/// so that a green `page.statistics_devices` cannot be read as covering the tab:
+/// these 234 cells say nothing about those three at any width. `WifiChannels` has its
+/// own section suite (`stats_wifi_channels_section_test.dart`); the other two have
+/// nothing, which is the honest state of it.
+///
+/// Both of this tab's #1488 defect sites are inside the built four —
+/// `DeviceDistribution` 1st, `SignalQuality` 4th — which is why this case lands at
+/// the current [kPageSweepHeight] rather than waiting on a taller surface.
+///
+/// [StatsDeviceDistributionSection] is in the premise for the reason
+/// [kStatisticsPageCase] gives at entry 3: it is on this tab and no other, so it is what
+/// makes "tab 1" a per-cell assertion rather than a claim in a doc comment. It is also
+/// this tab's first section, so the depth limit cannot reach past it, and it is one of
+/// #1488's two sites here — a cell that finds it has the fixed row on screen.
+final kStatisticsDevicesPageCase = PageSurfaceCase(
+  id: 'statistics_devices',
+  view: () => const UspStatisticsView(initialTab: 1),
+  overrides: () => gateStatisticsOverrides(),
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsDeviceDistributionSection,
+    StatsLegendDot,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_statistics_view` at **tab 2 — System** (#1489), and the one case in this
+/// family whose page-tab has **no depth limit left**: the System tab has four
+/// sections and all four build.
+///
+/// Measured, not inferred from the count — the reason [kStatisticsPageCase] states its
+/// depth as a number is that "the sliver lays out the viewport plus the cache extent"
+/// is not a bound anyone can read off a section list. At [kPageSweepHeight], at all
+/// nine swept widths, in `en`, `ru` and `zh`: `SystemGauges`, `ResourceTrends`,
+/// `CpuDistribution`, `Correlation` — **4 of 4**. This is the shallowest of the three
+/// tabs (9 / 7 / 4 sections), which is why the height that reaches four of nine on
+/// tab 0 reaches the end of this one.
+///
+/// So this is the only one of the three cases whose green sweep means *the tab*, and
+/// the one to reach for when asking what full-page coverage would look like: it is
+/// what the other two would be at a height that reached their ends.
+///
+/// Its two #1488 defect sites are `ResourceTrends` and `CpuDistribution`, 2nd and 3rd
+/// of the four. See [kStatisticsDevicesPageCase] for why entering a tab on this page
+/// needs no tap, and [kStatisticsPageCase] for the four-part premise all three share.
+///
+/// [StatsSystemGaugesSection] carries the most weight of the three tab discriminators,
+/// because this is the case whose green sweep is claimed to mean the whole tab: without
+/// it, "4 of 4" and "0 of 4, on the wrong tab" are the same green.
+final kStatisticsSystemPageCase = PageSurfaceCase(
+  id: 'statistics_system',
+  view: () => const UspStatisticsView(initialTab: 2),
+  overrides: () => gateStatisticsOverrides(),
+  requires: const [
+    UspTopBar,
+    StatsSectionCard,
+    StatsSystemGaugesSection,
+    StatsLegendDot,
+  ],
   forbids: const [AppLoader, ServiceErrorView],
 );
 
@@ -1666,11 +2326,14 @@ final kSystemLogPageCase = PageSurfaceCase(
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
+  kWifiSettingsAdvancedPageCase,
   kDeviceListPageCase,
   kDeviceDetailPageCase,
   kTopologyPageCase,
   kNodeDetailPageCase,
   kPortForwardingPageCase,
+  kPortRangePageCase,
+  kPortTriggeringPageCase,
   // Wave 2 (#1378), in flow order rather than cost order — the flow is what makes
   // the set legible, and every page in it costs about the same anyway.
   kPnpEntryPageCase,
@@ -1688,6 +2351,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // list read as though wave 2 had declared nine pages in one go, which is the one
   // thing the record of this page should not say.
   kPnpSetupPageCase,
+  kPnpSetupFirmwarePageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
   // local-login pages, then the menu, then the first-login firmware screen. Unlike
   // wave 2 this order is also the onboarding order — none of the six waited on
@@ -1712,6 +2376,14 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kSupportPageCase,
   kUnifiedDiagnosticsPageCase,
   kFirmwareUpdatePageCase,
+  kFirmwareFailedPageCase,
+  // #1549, and not wave 4 — it sits here for the reason the three statistics tabs sit
+  // beside `statistics`: it is the other half of the page above it. The split moved
+  // `_OtaCheckCard` out of `firmware_update_view.dart` whole, which took wave 4's widest
+  // fixed site with it, so this case is where that measurement now lives. Placing it at
+  // the end of the list would have left the wave-4 narrative pointing at a card that is
+  // no longer on the page it names.
+  kFirmwareOtaPageCase,
   kRouterAssistantPageCase,
   kTestConsolePageCase,
   // The two dashboard pages, inner first: `sliver_dashboard` is where the fixture was
@@ -1730,5 +2402,13 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kLocalNetworkPageCase,
   kStaticRoutingPageCase,
   kStatisticsPageCase,
+  // #1489, and the only place this list holds three cases for one page view. They sit
+  // beside `statistics` rather than at the end because the reader of this list wants
+  // "which pages" and they are one page; the id suffix is what says they are tabs of
+  // it. `page_roster.tsv` keys on the *file*, so all three still join to the single
+  // `usp_statistics_view.dart` row — its `# tabs` header block carries the per-tab
+  // ms/cell, which the register has no column for.
+  kStatisticsDevicesPageCase,
+  kStatisticsSystemPageCase,
   kSystemLogPageCase,
 ];

@@ -102,6 +102,35 @@ class BridgeRequestThrottler {
   /// Clear all cached results.
   void clearCache() => _cache.clear();
 
+  /// Drops every cross-request shortcut, because the connection they were
+  /// answered on is gone.
+  ///
+  /// Called by [UspClient.rebindTransport] (#1322). Both dedup levels are
+  /// keyed on the request *path* alone, so after a connection swap they would
+  /// answer the new session with the old one's work:
+  ///
+  /// - [_cache] holds completed values for [defaultCacheTtl] (5s). A get()
+  ///   issued just before the swap keeps being served afterwards — the wrong
+  ///   router in Remote Assistance, not merely a stale one.
+  /// - [_inFlight] is worse. Those actions have already run, so they captured
+  ///   the *previous* transport; deduping a new-session caller onto one hands
+  ///   it a request against a freed WASM client, which is #1322's
+  ///   `null pointer passed to rust` arriving by another route.
+  ///
+  /// Queued-but-undispatched requests are deliberately kept: their actions
+  /// read the transport when they finally run, so they will use the new
+  /// connection. Nothing is cancelled and no caller is left waiting — existing
+  /// awaiters of an in-flight request still get its completer, they just stop
+  /// being joined by new ones.
+  void invalidateSession() {
+    if (_cache.isNotEmpty || _inFlight.isNotEmpty) {
+      logger.d('[Throttler]: Connection replaced — dropping '
+          '${_cache.length} cached and ${_inFlight.length} in-flight entries');
+    }
+    _cache.clear();
+    _inFlight.clear();
+  }
+
   /// Resolves when the throttler has no active or queued requests.
   ///
   /// If already idle, returns immediately. Otherwise waits for all
@@ -161,11 +190,16 @@ class BridgeRequestThrottler {
           pending.completer.complete(result);
         }
 
-        // Cache the result
-        _cache[pending.cacheKey] = _CacheEntry(
-          future: pending.completer.future,
-          expiresAt: DateTime.now().add(pending.cacheTtl),
-        );
+        // Cache the result — unless this request has been retired. Without the
+        // check, a request that was in flight when [invalidateSession] ran
+        // reinstates its own answer the moment it lands, and the previous
+        // connection's value is served for a further [cacheTtl].
+        if (_isCurrent(pending)) {
+          _cache[pending.cacheKey] = _CacheEntry(
+            future: pending.completer.future,
+            expiresAt: DateTime.now().add(pending.cacheTtl),
+          );
+        }
       } on TimeoutException {
         logger.w('[Throttler]: Request timeout (${requestTimeout.inSeconds}s): '
             '${pending.cacheKey}');
@@ -183,7 +217,13 @@ class BridgeRequestThrottler {
         }
       } finally {
         _active--;
-        _inFlight.remove(pending.cacheKey);
+        // Only clear the slot if it is still ours. An unconditional remove would
+        // evict the *replacement* registered under the same key after an
+        // [invalidateSession], leaving a live in-flight request that nothing can
+        // dedup onto.
+        if (_isCurrent(pending)) {
+          _inFlight.remove(pending.cacheKey);
+        }
         if (_active == 0 && _queue.isEmpty && _idleCompleter != null) {
           _idleCompleter!.complete();
           _idleCompleter = null;
@@ -192,6 +232,15 @@ class BridgeRequestThrottler {
       }
     });
   }
+
+  /// Whether [pending] still owns its in-flight slot.
+  ///
+  /// False once [invalidateSession] has retired it — either the slot is empty or
+  /// a request issued on the new connection has taken it. Both readings mean the
+  /// same thing here: this result must not be published to anyone but the caller
+  /// who asked for it.
+  bool _isCurrent(_PendingRequest<dynamic> pending) =>
+      identical(_inFlight[pending.cacheKey], pending);
 
   _PendingRequest<dynamic>? _findQueued(String cacheKey) {
     for (final entry in _queue.entries) {

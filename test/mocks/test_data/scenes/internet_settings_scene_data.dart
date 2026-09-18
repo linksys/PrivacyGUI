@@ -63,9 +63,13 @@ const pppoeForm = UspInternetSettingsForm(
   vlanId: 0,
 );
 
+// Bridge carries a real MTU like any other form: the optional section paints a
+// fixed `Auto` row for bridge without reading the number, and the notifier no
+// longer rewrites it on the way in, so a bridge scene holding 0 would be a state
+// the app cannot reach.
 const bridgeForm = UspInternetSettingsForm(
   connectionType: UspWanConnectionType.bridge,
-  mtu: 0,
+  mtu: 1500,
   wanMacAddress: '',
   ipv6Enabled: false,
   dhcpv6Enabled: false,
@@ -124,6 +128,9 @@ const ipv6ReadOnlyInfo = InternetSettingsReadOnlyInfo(
 // State builders
 // =============================================================================
 
+/// [mtuModeSupported] defaults to true — the device reported
+/// `X_LINKSYS_MTUMode`, which every shipping FLWRT2 does, so an editing scene
+/// draws the Auto MTU toggle. Pass false for the pre-`feed_bbf#128` shape.
 InternetSettingsFeatureState dataState(
   UspInternetSettingsForm form, {
   InternetSettingsReadOnlyInfo readOnlyInfo =
@@ -131,6 +138,7 @@ InternetSettingsFeatureState dataState(
   bool isEditing = false,
   String? pppInstancePath,
   String? vlanInstancePath,
+  bool mtuModeSupported = true,
 }) {
   final settings = InternetSettingsSettings(form: form);
   return InternetSettingsFeatureState(
@@ -141,6 +149,7 @@ InternetSettingsFeatureState dataState(
       readOnlyInfo: readOnlyInfo,
       pppInstancePath: pppInstancePath,
       vlanInstancePath: vlanInstancePath,
+      mtuModeSupported: mtuModeSupported,
     ),
   );
 }
@@ -168,6 +177,7 @@ InternetSettingsFeatureState dirtyState({
       isEditing: true,
       activeMutation: isSaving ? 'save' : null,
       readOnlyInfo: defaultReadOnlyInfo,
+      mtuModeSupported: true,
     ),
   );
 }

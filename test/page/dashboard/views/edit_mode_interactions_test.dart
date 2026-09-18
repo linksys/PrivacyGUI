@@ -210,7 +210,7 @@ void main() {
     ///
     /// The tap is what moves focus — the tile is a `FocusableActionDetector`
     /// whose shortcuts are only installed in edit mode
-    /// (`dashboard_item_widget.dart:560`) — and `warnIfMissed` is off because the
+    /// (`dashboard_item_widget.dart:571` at 2.7.0) — and `warnIfMissed` is off because the
     /// press lands on the overlay above the tile, which is the arrangement under
     /// test everywhere else in this file.
     Future<ProviderContainer> grab(WidgetTester tester) async {
@@ -374,7 +374,7 @@ void main() {
   ///
   /// The tap is what moves focus — the tile's shortcuts are installed by a
   /// `FocusableActionDetector` and only in edit mode
-  /// (`dashboard_item_widget.dart:572`) — and `warnIfMissed` is off because the
+  /// (`dashboard_item_widget.dart:583` at 2.7.0) — and `warnIfMissed` is off because the
   /// press lands on the overlay above the tile, which is the arrangement under
   /// test everywhere else in this file.
   ///
@@ -527,10 +527,10 @@ void main() {
   // already committed to a *drag* — `dropOnTrash` asserts the displacement it is
   // dropping from — and the package finishes that drag either way: the decline
   // branch still calls `internal.onDragEnd`, which compacts, records history and
-  // notifies (`dashboard_controller_impl.dart:1659-1674`). What keeps that from
+  // notifies (`dashboard_controller_impl.dart:1717-1732` at 2.7.0). What keeps that from
   // saving the abandoned move is that opening the dialog takes focus off the
   // tile, and the package cancels an active interaction on focus loss
-  // (`dashboard_item_widget.dart:577-583`), so `onDragEnd` returns at its first
+  // (`dashboard_item_widget.dart:588-594` at 2.7.0), so `onDragEnd` returns at its first
   // line. These tests deliberately assert the outcome and not that mechanism: a
   // confirmation that did not happen to steal focus would fail them.
   //
@@ -556,14 +556,14 @@ void main() {
             .getString(pUspSliverDashboardLayout);
 
     /// The ids the pref holds, per breakpoint.
-    Map<int, List<dynamic>> savedIds(String raw) {
+    Map<int, List<String>> savedIds(String raw) {
       final envelope = UspLayoutEnvelope.tryDecode(raw);
       expect(envelope, isNotNull,
           reason: 'the pref holds an envelope this build can read');
       return {
         for (final slots in UspLayoutEnvelope.persistedSlotCounts)
-          slots: (envelope![slots] ?? const [])
-              .map((item) => (item as Map)['id'])
+          slots: (envelope![slots] ?? const <LayoutItem>[])
+              .map((item) => item.id)
               .toList(),
       };
     }
@@ -1229,7 +1229,7 @@ void main() {
   // one frame of the illegal geometry was drawn before it landed.
   //
   // 2.x resolves an anchored resize against the caps instead
-  // (`dashboard_controller_impl.dart:1828-1842`): for a left-family handle it
+  // (`dashboard_controller_impl.dart:1932-1946` at 2.7.0): for a left-family handle it
   // clamps `newX` into `[max(limitX, originalRight - maxW), originalRight -
   // minW]`, which for `x == 0, w == minW == maxW == cols` is `[0, 0]`. So the
   // caps now hold both handles, and the geometry is refused rather than
@@ -1325,7 +1325,7 @@ void main() {
         // to grab. The arrows reach `moveActiveItemBy` from there
         // (`dashboard_item_widget.dart:308-318`), and that is a second mutation
         // path with its own arithmetic — `targetX.clamp(0, slotCount - bbox.w)`
-        // (`dashboard_controller_impl.dart:1930`) rather than the resize
+        // (`dashboard_controller_impl.dart:2073` at 2.7.0) rather than the resize
         // resolver's anchored clamp. The caps reach it one step removed: they
         // keep `w == slotCount`, and that is what collapses the clamp to
         // `[0, 0]`. Worth a test of its own because the deleted correction

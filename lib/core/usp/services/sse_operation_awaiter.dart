@@ -529,11 +529,160 @@ class SseOperationAwaiter {
             ?.map((k, v) => MapEntry(k, v.toString())) ??
         {};
 
+    // USP's OperationComplete carries *either* output args or a CommandFailure,
+    // never both. Read under both spellings because only one of them has been
+    // seen on a bench: the notification's other members arrive snake_cased
+    // (`command_name`, `output_args`) so `err_code` is the expected shape, but
+    // the bridge hands some payloads through with protobuf's camelCase intact
+    // and a refusal read as a success is the one misparse that matters here.
+    //
+    // Which is why the *presence* of `cmd_failure` is what marks the refusal, and
+    // the code inside it is only detail: hedging two spellings still left a third,
+    // and a router that named its refusal with a message and no code, reading as
+    // success. See [OperateResult.refused].
+    final failure = operComplete['cmd_failure'] as Map<String, dynamic>?;
+    final errorCode = _nonEmpty(failure?['err_code'] ?? failure?['errCode']);
+    final errorMessage = _nonEmpty(failure?['err_msg'] ?? failure?['errMsg']);
+
     return OperateResult(
       commandName: operComplete['command_name']?.toString() ?? '',
       commandKey: operComplete['command_key']?.toString() ?? '',
-      status: outputArgs['Status'] ?? outputArgs['status'] ?? 'Unknown',
+      // A refusal reads as `Error` rather than as the `Unknown` it used to,
+      // because `cmd_failure` carries no `Status` and a caller checking
+      // `isError` was being told nothing. `isFailure` is the finer question.
+      status: outputArgs['Status'] ??
+          outputArgs['status'] ??
+          (failure != null ? 'Error' : 'Unknown'),
       outputArgs: outputArgs,
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+      refused: failure != null,
     );
+  }
+
+  static String? _nonEmpty(Object? value) {
+    final text = value?.toString();
+    return (text == null || text.isEmpty) ? null : text;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // OperationComplete watch (for commands whose result is not in the event)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Subscribe `OperationComplete` for [referencePath] and hand the caller the
+  /// feed, instead of blocking on one event and calling it the answer.
+  ///
+  /// [execute] is the right shape for a diagnostic: the notification *is* the
+  /// result. It is the wrong shape for a command that reports through the data
+  /// model. `FirmwareImage.{ota}.Download()` answers its OperationComplete in
+  /// ~49 ms and takes 1–2 s to do the work, so awaiting the event and returning
+  /// would report a check as finished before it had looked at anything.
+  ///
+  /// What the channel is still needed for is refusals — `cmd_failure` arrives
+  /// here and nowhere else — so the caller polls for its own answer and races
+  /// this to tell "found nothing" from "would not look".
+  ///
+  /// The caller **must** [OperationCompleteWatch.release] the result; the
+  /// subscription is a real one on the agent.
+  Future<OperationCompleteWatch> watchOperationComplete({
+    required String referencePath,
+  }) async {
+    if (!_manager.isConnected) {
+      // Deliberately *not* [_pollingFallback]. That fallback rewrites the operate
+      // path into a GET and waits for `DiagnosticsState`, a parameter only the
+      // diagnostics commands publish — pointed at a firmware Download it would
+      // spin to its own timeout and then report a failure for a command that ran
+      // fine. A watch nobody can feed is the honest degradation: the caller loses
+      // `cmd_failure` and keeps its own result channel.
+      logger
+          .w('[USP][SSE][Operate]: SSE disconnected — OperationComplete watch '
+              'on $referencePath will report nothing');
+      return OperationCompleteWatch.detached();
+    }
+
+    final opId = _uuid.v4().substring(0, 8);
+    final subscriptionId = 'watch-op-$opId';
+    final cleanupSubscription = await _manager.subscribe(
+      subscriptionId: subscriptionId,
+      notifType: 'OperationComplete',
+      referenceList: referencePath,
+      onNotification: (_) {}, // No-op: matching happens on the wildcard below.
+    );
+
+    late final OperationCompleteWatch watch;
+    final removeHandler = _manager.addWildcardHandler((notification) {
+      if (notification.type != 'OperationComplete') return;
+      final result = _parseOperateResult(notification);
+      if (result != null) watch.emit(result);
+    });
+    watch = OperationCompleteWatch.detached(onRelease: () async {
+      removeHandler();
+      try {
+        await cleanupSubscription();
+      } catch (e) {
+        logger.w('[USP][SSE][Operate]: Watch cleanup failed for '
+            '$subscriptionId: $e');
+      }
+    });
+    logger.d('[USP][SSE][Operate]: Watching OperationComplete on '
+        '$referencePath ($subscriptionId)');
+    return watch;
+  }
+}
+
+/// A live `OperationComplete` feed for one TR-181 subtree.
+///
+/// Buffers what it has seen, so a predicate registered *after* an event arrived
+/// still matches it. That is not a nicety: the only correlator worth matching on
+/// is the `commandKey`, and the key does not exist until the Operate's HTTP
+/// response returns — which the event is measured to beat.
+class OperationCompleteWatch {
+  /// A watch with no subscription behind it.
+  ///
+  /// Two callers, and they want it for opposite reasons.
+  /// [SseOperationAwaiter.watchOperationComplete] returns one when SSE is down,
+  /// where "nothing will ever arrive" is the truth; a test uses one plus [emit]
+  /// to say exactly what arrives and when.
+  OperationCompleteWatch.detached({Future<void> Function()? onRelease})
+      : _onRelease = onRelease;
+
+  final Future<void> Function()? _onRelease;
+  final List<OperateResult> _seen = [];
+  final List<
+      ({
+        bool Function(OperateResult) test,
+        Completer<OperateResult> completer,
+      })> _waiters = [];
+
+  /// Feed one parsed notification in. Public because the wildcard handler that
+  /// calls it is a closure registered by the awaiter, and because a test is the
+  /// other producer.
+  void emit(OperateResult result) {
+    _seen.add(result);
+    _waiters.removeWhere((waiter) {
+      if (!waiter.test(result)) return false;
+      waiter.completer.complete(result);
+      return true;
+    });
+  }
+
+  /// The first event — already seen or yet to arrive — satisfying [test].
+  ///
+  /// **Never completes with an error, and may never complete at all.** Both are
+  /// deliberate: the caller races this against its own timeout, and a future that
+  /// throws when the watch is released would surface as an unhandled async error
+  /// on the losing side of every race that went the ordinary way.
+  Future<OperateResult> firstWhere(bool Function(OperateResult) test) {
+    for (final result in _seen) {
+      if (test(result)) return Future.value(result);
+    }
+    final completer = Completer<OperateResult>();
+    _waiters.add((test: test, completer: completer));
+    return completer.future;
+  }
+
+  Future<void> release() async {
+    _waiters.clear();
+    await _onRelease?.call();
   }
 }

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
@@ -49,11 +52,12 @@ void main() {
     mockService = MockUspPortForwardingService();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
     final container = ProviderContainer(
       overrides: [
         uspPortForwardingServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        if (sse != null) sseInvalidationProvider.overrideWith((_) => sse),
       ],
     );
     container.listen(uspPortForwardingPageProvider, (_, __) {});
@@ -319,6 +323,95 @@ void main() {
 
       notifier.revert();
       expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // SSE invalidation (#1501)
+  //
+  // `sseInvalidationProvider` emits `({InvalidationDomain domain, int seq})`.
+  // This notifier reads `.domain` and ignores `seq`, whose only job is to keep
+  // two consecutive events for the *same* domain unequal — without it,
+  // riverpod 3.x's `==`-based `updateShouldNotify` collapses the second one and
+  // the repeat below stops re-fetching. So the repeat is the assertion that
+  // pins the tag end-to-end at the consumer, not just at the producer.
+  //
+  // The negative test is the other half: a listener whose comparison is
+  // accidentally always-true re-fetches on every unrelated SSE arrival and
+  // would pass the positive test alone.
+  // -------------------------------------------------------------------------
+  group('UspPortForwardingPageNotifier SSE invalidation', () {
+    test('portForwarding domain re-fetches, and a repeat re-fetches again',
+        () async {
+      stubFetch();
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+
+      // Drop the build() fetch so the counting below starts from zero.
+      verify(() => mockService.fetchForwardingRules()).called(1);
+      clearInteractions(mockService);
+
+      sse.add((domain: InvalidationDomain.portForwarding, seq: 0));
+      await Future.delayed(Duration.zero);
+      verify(() => mockService.fetchForwardingRules()).called(1);
+
+      // Same domain again — e.g. a second PortMapping instance created right
+      // after the first. `seq` is the only thing that differs.
+      sse.add((domain: InvalidationDomain.portForwarding, seq: 1));
+      await Future.delayed(Duration.zero);
+      verify(() => mockService.fetchForwardingRules()).called(1);
+
+      await sse.close();
+      container.dispose();
+    });
+
+    test('firewallRules domain does not re-fetch', () async {
+      stubFetch();
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockService);
+
+      // Port forwarding rules are enforced by the firewall, so firewallRules is
+      // the plausible-but-wrong neighbour: it maps from Device.Firewall.Chain.
+      // and must not reload the NAT.PortMapping page.
+      sse.add((domain: InvalidationDomain.firewallRules, seq: 0));
+      await Future.delayed(Duration.zero);
+
+      verifyNever(() => mockService.fetchForwardingRules());
+
+      await sse.close();
+      container.dispose();
+    });
+
+    test('a matching domain does not re-fetch while dirty', () async {
+      stubFetch();
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockService);
+
+      container
+          .read(uspPortForwardingPageProvider.notifier)
+          .addForwardingRule(pf2);
+      sse.add((domain: InvalidationDomain.portForwarding, seq: 0));
+      await Future.delayed(Duration.zero);
+
+      // onSseInvalidation() skips while dirty so an external change cannot
+      // clobber unsaved edits.
+      verifyNever(() => mockService.fetchForwardingRules());
+      expect(
+        container
+            .read(uspPortForwardingPageProvider)
+            .settings
+            .current
+            .forwardingRules,
+        hasLength(2),
+      );
+
+      await sse.close();
       container.dispose();
     });
   });

@@ -345,6 +345,12 @@ Widget chromeTopBarHost({required Locale locale, String? cellKey}) {
 ///
 /// [cellKey] is the sweep's old freshness key, kept for the suite's non-sweep
 /// tests — see [chromeTopBarHost].
+///
+/// [isRemoteMode] is still a bool *here* while the widget itself no longer has
+/// one: #1497 replaced it with a nullable `onEdit`, and the translation happens
+/// below so `kChromeHeaderModes` and both suites that read `mode.isRemoteMode`
+/// keep describing the sweep in the vocabulary a reader of a 234-cell grid wants
+/// — "which mode is this cell" rather than "which callbacks were null".
 Widget chromeHeaderHost({
   required Locale locale,
   required bool isEditMode,
@@ -370,10 +376,11 @@ Widget chromeHeaderHost({
               ),
               child: DashboardHeaderBar(
                 isEditMode: isEditMode,
-                isRemoteMode: isRemoteMode,
                 onPrint: onPrint ?? () {},
                 onRefresh: () {},
-                onEdit: () {},
+                // What `isRemoteMode: true` now means to this widget: no layout
+                // editor was handed over, so there is no `dashboard-edit` action.
+                onEdit: isRemoteMode ? null : () {},
                 onOptimizeLayout: () {},
                 onLayoutSettings: () {},
                 onCancelEdit: () {},

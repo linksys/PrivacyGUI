@@ -98,6 +98,10 @@ class UspSystemInfoDataService {
     }
   }
 
+  /// Fallback path, taken only when [firmwareBanksDataProvider] has not resolved
+  /// yet. It reads the table directly, so it has to drop the virtual OTA
+  /// instance itself — `physicalBanks` upstream does not cover this branch, and
+  /// this is the branch the very first read of `systemInfoDataProvider` takes.
   List<FirmwareImageUIModel> _buildFirmwareImageUIModels({
     required FirmwareImages data,
     required String activeRef,
@@ -105,7 +109,9 @@ class UspSystemInfoDataService {
   }) {
     final normalizedActive = _stripTrailingDot(activeRef);
     final normalizedBoot = _stripTrailingDot(bootRef);
-    return data.items.map((img) {
+    return data.items
+        .where((img) => img.alias != fw_model.kOtaFirmwareAlias)
+        .map((img) {
       final normalizedPath = _stripTrailingDot(img.instancePath);
       return FirmwareImageUIModel(
         instancePath: img.instancePath,

@@ -39,8 +39,15 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
 
     const defaultInterval = Duration(seconds: 30);
 
-    // Listen for future state changes
+    // Listen for future state changes.
+    // `is AsyncData` is not a completion check: a re-running provider emits
+    // AsyncData(isLoading: true, value: previous) first, so without the
+    // isLoading guard this starts the timer twice per invalidate and
+    // setRefreshInterval's unconditional _fetchAndAppend() costs a redundant USP
+    // round-trip while the domain fetch is still in flight.
+    // See doc/riverpod/listen_site_audit.md.
     ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next.isLoading) return;
       if (next is AsyncData) {
         _startTimerIfAuthenticated(defaultInterval);
       }

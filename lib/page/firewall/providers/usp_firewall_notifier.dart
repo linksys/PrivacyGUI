@@ -41,7 +41,11 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
   FirewallFeatureState build() {
     // Listen to data provider for SSE-driven changes.
     // Uses the framework's onSseInvalidation() — skips if dirty.
+    // The isLoading check excludes the re-run frame, which carries the previous
+    // value forward and would otherwise trigger a second forceRemote fetch per
+    // refetch. See doc/riverpod/listen_site_audit.md.
     ref.listen(firewallDataProvider, (_, next) {
+      if (next.isLoading) return;
       if (next.hasValue) onSseInvalidation();
     });
 

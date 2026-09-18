@@ -73,16 +73,37 @@ class StatsResourceTrendsSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // DEGRADATION SHAPE (#1488) — two inflexible groups in a centred `Row`
+        // overflowed 238px in 7 of 26 locales (worst `de`, 74px). A `Wrap`, which
+        // works here only because the *longer* of the two groups fits 238px on its
+        // own: `de`'s "Durchschn.: 49%  Spitze: 62%" is the longest single group
+        // in any locale, and it is what the `de` readability guard measures. The
+        // chart above is `Expanded`, so it yields the height.
+        //
+        // Both labels are percentages, so neither is `Flexible` or ellipsized —
+        // an ellipsis in "Avg: 49%  Peak: 62%" would read as a different figure.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).avg(avgMem)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatsLegendDot(color: colorScheme.primary),
+                AppGap.xs(),
+                AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatsLegendDot(color: colorScheme.secondary),
+                AppGap.xs(),
+                AppText.labelSmall(loc(context).avg(avgMem)),
+              ],
+            ),
           ],
         ),
       ],

@@ -91,6 +91,44 @@ void main() {
       );
       expect(result.commandName, 'IPPing()');
     });
+
+    test('refused defaults to whether a code was named', () {
+      // So that a hand-built result — a test, a fake — still reads as a refusal
+      // when it names a code, without every construction site having to know
+      // about the flag. Only the SSE parser passes it explicitly, because only
+      // the parser saw whether `cmd_failure` was there.
+      const named = OperateResult(
+        commandName: 'Download()',
+        commandKey: 'k',
+        status: 'Error',
+        outputArgs: {},
+        errorCode: '7004',
+      );
+      expect(named.refused, isTrue);
+      expect(named.isFailure, isTrue);
+
+      const plain = OperateResult(
+        commandName: 'Download()',
+        commandKey: 'k',
+        status: 'Complete',
+        outputArgs: {},
+      );
+      expect(plain.refused, isFalse);
+      expect(plain.isFailure, isFalse);
+    });
+
+    test('refused overrides the inference — a refusal with no code', () {
+      const result = OperateResult(
+        commandName: 'Download()',
+        commandKey: 'k',
+        status: 'Error',
+        outputArgs: {},
+        errorMessage: 'not permitted',
+        refused: true,
+      );
+      expect(result.isFailure, isTrue);
+      expect(result.errorCode, isNull);
+    });
   });
 
   // ---------------------------------------------------------------------------

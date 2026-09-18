@@ -73,7 +73,10 @@
 /// things" reads as settled — but the two sites in this repo's own committed
 /// capture of such a run (`test/fixtures/golden_overflow_warnings.json`, 16 records
 /// at `screens=1080`) are `firmware_update_card.dart:77`, a **loading** skeleton
-/// reached through `usp_admin_view.dart`, and `usp_sliver_dashboard_view.dart:414`,
+/// reached through `usp_admin_view.dart` — that coordinate is quoted as the capture
+/// recorded it and is deliberately not updated, but the skeleton itself now lives at
+/// `firmware_ota_card.dart:79`, moved by #1549 along with the version block it stands
+/// in for — and `usp_sliver_dashboard_view.dart:414`,
 /// the delete target that exists only in **edit mode**. Neither appears in any of
 /// the five committed baselines, at any width. What those two want is page and
 /// state coverage, which is #1369's and #1380's job; adding a width does not reach
@@ -367,10 +370,16 @@ class PageSurfaceFamily extends OverflowSurfaceFamily {
 /// The surface is **not** set here — [runOverflowSweep] owns that through
 /// `setLayoutSurface` (invariant 2), which is also why this returns a widget
 /// rather than pumping one.
+/// [extraRoutes] are declared alongside the page, for a caller that **taps** a
+/// button which navigates. `go_router` renders its own error screen for a location
+/// no route matches, so without a destination such a tap looks like it worked. Every
+/// swept cell passes none: the sweep pumps and measures, it does not press anything,
+/// and a route list that differed per cell would be a second axis.
 Widget pageSurfaceHost({
   required Widget view,
   required Locale locale,
   List<Override> overrides = const [],
+  List<RouteBase> extraRoutes = const [],
 }) {
   // Same call as `lib/app.dart`, not a copy of its body — see #1285.
   final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
@@ -397,6 +406,7 @@ Widget pageSurfaceHost({
             name: 'test_root',
             builder: (context, state) => view,
           ),
+          ...extraRoutes,
         ],
       ),
     ),

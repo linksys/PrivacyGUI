@@ -41,7 +41,9 @@ without review.
 - the codegen binary version above, and
 - the YAML snapshot in `usp_framework/usp-definitions/` at generation time.
 
-The YAML definitions are **not vendored** into this repo.
+The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
+
+Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure
 
@@ -62,8 +64,14 @@ The YAML definitions are **not vendored** into this repo.
      --language dart \
      --client-import 'package:privacy_gui/core/usp/services/usp_client.dart' \
      --client-class 'UspClient'
-   dart format lib/generated
+   fvm dart format lib/generated
    ```
+   Run the format **from the repo root**, on `lib/generated` — not on a temp
+   output directory. The style is decided by this package's language version
+   (`pubspec.yaml` pins `sdk: ">=3.3.0 <4.0.0"`, below 3.7), so formatting in
+   place is a no-op on untouched files; formatting a temp directory resolves to
+   the newest language version, switches to the 3.7 "tall" style, and turns a
+   3-file change into a 46-file diff of pure noise.
 
 3. **Web client assets**
    ```bash

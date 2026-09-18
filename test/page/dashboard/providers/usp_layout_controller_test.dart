@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
+import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // The counting store below wraps whatever `setMockInitialValues` installed.
@@ -15,6 +16,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_platfor
 // ignore: depend_on_referenced_packages
 import 'package:shared_preferences_platform_interface/types.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+
+import '../../../util/dashboard/layout_provider_harness.dart';
 // The drag entry points are not on the exported interface: `DashboardOverlay`
 // and the item widget reach them through this extension, and #1393 is about what
 // happens when they are called. Driving them directly is what lets the grab /
@@ -22,11 +25,6 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 // widget layer's own bindings are covered by the package.
 // ignore: implementation_imports
 import 'package:sliver_dashboard/src/controller/utility.dart';
-
-/// Wait for async initialization chains (SharedPreferences) to settle.
-Future<void> pumpAsync() async {
-  await Future.delayed(const Duration(milliseconds: 100));
-}
 
 /// Helper: creates a minimal valid layout item map for testing.
 Map<String, dynamic> _layoutItem(
@@ -85,16 +83,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   /// Creates a ProviderContainer, triggers async init, waits for it to settle.
+  ///
+  /// No `awaitPreferences`: nothing in this file reads a preference, and
+  /// `usp_layout_controller.dart` does not read that provider either, so asking
+  /// for it would put a provider in the container that the code under test never
+  /// touches.
   Future<ProviderContainer> createInitializedContainer({
     Map<String, Object> initialValues = const {},
-  }) async {
-    SharedPreferences.setMockInitialValues(initialValues);
-    final container = ProviderContainer();
-    // Force provider creation (triggers constructor → _initializeLayout)
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
+  }) =>
+      bootLayout(initialValues: initialValues);
 
   // ---------------------------------------------------------------------------
   // Initialization
@@ -205,6 +202,45 @@ void main() {
       expect(saved, isNotNull);
       final decoded = _savedDesktopLayout(saved!);
       expect(decoded.length, 18);
+    });
+
+    // Well-formed JSON holding a well-formed envelope holding an item the grid
+    // cannot import: `id` absent. Its own case sits in the envelope's decode
+    // table; this is the consequence at the boot it happens on, which is the
+    // part that made #1310's third trap worth fixing rather than noting.
+    //
+    // `expect(layout.length, 18)` is deliberately not the assertion. It passes
+    // either way, and for opposite reasons: with the fix, because the reject
+    // path reseeds the default; without it, because `LayoutItem.fromMap` threw
+    // inside `_importQuietly` *before* `_swapController`, leaving the grid on
+    // the controller the constructor built. Same count, and the second one is
+    // the bug. What separates them is the pref — the reject path overwrites the
+    // unreadable value, so the next boot is an ordinary one, whereas the throw
+    // left it stored and repeated on every boot for the life of the install.
+    //
+    // The throw itself also fails this test, without an assertion for it:
+    // `_initializeLayout` is called unawaited from the constructor, so its error
+    // reaches the test zone with nothing between.
+    test('a saved item the grid cannot import → overwrites the pref', () async {
+      final corrupt = jsonEncode({
+        'version': 2,
+        'layouts': {
+          '12': [
+            {'x': 0, 'y': 0, 'w': 6, 'h': 3},
+          ],
+        },
+      });
+      final container = await createInitializedContainer(
+        initialValues: {pUspSliverDashboardLayout: corrupt},
+      );
+      addTearDown(container.dispose);
+
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(pUspSliverDashboardLayout);
+      expect(saved, isNot(corrupt),
+          reason: 'the unreadable value is still stored, so every future boot '
+              'reads it again');
+      expect(_savedDesktopLayout(saved!).length, 18);
     });
 
     test('saved layout with fewer cards (preset) is valid', () async {
@@ -513,7 +549,7 @@ void main() {
   // row.
   //
   // `sliver_dashboard` 2.6.0 clamps `x` against the same caps
-  // (`dashboard_controller_impl.dart:1828-1842`), so the subscription became
+  // (`dashboard_controller_impl.dart:1932-1946` at 2.7.0), so the subscription became
   // unreachable and was deleted (#1399). These tests therefore changed shape:
   // they used to simulate the gesture by writing its result to the layout beacon
   // and assert it was undone, which is no longer a thing that happens to any
@@ -754,6 +790,100 @@ void main() {
       final newItem =
           layout.firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
       expect(newItem['x'], greaterThanOrEqualTo(0));
+    });
+
+    test('added card is indistinguishable from the items already on the grid',
+        () async {
+      // #1310 stage 1. `addWidget` used to splice a hand-written nine-key map
+      // into a list whose every other item came from `LayoutItem.toMap()`, i.e.
+      // sixteen.
+      //
+      // This does not fail on the old encoder, and the reason is worth having in
+      // writing: `_replaceController` imports through `controller.importLayout`,
+      // so the package's own `fromMap` re-types every map and fills the seven
+      // absent keys with `LayoutItem`'s defaults — which are the same values
+      // `LayoutItemFactory.fromSpec` leaves them at, because it sets none of
+      // them. The short map was therefore an intermediate value that never
+      // reached an observer. What made it a defect is the width caps, and that
+      // is the next test.
+      //
+      // Kept as a shape assertion rather than deleted: it is what stops a future
+      // `fromSpec` that *does* set one of these from silently losing it here.
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+      await notifier.applyPreset(UspDashboardPreset.essential);
+
+      await notifier.addWidget('topology');
+
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final added = layout.firstWhere((i) => (i as Map)['id'] == 'topology');
+      final existing = layout.firstWhere((i) => (i as Map)['id'] != 'topology');
+
+      expect(added.keys.toSet(), existing.keys.toSet());
+      // Named explicitly because these are the ones the old encoder omitted, and
+      // a key-set match alone would not say which.
+      expect(
+          added.keys, containsAll(['isResizable', 'isStatic', 'isDraggable']));
+    });
+
+    test('a spec with no constraints can be added', () async {
+      // The half of #1310 (c) that was a live throw rather than a wrong value.
+      //
+      // `LayoutItemFactory.fromSpec` falls back to `LayoutItem`'s defaults when a
+      // spec declares nothing for the requested `DisplayMode`, and those defaults
+      // put `double.infinity` in `maxW`/`maxH`. The added item is handed straight
+      // to `UspWidgetSpecs.scaleLayout` for the 8- and 4-column grids, which
+      // reads `(map['maxW'] as num?)?.toInt()` — and `.toInt()` on an infinity
+      // throws. `toMap()` writes an infinite bound as `null` instead, and
+      // `?? fromCols` absorbs it.
+      //
+      // Reached through the `spec:` parameter because that is the real one: it
+      // exists for widgets outside `UspWidgetSpecs`, all 18 of which declare
+      // `DisplayMode.normal` constraints. `PackageWidgetTemplate.toWidgetSpec`
+      // happens to fill `DisplayMode.normal` too, so no caller supplies this
+      // shape today — which is why the throw was latent rather than reported.
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+      await notifier.applyPreset(UspDashboardPreset.essential);
+
+      await notifier.addWidget(
+        'unconstrained_widget',
+        spec: const WidgetSpec(
+          id: 'unconstrained_widget',
+          displayName: 'Unconstrained',
+          constraints: {},
+        ),
+      );
+
+      for (final entry in notifier.exportAllBreakpoints().entries) {
+        final matches =
+            entry.value.where((i) => i.id == 'unconstrained_widget').toList();
+        expect(matches, hasLength(1),
+            reason: 'missing from the ${entry.key}-column grid');
+
+        // Asserted on `toMap()` rather than on the item, because an infinite cap
+        // is legal in memory and only illegal on the wire. #1310 moved the line
+        // between those two: `exportAllBreakpoints` now returns items, so the
+        // desktop grid legitimately hands back `maxW: double.infinity` — the very
+        // value the scale used to choke on — and it is `toMap()`'s
+        // `isInfinite ? null` that makes it JSON. Reading `isFinite` off the item
+        // here would assert the opposite of what the code guarantees.
+        final serialised = matches.single.toMap();
+        for (final key in ['maxW', 'maxH']) {
+          final value = serialised[key];
+          expect(value == null || (value as num).isFinite, isTrue,
+              reason: '$key on the ${entry.key}-column grid is $value');
+        }
+        // And the whole payload still has to reach SharedPreferences as JSON.
+        expect(() => jsonEncode(serialised), returnsNormally);
+      }
     });
 
     test('add to preset increments count by 1', () async {
@@ -1438,6 +1568,12 @@ void main() {
   //
   // The history is not a preference. It is a defect for this notifier: see the
   // first test.
+  //
+  // The group keeps its 2.6.0 name because #1395 is what it is anchored to, but
+  // the policy assertion below has since taken 2.7.0's `fluidResize` as well.
+  // That is the group working as intended rather than drifting: every minor that
+  // adds an interaction default lands here, and the constraint moved to `^2.7.0`
+  // precisely so that the next one is a version bump someone reviewed.
   group('2.6.0 input surface (#1395)', () {
     test('the undo history is off, because ours would restore a foreign grid',
         () async {
@@ -1446,7 +1582,7 @@ void main() {
 
       // `_importQuietly` suppresses *our* persist hook, not the package's
       // bookkeeping: `importLayout` records a history entry
-      // (`dashboard_controller_impl.dart:1030`), so seeding the 8- and 4-column
+      // (`dashboard_controller_impl.dart:1082` at 2.7.0), so seeding the 8- and 4-column
       // caches pushes those two layouts onto the undo stack before the user has
       // touched anything. `_restoreSnapshot` then re-projects a snapshot taken at
       // another slot count onto the live grid, and #1393's hook persists the
@@ -1553,6 +1689,16 @@ void main() {
         expect(shortcuts.lassoModifier, isNotEmpty,
             reason: 'lasso modifier: $site — inert while the lasso is off, and '
                 'the field that arms it if it is ever turned back on');
+
+        // The field 2.7.0 added, and the case this helper's comment predicted:
+        // it arrived on a `pub get` with no diff to review, because the
+        // constraint is `^2.6.0` and the lock is gitignored. Off by the package
+        // default, and named here to make that a decision rather than an
+        // inheritance — fluid resize previews the tile in raw pixels, which is
+        // the opposite of the slot-snapped geometry every rule in #1400 and
+        // #1293 is written against.
+        expect(controller.fluidResize.value, isFalse,
+            reason: 'fluid resize: $site');
       }
 
       // The instance a first run keeps, which is `_createDefaultController`'s —

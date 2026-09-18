@@ -1,15 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -375,26 +381,240 @@ class PnpNotifier extends Notifier<PnpState> {
     );
   }
 
-  // ─── Firmware Check ──────────────────────────────────────
+  // ─── Firmware Stage ──────────────────────────────────────
 
+  /// Offer the router a newer firmware before setup finishes, and finish setup
+  /// either way.
+  ///
+  /// **A flow stage, not a form step (REQ-B0).** It runs after `saveWifi` has been
+  /// committed — from `saveChanges()` when the main WiFi did not change, and from
+  /// [testReconnect] when it did — so `_buildStepperForm`'s step count is untouched
+  /// by any of this. A user who reaches here has a configured router whatever
+  /// happens next, which is what lets every failure below end in
+  /// [WizardWifiReady].
+  ///
+  /// **Every exit is [WizardWifiReady] (REQ-B3).** A read that throws, a router
+  /// with no `ota` row, a check that finds nothing, a fifteen-second wait with no
+  /// answer, an install that is refused — all of them log and finish setup. The
+  /// firmware update is the bonus; a configured network is the requirement.
+  ///
+  /// **The reboot belongs to the recovery framework, and only to it (REQ-B5).**
+  /// PnP has its own reconnect — [testReconnect], with exponential backoff and
+  /// `uspAuthCoordinator.restoreSession` — and it is **not** involved here. The two
+  /// are sequential by construction: [testReconnect] has already returned before
+  /// this method is called, and `saveChanges()`'s other arm never enters it. So the
+  /// flash's reboot is waited out by `enterRecoveryWaiting()` +
+  /// [appConnectionStateProvider], which is the path that also parks the SSE
+  /// channel and checks the serial fingerprint on the way back. Two reconnect
+  /// loops on one reboot would race for the same WASM session; there is exactly
+  /// one in flight, and `pnp_notifier_test.dart` asserts it by counting calls on
+  /// the other one.
+  ///
+  /// **No `verify()`, deliberately.** The dashboard's firmware page ends a flash by
+  /// confirming the bank flip and reporting a failure card if it does not add up.
+  /// PnP has nowhere to put that: its next screen is the WiFi credentials, and a
+  /// verification that failed for a benign reason — a slow TR-181 table, a router
+  /// that published no `Version` — would paint "Update Failed" over a setup that
+  /// worked. Reporting on an update belongs to the page that exists for it.
   Future<void> _checkFirmware({
     required String ssid,
     required String password,
     PnpWifiConfig? wifiConfig,
   }) async {
+    final ready = WizardWifiReady.fromWifiConfig(
+      ssid: ssid,
+      password: password,
+      wifiConfig: wifiConfig,
+    );
+    // REQ-B4 is satisfied by `ready` itself outliving the reboot, and it is built
+    // here — before the stage — for the reason a persisted copy used to be written
+    // here: after the flash is dispatched there may be no session left to build it
+    // from. What the router reboot cannot touch is this object: it is a router
+    // restart, not a page reload, so the container and `pnpProvider` (not
+    // `autoDispose`) are still the same ones. Verified on hardware 2026-09-16 —
+    // `..15 → ..16` from PnP, and the completion screen showed the SSID and
+    // passphrase that had just been configured.
     state = state.copyWith(phase: const WizardCheckingFirmware());
 
-    // NOTE: Firmware update via USP Operate is a P3 feature.
-    // For now, skip directly to WizardWifiReady.
-    // TODO: Integrate FirmwareImages.fetch(usp) when firmware Operate is available.
+    // Everything from here to the `finally` is inside the try, not just
+    // `_runFirmwareStage`. REQ-B3's acceptance criterion is that setup completes
+    // whatever the router does, and a narrower try only covers the throw the
+    // requirement happens to name: with the `ref.listen`, the `ref.read` and the
+    // cleanup outside it, a throw from any of those escapes into the caller — where
+    // `saveChanges()`'s catch reverts to the form with an error banner, and
+    // `testReconnect()`'s catch treats it as a failed attempt and runs the whole
+    // stage again, dispatching a second install at a router already flashing. So the
+    // landing is set in the `finally` and there is exactly one way out of this
+    // method.
+    ProviderSubscription<FirmwareUpdateState>? keepAlive;
+    try {
+      // `firmwareUpdateNotifierProvider` is `autoDispose` and `ref.read` registers
+      // no dependency, so between two awaits here the notifier holding the phase
+      // this stage is driving can be disposed and rebuilt at `idle` — losing the
+      // progress mid-flash, with nothing watching it yet because the view only
+      // starts watching when the phase below is published. A listener whose
+      // callback does nothing is the keep-alive: what it is for is the
+      // subscription, not the notifications.
+      keepAlive = ref.listen(firmwareUpdateNotifierProvider, (_, __) {});
+      final firmware = ref.read(firmwareUpdateNotifierProvider.notifier);
+      try {
+        await _runFirmwareStage(firmware);
+      } finally {
+        // The shared notifier must not be left carrying this stage's outcome.
+        // `_firmwareExitGuard` in `route_usp_dashboard.dart` silently vetoes the
+        // back arrow on `isUpdating`, so a phase left set here would follow the
+        // user to the firmware page and trap them there — and a `failed` left set
+        // would show them "Update Failed" for an attempt PnP deliberately never
+        // reported, with a Try Again that re-dispatches it.
+        //
+        // **Unconditional, not `if (isUpdating)`.** That flag excludes `failed`
+        // and `done` by definition, which are two of the three states this stage
+        // can leave behind; and sampling it once, here, samples it at the one
+        // moment a check abandoned by `.timeout()` has not resolved yet. `cancel()`
+        // is idempotent — it resets to a clean state keeping the banks, and every
+        // operation clears its own `_cancelRequested` on entry, so this cannot
+        // poison a later update the user starts themselves.
+        firmware.cancel();
+      }
+    } catch (e) {
+      // One `catch`, not `on ServiceError`, because `UspMutationLock` throws a bare
+      // `TimeoutException` and `.timeout()` below throws another — neither is a
+      // `ServiceError`, and all of them mean the same thing here.
+      logger.w('[PnP] the firmware stage did not complete ($e) — '
+          'finishing setup without an update');
+    } finally {
+      keepAlive?.close();
+      // REQ-B3, structurally: the credentials screen is the landing for every
+      // outcome — no update, no internet, a timeout, a throw, a flash that worked.
+      //
+      // The value just computed, **not** a read-back of the store. Reading back
+      // would put the durable copy on the live path, which is why it was written
+      // that way first — but `store()` swallows its failures by design and so does
+      // `clear()`, so a snapshot from an earlier setup run can still be in the
+      // keystore when this run's write silently fails. The read would then find it,
+      // be non-null, and render a *previous* network's SSID and passphrase into
+      // this screen's QR code. The in-memory value is the authority; the stored one
+      // exists for a restore after a page reload.
+      state = state.copyWith(phase: ready);
+    }
+  }
 
+  /// The four branches REQ-B1 names, in the order the router answers them.
+  ///
+  /// Returns normally for all three "nothing to do" outcomes; the caller finishes
+  /// setup on every path including a throw.
+  ///
+  /// **The check is dispatched rather than `Available` being read.** Branch 3 in the
+  /// requirement is `Available=false`, and read on its own that would make this
+  /// feature dead on the router it is for: the router reports `Status=NoImage` with
+  /// `Available=false` both when a check has just found nothing *and* when no check
+  /// has ever run, which is the state of a factory-fresh router at first
+  /// connection. So `checkForUpdate()` is what makes the field mean anything, and it
+  /// already answers all four branches — no `ota` row and "an update is already
+  /// running" both come back as `notChecked`, which is why they share an arm here.
+  Future<void> _runFirmwareStage(FirmwareUpdateNotifier firmware) async {
+    // One deadline over the whole stage up to the dispatch, not per request: the
+    // image-table read, the Operate and the check's own polling are all inside it.
+    final check = await firmware
+        .checkForUpdate()
+        .timeout(ref.read(pnpFirmwareCheckDeadlineProvider));
+
+    if (!check.isUpdateAvailable) {
+      // Branches 2 and 3. Logged at info and **not** recorded as an error: a
+      // router with no fwup stack is an OEM build, which is a permanent property
+      // of the device rather than a fault, and "checked, found nothing" is the
+      // ordinary answer.
+      logger.i('[PnP] no firmware update to install '
+          '(${check.verdict.name}) — finishing setup');
+      return;
+    }
+
+    // `hasError` before `valueOrNull`: Riverpod attaches the previous value to an
+    // `AsyncError` whether asked to or not, so reading the value first would
+    // dispatch an install against a row from a read that has since failed.
+    final banks = ref.read(firmwareBanksDataProvider);
+    final ota = banks.hasError ? null : banks.valueOrNull?.otaInstance;
+    if (ota == null) {
+      // Only reachable if the row disappeared between the check and this read —
+      // `checkForUpdate()` could not have returned `updateAvailable` without it.
+      logger.w('[PnP] an update was found but the ota row is no longer '
+          'readable — finishing setup');
+      return;
+    }
+
+    // Branch 4, and the one that locks the flow (REQ-B2). Published before the
+    // dispatch so the progress card is on screen for the seconds the router spends
+    // deciding, and so the route guard is closed before anything is committed.
     state = state.copyWith(
-      phase: WizardWifiReady(
-        ssid: ssid,
-        password: password,
-        wifiConfig: wifiConfig,
-      ),
+      phase: WizardUpdatingFirmware(version: check.version),
     );
+
+    final result = await firmware.triggerRouterOtaInstall(
+      otaInstance: ota.instance,
+    );
+    if (!result.isFlashing) {
+      // `flashing` is the only verdict with a reboot behind it. `idle` means mode 2
+      // checked again and found nothing — it checks before it downloads, so an
+      // accepted dispatch can still come back empty — and the failed verdicts have
+      // already failed the phase.
+      logger.i('[PnP] the router did not start an install '
+          '(${result.verdict.name}) — finishing setup');
+      return;
+    }
+
+    await _awaitFirmwareReboot(firmware);
+  }
+
+  /// Wait out the reboot the flash causes, through the recovery framework.
+  ///
+  /// No recovery dialog, unlike the firmware page: PnP is already a full-screen
+  /// flow, and REQ-B0 asks for the firmware stage to be one too. A modal over it
+  /// would put a second "waiting for the router" surface on top of the one the
+  /// wizard is already showing, with its own dismiss.
+  ///
+  /// Ends on any state other than `waitingForRecovery`, not only on
+  /// `authenticated`: the probe can also end the session (a serial mismatch means
+  /// this is a different router), and there is nothing to wait for after that.
+  Future<void> _awaitFirmwareReboot(FirmwareUpdateNotifier firmware) async {
+    firmware.enterRecoveryWaiting();
+
+    // `enterWaiting` can decline — the proximity strategy decides whether this
+    // trigger needs recovery on this surface — and then the state never leaves
+    // `authenticated`, so a listener waiting for it to change would wait out the
+    // whole deadline for a reboot nobody is watching.
+    if (ref.read(appConnectionStateProvider) !=
+        AppConnectionState.waitingForRecovery) {
+      logger.i('[PnP] recovery was not entered for the firmware reboot — '
+          'finishing setup');
+      return;
+    }
+
+    final settled = Completer<void>();
+    final sub = ref.listen<AppConnectionState>(
+      appConnectionStateProvider,
+      (_, next) {
+        if (next != AppConnectionState.waitingForRecovery &&
+            !settled.isCompleted) {
+          settled.complete();
+        }
+      },
+    );
+    try {
+      await settled.future.timeout(ref.read(pnpFirmwareRebootDeadlineProvider));
+      logger.i('[PnP] the router came back after the firmware update '
+          '(${ref.read(appConnectionStateProvider).name})');
+    } on TimeoutException {
+      // The connection state is left in `waitingForRecovery` on purpose: the probe
+      // loop is still the thing that will notice the router returning, and forcing
+      // it to `authenticated` here would claim a session this code has not seen.
+      // What PnP does is stop waiting — the credentials are what a user with an
+      // unreachable router needs, and they are on the next screen.
+      logger.w('[PnP] the router did not come back within '
+          '${ref.read(pnpFirmwareRebootDeadlineProvider).inMinutes} minutes — '
+          'showing the WiFi credentials anyway');
+    } finally {
+      sub.close();
+    }
   }
 
   // ─── No Internet Flow ───────────────────────────────────

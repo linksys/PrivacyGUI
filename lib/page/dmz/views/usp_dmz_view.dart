@@ -194,6 +194,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
             AppSwitch(
               identifier: 'dmz-enabled',
               value: pending.isEnabled,
+              // Same busy treatment the rule rows carry — see
+              // `usp_single_port_tab.dart` for why a null `onChanged` was not one
+              // (#1542). `disabled` here *is* `status.isSaving`.
+              isLoading: disabled,
+              busySemanticLabel: disabled ? loc(context).processing : null,
               onChanged: disabled
                   ? null
                   : (v) => notifier.updateSetting(

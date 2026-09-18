@@ -97,25 +97,51 @@ class _StatsSignalQualitySectionState
             color: colorScheme.primary,
           ),
         ] else if (distribution.signalLevelDistribution.isNotEmpty)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // DEGRADATION SHAPE (#1488) — the worst of the four legend rows that
+          // ticket measured: 26 of 26 locales overflow at a 320px screen, up to
+          // 190px in `ru`, and `ru` at 480px is the coordinate golden CI
+          // reported. It is the worst because its child count is data-driven —
+          // all four quality levels present means four inflexible groups in one
+          // centred `Row`, in 238px.
+          //
+          // A `Wrap`, for the reason #1252 gives on this page's Traffic Monitor
+          // legend: at every width where the groups fit it renders exactly as
+          // before (one run, centred), and where they do not, a group drops to a
+          // second line instead of overflowing. The chart above is `Expanded`, so
+          // it yields the height.
+          //
+          // The labels themselves are neither `Flexible` nor ellipsized: each one
+          // ends in a device count, and an ellipsis lands mid-number
+          // (density design §2.10a point 2). Reflowing the row moves the counts;
+          // it never shortens them. `spacing` replaces the per-group trailing
+          // `AppGap.md`, which also stops the last gap from pushing the centred
+          // run off-centre.
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
             children: [
               for (final entry in [
                 (3, loc(context).excellent, colorScheme.primary),
                 (2, loc(context).good, Colors.lightGreen),
                 (1, loc(context).fair, Colors.orange),
                 (0, loc(context).poor, colorScheme.error),
-              ]) ...[
-                if (distribution.signalLevelDistribution
-                    .containsKey(entry.$1)) ...[
-                  StatsLegendDot(color: entry.$3),
-                  AppGap.xs(),
-                  AppText.labelSmall(
-                    '${entry.$2}: ${distribution.signalLevelDistribution[entry.$1]}',
+              ])
+                // One lookup, bound: the previous `containsKey` + `[...]` pair read
+                // the map twice and interpolated an `int?`, so a level present with
+                // a null count would have rendered "Excellent: null" instead of
+                // being left out.
+                if (distribution.signalLevelDistribution[entry.$1]
+                    case final count?)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StatsLegendDot(color: entry.$3),
+                      AppGap.xs(),
+                      AppText.labelSmall('${entry.$2}: $count'),
+                    ],
                   ),
-                  AppGap.md(),
-                ],
-              ],
             ],
           ),
       ],

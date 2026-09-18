@@ -79,19 +79,21 @@ String? validateIpv6rdPrefixLength(int value) {
 }
 
 bool _validateOptionalFields(UspInternetSettingsForm form) {
-  // Bridge mode: MTU uses auto (0) — not user-configurable
+  // Bridge mode: MTU is not user-configurable — the WAN port joins br-lan, so
+  // the service sends neither MaxMTUSize nor X_LINKSYS_MTUMode.
   if (form.connectionType == UspWanConnectionType.bridge) {
     return true;
   }
-  // MTU must be in valid range: 576 (IPv4 RFC 791 min) to max by protocol
-  final mtuMax = switch (form.connectionType) {
-    UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
-    UspWanConnectionType.pptp ||
-    UspWanConnectionType.l2tp =>
-      1460, // tunnel overhead
-    _ => 1500, // Ethernet standard (DHCP, Static)
-  };
-  if (form.mtu < 576 || form.mtu > mtuMax) return false;
+  // Auto mode: the device picks the MTU, so [form.mtu] is a device-reported
+  // display value rather than something the user must get into range.
+  if (!form.mtuAuto) {
+    // Range is owned by [UspWanConnectionType] (single source of truth, shared
+    // with the notifier's clamp on type switch and the view's error text).
+    if (form.mtu < form.connectionType.mtuMin ||
+        form.mtu > form.connectionType.mtuMax) {
+      return false;
+    }
+  }
   // MAC: empty = no clone, otherwise must be valid format
   if (form.wanMacAddress.isNotEmpty && !_isValidMac(form.wanMacAddress)) {
     return false;

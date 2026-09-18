@@ -114,14 +114,19 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<DevicesData> build() async {
     // SSE: listen for device domain changes → debounce → re-fetch
     ref.listen(sseInvalidationProvider, (prev, next) {
-      final domain = next.valueOrNull;
+      final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.connectedDevices) {
         _debouncedInvalidate();
       }
     });
 
     // WiFi data changes → rebuild MeshNetwork with updated enrichment.
+    // Skip the re-run frame: it carries the previous WifiData forward with
+    // isLoading set, so rebuilding on it would recompute the mesh from stale
+    // data and emit an extra state — which this provider's own three listeners
+    // then see as well. See doc/riverpod/listen_site_audit.md.
     ref.listen(wifiDataProvider, (_, next) {
+      if (next.isLoading) return;
       final wd = next.valueOrNull;
       final cur = state.valueOrNull;
       if (wd == null || cur == null) return;

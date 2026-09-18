@@ -65,18 +65,39 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
           _BandDistributionBars(
               bandDistribution: distribution.bandDistribution),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // DEGRADATION SHAPE (#1488) — three inflexible groups in a centred `Row`
+        // overflowed 238px in 5 of 26 locales (worst `el`, 28px). A `Wrap` for
+        // the same reason as this page's other three legend rows: it is identical
+        // to the `Row` wherever the groups fit, and drops the offline count to a
+        // second line where they do not. The pie chart above is `Flexible`, so it
+        // yields the height.
+        //
+        // Every label ends in a client count, so none of the three is `Flexible`
+        // or ellipsized — the row reflows, the numbers stay whole.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wifiCount(distribution.wifiCount)),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).wiredCount(distribution.wiredCount)),
-            AppGap.lg(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatsLegendDot(color: colorScheme.primary),
+                AppGap.xs(),
+                AppText.labelSmall(
+                    loc(context).wifiCount(distribution.wifiCount)),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatsLegendDot(color: colorScheme.secondary),
+                AppGap.xs(),
+                AppText.labelSmall(
+                    loc(context).wiredCount(distribution.wiredCount)),
+              ],
+            ),
             AppText.labelSmall(
               loc(context).nOffline(distribution.offlineCount),
               color: colorScheme.onSurfaceVariant,

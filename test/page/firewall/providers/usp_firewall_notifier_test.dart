@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_status.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
@@ -238,4 +240,71 @@ void main() {
       expect(data.namedProps['ruleCount'], 2);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // The firewallDataProvider listener drives onSseInvalidation() once per
+  // upstream settle, not once per notification.
+  //
+  // `hasValue` alone is not an edge trigger: re-running an AsyncNotifier that
+  // already holds a value emits AsyncData(isLoading: true, value: prev) via
+  // copyWithPrevious before the fresh value, and that frame has hasValue true
+  // too. onSseInvalidation() calls unawaited(fetch(forceRemote: true)), which
+  // does NOT coalesce the way invalidateSelf() does — so the unguarded listener
+  // ran two full fetches per upstream refetch, the first of them against the
+  // stale value. See doc/riverpod/listen_site_audit.md (#1502 AC-4).
+  // -------------------------------------------------------------------------
+  group('UspFirewallNotifier — data provider re-notification', () {
+    test('an upstream refetch triggers exactly one forceRemote fetch',
+        () async {
+      final counting = _CountingFirewallNotifier();
+      final container = ProviderContainer(
+        overrides: [
+          uspFirewallServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          firewallDataProvider
+              .overrideWith(() => _TestFirewallDataNotifier(testData)),
+          uspFirewallProvider.overrideWith(() => counting),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // A permanent subscription keeps the notifier — and therefore its
+      // ref.listen on firewallDataProvider — alive, so the invalidate below
+      // rebuilds eagerly instead of being deferred to the next read.
+      container.listen(uspFirewallProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Boot already produces one: the data provider's first settle is a
+      // loading→data transition, which the listener treats as an invalidation.
+      // Measure the delta so this test is about the refetch, not about boot.
+      final baseline = counting.forceRemoteFetches;
+
+      container.invalidate(firewallDataProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Two listener firings (loading-with-previous, then the fresh value),
+      // one fetch. Without the isLoading guard the delta is 2.
+      expect(counting.forceRemoteFetches - baseline, 1);
+    });
+  });
+}
+
+/// Wraps the real notifier to count SSE-driven fetches. Only [performFetch] is
+/// overridden — the `ref.listen` under test is the production one in `build()`.
+class _CountingFirewallNotifier extends UspFirewallNotifier {
+  int forceRemoteFetches = 0;
+
+  @override
+  Future<(FirewallSettings?, FirewallStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) {
+    if (forceRemote) forceRemoteFetches++;
+    return super.performFetch(
+      forceRemote: forceRemote,
+      updateStatusOnly: updateStatusOnly,
+    );
+  }
 }

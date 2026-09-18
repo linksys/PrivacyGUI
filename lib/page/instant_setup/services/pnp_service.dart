@@ -527,7 +527,13 @@ class PnpService {
       }
       return _buildTopologyInfo(network);
     } catch (e) {
-      logger.d('[PnP] DataElements not supported or fetch failed: $e');
+      // `w`, not `d` — see the same distinction in
+      // `UspDevicesDataService.fetchMeshTopology`. An empty subtree is a
+      // legitimate single-router answer; a fault is the question going
+      // unanswered, and logging both at `d` is what hid #1555's schema mismatch
+      // for a whole firmware generation.
+      logger.w('[PnP] DataElements fetch faulted, treating the network as '
+          'non-mesh: $e');
       return MeshTopologyInfo.empty;
     }
   }

@@ -10,6 +10,9 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+
+import '../../../util/dashboard/layout_provider_harness.dart';
 
 /// The persistence half of #1299, at the address #1400 moved it to: a picked form
 /// is stored on the item it shaped, in the same copy of the same map as the
@@ -128,27 +131,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  /// Wait for the notifier's async init/save chains to settle.
-  Future<void> pumpAsync() => Future.delayed(const Duration(milliseconds: 100));
-
-  Future<ProviderContainer> boot({Map<String, Object>? initialValues}) async {
-    if (initialValues != null) {
-      SharedPreferences.setMockInitialValues(initialValues);
-    }
-    final container = ProviderContainer();
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
-
-  /// Reboots against whatever is already in the mock pref store.
-  Future<ProviderContainer> reboot() async {
-    final container = ProviderContainer();
-    container.read(uspSliverDashboardControllerProvider);
-    await pumpAsync();
-    return container;
-  }
-
   Future<String> storedRaw() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(pUspSliverDashboardLayout);
@@ -162,9 +144,8 @@ void main() {
     return envelope!;
   }
 
-  Map<String, Object?> itemNamed(List<dynamic> layout, String id) =>
-      (layout.firstWhere((item) => (item as Map)['id'] == id) as Map)
-          .cast<String, Object?>();
+  LayoutItem itemNamed(List<LayoutItem> layout, String id) =>
+      layout.firstWhere((item) => item.id == id);
 
   /// The pick the persisted payload carries for [id] on the [slots]-column grid,
   /// read off the item the way every consumer reads it (#1400).
@@ -172,22 +153,24 @@ void main() {
     final layout = (await storedEnvelope())[slots];
     if (layout == null) return null;
     for (final item in layout) {
-      if ((item as Map)['id'] == id) {
-        return CardFormChoice.readFrom(item['extra']);
-      }
+      if (item.id == id) return CardFormChoice.readFrom(item.extra);
     }
     return null;
   }
 
   /// The card as the grid currently holds it, on [slots] columns.
-  Map<String, Object?> live(
+  ///
+  /// Off the controller's own beacon rather than `exportLayout()`, which is that
+  /// beacon put through `toMap()` — so this is the same items one conversion
+  /// earlier (#1310).
+  LayoutItem live(
     ProviderContainer container,
     String id, {
     int slots = 12,
   }) {
     final controller = container.read(uspSliverDashboardControllerProvider);
     controller.setSlotCount(slots);
-    return itemNamed(controller.exportLayout(), id);
+    return itemNamed(controller.layout.value, id);
   }
 
   Future<void> pick(
@@ -222,10 +205,12 @@ void main() {
       jsonEncode({
         'version': 3,
         'layouts': {
-          '12': _defaultishLayout(),
+          '12': _asJson(_defaultishLayout()),
           if (everyBreakpoint) ...{
-            '8': UspWidgetSpecs.scaleLayout(_defaultishLayout(), 12, 8),
-            '4': UspWidgetSpecs.scaleLayout(_defaultishLayout(), 12, 4),
+            '8':
+                _asJson(UspWidgetSpecs.scaleLayout(_defaultishLayout(), 12, 8)),
+            '4':
+                _asJson(UspWidgetSpecs.scaleLayout(_defaultishLayout(), 12, 4)),
           },
         },
         'forms': forms,
@@ -238,12 +223,12 @@ void main() {
   // ---------------------------------------------------------------------------
   group('a pick belongs to the breakpoint it was made on', () {
     test('a pick made at desktop leaves the phone grid alone', () async {
-      final first = await boot();
+      final first = await bootLayout();
       final phoneBefore = live(first, 'device_info', slots: 4);
       await pick(first, 'device_info', CardDensity.popup, slots: 12);
       first.dispose();
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
 
       expect(live(second, 'device_info', slots: 4), phoneBefore,
@@ -257,15 +242,15 @@ void main() {
     });
 
     test('a pick made on a phone survives a reboot and stays there', () async {
-      final first = await boot();
+      final first = await bootLayout();
       final desktopBefore = live(first, 'device_info', slots: 12);
       await pick(first, 'device_info', CardDensity.popup, slots: 4);
       first.dispose();
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
 
-      expect(live(second, 'device_info', slots: 4)['h'], 1,
+      expect(live(second, 'device_info', slots: 4).h, 1,
           reason: 'The phone pick did not come back.');
       expect(live(second, 'device_info', slots: 12), desktopBefore,
           reason: 'A phone pick rewrote the desktop grid — #1293 all over '
@@ -273,7 +258,7 @@ void main() {
     });
 
     test('one card can be compact on a phone and normal on a laptop', () async {
-      final first = await boot();
+      final first = await bootLayout();
       await pick(first, 'device_info', CardDensity.compact, slots: 4);
       await pick(first, 'device_info', CardDensity.normal, slots: 12);
       first.dispose();
@@ -285,7 +270,7 @@ void main() {
     });
 
     test('the pick reaches the pref, not just the controller', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 12);
@@ -318,21 +303,21 @@ void main() {
         const CardFormChoice(density: CardDensity.popup),
         cols: 12,
       );
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({
           12: desktop,
           8: UspWidgetSpecs.scaleLayout(_defaultishLayout(), 12, 8)
-              .where((item) => (item as Map)['id'] != 'device_info')
+              .where((item) => item.id != 'device_info')
               .toList(),
         }).encode(),
       });
       addTearDown(container.dispose);
 
       final derived = live(container, 'device_info', slots: 8);
-      expect([derived['w'], derived['h']], [2, 1],
+      expect([derived.w, derived.h], [2, 1],
           reason: 'Scaled instead of re-derived this is 1 column wide, because '
               'the desktop item it came from is already pinned at 2 of 12.');
-      expect(derived['isResizable'], isFalse);
+      expect(derived.isResizable, isFalse);
       expect((await storedPick(8, 'device_info'))?.density, CardDensity.popup,
           reason: 'And the form it renders in is the form its own stored pick '
               'names, on the grid it was derived onto.');
@@ -350,7 +335,7 @@ void main() {
       // #1299 this could not even be asked — the picks were in a sibling map, and
       // the stored geometry was whatever the last save happened to hold, correct
       // only because every import recomputed it.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -381,16 +366,21 @@ void main() {
       // The other face of the same coin, and the cost named in the header. The app
       // can no longer produce a payload whose halves disagree — that is the test
       // above — so one has to be planted to observe that nothing repairs it.
+      // A `copyWith` rather than an assignment into the map: `LayoutItem` is
+      // immutable, so planting a pick means building the item that carries one
+      // (#1310). Same fixture either way — the point is that the geometry beside
+      // it is *not* popup's, which is what nothing repairs.
       final planted = _defaultishLayout();
-      planted.last['extra'] =
-          const CardFormChoice(density: CardDensity.popup).writeInto(null);
-      final container = await boot(initialValues: {
+      planted[planted.length - 1] = planted.last.copyWith(
+          extra:
+              const CardFormChoice(density: CardDensity.popup).writeInto(null));
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({12: planted}).encode(),
       });
       addTearDown(container.dispose);
 
       final stored = live(container, 'device_info', slots: 12);
-      expect([stored['w'], stored['h']], [6, 3],
+      expect([stored.w, stored.h], [6, 3],
           reason: 'A stored grid is imported as written. #1299 recomputed the '
               'geometry from the pick on every import, which healed a payload '
               'like this one — and re-derived seventeen cards on every boot to do '
@@ -401,7 +391,7 @@ void main() {
               'bytes\', the form is the pick\'s.');
 
       final derived = live(container, 'device_info', slots: 8);
-      expect([derived['w'], derived['h']], [2, 1],
+      expect([derived.w, derived.h], [2, 1],
           reason: 'A grid nobody stored is *created* on load, and creation is '
               'the one place the geometry is derived from the pick — see '
               'UspWidgetSpecs.applyPickedForms. So "no healing" is specific: it '
@@ -414,54 +404,54 @@ void main() {
   // ---------------------------------------------------------------------------
   group('popup collapses the card and takes its handles away', () {
     test('popup pins a 2x1 tile on the desktop grid', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 12);
       final item = live(container, 'device_info');
 
-      expect(item['w'], 2);
-      expect(item['h'], 1);
-      expect(item['isResizable'], isFalse,
+      expect(item.w, 2);
+      expect(item.h, 1);
+      expect(item.isResizable, isFalse,
           reason:
               'One value and the card name has no use for a larger box, and '
               'a locked-but-huge popup would be unrecoverable.');
     });
 
     test('the pin survives the round trip through the pref', () async {
-      final first = await boot();
+      final first = await bootLayout();
       await pick(first, 'device_info', CardDensity.popup, slots: 12);
       first.dispose();
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
       final item = live(second, 'device_info');
 
-      expect(item['w'], 2);
-      expect(item['minW'], 2);
-      expect(item['maxW'], 2.0);
-      expect(item['isResizable'], isFalse);
-      expect(CardFormChoice.readFrom(item['extra'])?.density, CardDensity.popup,
+      expect(item.w, 2);
+      expect(item.minW, 2);
+      expect(item.maxW, 2.0);
+      expect(item.isResizable, isFalse);
+      expect(CardFormChoice.readFrom(item.extra)?.density, CardDensity.popup,
           reason: 'Both halves came back, off one item. A reboot is where a '
               'write that saved one of them alone shows up.');
     });
 
     test('popup on a phone keeps the full width and takes only the height',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 4);
       final item = live(container, 'device_info', slots: 4);
 
-      expect(item['w'], 4,
+      expect(item.w, 4,
           reason: 'On a 4-column grid the width is #1293\'s, '
               'not the form\'s: each rule owns one axis, so popup becomes a short '
               'full-width bar.');
-      expect(item['minW'], 4);
-      expect(item['maxW'], 4.0);
-      expect(item['h'], 1);
-      expect(item['isResizable'], isFalse);
+      expect(item.minW, 4);
+      expect(item.maxW, 4.0);
+      expect(item.h, 1);
+      expect(item.isResizable, isFalse);
     });
 
     test('a popup tile reaches the live beacon already pinned', () async {
@@ -472,7 +462,7 @@ void main() {
       // second mechanism. That subscription is gone (#1399); what has to hold
       // now is that the pick alone leaves the beacon correct, with nothing
       // arriving after it.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final controller = container.read(uspSliverDashboardControllerProvider);
 
@@ -492,7 +482,7 @@ void main() {
     });
 
     test('popup is refused on a card that has no popup form', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       // stats_panel is not built through DashboardCardTemplate, so it has no
@@ -500,7 +490,7 @@ void main() {
       // so the assertion has to be the handles and the pick, not the box.
       await pick(container, 'stats_panel', CardDensity.popup, slots: 12);
 
-      expect(live(container, 'stats_panel')['isResizable'], isNot(isFalse));
+      expect(live(container, 'stats_panel').isResizable, isNot(isFalse));
       expect(await storedPick(12, 'stats_panel'), isNull);
     });
   });
@@ -510,7 +500,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('returning to normal restores the box popup collapsed', () {
     test('normal restores the w and h the card had before popup', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final before = live(container, 'device_info');
 
@@ -518,12 +508,12 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal);
 
       final after = live(container, 'device_info');
-      expect(after['w'], before['w']);
-      expect(after['h'], before['h']);
+      expect(after.w, before.w);
+      expect(after.h, before.h);
     });
 
     test('normal restores the handles and the spec bounds', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final before = live(container, 'device_info');
 
@@ -531,17 +521,17 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal);
 
       final after = live(container, 'device_info');
-      expect(after['isResizable'], isNot(isFalse),
+      expect(after.isResizable, isNot(isFalse),
           reason: 'The handles have to come back, or the restore is only '
               'cosmetic — the card is still locked at whatever it restored to.');
-      expect(after['minW'], before['minW']);
-      expect(after['maxW'], before['maxW']);
-      expect(after['minH'], before['minH']);
+      expect(after.minW, before.minW);
+      expect(after.maxW, before.maxW);
+      expect(after.minH, before.minH);
     });
 
     test('a size chosen before popup is what comes back, not the default',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -552,8 +542,8 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal);
 
       final after = live(container, 'device_info');
-      expect(after['w'], 8);
-      expect(after['h'], 5);
+      expect(after.w, 8);
+      expect(after.h, 5);
     });
 
     test('each breakpoint restores its own size', () async {
@@ -561,7 +551,7 @@ void main() {
       // scales to 5 on the 8-column grid, and `normal` restores the spec bounds,
       // so a card parked outside them would legitimately be pulled in and the
       // test would be measuring that instead of the restore.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -577,10 +567,10 @@ void main() {
         await pick(container, 'device_info', CardDensity.normal, slots: slots);
       }
 
-      expect(live(container, 'device_info', slots: 8)['w'], 4);
-      expect(live(container, 'device_info', slots: 8)['h'], 2);
-      expect(live(container, 'device_info', slots: 12)['w'], 6);
-      expect(live(container, 'device_info', slots: 12)['h'], 4);
+      expect(live(container, 'device_info', slots: 8).w, 4);
+      expect(live(container, 'device_info', slots: 8).h, 2);
+      expect(live(container, 'device_info', slots: 12).w, 6);
+      expect(live(container, 'device_info', slots: 12).h, 4);
     });
 
     test('picking popup twice still restores the first box, not the tile',
@@ -592,7 +582,7 @@ void main() {
       // through for a form the card is already in, but that guard is a saved
       // write rather than the thing protecting this — so the invariant is stated
       // where it is decided.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final before = live(container, 'device_info');
 
@@ -601,15 +591,15 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal);
 
       final after = live(container, 'device_info');
-      expect(after['w'], before['w']);
-      expect(after['h'], before['h']);
+      expect(after.w, before.w);
+      expect(after.h, before.h);
     });
 
     test('a card parked outside its spec bounds is pulled inside them',
         () async {
       // The other half of the rule above, stated on purpose: `normal` means the
       // spec's bounds, so a width no grid ever allowed does not survive it.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -619,10 +609,10 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal);
 
       final item = live(container, 'device_info', slots: 8);
-      expect(item['maxW'], 5.0,
+      expect(item.maxW, 5.0,
           reason: 'maxColumns 8 of 12 is 5 of 8 — the cap is a fraction of the '
               'grid, not a width.');
-      expect(item['w'], 5);
+      expect(item.w, 5);
     });
   });
 
@@ -631,21 +621,21 @@ void main() {
   // ---------------------------------------------------------------------------
   group('compact can be enlarged but not shrunk', () {
     test('compact raises minW above what the spec declares', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
-      expect(live(container, 'device_info')['minW'], 3,
+      expect(live(container, 'device_info').minW, 3,
           reason: 'Guard on the fixture: device_info declares minColumns 3, so '
               'the raise to 4 below is a real change.');
 
       await pick(container, 'device_info', CardDensity.compact, slots: 12);
 
-      expect(live(container, 'device_info')['minW'], 4,
+      expect(live(container, 'device_info').minW, 4,
           reason: 'Compact\'s floor is the width at which the reduced form '
               'still reads: 3 columns is 191.4px, under kPopupBelow.');
     });
 
     test('a card already narrower than the floor is grown to it', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -654,12 +644,12 @@ void main() {
 
       await pick(container, 'device_info', CardDensity.compact);
 
-      expect(live(container, 'device_info')['w'], 4,
+      expect(live(container, 'device_info').w, 4,
           reason: 'A floor that leaves the card below it is not a floor.');
     });
 
     test('shrinking below the floor is refused', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -667,11 +657,11 @@ void main() {
       await pick(container, 'device_info', CardDensity.compact, slots: 12);
       await notifier.updateItemSize('device_info', 3, 3);
 
-      expect(live(container, 'device_info')['w'], 4);
+      expect(live(container, 'device_info').w, 4);
     });
 
     test('enlarging past the floor still works', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -680,39 +670,39 @@ void main() {
       await notifier.updateItemSize('device_info', 8, 4);
 
       final item = live(container, 'device_info');
-      expect(item['w'], 8,
+      expect(item.w, 8,
           reason: 'Compact constrains the floor only. Widening a compact card '
               'is how the user discovers they would rather have it normal.');
-      expect(item['h'], 4);
-      expect(item['isResizable'], isNot(isFalse));
+      expect(item.h, 4);
+      expect(item.isResizable, isNot(isFalse));
     });
 
     test('the floor is scaled to the grid it is applied on', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.compact, slots: 8);
 
-      expect(live(container, 'device_info', slots: 8)['minW'], 3,
+      expect(live(container, 'device_info', slots: 8).minW, 3,
           reason: '4 of 12 columns is 3 of 8. A column count names a fraction '
               'of the grid, not a width.');
     });
 
     test('compact on a phone raises the height floor and nothing else',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.compact, slots: 4);
       final item = live(container, 'device_info', slots: 4);
 
-      expect(item['minW'], 4, reason: 'The phone width belongs to #1293.');
-      expect(item['maxW'], 4.0);
-      expect(item['minH'], greaterThanOrEqualTo(2));
+      expect(item.minW, 4, reason: 'The phone width belongs to #1293.');
+      expect(item.maxW, 4.0);
+      expect(item.minH, greaterThanOrEqualTo(2));
     });
 
     test('compact is refused on a card with no compact form', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'topology', CardDensity.compact, slots: 12);
@@ -724,22 +714,22 @@ void main() {
 
     test('compact reached from popup gets its spec ceiling back, not its floor',
         () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 12);
       await pick(container, 'device_info', CardDensity.compact, slots: 12);
       final item = live(container, 'device_info', slots: 12);
 
-      expect(item['maxW'], 8.0,
+      expect(item.maxW, 8.0,
           reason: 'Every arm has to be independent of the arm before it. Popup '
               'pins by writing the caps *down*; a compact arm that only ever '
               'raises minima would leave those caps at 2x1, so the card would '
               'come out of popup capped at its own new floor and no gesture '
               'could widen it again.');
-      expect(item['maxH'], 6.0);
-      expect(item['minW'], 4, reason: "Still compact's floor.");
-      expect(item['w'], 6, reason: 'And still the box popup collapsed.');
+      expect(item.maxH, 6.0);
+      expect(item.minW, 4, reason: "Still compact's floor.");
+      expect(item.w, 6, reason: 'And still the box popup collapsed.');
       expect(
           (await storedPick(12, 'device_info'))?.density, CardDensity.compact);
     });
@@ -750,7 +740,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('a pick has the same lifetime as the card', () {
     test('deleting the card drops its pick', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -759,7 +749,7 @@ void main() {
       await notifier.removeWidget('device_info');
       await notifier.addWidget('device_info');
 
-      expect(live(container, 'device_info')['isResizable'], isNot(isFalse),
+      expect(live(container, 'device_info').isResizable, isNot(isFalse),
           reason: 'A card added back arrived pre-collapsed by a pick made '
               'before it was deleted. Free now that the pick is on the item — '
               '#1299 had to prune a sibling map to get it.');
@@ -767,7 +757,7 @@ void main() {
     });
 
     test('resetLayout clears every pick', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
@@ -776,11 +766,11 @@ void main() {
       await notifier.resetLayout();
 
       expect(container.read(cardFormsProvider).isEmpty, isTrue);
-      expect(live(container, 'device_info')['isResizable'], isNot(isFalse));
+      expect(live(container, 'device_info').isResizable, isNot(isFalse));
     });
 
     test('the read model carries what was loaded from the pref', () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({
           12: UspWidgetSpecs.withCardForm(
             _defaultishLayout(),
@@ -804,7 +794,7 @@ void main() {
     });
 
     test('a stored pick renders in the form it names', () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: UspLayoutEnvelope({
           12: UspWidgetSpecs.withCardForm(
             _defaultishLayout(),
@@ -817,9 +807,9 @@ void main() {
       addTearDown(container.dispose);
 
       final item = live(container, 'device_info');
-      expect(item['w'], 2);
-      expect(item['h'], 1);
-      expect(item['isResizable'], isFalse,
+      expect(item.w, 2);
+      expect(item.h, 1);
+      expect(item.isResizable, isFalse,
           reason: 'The load path has to carry the geometry through unchanged, '
               'which is a weaker requirement than #1299\'s — it re-derived this '
               'on every import — and a load that dropped `extra` would fail here '
@@ -828,7 +818,7 @@ void main() {
     });
 
     test('the read model follows a pick made after load', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 12);
@@ -848,7 +838,7 @@ void main() {
       // from the `forms` map on every import, so the bytes beside the pick were
       // never what the grid rendered. Here the stored item is a 6x3 card whose
       // pick says popup, which is exactly the state a v3 payload is always in.
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: v3({
           '12': {
             'device_info': {'density': 'popup'}
@@ -858,14 +848,14 @@ void main() {
       addTearDown(container.dispose);
 
       final item = live(container, 'device_info');
-      expect([item['w'], item['h']], [2, 1]);
-      expect(item['isResizable'], isFalse);
+      expect([item.w, item.h], [2, 1]);
+      expect(item.isResizable, isFalse);
       expect((await storedPick(12, 'device_info'))?.density, CardDensity.popup);
     });
 
     test('the restore size comes across, so popup stays a two-way door',
         () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: v3({
           '12': {
             'device_info': {'density': 'popup', 'restoreW': 8, 'restoreH': 5}
@@ -877,7 +867,7 @@ void main() {
       await pick(container, 'device_info', CardDensity.normal, slots: 12);
 
       final item = live(container, 'device_info');
-      expect([item['w'], item['h']], [8, 5],
+      expect([item.w, item.h], [8, 5],
           reason:
               'An install that was sitting in popup when it upgraded has no '
               'handles to drag the card back with, so the box it remembers is '
@@ -886,7 +876,7 @@ void main() {
     });
 
     test('the migration is paid once', () async {
-      final first = await boot(initialValues: {
+      final first = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: v3({
           '12': {
             'device_info': {'density': 'popup'}
@@ -902,10 +892,10 @@ void main() {
               'describe the same cards can disagree.');
       expect(jsonDecode(raw)['version'], UspLayoutEnvelope.currentVersion);
 
-      final second = await reboot();
+      final second = await rebootLayout();
       addTearDown(second.dispose);
       final item = live(second, 'device_info');
-      expect([item['w'], item['h']], [2, 1],
+      expect([item.w, item.h], [2, 1],
           reason:
               'And the second boot is an ordinary one: it reads the pick off '
               'the item and imports the geometry as written.');
@@ -918,7 +908,7 @@ void main() {
       // all three, and there the fold is the only reason to write anything back —
       // without it the payload keeps its v3 stamp and its `forms` map, and is
       // re-folded on every boot until the user's next edit.
-      final first = await boot(initialValues: {
+      final first = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: v3(
           {
             '12': {
@@ -937,7 +927,7 @@ void main() {
     });
 
     test('a v3 pick for a card the payload does not hold is dropped', () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: v3({
           '12': {
             'a_card_we_removed': {'density': 'popup'}
@@ -963,7 +953,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('the control is invisible until it is used', () {
     test('a dashboard nobody picked a form on writes no pick at all', () async {
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
       final raw = await storedRaw();
 
@@ -978,16 +968,16 @@ void main() {
     });
 
     test('a v2 payload loads with no picks and is not rejected', () async {
-      final container = await boot(initialValues: {
+      final container = await bootLayout(initialValues: {
         pUspSliverDashboardLayout: jsonEncode({
           'version': 2,
-          'layouts': {'12': _defaultishLayout()},
+          'layouts': {'12': _asJson(_defaultishLayout())},
         }),
       });
       addTearDown(container.dispose);
 
       expect(container.read(cardFormsProvider).isEmpty, isTrue);
-      expect(live(container, 'device_info')['isResizable'], isNot(isFalse));
+      expect(live(container, 'device_info').isResizable, isNot(isFalse));
     });
 
     test('trying popup and changing your mind leaves the stamp at v2',
@@ -998,7 +988,7 @@ void main() {
       // width-derived form — so keying the stamp on "are there picks at all"
       // pinned the payload at v3 from the first popup onwards, for a card that
       // ends up carrying nothing an older build cannot read.
-      final container = await boot();
+      final container = await bootLayout();
       addTearDown(container.dispose);
 
       await pick(container, 'device_info', CardDensity.popup, slots: 12);
@@ -1027,27 +1017,37 @@ void main() {
 
 /// Two real cards in the shape `exportLayout()` produces — enough for the
 /// envelope to be importable without standing in for the default layout.
-List<Map<String, dynamic>> _defaultishLayout() => [
-      {
-        'id': 'stats_panel',
-        'x': 0,
-        'y': 0,
-        'w': 12,
-        'h': 1,
-        'minW': 6,
-        'maxW': 12.0,
-        'minH': 1,
-        'maxH': 2.0,
-      },
-      {
-        'id': 'device_info',
-        'x': 0,
-        'y': 1,
-        'w': 6,
-        'h': 3,
-        'minW': 3,
-        'maxW': 8.0,
-        'minH': 2,
-        'maxH': 6.0,
-      },
+List<LayoutItem> _defaultishLayout() => [
+      LayoutItem(
+        id: 'stats_panel',
+        x: 0,
+        y: 0,
+        w: 12,
+        h: 1,
+        minW: 6,
+        maxW: 12.0,
+        minH: 1,
+        maxH: 2.0,
+      ),
+      LayoutItem(
+        id: 'device_info',
+        x: 0,
+        y: 1,
+        w: 6,
+        h: 3,
+        minW: 3,
+        maxW: 8.0,
+        minH: 2,
+        maxH: 6.0,
+      ),
     ];
+
+/// [layout] as the JSON a hand-built payload needs.
+///
+/// Only the payloads this build can no longer *write* — the v2 and v3 shapes —
+/// reach for this. Everything else hands its items to `UspLayoutEnvelope`, which
+/// does the same `toMap()` walk itself: since #1310 those are the two places an
+/// item becomes bytes, and a fixture that spelled a third would be testing a
+/// shape no version ever stored.
+List<Map<String, dynamic>> _asJson(List<LayoutItem> layout) =>
+    [for (final item in layout) item.toMap()];

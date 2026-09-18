@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
-import 'package:privacy_gui/core/cloud/providers/remote_assistance/device_credentials_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_dialog.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -55,8 +53,11 @@ class UspSupportView extends ConsumerWidget {
                       child: _FaqCategoryAccordion(category: category),
                     )),
                 AppGap.lg(),
-                // Remote Assistance (only in local mode, not CA mode)
-                if (!GlobalConfig.remote.isActive) _RemoteAssistanceCard(),
+                // Remote Assistance. A support session does not offer to start
+                // another one, so the remote surface has no card here and this
+                // page has no opinion about which surface it is on.
+                ref.watch(surfaceStrategyProvider).assistanceEntryCard() ??
+                    const SizedBox.shrink(),
                 AppGap.lg(),
                 // Quick Link footer
                 _QuickLinkFooter(),
@@ -171,63 +172,6 @@ class _QuickLinkFooter extends ConsumerWidget {
           AppIcon.font(
             Icons.open_in_new,
             size: 18,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// Remote Assistance Card
-// =============================================================================
-
-class _RemoteAssistanceCard extends ConsumerWidget {
-  const _RemoteAssistanceCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final credentials = ref.watch(deviceCredentialsProvider);
-
-    return LayoutBlock(
-      identifier: 'support-remote-assistance',
-      onTap: credentials != null
-          ? () =>
-              showRemoteAssistanceDialog(context, ref, credentials: credentials)
-          : null,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: AppIcon.font(
-              Icons.support_agent,
-              size: 24,
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          AppGap.md(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge(loc(context).remoteAssistance),
-                AppText.bodySmall(
-                  'Get help from Linksys support',
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-          AppIcon.font(
-            Icons.chevron_right,
-            size: 24,
             color: colorScheme.onSurfaceVariant,
           ),
         ],

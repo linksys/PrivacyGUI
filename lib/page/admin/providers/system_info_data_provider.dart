@@ -35,6 +35,18 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   @override
   Future<SystemInfoData> build() async {
     // Listen to firmwareBanks changes → auto invalidate (pattern: EthernetDataProvider)
+    //
+    // Deliberately NOT guarded by a `banks` diff, even though `banks` is the
+    // only thing _fetch() passes on: this listener is the ONLY refresh trigger
+    // systemInfoDataProvider has in the whole app, and _fetch() reads SystemInfo
+    // live from USP. A `banks` diff would therefore suppress the app's only
+    // systemInfo refresh on a same-version reflash (banks identical,
+    // softwareVersion/uptime changed) for the rest of the session. Decoupling
+    // the two is a design change, not a guard — see #1505 and
+    // doc/riverpod/listen_site_audit.md.
+    //
+    // No `isLoading` guard either: the double firing on an upstream refetch is
+    // absorbed by invalidateSelf(), which coalesces, unlike a direct fetch().
     ref.listen(firmwareBanksDataProvider, (_, next) {
       if (next.hasValue && state.hasValue) {
         ref.invalidateSelf();
@@ -49,8 +61,14 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     // Read from firmwareBanksDataProvider (Single Source of Truth)
     final banksData = ref.read(firmwareBanksDataProvider).valueOrNull;
 
-    // Service fetches SystemInfo; firmwareBanks passed in externally
-    final model = await svc.fetch(firmwareBanks: banksData?.banks);
+    // Service fetches SystemInfo; firmwareBanks passed in externally.
+    //
+    // `physicalBanks`, not `banks`: this is the fan-out point for everything
+    // that consumes SystemInfoUIModel.firmwareImages — the support PDF prints
+    // one row per entry, and the admin card falls back to `.first.version` as
+    // the current version. The virtual OTA instance carries the version the
+    // router could update *to*, so letting it through makes both of those lie.
+    final model = await svc.fetch(firmwareBanks: banksData?.physicalBanks);
 
     return SystemInfoData(model: model);
   }
