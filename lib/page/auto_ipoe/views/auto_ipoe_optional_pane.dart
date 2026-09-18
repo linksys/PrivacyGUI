@@ -169,8 +169,8 @@ class _AutoIPoEOptionalPaneState extends ConsumerState<AutoIPoEOptionalPane> {
       nextStatus,
       expectedMode: widget.expectedMode,
     )) {
-      // The apply process already restarted WAN and Wi-Fi. A validated Active
-      // tunnel is the only success signal; a normal log footer alone is not.
+      // The apply process already restarted WAN and Wi-Fi. A verified Active
+      // runtime (tunnel or DHCPAuto) is required; a log footer alone is not.
       widget.onCompleted?.call(nextState);
       widget.onAwaitingCompletionChanged(false);
     } else if (nextStatus.hasTerminalApplyOutcome) {

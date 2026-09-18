@@ -214,6 +214,66 @@ void main() {
   });
 
   group('verified Active gate', () {
+    // A DHCPAuto runtime means Auto mode probed the line and it turned out to
+    // be plain DHCP rather than a tunnel. That is a real success for Auto, and
+    // only for Auto: asking for a specific static-IP mode and landing on DHCP
+    // means the tunnel did not come up. It also has to be corroborated -- the
+    // runtime type alone says nothing here, unlike MAPE/DSLite/IPIP6 where the
+    // type itself is the evidence.
+    group('DHCPAuto runtime', () {
+      const verifiedApply = AutoIPoETerminalResult(
+        phase: AutoIPoETerminalPhase.completed,
+        operation: AutoIPoETerminalResult.applyOperation,
+        exitCode: 0,
+        reason: 'Completed',
+        connectivityVerified: true,
+      );
+
+      test('is active for Auto mode with verified connectivity', () {
+        expect(
+          AutoIPoEIssueMapper.isVerifiedActive(
+            _status(
+              applyState: AutoIPoEApplyState.active,
+              runtimeKind: AutoIPoERuntimeType.dhcpAuto,
+              selectedMode: AutoIPoEMode.auto,
+              terminalResultSupported: true,
+              terminalResult: verifiedApply,
+            ),
+          ),
+          isTrue,
+        );
+      });
+
+      test('is not active for Auto mode without verified connectivity', () {
+        expect(
+          AutoIPoEIssueMapper.isVerifiedActive(
+            _status(
+              applyState: AutoIPoEApplyState.active,
+              runtimeKind: AutoIPoERuntimeType.dhcpAuto,
+              selectedMode: AutoIPoEMode.auto,
+            ),
+          ),
+          isFalse,
+        );
+      });
+
+      test('is not active for a static-IP mode even when verified', () {
+        // The user asked for a tunnel and did not get one.
+        expect(
+          AutoIPoEIssueMapper.isVerifiedActive(
+            _status(
+              applyState: AutoIPoEApplyState.active,
+              runtimeKind: AutoIPoERuntimeType.dhcpAuto,
+              selectedMode: AutoIPoEMode.v6PlusStaticIp,
+              terminalResultSupported: true,
+              terminalResult: verifiedApply,
+            ),
+          ),
+          isFalse,
+        );
+      });
+    });
+
     test('requires an actual IPv4-over-IPv6 runtime', () {
       expect(
         AutoIPoEIssueMapper.isVerifiedActive(

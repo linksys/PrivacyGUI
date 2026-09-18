@@ -280,6 +280,9 @@ class AutoIPoEIssueMapper {
     AutoIPoEMode? expectedMode,
   }) {
     final activeRuntime = switch (status.runtimeKind) {
+      AutoIPoERuntimeType.dhcpAuto =>
+        status.selectedMode == AutoIPoEMode.auto &&
+            status.hasVerifiedBackendConnectivity,
       AutoIPoERuntimeType.mape ||
       AutoIPoERuntimeType.dsLite ||
       AutoIPoERuntimeType.ipip6 =>
