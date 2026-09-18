@@ -18,12 +18,33 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   Timer? _expiredCountdownTimer;
   Timer? _activePollTimer;
   bool _activePolling = false;
+  bool _initiatingCA = false;
 
   static const int kActivePollIntervalSec = 5;
   static const int kActiveSessionPollIntervalSec = 60;
 
+  // Cadence for the passive (client-side) session info stream. Was an
+  // unexplained default of 3 on the private method; named here so the two
+  // stream cadences sit next to each other.
+  static const int kPassiveSessionPollIntervalSec = 3;
+
+  // How many session reads may fail in a row before the session is reported as
+  // gone rather than polled again.
+  static const int kMaxConsecutivePollFailures = 3;
+
   @override
-  RemoteClientState build() => RemoteClientState();
+  RemoteClientState build() {
+    // Two timers and a stream subscription, all holding `ref`. Without this they
+    // outlive the provider on invalidate or container teardown.
+    ref.onDispose(() {
+      _stopActivePolling();
+      _expiredCountdownTimer?.cancel();
+      _expiredCountdownTimer = null;
+      _sessionInfoStreamSubscription?.cancel();
+      _sessionInfoStreamSubscription = null;
+    });
+    return RemoteClientState();
+  }
 
   @visibleForTesting
   bool get isActivePolling => _activePolling;
@@ -102,11 +123,16 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     }
   }
 
-  void startSessionInfoStream() {
+  void startSessionInfoStream({int interval = kPassiveSessionPollIntervalSec}) {
     final sessionId = state.sessionInfo?.id;
-    if (sessionId != null) {
-      _startSessionInfoStream(sessionId);
+    if (sessionId == null) {
+      // Silently doing nothing here is how a caller that streams before reading
+      // the session looks identical to one whose session simply ended.
+      logger.w(
+          '[RemoteAssistance]: startSessionInfoStream with no session to stream');
+      return;
     }
+    _startSessionInfoStream(sessionId, interval: interval);
   }
 
   Future<void> initiateRemoteAssistance() async {
@@ -122,25 +148,35 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   }
 
   Future<void> initiateRemoteAssistanceCA() async {
-    // if the stream is already started, do nothing
-    if (_sessionInfoStreamSubscription != null) {
+    // The subscription check alone cannot guard this: it is only assigned two
+    // awaits later, so concurrent callers all get past it. TopBar.build() calls
+    // this on every rebuild, and the CG#209 log shows five calls slipping
+    // through within 1.2 s that way. [_initiatingCA] is set before the first
+    // await, so it closes that window.
+    if (_initiatingCA || _sessionInfoStreamSubscription != null) {
       return;
     }
-    logger.i('[RemoteAssistance]: initiateRemoteAssistanceCA');
-    final sessions = await fetchSessions();
-    if (sessions.isEmpty) {
-      state = RemoteClientState();
-      return;
+    _initiatingCA = true;
+    try {
+      logger.i('[RemoteAssistance]: initiateRemoteAssistanceCA');
+      final sessions = await fetchSessions();
+      if (sessions.isEmpty) {
+        state = RemoteClientState();
+        return;
+      }
+      logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
+      final sessionInfo =
+          await fetchSessionInfo(sessions.first.id, startCountdown: true);
+      if (sessionInfo == null) {
+        state = RemoteClientState();
+        return;
+      }
+      // start a stream to fetch session info
+      _startSessionInfoStream(sessionInfo.id,
+          interval: kActiveSessionPollIntervalSec);
+    } finally {
+      _initiatingCA = false;
     }
-    logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
-    final sessionInfo =
-        await fetchSessionInfo(sessions.first.id, startCountdown: true);
-    if (sessionInfo == null) {
-      state = RemoteClientState();
-      return;
-    }
-    // start a stream to fetch session info
-    _startSessionInfoStream(sessionInfo.id, interval: 60);
   }
 
   /// Marks whether a remote assistance dialog is currently shown so the
@@ -154,6 +190,13 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _stopActivePolling();
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription = null;
+    // Pre-existing leak, fixed here because this is the session teardown and the
+    // countdown is part of the session: nothing used to cancel this 1 Hz timer.
+    // On the ACTIVE path below, `state = RemoteClientState()` nulls
+    // `expiredCountdown`, so the next tick's `??=` re-seeded from the captured
+    // sessionInfo and started a fresh countdown for a session that no longer
+    // exists - rebuilding the top bar every second, indefinitely.
+    _stopExpiredCountdownTimer();
     // The dialog is closing in every path below; clear the flag up front so
     // the early returns do not leave it stuck true.
     state = state.copyWith(isDialogShown: () => false);
@@ -175,29 +218,78 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     state = RemoteClientState();
   }
 
-  // start a stream to fetch session info
-  Future<void> _startSessionInfoStream(String sessionId,
-      {int interval = 3}) async {
+  // Synchronous on purpose. There is nothing to await here, and the re-entrancy
+  // guard in [initiateRemoteAssistanceCA] holds only while no await runs before
+  // the subscription is assigned - `void` makes that structural instead of an
+  // invariant a later edit could break.
+  void _startSessionInfoStream(String sessionId,
+      {int interval = kPassiveSessionPollIntervalSec}) {
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription =
-        _fetchSessionInfoStream(sessionId, interval: interval)
-            .listen((sessionInfo) {
-      state = state.copyWith(sessionInfo: () => sessionInfo);
-    });
+        _fetchSessionInfoStream(sessionId, interval: interval).listen(
+      (sessionInfo) {
+        state = state.copyWith(sessionInfo: () => sessionInfo);
+      },
+      // Without this, a `getSessionInfo` that fails - a 404 once the session is
+      // deleted, most obviously - escapes as an unhandled async error and the
+      // subscription dies with no trace in the log.
+      onError: (Object e) {
+        logger.e('[RemoteAssistance]: session info stream error: $e');
+        _sessionInfoStreamSubscription = null;
+        // `state.sessionInfo` is deliberately left alone: a single failed read
+        // may be a blip, and clearing it would tear down a live session. The
+        // countdown, though, has nothing left feeding it.
+        _stopExpiredCountdownTimer();
+      },
+      // A finished stream has to release the field, or the guard in
+      // [initiateRemoteAssistanceCA] treats a dead subscription as a live one
+      // and refuses every later session for the rest of the app's life.
+      onDone: () {
+        _sessionInfoStreamSubscription = null;
+        _stopExpiredCountdownTimer();
+      },
+    );
   }
 
-  // yield synchronously triggers the listener in _startSessionInfoStream,
-  // which updates state before the next loop iteration checks expiredIn.
+  // Polls for as long as the cloud still considers the session usable.
+  //
+  // The loop carries the value it fetched rather than reading `state` back: the
+  // listener in [_startSessionInfoStream] writes `state` in a later microtask,
+  // not synchronously on `yield`, so `state` here is one iteration behind.
+  //
+  // The delay comes before the fetch because every caller has just read the
+  // session to seed `state`; fetching immediately would only repeat it.
+  //
+  // A failed read does not end the polling. That is the whole point of #1558:
+  // ending on the first blip would leave the session unpolled and the UI still
+  // claiming it is live, which is the symptom this fix exists to remove. After
+  // [kMaxConsecutivePollFailures] in a row the session is treated as gone and
+  // the stream ends, so listeners are not left waiting on a session nobody can
+  // reach.
   Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
-      {int interval = 3}) async* {
-    while (state.sessionInfo?.expiredIn != null &&
-        state.sessionInfo!.expiredIn < 0) {
-      final master = ref.read(deviceManagerProvider).masterDevice;
-      final sessionInfo = await ref
-          .read(deviceCloudServiceProvider)
-          .getSessionInfo(master: master, sessionId: sessionId);
-      yield sessionInfo;
+      {int interval = kPassiveSessionPollIntervalSec}) async* {
+    var sessionInfo = state.sessionInfo;
+    var consecutiveFailures = 0;
+    while (sessionInfo != null && sessionInfo.isLive) {
       await Future.delayed(Duration(seconds: interval));
+      final master = ref.read(deviceManagerProvider).masterDevice;
+      try {
+        sessionInfo = await ref
+            .read(deviceCloudServiceProvider)
+            .getSessionInfo(master: master, sessionId: sessionId);
+        consecutiveFailures = 0;
+        yield sessionInfo;
+      } catch (e) {
+        consecutiveFailures++;
+        logger.w(
+            '[RemoteAssistance]: session read failed ($consecutiveFailures/$kMaxConsecutivePollFailures): $e');
+        if (consecutiveFailures >= kMaxConsecutivePollFailures) {
+          logger.e(
+              '[RemoteAssistance]: giving up on session $sessionId; reporting it as gone');
+          state = state.copyWith(sessionInfo: () => null);
+          return;
+        }
+      }
     }
   }
 
@@ -210,17 +302,28 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     return pin;
   }
 
+  void _stopExpiredCountdownTimer() {
+    _expiredCountdownTimer?.cancel();
+    _expiredCountdownTimer = null;
+    // The field goes with the timer. Left behind it is a number that has stopped
+    // meaning anything but keeps being rendered.
+    state = state.copyWith(expiredCountdown: () => null);
+  }
+
   void _startExpiredCountdownTimer(GRASessionInfo sessionInfo) {
     _expiredCountdownTimer?.cancel();
+    // Counted from a local rather than read back out of state each tick. Reading
+    // state meant any other writer that reset it - and several do - handed the
+    // timer a null, which it then re-seeded from this same captured session,
+    // restarting a countdown for a session that had already ended.
+    var remaining = sessionInfo.remainingSeconds;
+    state = state.copyWith(expiredCountdown: () => remaining);
     _expiredCountdownTimer =
         Timer.periodic(const Duration(seconds: 1), (timer) {
-      var expiredCountdown = state.expiredCountdown;
-      expiredCountdown ??= sessionInfo.expiredIn.abs();
-      expiredCountdown--;
-      state = state.copyWith(expiredCountdown: () => expiredCountdown);
-      if (expiredCountdown < 0) {
-        timer.cancel();
-        _expiredCountdownTimer = null;
+      remaining--;
+      state = state.copyWith(expiredCountdown: () => remaining);
+      if (remaining < 0) {
+        _stopExpiredCountdownTimer();
       }
     });
   }

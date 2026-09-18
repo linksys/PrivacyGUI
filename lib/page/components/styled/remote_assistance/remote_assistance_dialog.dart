@@ -111,8 +111,7 @@ Widget _buildInitiateWidget(BuildContext context) {
 }
 
 Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds =
-      (kPendingSessionDurationSec + (state.sessionInfo?.expiredIn ?? 0)).abs();
+  final initialSeconds = state.sessionInfo?.remainingSeconds ?? 0;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +138,7 @@ Widget _buildInvalidWidget(BuildContext context) {
 }
 
 Widget _buildCountingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds = (state.sessionInfo?.expiredIn ?? 0).abs();
+  final initialSeconds = state.sessionInfo?.remainingSeconds ?? 0;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
