@@ -98,17 +98,18 @@ void main() {
   });
 
   test(
-    'stock recovery shares its elapsed start across probes and resets it after completion',
+    'stock recovery shares one elapsed start across a poll and never leaks it to another',
     () async {
       final repository = _WANStatusRepository();
       final notifier = _container(repository).read(sideEffectProvider.notifier);
 
       final result = await notifier.poll(
-        pollFunc: () async {
+        pollFunc: (pollStartedAt) async {
           // A responding router with no native WAN connection is not ready
           // immediately. The native fallback is router recovery, not an
           // Internet check; PnP performs its ICC check separately.
-          expect((await notifier.testRouterFullyBootedUp()).$1, isFalse);
+          expect((await notifier.testRouterFullyBootedUp(pollStartedAt)).$1,
+              isFalse);
 
           // Production intentionally uses DateTime.now(), which FakeAsync
           // does not replace. One real-time boundary test avoids adding a
@@ -116,11 +117,15 @@ void main() {
           await Future<void>.delayed(const Duration(seconds: 61));
 
           repository.reachable = false;
-          expect((await notifier.testRouterFullyBootedUp()).$1, isFalse,
+          expect((await notifier.testRouterFullyBootedUp(pollStartedAt)).$1,
+              isFalse,
               reason: 'Elapsed time must never bypass a failed JNAP request');
 
           repository.reachable = true;
-          final recovered = await notifier.testRouterFullyBootedUp();
+          // Every probe in this operation measures from the same start, which
+          // is what lets the allowance accumulate across them.
+          final recovered =
+              await notifier.testRouterFullyBootedUp(pollStartedAt);
           expect(recovered.$1, isTrue,
               reason: 'Both WAN statuses may remain disconnected for IPoE');
           return recovered;
@@ -132,9 +137,16 @@ void main() {
       );
       expect(result, isTrue);
 
-      // Neither a direct probe nor another save may inherit a completed
-      // operation's 60-second recovery allowance.
-      expect((await notifier.testRouterFullyBootedUp()).$1, isFalse);
+      // Neither a direct probe nor another save may inherit the completed
+      // operation's 60-second allowance. That is now structural rather than
+      // restored: the reference time is a parameter, so there is no shared field
+      // for a later caller to read or for a finishing poll to erase.
+      expect(
+        (await notifier
+                .testRouterFullyBootedUp(DateTime.now().millisecondsSinceEpoch))
+            .$1,
+        isFalse,
+      );
       await expectLater(
         notifier.poll(
           pollFunc: notifier.testRouterFullyBootedUp,
@@ -145,7 +157,12 @@ void main() {
         ),
         throwsA(isA<JNAPSideEffectError>()),
       );
-      expect((await notifier.testRouterFullyBootedUp()).$1, isFalse);
+      expect(
+        (await notifier
+                .testRouterFullyBootedUp(DateTime.now().millisecondsSinceEpoch))
+            .$1,
+        isFalse,
+      );
     },
     timeout: const Timeout(Duration(seconds: 90)),
   );

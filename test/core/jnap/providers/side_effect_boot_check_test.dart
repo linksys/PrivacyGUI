@@ -8,11 +8,10 @@
 // start time, so it can only apply inside a poll — which is what these tests
 // pin, along with the WAN answers themselves.
 //
-// The grace boundary itself is not unit-tested: crossing it takes a minute of
-// wall clock, and faking the clock here would test the harness rather than the
-// predicate. What is pinned is that without an active poll the grace cannot
-// fire at all, which is the arm that decides whether a silent WAN reads as
-// success.
+// The reference time is now a parameter rather than a field shared by every
+// poll, which is what makes the grace boundary testable at all: a caller can
+// hand in a start time already past it instead of waiting a minute. Both sides
+// of that boundary are pinned below.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,10 +73,21 @@ void main() {
     )).thenAnswer((_) => answer());
   }
 
+  /// A poll that started just now, so the grace has not elapsed.
+  int justStarted() => DateTime.now().millisecondsSinceEpoch;
+
+  /// A poll that started long enough ago for the grace to have elapsed.
+  int startedBeforeGrace() =>
+      DateTime.now().millisecondsSinceEpoch -
+      SideEffectNotifier.routerRespondingGrace.inMilliseconds -
+      1000;
+
   test('a connected IPv4 WAN counts as booted', () async {
     whenWanStatus(() async => _wanStatus(ipv4: 'Connected'));
 
-    final (booted, result) = await notifier.testRouterFullyBootedUp();
+    final (booted, result) = await notifier.testRouterFullyBootedUp(
+      justStarted(),
+    );
 
     expect(booted, isTrue);
     expect(result, isA<JNAPSuccess>());
@@ -87,20 +97,41 @@ void main() {
     whenWanStatus(
         () async => _wanStatus(ipv4: 'Disconnected', ipv6: 'Connected'));
 
-    final (booted, _) = await notifier.testRouterFullyBootedUp();
+    final (booted, _) = await notifier.testRouterFullyBootedUp(justStarted());
 
     expect(booted, isTrue);
   });
 
-  test('a disconnected WAN outside a poll is not booted', () async {
-    // No poll is running, so there is no start time to measure the grace
-    // against and the router answering proves nothing on its own. Before the
-    // grace was tied to the poll, this arm read the call's own start time and
-    // could never fire; it must not fire here either.
+  test('a disconnected WAN inside the grace is not booted', () async {
     whenWanStatus(
         () async => _wanStatus(ipv4: 'Disconnected', ipv6: 'Disconnected'));
 
-    final (booted, _) = await notifier.testRouterFullyBootedUp();
+    final (booted, _) = await notifier.testRouterFullyBootedUp(justStarted());
+
+    expect(booted, isFalse);
+  });
+
+  test('a router answering past the grace counts as booted with the WAN down',
+      () async {
+    // The arm that turns a never-connecting WAN into a reported success. It was
+    // unreachable from a test while the reference time lived on the notifier,
+    // because only a real poll set it.
+    whenWanStatus(
+        () async => _wanStatus(ipv4: 'Disconnected', ipv6: 'Disconnected'));
+
+    final (booted, _) =
+        await notifier.testRouterFullyBootedUp(startedBeforeGrace());
+
+    expect(booted, isTrue);
+  });
+
+  test('an unreachable router is not booted even past the grace', () async {
+    // The grace needs the router to be answering; a failed read is not an
+    // answer, so it cannot satisfy it.
+    whenWanStatus(() => Future.error(const JNAPError(result: 'ErrorTimeout')));
+
+    final (booted, _) =
+        await notifier.testRouterFullyBootedUp(startedBeforeGrace());
 
     expect(booted, isFalse);
   });
@@ -108,7 +139,9 @@ void main() {
   test('an unreachable router is not booted', () async {
     whenWanStatus(() => Future.error(const JNAPError(result: 'ErrorTimeout')));
 
-    final (booted, result) = await notifier.testRouterFullyBootedUp();
+    final (booted, result) = await notifier.testRouterFullyBootedUp(
+      justStarted(),
+    );
 
     expect(booted, isFalse);
     expect(result, isNull);
