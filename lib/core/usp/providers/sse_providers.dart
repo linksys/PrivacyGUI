@@ -14,7 +14,6 @@ import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/framework/mode/bridge_config.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// How this build's transport is described — the mode-dependent half of
@@ -219,26 +218,27 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   final bridge = ref.watch(uspBridgeClientProvider);
   if (bridge == null) return;
 
-  // Step 0: Health check — best-effort, non-fatal (local mode only).
+  // Step 0: Health check — best-effort and non-fatal, in **both** modes.
   // If the bridge is busy (504) or slow, we still attempt SSE connection
   // because SseConnectionManager has its own retry/backoff logic.
-  // Skip in Remote mode — Guardian proxy has no health endpoint.
   //
-  // #1474 phase 3 deliberately left this read alone, taking the file from 3 mode
-  // reads to 1. It is not a mode *cause*: it exists because
-  // `BridgeEndpoints.remote()`'s `health` path is a fabrication — Guardian has no
-  // such endpoint — so this `if` is compensating for a wrong endpoint table, and
-  // the fix is to delete that path, not to give the mode a strategy member for
-  // "does my transport have a health check". That is transport-layer cleanup
-  // outside this epic; wrapping it in a strategy first would freeze the
-  // fabrication into a contract.
-  if (!GlobalConfig.remote.isActive) {
-    try {
-      await bridge.health().timeout(const Duration(seconds: 5));
-      logger.d('[SSE]: Bridge health check passed');
-    } catch (e) {
-      logger.w('[SSE]: Bridge health check failed: $e — continuing');
-    }
+  // **This used to be skipped remotely, on a premise that was false.** #1474 phase 3
+  // left the read alone and recorded the reason as the remote table's `health` entry
+  // being invented. Guardian's own OpenAPI spec (received 2026-09-17) serves that
+  // path, byte for byte as we declare it, so the `if` was compensating for nothing
+  // and the endpoint table was right all along. #1576 deleted the gate; the same
+  // premise is gone from `remote_transport_strategy.dart` and from
+  // `bridge_endpoints_test.dart`, and `usp_health_claim_test.dart` scans for its
+  // *absence* rather than for the new call — a scan for the call passes green with
+  // the wrong comment beside it, which is how one docstring became four.
+  //
+  // It is still not a mode *cause*: both transports have a health endpoint, so
+  // there is nothing here for a strategy member to answer.
+  try {
+    await bridge.health().timeout(const Duration(seconds: 5));
+    logger.d('[SSE]: Bridge health check passed');
+  } catch (e) {
+    logger.w('[SSE]: Bridge health check failed: $e — continuing');
   }
 
   // Connect SSE only — core subscriptions are registered by the dashboard

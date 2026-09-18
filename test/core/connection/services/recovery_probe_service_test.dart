@@ -59,9 +59,15 @@ class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
 class MockRouterFingerprintService extends Mock
     implements RouterFingerprintService {}
 
-/// The path `RemoteTransportStrategy.isRouterReachable` reads. Cheapest always
-/// present parameter on the object model; reaching it proves the whole chain
-/// browser → Guardian → agent → OBUSPA → box is carrying traffic.
+/// The path `RemoteTransportStrategy.isRouterReachable` read **until #1576**, and
+/// still reads behind its 404-only fallback.
+///
+/// It is the cheapest always-present parameter on the object model, and reaching it
+/// proves the whole chain browser → Guardian → agent → OBUSPA → box is carrying
+/// traffic. What it is not is cheap: a full object-model round trip to answer a
+/// yes/no, every 30 s. Guardian's own `/usp/health` answers the same question with a
+/// ~5-second budget, so #1576 made that the probe and left this as the arm a
+/// deployment without the endpoint takes (#1575 verification item 3).
 const _kReachabilityPath = 'Device.DeviceInfo.SerialNumber';
 
 void main() {
@@ -105,7 +111,19 @@ void main() {
         'agent_state': 'ready',
       };
 
+  /// Guardian answers its health check. An empty map on purpose: a *partial* answer
+  /// is a normal 200 — firmware that lacks one of the seven parameters omits its key
+  /// — so the remote probe reads the status and nothing else.
   void stubReachableRemotely() {
+    when(() => mockBridge.health())
+        .thenAnswer((_) async => <String, dynamic>{});
+  }
+
+  /// Guardian has not deployed `/usp/health` on this environment, so the probe falls
+  /// back to the pre-#1576 read and that read succeeds.
+  void stubReachableRemotelyViaFallback() {
+    when(() => mockBridge.health())
+        .thenThrow(BridgeReadException(404, 'health'));
     when(() => mockUsp.get([_kReachabilityPath]))
         .thenAnswer((_) async => {_kReachabilityPath: 'ABC123'});
   }
@@ -232,10 +250,11 @@ void main() {
     });
 
     test('reads reachability from the bridge, not from a USP Get', () async {
-      // The negative half of the remote group's first test: the two modes must
-      // not both be doing both things. A local probe that also issued the
-      // Guardian read would pass every expectation above while doubling the
-      // requests a booting router receives.
+      // Since #1576 **both** modes read their transport's health endpoint, so this
+      // is no longer the difference between the two probes — what it still pins is
+      // that the local probe issues no object-model read of its own. The `Get` it
+      // must not make is now the remote arm's *fallback*, which a local build has no
+      // business taking.
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
       when(() => mockAuth.restoreSession(isRecovering: true))
@@ -274,17 +293,51 @@ void main() {
       verifyNever(() => mockAuth.getSerialNumber());
     });
 
-    test('never calls the fabricated Guardian health endpoint', () async {
+    test('reads Guardian\'s health endpoint, and nothing else (#1576)',
+        () async {
+      // **This test used to assert the opposite**, under the name "never calls the
+      // fabricated Guardian health endpoint". The premise was that Guardian did not
+      // serve the path; its own OpenAPI spec does, at exactly the path
+      // `BridgeEndpoints.remote()` has always declared. So the probe now spends one
+      // purpose-built 5-second check instead of a whole object-model round trip
+      // every 30 s, and the `Get` below is the arm it must not take when the
+      // endpoint answers.
       stubReachableRemotely();
 
       await service.probe();
 
-      verifyNever(() => mockBridge.health());
+      verify(() => mockBridge.health()).called(1);
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('a 404 falls back to the pre-#1576 read, and still recovers',
+        () async {
+      // The deployment hedge. Delete this test with
+      // `RemoteTransportStrategy._reachableViaSerialNumber` once #1575's
+      // verification item 3 is answered — it is dated, not permanent.
+      stubReachableRemotelyViaFallback();
+
+      final result = await service.probe();
+
+      expect(result, ProbeResult.recovered);
       verify(() => mockUsp.get([_kReachabilityPath])).called(1);
     });
 
+    test('a 400 is unreachable and does not spend the fallback', () async {
+      // Guardian rejects an offline device with 400 before publishing anything, so
+      // the status already answers the probe's question. Falling back would pay for
+      // a round trip to re-learn it.
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(400, 'health'));
+
+      final result = await service.probe();
+
+      expect(result, ProbeResult.unreachable);
+      verifyNever(() => mockUsp.get(any()));
+    });
+
     test('a failed Guardian read is unreachable, not a mismatch', () async {
-      when(() => mockUsp.get([_kReachabilityPath]))
+      when(() => mockBridge.health())
           .thenThrow(Exception('502 from the proxy'));
 
       final result = await service.probe();
@@ -295,10 +348,14 @@ void main() {
               'Guardian session may well still be alive');
     });
 
-    test('a 200 that omits the parameter is unreachable', () async {
+    test('a fallback 200 that omits the parameter is unreachable', () async {
       // Guardian answers 200 with an empty result set while the agent is
       // reconnecting to the router, so "the request succeeded" is not "the box
-      // is back".
+      // is back". This case belongs to the **fallback** arm now: on the health
+      // endpoint an answer with no parameters is a 400, not an empty 200, which is
+      // why the primary read can trust its status.
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(404, 'health'));
       when(() => mockUsp.get([_kReachabilityPath]))
           .thenAnswer((_) async => <String, dynamic>{});
 
@@ -320,23 +377,30 @@ void main() {
       expect(result, ProbeResult.recovered);
     });
 
-    test('healthOnly recovers on the Guardian read alone', () async {
+    test('healthOnly recovers on the reachability check alone', () async {
+      // `healthOnly` skips step 2 — the credential re-establishment — not step 1.
+      // Its `verifyNever` used to be `mockBridge.health()`, which was really
+      // asserting the fabrication claim a second time; what it means to assert is
+      // that the coordinator is never touched.
       stubReachableRemotely();
 
       final result = await service.probe(healthOnly: true);
 
       expect(result, ProbeResult.recovered);
-      verifyNever(() => mockBridge.health());
+      verifyNever(() =>
+          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
     });
 
-    test('no UspClient yet is unreachable, not a crash', () async {
+    test('no bridge yet is unreachable, not a crash', () async {
       // The window `RemoteTransportStrategy.bridgeConfig` documents: the mode is
       // known at build time, the session only when the agent opens its link. The
-      // pre-#1323 provider wrote `bridge!` here and threw.
+      // pre-#1323 provider wrote `bridge!` here and threw. Since #1576 the null the
+      // probe meets first is the *bridge*, not the USP client.
       container.dispose();
       container = ProviderContainer(overrides: [
         appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
         uspClientProvider.overrideWithValue(null),
+        uspBridgeClientProvider.overrideWithValue(null),
       ]);
 
       final result = await container.read(recoveryProbeServiceProvider).probe();

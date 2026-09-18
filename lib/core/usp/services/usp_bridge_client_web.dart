@@ -152,11 +152,27 @@ class UspBridgeClient {
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Calls GET health endpoint.
+  ///
+  /// Throws [BridgeReadException] on any non-2xx, and the status matters to one
+  /// caller: `RemoteTransportStrategy.isRouterReachable` reads a **404** as "this
+  /// deployment does not serve the endpoint" and falls back, while every other
+  /// code means the router is away (#1576).
+  ///
+  /// Checking the status here rather than letting the decode decide is what makes
+  /// that possible at all. [_withAuthRetry] hands its parser every non-401
+  /// response, and Guardian answers an error with a JSON body — so `jsonDecode`
+  /// **succeeds** on a 404 and the probe would have read "unreachable endpoint" as
+  /// "reachable router".
   Future<Map<String, dynamic>> health() async {
     return _withAuthRetry(
       () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
           headers: _authHeaders),
-      (r) => jsonDecode(r.body) as Map<String, dynamic>,
+      (r) {
+        if (r.statusCode < 200 || r.statusCode >= 300) {
+          throw BridgeReadException(r.statusCode, 'health');
+        }
+        return jsonDecode(r.body) as Map<String, dynamic>;
+      },
     );
   }
 

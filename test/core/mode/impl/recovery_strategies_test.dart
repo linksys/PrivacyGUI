@@ -24,12 +24,16 @@ import 'package:privacy_gui/core/mode/impl/remote_credential_strategy.dart';
 import 'package:privacy_gui/core/mode/impl/remote_proximity_strategy.dart';
 import 'package:privacy_gui/core/mode/impl/remote_transport_strategy.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspBridgeClient extends Mock implements UspBridgeClient {}
 
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
 
@@ -289,18 +293,107 @@ void main() {
     });
   });
 
+  // Since #1576 this reads Guardian's own `/usp/health` — a purpose-built liveness
+  // check with a ~5-second budget — instead of a `Device.DeviceInfo.SerialNumber`
+  // `Get` over `POST /actions/usp`. The old read is kept behind a **404-only**
+  // fallback, because whether QA has the endpoint deployed is #1575's verification
+  // item 3 and pointing the probe at an undeployed path would make an RA session
+  // never recover from a transient drop.
+  //
+  // Every case below is about the *status*, and none reads the body: a partial answer
+  // is a normal `200` (firmware that lacks a parameter omits its key), so the status
+  // is the whole verdict. That is the one asymmetry with `LocalTransportStrategy`,
+  // which does read two fields because the on-router bridge answers `200` while
+  // OBUSPA behind it is still starting.
   group('RemoteTransportStrategy.isRouterReachable', () {
     late MockUspClient mockUsp;
+    late MockUspBridgeClient mockBridge;
     late ProviderContainer container;
 
     setUp(() {
       mockUsp = MockUspClient();
+      mockBridge = MockUspBridgeClient();
       container = ProviderContainer(overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
+        uspBridgeClientProvider.overrideWithValue(mockBridge),
       ]);
     });
 
     tearDown(() => container.dispose());
+
+    Future<bool> probe() =>
+        const RemoteTransportStrategy(credential: RemoteCredentialStrategy())
+            .isRouterReachable(_refOf(container));
+
+    test('a 200 is reachable, and the body is not read', () async {
+      // An empty map stands in for a *partial* answer, which the spec makes a
+      // normal 200: firmware that lacks one of the seven parameters has its key
+      // omitted rather than sent as null, and only an answer carrying none of them
+      // is a 400. So a strategy that read a field would report a supported router
+      // as away.
+      when(() => mockBridge.health()).thenAnswer((_) async => {});
+
+      await expectLater(probe(), completion(isTrue));
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('a 404 falls back to the pre-#1576 read', () async {
+      // The deployment hedge, and the only status that takes this arm. Remove it
+      // together with `_reachableViaSerialNumber` once #1575's verification item 3
+      // is answered — that is the whole reason this test names the issue.
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(404, 'health'));
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => {'Device.DeviceInfo.SerialNumber': 'SN123'});
+
+      await expectLater(probe(), completion(isTrue));
+      verify(() => mockUsp.get(['Device.DeviceInfo.SerialNumber'])).called(1);
+    });
+
+    test('a 404 whose fallback also fails is unreachable', () async {
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(404, 'health'));
+      when(() => mockUsp.get(any())).thenThrow(StateError('socket gone'));
+
+      await expectLater(probe(), completion(isFalse));
+    });
+
+    test('a 400 is the router being away, and does NOT fall back', () async {
+      // Guardian answers 400 for an offline device *before* publishing anything,
+      // which is exactly the semantics a reachability probe wants. Falling back
+      // here would spend a full object-model round trip to re-learn what the
+      // status already said.
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(400, 'health'));
+
+      await expectLater(probe(), completion(isFalse));
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('a 500 is unreachable and does not fall back either', () async {
+      when(() => mockBridge.health())
+          .thenThrow(BridgeReadException(500, 'health'));
+
+      await expectLater(probe(), completion(isFalse));
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('no bridge yet is unreachable', () async {
+      // The window `RemoteTransportStrategy.bridgeConfig` documents: the mode is
+      // known at build time, the Guardian session only when the agent opens the
+      // link. A probe loop can run in it.
+      final noBridge = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        uspBridgeClientProvider.overrideWithValue(null),
+      ]);
+      addTearDown(noBridge.dispose);
+
+      await expectLater(
+        const RemoteTransportStrategy(credential: RemoteCredentialStrategy())
+            .isRouterReachable(_refOf(noBridge)),
+        completion(isFalse),
+      );
+    });
 
     test('never throws, whatever the transport does', () async {
       // The contract says so in words, and `RecoveryProbeService` takes it
@@ -308,13 +401,9 @@ void main() {
       // escape `_runProbe`, and `Timer.periodic`'s callback is not awaited by
       // anyone, so it would surface as an unhandled async error and the probe
       // loop would keep running with no result recorded.
-      when(() => mockUsp.get(any())).thenThrow(StateError('socket gone'));
+      when(() => mockBridge.health()).thenThrow(StateError('socket gone'));
 
-      await expectLater(
-        const RemoteTransportStrategy(credential: RemoteCredentialStrategy())
-            .isRouterReachable(_refOf(container)),
-        completion(isFalse),
-      );
+      await expectLater(probe(), completion(isFalse));
     });
   });
 }

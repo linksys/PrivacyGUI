@@ -77,14 +77,16 @@ void main() {
               'the asymmetry is Guardian\'s, and it is the kind of detail a '
               'well-meaning "consistency" edit breaks');
 
-      // These two are documented fabrications, and the expectations exist to
-      // record that rather than to bless it: Guardian has no health or turbo
-      // endpoint, which is why `sseBootstrapProvider` skips its `health()` call
-      // in remote mode instead of calling a 404. #1474 phase 3 deliberately left
-      // that `if` in place — see the comment there — because wrapping a
-      // fabricated path in a strategy member would freeze it into a contract.
-      // When the transport layer deletes these two fields, delete these two
-      // lines with them.
+      // **`health` is not a fabrication, and this comment used to say it was.**
+      // Guardian's own OpenAPI spec serves `/usp/health` at exactly this path, so
+      // #1576 deleted the remote-mode skip in `sseBootstrapProvider` and pointed
+      // `RemoteTransportStrategy.isRouterReachable` at it. The expectation below is
+      // now an ordinary contract assertion.
+      //
+      // `turboPrefix` is a different matter and is still unverified: nothing calls
+      // it remotely and no spec has been seen for it. Left as a declared path
+      // rather than deleted, because deleting a `required` field to express "we
+      // have not checked" would be the mistake `health` just cost a release cycle.
       expect(remote.health, '$base/health');
       expect(remote.turboPrefix, '$base/turbo');
     });
