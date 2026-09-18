@@ -639,6 +639,7 @@
   "errorTimeout": "Upłynął limit czasu operacji. Spróbuj ponownie.",
   "errorUnauthorized": "Nie masz uprawnień do wykonania tej czynności.",
   "errorUnexpected": "Coś poszło nie tak. Spróbuj ponownie.",
+  "errorCommandRefused": "Router odrzucił to polecenie. Spróbuj ponownie za chwilę.",
   "errors": "Błędy",
   "estimatedTimeRemaining": "Szacowany pozostały czas: {time}",
   "ethernetPorts": "Porty Ethernet",

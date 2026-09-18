@@ -208,13 +208,20 @@ export class UspClient {
      * Performs an Operate command on the USP agent
      *
      * # Arguments
-     * * `command` - Command path (e.g., "Device.Reboot()" or "Device.IP.Diagnostics.Ping()")
+     * * `command` - Command path (e.g., "Device.Reboot()" or "Device.IP.Diagnostics.IPPing()")
      * * `args` - JavaScript object with input argument name-value pairs (optional, pass {} for no args)
      *
      * # Returns
-     * * Promise that resolves to `{ commandKey: string, outputArgs: Record<string, string> | undefined }`
+     * * Promise that resolves to `{ commandKey: string, outputArgs: Record<string, string> }`
      *   - `commandKey` — UUID for correlating with OperationComplete notifications
-     *   - `outputArgs` — output arguments from the command (undefined if none)
+     *   - `outputArgs` — output arguments from the command. Always present on
+     *     success, and empty whenever the command produced none, so its presence
+     *     does not distinguish the cases below
+     *   - `requestPath` — present only for an accepted asynchronous command: the
+     *     `Device.LocalAgent.Request.{i}` path the outcome will be reported against
+     *   - `noMatch` — present only when a Search Path command matched zero
+     *     objects, so nothing ran (USP 1.3 R-MSG.4a). This flag is the only
+     *     thing separating it from a command that ran and returned nothing
      *
      * # Example (JavaScript)
      * ```javascript
@@ -223,7 +230,7 @@ export class UspClient {
      * console.log("Track async result with:", commandKey);
      *
      * // Command with input arguments
-     * const result = await client.operate("Device.IP.Diagnostics.Ping()", {
+     * const result = await client.operate("Device.IP.Diagnostics.IPPing()", {
      *     "Host": "8.8.8.8",
      *     "NumberOfRepetitions": "4"
      * });
@@ -516,11 +523,28 @@ export function buildWebSocketConnect(from_id: string, to_id: string): Uint8Arra
  * Decode a USP Record received over WebSocket and return a JS object
  * with the parsed response.
  *
+ * Throws when the Record, the enclosed Msg, or an `OperateResp` inside it
+ * cannot be decoded. That includes the two `OperateResp` shapes this client
+ * refuses — an `OperationResult` with the oneof unset, and more than one
+ * `OperationResult` — so a refusal cannot be mistaken for a Record that
+ * merely carried nothing to report.
+ *
+ * An `OperateResp` with no `OperationResult` is **not** a refusal: it is a
+ * Search Path that matched zero objects, which USP 1.3 R-MSG.4a requires to
+ * succeed. It returns `no_match: true` and, because the wire carries no
+ * `executed_command`, no `command` key at all.
+ *
  * # JavaScript
  * ```javascript
  * const result = decodeRecord(responseBytes);
- * // result = { from_id, to_id, version, msg_type, msg_id, command?, output_args?, error? }
+ * // result = { from_id, to_id, version, msg_type, msg_id,
+ * //            command?, output_args?, request_path?, no_match?, error? }
  * ```
+ *
+ * Keys are `snake_case` here, unlike the `camelCase` of the unified
+ * `result.data` object the HTTP operations return; `request_path` and
+ * `no_match` are the values that surface exposes as `requestPath` and
+ * `noMatch`.
  */
 export function decodeRecord(data: Uint8Array): any;
 
@@ -575,12 +599,12 @@ export interface InitOutput {
     readonly uspwsclient_onRecord: (a: number, b: number) => void;
     readonly uspwsclient_onStateChange: (a: number, b: number) => void;
     readonly uspwsclient_sendRecord: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_3024: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3026: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2348: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2348_2: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2348_3: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_2347: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_3179: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3181: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2503: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2503_2: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2503_3: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_2502: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

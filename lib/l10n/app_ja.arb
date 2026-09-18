@@ -642,6 +642,7 @@
   "errorTimeout": "操作がタイムアウトしました。再度お試しください。",
   "errorUnauthorized": "この操作を実行する権限がありません。",
   "errorUnexpected": "問題が発生しました。再度お試しください。",
+  "errorCommandRefused": "ルーターがこのコマンドを拒否しました。しばらくしてからもう一度お試しください。",
   "errors": "エラー",
   "estimatedTimeRemaining": "推定残り時間: {time}",
   "ethernetPorts": "イーサネットポート",
