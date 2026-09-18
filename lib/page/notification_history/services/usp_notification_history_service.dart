@@ -171,6 +171,21 @@ class UspNotificationHistoryService {
   /// Maps the transport's vocabulary to [ServiceError], per constitution
   /// Article XIII. Nothing above this layer sees an HTTP status or a
   /// `SessionExpiredException`.
+  ///
+  /// **The last arm is a catch-all, and §13.3 requires it to be.** The typed arms
+  /// above cover what this client throws deliberately; they do not cover what the
+  /// stack underneath throws by itself. `_withAuthRetry` does a bare
+  /// `await request()`, so an `http.ClientException` — a network drop, which is the
+  /// *expected* failure on a page an agent reads over the public internet — and a
+  /// `FormatException` out of `jsonDecode` both reach here untyped. Without this arm
+  /// they escaped `ServiceError` entirely: `build()`'s `on ServiceError catch` missed
+  /// them, and the view's `error is ServiceError ? error : null` then rendered a
+  /// failure screen with no message on it at all.
+  ///
+  /// [UnexpectedError] rather than [NetworkError] for the drop, deliberately: telling
+  /// the two apart needs `package:http`'s exception type in the service layer, and a
+  /// guess between them would be a worse answer than the honest fallback whose
+  /// `detail` the UI is allowed to surface.
   Future<Map<String, dynamic>> _read(
     Future<Map<String, dynamic>> Function() read,
   ) async {
@@ -188,6 +203,8 @@ class UspNotificationHistoryService {
       // guard was removed — report it as a service that cannot serve rather than
       // letting a framework error reach the UI.
       throw ServiceNotInitializedError(detail: e.message);
+    } catch (e) {
+      throw UnexpectedError(detail: e.toString());
     }
   }
 }

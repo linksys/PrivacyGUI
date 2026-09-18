@@ -45,31 +45,20 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
+import '../../../mocks/test_data/scenes/notification_history_scene_data.dart';
 
-class _MockService extends Mock implements UspNotificationHistoryService {}
-
-NotificationHistoryEntryUIModel _entry(
-  String id,
-  String type, {
-  String? commandKey,
-  int ms = 1757000000000,
-}) =>
-    NotificationHistoryEntryUIModel(
-      msgId: id,
-      originTs: DateTime.fromMillisecondsSinceEpoch(ms),
-      notificationType: type,
-      commandKey: commandKey,
-    );
+class MockUspNotificationHistoryService extends Mock
+    implements UspNotificationHistoryService {}
 
 void main() {
   late AppLocalizations loc;
-  late _MockService service;
+  late MockUspNotificationHistoryService service;
 
   setUpAll(() async {
     loc = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
-  setUp(() => service = _MockService());
+  setUp(() => service = MockUspNotificationHistoryService());
 
   Widget wrap({required bool available}) {
     final router = GoRouter(
@@ -120,7 +109,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 1 — the two timestamps, including their null case
   // ═════════════════════════════════════════════════════════════════════════
-  group('session state', () {
+  group('UspNotificationHistoryView - session state', () {
     testWidgets('both labels render, and nulls read as an em dash',
         (tester) async {
       stub();
@@ -170,12 +159,12 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 4 — Unknown is a value, not a placeholder
   // ═════════════════════════════════════════════════════════════════════════
-  group('the list', () {
+  group('UspNotificationHistoryView - the list', () {
     testWidgets('renders a row per entry, Unknown included', (tester) async {
       stub(entries: [
-        _entry('m1', 'ValueChange'),
-        _entry('m2', 'OperationComplete', commandKey: 'key-abc'),
-        _entry('m3', 'Unknown'),
+        notificationEntry('m1', 'ValueChange'),
+        notificationEntry('m2', 'OperationComplete', commandKey: 'key-abc'),
+        notificationEntry('m3', 'Unknown'),
       ]);
 
       await pump(tester);
@@ -190,8 +179,8 @@ void main() {
     testWidgets('the command key line appears only on the row that has one',
         (tester) async {
       stub(entries: [
-        _entry('m1', 'ValueChange'),
-        _entry('m2', 'OperationComplete', commandKey: 'key-abc'),
+        notificationEntry('m1', 'ValueChange'),
+        notificationEntry('m2', 'OperationComplete', commandKey: 'key-abc'),
       ]);
 
       await pump(tester);
@@ -204,12 +193,12 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 3 — a row opens its body, and a 404 is ordinary
   // ═════════════════════════════════════════════════════════════════════════
-  group('opening a row', () {
+  group('UspNotificationHistoryView - opening a row', () {
     testWidgets('fetches and renders its body', (tester) async {
-      stub(entries: [_entry('m1', 'ValueChange')]);
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1')).thenAnswer(
         (_) async => NotificationDetailUIModel(
-          entry: _entry('m1', 'ValueChange'),
+          entry: notificationEntry('m1', 'ValueChange'),
           body: const ValueChangeBodyUIModel(
             paramPath: 'Device.WiFi.SSID.1.SSID',
             paramValue: 'Linksys-Guest',
@@ -229,7 +218,7 @@ void main() {
 
     testWidgets('a 404 says "no longer available", not a crash',
         (tester) async {
-      stub(entries: [_entry('m1', 'ValueChange')]);
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1'))
           .thenThrow(const ResourceNotFoundError(code: 404));
       await pump(tester);
@@ -247,10 +236,12 @@ void main() {
 
     testWidgets('a refused OperationComplete shows its error, not its args',
         (tester) async {
-      stub(entries: [_entry('m2', 'OperationComplete', commandKey: 'k')]);
+      stub(entries: [
+        notificationEntry('m2', 'OperationComplete', commandKey: 'k')
+      ]);
       when(() => service.fetchDetail('m2')).thenAnswer(
         (_) async => NotificationDetailUIModel(
-          entry: _entry('m2', 'OperationComplete', commandKey: 'k'),
+          entry: notificationEntry('m2', 'OperationComplete', commandKey: 'k'),
           body: const OperationCompleteBodyUIModel(
             commandName: 'Device.IP.Diagnostics.IPPing()',
             commandKey: 'k',
@@ -272,10 +263,10 @@ void main() {
 
     testWidgets('an unrecognised body is shown as JSON rather than dropped',
         (tester) async {
-      stub(entries: [_entry('m9', 'Unknown')]);
+      stub(entries: [notificationEntry('m9', 'Unknown')]);
       when(() => service.fetchDetail('m9')).thenAnswer(
         (_) async => NotificationDetailUIModel(
-          entry: _entry('m9', 'Unknown'),
+          entry: notificationEntry('m9', 'Unknown'),
           body: const RawBodyUIModel('{\n  "obj_creation": {}\n}'),
         ),
       );

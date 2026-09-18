@@ -32,21 +32,21 @@ import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/page/notification_history/models/notification_history_ui_model.dart';
 import 'package:privacy_gui/page/notification_history/services/usp_notification_history_service.dart';
 
-class _MockBridge extends Mock implements UspBridgeClient {}
+class MockUspBridgeClient extends Mock implements UspBridgeClient {}
 
 void main() {
-  late _MockBridge bridge;
+  late MockUspBridgeClient bridge;
   late UspNotificationHistoryService service;
 
   setUp(() {
-    bridge = _MockBridge();
+    bridge = MockUspBridgeClient();
     service = UspNotificationHistoryService(bridge);
   });
 
   // ═════════════════════════════════════════════════════════════════════════
   // /usp/state
   // ═════════════════════════════════════════════════════════════════════════
-  group('session state', () {
+  group('UspNotificationHistoryService - session state', () {
     test('reads the camelCase envelope and epoch milliseconds', () async {
       when(() => bridge.uspState()).thenAnswer((_) async => {
             'deviceUuid': 'uuid-1',
@@ -98,7 +98,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // /usp/notifications/history
   // ═════════════════════════════════════════════════════════════════════════
-  group('history list', () {
+  group('UspNotificationHistoryService - history list', () {
     test('parses entries, newest first as served', () async {
       when(() => bridge.notificationsHistory()).thenAnswer((_) async => {
             'entries': [
@@ -178,7 +178,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // /usp/notifications/{msgId}
   // ═════════════════════════════════════════════════════════════════════════
-  group('one entry with its body', () {
+  group('UspNotificationHistoryService - one entry with its body', () {
     Map<String, dynamic> envelope(Map<String, dynamic> body) => {
           'msgId': 'msg-1',
           'originTs': 1757000000000,
@@ -318,7 +318,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Errors → ServiceError (constitution Article XIII)
   // ═════════════════════════════════════════════════════════════════════════
-  group('errors are mapped in the service, per Article XIII', () {
+  group('UspNotificationHistoryService - errors, per Article XIII', () {
     test('a 404 on one entry is ResourceNotFoundError', () async {
       // The spec makes 404 cover "does not exist" and "is not yours" and says
       // not to tell them apart, so one error type is the whole answer. The page

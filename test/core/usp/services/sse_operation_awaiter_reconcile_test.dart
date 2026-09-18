@@ -45,6 +45,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
@@ -193,6 +194,28 @@ void main() {
       await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
     });
 
+    test('a diagnostic against an OFFLINE device still reconciles', () async {
+      // #1578's second acceptance row, named so it is findable. The read is the one
+      // part of this epic that does not need the device: the store is Guardian's, and
+      // "the device dropped" is the likeliest reason the push went missing in the
+      // first place.
+      //
+      // Worth stating because it constrains which edge can cover it: while the device
+      // is offline Guardian answers the *stream* with a 400 (#1577), so it never
+      // reopens and the reconnect edge cannot fire. The pre-timeout read is therefore
+      // the whole of the offline path, which is exactly why it exists.
+      await connectManager();
+      when(() => mockBridge.results('key-abc'))
+          .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
+
+      final result = await runDiagnostic();
+
+      expect(result.commandKey, 'key-abc');
+      expect(result.status, 'Complete');
+      // No stream event was ever delivered — the device is not there to send one.
+      verify(() => mockBridge.results('key-abc')).called(1);
+    });
+
     test('another execution\'s row never resolves this one', () async {
       // Attribution, and the claim that matters most here: the query already filtered
       // on the key, but the spec makes resolving the ambiguity the *client's* job, so
@@ -269,13 +292,20 @@ void main() {
     // Acceptance 3 of #1578, and the reason it is a count rather than a code review:
     // a `Timer.periodic` added to this class looks like working code and every other
     // test in this file would stay green.
+    //
+    // **An hour of fake time, not 700 ms of real time.** The first version elapsed
+    // 700 ms and its own comment claimed that was "well past any plausible poll
+    // interval" — which was wrong twice over. The interval a well-meaning change
+    // would copy is the server's own ~10 s, and no amount of *real* waiting is a
+    // reasonable price for the assertion anyway. `fakeAsync` fires a real periodic
+    // timer 360 times inside an hour, so the mutant this test is written against
+    // cannot survive it.
     await connectManager();
     when(() => mockBridge.results('key-abc'))
         .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
-
     await runDiagnostic();
-    // Well past any plausible poll interval a well-meaning change would pick.
-    await Future.delayed(const Duration(milliseconds: 700));
+
+    fakeAsync((async) => async.elapse(const Duration(hours: 1)));
 
     verify(() => mockBridge.results('key-abc')).called(1);
   });

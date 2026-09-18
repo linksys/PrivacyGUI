@@ -142,13 +142,6 @@ class _Content extends ConsumerWidget {
 
 /// `lastBoot` and `lastUspActivity`, both of which are legitimately null.
 class _SessionStateCard extends StatelessWidget {
-  /// The em dash both timestamps fall back to.
-  ///
-  /// Null here means the device has produced nothing yet, which is the normal
-  /// state of a device that has just been adopted — not an error, and not a
-  /// reason to hide the row.
-  static const _absent = '—';
-
   final SessionUspStateUIModel? sessionState;
 
   const _SessionStateCard({required this.sessionState});
@@ -159,39 +152,24 @@ class _SessionStateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _labelled(context, loc(context).notificationHistoryLastBoot,
-              _format(context, sessionState?.lastBoot)),
+          _LabelledValue(
+            label: loc(context).notificationHistoryLastBoot,
+            value: _format(context, sessionState?.lastBoot),
+            emphasised: true,
+          ),
           AppGap.sm(),
-          _labelled(context, loc(context).notificationHistoryLastActivity,
-              _format(context, sessionState?.lastUspActivity)),
+          _LabelledValue(
+            label: loc(context).notificationHistoryLastActivity,
+            value: _format(context, sessionState?.lastUspActivity),
+            emphasised: true,
+          ),
         ],
       ),
     );
   }
 
   String _format(BuildContext context, DateTime? at) =>
-      at == null ? _absent : _formatTimestamp(at);
-
-  /// A `Wrap` rather than a `Row`, for the reason the log cards use one: a label
-  /// and a value that both grow with the locale overflow a 320px phone as a
-  /// `Row`, and reflow onto two runs as a `Wrap`. Guarded by the page-surface
-  /// sweep.
-  Widget _labelled(BuildContext context, String label, String value) =>
-      SizedBox(
-        width: double.infinity,
-        child: Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            AppText.bodySmall(
-              label,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            AppText.bodyMedium(value),
-          ],
-        ),
-      );
+      at == null ? _absentValue : _formatTimestamp(at);
 }
 
 class _EmptyState extends StatelessWidget {
@@ -298,34 +276,23 @@ class _EntryCard extends ConsumerWidget {
             ),
           ),
           AppGap.sm(),
-          _field(
-              context, loc(context).notificationHistoryMessageId, entry.msgId),
+          _LabelledValue(
+            label: loc(context).notificationHistoryMessageId,
+            value: entry.msgId,
+          ),
           // Null on every row but `OperationComplete`, which is the common case
           // and not worth an empty line each time.
           if (entry.commandKey != null) ...[
             AppGap.xs(),
-            _field(context, loc(context).notificationHistoryCommandKey,
-                entry.commandKey!),
+            _LabelledValue(
+              label: loc(context).notificationHistoryCommandKey,
+              value: entry.commandKey!,
+            ),
           ],
         ],
       ),
     );
   }
-
-  Widget _field(BuildContext context, String label, String value) => SizedBox(
-        width: double.infinity,
-        child: Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.xs,
-          children: [
-            AppText.bodySmall(
-              label,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            AppText.bodySmall(value),
-          ],
-        ),
-      );
 
   void _openDetail(BuildContext context, WidgetRef ref) {
     showAppDialog<void>(
@@ -410,8 +377,14 @@ class _Body extends StatelessWidget {
     };
 
     if (body case RawBodyUIModel(:final pretty, :final isEmpty)) {
+      // An em dash, not the "no longer available" sentence. That sentence answers a
+      // **404** — the entry is gone or was never this session's — and an entry that
+      // was served with no `body` member is a different thing: it is here, it just
+      // carries nothing. Reusing the 404 copy would report a fault for a row the
+      // server handed us intact. Same em-dash convention as the two null timestamps
+      // at the top of the page.
       return isEmpty
-          ? AppText.bodyMedium(loc(context).notificationHistoryGone)
+          ? AppText.bodyMedium(_absentValue)
           // Selectable because the only useful thing to do with an unrecognised
           // body is copy it into the ticket. No font override: the app's CJK and
           // Arabic fallbacks are declared per family, and naming one that is not
@@ -424,26 +397,63 @@ class _Body extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final row in rows) ...[
-          SizedBox(
-            width: double.infinity,
-            child: Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: [
-                AppText.bodySmall(
-                  row.$1,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                AppText.bodySmall(row.$2),
-              ],
-            ),
-          ),
+          _LabelledValue(label: row.$1, value: row.$2),
           AppGap.xs(),
         ],
       ],
     );
   }
 }
+
+/// A muted label beside its value, which is every row this page draws.
+///
+/// One widget rather than the three near-copies #1580 first shipped — the
+/// session-state lines, the message-id/command-key lines, and the body's field rows
+/// were the same `SizedBox` + `Wrap` + two `AppText`s three times over, differing only
+/// in the value's size and the gap.
+///
+/// **A `Wrap`, not a `Row`, and that is the load-bearing part.** A label and a value
+/// that both grow with the locale overflow a 320px phone as a `Row` — the same defect
+/// #1380 fixed across most of wave 4 — and reflow onto two runs as a `Wrap`. All 234
+/// cells of `page.notification_history` go through this widget now, so a `Row` here
+/// would be a `Row` everywhere.
+class _LabelledValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  /// Renders the value one step larger, for the two session-state lines at the top of
+  /// the page. The field rows below are uniform and take the default.
+  final bool emphasised;
+
+  const _LabelledValue({
+    required this.label,
+    required this.value,
+    this.emphasised = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          spacing: emphasised ? AppSpacing.md : AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            AppText.bodySmall(
+              label,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            emphasised ? AppText.bodyMedium(value) : AppText.bodySmall(value),
+          ],
+        ),
+      );
+}
+
+/// What the page renders where a value is legitimately absent.
+///
+/// One spelling for the two places that need it — the null timestamps and a body with
+/// no members — so "absent" cannot come to look like two different things.
+const _absentValue = '—';
 
 /// `originTs` and the two state timestamps, rendered local.
 ///

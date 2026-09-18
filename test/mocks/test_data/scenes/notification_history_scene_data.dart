@@ -24,6 +24,25 @@ import 'package:privacy_gui/page/notification_history/providers/usp_notification
 /// output moves cannot be diffed. Local time, because that is what the page shows.
 final _at = DateTime.fromMillisecondsSinceEpoch(1757000000000);
 
+/// One history row, for a test that cares about a property rather than a scene.
+///
+/// Here rather than copied into each suite: it was defined identically in the notifier
+/// test and the view test, which is the shape that lets a later widening of one drift
+/// from the other. Distinct from the composed scenes below — those are whole states
+/// ready for a provider override, this is an arrange-helper.
+NotificationHistoryEntryUIModel notificationEntry(
+  String msgId,
+  String notificationType, {
+  int ms = 1757000000000,
+  String? commandKey,
+}) =>
+    NotificationHistoryEntryUIModel(
+      msgId: msgId,
+      originTs: DateTime.fromMillisecondsSinceEpoch(ms),
+      notificationType: notificationType,
+      commandKey: commandKey,
+    );
+
 /// Three rows, chosen so that between them every widget on the page renders.
 ///
 /// - **`OperationComplete`** is the longest of USP's seven stored type names and the

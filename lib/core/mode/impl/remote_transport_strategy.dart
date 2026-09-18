@@ -68,11 +68,21 @@ class RemoteTransportStrategy implements TransportStrategy {
   ///
   /// Any `200` is reachable, **including a partial answer**: firmware that lacks
   /// one of the seven parameters has its key omitted rather than sent as null, and
-  /// only an answer carrying none of them is a `400`. So there is nothing to read
-  /// out of the body — the status is the whole verdict. That is the one asymmetry
+  /// only an answer carrying none of them is a `400`. So nothing in the body
+  /// *decides* the verdict — the status is the whole of it. That is the one asymmetry
   /// with `LocalTransportStrategy`, which reads `agent_connected` / `agent_state`
   /// because the on-router bridge answers `200` while OBUSPA behind it is still
   /// starting. Guardian has already talked to the device by the time it answers.
+  ///
+  /// The body is *logged*, though, for the one field #1576 asks about: `serialNumber`.
+  /// The spec suggests comparing it against the serial in the path, which on the
+  /// device-side variant `GET /devices/{serialNumber}/usp/health` would be a real
+  /// identity check — the first one RA has ever had. **There is no serial in the RA
+  /// path** (it is scoped by session id), so there is nothing here to compare it
+  /// *to*, and the stored fingerprint is deliberately not consulted in this mode
+  /// (#1323). Logging it is therefore the whole of what this package can honestly do,
+  /// and it is what the epic's "Logged only" decision asks for: the value ends up in a
+  /// support log where a human can compare it, and no code acts on it.
   ///
   /// **The `404` fallback is temporary and dated.** The spec is documentation, and
   /// whether QA has the endpoint deployed is #1575's verification item 3, still
@@ -97,7 +107,20 @@ class RemoteTransportStrategy implements TransportStrategy {
     if (bridge == null) return false;
 
     try {
-      await bridge.health();
+      // The endpoint budgets ~5 s for itself, and this runs on a 30-second probe
+      // loop, so a request that hangs past that budget has already answered the
+      // question. Without the cap a stalled socket stalls the loop — the acceptance
+      // names "timeout" as one of the three false cases, and `TimeoutException`
+      // lands in the generic `catch` below.
+      final health = await bridge.health().timeout(const Duration(seconds: 5));
+      final serial = health['serialNumber'];
+      if (serial != null) {
+        // Logged, never acted on. See the docstring: `reestablishAfterOutage`
+        // returning a constant `true` is what stopped a transient drop from ending a
+        // live support session (#1323), and a probe that could answer
+        // `serialMismatch` again would reopen exactly that.
+        logger.d('[Recovery] Guardian health reports serialNumber=$serial');
+      }
       return true;
     } on BridgeReadException catch (e) {
       if (e.isNotFound) {

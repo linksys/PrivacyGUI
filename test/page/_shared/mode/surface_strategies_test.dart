@@ -43,7 +43,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 
-/// The fourteen members, spelled as they appear in a call site.
+/// The fifteen members, spelled as they appear in a call site.
 ///
 /// A roster rather than a count: the count is in the guide doc and drifts, while
 /// this list is what the "every member has a caller" group iterates. Adding a
@@ -60,6 +60,7 @@ const _members = <String>[
   'fixedDashboardLayout',
   'layoutEditor',
   'firstRunPresetFlow',
+  'notificationHistoryMenuEntry',
   'firmwareManualEntry',
   'sessionExitAction',
   'recoveryMessages',
@@ -279,6 +280,54 @@ void main() {
     // said so. `surface_consumers_test.dart` pumps the real page at
     // `installing` and `failed` for that reason; what is left here is what a
     // sentinel *can* answer honestly.
+    // #1580 acceptance 6, first half: "A local build shows no entry point". The
+    // second half — the page degrading when reached by URL — is in
+    // `usp_notification_history_view_widget_test.dart`, because it is about what the
+    // page renders rather than about what the surface offers.
+    //
+    // The member is generic (`T? …<T>(T Function())`) for the reason
+    // `firmwareManualEntry` takes a builder: the menu's item type lives under
+    // `lib/page/` and `lib/framework/mode/` may not name it. So the sentinel here is
+    // a plain `String`, which is also the cheapest way to see the *other* half of the
+    // decision — that a surface which omits the entry never **builds** it.
+    group('notification history menu entry', () {
+      test('remote offers the entry it was handed', () {
+        expect(remote.notificationHistoryMenuEntry(() => 'entry'), 'entry');
+      });
+
+      test('local offers nothing', () {
+        expect(local.notificationHistoryMenuEntry(() => 'entry'), isNull,
+            reason:
+                'the router keeps no notification store — the one this page '
+                'reads is Guardian\'s, and it exists only for the duration of a '
+                'support session it scopes');
+      });
+
+      test('local never runs the builder', () {
+        // Not a micro-optimisation: the builder evaluates `loc(context)` twice and
+        // names a route. A surface that lacks the entry should not be paying for a
+        // card it is not showing, and #1580 states that as the reason the member
+        // takes a builder rather than a value.
+        var built = 0;
+        local.notificationHistoryMenuEntry(() {
+          built++;
+          return 'entry';
+        });
+
+        expect(built, 0);
+      });
+
+      test('remote runs it exactly once', () {
+        var built = 0;
+        remote.notificationHistoryMenuEntry(() {
+          built++;
+          return 'entry';
+        });
+
+        expect(built, 1);
+      });
+    });
+
     group('firmware manual entry', () {
       const picker = _Sentinel('picker');
 
@@ -399,11 +448,19 @@ void main() {
       // member. Subtracted by name rather than by a cleverer regex: the regex
       // that excluded it would also be the regex that quietly excluded a real
       // member whose signature grew a callback parameter.
-      final declared = RegExp(r'^\s*[\w<>,?\s]+\s(\w+)\(', multiLine: true)
-          .allMatches(contract!)
-          .map((m) => m.group(1)!)
-          .toSet()
-        ..remove('Function');
+      // The `(?:<[\w\s,?]+>)?` is #1580's addition, and it is a widening rather
+      // than a cleverness: `notificationHistoryMenuEntry` is the contract's first
+      // **generic** member (`T? …<T>(T Function() entry)`), so its name is followed
+      // by a type-parameter list instead of the paren this pattern expected. Without
+      // it the member is not detected as declared, and the two directions below
+      // disagree in the confusing way — the roster is accused of naming something
+      // the contract does not have, while the contract has it.
+      final declared =
+          RegExp(r'^\s*[\w<>,?\s]+\s(\w+)(?:<[\w\s,?]+>)?\(', multiLine: true)
+              .allMatches(contract!)
+              .map((m) => m.group(1)!)
+              .toSet()
+            ..remove('Function');
       expect(declared.difference(_members.toSet()), isEmpty,
           reason:
               'the contract declares a member _members does not list, so it '
