@@ -74,7 +74,18 @@ UspError? parseUspError(Object error) {
 
   final (category, message) = _parseCategoryAndMessage(rest);
 
-  final faultCodeMatch = _faultCode.firstMatch(raw);
+  // **The last match, not the first.** The suffix this pattern is written for is
+  // appended *after* the router's verbatim message — `UspClient._operateRefusal`
+  // builds `… refused: $why (code: N)` — so a vendor message that happens to
+  // contain its own `(code: M)` would otherwise win, and `firstMatch` would hand
+  // the user-facing category to a substring of prose. Measured: with a message
+  // containing `(code: 9001)` and a real suffix of `(code: 7022)`, `firstMatch`
+  // returns 9001.
+  //
+  // Refusals are why this matters now. Before #1533 an operation error carried a
+  // message *or* a code; a refusal routinely carries both.
+  final matches = _faultCode.allMatches(raw);
+  final faultCodeMatch = matches.isEmpty ? null : matches.last;
   final httpStatusMatch = _httpStatus.firstMatch(raw);
 
   return UspError(
@@ -137,6 +148,15 @@ UspError? parseUspError(Object error) {
 /// | HTTP status `401`         | `HTTP error: HTTP 401` (regex)       | NotAuthenticatedError       |
 ///
 /// ### Source 2 — fault codes in `(code: XXXX)`, passed through from firmware
+///
+/// **These rows are the *protocol* path.** A fault code alone does not decide the
+/// mapping — the category prefix picks the mapper first, and the same code reaching
+/// `_mapOperationError` (i.e. a refusal, `Operation error: …`) maps to
+/// `UspCompleteFailureError` instead. A round-2 reviewer read `9001 → UnauthorizedError`
+/// off this table and concluded that generalising the refusal arm had broken
+/// `on UnauthorizedError` at two firmware call sites; it had not, because a 9001
+/// *refusal* never took that row. Stated here so the next reader does not repeat the
+/// inference.
 /// (7xxx = TR-369 standard; 9xxx = bbfdm vendor). Rust only relays these.
 ///
 /// | code | meaning                          | → ServiceError          |
@@ -191,8 +211,9 @@ UspError? parseUspError(Object error) {
 /// `'read-only'`, `'Invalid value'` — map `OperationError::*`, which is
 /// constructed ONLY in the Rust `ffi` module (native,
 /// `#[cfg(not(target_arch = "wasm32"))]`). Those never fire in the production WASM
-/// build. **Its 7022 arm does**, from source 4 — so the function itself is live
-/// even though its string arms are not. See [_mapOperationError].
+/// build. **Its coded-refusal arm does**, from source 4 — any fault code except the
+/// `9999` transport sentinel — so the function itself is live even though its string
+/// arms are not. See [_mapOperationError].
 ///
 /// **Warning**: anything not matched above falls through to NetworkError
 /// (transport) or UnexpectedError (auth/protocol/unparseable). If source
@@ -346,15 +367,28 @@ ServiceError _mapOperationError(UspError e) {
   // what they describe: they match native `OperationError::*` strings, which carry
   // no `(code: N)` suffix at all, so `faultCode` is null for them and this `if`
   // declines.
+  // `9999` is excluded on purpose. It is the WASM client's **transport** sentinel —
+  // `_localizeFaultCode`'s own table says "never reached the router" and maps it to
+  // `l.errorNetwork`. Routing a *refusal* there would report the router answering as
+  // the network failing, which is the exact confusion #1533 exists to remove, so the
+  // one code that must not take this arm is the one that would invert its purpose.
+  // It should not arrive here at all — the code comes out of the agent's own `error`
+  // map, not from the shim — which is why this is a guard rather than a branch.
   final refusalCode = e.faultCode;
-  if (refusalCode != null) {
+  if (refusalCode != null && refusalCode != 9999) {
     return UspCompleteFailureError(
       summary: msg,
       failures: [
         UspErrorDetail(
           requestedPath: '',
           errorCode: refusalCode,
-          errorMessage: 'Command Failure',
+          // The parsed summary, **not** the literal `'Command Failure'` this used to
+          // carry. That phrase is TR-369's name for 7022 alone, and once this arm
+          // covered every code it was being stamped onto 9005 and 7004 refusals as
+          // well — a wrong label, and a visible one: `usp_test_console_view.dart`
+          // renders `failures`. The summary is accurate for every code and says what
+          // the router actually said.
+          errorMessage: msg,
         ),
       ],
       code: refusalCode,
@@ -368,5 +402,29 @@ ServiceError _mapOperationError(UspError e) {
   if (msg.contains('Invalid value')) {
     return InvalidInputError(detail: msg);
   }
-  return UnexpectedError(originalError: e.rawError, detail: msg);
+  // **No `detail:`, and that omission is the fix — not an oversight.**
+  //
+  // `service_error_localizations.dart` renders `UnexpectedError`'s `detail`
+  // **verbatim** (`UnexpectedError(:final detail) => detail ?? l.errorUnexpected`),
+  // which is right for a type with no semantics of its own. But what lands here is a
+  // string built for a log — `Operation error: Device.X() refused: …` — so passing it
+  // through put raw English on screen in all 26 locales.
+  //
+  // Round 2's two reviewers disagreed about whether this was reachable. It is: a
+  // refusal carrying **no** `errorCode` declines the coded arm above, fails the three
+  // native-only string arms, and arrives here. `UspClient._operateRefusal` builds
+  // exactly that shape when the agent's error detail is absent, and
+  // `usp_client_operate_result_test.dart` already establishes it as a real one.
+  //
+  // Dropping `detail` costs no diagnostics: `originalError` still carries the raw
+  // string, and `mapUspErrorToServiceError` logs it in full on the way out. The user
+  // gets `l.errorUnexpected` instead — generic, but **localized**.
+  //
+  // Generic is the honest answer rather than a shortcoming: a refusal with no code and
+  // no message is a router that declined without saying why, and there is nothing more
+  // specific to tell. Saying it in the user's own language is what was missing. A
+  // refusal-specific localized line for this case would need a new `ServiceError`
+  // subtype or a codeless path through `_localizeFaultCode` — wider than #1533, and
+  // whoever wants that copy should own it.
+  return UnexpectedError(originalError: e.rawError);
 }

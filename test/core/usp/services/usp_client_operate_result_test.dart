@@ -195,6 +195,30 @@ void main() {
           (error as UspCompleteFailureError).failures.single.errorCode, 8123);
     });
 
+    test('a refusal with NO code is not raw English either', () {
+      // Round 2's Critical, and the half the coded arm could not reach. Two reviewers
+      // disagreed about whether this path exists; it does — `_operateRefusal` builds
+      // exactly this when the agent's error detail is absent, which the
+      // "still throws when the error detail is missing entirely" test above
+      // establishes independently.
+      //
+      // Asserted as "the log string is not the user-facing message" rather than as an
+      // exact sentence: the point is that `UnexpectedError.detail` is rendered
+      // verbatim, so leaving it set is what put English on screen in all 26 locales.
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {'data': <String, dynamic>{}},
+      });
+      final error = mapUspErrorToServiceError(thrown);
+
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).detail, isNull,
+          reason:
+              'a set `detail` is surfaced verbatim, and this one is a log line');
+      // The raw string is not lost — it stays available for logs and diagnostics.
+      expect(error.originalError, thrown);
+    });
+
     test('a native operation error with no code keeps its own mapping', () {
       // The three string arms sit after the generalised one and must stay
       // reachable: they match native `OperationError::*` strings, which carry no
@@ -207,6 +231,77 @@ void main() {
             'Get failed: Operation error: Path not found: Device.Bogus.Path'),
         isA<ResourceNotFoundError>(),
       );
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Round-2 review remediation
+  // ══════════════════════════════════════════════════════════════════════════
+  group('UspClient.extractOperateResult — round-2 remediation', () {
+    test('an infinite code does not crash the refusal', () {
+      // My own round-1 fix had this hole, and it is a measured one:
+      // `double.infinity.truncateToDouble()` **is** infinity, so the normalisation
+      // guard passed for ±Infinity and `toInt()` threw
+      // `UnsupportedError: Infinity or NaN toInt` — swapping the refusal string for
+      // a crash and losing the code and the router's message with it. NaN was safe
+      // only because `NaN != NaN`.
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {
+          'error': {
+            'Device.X()': {'errorCode': double.infinity, 'errorMessage': 'odd'},
+          },
+        },
+      });
+
+      expect(thrown, contains('refused'));
+      expect(thrown, contains('Infinity'),
+          reason: 'not a fault code, so it is rendered rather than normalised');
+      expect(parseUspError(thrown)?.faultCode, isNull);
+    });
+
+    test('a code in the router message does not steer the category', () {
+      // The suffix is appended *after* the router's verbatim message, so a vendor
+      // message carrying its own `(code: N)` used to win `firstMatch`. Measured:
+      // with 9001 in the message and 7022 in the suffix, the parser returned 9001.
+      final thrown = _thrownFrom({
+        'success': false,
+        'result': {
+          'error': {
+            'Device.X()': {
+              'errorCode': 7022,
+              'errorMessage': 'upstream said (code: 9001)',
+            },
+          },
+        },
+      });
+
+      expect(parseUspError(thrown)?.faultCode, 7022,
+          reason:
+              'the suffix is the code; a code-shaped substring of prose is not');
+    });
+
+    test('9999 is not treated as a refusal', () {
+      // `_localizeFaultCode` maps 9999 to `errorNetwork`, and its own table says
+      // 9999 "never reached the router". Routing a *refusal* there would report the
+      // router answering as the network failing — the exact confusion #1533 exists
+      // to remove. It should never arrive (the code comes from the agent's own
+      // error map), which is why this is a guard rather than a branch.
+      final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 9999)));
+
+      expect(error, isNot(isA<UspCompleteFailureError>()));
+    });
+
+    test('the failure detail carries the router message, not a 7022 label', () {
+      // `'Command Failure'` is TR-369's name for 7022 alone. Once the arm covered
+      // every code it was being stamped onto 9005 and 7004 refusals too — a wrong
+      // label, and a visible one: `usp_test_console_view.dart` renders `failures`.
+      final error = mapUspErrorToServiceError(
+          _thrownFrom(refused(code: 9005, message: 'no such object')));
+
+      final detail = (error as UspCompleteFailureError).failures.single;
+      expect(detail.errorMessage, isNot('Command Failure'));
+      expect(detail.errorMessage, contains('no such object'));
     });
   });
 

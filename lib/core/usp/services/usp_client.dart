@@ -1022,7 +1022,15 @@ class UspClient {
     // be read as one.
     final codeText = switch (code) {
       null => null,
-      final num n when n == n.truncateToDouble() => n.toInt().toString(),
+      // `isFinite` first, and it is not belt-and-braces: `double.infinity
+      // .truncateToDouble()` **is** infinity, so `n == n.truncateToDouble()`
+      // passes for ±Infinity and `toInt()` then throws
+      // `UnsupportedError: Infinity or NaN toInt` — replacing the refusal string
+      // with a crash and losing both the code and the router's message. Measured.
+      // NaN is safe only by accident (`NaN != NaN` fails the guard), which is
+      // exactly the kind of accident worth not relying on.
+      final num n when n.isFinite && n == n.truncateToDouble() =>
+        n.toInt().toString(),
       _ => code.toString(),
     };
     final suffix = codeText == null ? '' : ' (code: $codeText)';
