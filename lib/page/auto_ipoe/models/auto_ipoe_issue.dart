@@ -87,6 +87,17 @@ class AutoIPoEApplyNotStarted implements Exception {
   String toString() => 'AutoIPoEApplyNotStarted: $cause';
 }
 
+/// Apply was dispatched and accepted; its outcome is not yet known.
+///
+/// Deliberately not an [AutoIPoEIssue]: nothing has gone wrong, so there is no
+/// code, category or field group to render. Returning an issue here made a
+/// successful save carry an error code, and the only thing keeping that off the
+/// screen was one caller passing `compactProgress: true`. The caller must start
+/// read-only reconciliation and must not dispatch Apply again.
+class AutoIPoEApplyAccepted {
+  const AutoIPoEApplyAccepted();
+}
+
 class AutoIPoERecoveryPending implements Exception {
   const AutoIPoERecoveryPending(this.issue);
 

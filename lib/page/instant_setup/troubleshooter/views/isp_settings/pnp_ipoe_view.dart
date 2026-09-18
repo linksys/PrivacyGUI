@@ -126,20 +126,32 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     }
     setState(() {
       _isSubmitting = false;
-      if (result is AutoIPoEIssue) {
+      if (result is AutoIPoEApplyAccepted) {
+        // Apply is in flight, not failed: enter the reconciliation UI with no
+        // issue to render.
+        _isRecovering = true;
+      } else if (result is AutoIPoEIssue) {
         _issue = result;
         _isRecovering = result.retryable;
       } else if (result is String) {
         _errorMessage = result;
       }
     });
+    if (result is AutoIPoEApplyAccepted) {
+      if (mounted) {
+        // Follow that one operation read-only; this path never calls Set or
+        // Apply.
+        unawaited(_reconcileExistingApply());
+      }
+      return;
+    }
     if (result is AutoIPoEIssue && result.isTerminal && mounted) {
       await showAutoIPoETerminalFailureDialog(context, result);
     } else if (result is AutoIPoEIssue &&
         result.recoveryAction == AutoIPoERecoveryAction.continueChecking &&
         mounted) {
-      // Apply has already been dispatched. Follow that one operation in the
-      // background; this path never calls Set or Apply.
+      // An outcome that is genuinely unknown still arrives as an issue, and its
+      // code is worth showing. Same read-only follow, different meaning.
       unawaited(_reconcileExistingApply());
     }
   }

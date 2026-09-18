@@ -416,9 +416,12 @@ void main() {
           ),
           shouldTrackRuntime: false,
           awaitingCompletion: true,
+          // A genuinely retryable issue: ApplyAccepted is no longer an issue
+          // code, so asserting it is hidden would assert about something that
+          // cannot occur.
           issue: const AutoIPoEIssue(
             category: AutoIPoEIssueCategory.retryable,
-            code: 'ApplyAccepted',
+            code: 'PrefixNotReady',
             retryable: true,
             recoveryAction: AutoIPoERecoveryAction.continueChecking,
           ),
@@ -445,6 +448,35 @@ void main() {
     expect(find.text('Show details'), findsOneWidget);
     expect(find.text('IPoE Log'), findsNothing);
     expect(find.textContaining('raw mapv6'), findsNothing);
+    expect(find.textContaining('PrefixNotReady'), findsNothing);
+  });
+
+  testWidgets('an accepted Apply shows no error code even outside compact mode',
+      (tester) async {
+    // The complement of the test above, and the one that was missing. That one
+    // proves compact mode hides diagnostics; this proves an accepted Apply has
+    // no diagnostics to hide, because it is no longer represented as an issue.
+    // Without it the guarantee rests on one caller passing compactProgress.
+    await tester.pumpWidget(
+      testableWidget(
+        locale: const Locale('en'),
+        child: AutoIPoEOptionalPane(
+          compactProgress: false,
+          state: const AutoIPoEState.init(),
+          shouldTrackRuntime: false,
+          awaitingCompletion: true,
+          // What the view now holds after AutoIPoEApplyAccepted comes back.
+          issue: null,
+          isChecking: false,
+          onContinueChecking: () {},
+          onRetry: () {},
+          onEditSettings: () {},
+          onAwaitingCompletionChanged: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.textContaining('Error code'), findsNothing);
     expect(find.textContaining('ApplyAccepted'), findsNothing);
   });
 

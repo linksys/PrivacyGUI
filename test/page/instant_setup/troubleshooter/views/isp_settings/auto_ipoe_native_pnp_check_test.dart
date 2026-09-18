@@ -72,12 +72,7 @@ void main() {
           name: RouteNamed.pnpIspSaveSettings,
           path: '/save',
           builder: (context, _) => TextButton(
-            onPressed: () => context.pop(const AutoIPoEIssue(
-              category: AutoIPoEIssueCategory.retryable,
-              code: 'ApplyAccepted',
-              retryable: true,
-              recoveryAction: AutoIPoERecoveryAction.continueChecking,
-            )),
+            onPressed: () => context.pop(const AutoIPoEApplyAccepted()),
             child: const Text('Accept apply'),
           ),
         ),

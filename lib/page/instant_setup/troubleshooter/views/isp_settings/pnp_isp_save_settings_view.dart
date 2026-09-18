@@ -144,14 +144,7 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
       '[PnP]: Troubleshooter - Auto-IPoE Apply accepted; opening correlated progress without resubmitting Apply',
     );
     if (mounted) {
-      context.pop(
-        const AutoIPoEIssue(
-          category: AutoIPoEIssueCategory.retryable,
-          code: 'ApplyAccepted',
-          retryable: true,
-          recoveryAction: AutoIPoERecoveryAction.continueChecking,
-        ),
-      );
+      context.pop(const AutoIPoEApplyAccepted());
     }
   }
 

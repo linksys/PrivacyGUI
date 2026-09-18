@@ -75,6 +75,19 @@ class _StalledBridge extends Fake implements AutoIPoEInternetSettingsBridge {
 /// Stands in for the save page. Popping the issue is the whole contract the
 /// real one has with this view, and doing it from a stub keeps these
 /// screenshots off the save/Apply path entirely.
+/// Stands in for the save page on the success path: Apply was accepted and its
+/// outcome is not known yet, which is not an issue and carries no code.
+GoRoute _saveRouteAccepting() => GoRoute(
+      name: RouteNamed.pnpIspSaveSettings,
+      path: '/save',
+      builder: (context, _) => TextButton(
+        onPressed: () => context.pop(const AutoIPoEApplyAccepted()),
+        // Untranslated on purpose: this stub is never in frame when the
+        // golden is taken.
+        child: const Text('pop'),
+      ),
+    );
+
 GoRoute _saveRoutePopping(AutoIPoEIssue issue) => GoRoute(
       name: RouteNamed.pnpIspSaveSettings,
       path: '/save',
@@ -158,12 +171,7 @@ void main() async {
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
           builder: (context, state) => const PnpIpoeView(),
         ),
-        _saveRoutePopping(const AutoIPoEIssue(
-          category: AutoIPoEIssueCategory.retryable,
-          code: 'ApplyAccepted',
-          retryable: true,
-          recoveryAction: AutoIPoERecoveryAction.continueChecking,
-        )),
+        _saveRouteAccepting(),
       ],
     );
     await tester.pumpWidget(
@@ -171,8 +179,9 @@ void main() async {
         router: router,
         locale: locale,
         overrides: overrides(
-          _StalledBridge(const AutoIPoEReconciliationProgress
-              .connectivityChecking(attempt: 3, attemptTotal: 30)),
+          _StalledBridge(
+              const AutoIPoEReconciliationProgress.connectivityChecking(
+                  attempt: 3, attemptTotal: 30)),
         ),
       ),
     );
