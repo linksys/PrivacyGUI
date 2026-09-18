@@ -162,6 +162,9 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
       final outcome = await coordinator.followPnpSetup(
         expectedMode: ref.read(autoIPoEProvider).settings.selectedMode,
         isCurrent: isCurrent,
+        // Carries over what reconciliation has already observed, the way the
+        // old local progress field did.
+        initialStatus: ref.read(autoIPoEProvider).status,
         // Same native status check and retry budget as DHCP/PPPoE. ICC refreshes
         // asynchronously after tunnel hotplug events.
         verifyInternet: () =>

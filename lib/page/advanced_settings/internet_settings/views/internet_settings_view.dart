@@ -2230,6 +2230,9 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       final outcome = await coordinator.followAdvancedApply(
         expectedMode: autoIPoEState.settings.selectedMode,
         isCurrent: () => mounted,
+        // An error arriving before any progress is classified against the status
+        // the page already had, which is what the accumulated state used to do.
+        initialStatus: autoIPoEState.status,
         onProgress: _updateAdvancedAutoIPoEProgress,
         onRuntime: (status, log) {
           reconciledState = reconciledState.copyWith(status: status, log: log);

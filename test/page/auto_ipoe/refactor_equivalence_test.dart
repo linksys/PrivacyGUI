@@ -251,6 +251,60 @@ void main() {
       expect(kind, anyOf('failed-terminal', 'failed-recoverable'));
     });
   });
+
+  group('unclassified-error classification — 080a04e0', () {
+    // The pre-refactor Advanced path accumulated state from the provider and
+    // classified an unclassified error against `reconciledState.status`, seeded
+    // with the status the page already had. The PnP path did the same through
+    // its own progress field. An error that arrives before any progress does
+    // therefore has a status to be classified against, and classifying it
+    // against an empty one produces a different issue -- different dialog copy,
+    // and a different field group highlighted.
+    final routerStatus = const AutoIPoEStatus.init().copyWith(
+      lastError: 'ErrorAutoIPoEProvisioningFailed',
+      errorCategory: 'provider',
+      retryable: false,
+      errorFieldGroup: 'mode',
+    );
+
+    AutoIPoEIssue oldIssue(Object error) => AutoIPoEIssueMapper.from(
+          status: routerStatus,
+          error: error,
+          mode: AutoIPoEMode.auto,
+        );
+
+    test('agrees with the accumulated status the old path used', () async {
+      final coordinator = AutoIPoEReconciliationCoordinator(
+        bridge: _ThrowingBridge(StateError('boom'), reportProgress: false),
+      );
+
+      final outcome = await coordinator.followAdvancedApply(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
+        initialStatus: routerStatus,
+      );
+
+      expect(outcome, isA<AutoIPoEReconciliationFailed>());
+      expect((outcome as AutoIPoEReconciliationFailed).issue,
+          oldIssue(StateError('boom')));
+    });
+
+    test('an empty seed would have classified it differently', () async {
+      // Guards the fix: if the seed is ever dropped again, this is the shape the
+      // user would get instead.
+      final coordinator = AutoIPoEReconciliationCoordinator(
+        bridge: _ThrowingBridge(StateError('boom'), reportProgress: false),
+      );
+
+      final outcome = await coordinator.followAdvancedApply(
+        expectedMode: AutoIPoEMode.auto,
+        isCurrent: () => true,
+      );
+
+      expect((outcome as AutoIPoEReconciliationFailed).issue,
+          isNot(oldIssue(StateError('boom'))));
+    });
+  });
 }
 
 AutoIPoEIssue _pending(AutoIPoERecoveryAction action,
@@ -286,9 +340,13 @@ AutoIPoEStatus _statusWith({
 /// Throws one shape from the reconciliation wait, so the coordinator's
 /// classification is the only thing under test.
 class _ThrowingBridge extends Fake implements AutoIPoEInternetSettingsBridge {
-  _ThrowingBridge(this.thrown);
+  _ThrowingBridge(this.thrown, {this.reportProgress = true});
 
   final Object? thrown;
+
+  /// When false, nothing is reported before the throw, which is the case where
+  /// the seeded status is the only status available.
+  final bool reportProgress;
 
   @override
   Future<AutoIPoELog> waitForPnpIPoESetupCompletion({
@@ -299,11 +357,13 @@ class _ThrowingBridge extends Fake implements AutoIPoEInternetSettingsBridge {
     AutoIPoEProgressCallback? onProgress,
     AutoIPoEReconciliationProgressCallback? onReconciliationProgress,
   }) async {
-    // Report new-firmware status so the fallback probe is not part of this test.
-    onProgress?.call(
-      _statusWith(terminalResultSupported: true, verifiedConnectivity: true),
-      const AutoIPoELog.init(),
-    );
+    if (reportProgress) {
+      // New-firmware status, so the fallback probe is not part of this test.
+      onProgress?.call(
+        _statusWith(terminalResultSupported: true, verifiedConnectivity: true),
+        const AutoIPoELog.init(),
+      );
+    }
     if (thrown != null) {
       throw thrown!;
     }

@@ -84,6 +84,7 @@ class AutoIPoEReconciliationCoordinator {
     required AutoIPoEMode expectedMode,
     required bool Function() isCurrent,
     required Future<void> Function() verifyInternet,
+    AutoIPoEStatus initialStatus = const AutoIPoEStatus.init(),
     void Function(AutoIPoEReconciliationProgress progress)? onProgress,
     void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
     void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
@@ -91,6 +92,7 @@ class AutoIPoEReconciliationCoordinator {
       _follow(
         expectedMode: expectedMode,
         isCurrent: isCurrent,
+        initialStatus: initialStatus,
         verifyInternet: verifyInternet,
         useLegacyConnectivityProbe: true,
         classifyErrorsWithStatus: false,
@@ -110,6 +112,7 @@ class AutoIPoEReconciliationCoordinator {
   Future<AutoIPoEReconciliationOutcome> followAdvancedApply({
     required AutoIPoEMode expectedMode,
     required bool Function() isCurrent,
+    AutoIPoEStatus initialStatus = const AutoIPoEStatus.init(),
     void Function(AutoIPoEReconciliationProgress progress)? onProgress,
     void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
     void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
@@ -117,6 +120,7 @@ class AutoIPoEReconciliationCoordinator {
       _follow(
         expectedMode: expectedMode,
         isCurrent: isCurrent,
+        initialStatus: initialStatus,
         verifyInternet: null,
         useLegacyConnectivityProbe: false,
         classifyErrorsWithStatus: true,
@@ -128,6 +132,7 @@ class AutoIPoEReconciliationCoordinator {
   Future<AutoIPoEReconciliationOutcome> _follow({
     required AutoIPoEMode expectedMode,
     required bool Function() isCurrent,
+    required AutoIPoEStatus initialStatus,
     required Future<void> Function()? verifyInternet,
     required bool useLegacyConnectivityProbe,
     required bool classifyErrorsWithStatus,
@@ -135,7 +140,12 @@ class AutoIPoEReconciliationCoordinator {
     void Function(AutoIPoEStatus status, AutoIPoELog log)? onRuntime,
     void Function(AutoIPoEIssue issue)? onPollingWindowEnded,
   }) async {
-    var latestStatus = const AutoIPoEStatus.init();
+    // Seeded rather than empty: both callers used to start from the status they
+    // already had, and it feeds two decisions -- whether the legacy probe is
+    // needed, and how an unclassified error is classified. Starting empty makes
+    // the same error map to a different issue when it arrives before any
+    // progress does.
+    var latestStatus = initialStatus;
     try {
       while (isCurrent()) {
         try {
