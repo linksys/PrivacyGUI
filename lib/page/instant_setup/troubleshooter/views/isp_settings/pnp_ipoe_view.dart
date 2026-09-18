@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_reconciliation_coordinator.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
 import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
@@ -40,7 +41,6 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
   AutoIPoELog _progressLog = const AutoIPoELog.init();
   AutoIPoEReconciliationProgress _progress =
       const AutoIPoEReconciliationProgress.initial();
-  AutoIPoECapabilities _capabilities = const AutoIPoECapabilities.init();
   AutoIPoESettings _settings = const AutoIPoESettings.init().copyWith(
     isEnabled: true,
     selectedMode: AutoIPoEMode.auto,
@@ -55,7 +55,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
   Future<void> _loadCapabilities() async {
     try {
       final capabilities =
-          await ref.read(autoIPoEServiceProvider).getCapabilities();
+          await ref.read(autoIPoEProvider.notifier).fetchCapabilities();
       final supportedModes = capabilities.supportedModes
           .where((mode) => mode != AutoIPoEMode.disabled)
           .toList();
@@ -68,7 +68,6 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
         return;
       }
       setState(() {
-        _capabilities = capabilities;
         _settings = _settings.copyWith(
           isEnabled: true,
           selectedMode: selectedMode,
@@ -267,6 +266,9 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
     if (_isLoading) {
       return const AppFullScreenSpinner();
     }
+    // Capabilities live in the provider now: they describe the router, not this
+    // screen, and two screens ask the same question.
+    final capabilities = ref.watch(autoIPoEProvider).capabilities;
     final showEditor = shouldShowPnpIPoEEditor(isRecovering: _isRecovering);
 
     return StyledAppPageView(
@@ -289,7 +291,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
               compactProgress: true,
               progress: _progress,
               state: AutoIPoEState(
-                capabilities: _capabilities,
+                capabilities: capabilities,
                 settings: _settings,
                 status: _progressStatus,
                 log: _progressLog,
@@ -309,7 +311,7 @@ class _PnpIpoeViewState extends ConsumerState<PnpIpoeView> {
             AutoIPoESection(
               settings: _settings,
               status: const AutoIPoEStatus.init(),
-              capabilities: _capabilities,
+              capabilities: capabilities,
               isEditing: true,
               highlightedFieldGroup:
                   _issue?.fieldGroup ?? AutoIPoEFieldGroup.none,
