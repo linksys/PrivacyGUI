@@ -6,21 +6,24 @@ void main() {
     group('fromRawFields', () {
       test('returns dhcp for addressingType DHCP', () {
         expect(
-          UspWanConnectionType.fromRawFields(addressingType: 'DHCP'),
+          UspWanConnectionType.fromRawFields(
+              addressingType: 'DHCP', interfaceEnabled: true),
           UspWanConnectionType.dhcp,
         );
       });
 
       test('returns staticIp for addressingType Static', () {
         expect(
-          UspWanConnectionType.fromRawFields(addressingType: 'Static'),
+          UspWanConnectionType.fromRawFields(
+              addressingType: 'Static', interfaceEnabled: true),
           UspWanConnectionType.staticIp,
         );
       });
 
       test('returns pppoe for addressingType IPCP with no lowerLayers', () {
         expect(
-          UspWanConnectionType.fromRawFields(addressingType: 'IPCP'),
+          UspWanConnectionType.fromRawFields(
+              addressingType: 'IPCP', interfaceEnabled: true),
           UspWanConnectionType.pppoe,
         );
       });
@@ -29,6 +32,7 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
+            interfaceEnabled: true,
             lowerLayers: 'Device.Ethernet.Link.2',
           ),
           UspWanConnectionType.pppoe,
@@ -39,6 +43,7 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
+            interfaceEnabled: true,
             lowerLayers: 'Device.GRE.Tunnel.1.Interface.1',
           ),
           UspWanConnectionType.pptp,
@@ -49,25 +54,60 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
+            interfaceEnabled: true,
             lowerLayers: 'Device.L2TPv2.Tunnel.1.Interface.1',
           ),
           UspWanConnectionType.l2tp,
         );
       });
 
-      test('returns bridge for empty addressingType', () {
+      test('returns bridge when the WAN interface is disabled', () {
+        // Device.IP.Interface.{wan}.Enable == false is the only bridge signal:
+        // its firmware set handler is what folds the WAN port into br-lan.
         expect(
-          UspWanConnectionType.fromRawFields(addressingType: ''),
+          UspWanConnectionType.fromRawFields(
+            addressingType: 'DHCP',
+            interfaceEnabled: false,
+          ),
           UspWanConnectionType.bridge,
         );
       });
 
-      test('returns dhcp for unknown non-empty addressingType', () {
-        // Only an explicitly empty AddressingType signals bridge; any other
-        // unrecognised value (future firmware, transient) falls back to DHCP
-        // rather than being misclassified as bridge.
+      test('bridge wins over addressingType whatever the firmware reports', () {
+        // The firmware may leave any AddressingType behind while bridged; the
+        // disabled interface still decides.
+        for (final reported in ['', 'DHCP', 'Static', 'IPCP', 'Something']) {
+          expect(
+            UspWanConnectionType.fromRawFields(
+              addressingType: reported,
+              interfaceEnabled: false,
+            ),
+            UspWanConnectionType.bridge,
+            reason: 'addressingType "$reported" with Enable=false',
+          );
+        }
+      });
+
+      test('returns dhcp for empty addressingType on an enabled interface', () {
+        // Empty no longer means bridge: writing AddressingType="" never entered
+        // bridge mode on this firmware. A transient empty value falls back to
+        // DHCP rather than flipping the UI into Bridge.
         expect(
-          UspWanConnectionType.fromRawFields(addressingType: 'Something'),
+          UspWanConnectionType.fromRawFields(
+            addressingType: '',
+            interfaceEnabled: true,
+          ),
+          UspWanConnectionType.dhcp,
+        );
+      });
+
+      test('returns dhcp for unknown addressingType on an enabled interface',
+          () {
+        expect(
+          UspWanConnectionType.fromRawFields(
+            addressingType: 'Something',
+            interfaceEnabled: true,
+          ),
           UspWanConnectionType.dhcp,
         );
       });

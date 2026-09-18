@@ -4,12 +4,12 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// WAN Bridge mode switch — sets AddressingType to empty string (1 param)
+/// WAN Bridge mode switch — Device.IP.Interface.{wan}.Enable (1 param)
 class WanBridge {
-  final String addressingType;
+  final bool enable;
 
   const WanBridge({
-    required this.addressingType,
+    required this.enable,
   });
 
   /// Resolve the instance index by searching for Alias='wan'
@@ -30,7 +30,7 @@ class WanBridge {
 
   /// Build parameter paths using the resolved instance path
   static List<String> _buildPaths(String instancePath) => [
-        '${instancePath}IPv4Address.1.AddressingType',
+        '${instancePath}Enable',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -43,29 +43,29 @@ class WanBridge {
   factory WanBridge._fromResponse(
       Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
-      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    if (!response.containsKey('${instancePath}Enable')) {
+      missing.add('${instancePath}Enable');
     }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanBridge(
-      addressingType:
-          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
-              as String,
+      enable: response['${instancePath}Enable'] == true ||
+          response['${instancePath}Enable'] == 'true' ||
+          response['${instancePath}Enable'] == '1',
     );
   }
 
   /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
     UspClient client, {
-    String? addressingType,
+    bool? enable,
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     final instancePath = await _resolveInstance(client);
-    if (addressingType != null) {
-      params['${instancePath}IPv4Address.1.AddressingType'] = addressingType;
+    if (enable != null) {
+      params['${instancePath}Enable'] = enable;
     }
     if (params.isEmpty) {
       return {
@@ -79,7 +79,7 @@ class WanBridge {
   @override
   String toString() {
     return 'WanBridge('
-        'addressingType: $addressingType'
+        'enable: $enable'
         ')';
   }
 }

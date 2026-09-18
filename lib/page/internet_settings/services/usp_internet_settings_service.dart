@@ -29,17 +29,20 @@ class UspInternetSettingsService {
 
   UspInternetSettingsService(this._usp);
 
-  /// Timeout for the terminal bridge-mode SET.
+  /// Timeout for the terminal bridge-mode SETs (both directions).
   ///
-  /// Entering bridge is terminal-by-design: on receiving the
-  /// `AddressingType=""` SET the firmware applies bridge mode and bounces the
-  /// LAN link (fw >= 1.2.2.26070203) / reloads the network within ~2s, which
-  /// tears down the very connection carrying this request's response. Verified
-  /// on-device: obuspa applies the SET and returns a SET_RESP over its local
-  /// UDS (rc=0), but the app never receives the HTTP response because the
-  /// transport is already gone. 4s leaves headroom over the observed ~2s
-  /// disconnect without making the user wait the full 15s throttler timeout on
-  /// a SET that has already succeeded. See [_applyBridgeMode].
+  /// Crossing the bridge boundary is terminal-by-design. The firmware's set
+  /// handler for `Device.IP.Interface.{wan}.Enable` moves the WAN device in or
+  /// out of `br-lan`, commits, and then runs `/usr/sbin/bridge-mode-apply.sh
+  /// enter|exit`, which stops or restarts firewall and dnsmasq, bounces the
+  /// physical switch ports, deauths the wireless clients and restarts lighttpd.
+  /// Any one of those tears down the very connection carrying this request's
+  /// response. Verified on-device: obuspa applies the SET and returns a
+  /// SET_RESP over its local UDS (rc=0), but the app never receives the HTTP
+  /// response because the transport is already gone. 4s leaves headroom over
+  /// the observed ~2s disconnect without making the user wait the full 15s
+  /// throttler timeout on a SET that has already succeeded. See
+  /// [_enterBridgeMode] and [_exitBridgeMode].
   static const _bridgeSetTimeout = Duration(seconds: 4);
 
   // ---------------------------------------------------------------------------
@@ -73,6 +76,7 @@ class UspInternetSettingsService {
       // fetch the tunnel the current connection type actually uses.
       final connectionType = UspWanConnectionType.fromRawFields(
         addressingType: wan.addressingType,
+        interfaceEnabled: wan.interfaceEnabled,
         lowerLayers: pppInstance?.lowerLayers ?? '',
       );
       GreTunnel? gre;
@@ -96,7 +100,7 @@ class UspInternetSettingsService {
         // Auto MTU toggle rather than offering a mode it cannot write.
         mtuModeSupported: wan.mtuMode != null,
         debugAddressingType: wan.addressingType,
-        debugBridgeEnabled: wan.bridgeEnabled,
+        debugInterfaceEnabled: wan.interfaceEnabled,
         debugMtu: wan.mtu,
         debugIpv6Enabled: ipv6.ipv6Enabled,
       );
@@ -217,8 +221,9 @@ class UspInternetSettingsService {
   /// 5. Save PPP instance fields (credentials, connection mode)
   /// 6. Save VLAN instance fields (if instance exists)
   /// 7. Save IPv6 fields
-  /// 8. Apply terminal bridge SET last (drops the connection; see
-  ///    [_applyBridgeMode]) so every other SET lands on a live connection
+  /// 8. Cross the bridge boundary last (drops the connection; see
+  ///    [_enterBridgeMode] / [_exitBridgeMode]) so every other SET lands on a
+  ///    live connection
   Future<void> saveAll(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited, {
@@ -236,15 +241,19 @@ class UspInternetSettingsService {
       // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so the
       // tunnel instance becomes valid before its RemoteEndpoints is written.
       //
-      // Entering bridge is terminal: the bridge SET drops this connection (see
-      // _applyBridgeMode). Defer it so the FW-spec VLAN/IPv6 SETs below still
-      // land on a live connection; it is sent last, in Step 6.
+      // Crossing the bridge boundary in either direction is terminal: the SET
+      // on Device.IP.Interface.{wan}.Enable drops this connection (see
+      // _enterBridgeMode / _exitBridgeMode). Neither is sent here, so the
+      // FW-spec VLAN/IPv6 SETs below still land on a live connection; the
+      // boundary SET goes last, in Step 8.
       final typeChanged = original.connectionType != edited.connectionType;
       final switchingToPppBased =
           typeChanged && edited.connectionType.isPppBased;
       final enteringBridge =
           typeChanged && edited.connectionType == UspWanConnectionType.bridge;
-      await _saveWanSettings(original, edited, deferBridge: enteringBridge);
+      final leavingBridge =
+          typeChanged && original.connectionType == UspWanConnectionType.bridge;
+      await _saveWanSettings(original, edited);
 
       // Step 3: Set LowerLayers on PPP instance (tunnel type selection)
       if (pppPath != null && edited.connectionType.isPppBased) {
@@ -269,9 +278,13 @@ class UspInternetSettingsService {
       // Step 7: IPv6 fields
       await _saveIpv6Settings(original, edited);
 
-      // Step 8: terminal bridge SET — last, once every other SET has landed.
+      // Step 8: terminal bridge-boundary SET — last, once every other SET has
+      // landed. The two are mutually exclusive: one tests the edited type, the
+      // other the original.
       if (enteringBridge) {
-        await _applyBridgeMode();
+        await _enterBridgeMode();
+      } else if (leavingBridge) {
+        await _exitBridgeMode();
       }
     } catch (e) {
       if (e is ServiceError) rethrow;
@@ -317,14 +330,13 @@ class UspInternetSettingsService {
 
   /// Saves the WAN singleton fields for the target mode.
   ///
-  /// When [deferBridge] is true and the edit is an entering-bridge transition,
-  /// the terminal bridge SET is skipped here so [saveAll] can send it last,
-  /// after the FW-spec VLAN/IPv6 SETs have landed on a still-live connection.
+  /// The bridge boundary is deliberately not crossed here: both directions are
+  /// a single terminal SET that [saveAll] sends last, once the FW-spec
+  /// VLAN/IPv6 SETs have landed on a still-live connection.
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
-    UspInternetSettingsForm edited, {
-    bool deferBridge = false,
-  }) async {
+    UspInternetSettingsForm edited,
+  ) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
     if (typeChanged) {
@@ -366,9 +378,9 @@ class UspInternetSettingsService {
           ));
 
         case UspWanConnectionType.bridge:
-          // When deferred, saveAll sends the terminal bridge SET last (after
-          // VLAN/IPv6) via _applyBridgeMode(); otherwise apply it here.
-          if (!deferBridge) await _applyBridgeMode();
+          // Nothing to write for the target mode: entering bridge is the single
+          // Enable=false SET that saveAll sends last (Step 8).
+          break;
       }
     } else {
       switch (edited.connectionType) {
@@ -427,13 +439,31 @@ class UspInternetSettingsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Bridge mode apply — terminal, fire-and-forget by design
+  // Bridge mode boundary — terminal, fire-and-forget by design
   // ---------------------------------------------------------------------------
 
-  /// Applies bridge mode via the WAN `AddressingType=""` SET.
+  /// Enters bridge mode: `Device.IP.Interface.{wan}.Enable = false`.
+  ///
+  /// That one parameter is what actually bridges the WAN. Its firmware set
+  /// handler adds the WAN device to `br-lan`'s `ports`, commits network+dhcp and
+  /// runs `bridge-mode-apply.sh enter`. Writing `AddressingType=""` — what this
+  /// used to send — does none of that: on this firmware that set handler only
+  /// writes a uci option and never invokes the script, so the router was left
+  /// with a dead WAN rather than a bridge.
+  Future<void> _enterBridgeMode() => _setBridgeBoundary(enable: false);
+
+  /// Leaves bridge mode: `Device.IP.Interface.{wan}.Enable = true`.
+  ///
+  /// Sent after the target mode's own SETs, never before: `bridge-mode-apply.sh
+  /// exit` ends with `ifup wan`, so the new proto has to already be in uci or
+  /// the WAN comes back up on the bridge-era config.
+  Future<void> _exitBridgeMode() => _setBridgeBoundary(enable: true);
+
+  /// Sends the terminal bridge-boundary SET, treating the disconnect it causes
+  /// as success.
   ///
   /// This SET is terminal-by-design (see [_bridgeSetTimeout]): the firmware
-  /// applies bridge mode and drops the connection carrying the response, so a
+  /// applies the change and drops the connection carrying the response, so a
   /// transport-level timeout/network error on THIS SET is the expected
   /// signature of success — the SET was received and applied on-device before
   /// the disconnect. Those two cases are swallowed.
@@ -442,20 +472,21 @@ class UspInternetSettingsService {
   /// mapped to a validation / resource / partial / auth / unexpected
   /// [ServiceError] — means the SET was rejected. Those propagate so the user
   /// still sees the failure; a real config failure is never hidden.
-  Future<void> _applyBridgeMode() async {
+  Future<void> _setBridgeBoundary({required bool enable}) async {
+    // enable=false enters bridge, enable=true leaves it.
+    final direction = enable ? 'exit' : 'enter';
     try {
       _handleSetResult(
-        await WanBridge.update(_usp, addressingType: '')
-            .timeout(_bridgeSetTimeout),
+        await WanBridge.update(_usp, enable: enable).timeout(_bridgeSetTimeout),
       );
     } on TimeoutException {
-      // No response within the budget: the firmware applied bridge mode and
+      // No response within the budget: the firmware applied the change and
       // dropped the connection, so the SET_RESP can never arrive. Expected
       // success. (Future.timeout keeps an error listener on the underlying
       // request, so its eventual late error is consumed, not left unhandled.)
       logger.i(
-          '[USP][WAN]: bridge SET timed out after ${_bridgeSetTimeout.inSeconds}s '
-          '— treating as success (firmware dropped the connection applying bridge mode)');
+          '[USP][WAN]: bridge $direction SET timed out after ${_bridgeSetTimeout.inSeconds}s '
+          '— treating as success (firmware dropped the connection applying it)');
     } catch (e) {
       // Reached when the request fails BEFORE the timeout. A transport /
       // connectivity error is the same disconnect signature → success. But
@@ -466,8 +497,8 @@ class UspInternetSettingsService {
       if (e is ServiceError) rethrow;
       final mapped = mapUspErrorToServiceError(e);
       if (mapped is NetworkError || mapped is ConnectivityError) {
-        logger.i('[USP][WAN]: bridge SET hit a transport error '
-            '— treating as success (firmware dropped the connection applying bridge mode)');
+        logger.i('[USP][WAN]: bridge $direction SET hit a transport error '
+            '— treating as success (firmware dropped the connection applying it)');
         return;
       }
       throw mapped;
@@ -687,7 +718,7 @@ class InternetSettingsFetchResult {
 
   /// Debug fields for logging — not exposed to UI.
   final String debugAddressingType;
-  final bool debugBridgeEnabled;
+  final bool debugInterfaceEnabled;
   final int debugMtu;
   final bool debugIpv6Enabled;
 
@@ -698,7 +729,7 @@ class InternetSettingsFetchResult {
     this.vlanInstancePath,
     this.mtuModeSupported = false,
     this.debugAddressingType = '',
-    this.debugBridgeEnabled = false,
+    this.debugInterfaceEnabled = true,
     this.debugMtu = 0,
     this.debugIpv6Enabled = false,
   });

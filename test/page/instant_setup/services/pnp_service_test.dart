@@ -18,7 +18,8 @@ void main() {
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '',
-    'Device.Bridging.Bridge.1.Enable': false,
+    // Enable is the bridge signal — true means a normal (non-bridged) WAN.
+    'Device.IP.Interface.2.Enable': true,
     'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
   };
 

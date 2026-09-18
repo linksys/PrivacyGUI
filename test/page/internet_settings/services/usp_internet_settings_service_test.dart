@@ -20,7 +20,7 @@ const _wanResponse = <String, dynamic>{
   'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '192.168.1.1',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8,8.8.4.4',
-  'Device.Bridging.Bridge.1.Enable': false,
+  'Device.IP.Interface.2.Enable': true,
   'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
 };
 
@@ -698,8 +698,7 @@ void main() {
       );
     });
 
-    test('switching to Bridge sends only AddressingType as empty string',
-        () async {
+    test('switching to Bridge sends only Enable=false', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
       );
@@ -713,16 +712,21 @@ void main() {
         () =>
             mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
       ).captured;
-      final bridgeParams = captured.whereType<Map<String, dynamic>>().where(
-          (m) => m.containsKey(
-              'Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      final bridgeParams = captured
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m.containsKey('Device.IP.Interface.2.Enable'));
       expect(bridgeParams.length, equals(1));
-      expect(
-        bridgeParams
-            .first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals(''),
-      );
+      expect(bridgeParams.first['Device.IP.Interface.2.Enable'], isFalse);
       expect(bridgeParams.first.length, equals(1));
+      // AddressingType is no longer part of entering bridge at all.
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(
+          params.containsKey(
+              'Device.IP.Interface.2.IPv4Address.1.AddressingType'),
+          isFalse,
+          reason: 'entering bridge must not touch AddressingType',
+        );
+      }
     });
 
     test('switching to Bridge sends neither MaxMTUSize nor X_LINKSYS_MTUMode',
@@ -821,7 +825,7 @@ void main() {
                 'result': {
                   'data': <String, dynamic>{},
                   'error': {
-                    'Device.IP.Interface.2.IPv4Address.1.AddressingType': {
+                    'Device.IP.Interface.2.Enable': {
                       'errorCode': 7006,
                       'errorMessage': 'Invalid value',
                     },
@@ -870,8 +874,8 @@ void main() {
 
       final ipv6Index = captureOrder.indexWhere(
           (m) => m.keys.any((k) => k.contains('IPv6') || k.contains('DHCPv6')));
-      final bridgeIndex = captureOrder.indexWhere((m) =>
-          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      final bridgeIndex = captureOrder
+          .indexWhere((m) => m.containsKey('Device.IP.Interface.2.Enable'));
 
       expect(ipv6Index, greaterThanOrEqualTo(0),
           reason: 'IPv6 change should have produced a SET');
@@ -879,6 +883,134 @@ void main() {
           reason: 'bridge switch should have produced a SET');
       expect(bridgeIndex, greaterThan(ipv6Index),
           reason: 'bridge SET must be sent after the IPv6 SET');
+    });
+
+    test('leaving bridge sends Enable=true after the target mode SET',
+        () async {
+      // bridge-mode-apply.sh exit ends with `ifup wan`, so the target mode's
+      // proto has to be in uci before Enable=true crosses the boundary.
+      final captureOrder = <Map<String, dynamic>>[];
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        captureOrder
+            .add(invocation.positionalArguments[0] as Map<String, dynamic>);
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await service.saveAll(original, edited);
+
+      final dhcpIndex = captureOrder.indexWhere((m) =>
+          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      final exitIndex = captureOrder
+          .indexWhere((m) => m.containsKey('Device.IP.Interface.2.Enable'));
+
+      expect(dhcpIndex, greaterThanOrEqualTo(0),
+          reason: 'leaving bridge should set the target AddressingType');
+      expect(exitIndex, greaterThanOrEqualTo(0),
+          reason: 'leaving bridge should send the Enable=true boundary SET');
+      expect(captureOrder[exitIndex]['Device.IP.Interface.2.Enable'], isTrue);
+      expect(exitIndex, greaterThan(dhcpIndex),
+          reason: 'Enable=true must be sent after the target mode SET');
+    });
+
+    test('leaving bridge treats a transport error on the exit SET as success',
+        () async {
+      // Same disconnect signature as entering: the exit script bounces the
+      // ports and restarts lighttpd, so the response never arrives. Only the
+      // boundary SET fails here — the target mode SET must still succeed, or
+      // saveAll would abort before ever reaching the boundary.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final params =
+            invocation.positionalArguments[0] as Map<String, dynamic>;
+        if (params.containsKey('Device.IP.Interface.2.Enable')) {
+          throw 'Set failed: Transport error: Request timeout';
+        }
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await expectLater(service.saveAll(original, edited), completes);
+    });
+
+    test('leaving bridge rethrows a real fault on the exit SET', () async {
+      // A fault code on Enable means the router rejected the exit before any
+      // disconnect — a genuine failure the user must see.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final params =
+            invocation.positionalArguments[0] as Map<String, dynamic>;
+        if (params.containsKey('Device.IP.Interface.2.Enable')) {
+          return {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.IP.Interface.2.Enable': {
+                  'errorCode': 7006,
+                  'errorMessage': 'Invalid value',
+                },
+              },
+            },
+          };
+        }
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await expectLater(
+        service.saveAll(original, edited),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('editing while staying in bridge crosses no boundary', () async {
+      // Enter and exit are mutually exclusive and both require a type change:
+      // a save that leaves the type at bridge must not touch Enable at all.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(ipv6Enabled: false);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(params.containsKey('Device.IP.Interface.2.Enable'), isFalse,
+            reason: 'no type change means no boundary SET');
+      }
     });
 
     test('MTU change without type change sends only MTU param', () async {

@@ -13,7 +13,7 @@ class WanSettings {
   final String subnetMask;
   final String defaultGateway;
   final String dnsServers;
-  final bool bridgeEnabled;
+  final bool interfaceEnabled;
 
   const WanSettings({
     required this.addressingType,
@@ -23,7 +23,7 @@ class WanSettings {
     required this.subnetMask,
     required this.defaultGateway,
     required this.dnsServers,
-    required this.bridgeEnabled,
+    required this.interfaceEnabled,
   });
 
   /// Resolve the instance index by searching for Alias='wan'
@@ -51,7 +51,7 @@ class WanSettings {
         '${instancePath}IPv4Address.1.SubnetMask',
         '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
         '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
-        'Device.Bridging.Bridge.1.Enable',
+        '${instancePath}Enable',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -84,8 +84,8 @@ class WanSettings {
         .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers')) {
       missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers');
     }
-    if (!response.containsKey('Device.Bridging.Bridge.1.Enable')) {
-      missing.add('Device.Bridging.Bridge.1.Enable');
+    if (!response.containsKey('${instancePath}Enable')) {
+      missing.add('${instancePath}Enable');
     }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
@@ -110,9 +110,9 @@ class WanSettings {
       dnsServers:
           (response['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] ?? '')
               as String,
-      bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
-          response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
-          response['Device.Bridging.Bridge.1.Enable'] == '1',
+      interfaceEnabled: response['${instancePath}Enable'] == true ||
+          response['${instancePath}Enable'] == 'true' ||
+          response['${instancePath}Enable'] == '1',
     );
   }
 
@@ -150,7 +150,7 @@ class WanSettings {
         'subnetMask: $subnetMask, '
         'defaultGateway: $defaultGateway, '
         'dnsServers: $dnsServers, '
-        'bridgeEnabled: $bridgeEnabled'
+        'interfaceEnabled: $interfaceEnabled'
         ')';
   }
 }
