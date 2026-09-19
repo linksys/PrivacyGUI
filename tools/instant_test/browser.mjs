@@ -344,6 +344,62 @@ try {
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
     await button(p,'My device uses an Ethernet cable').click();await visible(p,'Wired device troubleshooting');
   });
+  for (const method of ['keyboard', 'menu']) {
+    await check(`copy-selected-${method}`, async p => {
+      const heading = p.getByText('Your router is very busy', {exact:true});
+      const box = await heading.boundingBox();
+      // Exercise the browser's denied async-clipboard path without granting
+      // write permission. The user-gesture copy fallback must still succeed.
+      await p.evaluate(() => {
+        navigator.clipboard.writeText = () => Promise.reject(new DOMException('Blocked for test', 'NotAllowedError'));
+        const original = document.execCommand.bind(document);
+        window.__copyAttempts = [];
+        document.execCommand = (...args) => {
+          const text = document.activeElement?.value;
+          const ok = original(...args);
+          if(args[0] === 'copy') window.__copyAttempts.push({text,ok});
+          return ok;
+        };
+      });
+      await p.mouse.click(box.x+60,box.y+box.height/2,{clickCount:3});
+      if (method === 'keyboard') await p.keyboard.press(process.platform === 'darwin' ? 'Meta+c' : 'Control+c');
+      else {
+        await p.mouse.click(box.x+60,box.y+box.height/2,{button:'right'});
+        await button(p,'Copy').click();
+      }
+      await p.waitForFunction(() => window.__copyAttempts.some(x => x.ok));
+      const attempts = await p.evaluate(() => window.__copyAttempts);
+      assert.equal(attempts.at(-1).text,'Your router is very busy');
+      // Grant read permission only after the copy, then inspect actual contents.
+      await p.context().grantPermissions(['clipboard-read']);
+      assert.equal(await p.evaluate(() => navigator.clipboard.readText()),'Your router is very busy');
+    });
+  }
+  await check('copy-denied-feedback', async p => {
+    await p.evaluate(() => {
+      document.execCommand = () => false;
+      navigator.clipboard.writeText = () => Promise.reject(new DOMException('Blocked for test','NotAllowedError'));
+    });
+    const box = await p.getByText('Your router is very busy',{exact:true}).boundingBox();
+    await p.mouse.click(box.x+60,box.y+box.height/2,{clickCount:3});
+    await p.keyboard.press(process.platform === 'darwin' ? 'Meta+c' : 'Control+c');
+    await p.locator('body').getByText('Copy was blocked by your browser. Allow clipboard access and try again.',{exact:true}).last().waitFor();
+  });
+  for(const mobile of [false,true]) {
+    await check(`warning-device-handoff-${mobile?'mobile':'desktop'}`,async p=>{
+      const action=p.getByRole('button',{name:/^Help .*\([A-Fa-f0-9:]+\)$/}).first();
+      await action.waitFor();
+      const label=await action.innerText();
+      const name=label.match(/^Help (.*) \(/)[1];
+      await clickInScrollView(p,action);
+      await visible(p,`Help for ${name}`);
+      assert.equal(await p.getByText('1. Choose a device',{exact:true}).count(),0);
+      await clickInScrollView(p,'Connection details');
+      await visible(p,'Link rate');
+      await clickInScrollView(p,button(p,'Back to Instant-Test').last());
+      await action.waitFor();
+    },mobile);
+  }
   await walkthroughs({check,button,visible,clickInScrollView,url});
 } finally {
   await writeFile(`${output}/results.json`, JSON.stringify({url,results},null,2));

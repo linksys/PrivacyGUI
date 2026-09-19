@@ -1,3 +1,4 @@
+import '../models/diagnostic_client.dart';
 import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
@@ -22,6 +23,7 @@ class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewNetwork;
   final VoidCallback? onViewClients;
   final VoidCallback? onTroubleshootWeakDevices;
+  final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
   final void Function(int flowIndex)? onNavigateToFlow;
   /// When false, the in-body "Something else?" symptom cards are hidden — the
   /// single-page host supplies its own workflow chooser instead.
@@ -32,6 +34,7 @@ class OverviewTab extends ConsumerStatefulWidget {
     this.onViewNetwork,
     this.onViewClients,
     this.onTroubleshootWeakDevices,
+    this.onTroubleshootDevice,
     this.onNavigateToFlow,
     this.showProblemCards = true,
   });
@@ -110,6 +113,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             onToggleChecks: () =>
                 setState(() => _checksExpanded = !_checksExpanded),
             onAction: _handleAction,
+            onTroubleshootDevice: widget.onTroubleshootDevice,
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
             showProblemCards: widget.showProblemCards,
@@ -593,6 +597,7 @@ class _StatusCard extends StatelessWidget {
   final VoidCallback onToggleChecks;
   final Future<void> Function(String actionKey) onAction;
   final VoidCallback? onViewClients;
+  final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
   final void Function(int flowIndex)? onNavigateToFlow;
   final bool showProblemCards;
   final bool hasRestarted;
@@ -605,6 +610,7 @@ class _StatusCard extends StatelessWidget {
     required this.onToggleChecks,
     required this.onAction,
     this.onViewClients,
+    this.onTroubleshootDevice,
     this.onNavigateToFlow,
     this.showProblemCards = true,
     this.hasRestarted = false,
@@ -725,6 +731,19 @@ class _StatusCard extends StatelessWidget {
                     ]))
                 : Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
+
+          if (onTroubleshootDevice != null && state.issueDevices.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final device in state.issueDevices.map((score) => score.client))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppTextButton(
+                  'Help ${device.displayName} (${device.macAddress})',
+                  onTap: () => onTroubleshootDevice!(device),
+                  icon: Icons.chevron_right,
+                ),
+              ),
+          ],
 
           // Primary action button — or ISP escalation after restart (D-26)
           if (hasRestarted && primary.postRestartEscalation != null) ...[

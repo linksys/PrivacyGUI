@@ -32,3 +32,13 @@ The local HTML web build uses the same renderer as GUI #557. Browser acceptance 
 No home-router deployment or hardware acceptance is claimed for this pass. The previously captured authenticated hard-reload browser error remains a separate investigation; these changes are not evidence that it is fixed. Full firmware rebuild and on-device acceptance remain necessary before distributing an updated image.
 
 Final local acceptance: **369 Flutter tests passed**, **54/54 Chromium scenarios passed**, and the HTML web build succeeded. Chromium recorded no uncaught page errors or unexpected failed requests. The existing preview-only asset 404 remains: /assets/assets/resources/versions.json. Firmware packaging provides this version-history asset; this preview result does not qualify a new firmware image.
+
+## Copy and affected-device handoff follow-up
+
+Live #555 validation found that denied browser clipboard permission could leave selected text uncopied and emit an unhandled error. Diagnostic selection now supports keyboard and in-page Copy actions through a synchronous browser copy path, with the platform clipboard as fallback. If both fail, the page reports the blocked copy without throwing. The browser context menu is restored when the diagnostic selection areas are disposed, and editable fields keep their own copy behavior.
+
+The result card now offers a help action for every affected device. Names include the hardware MAC so duplicate names remain distinguishable. Selecting an action enters One device is slow with that exact device already selected; users can inspect its connection measurements without choosing it again.
+
+Regression coverage includes duplicate names with different signal measurements, editable-field copying after diagnostic selection, context-menu selection retention, denied-copy feedback, actual browser clipboard contents, and desktop/mobile direct-device handoff. These changes require a new GUI/firmware build before they are present on a router running #555.
+
+Validation on September 19: 375 affected Flutter tests and all 59 Chromium scenarios pass; the HTML web build succeeds. The base-branch comparison reproduces both duplicate-device navigation failures and unhandled clipboard denial. The known preview-only version-history asset 404 remains recorded separately. No router deployment was performed for these fixes.

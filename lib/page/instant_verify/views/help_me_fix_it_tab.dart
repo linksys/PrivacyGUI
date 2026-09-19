@@ -1,3 +1,4 @@
+import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
 import 'instant_test_page_header.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -227,7 +228,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
             key: visit.key,
             offstage: visit != active,
             child: ExcludeFocus(excluding: visit != active,
-                child: TickerMode(enabled: visit == active, child: SelectionArea(child: _flow(visit)))),
+                child: TickerMode(enabled: visit == active, child: DiagnosticSelectionArea(child: _flow(visit)))),
           ),
         if (widget.singlePage) ...[
           const SizedBox(height: 24),

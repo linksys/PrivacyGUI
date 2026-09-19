@@ -1,3 +1,4 @@
+import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
@@ -98,7 +99,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
   }
 
   @override
-  Widget build(BuildContext context) => SelectionArea(
+  Widget build(BuildContext context) => DiagnosticSelectionArea(
       child: InstantTestLayout(
           contentWidth: InstantTestContentWidth.wide,
           child: Column(
@@ -118,13 +119,14 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                       offstage: _showFlow || _details != null,
                       child: ExcludeFocus(
                         excluding: _showFlow || _details != null,
-                        child: SelectionArea(
+                        child: DiagnosticSelectionArea(
                             child: OverviewTab(
                           showProblemCards: false,
                           leading:
                               SymptomChooser(onSelect: (flow) => _launch(flow)),
                           onNavigateToFlow: (index) => _launch(index + 1),
                           onTroubleshootWeakDevices: () => _launch(31),
+                          onTroubleshootDevice: (device) => _launch(31, device: device),
                         )),
                       ),
                     ),
@@ -133,7 +135,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                         offstage: _showFlow,
                         child: ExcludeFocus(
                             excluding: _showFlow,
-                            child: SelectionArea(
+                            child: DiagnosticSelectionArea(
                                 child: Column(children: [
                               InstantTestPageHeader(
                                   title: _details == 1

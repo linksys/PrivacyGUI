@@ -87,4 +87,8 @@ On the authenticated device page, choosing an overview test scenario opens the i
 
 See [WORKFLOW_COPY_REVIEW.md](WORKFLOW_COPY_REVIEW.md) for the status/navigation audit. The preview-only `progress=1` query animates deterministic loading, partial results, and completion over six seconds; combine it with `probe=probeError` to exercise a terminal check failure. These controls do not affect the authenticated router route or execute router requests. Ordinary demo fixtures retain their immediate results.
 
-The live harness now verifies the return to the authenticated router home instead of clicking retired device/network shortcuts. Run it only when an Instant-Test router build is available again; the home unit has been released for unrelated AI firmware testing.
+The live harness now verifies the return to the authenticated router home instead of clicking retired device/network shortcuts. The home router was validated on firmware #555 / GUI #559. Copy and direct-device follow-up changes require a newer build for hardware acceptance.
+
+## Copy and direct-device regressions
+
+Browser acceptance now checks Command-C/Ctrl-C and the in-page Copy menu with the asynchronous clipboard API denied, then reads the actual clipboard to verify the selected text. When both browser copy methods are blocked, it checks visible guidance and the absence of uncaught errors. Desktop/mobile checks open an affected device directly from the result card and return to the overview. Widget regressions distinguish two devices with the same name by MAC and measurements, and ensure text-field copying does not reuse an older diagnostic selection.
