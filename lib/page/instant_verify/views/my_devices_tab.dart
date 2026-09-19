@@ -1,3 +1,4 @@
+import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:flutter/material.dart';
@@ -477,7 +478,7 @@ void _showDeviceDetail(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (context) => SelectionArea(
+    builder: (context) => DiagnosticSelectionArea(
       child: _DeviceDetailSheet(
         client: client,
         state: state,

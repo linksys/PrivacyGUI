@@ -1,3 +1,4 @@
+import 'diagnostic_selection_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
@@ -210,7 +211,7 @@ class _InstantVerifyPivotViewState
           ],
         ),
       ),
-      body: SelectionArea(
+      body: DiagnosticSelectionArea(
         child: TabBarView(
         controller: _tabController,
         children: [

@@ -403,7 +403,8 @@ void main() {
       final findings = v.findings;
       final wifiIdx = findings.indexWhere((f) => f.checkNumber == 7);
       expect(wifiIdx, greaterThanOrEqualTo(0));
-      expect(findings[wifiIdx].headline, contains('weak WiFi'));
+      expect(findings[wifiIdx].headline, 'WiFi may be affecting the speed test');
+      expect(findings[wifiIdx].explanation, contains('cannot tell whether this device is affected'));
     });
 
     test('weak device + fast speed → no WiFi elevation in speed check', () {
@@ -412,7 +413,7 @@ void main() {
       // Should not get the "weak WiFi connection" elevation from speed check
       final elevatedWifi = v.findings
           .where((f) =>
-              f.checkNumber == 7 && f.headline.contains('weak WiFi connection'))
+              f.checkNumber == 7 && f.headline == 'WiFi may be affecting the speed test')
           .toList();
       expect(elevatedWifi, isEmpty);
     });
@@ -422,7 +423,7 @@ void main() {
       final v = _compute(downloadMbps: 15, deviceScores: [good]);
       final elevatedWifi = v.findings
           .where((f) =>
-              f.checkNumber == 7 && f.headline.contains('weak WiFi connection'))
+              f.checkNumber == 7 && f.headline == 'WiFi may be affecting the speed test')
           .toList();
       expect(elevatedWifi, isEmpty);
     });

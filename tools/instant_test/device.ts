@@ -55,7 +55,14 @@ try{
   await snap(name);
   await click('Back to Instant-Test');await btn("Internet isn't working").waitFor();
  }
- for(const [name,label] of [['live-devices','View devices'],['live-network','View network']]){await click(label);await page.waitForTimeout(800);await snap(name);await click('Back to Instant-Test');}
+ const instantUrl=page.url();
+ assert.equal(await btn('View devices').count(),0);
+ assert.equal(await btn('View network').count(),0);
+ await click('Back to router home');
+ await page.waitForURL(/dashboardHome/);
+ await snap('router-home-return');
+ await page.goto(instantUrl);
+ await btn('Run Again').waitFor({timeout:90000});
  await click('Test scenarios');
  await click(page.getByText('Router overloaded + mesh issues',{exact:false}).last());
  await page.getByText('Instant-Test preview',{exact:true}).waitFor();

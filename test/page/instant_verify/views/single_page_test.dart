@@ -609,7 +609,7 @@ void main() {
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
-  testWidgets('home actions scroll with diagnostics and details follow results',
+  testWidgets('home actions scroll with diagnostics and only workflows are offered',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -619,15 +619,12 @@ void main() {
     expect(find.text('What needs help?'), findsOneWidget);
     expect(find.text('Device details'), findsNothing);
     expect(find.text('Network details'), findsNothing);
-    expect(
-        tester.getTopLeft(find.text('View devices')).dy,
-        greaterThan(
-            tester.getBottomLeft(find.text("Doesn't reach a room")).dy));
-    await tester.ensureVisible(find.text('View devices'));
+    expect(find.text('View devices'), findsNothing);
+    expect(find.text('View network'), findsNothing);
+    final chooserTop = tester.getTopLeft(find.text('What needs help?')).dy;
+    await tester.ensureVisible(find.text('Run Again'));
     await tester.pumpAndSettle();
-    expect(tester.getTopLeft(find.text('What needs help?')).dy, lessThan(0));
-    await tapText(tester, 'View devices');
-    expect(find.text('Device details'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('What needs help?')).dy, lessThan(chooserTop));
   });
 
   testWidgets('six direct symptoms and full-page help hide home controls',
@@ -759,8 +756,10 @@ void main() {
   testWidgets(
       'device details pass the selected device into help and restore origin',
       (tester) async {
-    await mount(tester);
-    await tapText(tester, 'View devices');
+    final router = GoRouter(initialLocation: '/instant-prototype?instant=devices', routes: [GoRoute(path: '/instant-prototype', builder: (_, __) => const Scaffold(body: InstantTestPage()))]);
+    addTearDown(router.dispose);
+    await mount(tester, child: Router(routerDelegate: router.routerDelegate, routeInformationParser: router.routeInformationParser, routeInformationProvider: router.routeInformationProvider));
+    await tester.pumpAndSettle();
     await tapText(tester, 'Office printer');
     await tapText(tester, 'Troubleshoot this device');
     expect(find.text('Select a device'), findsNothing);
@@ -792,8 +791,10 @@ void main() {
 
   testWidgets('network details and bridge finding remain reachable',
       (tester) async {
-    await mount(tester);
-    await tapText(tester, 'View network');
+    final router = GoRouter(initialLocation: '/instant-prototype?instant=network', routes: [GoRoute(path: '/instant-prototype', builder: (_, __) => const Scaffold(body: InstantTestPage()))]);
+    addTearDown(router.dispose);
+    await mount(tester, child: Router(routerDelegate: router.routerDelegate, routeInformationParser: router.routeInformationParser, routeInformationProvider: router.routeInformationProvider));
+    await tester.pumpAndSettle();
     expect(find.text('Internet Connection'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to Instant-Test'));
     await tester.pumpAndSettle();

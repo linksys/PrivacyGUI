@@ -37,6 +37,9 @@ async function check(name, run, mobile = false) {
   if (scenario && scenario !== name) return;
   const context = await browser.newContext({viewport:mobile ? {width:390,height:844} : {width:1440,height:1000}, colorScheme:mobile?'light':'dark'});
   const page = await context.newPage();
+  // HTML rendering duplicates painted text in flt-scene; prefer the accessibility tree.
+  const getText = page.locator('flt-semantics-host').getByText.bind(page.locator('flt-semantics-host'));
+  page.getByText = (...args) => getText(...args).filter({visible:true});
   const errors=[], failures=[], known=[];
   page.on('pageerror', e => errors.push(e.message));
   page.on('requestfailed', request => {
@@ -70,6 +73,30 @@ async function check(name, run, mobile = false) {
   } finally {await context.close();}
 }
 try {
+  for (const mobile of [false, true]) {
+    await check(`initial-checking-${mobile ? 'mobile' : 'desktop'}`, async p => {
+      await p.goto(`${url}?progress=1`);
+      await visible(p,'Checking your connection');
+      await p.getByText('Your devices',{exact:false}).last().waitFor();
+      assert.equal(await button(p,'View test progress').count(),0);
+      await p.screenshot({path:`${output}/checking-${mobile?'mobile':'desktop'}.png`});
+      await p.getByText('Testing download speed…',{exact:false}).last().waitFor();
+      await p.screenshot({path:`${output}/checking-partial-${mobile?'mobile':'desktop'}.png`});
+      await p.getByText('Checking your connection',{exact:true}).waitFor({state:'hidden'});
+      await visible(p,'Your router is very busy');
+      const resultBox=await p.getByText('Your router is very busy',{exact:true}).boundingBox();
+      const chooserBox=await p.getByText('What needs help?',{exact:true}).boundingBox();
+      assert(resultBox.y < chooserBox.y, 'Completion must stay above the workflow chooser');
+    }, mobile);
+  }
+  await check('initial-checking-error', async p => {
+    await p.goto(`${url}?progress=1&probe=probeError`);
+    await visible(p,'Checking your connection');
+    await p.getByText("We couldn't finish checking your connection",{exact:false}).last().waitFor();
+    assert.equal(await p.getByText('Checking your connection',{exact:true}).count(),0);
+    assert.equal(await p.getByText("We didn't detect any issues",{exact:true}).count(),0);
+    await button(p,'Run Again').waitFor();
+  });
   for (const mobile of [false, true]) {
     await check(`demo-controls-${mobile ? 'mobile' : 'desktop'}`, async p => {
       const jnap = [];
@@ -128,9 +155,9 @@ try {
         const box=await tile.boundingBox();
         assert(box.x>=0 && box.x+box.width<=p.viewportSize().width,'Action tile exceeds the viewport');
       }
-      const last=await button(p,"Doesn't reach a room").boundingBox();
-      const details=await button(p,'View devices').boundingBox();
-      assert(details.y>last.y+last.height,'Detail links must follow the action section and diagnostics');
+      assert.equal(await button(p,'View devices').count(),0);
+      assert.equal(await button(p,'View network').count(),0);
+      await button(p,'Back to router home').waitFor();
     },mobile);
   }
   for (const mobile of [false,true]) {
@@ -179,7 +206,7 @@ try {
   });
   await check('mesh-health',async p=>{
     await visible(p,'A WiFi node has a weak connection.');
-    await clickInScrollView(p,'View network');
+    await p.goto(`${url}?instant=network`);
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
@@ -214,13 +241,13 @@ try {
     assert.equal(await p.getByText('Running diagnostics…',{exact:true}).count(),0);
   });
   await check('browser-history',async p=>{
-    await clickInScrollView(p,'View devices');
-    await button(p,'Back to Instant-Test').waitFor();
-    assert.match(p.url(),/instant=devices/);
+    await clickInScrollView(p,'One device is slow');
+    await button(p,'Back to Instant-Test').last().waitFor();
+    assert.match(p.url(),/instant=31/);
     await p.goBack();await button(p,'Whole internet is slow').waitFor();
-    await p.goForward();await button(p,'Back to Instant-Test').waitFor();
-    await p.reload();await button(p,'Back to Instant-Test').waitFor();
-    await button(p,'Back to Instant-Test').click();
+    await p.goForward();await button(p,'Back to Instant-Test').last().waitFor();
+    await p.reload();await button(p,'Back to Instant-Test').last().waitFor();
+    await button(p,'Back to Instant-Test').last().click();
     await button(p,'Whole internet is slow').waitFor();
     assert(!p.url().includes('instant='));
   });
@@ -254,7 +281,7 @@ try {
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
   await check('device-details-handoff',async p=>{
-    await clickInScrollView(p,'View devices');
+    await p.goto(`${url}?instant=devices`);
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
     await button(p,'Troubleshoot this device').click();
@@ -317,6 +344,62 @@ try {
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
     await button(p,'My device uses an Ethernet cable').click();await visible(p,'Wired device troubleshooting');
   });
+  for (const method of ['keyboard', 'menu']) {
+    await check(`copy-selected-${method}`, async p => {
+      const heading = p.getByText('Your router is very busy', {exact:true});
+      const box = await heading.boundingBox();
+      // Exercise the browser's denied async-clipboard path without granting
+      // write permission. The user-gesture copy fallback must still succeed.
+      await p.evaluate(() => {
+        navigator.clipboard.writeText = () => Promise.reject(new DOMException('Blocked for test', 'NotAllowedError'));
+        const original = document.execCommand.bind(document);
+        window.__copyAttempts = [];
+        document.execCommand = (...args) => {
+          const text = document.activeElement?.value;
+          const ok = original(...args);
+          if(args[0] === 'copy') window.__copyAttempts.push({text,ok});
+          return ok;
+        };
+      });
+      await p.mouse.click(box.x+60,box.y+box.height/2,{clickCount:3});
+      if (method === 'keyboard') await p.keyboard.press(process.platform === 'darwin' ? 'Meta+c' : 'Control+c');
+      else {
+        await p.mouse.click(box.x+60,box.y+box.height/2,{button:'right'});
+        await button(p,'Copy').click();
+      }
+      await p.waitForFunction(() => window.__copyAttempts.some(x => x.ok));
+      const attempts = await p.evaluate(() => window.__copyAttempts);
+      assert.equal(attempts.at(-1).text,'Your router is very busy');
+      // Grant read permission only after the copy, then inspect actual contents.
+      await p.context().grantPermissions(['clipboard-read']);
+      assert.equal(await p.evaluate(() => navigator.clipboard.readText()),'Your router is very busy');
+    });
+  }
+  await check('copy-denied-feedback', async p => {
+    await p.evaluate(() => {
+      document.execCommand = () => false;
+      navigator.clipboard.writeText = () => Promise.reject(new DOMException('Blocked for test','NotAllowedError'));
+    });
+    const box = await p.getByText('Your router is very busy',{exact:true}).boundingBox();
+    await p.mouse.click(box.x+60,box.y+box.height/2,{clickCount:3});
+    await p.keyboard.press(process.platform === 'darwin' ? 'Meta+c' : 'Control+c');
+    await p.locator('body').getByText('Copy was blocked by your browser. Allow clipboard access and try again.',{exact:true}).last().waitFor();
+  });
+  for(const mobile of [false,true]) {
+    await check(`warning-device-handoff-${mobile?'mobile':'desktop'}`,async p=>{
+      const action=p.getByRole('button',{name:/^Help .*\([A-Fa-f0-9:]+\)$/}).first();
+      await action.waitFor();
+      const label=await action.innerText();
+      const name=label.match(/^Help (.*) \(/)[1];
+      await clickInScrollView(p,action);
+      await visible(p,`Help for ${name}`);
+      assert.equal(await p.getByText('1. Choose a device',{exact:true}).count(),0);
+      await clickInScrollView(p,'Connection details');
+      await visible(p,'Link rate');
+      await clickInScrollView(p,button(p,'Back to Instant-Test').last());
+      await action.waitFor();
+    },mobile);
+  }
   await walkthroughs({check,button,visible,clickInScrollView,url});
 } finally {
   await writeFile(`${output}/results.json`, JSON.stringify({url,results},null,2));

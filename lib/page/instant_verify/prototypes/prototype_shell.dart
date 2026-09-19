@@ -20,6 +20,7 @@ class _PrototypeRootState extends State<PrototypeRoot> {
   MockBrowserDiagnosticService? _service;
   String? _configuration;
   int _overview = 3;
+  bool _showProgress = false;
 
   @override
   void didChangeDependencies() {
@@ -30,9 +31,10 @@ class _PrototypeRootState extends State<PrototypeRoot> {
     final scenario = PreviewProbeScenario.values.firstWhere(
         (value) => value.name == query['probe'],
         orElse: () => PreviewProbeScenario.healthy);
+    _showProgress = query['progress'] == '1';
     final overview = int.tryParse(query['overview'] ?? '') ?? 3;
     _overview = overview >= 0 && overview < 5 ? overview : 3;
-    final configuration = '${scenario.name}:$_overview:${query['run'] ?? ''}';
+    final configuration = '${scenario.name}:$_overview:$_showProgress:${query['run'] ?? ''}';
     if (_configuration != configuration) {
       _configuration = configuration;
       _service = MockBrowserDiagnosticService(scenario: scenario);
@@ -45,7 +47,7 @@ class _PrototypeRootState extends State<PrototypeRoot> {
         overrides: [
           browserDiagnosticServiceProvider.overrideWithValue(_service!),
           instantVerifyPivotProvider
-              .overrideWith(() => MockInstantVerifyPivotNotifier(overviewScenario: _overview, actionScenario: _service!.scenario)),
+              .overrideWith(() => MockInstantVerifyPivotNotifier(showProgress: _showProgress, overviewScenario: _overview, actionScenario: _service!.scenario)),
         ],
         child: Scaffold(
           appBar: AppBar(

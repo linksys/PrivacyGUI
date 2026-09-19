@@ -379,10 +379,13 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         verdictIsPreliminary: true,
       );
 
-      // Phase 2: Run browser tests in background (unawaited)
-      _runBrowserTests(generation: generation, forceSpeedTest: forceSpeedTest);
+      // Phase 2: publish progress while retaining ownership of failures.
+      await _runBrowserTests(generation: generation, forceSpeedTest: forceSpeedTest);
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to load: $e');
+      if (_fetchGeneration != generation) return;
+      state = state.copyWith(phase: PivotLoadPhase.complete,
+          browserTestStep: 'error', verdictIsPreliminary: false,
+          errorMessage: 'Connection checks could not complete.');
       dev.log('InstantVerifyPivot: fetch failed: $e');
     }
   }
