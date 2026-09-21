@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
 import '../../../layout_gate/families/page_surface_family.dart';
@@ -48,7 +49,7 @@ void main() {
   final withRates = slaveNodeWithBackhaulRates;
   final withoutRates = slaveNodeWithBackhaulTiming;
 
-  Future<void> pump(WidgetTester tester, state) async {
+  Future<void> pump(WidgetTester tester, UspNodeDetailState state) async {
     await setLayoutSurface(tester, const Size(1280, 1800));
     await tester.pumpWidget(pageSurfaceHost(
       view: UspNodeDetailView(deviceId: (state.node as SlaveNode).deviceId),

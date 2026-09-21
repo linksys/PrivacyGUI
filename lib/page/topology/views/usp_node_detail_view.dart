@@ -535,6 +535,15 @@ class UspNodeDetailView extends ConsumerWidget {
             //
             // No `maxLines`: free to wrap. A line cap would reintroduce the
             // truncation this placement exists to avoid.
+            //
+            // AC2's audit of the two rates' consumers, recorded because the ticket
+            // got it wrong: it says this view is "the only one today", and
+            // `usp_topology_builder.dart` also reads `uplinkRate`, as
+            // `MeshLink.throughput`. That one needs no qualifier — ui_kit uses it
+            // only as an animation-speed multiplier (`(throughput / 100).clamp(0.5,
+            // 3.0)` in `link_renderer.dart` and `topology_graph_view.dart`) and
+            // never renders it as text. So this is the only place a customer reads
+            // the number, and the only place the sentence is needed.
             AppText.labelSmall(
               loc(context).backhaulRateNotInternetSpeed,
               color: colorScheme.onSurfaceVariant,

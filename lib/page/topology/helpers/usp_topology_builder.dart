@@ -75,6 +75,7 @@ class UspTopologyBuilder {
     final extenderNodeIdsNormalized = <String>{};
     final normalizedToOriginal = <String, String>{};
     final deviceIdToExtenderId = <String, String>{};
+    final parentQueries = <BackhaulParentQuery>[];
 
     for (final slave in meshNetwork.slaves) {
       final extenderId = 'extender-${slave.deviceId}';
@@ -99,6 +100,10 @@ class UspTopologyBuilder {
           deviceIdToExtenderId[normalizedDeMac] = extenderId;
         }
       }
+      parentQueries.add((
+        extenderId: extenderId,
+        parentDeviceId: slave.backhaul.parentNodeId,
+      ));
       logger.t('[USP][TopologyBuilder]: Slave ${slave.deviceId} '
           '→ hostsMac: $normalizedHostsMac, '
           'dataElementsId: ${slave.dataElementsId}, '
@@ -120,13 +125,10 @@ class UspTopologyBuilder {
     //    whose parent is missing from the tree. The master's identifiers are
     //    passed in for exactly that distinction.
     final parentGraph = resolveBackhaulParents(
-      slaves: [
-        for (final slave in meshNetwork.slaves)
-          (
-            extenderId: 'extender-${slave.deviceId}',
-            parentDeviceId: slave.backhaul.parentNodeId,
-          ),
-      ],
+      // Collected in the loop above rather than re-derived here: a second pass
+      // would re-spell `extender-<deviceId>`, and an id built two ways is an id
+      // that can differ in one of them.
+      slaves: parentQueries,
       extenderIdByNodeMac: deviceIdToExtenderId,
       gatewayNodeMacs: {
         for (final mac in [master.deviceId, master.dataElementsId])
@@ -168,8 +170,7 @@ class UspTopologyBuilder {
 
       // Resolved above, for the whole graph at once — a cycle is a property of
       // the set, not of one node.
-      final parentId =
-          parentGraph.parentIdByExtenderId[extenderId] ?? gatewayId;
+      final parentId = parentIdByExtenderId[extenderId] ?? gatewayId;
 
       final extenderIconName = routerIconTestByModel(modelNumber: slave.model);
       nodes.add(MeshNode(
@@ -222,6 +223,13 @@ class UspTopologyBuilder {
       // Determine parent node
       String parentId = gatewayId;
       if (meshNetwork.hasMesh && client.parentNodeId != null) {
+        // Normalised the same way as the keys it is probed against, which is why
+        // this site moved to `normalizeMac` with the node-side ones (#1441): the
+        // set below is built in the slave loop above, so leaving this probe on the
+        // old `toUpperCase().replaceAll(':', '')` would make the two disagree on
+        // any identifier that is not colon-separated — the mismatch #1441 is
+        // about, pointed at clients. Client *attribution* logic is #1439's and is
+        // untouched.
         final parentNormalized = normalizeMac(client.parentNodeId!);
         logger.t('[USP][TopologyBuilder]: Device ${client.displayName} '
             'parentNodeId=${client.parentNodeId}, '
@@ -306,11 +314,22 @@ class UspTopologyBuilder {
   /// view animated traffic along a link nothing was known about.
   ///
   /// [ConnectionType.unknown] (ui_kit#87, shipped in v3.2.0; this repo resolves
-  /// v3.3.2) closes both halves: `MeshLink.styleFrom` routes it to
-  /// `TopologySpec.unknownConnectionLinkStyle`, a style per visual language whose
-  /// one cross-language guarantee is no flow animation, and `MeshLink.linkQuality`
-  /// discards any RSSI carried alongside an unknown medium rather than painting a
-  /// confident grade. Nothing is hand-rolled here (constitution Article XV).
+  /// v3.3.2) closes it: every renderer resolves its style through
+  /// `MeshLink.styleFrom`, which switches on the medium *first* and routes this
+  /// member to `TopologySpec.unknownConnectionLinkStyle` — a style per visual
+  /// language whose one cross-language guarantee is no flow animation. Nothing is
+  /// hand-rolled here (constitution Article XV).
+  ///
+  /// **The quality axis is left alone, deliberately.** `MeshLink.linkQuality`
+  /// would discard an RSSI carried beside an unknown medium, but only when no
+  /// override is given, and this builder gives one (`_rssiToLinkQuality`). That is
+  /// the right call and not an oversight: `Backhaul.Stats.SignalStrength` is a
+  /// reading of *this* link, and a wired backhaul has none, so a row with an RSSI
+  /// and no named medium is a link we measured and firmware did not label. We know
+  /// its quality by another route, which is what the override is for. Medium
+  /// unknown, quality graded — two axes, pinned as a pair in
+  /// `usp_topology_builder_test.dart` so the next reader does not have to
+  /// re-derive it.
   ///
   /// Keyed on **absence** of a medium, not on failing to match `Ethernet`: a
   /// value firmware named and we do not recognise stays `wifi`. The practical

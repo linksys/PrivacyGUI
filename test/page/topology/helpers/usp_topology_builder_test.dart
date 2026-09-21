@@ -954,6 +954,48 @@ void main() {
         }
       });
 
+      test('a client whose parent MAC is dashed still attaches to its node',
+          () {
+        // The fifth site the normaliser swap touched, and the one on the client
+        // probe rather than the node one. It is not separable: the set it is
+        // probed against is built in the same loop as the node keys, so the two
+        // have to agree on the normal form — otherwise a dashed identifier misses
+        // and the client is drawn on the gateway, which is #1441's defect pointed
+        // at clients. Client attribution itself is #1439's and is untouched.
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              deviceId: DevicesTestData.slaveMac1,
+              dataElementsId: DevicesTestData.slaveMac1,
+              connectedClients: [
+                DevicesTestData.createSlaveConnectedClient(
+                  mac: DevicesTestData.clientMac3,
+                  // The slave's own MAC, written the other way round.
+                  parentNodeId: DevicesTestData.slaveMac1
+                      .replaceAll(':', '-')
+                      .toLowerCase(),
+                  parentNodeName: 'Extender-1',
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        expect(
+          topology.nodes
+              .firstWhere((n) => n.id == 'client-${DevicesTestData.clientMac3}')
+              .parentId,
+          'extender-${DevicesTestData.slaveMac1}',
+          reason: 'a dashed parent MAC must key the same entry as a colon one',
+        );
+      });
+
       test(
           'a node parented by the gateway resolves to it, and a real hop '
           'survives', () {
@@ -1106,6 +1148,43 @@ void main() {
             () => expect(levelFor(backhaul), expectedLevel));
         test('$name → ${expectedMedium.name} link',
             () => expect(connectionTypeFor(backhaul), expectedMedium));
+      });
+
+      test('an unknown medium keeps the quality we measured (#1464)', () {
+        // The pair a reviewer had to re-derive across two packages, so it is
+        // pinned here. `MeshLink.linkQuality` discards an RSSI carried beside
+        // `ConnectionType.unknown` — but only when the app gives no override, and
+        // this builder gives one.
+        //
+        // That is deliberate. `Backhaul.Stats.SignalStrength` is a reading of this
+        // link and a wired backhaul has none, so a row with an RSSI and no named
+        // medium is a link we measured and firmware did not label: medium unknown,
+        // quality known. Collapsing the quality to `unknown` as well would throw a
+        // real reading away to say something about a different axis.
+        const measuredButUnlabelled = BackhaulInfo(
+          parentNodeId: DevicesTestData.masterMac,
+          signalStrength: -50,
+        );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: MeshNetwork(
+            master: DevicesTestData.createMaster(),
+            slaves: [
+              DevicesTestData.createWifiSlave(
+                dataElementsId: DevicesTestData.slaveMac1,
+                backhaul: measuredButUnlabelled,
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+        final link = topology.links
+            .firstWhere((l) => l.targetId.startsWith('extender-'));
+
+        expect(link.connectionType, ConnectionType.unknown,
+            reason: 'no medium was named');
+        expect(link.linkQuality, LinkQuality.excellent,
+            reason: '-50 dBm was measured, and the override is what says so');
+        expect(link.rssi, -50);
       });
 
       test('the level and the link agree on every row', () {

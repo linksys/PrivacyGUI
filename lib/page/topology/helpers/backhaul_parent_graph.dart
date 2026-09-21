@@ -43,6 +43,15 @@ enum BackhaulParentOutcome {
   cycleBroken,
 }
 
+/// What the resolver is asked about one slave: its node id in the emitted graph,
+/// and the parent firmware named for it.
+///
+/// Named so the signature reads as one thing rather than as two parallel lists,
+/// and so the pair cannot be passed in the wrong order at a call site. The two
+/// travel together everywhere: they are read together, logged together, and a
+/// resolution is meaningless without both.
+typedef BackhaulParentQuery = ({String extenderId, String? parentDeviceId});
+
 /// One slave's resolved parent, and how it was resolved.
 class BackhaulParent {
   /// The slave's node id in the emitted graph (`extender-<deviceId>`).
@@ -76,6 +85,11 @@ class BackhaulParent {
     this.cycle = const [],
   });
 
+  /// For diagnostics, and it has a consumer: the collection-level expectations
+  /// (`expect(graph.brokenCycles, hasLength(1))`) print these on failure, where
+  /// `Instance of 'BackhaulParent'` twice over would say nothing about *which*
+  /// cycle was reported twice. Same reason the models in `_shared` carry
+  /// `namedProps`.
   @override
   String toString() => '$extenderId → $parentId (${outcome.name}'
       '${reportedParentDeviceId == null ? '' : ', reported '
@@ -139,7 +153,7 @@ class BackhaulParentGraph {
 /// functional and its cycles are disjoint — breaking one cannot create or hide
 /// another.
 BackhaulParentGraph resolveBackhaulParents({
-  required List<({String extenderId, String? parentDeviceId})> slaves,
+  required List<BackhaulParentQuery> slaves,
   required Map<String, String> extenderIdByNodeMac,
   required Set<String> gatewayNodeMacs,
   required String gatewayId,
