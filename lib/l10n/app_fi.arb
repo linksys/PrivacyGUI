@@ -639,6 +639,7 @@
   "errorTimeout": "Toiminto aikakatkaistiin. Yritä uudelleen.",
   "errorUnauthorized": "Sinulla ei ole oikeutta suorittaa tätä toimintoa.",
   "errorUnexpected": "Jokin meni pieleen. Yritä uudelleen.",
+  "errorCommandRefused": "Reititin hylkäsi tämän komennon. Yritä hetken kuluttua uudelleen.",
   "errors": "Virheet",
   "estimatedTimeRemaining": "Arvioitu jäljellä oleva aika: {time}",
   "ethernetPorts": "Ethernet-portit",

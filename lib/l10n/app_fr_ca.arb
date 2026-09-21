@@ -641,6 +641,7 @@
   "errorTimeout": "L'opération a expiré. Veuillez réessayer.",
   "errorUnauthorized": "Vous n'avez pas la permission d'effectuer cette action.",
   "errorUnexpected": "Une erreur est survenue. Veuillez réessayer.",
+  "errorCommandRefused": "Le routeur a refusé cette commande. Veuillez réessayer dans un instant.",
   "errors": "Erreurs",
   "estimatedTimeRemaining": "Temps restant estimé : {time}",
   "ethernetPorts": "Ports Ethernet",

@@ -639,6 +639,7 @@
   "errorTimeout": "การดำเนินการหมดเวลา กรุณาลองอีกครั้ง",
   "errorUnauthorized": "คุณไม่มีสิทธิ์ดำเนินการนี้",
   "errorUnexpected": "เกิดข้อผิดพลาดบางอย่าง กรุณาลองอีกครั้ง",
+  "errorCommandRefused": "เราเตอร์ปฏิเสธคำสั่งนี้ โปรดลองอีกครั้งในอีกสักครู่",
   "errors": "ข้อผิดพลาด",
   "estimatedTimeRemaining": "เวลาที่เหลือโดยประมาณ: {time}",
   "ethernetPorts": "พอร์ต Ethernet",

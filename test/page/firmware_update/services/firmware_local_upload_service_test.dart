@@ -147,6 +147,37 @@ void main() {
       );
     });
 
+    // #1533 item 2: a chunk the router refuses must fail the upload visibly.
+    // `uploadChunk` is `Future<void>` and only reacts to throws, which is why the
+    // fix belongs in `UspClient.extractOperateResult`: once a refusal throws
+    // there, this path needs no change. Before it threw, a refused chunk completed
+    // normally and the UI showed a finished upload.
+    //
+    // **What this test does not cover.** `UspClient` is mocked here, so the real
+    // `extractOperateResult` never runs and the throw is injected rather than
+    // produced. It pins the second half — a refusal that reaches this service
+    // surfaces as a command failure and not as a network error — and nothing
+    // spans the two halves, because the seam between them *is* the mock. The
+    // throw itself is pinned in `usp_client_operate_result_test.dart`.
+    //
+    // The assertion is on the *type*: `UnexpectedError` would render as
+    // "something went wrong", which is what a network blip looks like too.
+    test(
+        'a refusal reaching this service is a command failure, not a network error',
+        () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args'))).thenThrow(
+        'Operate failed: Operation error: '
+        'Device.LocalAgent.X_LINKSYS_Download() refused: Command Failure '
+        '(code: 7022)',
+      );
+
+      await expectLater(
+        service.uploadFile(bytes: bytesOf(10), md5: 'abc', commandKey: 'cmd-1'),
+        throwsA(
+            isA<UspCompleteFailureError>().having((e) => e.code, 'code', 7022)),
+      );
+    });
+
     test('rethrows existing ServiceError without re-mapping', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
           .thenThrow(const NetworkError(detail: 'timeout'));

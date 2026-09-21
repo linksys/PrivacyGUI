@@ -639,6 +639,7 @@
   "errorTimeout": "İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.",
   "errorUnauthorized": "Bu işlemi gerçekleştirmek için izniniz yok.",
   "errorUnexpected": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+  "errorCommandRefused": "Yönlendirici bu komutu reddetti. Lütfen birazdan yeniden deneyin.",
   "errors": "Hatalar",
   "estimatedTimeRemaining": "Tahmini kalan süre: {time}",
   "ethernetPorts": "Ethernet Portları",
