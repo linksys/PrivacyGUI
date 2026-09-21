@@ -67,6 +67,42 @@ void main() {
     });
   });
 
+  // The getter #1464 added, and the one whose whole purpose is to disagree with
+  // `isWifi` on one row. This file gives every medium getter a group; without
+  // this one `hasMedium` would be covered only indirectly, through
+  // `usp_topology_builder_test.dart`'s decision table.
+  group('hasMedium', () {
+    test('a named medium is a named medium, either spelling', () {
+      expect(const BackhaulInfo(linkType: 'Wi-Fi').hasMedium, isTrue);
+      expect(const BackhaulInfo(linkType: 'Ethernet').hasMedium, isTrue);
+      // Not recognised, but named — the question is whether firmware said
+      // anything, not whether we know what it means.
+      expect(
+          const BackhaulInfo(linkType: 'Ethernet over Coax').hasMedium, isTrue);
+    });
+
+    test('absent, empty and whitespace are all "firmware named nothing"', () {
+      // `meshBackhaulLinkType` maps `None` to null before a `BackhaulInfo` is
+      // built, so `None` arrives here as the first of these. The other two cover
+      // a value that reached the model any other way.
+      expect(BackhaulInfo.none.hasMedium, isFalse);
+      expect(const BackhaulInfo(linkType: '').hasMedium, isFalse);
+      expect(const BackhaulInfo(linkType: '   ').hasMedium, isFalse);
+    });
+
+    test('it disagrees with isWifi on a link known only by its parent', () {
+      // The row the getter exists for, and the reason `isWifi` could not serve:
+      // there *is* a link and it is not Ethernet, which is the right answer for
+      // the interface tile and the wrong one for a topology link that has to
+      // pick a medium to draw. `UspTopologyBuilder` reads this one and emits
+      // `ConnectionType.unknown` (#1464 AC4).
+      const link = BackhaulInfo(parentNodeId: 'AA:BB:CC:DD:EE:00');
+      expect(link.hasInfo, isTrue, reason: 'a parent is a link');
+      expect(link.isWifi, isTrue, reason: 'a link, and not Ethernet');
+      expect(link.hasMedium, isFalse, reason: 'but nobody named a medium');
+    });
+  });
+
   group('hasInfo', () {
     test('a medium alone is a link', () {
       expect(const BackhaulInfo(linkType: 'Wi-Fi').hasInfo, isTrue);
