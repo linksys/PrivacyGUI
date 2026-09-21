@@ -4,6 +4,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -14,7 +15,10 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv6_section.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_start_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_manual_tools_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_results_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../layout_gate/collector.dart';
@@ -25,12 +29,15 @@ import '../../layout_gate/surface.dart';
 import '../../layout_gate/sweep.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
+import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
 import '../../mocks/test_data/scenes/admin_scene_data.dart';
 import '../../mocks/test_data/scenes/apps_scene_data.dart';
 import '../../mocks/test_data/scenes/instant_privacy_scene_data.dart';
 import '../../mocks/test_data/scenes/system_log_scene_data.dart';
+import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
+import '../../util/settle.dart';
 
 /// The overflow gate's page sweep — the #1349 pilot, #1377's wave 1, #1378's wave 2,
 /// #1379's wave 3, #1380's wave 4, then three later additions that are not waves
@@ -38,13 +45,13 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
 /// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-four whole pages, declared as fifty-three cases** — five pages are swept more
+/// **Forty-four whole pages, declared as sixty-one cases** — six pages are swept more
 /// than once, by two different mechanisms. Three are tabs: `statistics` as three cases,
 /// `port_forwarding` as three, `wifi_settings` as two (all #1489). Two are *fixture
 /// states* of one page: `pnp_setup`/`pnp_setup_firmware` and
 /// `firmware_update`/`firmware_failed` (both #1554). So the two counts are different
 /// quantities rather than one of them being stale — × 9 screen widths × 26 locales =
-/// **12,402 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
+/// **14,274 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
 /// the declaration, the fifty-one pins, and the readability guards that sit beside
@@ -338,6 +345,49 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kUnifiedDiagnosticsPageCase),
+    expectedCellCount: 234,
+  );
+
+  // #1602's second half. The case above sweeps this view's `idle` step on a `const []`
+  // fixture — nobody had picked a state for it — while the view is a `switch` into seven
+  // arms and the golden suite enumerates 28 states. These eight cover the other five
+  // builders plus the three data variants whose sub-widget no sibling fixture renders
+  // (`TracerouteDetailCard`, and the two manual-tools blocks `activeTab` gates). 302 of
+  // 6,318 probed cells were red, all at 320px over five sites; four were the same
+  // no-`Expanded` title `Row` as #1554's. `page_surface_cases.dart` carries each case's
+  // premise, why the running screen is the loader exemption's third and differently
+  // argued entry, and why the three manual cases share a premise that a separate test
+  // pins apart.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsSelectFlowPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsRunningPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsResultsPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsResultsTraceroutePageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsManualToolsPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsManualTraceroutePageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsManualNsLookupPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDiagnosticsCompletedPageCase),
     expectedCellCount: 234,
   );
 
@@ -3400,6 +3450,138 @@ void main() {
             'reaching the far edge on a wide page means the reflow was paid for by '
             'every other width:\n${failures.join('\n')}',
       );
+    });
+  });
+  group('unified diagnostics: what #1602 fixed and the sweep cannot see', () {
+    // Rule 4 of the gate skill, and the #1602 lesson from one page over: a fix that
+    // replaces a `Row` with a `Wrap` **removes the overflow oracle for that site**.
+    // `RenderWrap` hands each child the line's width as a constraint, so a child that
+    // wants more room is not reported — it is squeezed. Both of the summary header's
+    // `Wrap`s therefore need a readability verdict beside the 234 cells that no longer
+    // go red there.
+    testWidgets(
+        'the results summary header keeps every status label legible at 320px, in '
+        'every locale', (tester) async {
+      // Measured 2026-09-21: the line is **190.0px** and the widest label is `ru`
+      // "Предупреждение" at **100px** (`de` "Fehlgeschlagen" 91, `el` 87), so the
+      // headroom is 90px — roughly half the line, against the 28px the pnp action row
+      // has. Comfortable, and pinned anyway, because the number that matters is the one
+      // a new locale or a reworded label moves.
+      final offenders = <String>[];
+      for (final locale in AppLocalizations.supportedLocales) {
+        await setLayoutSurface(tester, const Size(320, kPageSweepHeight));
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey('diag-summary-${locale.toString()}'),
+          child: pageSurfaceHost(
+            view: const UnifiedDiagnosticsView(),
+            locale: locale,
+            overrides:
+                unifiedDiagnosticsOverrides(multipleRecommendationsState),
+          ),
+        ));
+        await settleIgnoringAnimations(tester);
+
+        final wraps = find.descendant(
+            of: find.byType(DiagnosticResultsView),
+            matching: find.byType(Wrap));
+        expect(wraps, findsWidgets,
+            reason:
+                'the summary header is built from Wraps since #1602; if it is '
+                'a Row again this guard is measuring the wrong widget');
+
+        final labels =
+            find.descendant(of: wraps.last, matching: find.byType(Text));
+        for (var i = 0; i < labels.evaluate().length; i++) {
+          final label = labels.at(i);
+          final paragraph = tester.paragraphOf(label);
+          final text = paragraph.text.toPlainText();
+          // Both verdicts, in the skill's order — neither subsumes the other.
+          if (tester.isTextClipped(label)) {
+            offenders.add('${locale.toString()}: "$text" truncated — granted '
+                '${paragraph.size.width.toStringAsFixed(1)}px');
+          } else if (!kLocalesWithoutWordSpaces.contains(locale.toString()) &&
+              tester.hasSplitToken(label)) {
+            offenders.add('${locale.toString()}: "$text" broke mid-word — '
+                'granted ${paragraph.size.width.toStringAsFixed(1)}px, widest '
+                'token ${tester.widestTokenWidth(label).toStringAsFixed(1)}px');
+          }
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'a Wrap constrains its children to the line, so a status count with '
+            'too little room squeezes its label instead of overflowing — invisible '
+            'to all 234 cells of page.unified_diagnostics_results:\n'
+            '${offenders.join('\n')}',
+      );
+    });
+
+    testWidgets('the three manual-tools fixtures each select their own tool',
+        (tester) async {
+      // The premise the three manual cases cannot state. `diagnostic_manual_tools_view`
+      // gates its three result blocks on `state.activeTab`, and all three are private
+      // methods returning `LayoutBlock` — so `requires`, which takes only `Type`s,
+      // cannot tell them apart, and a fixture that drifted onto another tool would
+      // sweep 702 green cells over the same block three times.
+      //
+      // Pinned once rather than per cell because that is the granularity of the risk:
+      // the fixtures are `const`, so "which tool does this state select" is one fact
+      // per run. A text finder is what makes it checkable, and `requires` has none.
+      final expected = <String, List<Override>>{
+        'ping': manualToolsOverrides(manualToolsPingResultState),
+        'traceroute': manualToolsOverrides(manualToolsTracerouteResultState),
+        'nslookup': manualToolsOverrides(manualToolsNsLookupResultState),
+      };
+      final hostsSeen = <String, String>{};
+      for (final entry in expected.entries) {
+        await setLayoutSurface(tester, const Size(1080, kPageSweepHeight));
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey('diag-manual-${entry.key}'),
+          child: pageSurfaceHost(
+            view: const UnifiedDiagnosticsView(),
+            locale: const Locale('en'),
+            overrides: entry.value,
+          ),
+        ));
+        await settleIgnoringAnimations(tester);
+        expect(find.byType(DiagnosticManualToolsView), findsOneWidget);
+
+        // Each block prints its own target, so the rendered text identifies the tool
+        // without naming a private widget.
+        final texts = tester
+            .widgetList<Text>(find.descendant(
+                of: find.byType(DiagnosticManualToolsView),
+                matching: find.byType(Text)))
+            .map((t) => t.data ?? '')
+            .join(' | ');
+        hostsSeen[entry.key] = texts;
+      }
+
+      // **The host has to be in the needle, and the first draft's failure is why.**
+      // The tool selector prints `Ping | Traceroute | NS Lookup` on every tab, so a
+      // bare tool name is in the tree whatever `activeTab` says — `contains('NS
+      // Lookup')` would have passed on all three fixtures and this test would have
+      // asserted nothing. Both result headers interpolate the host
+      // (`tracerouteTo(host)`, `nsLookupHost(hostName)`) and both fixtures use
+      // `google.com`, so the interpolated form appears only in the block itself.
+      expect(hostsSeen['traceroute'], contains('Traceroute to google.com'),
+          reason:
+              'manualToolsTracerouteResultState must land on the traceroute '
+              'tab, or page.unified_diagnostics_manual_traceroute measures the '
+              'ping block and the site it exists for has no cell');
+      expect(hostsSeen['nslookup'], contains('NS Lookup google.com'),
+          reason:
+              'manualToolsNsLookupResultState must land on the nslookup tab, '
+              'for the same reason');
+      expect(hostsSeen['ping'], isNot(contains('Traceroute to google.com')),
+          reason:
+              'manualToolsPingResultState must NOT land on traceroute — the '
+              'three cases would then hold two blocks between them, not three');
+      expect(hostsSeen['ping'], isNot(contains('NS Lookup google.com')),
+          reason: 'nor on nslookup, for the same reason');
     });
   });
 }

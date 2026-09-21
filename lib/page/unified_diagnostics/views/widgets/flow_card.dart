@@ -48,7 +48,9 @@ class FlowCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      AppText.titleSmall(title),
+                      // #1602: the title had no flex, so a long one plus the
+                      // `recommended` badge went over by up to 45px at 320px.
+                      Flexible(child: AppText.titleSmall(title)),
                       if (recommended) ...[
                         AppGap.sm(),
                         Container(

@@ -77,8 +77,8 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is fifty-three cases over
-  // forty-four pages, because five of those pages are swept more than once. The two
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-one cases over
+  // forty-four pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
   // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
@@ -100,7 +100,12 @@ void main() {
   // #1602 is also the first addition found by *joining two enumerations* rather than
   // by a nightly failure at a coordinate this gate already swept: the golden suite's
   // `states:` keys are an independent count of one view's screens, and comparing them
-  // against this list is what showed `PnpSetupView` had eight and the gate two.
+  // against this list is what showed `PnpSetupView` had eight and the gate two. Run
+  // across every view with both, the same join found `UnifiedDiagnosticsView` at 28
+  // against **one** — and that one on an empty override list — so #1602's second half
+  // took the count to **61**, nine cases on that one view file. The join is the cheap
+  // instrument for this whole axis; what it cannot see is the 18 swept views with no
+  // golden suite at all, where there is no second enumeration to compare against.
   //
   // These counts are written out in **five** places — this group, the page sweep file's
   // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
@@ -110,13 +115,13 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares fifty-three cases over forty-four pages, and which '
-      'fifty-three is a decision', () {
+      'the gate declares sixty-one cases over forty-four pages, and which '
+      'sixty-one is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states and #1602\'s two '
-        'completion branches', () {
+        'completion branches plus eight diagnostics screens', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -161,6 +166,18 @@ void main() {
           'remote_assistance',
           'support',
           'unified_diagnostics',
+          // #1602's second half: this view's other five builders plus the three
+          // data variants whose sub-widget no sibling fixture renders. Nine cases
+          // over one view file, the family's largest fan-out — see the roster's
+          // `# second-state` block for what that costs its ms_per_cell column.
+          'unified_diagnostics_select_flow',
+          'unified_diagnostics_running',
+          'unified_diagnostics_results',
+          'unified_diagnostics_results_traceroute',
+          'unified_diagnostics_manual_tools',
+          'unified_diagnostics_manual_traceroute',
+          'unified_diagnostics_manual_nslookup',
+          'unified_diagnostics_completed',
           'firmware_update',
           // #1554, added after #1572: the same view file's `failed` phase. The first
           // case in this family that arrived because of a *defect* rather than a gap —
@@ -419,8 +436,8 @@ void main() {
     }
 
     test(
-        'exactly two pages are exempt from the loader rule, and both are named',
-        () {
+        'exactly three pages are exempt from the loader rule, and all three are '
+        'named', () {
       // The membership pin. The two-branch test above is satisfied by *any*
       // exemption set — including one that grew an entry because a fixture was hard
       // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
@@ -438,14 +455,33 @@ void main() {
       // Note it is two *cases*, not two views: `pnp_setup` — the same view file in its
       // form phase — still forbids the loader, because there a spinner really is the
       // stand-in this rule is about.
+      //
+      // **The third entry (#1602) held the bar, and the case that did not is the more
+      // useful half of the story.** `unified_diagnostics_manual_tools` is exempt because
+      // `_buildPingResult` ends in a determinate linear `AppLoader` whose `value` is the
+      // success rate — the bar's width *is* the number, which is `pnp_setup_firmware`'s
+      // sentence verbatim. What was drafted as the third entry was
+      // `unified_diagnostics_running`, on the grounds that the running view paints a
+      // 12x12 spinner in whichever step `isCurrent`; that argued a *new* kind of
+      // loader-is-content page and would have widened this rule. The sweep refused it —
+      // nine coordinates failed with `rendered no AppLoader`, because on the speed-test
+      // fixture no step is current and the spinner is never built. So the entry that
+      // arrived is the one whose loader a *cell* can see, and the rule still names one
+      // kind of screen. A `requires` naming a conditional widget is a claim about the
+      // fixture, and reading the source cannot settle it.
       expect(
         kPagesWhoseLoaderIsContent,
-        const {'auto_parent_first_login', 'pnp_setup_firmware'},
+        const {
+          'auto_parent_first_login',
+          'pnp_setup_firmware',
+          'unified_diagnostics_manual_tools',
+        },
         reason: 'auto_parent_first_login exists to say "we are installing '
             'firmware, do not unplug the router" — the spinner is the subject of '
-            'the screen — and pnp_setup_firmware is the setup wizard saying it. A '
-            'third entry needs that same argument made in the case doc, not just a '
-            'passing sweep.',
+            'the screen — pnp_setup_firmware is the setup wizard saying it, and '
+            'unified_diagnostics_manual_tools is a determinate bar whose value is '
+            'the success rate it reports. A fourth entry needs that same argument '
+            'made in the case doc, not just a passing sweep.',
       );
       expect(
         kPageSurfaceCases.map((c) => c.id),

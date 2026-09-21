@@ -22,7 +22,7 @@ are for people maintaining the gate itself:
 fvm flutter test --tags overflow
 ```
 
-That runs every overflow sweep in the repo: **16,017 coordinates**, each one a
+That runs every overflow sweep in the repo: **17,889 coordinates**, each one a
 screen × width × tab × locale combination, pumped as its own widget tree and
 asked one question — did a `RenderFlex` overflow?
 
@@ -51,7 +51,7 @@ moved all four test counts and no clock: #1367 removed one forced-form coordinat
 everywhere) and brought a `layout-gate`-carrying stats-panel suite (+21 to the last two
 rows), and #1376 brought an untagged identifier suite (+8 to the last row only) plus one
 extra test inside an identifier suite that already existed (+1, also last row only). One
-cell of 13,677 (14,847 since #1489, 15,549 since #1554, 16,017 since #1602) is three orders of magnitude below the drift these runs show, so the counts
+cell of 13,677 (14,847 since #1489, 15,549 since #1554, 17,889 since #1602) is three orders of magnitude below the drift these runs show, so the counts
 are corrected and the clocks are kept.
 
 **#1488/#1489 moved the counts again, and the third row is written as a sum on purpose.**
@@ -140,7 +140,7 @@ fvm flutter test \
 
 **One thing this selector cannot tell you: whether every page is still swept.**
 All forty-four pages are in one file and every page is in the PR gate — declared as
-**fifty-three cases**, because five of them are swept more than once: `statistics` and
+**sixty-one cases**, because six of them are swept more than once: `statistics` and
 `port_forwarding` three times each and `wifi_settings` twice, once per tab (#1489), plus
 two pages swept in two *fixture states* rather than two tabs (#1554) — `pnp_setup` in its
 form and in the locked firmware stage, and `firmware_update` in idle and in the `failed`
@@ -249,7 +249,7 @@ The names in this subsystem mislead in a specific way, so:
 | **family** | The declaration of one sweep: which coordinates exist, and how one coordinate becomes a widget. Five sweeps, nine families. |
 | **cell** | One coordinate. A `clean` cell is a recorded row, **not** an absence. |
 | **ratchet** / **allowlist** | [known_overflows.json](../../test/fixtures/known_overflows.json). A tolerance list that *weakens* the verdict. **Currently empty**, so nothing is exempt. See §6. |
-| **baseline** (`.tsv`) | A coverage register — a record of *which* 16,017 coordinates were measured. It judges nothing. See §5. |
+| **baseline** (`.tsv`) | A coverage register — a record of *which* 17,889 coordinates were measured. It judges nothing. See §5. |
 | `sweep_test.dart`, `ratchet_test.dart` | **Not sweeps.** Unit tests of the framework itself. You never run them deliberately. |
 
 The two easiest mistakes: thinking `sweep` is an auxiliary check on top of the
@@ -306,9 +306,9 @@ Coverage today, per sweep:
 | `card` | 1,943 | every dashboard card × narrowest grid width per span × tab × 26 locales |
 | `chrome` | 1,248 | top bar and dashboard header at screen width × locale × action mode |
 | `popup` | 347 | the same cards pinned into the popup form |
-| `page` | 12,402 | **forty-four whole pages, declared as fifty-three cases** — every page view under `lib/page/` except the two excluded as unreachable, plus five extra cases for the sibling tabs of the three tabbed pages (#1489) and four for second *fixture states* — of `pnp_setup` and `firmware_update` (#1554) and of `pnp_setup`'s two completion branches (#1602) — at 9 widths × 26 locales each. The #1349 pilot (`dhcp`, `wifi_settings`), #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`), and #1380's wave 4, the remaining twenty-one (`admin`, `advanced_settings`, `apps`, `dmz`, `firewall`, `firmware_update`, `instant_privacy`, `instant_safety`, `internet_settings`, `ipv6_port_service`, `local_network`, `remote_assistance`, `router_assistant`, `sliver_dashboard`, `usp_dashboard`, `static_routing`, `statistics`, `support`, `system_log`, `test_console`, `unified_diagnostics`), #1549's split of the firmware page into `firmware_update` and `firmware_ota` (the 44th page), #1489's five tab cases `statistics_devices`, `statistics_system`, `wifi_settings_advanced`, `port_range` and `port_triggering`, #1554's `pnp_setup_firmware` and `firmware_failed`, and #1602's `pnp_setup_complete_split` and `pnp_setup_complete_unified` — the last nine add cells without adding a page. `test/fixtures/page_roster.tsv` is the register that says so — it holds **46** rows, one per page view *file* (44 swept plus the two excluded), so it counts page views and not cases |
+| `page` | 14,274 | **forty-four whole pages, declared as sixty-one cases** — every page view under `lib/page/` except the two excluded as unreachable, plus five extra cases for the sibling tabs of the three tabbed pages (#1489) and twelve for second *fixture states* — of `pnp_setup` and `firmware_update` (#1554), of `pnp_setup`'s two completion branches and of eight `unified_diagnostics` screens (#1602) — at 9 widths × 26 locales each. The #1349 pilot (`dhcp`, `wifi_settings`), #1377's wave 1 (`device_list`, `device_detail`, `topology`, `node_detail`, `port_forwarding`), #1378's wave 2, the instant_setup flow (`pnp_entry`, `pnp_no_internet`, `pnp_isp_settings`, `pnp_pppoe`, `pnp_static_ip`, `pnp_unplug_modem`, `pnp_modem_lights_off`, `pnp_waiting_modem`, `pnp_setup`), #1379's wave 3, the entry surfaces (`home`, `login_local`, `local_router_recovery`, `local_reset_router_password`, `menu`, `auto_parent_first_login`), and #1380's wave 4, the remaining twenty-one (`admin`, `advanced_settings`, `apps`, `dmz`, `firewall`, `firmware_update`, `instant_privacy`, `instant_safety`, `internet_settings`, `ipv6_port_service`, `local_network`, `remote_assistance`, `router_assistant`, `sliver_dashboard`, `usp_dashboard`, `static_routing`, `statistics`, `support`, `system_log`, `test_console`, `unified_diagnostics`), #1549's split of the firmware page into `firmware_update` and `firmware_ota` (the 44th page), #1489's five tab cases `statistics_devices`, `statistics_system`, `wifi_settings_advanced`, `port_range` and `port_triggering`, #1554's `pnp_setup_firmware` and `firmware_failed`, and #1602's `pnp_setup_complete_split`, `pnp_setup_complete_unified` and eight `unified_diagnostics_*` screens — the last seventeen add cells without adding a page. `test/fixtures/page_roster.tsv` is the register that says so — it holds **46** rows, one per page view *file* (44 swept plus the two excluded), so it counts page views and not cases |
 | `forced_form` | 77 | the boxes a user's forced-size pick produces, which no drag could — 78 until the 2026-08-27 `dev-2.7.0` merge, where #1367's per-card resolution for the KPI stats panel retired the `skeleton\|variant=stats` coordinate. The only figure in this table that has ever gone **down**, and the reason a shrinking baseline is a diff to read rather than a sweep that stopped measuring |
-| | **16,017** | |
+| | **17,889** | |
 
 `page` is the row that moves, on both of its axes. The epic (#1369) takes the
 remaining 21 page views in waves, at **234** cells each — and #1372 moved the width
@@ -453,7 +453,7 @@ Both are why `shoot` exists. When a cell's verdict matters, look at the picture.
 
 ```bash
 # ── run ─────────────────────────────────────────────────────────────────────
-fvm flutter test --tags overflow          # the five sweeps, 16,017 cells
+fvm flutter test --tags overflow          # the five sweeps, 17,889 cells
 fvm flutter test --tags layout-gate       # the whole PR-blocking gate
 ./run_tests.sh                            # what CI runs (includes the above)
 

@@ -383,6 +383,50 @@
 # second-state ONE MORE PREFIX CONSEQUENCE, on top of the one above: page.pnp_setup_complete is itself
 # second-state a prefix of both completion groups, so --plain-name 'page.pnp_setup_complete' runs 468
 # second-state cells and --plain-name 'page.pnp_setup' now runs all four cases, 936.
+# second-state NINE CASES ON ONE ROW (#1602's second half, 2026-09-21) - the largest fan-out this
+# second-state column has had to absorb, and the first found the same way the pnp pair was: by
+# second-state joining the gate's case list to a golden suite's `states:` keys. unified_diagnostics_view.dart
+# second-state is a switch into seven arms, five of them separate page-sized widgets, and the case that
+# second-state existed swept `idle` on an EMPTY override list - nobody had picked a state. The golden suite
+# second-state enumerates 28 states against that one case.
+# second-state Eight were added rather than five or 28. Five would be one per builder and would leave
+# second-state three of the five fixed sites with no cell, because the DATA inside a results or
+# second-state manual-tools state decides which sub-widget renders: only tracerouteResultsState draws
+# second-state TracerouteDetailCard, and the three manual blocks are gated on state.activeTab. 28 would be
+# second-state 6,084 cells; these eight are 1,872.
+# second-state Figures, this column's own basis (--plain-name 'page.unified_diagnostics_', --reporter json,
+# second-state each group's nine coordinate tests summed / 234, three runs, median), 2026-09-21:
+# second-state
+# second-state   unified_diagnostics_view.dart   row 15.2   select_flow        13.8 (13.6 / 14.0 / 13.8)
+# second-state                                              manual_tools       14.4 (14.2 / 14.6 / 14.4)
+# second-state                                              manual_nslookup    12.6 (11.8 / 12.6 / 12.6)
+# second-state                                              manual_traceroute  12.3 (12.3 / 12.5 / 12.3)
+# second-state                                              results            10.9 (10.6 / 10.9 / 11.1)
+# second-state                                              results_traceroute 10.4 (10.2 / 10.4 / 10.8)
+# second-state                                              running             8.9 (8.6 / 8.9 / 9.1)
+# second-state                                              completed           5.8 (6.5 / 5.7 / 5.8)
+# second-state
+# second-state THE CONTROL AGREED WITH THE ROW, WHICH HAS NOT HAPPENED IN THIS FILE BEFORE. The same
+# second-state three-run protocol on the original idle case read 14.1 (13.8 / 14.3 / 14.1, spread 3.5%)
+# second-state against the committed 15.2 - -7.2%, inside this file's own noise. Both pnp controls
+# second-state disagreed with their row by more than 20% and were attributed to the box; this one does not,
+# second-state on the same box in the same session as those readings. So -21% there was not a standing
+# second-state property of this machine, and the row is left at 15.2 because it is right, not because a
+# second-state disagreement was unattributable.
+# second-state THE INHERITANCE ERROR IS MILD HERE, AND THE REASON IS THE THIRD READING OF THE SAME RULE.
+# second-state Ratios against the 14.1 control run minutes earlier: 0.41 (completed) to 1.02
+# second-state (manual_tools), median 0.80 - so the row over-projects most cases by a quarter or less,
+# second-state against the pnp completion pair's 2.2x. The `# tabs` and #1554 blocks both concluded the
+# second-state inheritance error is a property of how alike the two TREES are rather than of the
+# second-state mechanism, and this is the widest test of that yet: all nine cases are the same page shell
+# second-state with a different card stack inside it, which is the firmware pair's shape (~1.0) and not the
+# second-state pnp pair's form-against-card (0.38-0.47). `completed` at 0.41 is the one outlier and it is
+# second-state the exception that fits: an icon, a headline and one button is not a card stack.
+# second-state PREFIX CONSEQUENCE AGAIN, and it bites harder here than on pnp. page.unified_diagnostics is
+# second-state a prefix of all eight new group names, so --plain-name 'page.unified_diagnostics' runs 2,106
+# second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
+# second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
+# second-state and 'page.unified_diagnostics_' for the eight added ones.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
