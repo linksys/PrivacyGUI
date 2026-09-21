@@ -11,12 +11,13 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-08-05
+**Last updated**: 2026-09-21
 
 The web package records reviewed `usp_framework` commit
-`344a1757f97bcc8643b05322027aafd7053856cd` (merged `main`, PR #45
-WebSocket readiness) and was built with both the
-`wasm` and `websocket` features. Machine-verifiable local hashes and the
+`d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 official BBF
+proto) and carries both the `wasm` and `websocket` features — verified by the
+declared surface still exporting `UspWsClient` and `decodeRecord`, since a package
+built without the feature would silently omit them. Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer
 repository owns the source-to-committed-package rebuild gate.
@@ -31,9 +32,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.16.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.12.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.12.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.12.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 
@@ -74,6 +75,15 @@ Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys
    3-file change into a 46-file diff of pure noise.
 
 3. **Web client assets**
+
+   **Upstream commits its CI-built package** under `usp-client/pkg/`, so the build
+   below is usually unnecessary: copying that directory's files gives you the exact
+   artifact upstream CI validated, rather than one built on this machine. Check
+   whether the commit you are pinning already carries a package, and confirm the
+   feature set from the declared surface (`UspWsClient` and `decodeRecord` must be
+   present — a package built without the `websocket` feature omits them silently).
+
+   Build locally only if that package is absent or stale relative to the commit:
    ```bash
    cd linksys/usp/usp_framework/usp-client
    wasm-pack build --release --target web --out-dir pkg --features wasm,websocket
