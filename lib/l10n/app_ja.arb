@@ -436,6 +436,7 @@
   "backToDevices": "デバイスに戻る",
   "backToTopology": "トポロジーに戻る",
   "backhaulConnection": "バックホール接続",
+  "backhaulRateNotInternetSpeed": "メッシュノード間のリンク速度です。インターネット速度ではありません。",
   "badgeNew": "新着",
   "badgeUser": "ユーザー",
   "band": "バンド",

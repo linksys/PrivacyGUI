@@ -580,12 +580,16 @@ void main() {
         isNot(contains(DetailSpeedCard)),
         reason: 'not an omission — the throughput row is gated on '
             '`uplinkRate != null || downlinkRate != null` '
-            '(`usp_node_detail_view.dart:400`), and no existing '
-            '`UspNodeDetailState` carries either rate, so no speed card renders '
-            'on this page in any of the 234 cells. Requiring it fails all 26 '
+            '(`usp_node_detail_view.dart:400`) and *this case\'s* fixture '
+            '(`slaveNodeWithBackhaulTiming`) carries neither rate, so no speed '
+            'card renders in any of the 234 cells. Requiring it fails all 26 '
             'locales of the first width, which is how #1377 found the assumption. '
-            'Adding it back needs a fixture with rates first — that is a later '
-            'wave\'s scope, and this pin is where the gap is recorded.',
+            'Updated by #1442: a fixture with rates now exists '
+            '(`slaveNodeWithBackhaulRates`), so the reason this pin holds is the '
+            'one-fixture-per-case rule rather than an absent fixture — see the '
+            'case\'s doc. The row is swept at widget level in '
+            '`usp_node_detail_backhaul_overflow_test.dart`; putting it in these '
+            '234 cells means a second case, which is #1602\'s scope.',
       );
     });
 

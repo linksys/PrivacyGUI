@@ -321,6 +321,37 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
       connectedClients: _meshSlaveClients,
     );
 
+/// Slave node whose backhaul reports **both data rates**, so the card's
+/// throughput row renders its two [DetailSpeedCard]s.
+///
+/// The only scene that reaches that row. `slaveNodeWithBackhaulTiming` carries a
+/// `lastContactTime` and no rates, which is why the speed cards' caption was
+/// measured on the *device*-detail page instead — and why #1442's qualifier
+/// needs a fixture of its own: the two pages pass different `label`s to the same
+/// widget, so the device page's guard says nothing about this one's copy.
+///
+/// Rates in kbps, the unit [DetailSpeedCard] documents. Deliberately unequal:
+/// equal values make the two cards indistinguishable by their text, so a test
+/// asserting "the uplink card says X" would be satisfied by the downlink one.
+final slaveNodeWithBackhaulRates = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:05',
+    dataElementsId: 'AA:BB:CC:DD:FF:15',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789015',
+    softwareVersion: '1.0.10.200000',
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(
+      linkType: 'Wi-Fi',
+      signalStrength: -50,
+      uplinkRate: 1442000,
+      downlinkRate: 2882000,
+    ),
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
 /// Slave node with **no backhaul at all** — `BackhaulInfo.hasInfo` is false, so
 /// it is neither Wi-Fi nor Ethernet.
 ///

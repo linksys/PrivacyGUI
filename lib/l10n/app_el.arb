@@ -433,6 +433,7 @@
   "backToDevices": "Επιστροφή στις συσκευές",
   "backToTopology": "Επιστροφή στην τοπολογία",
   "backhaulConnection": "Σύνδεση backhaul",
+  "backhaulRateNotInternetSpeed": "Ταχύτητα σύνδεσης μεταξύ κόμβων mesh — δεν είναι η ταχύτητα του internet.",
   "badgeNew": "ΝΕΟ",
   "badgeUser": "ΧΡΗΣΤΗΣ",
   "band": "Ζώνη",

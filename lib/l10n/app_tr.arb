@@ -433,6 +433,7 @@
   "backToDevices": "Cihazlara Dön",
   "backToTopology": "Topolojiye Dön",
   "backhaulConnection": "Ana Hat Bağlantısı",
+  "backhaulRateNotInternetSpeed": "Mesh düğümleri arasındaki bağlantı hızı — internet hızınız değil.",
   "badgeNew": "YENİ",
   "badgeUser": "KULLANICI",
   "band": "Bant",

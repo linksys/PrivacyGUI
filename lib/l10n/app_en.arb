@@ -1673,6 +1673,7 @@
   "routerPasswordRuleOneSpecial": "At least one special character",
   "backToTopology": "Back to Topology",
   "backhaulConnection": "Backhaul Connection",
+  "backhaulRateNotInternetSpeed": "Link rate between mesh nodes — not your internet speed.",
   "bandwidth": "Bandwidth",
   "bitRate": "Bit Rate",
   "changeRouterPassword": "Change Router Password",

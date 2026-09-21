@@ -442,12 +442,24 @@ final kTopologyPageCase = PageSurfaceCase(
 /// **What this fixture does not reach, recorded rather than papered over.** The
 /// backhaul throughput row is `if (uplinkRate != null || downlinkRate != null)`
 /// (`usp_node_detail_view.dart:400`) — *not* `phyRate`, which is what an earlier
-/// draft of this case assumed. No existing `UspNodeDetailState` carries either
-/// rate, so no [DetailSpeedCard] renders on this page in any of the 234 cells, and
-/// #1377 may not write a fixture that would (its own out-of-scope list). So the
-/// row stays unmeasured here and is a later wave's fixture scope. The premise
-/// caught the assumption at all 26 locales of the first width, which is the
+/// draft of this case assumed. This fixture carries neither rate, so no
+/// [DetailSpeedCard] renders on this page in any of the 234 cells. The premise
+/// caught that assumption at all 26 locales of the first width, which is the
 /// argument for `requires` being a value stated up front.
+///
+/// **The "no fixture exists" half of that is no longer true (#1442).**
+/// `slaveNodeWithBackhaulRates` carries both rates, written for the qualifier
+/// #1442 adds under that row. This case still pumps
+/// `slaveNodeWithBackhaulTiming`, deliberately: a case is one page *and one
+/// fixture* (§8), the last-contact tile only this fixture unlocks would go with
+/// the swap, and changing it re-sweeps 234 cells against the ratchet for a row
+/// that is already measured elsewhere. The throughput row is swept by
+/// `usp_node_detail_backhaul_overflow_test.dart` — 16 cells, 4 locales × 4
+/// widths, 13 of them red under the pre-#1302 caption shape.
+///
+/// A second case on this page with the rates fixture is the shape that would
+/// close it at gate level, and it belongs to #1602's one-fixture-per-page
+/// sweep rather than to #1442.
 ///
 /// The premise therefore takes one widget from each card the fixture *does* unlock:
 /// [BackhaulSignalIndicator] (the backhaul card's signal tile) and

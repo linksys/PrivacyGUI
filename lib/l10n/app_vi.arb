@@ -433,6 +433,7 @@
   "backToDevices": "Quay lại Thiết bị",
   "backToTopology": "Quay lại Cấu trúc mạng",
   "backhaulConnection": "Kết nối backhaul",
+  "backhaulRateNotInternetSpeed": "Tốc độ liên kết giữa các nút mesh — không phải tốc độ Internet của bạn.",
   "badgeNew": "MỚI",
   "badgeUser": "NGƯỜI DÙNG",
   "band": "Băng tần",

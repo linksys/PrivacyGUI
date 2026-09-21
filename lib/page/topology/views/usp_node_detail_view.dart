@@ -516,6 +516,29 @@ class UspNodeDetailView extends ConsumerWidget {
                   ),
               ],
             ),
+            AppGap.xs(),
+            // The rate is a node-to-node link rate — 2882 Mbps on the bench — and
+            // without this line a customer reads it as their internet connection,
+            // which is typically one or two orders of magnitude lower (#1442,
+            // PM#124 REQ-12).
+            //
+            // A full-width row under the cards, **not** part of `DetailSpeedCard`'s
+            // `label`, which is where the ticket's AC2 put it. Measured: that
+            // caption gets 70.5dp here at 1241px, and `Download` already needs
+            // 297dp in `fr` and 143dp in `pl`, so the slot is ellipsized in about
+            // twenty locales before anything is added to it — and an ellipsis
+            // here removes exactly the words REQ-12 asks for. Shortening a caption
+            // is free when the number below carries the reading (#1302); it is not
+            // free when the caption *is* the information. Guarded by
+            // `usp_node_detail_backhaul_overflow_test.dart`, which is what AC2's
+            // reasoning — "a new row would have no guard" — was protecting.
+            //
+            // No `maxLines`: free to wrap. A line cap would reintroduce the
+            // truncation this placement exists to avoid.
+            AppText.labelSmall(
+              loc(context).backhaulRateNotInternetSpeed,
+              color: colorScheme.onSurfaceVariant,
+            ),
             AppGap.sm(),
           ],
           // Last Contact row

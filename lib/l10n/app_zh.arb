@@ -436,6 +436,7 @@
   "backToDevices": "返回设备",
   "backToTopology": "返回拓扑",
   "backhaulConnection": "回程连接",
+  "backhaulRateNotInternetSpeed": "网状节点之间的连接速率，不是您的互联网速度。",
   "badgeNew": "新",
   "badgeUser": "用户",
   "band": "频段",

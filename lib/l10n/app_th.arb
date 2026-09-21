@@ -433,6 +433,7 @@
   "backToDevices": "กลับไปที่อุปกรณ์",
   "backToTopology": "กลับไปที่โทโพโลยี",
   "backhaulConnection": "การเชื่อมต่อ Backhaul",
+  "backhaulRateNotInternetSpeed": "อัตราการเชื่อมต่อระหว่างโหนดเมช ไม่ใช่ความเร็วอินเทอร์เนงิต",
   "badgeNew": "ใหม่",
   "badgeUser": "ผู้ใช้",
   "band": "แบนด์",

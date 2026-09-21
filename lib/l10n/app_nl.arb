@@ -435,6 +435,7 @@
   "backToDevices": "Terug naar apparaten",
   "backToTopology": "Terug naar topologie",
   "backhaulConnection": "Backhaul-verbinding",
+  "backhaulRateNotInternetSpeed": "Verbindingssnelheid tussen mesh-nodes, niet uw internetsnelheid.",
   "badgeNew": "NIEUW",
   "badgeUser": "GEBRUIKER",
   "band": "Band",
