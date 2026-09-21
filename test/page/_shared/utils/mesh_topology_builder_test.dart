@@ -201,6 +201,32 @@ void main() {
       expect(slave.backhaul.uplinkRate, 500000);
     });
 
+    test('a zero rate is no rate, not a rate of zero (#1442 AC3)', () {
+      // The shape every bench read has so far: `Backhaul.Stats` members default
+      // to `= 0` in prplMesh's ODL and the controller row reports exactly that,
+      // with `Stats.TimeStamp` at the epoch. So this is not an edge case, it is
+      // the common case — and without the `> 0` guard the node-detail card
+      // renders `0 Mbps` beside a qualifier explaining what the 0 means.
+      //
+      // The guard was already there and had no test. #1442 AC3 says not to
+      // regress it, which nothing could have caught: the view's `!= null` check
+      // is the second half of the same rule and would happily print a 0.
+      final network = DataElementsNetwork(items: [
+        _node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Wi-Fi',
+          parentDeviceId: 'AA:BB:CC:DD:EE:01',
+          uplinkRate: 0,
+          downlinkRate: 0,
+        ),
+      ]);
+
+      final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
+      expect(slave.backhaul.uplinkRate, isNull);
+      expect(slave.backhaul.downlinkRate, isNull);
+    });
+
     test('excludes backhaul stats when includeBackhaulStats is false', () {
       final network = DataElementsNetwork(items: [slaveNode]);
 
