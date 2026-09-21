@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/topology/helpers/backhaul_parent_graph.dart';
+import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 
 /// The parent graph the topology builder hands to ui_kit (#1441).
 ///
@@ -40,9 +41,9 @@ void main() {
             .map((s) => (extenderId: s.id, parentDeviceId: s.parent))
             .toList(),
         extenderIdByNodeMac: {
-          for (final s in slaves) normalizeNodeMac(s.id): s.id,
+          for (final s in slaves) normalizeMac(s.id): s.id,
         },
-        gatewayNodeMacs: {normalizeNodeMac(gatewayMacOverride ?? gatewayMac)},
+        gatewayNodeMacs: {normalizeMac(gatewayMacOverride ?? gatewayMac)},
         gatewayId: gatewayId,
       );
 
@@ -107,7 +108,7 @@ void main() {
     });
 
     test('separators and case do not decide a miss', () {
-      // `normalizeNodeMac` is the one normal form for both sides of the lookup.
+      // `normalizeMac` is the one normal form for both sides of the lookup.
       // A dashed or lower-case parent MAC used to miss and collapse a real hop.
       final graph = resolve([
         (id: 'AA:BB:CC:DD:EE:01', parent: gatewayMac),

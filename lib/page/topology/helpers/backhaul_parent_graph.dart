@@ -103,20 +103,16 @@ class BackhaulParentGraph {
       parents.where((p) => p.outcome == BackhaulParentOutcome.cycleBroken);
 }
 
-/// A MAC or device id in the form the parent lookup keys on.
-///
-/// [normalizeMac] under a name that says what it is for here, so the map's keys
-/// and the value probed against them cannot be normalised two different ways —
-/// which is itself a cause of [BackhaulParentOutcome.miss].
-String normalizeNodeMac(String raw) => normalizeMac(raw);
-
 /// Resolves each slave's parent into an **acyclic** graph, and says how.
 ///
 /// [slaves] are in emission order; [extenderIdByNodeMac] maps every identifier a
 /// slave is known by (its `Hosts` MAC and its DataElements MAC, which differ) to
 /// that slave's `extenderId`; [gatewayNodeMacs] are the master's identifiers,
 /// which have no `extender-` id of their own and so cannot be in that map.
-/// All three sets of keys must be [normalizeNodeMac]d.
+/// All three sets of keys must be [normalizeMac]d — the map's keys and the value
+/// probed against them normalised two different ways is itself a cause of
+/// [BackhaulParentOutcome.miss], which is why there is one function for it and
+/// not a hand-written `toUpperCase().replaceAll(...)` per site.
 ///
 /// ## Why a cycle may not be emitted
 ///
@@ -152,7 +148,7 @@ BackhaulParentGraph resolveBackhaulParents({
 
   for (final slave in slaves) {
     final reported = slave.parentDeviceId;
-    final normalized = reported == null ? '' : normalizeNodeMac(reported);
+    final normalized = reported == null ? '' : normalizeMac(reported);
 
     final BackhaulParentOutcome outcome;
     final String parentId;

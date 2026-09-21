@@ -282,19 +282,32 @@ void main() {
       reason: 'the qualifier must render beside the rates it qualifies',
     );
 
-    // The `Row` of speed cards is the sibling that defines "full width": both are
-    // children of the same `Column`, so they are granted the same room unless the
-    // qualifier has been put inside the row.
+    // Asserted structurally rather than by comparing widths. A wrapped paragraph
+    // reports its box as the full constraint, so `width == row.width` does hold
+    // here (197dp at this coordinate against 400dp+ of `ru` text) — but it holds
+    // *because* the sentence is long, and a shorter translation would fail it
+    // while sitting in exactly the right place. The property is where the widget
+    // is, not how wide its glyphs happen to run.
     final cardsRow = find
         .ancestor(
             of: find.byType(DetailSpeedCard).first, matching: find.byType(Row))
         .first;
     expect(
-      tester.getSize(qualifier).width,
-      closeTo(tester.getSize(cardsRow).width, 0.5),
-      reason: 'the qualifier is narrower than the row of cards above it, so it '
-          'is sharing a Row instead of being full-width — which is the '
-          'placement this row exists to avoid (see the comment above)',
+      find.descendant(of: cardsRow, matching: qualifier),
+      findsNothing,
+      reason: 'the qualifier is inside the cards\' Row, so it is granted a '
+          'fraction of the width instead of all of it — the same mistake as '
+          'putting it in the card caption, which is what this placement exists '
+          'to avoid (see the comment above)',
+    );
+    expect(
+      find.descendant(
+        of: find.ancestor(of: cardsRow, matching: find.byType(Column)).first,
+        matching: qualifier,
+      ),
+      findsOneWidget,
+      reason: 'it must still be in the card that holds the rates: a sentence '
+          'elsewhere on the page qualifies nothing',
     );
   });
 

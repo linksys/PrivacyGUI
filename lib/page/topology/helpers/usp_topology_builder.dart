@@ -78,20 +78,21 @@ class UspTopologyBuilder {
 
     for (final slave in meshNetwork.slaves) {
       final extenderId = 'extender-${slave.deviceId}';
-      // `normalizeNodeMac` rather than a hand-written
+      // `normalizeMac` rather than a hand-written
       // `toUpperCase().replaceAll(':', '')`, which is what these five sites used
       // to spell: it strips *every* separator, so a dashed or spaced identifier
       // — firmware writes MACs in more than one shape — keys the same entry
       // instead of missing the lookup and losing a hop (#1441). The keys and the
       // value probed against them must be normalised the same way, which is the
-      // whole reason it is one named function.
-      final normalizedHostsMac = normalizeNodeMac(slave.deviceId);
+      // whole reason it is one named function — and it already existed in
+      // `node_identifier.dart`, which this file imports.
+      final normalizedHostsMac = normalizeMac(slave.deviceId);
       extenderNodeIdsNormalized.add(normalizedHostsMac);
       normalizedToOriginal[normalizedHostsMac] = slave.deviceId;
       deviceIdToExtenderId[normalizedHostsMac] = extenderId;
 
       if (slave.dataElementsId != null && slave.dataElementsId!.isNotEmpty) {
-        final normalizedDeMac = normalizeNodeMac(slave.dataElementsId!);
+        final normalizedDeMac = normalizeMac(slave.dataElementsId!);
         if (normalizedDeMac != normalizedHostsMac) {
           extenderNodeIdsNormalized.add(normalizedDeMac);
           normalizedToOriginal[normalizedDeMac] = slave.deviceId;
@@ -129,10 +130,14 @@ class UspTopologyBuilder {
       extenderIdByNodeMac: deviceIdToExtenderId,
       gatewayNodeMacs: {
         for (final mac in [master.deviceId, master.dataElementsId])
-          if (mac != null && mac.isNotEmpty) normalizeNodeMac(mac),
+          if (mac != null && mac.isNotEmpty) normalizeMac(mac),
       },
       gatewayId: gatewayId,
     );
+
+    // Hoisted: the getter builds a fresh map, so reading it inside the loop
+    // below would rebuild it once per slave.
+    final parentIdByExtenderId = parentGraph.parentIdByExtenderId;
 
     // Warning level, and once per finding: both states mean the rendered topology
     // is not the one firmware described, and a support bundle is the only place
@@ -217,7 +222,7 @@ class UspTopologyBuilder {
       // Determine parent node
       String parentId = gatewayId;
       if (meshNetwork.hasMesh && client.parentNodeId != null) {
-        final parentNormalized = normalizeNodeMac(client.parentNodeId!);
+        final parentNormalized = normalizeMac(client.parentNodeId!);
         logger.t('[USP][TopologyBuilder]: Device ${client.displayName} '
             'parentNodeId=${client.parentNodeId}, '
             'normalized=$parentNormalized, '
