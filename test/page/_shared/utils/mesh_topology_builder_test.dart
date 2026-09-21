@@ -67,7 +67,6 @@ MeshNode _node({
   String? softwareVersion,
   String? linkType,
   String? parentDeviceId,
-  String? parentBssid,
   String? backhaulStaMac,
   int? rcpi,
   int? uplinkRate,
@@ -89,7 +88,6 @@ MeshNode _node({
     backhaulLinkType: linkType,
     backhaulBackhaulDeviceId: parentDeviceId,
     backhaulBackhaulMacAddress: backhaulStaMac,
-    backhaulMacAddressMultiAp: parentBssid,
     backhaulStatsLastDataDownlinkRate: downlinkRate,
     backhaulStatsLastDataUplinkRate: uplinkRate,
     backhaulStatsSignalStrengthRcpi: rcpi,
@@ -139,7 +137,6 @@ void main() {
     softwareVersion: '2.0.0',
     linkType: 'Wi-Fi',
     parentDeviceId: 'AA:BB:CC:DD:EE:01',
-    parentBssid: 'AA:BB:CC:DD:EE:01',
     backhaulStaMac: 'AA:BB:CC:DD:EE:02',
     rcpi: 180, // RCPI = 180 → RSSI = (180/2) - 110 = -20
     uplinkRate: 500000,
@@ -313,13 +310,11 @@ void main() {
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Wi-Fi',
           parentDeviceId: '   ',
-          parentBssid: '',
         ),
       ]);
 
       final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
       expect(slave.backhaul.parentNodeId, isNull);
-      expect(slave.backhaul.parentBssid, isNull);
       expect(slave.isMaster, isFalse, reason: 'still an agent, by LinkType');
     });
 
@@ -345,24 +340,29 @@ void main() {
       expect(node.isMaster, isTrue);
     });
 
-    test('an all-zero parent BSSID is no BSSID (#1555)', () {
-      // A genuine agent whose parent fields firmware filled with the sentinel.
-      // It stays an agent — `LinkType` decides that — but neither MAC may reach
-      // the model, or the backhaul card prints `00:00:00:00:00:00` as the AP it
-      // is attached to.
+    test('an all-zero parent ID on a genuine agent is no parent (#1555)', () {
+      // The sibling of the row above, on a node that really is an agent: there
+      // the sentinel must not make the controller a slave, here it must not give
+      // an agent a parent nothing can resolve — `usp_topology_builder` renders
+      // that node attached to the gateway and logs the lost hop (#1441).
+      //
+      // This test used to assert a `parentBssid` beside it, read from
+      // `Backhaul.MACAddress`. That field is the node's **own** station MAC, not
+      // its parent's BSSID (prplMesh's `device.odl` documents `ServingBSSID` as
+      // the parent's), and it had no consumer on either side, so #1441 AC4
+      // deleted it. The parent-ID half is what the sentinel guard is for and it
+      // stays.
       final network = DataElementsNetwork(items: [
         _node(
           instance: '2',
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Wi-Fi',
           parentDeviceId: '00:00:00:00:00:00',
-          parentBssid: '00:00:00:00:00:00',
         ),
       ]);
 
       final slave = MeshTopologyBuilder.build(network).nodes[0] as SlaveNode;
       expect(slave.backhaul.parentNodeId, isNull);
-      expect(slave.backhaul.parentBssid, isNull);
       expect(slave.isMaster, isFalse, reason: 'still an agent, by LinkType');
     });
 
@@ -416,15 +416,6 @@ void main() {
 
       final slave = result.nodes[0] as SlaveNode;
       expect(slave.backhaul.parentNodeId, 'AA:BB:CC:DD:EE:01');
-    });
-
-    test('includes backhaulParentBssid', () {
-      final network = DataElementsNetwork(items: [slaveNode]);
-
-      final result = MeshTopologyBuilder.build(network);
-
-      final slave = result.nodes[0] as SlaveNode;
-      expect(slave.backhaul.parentBssid, 'AA:BB:CC:DD:EE:01');
     });
 
     test('excludes backhaulDownlinkRate when includeBackhaulStats is false',
