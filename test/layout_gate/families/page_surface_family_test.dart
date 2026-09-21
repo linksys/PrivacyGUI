@@ -77,7 +77,7 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is fifty-one cases over
+  // "Cases" and not "pages", corrected by #1489: this list is fifty-three cases over
   // forty-four pages, because five of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
@@ -88,11 +88,19 @@ void main() {
   // title read "forty-eight over forty-three" — #1489's numbers — through #1549, which
   // split one firmware page in two and added `firmware_ota` to the list below without
   // touching the sentence above it. Re-measured 2026-09-17 after #1554 gained a second
-  // fixture-state case on top of #1572: `kPageSurfaceCases` holds 51 and the roster
-  // holds 44 `swept` rows of 46. **Three of the five multiply-swept pages are tabs and
-  // two are fixture states** — `pnp_setup`/`pnp_setup_firmware` and
-  // `firmware_update`/`firmware_failed` — so "swept more than once" now has two
+  // fixture-state case on top of #1572: `kPageSurfaceCases` held 51 and the roster
+  // holds 44 `swept` rows of 46. **#1602 makes it 53**, by giving `pnp_setup_view.dart`
+  // its third and fourth case — the two `WizardWifiReady` branches — so one view file
+  // now carries four cases and the roster still carries one row for it. **Three of the
+  // five multiply-swept pages are tabs and two are fixture states** —
+  // `pnp_setup`/`pnp_setup_firmware`/`pnp_setup_complete_*` and
+  // `firmware_update`/`firmware_failed` — so "swept more than once" has two
   // mechanisms behind it, not one.
+  //
+  // #1602 is also the first addition found by *joining two enumerations* rather than
+  // by a nightly failure at a coordinate this gate already swept: the golden suite's
+  // `states:` keys are an independent count of one view's screens, and comparing them
+  // against this list is what showed `PnpSetupView` had eight and the gate two.
   //
   // These counts are written out in **five** places — this group, the page sweep file's
   // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
@@ -102,12 +110,13 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares fifty-one cases over forty-four pages, and which '
-      'fifty-one is a decision', () {
+      'the gate declares fifty-three cases over forty-four pages, and which '
+      'fifty-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
-        '#1549\'s split page and #1554\'s two fixture states', () {
+        '#1549\'s split page, #1554\'s two fixture states and #1602\'s two '
+        'completion branches', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -136,6 +145,12 @@ void main() {
           // declaration locality is the more useful of the two orders for a reader
           // asking "what else sweeps this page".
           'pnp_setup_firmware',
+          // #1602: the same view file again, its two `WizardWifiReady` branches.
+          // Beside their siblings for the reason the firmware case is — four cases
+          // now measure one page view file, and a reader asking "what else sweeps
+          // this page" wants all four in one screenful.
+          'pnp_setup_complete_split',
+          'pnp_setup_complete_unified',
           'home',
           'login_local',
           'local_router_recovery',

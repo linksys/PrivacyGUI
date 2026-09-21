@@ -38,13 +38,13 @@ import '../../util/dashboard/text_readability_probe.dart';
 /// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
 /// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-four whole pages, declared as fifty-one cases** — five pages are swept more
+/// **Forty-four whole pages, declared as fifty-three cases** — five pages are swept more
 /// than once, by two different mechanisms. Three are tabs: `statistics` as three cases,
 /// `port_forwarding` as three, `wifi_settings` as two (all #1489). Two are *fixture
 /// states* of one page: `pnp_setup`/`pnp_setup_firmware` and
 /// `firmware_update`/`firmware_failed` (both #1554). So the two counts are different
 /// quantities rather than one of them being stale — × 9 screen widths × 26 locales =
-/// **11,934 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
+/// **12,402 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
 /// the declaration, the fifty-one pins, and the readability guards that sit beside
@@ -263,6 +263,23 @@ void main() {
   // rather than a relaxed first one, and why it is the loader exemption's second entry.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpSetupFirmwarePageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same view's two completion screens (#1602) — the third and fourth cases for one
+  // page view file, and the first pair whose *absence* was found by joining the gate's
+  // case list against a golden suite's state keys rather than by a nightly failure on a
+  // coordinate this gate already swept. Golden reported three cells at 480px in `el` and
+  // `fr_CA`; at 320px both branches overflow in all 26 locales, `en` included, and the
+  // unified branch has a second site. `page_surface_cases.dart` carries the premises and
+  // why `isSplitMode` being derived is what makes `LayoutBlock` / `QrImageView` the only
+  // honest discriminators.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpSetupCompleteSplitPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpSetupCompleteUnifiedPageCase),
     expectedCellCount: 234,
   );
 

@@ -343,6 +343,46 @@
 # second-state is now a PREFIX of page.pnp_setup_firmware, so --plain-name 'page.pnp_setup' matches
 # second-state both groups. Re-measuring the form case in isolation takes the trailing space -
 # second-state --plain-name 'page.pnp_setup ' - or the coordinate suffix.
+# second-state A THIRD AND FOURTH CASE ON THE SAME ROW (#1602, 2026-09-21), and the first pair this
+# second-state file has taken whose ABSENCE was found by joining two enumerations rather than by a
+# second-state nightly failure at a coordinate the gate already swept. pnp_setup_view.dart is a state
+# second-state machine - nine phases reaching seven builders - and the gate's unit is (page, one
+# second-state fixture), so this row read `swept` on the strength of two cases while six of the seven
+# second-state builders had no cell at any width in any locale. The golden suite #1586 gave this view
+# second-state enumerates the same thing independently, as eight `states:` keys; comparing the two
+# second-state lists is what showed 8 against 2. kPnpSetupCompleteSplitPageCase and
+# second-state kPnpSetupCompleteUnifiedPageCase are the two WizardWifiReady branches, and isSplitMode
+# second-state is derived (bands.length > 1) rather than stored, so each case's premise names the
+# second-state widget the other cannot build - LayoutBlock against QrImageView.
+# second-state This row therefore reads 34.3 while accounting for FOUR cases. Same mechanism as the
+# second-state pair above, same single row: page_roster_test.dart joins through view().runtimeType.
+# second-state Figures, this column's own basis (--plain-name 'page.pnp_setup_complete_<branch>
+# second-state screen_px', --reporter json, the nine coordinate tests' durations summed / 234, three
+# second-state runs, median), 2026-09-21:
+# second-state
+# second-state   pnp_setup_view.dart   row 34.3   complete_split  12.2 (12.2 / 12.1 / 13.8)
+# second-state                                    complete_unified  12.8 (12.8 / 13.1 / 12.8)
+# second-state
+# second-state split's spread is 13.9% against unified's 2.3%, on trees of the same kind, so read the
+# second-state median and not the difference between the two cases.
+# second-state THE CONTROL, AND WHY IT IS WHAT MAKES THOSE FIGURES MEAN ANYTHING. The same three-run
+# second-state protocol on the sibling form case read 27.1 (27.3 / 27.1 / 27.0, spread 1.1%) against
+# second-state the committed 34.3, i.e. -21.0% on a fixture whose tree did not change in this PR. The
+# second-state #1554 block above recorded -23.3% on the same case on a different day, so the two
+# second-state controls agree with each other and disagree with the row: it is the box, and the row is
+# second-state left alone for the reason stated there. So the claim here is the RATIO taken minutes
+# second-state apart on one box - 12.2/27.1 = 0.45 and 12.8/27.1 = 0.47 - i.e. the row OVER-projects
+# second-state each completion branch by ~2.2x, not the 12.2-against-34.3 figure a reader would form.
+# second-state AND IT CONFIRMS THE PAIR ABOVE ON A THIRD AND FOURTH TREE. #1554's pnp pair measured
+# second-state 0.38 and its firmware pair measured ~1.0, and the difference it attributed to how alike
+# second-state the two trees are rather than to the mechanism. These two are one centred card - an
+# second-state illustration, a heading, two or six credential rows and one or two buttons - against
+# second-state the same three-band form with six input fields and three rule lists, so the prediction
+# second-state was "near pnp's 0.38, not near firmware's 1.0". Measured 0.45 and 0.47. That is the
+# second-state third independent reading that inheritance error is a property of the TREES.
+# second-state ONE MORE PREFIX CONSEQUENCE, on top of the one above: page.pnp_setup_complete is itself
+# second-state a prefix of both completion groups, so --plain-name 'page.pnp_setup_complete' runs 468
+# second-state cells and --plain-name 'page.pnp_setup' now runs all four cases, 936.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart

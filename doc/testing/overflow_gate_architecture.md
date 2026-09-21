@@ -109,7 +109,7 @@ measurement retired the epic's cost model as an *estimate*: a projection summed 
 per-page figures is a **floor** — 336.1s modelled against 558s measured — because a page
 in company costs between **0.45× and 4.47×** what it costs alone, bimodally, for reasons
 #1380 measured and did not explain. `known_overflows.json` is **still** empty — four waves
-and a pilot in, across every one of the 11,934 cells the sweep now holds, it has never held
+and a pilot in, across every one of the 12,402 cells the sweep now holds, it has never held
 an entry.
 
 **#1489 then added 1,170 cells of coverage without adding a page** (2026-09-09), which
@@ -156,8 +156,8 @@ setup wizard, a page-sized tree with no stepper and no fields, which the form ca
 be re-pointed at because it fails both of that case's lists. Both entered clean — **234 cells,
 zero incidents** for the second, so `known_overflows.json` is still empty across all of it.
 
-So the gate now holds **44 pages as 51 cases** and **11,934** page cells, the committed
-dataset is **15,549** rows, and the roster holds **46** rows of which **44** are swept. Two
+So the gate now holds **44 pages as 53 cases** and **12,402** page cells, the committed
+dataset is **16,017** rows, and the roster holds **46** rows of which **44** are swept. Two
 consequences of the second case are recorded where they bite rather than here: the roster's
 `# second-state` block carries its measured ms/cell (**9.9**, against the row's 34.3 — a 3.5×
 over-projection, the largest inheritance error this register has recorded, and larger than any
@@ -417,7 +417,7 @@ rather than out of §11.12:
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | 9s (**14s** wall) | **6.1ms** |
 | Popup sweep (one file) | **80** (354 pre-#1345) | 347 | 4s (**8s** wall) | — |
 | Forced-form sweep (one file) | **37** (38 pre-#1367, 37 pre-merge, 80 pre-#1344) | 77 | 1s (**6s** wall) | — |
-| **Page sweep (one file, new at #1349)** | **528** since #1554's second pair (518, then 508 since #1549), **498** since #1489, **448** when this row's clock was taken (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 11,934 since #1554, 11,232 since #1489, 10,062 clocked + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
+| **Page sweep (one file, new at #1349)** | **551** measured after #1602's completion pair — not 548, which is what adding its +20 to the row's previous **528** gives: the file runs 530 cell tests (53 cases x 10) and **21** readability guards, so the 528 had been three short since the guards grew and the arithmetic inherits that. 528 since #1554's second pair (518, then 508 since #1549), **498** since #1489, **448** when this row's clock was taken (222 pre-#1380, 162 pre-#1379, 152 pre-`pnp_setup`, 137 pre-#1372, 65 pre-#1378, 19 pre-#1377) | 12,402 since #1602, 11,934 since #1554, 11,232 since #1489, 10,062 clocked + 845 guard pumps | **9m13s** (**9m18s** wall) — median of three consecutive runs, {8m54s, 9m18s, 10m15s} shell clock, an 81s spread, so read the per-cell figure and not the difference (1m53s / 1m58s pre-#1380) | **55.0ms** (21.9ms pre-#1380 and pre-#1379, 24.8ms at fifteen, 23.1ms pre-#1372, 27.5ms pre-#1378; 33–38ms over the pilot's two alone) |
 | The five overflow sweeps (5 files, named) | **804** since #1554's second pair (794, then 784 since #1549), **774** since #1489, **724** clocked (725 pre-#1367, 499 pre-#1380, 439 pre-#1379, 429 pre-`pnp_setup`, 414 pre-#1372, 342 pre-#1378, 296 pre-#1377, 277 pre-#1349, 273 pre-merge) | 15,549 rows † (13,677 clocked) | **8m17s** (**8m22s** wall) — 2m11s / 2m17s pre-#1380 | — |
 | The same five via `--tags overflow` | **804** since #1554, **724** clocked | 15,549 rows † (13,677 clocked) | **9m23s** (**9m40s** wall) — 3m14s / 3m32s pre-#1380; the tag's own cost is the 77s gap, was 63s | — |
 | Whole `layout-gate` family (50 files since #1488; 49 when this row was measured) | **2,061** (2,041 pre-#1367; 1,764 pre-#1380; 1,685 pre-#1379; 1,672 pre-`pnp_setup`; 1,652 pre-#1371; 1,636 pre-#1372; 1,543 pre-#1378; 1,482 pre-#1377; 1,476 pre-#1370; 1,443 measured pre-#1382 where this row read 1,440 — see below; 1,428 pre-#1339, 1,414 pre-`shoot`, 1,379 pre-#1349, 1,368 after #1364, 1,362 at the merge, 1,299 pre-merge) | > 13,847 | **9m34s / 9m43s** wall (3m45s / 3m54s pre-#1380, 3m21s / 3m29s pre-#1379, 2m49s / 2m57s pre-`pnp_setup`, 2m44s / 2m53s pre-#1371, 2m13s / 2m21s pre-#1372, 2m21s / 2m30s pre-#1378, 2m10s / 2m19s pre-#1377, 2m07s pre-#1370, 2m06s pre-#1382, 2m12s pre-#1339, 1m52s pre-#1349) | — |

@@ -163,6 +163,7 @@ import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_st
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
+import 'package:qr_flutter/qr_flutter.dart' show QrImageView;
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart'
     show
@@ -891,6 +892,74 @@ final kPnpSetupFirmwarePageCase = PageSurfaceCase(
     FirmwareUpdateWarningNote,
   ],
   forbids: const [AppStepper],
+);
+
+/// `pnp_setup_view` a third and fourth time — the wizard's **completion screens**,
+/// the two branches of `WizardWifiReady` (#1602).
+///
+/// ## Why they were missing, which is the finding worth keeping
+///
+/// This view is a state machine: nine phases reach seven builders, and the gate's unit
+/// is `(page, one fixture)`. So `pnp_setup_view.dart`'s roster row read `swept` on the
+/// strength of two cases — the three-step form and the firmware stage — while six of
+/// the seven builders had **no cell at any width in any locale**. The register was not
+/// lying; it has no column for "which phase". [kPnpSetupPageCase]'s
+/// `requires: [AppStepper, AppTextField, AppPasswordInput]` made it worse in the
+/// helpful direction: that case cannot drift onto another phase, so no fixture
+/// accident would ever have stumbled into these two.
+///
+/// What found it was the nightly golden report — #1586 gave this view its first golden
+/// suite, whose eight state keys are an enumeration of exactly the thing the gate had
+/// two of. **Joining the two enumerations is the cheap instrument**: `gate cases` vs
+/// `golden states:`, per view.
+///
+/// ## What a 480px golden could not say
+///
+/// Golden shoots `phone480` and `desktop1280`, and reported three cells — `el` +4.6 to
+/// +13.0, `fr_CA` +44 to +53 — which reads as long-translation overflow at narrow
+/// width. Swept here at nine widths it is not: at **320px all 26 locales overflow in
+/// both branches** (`en` +101 split, +68 unified; `fr_CA` +213), and unified has a
+/// **second site golden never saw** — the Print/Done action `Row`, 26 of 26 locales.
+/// 601px and above are clean. Structural one width below the narrowest golden device.
+///
+/// ## The premises pin the *branch*, not just the phase
+///
+/// `isSplitMode` is `bands.length > 1` — derived, not stored — so the two fixtures
+/// differ only in a list, and a case that named `[AppCard, AppButton]` would hold
+/// against either branch. Each therefore requires the widget the other cannot build
+/// and forbids the widget the other must:
+///
+///   * [LayoutBlock] is the split branch's per-band wrapper; the unified branch has
+///     none.
+///   * [QrImageView] is the unified branch's QR code; the split branch has none.
+///
+/// That also covers the `bands.isEmpty` fallback inside `_buildCompleteSplitMode`,
+/// which returns the *unified* tree — a split fixture that lost its bands would fail
+/// on `LayoutBlock` rather than sweep its sibling and report 234 green cells.
+///
+/// `forbids: [AppStepper]` is the sibling guard the firmware case also carries:
+/// `WizardConfiguring` is where a fixture that lost its override lands, and it renders
+/// the three-step form.
+final kPnpSetupCompleteSplitPageCase = PageSurfaceCase(
+  id: 'pnp_setup_complete_split',
+  view: () => const PnpSetupView(),
+  overrides: () => pnpOverrides(pnpWizardWifiReadySplitState),
+  requires: const [LayoutBlock, AppButton],
+  forbids: const [AppLoader, AppStepper, QrImageView],
+);
+
+/// `page.pnp_setup_complete_unified` — the other branch of `WizardWifiReady`.
+///
+/// See [kPnpSetupCompleteSplitPageCase] for why both branches exist as cases and what
+/// the premises pin. The one thing this case carries alone: it is the branch with the
+/// **action row** (`Print` beside `Done`), which is the second overflow site #1602's
+/// golden report could not see, because it only goes over at 320px.
+final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
+  id: 'pnp_setup_complete_unified',
+  view: () => const PnpSetupView(),
+  overrides: () => pnpOverrides(pnpWizardWifiReadyUnifiedState),
+  requires: const [QrImageView, AppButton],
+  forbids: const [AppLoader, AppStepper, LayoutBlock],
 );
 
 // ===========================================================================
@@ -2352,6 +2421,10 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // thing the record of this page should not say.
   kPnpSetupPageCase,
   kPnpSetupFirmwarePageCase,
+  // #1602's two, appended for the same reason the ninth was: onboarding order, not
+  // flow order. In flow order they are this wizard's last screen.
+  kPnpSetupCompleteSplitPageCase,
+  kPnpSetupCompleteUnifiedPageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
   // local-login pages, then the menu, then the first-login firmware screen. Unlike
   // wave 2 this order is also the onboarding order — none of the six waited on

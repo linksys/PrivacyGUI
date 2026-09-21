@@ -79,8 +79,8 @@ tags:
   # 2,412 before that: every sweep loops its locales inside one test per
   # coordinate, so 13,677 cells are declared by 724 tests (card 102, popup 80,
   # chrome 57, forced-form 37, page 448 — 430 of them cells, the other 18
-  # readability guards). Page has since grown to 510 cell tests over 11,934 cells
-  # (#1489 +50, #1549 +10, #1554 +20) for 15,549 in total; the clock is not re-taken,
+  # readability guards). Page has since grown to 530 cell tests over 12,402 cells
+  # (#1489 +50, #1549 +10, #1554 +20, #1602 +20) for 16,017 in total; the clock is not re-taken,
   # so the breakdown below stays on the reading it was measured with. This block is
   # the FOURTH place these counts are written out, after SKILL.md, the architecture
   # doc and page_surface_family_test.dart — which is why every one of them drifted
