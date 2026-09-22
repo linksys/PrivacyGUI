@@ -17,6 +17,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
   final currentTz = resolveTimezone(
     zoneName: current.localTimeZoneName,
     localTimeZone: current.localTimeZone,
+    reportedOffsetMinutes: current.reportedOffsetMinutes,
   );
   TimeZoneInfo? selected = currentTz;
   String searchQuery = '';
@@ -88,14 +89,18 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               Expanded(
                 child: AppText.bodyMedium(loc(context).daylightSavingsTime),
               ),
-              // The identifier carries over from the `AppSwitch` this replaced.
-              // It has no references in this repo, but the E2E specs live in
-              // another one and harvest identifiers out of Dart source text, so
-              // keeping the name costs nothing and renaming it could break a
-              // spec no compiler here can see.
-              Semantics(
+              // The `AppSwitch` this replaced carried `identifier:
+              // 'admin-timezone-dst'`, and that identifier is deliberately not
+              // carried over. It has no references in this repo, but the E2E
+              // specs live in another one and harvest identifiers out of Dart
+              // source text, so a spec may well tap it. Keeping the name on a
+              // node that no longer does anything would make that spec tap a
+              // dead control and fail somewhere unrelated — or pass vacuously.
+              // Dropping it makes the lookup fail and point straight here. Any
+              // spec that toggled daylight savings has to change regardless,
+              // because the toggle is gone.
+              KeyedSubtree(
                 key: const Key('dstIndicator'),
-                identifier: 'admin-timezone-dst',
                 child: AppText.bodyMedium(
                   observesDST ? loc(context).on : loc(context).off,
                   color: Theme.of(context)
@@ -148,6 +153,20 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     event: () async {
       final ntpValue = ntpController.text.trim();
       final tz = selected!;
+      final ntpServer1 = ntpValue != current.ntpServer1 ? ntpValue : null;
+
+      // Writing nothing when the zone was not changed is load-bearing, not an
+      // optimisation (#1609). The device may be holding a legacy `UTC±N`, which
+      // is ambiguous — `UTC-8` resolves to Hong Kong although it may have been
+      // saved as Singapore, and `UTC8` resolves to Pacific although the string
+      // has no DST transitions in it. Writing the resolved zone's name back
+      // would commit that guess: an edit that only touched the NTP server would
+      // permanently relabel a Singapore router as Hong Kong, and switch daylight
+      // savings on for a router deliberately left at fixed UTC-8.
+      if (tz == currentTz) {
+        return TimezoneEditResult.ntpOnly(ntpServer1: ntpServer1);
+      }
+
       return TimezoneEditResult(
         // The name when the entry has one, so the choice reads back as itself;
         // the POSIX string for the three entries whose own offset or DST flag
@@ -157,7 +176,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
         localTimeZone: tz.ianaName == null
             ? tz.posixFor(dstEnabled: tz.observesDST)
             : null,
-        ntpServer1: ntpValue != current.ntpServer1 ? ntpValue : null,
+        ntpServer1: ntpServer1,
       );
     },
   );
@@ -287,6 +306,8 @@ class TimezoneEditResult {
 
   final String? ntpServer1;
 
+  /// Exactly one timezone leaf, because the firmware wires them to clobber each
+  /// other — see `UspAdminService.updateTimezone`.
   const TimezoneEditResult({
     this.zoneName,
     this.localTimeZone,
@@ -295,4 +316,13 @@ class TimezoneEditResult {
           (zoneName == null) != (localTimeZone == null),
           'exactly one timezone leaf is written — see UspAdminService',
         );
+
+  /// The zone was not changed, so neither leaf is written.
+  ///
+  /// A separate constructor rather than a third null: the invariant above is
+  /// what stops an ambiguous legacy value being committed as a guess, and
+  /// relaxing it would let that back in silently.
+  const TimezoneEditResult.ntpOnly({this.ntpServer1})
+      : zoneName = null,
+        localTimeZone = null;
 }

@@ -434,12 +434,36 @@ TimeZoneInfo? matchTimezone(String posixFromRouter) {
   return null;
 }
 
-// `inferDstEnabled` was removed with #1609. It answered "does the stored POSIX
-// string carry DST rules", which was the closest thing available to a DST state
-// while the toggle was writable. Now that daylight savings is a property of the
-// zone, `TimeZoneInfo.observesDST` on the resolved entry answers it directly and
-// correctly for legacy strings too — `UTC5` resolves to the non-DST sibling, so
-// the row reads Off without anyone inferring anything.
+/// Whether daylight savings is actually in effect on the device.
+///
+/// Not the same question as [TimeZoneInfo.observesDST], and conflating them is a
+/// live regression this exists to prevent. When the zone came back by name, the
+/// name is the identity and its DST rule is the device's — `observesDST` is the
+/// answer. When it came back by POSIX string, the string is a *clock rule*, and a
+/// bare `UTC±N` has no transitions in it whatever entry it resolved to.
+///
+/// Four legacy values make the difference visible: `UTC8`, `UTC9`, `UTC1` and
+/// `UTC3:30` are each owned by exactly one entry, and that entry observes DST
+/// (`PST8`, `AKST9`, `AZOT1`, `NST03:30` — they have no non-DST sibling). A
+/// router that 2.7.1 left on `UTC8` is on fixed UTC-8; reading `observesDST` off
+/// `PST8` would tell the user daylight savings is on.
+/// [reportedOffsetMinutes] applies the same veto as [resolveTimezone], and it has
+/// to be the same one: resolve the label from the POSIX string because the clock
+/// contradicts the name, then read the DST state off the name anyway, and the
+/// card shows Hong Kong with daylight savings on.
+bool dstInEffect({
+  required String zoneName,
+  required String localTimeZone,
+  int? reportedOffsetMinutes,
+}) {
+  final named = matchByZoneName(zoneName);
+  if (named != null && _offsetIsPlausible(named, reportedOffsetMinutes)) {
+    return named.observesDST;
+  }
+  final tz = matchTimezone(localTimeZone);
+  if (tz == null || !tz.observesDST) return false;
+  return localTimeZone == tz.posixWithDST;
+}
 
 /// Resolve an IANA zone name from `Device.Time.X_LINKSYS_LocalTimeZoneName`.
 ///
@@ -456,7 +480,7 @@ TimeZoneInfo? matchByZoneName(String zoneName) {
   return null;
 }
 
-/// The zone to display, given both of the device's answers.
+/// The zone to display, given the device's answers.
 ///
 /// Prefers [zoneName], falling back to the POSIX string. The fallback is not
 /// belt-and-braces, it is the only thing that works on three real inputs:
@@ -464,8 +488,30 @@ TimeZoneInfo? matchByZoneName(String zoneName) {
 /// `LocalTimeZone` clears it); a zone set from the device's own 89-row list,
 /// which may name a region outside our 39; and a factory-fresh box, where both
 /// are useless and the caller falls through to the reported offset.
+///
+/// [reportedOffsetMinutes] vetoes a name that cannot be telling the truth. The
+/// firmware clears the name whenever the POSIX leaf is written, which is what
+/// keeps the two consistent — measured, but it is the firmware's promise and not
+/// ours, and something other than this app (the device's own zone list, a CLI, a
+/// cloud push) could leave a name behind that the clock contradicts. A name is
+/// only believed if the zone's standard offset, or that offset plus an hour when
+/// it observes DST, matches what the device reports; otherwise we fall through to
+/// the POSIX string, and past that to the raw offset. Pass null to skip the check
+/// when no clock reading is available.
 TimeZoneInfo? resolveTimezone({
   required String zoneName,
   required String localTimeZone,
-}) =>
-    matchByZoneName(zoneName) ?? matchTimezone(localTimeZone);
+  int? reportedOffsetMinutes,
+}) {
+  final named = matchByZoneName(zoneName);
+  if (named != null && _offsetIsPlausible(named, reportedOffsetMinutes)) {
+    return named;
+  }
+  return matchTimezone(localTimeZone);
+}
+
+bool _offsetIsPlausible(TimeZoneInfo tz, int? reported) {
+  if (reported == null) return true;
+  if (reported == tz.utcOffsetMinutes) return true;
+  return tz.observesDST && reported == tz.utcOffsetMinutes + 60;
+}

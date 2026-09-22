@@ -113,6 +113,27 @@ void main() {
       expect(find.text('Off'), findsOneWidget);
     });
 
+    // #1609 remediation. `UTC8` is owned only by `PST8`, which observes DST, so
+    // reading `observesDST` off the resolved entry announced daylight savings on
+    // a router 2.7.1 left at a fixed UTC-8. The string has no transitions in it.
+    testWidgets('a legacy UTC8 reads DST Off, not On', (tester) async {
+      const legacy = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-09-22T06:30:00-08:00',
+        localTimeZone: 'UTC8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: legacy));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Pacific Time'), findsOneWidget);
+      expect(find.text('Daylight Savings Time'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+      expect(find.text('On'), findsNothing);
+    });
+
     // #1609 AC5: the pair that no POSIX string could tell apart.
     testWidgets('the zone name picks Singapore over Hong Kong', (tester) async {
       const sg = TimeSettingsUIModel(

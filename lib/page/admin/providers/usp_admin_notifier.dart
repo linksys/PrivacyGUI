@@ -103,6 +103,13 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
     String? localTimeZone,
     String? ntpServer1,
   }) async {
+    // With both leaves optional, a call that supplies neither and no NTP server
+    // writes nothing: the service skips the name and `TimeSettings.update`
+    // short-circuits an empty param map into a synthetic success. The caller
+    // would then show "saved" for a write that never happened.
+    if (zoneName == null && localTimeZone == null && ntpServer1 == null) {
+      throw ArgumentError('updateTimezone was given nothing to write');
+    }
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.updateTimezone(

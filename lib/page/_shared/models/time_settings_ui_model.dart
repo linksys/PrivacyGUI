@@ -65,10 +65,15 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
     // The premise is gone as well: the firmware evaluates the POSIX DST rule
     // itself, so the offset it reports is already the one in force (bench
     // M60TB-EU: `PST8PDT,M3.2.0/02:00,M11.1.0/02:00` reads back `-07:00` in
-    // September, the instant it is set). And `timeDataProvider` fetches all six
-    // `Device.Time.*` paths in one `Get` under a single `BridgeRequestThrottler`
-    // cacheKey, so the offset and the zone are always the same snapshot — the
-    // divergence cannot enter here to begin with.
+    // September, the instant it is set). And `CurrentLocalTime` and
+    // `LocalTimeZone` are read in the same codegen `Get` under one
+    // `BridgeRequestThrottler` cacheKey, so those two are always the same
+    // snapshot and the offset cannot lag the POSIX string.
+    //
+    // [localTimeZoneName] is the exception and deliberately not part of that
+    // claim: it comes from a second `Get` with its own cache entry, so it can be
+    // a snapshot older or newer than this clock. That is why `resolveTimezone`
+    // takes [reportedOffsetMinutes] and refuses a name the offset contradicts.
     return DateTime(
       int.parse(match[1]!),
       int.parse(match[2]!),

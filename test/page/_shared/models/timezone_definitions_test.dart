@@ -181,5 +181,119 @@ void main() {
       expect(resolveTimezone(zoneName: 'Europe/Dublin', localTimeZone: 'CST-8'),
           isNull);
     });
+
+    // The firmware clears the name whenever the POSIX leaf is written, which is
+    // what keeps the two consistent — but that is the firmware's promise, not
+    // ours, and something else (the device's own zone list, a CLI, a cloud push)
+    // could leave a name behind that the clock contradicts.
+    test('a name the reported offset contradicts is not believed', () {
+      final tz = resolveTimezone(
+        zoneName: 'Asia/Taipei', // GMT+8
+        localTimeZone: 'UTC-9', // JST, and what the device is really on
+        reportedOffsetMinutes: 540,
+      );
+      expect(tz?.timeZoneID, 'JST-9-NO-DST',
+          reason: 'the POSIX string agrees with the clock; the name does not');
+    });
+
+    test('a DST-observing name is believed at its DST offset', () {
+      // New York in September: standard -300, reported -240.
+      final tz = resolveTimezone(
+        zoneName: 'America/New_York',
+        localTimeZone: 'EST5EDT,M3.2.0,M11.1.0',
+        reportedOffsetMinutes: -240,
+      );
+      expect(tz?.timeZoneID, 'EST5');
+    });
+
+    test('a non-DST name is not believed an hour off', () {
+      final tz = resolveTimezone(
+        zoneName: 'Asia/Singapore', // no DST, so +540 cannot be right
+        localTimeZone: 'JST-9',
+        reportedOffsetMinutes: 540,
+      );
+      expect(tz?.timeZoneID, isNot('SGT-8-NO-DST'));
+    });
+
+    test('with no clock reading the name is taken at face value', () {
+      final tz = resolveTimezone(
+        zoneName: 'Asia/Singapore',
+        localTimeZone: 'UTC-9',
+        reportedOffsetMinutes: null,
+      );
+      expect(tz?.timeZoneID, 'SGT-8-NO-DST');
+    });
+  });
+
+  // Not the same question as `TimeZoneInfo.observesDST`, and conflating them was
+  // a live regression: four legacy values are owned by exactly one entry and that
+  // entry observes DST, so reading `observesDST` told the user daylight savings
+  // was on for a router sitting on a fixed offset.
+  group('dstInEffect', () {
+    test('a name carries its own DST rule', () {
+      expect(
+          dstInEffect(
+              zoneName: 'America/New_York',
+              localTimeZone: 'EST5EDT,M3.2.0,M11.1.0'),
+          isTrue);
+      expect(dstInEffect(zoneName: 'Asia/Singapore', localTimeZone: '<+08>-8'),
+          isFalse);
+    });
+
+    test('the four legacy values whose only owner observes DST read Off', () {
+      // `UTC8`/`UTC9`/`UTC1`/`UTC3:30` have no non-DST sibling, so they resolve
+      // to `PST8`/`AKST9`/`AZOT1`/`NST03:30`. The strings themselves carry no
+      // transitions, so the device is not observing DST.
+      for (final legacy in ['UTC8', 'UTC9', 'UTC1', 'UTC3:30']) {
+        final resolved = matchTimezone(legacy);
+        expect(resolved?.observesDST, isTrue,
+            reason:
+                '$legacy must still resolve to a DST-capable entry, or this '
+                'test is no longer measuring the trap');
+        expect(dstInEffect(zoneName: '', localTimeZone: legacy), isFalse,
+            reason: '$legacy has no DST transitions in it');
+      }
+    });
+
+    test('a legacy posixWithDST string reads On', () {
+      expect(
+          dstInEffect(
+              zoneName: '',
+              localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00'),
+          isTrue);
+    });
+
+    test('an unresolvable string reads Off rather than throwing', () {
+      expect(dstInEffect(zoneName: '', localTimeZone: 'UTC'), isFalse);
+      expect(dstInEffect(zoneName: '', localTimeZone: ''), isFalse);
+    });
+
+    // The veto has to be applied here as well as in `resolveTimezone`, or the two
+    // disagree: the label comes from the POSIX string because the clock
+    // contradicts the name, while the DST state still comes off the name. The
+    // card would then show Hong Kong with daylight savings on.
+    test('a vetoed name does not get to decide the DST state', () {
+      const args = (
+        zoneName: 'America/New_York', // observes DST, standard -300
+        localTimeZone: 'UTC-8', // GMT+8, no DST, and what the clock agrees with
+        reported: 480,
+      );
+      expect(
+          resolveTimezone(
+            zoneName: args.zoneName,
+            localTimeZone: args.localTimeZone,
+            reportedOffsetMinutes: args.reported,
+          )?.timeZoneID,
+          'HKT-8-NO-DST');
+      expect(
+          dstInEffect(
+            zoneName: args.zoneName,
+            localTimeZone: args.localTimeZone,
+            reportedOffsetMinutes: args.reported,
+          ),
+          isFalse,
+          reason: 'the label resolved to Hong Kong, so the DST row must not be '
+              'answering for New York');
+    });
   });
 }

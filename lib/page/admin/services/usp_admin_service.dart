@@ -132,8 +132,15 @@ class UspAdminService {
     String? ntpServer2,
     bool? enable,
   }) async {
-    assert(zoneName == null || localTimeZone == null,
-        'writing both timezone leaves is order-dependent — pass one');
+    // Thrown, not asserted: asserts are stripped from the release web build, and
+    // this is the one guard standing between a future caller and a write whose
+    // result depends on the order the firmware applies two leaves in.
+    if (zoneName != null && localTimeZone != null) {
+      throw ArgumentError(
+          'pass either zoneName or localTimeZone, never both — the firmware '
+          'derives one from the other and clears it on the reverse write, so a '
+          'combined Set is order-dependent');
+    }
     try {
       // The name goes in its own `Set` because it is not on the codegen model:
       // `time_settings.yaml` does not declare the leaf, and widening the
@@ -146,13 +153,20 @@ class UspAdminService {
       if (zoneName != null) {
         _check(await _usp.set({_zoneNamePath: zoneName}));
       }
-      _check(await TimeSettings.update(
-        _usp,
-        localTimeZone: localTimeZone,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-        enable: enable,
-      ));
+      _check(
+        await TimeSettings.update(
+          _usp,
+          localTimeZone: localTimeZone,
+          ntpServer1: ntpServer1,
+          ntpServer2: ntpServer2,
+          enable: enable,
+        ),
+        // Naming what already landed, because this is where #814's atomicity is
+        // spent: if the name went in and this call fails, the zone really did
+        // change while the user is told the edit failed. Nothing rolls it back,
+        // so the least we owe them is a message that says so.
+        alreadyApplied: zoneName != null ? 'timezone' : null,
+      );
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -160,7 +174,12 @@ class UspAdminService {
   }
 
   /// Turns a raw Set result into a throw, or nothing.
-  void _check(Map<String, dynamic> result) {
+  ///
+  /// [alreadyApplied] names what an earlier `Set` in the same edit committed, so
+  /// a failure here does not read as "nothing happened".
+  void _check(Map<String, dynamic> result, {String? alreadyApplied}) {
+    final landed =
+        alreadyApplied == null ? '' : ' ($alreadyApplied was already applied)';
     final parsed = UspResultParser.parseSetResult(result);
     switch (parsed) {
       case UspSuccess():
@@ -171,13 +190,13 @@ class UspAdminService {
           :final failures
         ):
         throw UspPartialFailureError(
-          summary: 'Timezone update partial failure: $errorSummary',
+          summary: 'Timezone update partial failure: $errorSummary$landed',
           successPaths: successes.map((s) => s.requestedPath).toList(),
           failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
-          summary: 'Timezone update failed: $errorSummary',
+          summary: 'Timezone update failed: $errorSummary$landed',
           failures: errors,
         );
     }

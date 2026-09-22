@@ -174,13 +174,16 @@ void main() {
     test('refuses to write both leaves', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
 
+      // Thrown rather than asserted, so the guard survives the release web
+      // build where asserts are stripped.
       expect(
         () => service.updateTimezone(
           zoneName: 'Asia/Singapore',
           localTimeZone: 'UTC-8',
         ),
-        throwsA(isA<AssertionError>()),
+        throwsA(isA<ArgumentError>()),
       );
+      verifyNever(() => mockUsp.set(any()));
     });
   });
 

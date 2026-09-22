@@ -52,17 +52,29 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
   @override
   Widget build(BuildContext context) {
     // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    final reportedOffset = widget.timeSettings.reportedOffsetMinutes;
     final tzInfo = resolveTimezone(
       zoneName: widget.timeSettings.localTimeZoneName,
       localTimeZone: widget.timeSettings.localTimeZone,
+      reportedOffsetMinutes: reportedOffset,
     );
     // Three tiers, because an unmatched zone is ordinary on FLWRT 2.0 rather
-// than exotic — the factory value is a bare `UTC` and 81 of the 89 zones the
+    // than exotic — the factory value is a bare `UTC` and 81 of the 89 zones the
     // device publishes have no entry of ours (#1609). When we cannot name the
     // region we still know the offset, because the device reports it with every
     // clock reading; the raw POSIX string is the last resort, for a reading that
     // carried no offset either.
-    final reportedOffset = widget.timeSettings.reportedOffsetMinutes;
+    //
+    // The offset beside a *named* zone is the zone's standard offset, not the one
+    // the device is currently on. It is a hair inconsistent during DST — the
+    // label reads GMT-05:00 while the clock below it runs at -04:00 — and it is
+    // still the right choice, for the same reason every desktop timezone picker
+    // makes it: the label identifies the zone, and a label that changed with the
+    // season would identify it less (#1237 AC5 measures exactly that). What the
+    // device is on right now is the DST row's job, and the clock's.
+    //
+    // The reported offset is used where there is no zone to name, because then it
+    // is all we have.
     final tzDisplay = tzInfo != null
         ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
         : reportedOffset != null
@@ -140,8 +152,16 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                   DetailInfoTile(
                     icon: Icons.wb_sunny,
                     label: loc(context).daylightSavingsTimeLabel,
-                    value:
-                        tzInfo.observesDST ? loc(context).on : loc(context).off,
+                    // `dstInEffect`, not `tzInfo.observesDST` — a legacy `UTC8`
+                    // resolves to `PST8`, which observes DST, while the string
+                    // itself has no transitions. See `dstInEffect`.
+                    value: dstInEffect(
+                      zoneName: widget.timeSettings.localTimeZoneName,
+                      localTimeZone: widget.timeSettings.localTimeZone,
+                      reportedOffsetMinutes: reportedOffset,
+                    )
+                        ? loc(context).on
+                        : loc(context).off,
                   ),
                 DetailInfoTile(
                   icon: Icons.dns,

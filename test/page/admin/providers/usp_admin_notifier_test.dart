@@ -156,10 +156,11 @@ void main() {
       container.dispose();
     });
 
-    test('updateTimezone delegates to admin service', () async {
+    test('updateTimezone passes the zone name through', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
       when(() => mockAdminService.updateTimezone(
+            zoneName: any(named: 'zoneName'),
             localTimeZone: any(named: 'localTimeZone'),
             ntpServer1: any(named: 'ntpServer1'),
             ntpServer2: any(named: 'ntpServer2'),
@@ -170,15 +171,37 @@ void main() {
       await container.read(uspAdminProvider.future);
 
       await container.read(uspAdminProvider.notifier).updateTimezone(
-            localTimeZone: 'Asia/Tokyo',
+            zoneName: 'Asia/Tokyo',
           );
 
       verify(() => mockAdminService.updateTimezone(
-            localTimeZone: 'Asia/Tokyo',
+            zoneName: 'Asia/Tokyo',
+            localTimeZone: null,
             ntpServer1: null,
-            ntpServer2: null,
-            enable: null,
           )).called(1);
+      container.dispose();
+    });
+
+    // Both leaves became optional with #1609, which opened a hole: a call with
+    // neither and no NTP server writes nothing, because the service skips the
+    // name and `TimeSettings.update` short-circuits an empty param map into a
+    // synthetic success. The caller would then report "saved".
+    test('updateTimezone refuses a call with nothing to write', () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+
+      expect(
+        () => container.read(uspAdminProvider.notifier).updateTimezone(),
+        throwsA(isA<ArgumentError>()),
+      );
+      verifyNever(() => mockAdminService.updateTimezone(
+            zoneName: any(named: 'zoneName'),
+            localTimeZone: any(named: 'localTimeZone'),
+            ntpServer1: any(named: 'ntpServer1'),
+          ));
       container.dispose();
     });
 

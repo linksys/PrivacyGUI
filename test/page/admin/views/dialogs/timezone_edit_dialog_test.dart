@@ -200,6 +200,34 @@ void main() {
             reason: '${tz.timeZoneID} does not read back as itself');
       }
     });
+
+    // The dialog writes no timezone leaf when the zone was not changed, and that
+    // is load-bearing rather than an optimisation: a legacy `UTC±N` is ambiguous,
+    // so writing the resolved zone back would commit a guess the user never made.
+    test('the NTP-only result writes neither leaf', () {
+      const result =
+          TimezoneEditResult.ntpOnly(ntpServer1: 'time.cloudflare.com');
+      expect(result.zoneName, isNull);
+      expect(result.localTimeZone, isNull);
+      expect(result.ntpServer1, 'time.cloudflare.com');
+    });
+
+    test('the NTP-only result may also carry nothing at all', () {
+      const result = TimezoneEditResult.ntpOnly();
+      expect(result.zoneName, isNull);
+      expect(result.localTimeZone, isNull);
+      expect(result.ntpServer1, isNull);
+    });
+
+    test('an ambiguous legacy value resolves to the zone that would be written',
+        () {
+      // `UTC-8` was saved as Singapore but resolves to Hong Kong. If the dialog
+      // wrote the resolved zone on an NTP-only edit, that is the relabelling it
+      // would commit — which is why it writes nothing when the selection is
+      // unchanged.
+      final resolved = resolveTimezone(zoneName: '', localTimeZone: 'UTC-8');
+      expect(resolved?.ianaName, 'Asia/Hong_Kong');
+    });
   });
 
   group('Dialog NTP result logic', () {
