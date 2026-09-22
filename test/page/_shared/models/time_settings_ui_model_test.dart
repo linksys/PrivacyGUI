@@ -51,24 +51,98 @@ void main() {
         expect(m.parsedLocalTime, DateTime(2026, 4, 17, 8, 0, 0));
       });
 
-      test('converts stale offset to correct target timezone', () {
-        // Device returns +08:00 offset but timezone was changed to Alaska
+      // These two replace `converts stale offset to correct target timezone`
+      // and `converts negative offset to target timezone` (#1609). Those pinned
+      // a re-derivation of the wall clock from `kTimeZoneDefinitions`, which
+      // existed to compensate for a `CurrentLocalTime` whose offset lagged
+      // behind `LocalTimeZone`. That premise does not hold: on FLWRT 2.0 the
+      // offset is current the instant the zone is set, and `timeDataProvider`
+      // reads all six `Device.Time.*` paths in one `Get` under a single
+      // throttler cacheKey, so the offset and the zone cannot diverge on the
+      // way in. Re-deriving cost us an hour under DST and the whole offset for
+      // any zone the table does not carry.
+      test('trusts the device offset rather than re-deriving it', () {
         final m = _model(
           currentLocalTime: '2026-04-27T17:28:51+08:00',
           localTimeZone: 'AKST9AKDT,M3.2.0/02:00,M11.1.0/02:00',
         );
-        // UTC = 17:28:51 - 8h = 09:28:51, Alaska = UTC-9 = 00:28:51
-        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 0, 28, 51));
+        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 17, 28, 51));
       });
 
-      test('converts negative offset to target timezone', () {
-        // Device returns -08:00 offset but timezone was changed to GMT+8
+      test('trusts a negative device offset rather than re-deriving it', () {
         final m = _model(
           currentLocalTime: '2026-04-27T01:29:04-08:00',
           localTimeZone: 'UTC-8',
         );
-        // UTC = 01:29:04 + 8h = 09:29:04, GMT+8 = UTC+8 = 17:29:04
-        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 17, 29, 4));
+        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 1, 29, 4));
+      });
+    });
+
+    // #1609 defect 1. Every case here is a real reading from the bench
+    // (M60TB-EU, FLWRT 2.0.x): the firmware applies the POSIX DST rule itself,
+    // so the offset it reports is already the one in force at that instant.
+    group('parsedLocalTime — the clock the device reports is the clock we show',
+        () {
+      test('DST in force: Pacific in July is -07:00, not the table\'s -08:00',
+          () {
+        final m = _model(
+          currentLocalTime: '2026-07-15T14:00:00-07:00',
+          localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
+        );
+        expect(m.parsedLocalTime, DateTime(2026, 7, 15, 14, 0, 0));
+      });
+
+      test('DST in force: CEST in July is +02:00', () {
+        final m = _model(
+          currentLocalTime: '2026-07-15T14:00:00+02:00',
+          localTimeZone: 'CET-1CEST,M3.5.0/02:00,M10.5.0/03:00',
+        );
+        expect(m.parsedLocalTime, DateTime(2026, 7, 15, 14, 0, 0));
+      });
+
+      test('DST in force: NZDT in January is +13:00', () {
+        final m = _model(
+          currentLocalTime: '2026-01-15T14:00:00+13:00',
+          localTimeZone: 'NZST-12NZDT,M9.5.0/02:00,M4.1.0/03:00',
+        );
+        expect(m.parsedLocalTime, DateTime(2026, 1, 15, 14, 0, 0));
+      });
+
+      test('standard time on a DST-capable zone is unchanged', () {
+        final m = _model(
+          currentLocalTime: '2026-01-15T14:00:00-08:00',
+          localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
+        );
+        expect(m.parsedLocalTime, DateTime(2026, 1, 15, 14, 0, 0));
+      });
+
+      // The table carries none of these four, and dropping the offset without
+      // putting one back showed UTC. `CST-8` and `<+08>-8` are the device's own
+      // values (`X_LINKSYS_SupportedZones`) for Taipei and Singapore, `SGT-8`
+      // is the 1.x JNAP id, and the last is how the device spells the same
+      // Pacific rule we write with explicit `/02:00` suffixes.
+      for (final tz in const [
+        'CST-8',
+        '<+08>-8',
+        'SGT-8',
+        'PST-8',
+      ]) {
+        test('unrecognized zone $tz keeps the device offset', () {
+          final m = _model(
+            currentLocalTime: '2026-09-22T18:30:00+08:00',
+            localTimeZone: tz,
+          );
+          expect(m.parsedLocalTime, DateTime(2026, 9, 22, 18, 30, 0));
+        });
+      }
+
+      test("unrecognized zone in the device's own DST spelling keeps -07:00",
+          () {
+        final m = _model(
+          currentLocalTime: '2026-07-15T14:00:00-07:00',
+          localTimeZone: 'PST8PDT,M3.2.0,M11.1.0',
+        );
+        expect(m.parsedLocalTime, DateTime(2026, 7, 15, 14, 0, 0));
       });
     });
 

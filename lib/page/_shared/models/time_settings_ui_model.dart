@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
-import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 
 /// Presentation Layer Model for time settings.
 class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
@@ -39,19 +38,29 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
       int.parse(match[6]!),
     );
 
-    final hasOffset = match[7] != null;
-    if (hasOffset) {
-      final sign = match[7] == '+' ? 1 : -1;
-      final offsetMinutes =
-          sign * (int.parse(match[8]!) * 60 + int.parse(match[9]!));
-      dt = dt.subtract(Duration(minutes: offsetMinutes));
-
-      final tzInfo = matchTimezone(localTimeZone);
-      if (tzInfo != null) {
-        dt = dt.add(Duration(minutes: tzInfo.utcOffsetMinutes));
-      }
-    }
-
+    // The captured offset is deliberately not applied (#1609). `dt` already
+    // holds the device's wall clock, which is the only thing either consumer
+    // wants: `formatDateTime` prints the fields, and `LocalTimeTicker` advances
+    // them. The offset groups stay in the pattern so both `Z` and `+HH:MM`
+    // forms keep parsing.
+    //
+    // What used to happen here was a round trip — subtract the reported offset
+    // to reach UTC, then add back `matchTimezone(localTimeZone)!
+    // .utcOffsetMinutes` — put in to repair a `CurrentLocalTime` whose offset
+    // lagged behind a freshly written `LocalTimeZone`. It cost more than it
+    // bought, in two directions. `utcOffsetMinutes` is standard time only, so
+    // every DST-observing zone read an hour early for the whole of its DST
+    // period; and an unmatched zone added nothing back at all, leaving the
+    // clock on UTC — a full offset out, which on FLWRT 2.0 is 81 of the 89
+    // zones the device itself offers.
+    //
+    // The premise is gone as well: the firmware evaluates the POSIX DST rule
+    // itself, so the offset it reports is already the one in force (bench
+    // M60TB-EU: `PST8PDT,M3.2.0/02:00,M11.1.0/02:00` reads back `-07:00` in
+    // September, the instant it is set). And `timeDataProvider` fetches all six
+    // `Device.Time.*` paths in one `Get` under a single `BridgeRequestThrottler`
+    // cacheKey, so the offset and the zone are always the same snapshot — the
+    // divergence cannot enter here to begin with.
     return dt;
   }
 

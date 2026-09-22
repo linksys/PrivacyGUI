@@ -240,5 +240,47 @@ void main() {
       await tester.pump();
       expect(find.text('2026-04-17 20:00:00'), findsOneWidget);
     });
+
+    // #1609 AC4. The model's own suite pins the arithmetic; these two pin that
+    // the card renders it, because the defect was invisible to every test above
+    // — they all use a `Z` suffix or no offset at all, the one shape the broken
+    // branch never ran on. Both readings are from the bench (M60TB-EU,
+    // FLWRT 2.0.x).
+    testWidgets('renders the device clock while DST is in force',
+        (tester) async {
+      const settings = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // The firmware applies the POSIX rule, so July reports -07:00 for a
+        // zone whose standard offset is -08:00. Re-deriving from the table's
+        // standard offset showed 13:00.
+        currentLocalTime: '2026-07-15T14:00:00-07:00',
+        localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: settings));
+      await tester.pump();
+
+      expect(find.text('2026-07-15 14:00:00'), findsOneWidget);
+    });
+
+    testWidgets('renders the device clock for a zone the table cannot match',
+        (tester) async {
+      const settings = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // `CST-8` is the device's own value for Asia/Taipei. Dropping the
+        // offset with nothing to put back showed 10:30, i.e. UTC.
+        currentLocalTime: '2026-09-22T18:30:00+08:00',
+        localTimeZone: 'CST-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: settings));
+      await tester.pump();
+
+      expect(find.text('2026-09-22 18:30:00'), findsOneWidget);
+    });
   });
 }
