@@ -51,8 +51,15 @@ class _TestTimeDataNotifier extends TimeDataNotifier {
   final TimeData _data;
   _TestTimeDataNotifier(this._data);
 
+  /// Counts rebuilds, which is what `ref.invalidate(timeDataProvider)` causes —
+  /// the only observable this test can use to tell a refresh happened (#1609).
+  int builds = 0;
+
   @override
-  Future<TimeData> build() async => _data;
+  Future<TimeData> build() async {
+    builds++;
+    return _data;
+  }
 }
 
 void main() {
@@ -202,6 +209,42 @@ void main() {
             localTimeZone: any(named: 'localTimeZone'),
             ntpServer1: any(named: 'ntpServer1'),
           ));
+      container.dispose();
+    });
+
+    // #1609 review round 1. The zone name and the NTP server go out as two
+    // `Set`s, so the first can land and the second fail — the zone really changed
+    // while the user is told the edit failed. Re-reading is the only thing that
+    // stops the card showing a zone that is no longer set, and it used to be
+    // skipped because `ref.invalidate` sat after the `try` and the catch
+    // rethrew.
+    test('a failed timezone update still refreshes the card', () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.updateTimezone(
+            zoneName: any(named: 'zoneName'),
+            localTimeZone: any(named: 'localTimeZone'),
+            ntpServer1: any(named: 'ntpServer1'),
+            ntpServer2: any(named: 'ntpServer2'),
+            enable: any(named: 'enable'),
+          )).thenThrow(const NetworkError(detail: 'NTP write failed'));
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+      await container.read(timeDataProvider.future);
+      final before = testTimeNotifier.builds;
+
+      await expectLater(
+        container.read(uspAdminProvider.notifier).updateTimezone(
+              zoneName: 'America/New_York',
+              ntpServer1: 'time.cloudflare.com',
+            ),
+        throwsA(isA<ServiceError>()),
+      );
+      await container.read(timeDataProvider.future);
+
+      expect(testTimeNotifier.builds, greaterThan(before),
+          reason: 'the write may have half-landed, so the card must re-read');
       container.dispose();
     });
 

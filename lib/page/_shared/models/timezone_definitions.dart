@@ -533,6 +533,15 @@ TimeZoneInfo? resolveTimezone({
   return matchTimezone(localTimeZone);
 }
 
+/// Whether [reported] can be this zone's current offset.
+///
+/// The DST shift is taken as exactly one hour. That holds for all 15
+/// DST-observing entries in `kTimeZoneDefinitions` and is not a general truth —
+/// Lord Howe shifts 30 minutes, and the device does publish it
+/// (`<+1030>-10:30<+11>-11`). We do not offer it, so the simple form is enough;
+/// if a half-hour-shift zone is ever added, this needs a per-entry shift instead
+/// of the constant, and the symptom would be that zone's name being rejected in
+/// its own DST period and the card falling back to the POSIX label.
 bool _offsetIsPlausible(TimeZoneInfo tz, int? reported) {
   if (reported == null) return true;
   if (reported == tz.utcOffsetMinutes) return true;

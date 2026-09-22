@@ -231,22 +231,36 @@ void main() {
     // result that reads back as the zone the user was looking at, not as the
     // sibling non-DST zone at the same offset. These mirror what the dialog's
     // `event` callback builds.
-    // Mirrors what the dialog's `event` callback builds, so both switch
-    // positions go through one expression rather than two copies of it — and so
-    // neither `dstEnabled` is a compile-time constant, which made one arm
-    // unreachable and the analyzer call it dead.
-    TimezoneEditResult resultFor(TimeZoneInfo tz, {required bool dstEnabled}) {
-      final posix = tz.observesDST && !dstEnabled ? tz.standardTimePosix : null;
-      return TimezoneEditResult(
-        zoneName: posix == null ? tz.ianaName : null,
-        localTimeZone: posix,
-      );
-    }
+    // `buildTimezoneEditResult` is the real thing the dialog calls, not a copy of
+    // it. The copy this replaces was already an incomplete mirror — it omitted
+    // the legacy-POSIX fallback — so a test for one of the three unnamed entries
+    // would have passed against behaviour the dialog does not have.
+    TimezoneEditResult? save(
+      TimeZoneInfo selected, {
+      required bool dstEnabled,
+      TimeZoneInfo? from,
+      bool fromDst = true,
+      String ntp = 'pool.ntp.org',
+      String currentNtp = 'pool.ntp.org',
+    }) =>
+        buildTimezoneEditResult(
+          selected: selected,
+          dstEnabled: dstEnabled,
+          currentTz: from,
+          currentDst: fromDst,
+          ntpValue: ntp,
+          currentNtp: currentNtp,
+        );
+
+    final eastern =
+        kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
+    final singapore = kTimeZoneDefinitions
+        .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
+    final brazil =
+        kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'BRT3');
 
     test('daylight savings off sends the POSIX abbreviation, not the name', () {
-      final eastern =
-          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
-      final result = resultFor(eastern, dstEnabled: false);
+      final result = save(eastern, dstEnabled: false)!;
 
       expect(result.localTimeZone, 'EST5');
       expect(result.zoneName, isNull,
@@ -257,24 +271,66 @@ void main() {
     });
 
     test('daylight savings on sends the name', () {
-      final eastern =
-          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
-      final result = resultFor(eastern, dstEnabled: true);
+      final result = save(eastern, dstEnabled: true)!;
 
       expect(result.zoneName, 'America/New_York');
       expect(result.localTimeZone, isNull);
     });
 
-    test('a non-DST zone sends its name whichever way the flag is set', () {
-      // The switch is disabled for these, so `dstEnabled` cannot be true in
-      // practice; pinned both ways because nothing in the types says so.
-      final sg = kTimeZoneDefinitions
-          .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
-      for (final flag in [false, true]) {
-        final result = resultFor(sg, dstEnabled: flag);
+    for (final flag in [false, true]) {
+      test('a non-DST zone sends its name with dstEnabled=$flag', () {
+        // The switch is disabled for these, so the flag cannot be true in
+        // practice; pinned both ways because nothing in the types says so, and
+        // named per value so a failure says which one broke.
+        final result = save(singapore, dstEnabled: flag)!;
         expect(result.zoneName, 'Asia/Singapore');
         expect(result.localTimeZone, isNull);
-      }
+      });
+    }
+
+    // The branch the old hand-written mirror omitted entirely.
+    test('an entry with no IANA name sends its legacy POSIX string', () {
+      expect(brazil.ianaName, isNull);
+      final result = save(brazil, dstEnabled: true)!;
+
+      expect(result.zoneName, isNull);
+      expect(result.localTimeZone, brazil.posixWithDST,
+          reason: 'the mirror this replaces returned null here');
+    });
+
+    // #1609 review round 1, Critical. Save with nothing changed used to return an
+    // all-null result, which passed both call sites' `result == null` guard,
+    // reached `updateTimezone`, tripped its nothing-to-write guard and showed the
+    // user a failure snackbar for a completely normal interaction.
+    test('changing nothing writes nothing at all', () {
+      final result = save(eastern, dstEnabled: true, from: eastern);
+
+      expect(result, isNull,
+          reason:
+              'both call sites already return early on a null result, which '
+              'is exactly the handling a no-change Save needs');
+    });
+
+    test('changing only the NTP server leaves the timezone leaves alone', () {
+      final result = save(
+        eastern,
+        dstEnabled: true,
+        from: eastern,
+        ntp: 'time.cloudflare.com',
+      )!;
+
+      expect(result.ntpServer1, 'time.cloudflare.com');
+      expect(result.zoneName, isNull,
+          reason:
+              'writing the resolved zone back would commit a guess about an '
+              'ambiguous legacy value the user never touched');
+      expect(result.localTimeZone, isNull);
+    });
+
+    test('flipping only the switch still writes the zone', () {
+      final result = save(eastern, dstEnabled: false, from: eastern)!;
+
+      expect(result.localTimeZone, 'EST5');
     });
 
     test('a zone whose switch is disabled always sends the name', () {

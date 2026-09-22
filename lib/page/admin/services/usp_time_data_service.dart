@@ -41,7 +41,13 @@ class UspTimeDataService {
   /// generated file is overwritten on the next run. Folding the leaf into the
   /// upstream definition is the follow-up; reading one leaf raw is the existing
   /// idiom until then.
-  static const _zoneNamePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
+  ///
+  /// Public, and referenced by `UspAdminService` rather than copied there, even
+  /// though a private `_xxxPath` per service is this repo's usual shape. These
+  /// two are a read/write *pair* on one leaf: if the strings ever diverged the
+  /// write would land somewhere the read never looks, and nothing would fail —
+  /// the card would just go on showing the old zone.
+  static const zoneNamePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
 
   /// Fetches time settings and returns a [TimeSettingsUIModel].
   Future<TimeSettingsUIModel> fetch() async {
@@ -79,12 +85,12 @@ class UspTimeDataService {
   /// diagnostics to say why.
   Future<String> _fetchZoneName() async {
     try {
-      final response = await _usp.get([_zoneNamePath]);
-      final value = response[_zoneNamePath];
+      final response = await _usp.get([zoneNamePath]);
+      final value = response[zoneNamePath];
       return value is String ? value : '';
     } catch (e) {
       logger.w(
-          '[USP][Time]: $_zoneNamePath unreadable, '
+          '[USP][Time]: $zoneNamePath unreadable, '
           'falling back to the POSIX string',
           error: e);
       return '';

@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/admin/services/usp_time_data_service.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
@@ -111,9 +112,6 @@ class UspAdminService {
     }
   }
 
-  /// `Device.Time.X_LINKSYS_LocalTimeZoneName` — see [updateTimezone].
-  static const _zoneNamePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
-
   /// Update timezone and optionally NTP servers / enable.
   ///
   /// Pass **either** [zoneName] or [localTimeZone], never both (#1609). The two
@@ -151,7 +149,7 @@ class UspAdminService {
       // changing the zone and an NTP server together costs the atomicity #814
       // introduced.
       if (zoneName != null) {
-        _check(await _usp.set({_zoneNamePath: zoneName}));
+        _check(await _usp.set({UspTimeDataService.zoneNamePath: zoneName}));
       }
       _check(
         await TimeSettings.update(
