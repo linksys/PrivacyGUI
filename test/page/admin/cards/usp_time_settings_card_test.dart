@@ -95,11 +95,16 @@ void main() {
       expect(find.text('Unsynchronized'), findsOneWidget);
     });
 
-    testWidgets('hides DST row for non-DST timezone', (tester) async {
+    // #1609: this replaces `hides DST row for non-DST timezone` — see the note
+    // at the same test in `usp_timezone_card_test.dart`. The row states the
+    // selected zone's DST property instead of disappearing.
+    testWidgets('shows DST Off, rather than nothing, for a non-DST zone',
+        (tester) async {
       await tester.pumpWidget(_buildTestWidget(_gmt8Time));
       await tester.pumpAndSettle();
 
-      expect(find.text('DST'), findsNothing);
+      expect(find.text('DST'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
     });
 
     testWidgets('shows DST On for DST-enabled timezone', (tester) async {

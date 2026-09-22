@@ -89,25 +89,97 @@ void main() {
     });
   });
 
-  group('inferDstEnabled', () {
-    test('returns true when posixWithDST matches', () {
-      final result = inferDstEnabled('PST8PDT,M3.2.0/02:00,M11.1.0/02:00');
-      expect(result, isTrue);
+  // #1609. `matchTimezone` reads a POSIX string, which is a clock rule and not
+  // an identity, so it cannot tell two zones sharing one rule apart. The zone
+  // *name* can: it is what we now write, and the device hands it straight back.
+  group('matchByZoneName', () {
+    test('resolves the zone the user actually chose', () {
+      expect(matchByZoneName('Asia/Singapore')?.timeZoneID, 'SGT-8-NO-DST');
+      expect(matchByZoneName('Asia/Hong_Kong')?.timeZoneID, 'HKT-8-NO-DST');
     });
 
-    test('returns false when posixNoDST matches', () {
-      final result = inferDstEnabled('UTC8');
-      expect(result, isFalse);
+    test('tells apart the pair no POSIX string can', () {
+      // Both zones are GMT+8 with no DST, so both used to store `UTC-8` and
+      // both came back as Hong Kong.
+      final sg = matchByZoneName('Asia/Singapore');
+      final hk = matchByZoneName('Asia/Hong_Kong');
+      expect(sg, isNotNull);
+      expect(hk, isNotNull);
+      expect(sg!.timeZoneID, isNot(hk!.timeZoneID));
+      expect(sg.posixNoDST, hk.posixNoDST,
+          reason:
+              'the legacy strings really were identical — that was the bug');
     });
 
-    test('returns false for unknown string', () {
-      final result = inferDstEnabled('UNKNOWN');
-      expect(result, isFalse);
+    test('is null for an empty name', () {
+      expect(matchByZoneName(''), isNull);
     });
 
-    test('returns false for non-DST timezone ID match', () {
-      final result = inferDstEnabled('HST10-NO-DST');
-      expect(result, isFalse);
+    test('is null for a name no entry of ours claims', () {
+      // A real IANA zone, and one the device offers, but outside our 39.
+      expect(matchByZoneName('Europe/Dublin'), isNull);
+    });
+
+    test('every ianaName is unique across the table', () {
+      final names = kTimeZoneDefinitions
+          .map((tz) => tz.ianaName)
+          .whereType<String>()
+          .toList();
+      expect(names.length, 36);
+      expect(names.toSet().length, names.length,
+          reason: 'a shared ianaName would reintroduce the ambiguity this '
+              'replaces');
+    });
+
+    test('the three entries with stale data carry no ianaName', () {
+      // Kwajalein is UTC+12 since 1993, Brazil dropped DST in 2019, and Guyana
+      // is UTC-4 — so no IANA name means what these labels say. They keep
+      // writing POSIX until the data is settled.
+      final unnamed = kTimeZoneDefinitions
+          .where((tz) => tz.ianaName == null)
+          .map((tz) => tz.timeZoneID)
+          .toSet();
+      expect(unnamed, {'MHT12-NO-DST', 'BRT3', 'ART3-NO-DST'});
+    });
+
+    test('a named entry agrees with its own DST flag', () {
+      // A DST-observing entry must not point at a zone with no DST rule, or the
+      // indicator would contradict the firmware.
+      for (final tz in kTimeZoneDefinitions.where((t) => t.ianaName != null)) {
+        expect(matchByZoneName(tz.ianaName!)?.observesDST, tz.observesDST,
+            reason: '${tz.timeZoneID} round-trips to a different DST flag');
+      }
+    });
+  });
+
+  group('resolveTimezone', () {
+    test('prefers the zone name when the device sent one', () {
+      final tz = resolveTimezone(
+        zoneName: 'Asia/Singapore',
+        localTimeZone: 'CST-8',
+      );
+      expect(tz?.timeZoneID, 'SGT-8-NO-DST');
+    });
+
+    test('falls back to POSIX when the zone name is empty', () {
+      // What a router written by 2.7.1 or earlier looks like: the POSIX string
+      // is set and `X_LINKSYS_LocalTimeZoneName` is empty (#1609 AC8).
+      final tz = resolveTimezone(zoneName: '', localTimeZone: 'UTC-8');
+      expect(tz?.timeZoneID, 'HKT-8-NO-DST');
+    });
+
+    test('falls back to POSIX when the zone name is not one of ours', () {
+      final tz = resolveTimezone(
+        zoneName: 'Europe/Dublin',
+        localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
+      );
+      expect(tz?.timeZoneID, 'PST8');
+    });
+
+    test('is null when neither resolves', () {
+      expect(resolveTimezone(zoneName: '', localTimeZone: 'UTC'), isNull);
+      expect(resolveTimezone(zoneName: 'Europe/Dublin', localTimeZone: 'CST-8'),
+          isNull);
     });
   });
 }

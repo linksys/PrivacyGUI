@@ -51,8 +51,11 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
 
   @override
   Widget build(BuildContext context) {
-    final tzInfo = matchTimezone(widget.timeSettings.localTimeZone);
-    final dstEnabled = inferDstEnabled(widget.timeSettings.localTimeZone);
+    // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    final tzInfo = resolveTimezone(
+      zoneName: widget.timeSettings.localTimeZoneName,
+      localTimeZone: widget.timeSettings.localTimeZone,
+    );
     // Three tiers, because an unmatched zone is ordinary on FLWRT 2.0 rather
 // than exotic — the factory value is a bare `UTC` and 81 of the 89 zones the
     // device publishes have no entry of ours (#1609). When we cannot name the
@@ -126,11 +129,19 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                   label: loc(context).timezone,
                   value: tzDisplay,
                 ),
-                if (tzInfo != null && tzInfo.observesDST)
+                // Shown for any zone we can name, not only DST-observing ones
+                // (#1609). It used to be gated on `observesDST`, so saving a
+                // DST-capable zone with DST off — which landed on the
+                // equivalent non-DST zone — made the row vanish and the option
+                // look as though it had been eaten. DST is now a property of
+                // the selected zone, so the row states that property and
+                // stays put.
+                if (tzInfo != null)
                   DetailInfoTile(
                     icon: Icons.wb_sunny,
                     label: loc(context).daylightSavingsTimeLabel,
-                    value: dstEnabled ? 'On' : 'Off',
+                    value:
+                        tzInfo.observesDST ? loc(context).on : loc(context).off,
                   ),
                 DetailInfoTile(
                   icon: Icons.dns,

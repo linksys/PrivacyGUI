@@ -93,13 +93,20 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   /// Update timezone and optionally NTP server (used by timezone edit dialog).
+  ///
+  /// Exactly one of [zoneName] and [localTimeZone] is set — the dialog sends the
+  /// IANA name for the 36 zones that have one and the POSIX string for the three
+  /// that do not. See `UspAdminService.updateTimezone` for why they cannot both
+  /// go in one write.
   Future<void> updateTimezone({
-    required String localTimeZone,
+    String? zoneName,
+    String? localTimeZone,
     String? ntpServer1,
   }) async {
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.updateTimezone(
+          zoneName: zoneName,
           localTimeZone: localTimeZone,
           ntpServer1: ntpServer1,
         );

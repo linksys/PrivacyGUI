@@ -7,6 +7,16 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
   final String status;
   final String currentLocalTime;
   final String localTimeZone;
+
+  /// `Device.Time.X_LINKSYS_LocalTimeZoneName` — the IANA zone name, and the
+  /// only unambiguous identity the device offers (#1609).
+  ///
+  /// Empty on a factory-fresh box and on any router last written by 2.7.1 or
+  /// earlier, because writing `LocalTimeZone` clears it. So it is additional
+  /// information, never a replacement for [localTimeZone]; see
+  /// `resolveTimezone`.
+  final String localTimeZoneName;
+
   final String ntpServer1;
   final String ntpServer2;
 
@@ -15,6 +25,7 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
     required this.status,
     required this.currentLocalTime,
     required this.localTimeZone,
+    this.localTimeZoneName = '',
     required this.ntpServer1,
     required this.ntpServer2,
   });
@@ -115,6 +126,7 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
         'status': status,
         'currentLocalTime': currentLocalTime,
         'localTimeZone': localTimeZone,
+        'localTimeZoneName': localTimeZoneName,
         'ntpServer1': ntpServer1,
         'ntpServer2': ntpServer2,
       };

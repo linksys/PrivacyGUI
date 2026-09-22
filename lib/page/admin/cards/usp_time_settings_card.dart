@@ -58,7 +58,11 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     _syncIfChanged(timeData);
 
-    final tzInfo = matchTimezone(time.localTimeZone);
+    // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    final tzInfo = resolveTimezone(
+      zoneName: time.localTimeZoneName,
+      localTimeZone: time.localTimeZone,
+    );
     // Three tiers, matching `usp_timezone_card.dart` (#1609). An unmatched zone
     // is ordinary on FLWRT 2.0, not exotic — the factory value is a bare `UTC`
     // and 81 of the 89 zones the device publishes have no entry of ours — so
@@ -151,7 +155,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
               if (offsetDisplay.isNotEmpty)
                 InfoGridItem(
                     label: loc(context).utcOffset, value: offsetDisplay),
-              if (tzInfo != null && tzInfo.observesDST)
+              // Shown for any zone we can name, not only DST-observing ones —
+              // see the note at the same row in `usp_timezone_card.dart` (#1609).
+              if (tzInfo != null)
                 InfoGridItem(
                   // Deliberately unlocalized, and recorded as arguable in
                   // §2.10d point 6 rather than fixed here: unlike the `Enabled`
@@ -161,9 +167,8 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                   // (`Sommerzeit`), which is a width change in a cell this
                   // branch has not measured. The value beside it is localized.
                   label: 'DST',
-                  value: inferDstEnabled(time.localTimeZone)
-                      ? loc(context).on
-                      : loc(context).off,
+                  value:
+                      tzInfo.observesDST ? loc(context).on : loc(context).off,
                 ),
             ],
           ),
@@ -184,6 +189,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       ref,
       loadingKey: 'time',
       mutation: () => ref.read(uspAdminProvider.notifier).updateTimezone(
+            zoneName: result.zoneName,
             localTimeZone: result.localTimeZone,
             ntpServer1: result.ntpServer1,
           ),

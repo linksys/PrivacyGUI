@@ -111,44 +111,75 @@ class UspAdminService {
     }
   }
 
+  /// `Device.Time.X_LINKSYS_LocalTimeZoneName` — see [updateTimezone].
+  static const _zoneNamePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
+
   /// Update timezone and optionally NTP servers / enable.
+  ///
+  /// Pass **either** [zoneName] or [localTimeZone], never both (#1609). The two
+  /// leaves are wired together in the firmware and they clobber each other:
+  /// writing the name derives the POSIX string (`Asia/Taipei` → `CST-8`, DST
+  /// rule included), and writing the POSIX string clears the name. Putting both
+  /// in one `Set` would make the outcome depend on the order the firmware
+  /// happens to apply them. [zoneName] is the one to prefer — it is an identity,
+  /// so the zone that was chosen is the zone that reads back — and
+  /// [localTimeZone] remains for the three table entries that have no faithful
+  /// IANA name.
   Future<void> updateTimezone({
+    String? zoneName,
     String? localTimeZone,
     String? ntpServer1,
     String? ntpServer2,
     bool? enable,
   }) async {
+    assert(zoneName == null || localTimeZone == null,
+        'writing both timezone leaves is order-dependent — pass one');
     try {
-      final result = await TimeSettings.update(
+      // The name goes in its own `Set` because it is not on the codegen model:
+      // `time_settings.yaml` does not declare the leaf, and widening the
+      // generated `_paths` by hand would be undone by the next codegen run.
+      // Folding it upstream is the follow-up. In the ordinary case — a zone
+      // change with the Advanced section untouched — the call below short-
+      // circuits on an empty param map, so this is still one request; only
+      // changing the zone and an NTP server together costs the atomicity #814
+      // introduced.
+      if (zoneName != null) {
+        _check(await _usp.set({_zoneNamePath: zoneName}));
+      }
+      _check(await TimeSettings.update(
         _usp,
         localTimeZone: localTimeZone,
         ntpServer1: ntpServer1,
         ntpServer2: ntpServer2,
         enable: enable,
-      );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(
-            :final errorSummary,
-            :final successes,
-            :final failures
-          ):
-          throw UspPartialFailureError(
-            summary: 'Timezone update partial failure: $errorSummary',
-            successPaths: successes.map((s) => s.requestedPath).toList(),
-            failures: failures,
-          );
-        case UspFailure(:final errorSummary, :final errors):
-          throw UspCompleteFailureError(
-            summary: 'Timezone update failed: $errorSummary',
-            failures: errors,
-          );
-      }
+      ));
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Turns a raw Set result into a throw, or nothing.
+  void _check(Map<String, dynamic> result) {
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        return;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'Timezone update partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failures: failures,
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'Timezone update failed: $errorSummary',
+          failures: errors,
+        );
     }
   }
 

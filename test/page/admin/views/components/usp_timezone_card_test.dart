@@ -40,7 +40,11 @@ void main() {
       enable: true,
       status: 'Synchronized',
       currentLocalTime: '2026-04-17T04:00:00Z',
-      localTimeZone: 'UTC-8', // matches SGT-8-NO-DST (GMT+8, no DST)
+      // A legacy value: `UTC-8` matches **HKT-8-NO-DST**, not SGT-8-NO-DST as
+      // the comment here used to claim. Both zones stored this one string, and
+      // `matchTimezone` returns whichever comes first, which is Hong Kong —
+      // the bug #1609 fixes, mis-documented in the test that rendered it.
+      localTimeZone: 'UTC-8',
       ntpServer1: 'pool.ntp.org',
       ntpServer2: '',
     );
@@ -49,16 +53,22 @@ void main() {
       await tester.pumpWidget(_buildTestWidget(timeSettings: gmt8Settings));
       await tester.pumpAndSettle();
 
-      // SGT-8-NO-DST → "China, Hong Kong, Australia Western (GMT+08:00)"
-      // or "Singapore, Taiwan, Russia (GMT+08:00)" depending on match order
+      expect(find.textContaining('China, Hong Kong, Australia Western'),
+          findsOneWidget);
       expect(find.textContaining('GMT+08:00'), findsOneWidget);
     });
 
-    testWidgets('hides DST row for non-DST timezone', (tester) async {
+    // #1609: this replaces `hides DST row for non-DST timezone`. The row used to
+    // be gated on `observesDST`, which is how saving a DST-capable zone with DST
+    // off — landing on the equivalent non-DST zone — made the option vanish.
+    // It now states the selected zone's own DST property and stays put.
+    testWidgets('shows DST Off, rather than nothing, for a non-DST zone',
+        (tester) async {
       await tester.pumpWidget(_buildTestWidget(timeSettings: gmt8Settings));
       await tester.pumpAndSettle();
 
-      expect(find.text('Daylight Savings Time'), findsNothing);
+      expect(find.text('Daylight Savings Time'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
     });
 
     testWidgets('shows DST row for DST-capable timezone with DST on',
@@ -78,22 +88,50 @@ void main() {
       expect(find.text('On'), findsOneWidget);
     });
 
-    testWidgets('shows DST Off for DST-capable timezone with DST off',
+    // #1609: this replaces `shows DST Off for DST-capable timezone with DST off`,
+    // whose premise no longer exists — DST is a property of the zone, so a
+    // DST-capable zone cannot be saved with DST off. What remains worth pinning
+    // is that a legacy router still holding the old `UTC±N` reads correctly: the
+    // string resolves to the non-DST sibling, and the row says Off because that
+    // sibling does not observe DST (AC8).
+    testWidgets('a legacy UTC±N string reads as its non-DST sibling',
         (tester) async {
-      const dstOffSettings = TimeSettingsUIModel(
+      const legacy = TimeSettingsUIModel(
         enable: true,
         status: 'Synchronized',
-        currentLocalTime: '2026-04-17T12:00:00Z',
-        localTimeZone:
-            'EST5', // matches EST5 by timeZoneID (DST-capable, DST off)
+        // What releases up to 2.7.1 wrote for GMT-05:00 with DST off.
+        currentLocalTime: '2026-04-17T07:00:00-05:00',
+        localTimeZone: 'UTC5',
         ntpServer1: 'pool.ntp.org',
         ntpServer2: '',
       );
-      await tester.pumpWidget(_buildTestWidget(timeSettings: dstOffSettings));
+      await tester.pumpWidget(_buildTestWidget(timeSettings: legacy));
       await tester.pumpAndSettle();
 
+      expect(find.textContaining('Indiana East'), findsOneWidget);
       expect(find.text('Daylight Savings Time'), findsOneWidget);
       expect(find.text('Off'), findsOneWidget);
+    });
+
+    // #1609 AC5: the pair that no POSIX string could tell apart.
+    testWidgets('the zone name picks Singapore over Hong Kong', (tester) async {
+      const sg = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-09-22T18:30:00+08:00',
+        // Both zones are GMT+8 with no DST. The POSIX string the firmware
+        // derived is the same one it would derive for Hong Kong; only the name
+        // separates them.
+        localTimeZone: 'CST-8',
+        localTimeZoneName: 'Asia/Singapore',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: sg));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Singapore'), findsOneWidget);
+      expect(find.textContaining('Hong Kong'), findsNothing);
     });
 
     testWidgets('displays NTP server', (tester) async {

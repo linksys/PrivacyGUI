@@ -14,9 +14,11 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
   BuildContext context, {
   required TimeSettingsUIModel current,
 }) {
-  final currentTz = matchTimezone(current.localTimeZone);
+  final currentTz = resolveTimezone(
+    zoneName: current.localTimeZoneName,
+    localTimeZone: current.localTimeZone,
+  );
   TimeZoneInfo? selected = currentTz;
-  bool dstEnabled = inferDstEnabled(current.localTimeZone);
   String searchQuery = '';
   bool advancedExpanded = false;
   final ntpController = TextEditingController(text: current.ntpServer1);
@@ -44,7 +46,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               return false;
             }).toList();
 
-      final dstToggleEnabled = selected?.observesDST ?? false;
+      // Whether the *selected* zone observes DST, which is all this row says
+      // now — see the switch below.
+      final observesDST = selected?.observesDST ?? false;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -61,24 +65,44 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             },
           ),
           AppGap.md(),
-          // DST toggle row
+          // Daylight savings, as a read-only property of the selected zone
+          // rather than a switch (#1609).
+          //
+          // It used to be writable, and that is what made a saved zone come
+          // back wearing another zone's name. Switching it off wrote the
+          // zone's no-DST POSIX string — and "Eastern Time without DST" is not
+          // a distinguishable thing: it is the same clock rule as Panama, which
+          // is exactly what the device's own `EST5` row is. So the zone read
+          // back as Panama. Six of the eleven collisions could not be spelled
+          // apart by any POSIX string for that reason.
+          //
+          // The list already carries both variants as separate entries, so
+          // nothing is lost: "Eastern Time (USA & Canada)" and "Indiana East,
+          // Colombia, Panama" are both there to pick. 1.x worked this way too —
+          // its 40 zone ids bake DST into the entry and it had no switch. What
+          // this removes is a capability 2.x invented, and with it an input the
+          // data model cannot represent.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: AppText.bodyMedium(loc(context).daylightSavingsTime),
               ),
-              AppSwitch(
-                key: const Key('dstToggle'),
+              // The identifier carries over from the `AppSwitch` this replaced.
+              // It has no references in this repo, but the E2E specs live in
+              // another one and harvest identifiers out of Dart source text, so
+              // keeping the name costs nothing and renaming it could break a
+              // spec no compiler here can see.
+              Semantics(
+                key: const Key('dstIndicator'),
                 identifier: 'admin-timezone-dst',
-                value: dstEnabled,
-                onChanged: dstToggleEnabled
-                    ? (value) {
-                        setState(() {
-                          dstEnabled = value;
-                        });
-                      }
-                    : null,
+                child: AppText.bodyMedium(
+                  observesDST ? loc(context).on : loc(context).off,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),
@@ -102,9 +126,6 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                         onTap: () {
                           setState(() {
                             selected = tz;
-                            if (!tz.observesDST) {
-                              dstEnabled = false;
-                            }
                           });
                         },
                       );
@@ -126,8 +147,16 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     },
     event: () async {
       final ntpValue = ntpController.text.trim();
+      final tz = selected!;
       return TimezoneEditResult(
-        localTimeZone: selected!.posixFor(dstEnabled: dstEnabled),
+        // The name when the entry has one, so the choice reads back as itself;
+        // the POSIX string for the three entries whose own offset or DST flag
+        // disagrees with the tz database. Never both — they clobber each other
+        // in the firmware (#1609).
+        zoneName: tz.ianaName,
+        localTimeZone: tz.ianaName == null
+            ? tz.posixFor(dstEnabled: tz.observesDST)
+            : null,
         ntpServer1: ntpValue != current.ntpServer1 ? ntpValue : null,
       );
     },
@@ -250,11 +279,20 @@ class _AdvancedSection extends StatelessWidget {
 }
 
 class TimezoneEditResult {
-  final String localTimeZone;
+  /// The IANA zone name to write, when the chosen entry has one.
+  final String? zoneName;
+
+  /// The POSIX string to write instead, for an entry with no IANA name.
+  final String? localTimeZone;
+
   final String? ntpServer1;
 
   const TimezoneEditResult({
-    required this.localTimeZone,
+    this.zoneName,
+    this.localTimeZone,
     this.ntpServer1,
-  });
+  }) : assert(
+          (zoneName == null) != (localTimeZone == null),
+          'exactly one timezone leaf is written — see UspAdminService',
+        );
 }

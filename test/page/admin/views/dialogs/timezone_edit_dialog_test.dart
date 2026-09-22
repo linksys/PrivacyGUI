@@ -102,8 +102,15 @@ void main() {
     });
   });
 
-  group('Dialog DST toggle logic', () {
-    test('DST-capable timezone with DST POSIX → dstEnabled=true', () {
+  // #1609 replaces the old `Dialog DST toggle logic` group. Daylight savings is
+  // no longer an input: it was writable, and switching it off wrote the zone's
+  // no-DST POSIX string — which is not a distinguishable thing, because
+  // "Eastern Time without DST" is the same clock rule as Panama and the device's
+  // own `EST5` row *is* Panama. The zone therefore came back relabelled. The
+  // list already carries both variants as separate entries, so the choice is
+  // still there; it is made by picking a zone, the way 1.x did it.
+  group('Dialog daylight-savings display', () {
+    test('a DST zone read from the device reports DST on', () {
       const settings = TimeSettingsUIModel(
         enable: true,
         status: 'Synchronized',
@@ -112,14 +119,32 @@ void main() {
         ntpServer1: '',
         ntpServer2: '',
       );
-      final tz = matchTimezone(settings.localTimeZone);
-      expect(tz, isNotNull);
-      expect(tz!.observesDST, isTrue);
-      expect(inferDstEnabled(settings.localTimeZone), isTrue);
+      final tz = resolveTimezone(
+        zoneName: settings.localTimeZoneName,
+        localTimeZone: settings.localTimeZone,
+      );
+      expect(tz?.observesDST, isTrue);
     });
 
-    test('Non-DST POSIX string → dstEnabled=false', () {
-      // UTC5 matches EST5-NO-DST (non-DST variant preferred by matchTimezone)
+    test('a non-DST zone reports DST off', () {
+      const settings = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '',
+        localTimeZone: 'CST-8',
+        localTimeZoneName: 'Asia/Singapore',
+        ntpServer1: '',
+        ntpServer2: '',
+      );
+      final tz = resolveTimezone(
+        zoneName: settings.localTimeZoneName,
+        localTimeZone: settings.localTimeZone,
+      );
+      expect(tz?.observesDST, isFalse);
+    });
+
+    test('a legacy UTC±N string still resolves, to its non-DST sibling', () {
+      // AC8: what releases up to 2.7.1 wrote is still readable.
       const settings = TimeSettingsUIModel(
         enable: true,
         status: 'Synchronized',
@@ -128,25 +153,52 @@ void main() {
         ntpServer1: '',
         ntpServer2: '',
       );
-      final tz = matchTimezone(settings.localTimeZone);
-      expect(tz, isNotNull);
-      // matchTimezone prefers non-DST entry when posixNoDST collides
-      expect(tz!.observesDST, isFalse);
-      expect(inferDstEnabled(settings.localTimeZone), isFalse);
+      final tz = resolveTimezone(
+        zoneName: settings.localTimeZoneName,
+        localTimeZone: settings.localTimeZone,
+      );
+      expect(tz?.timeZoneID, 'EST5-NO-DST');
+      expect(tz?.observesDST, isFalse);
+    });
+  });
+
+  // #1609 AC5. The dialog's own contract: what it hands back for a chosen zone.
+  group('Dialog result carries an identity', () {
+    test('a named zone is written by name, never by POSIX string', () {
+      final sg = kTimeZoneDefinitions
+          .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
+      final result = TimezoneEditResult(
+        zoneName: sg.ianaName,
+        localTimeZone: sg.ianaName == null
+            ? sg.posixFor(dstEnabled: sg.observesDST)
+            : null,
+      );
+      expect(result.zoneName, 'Asia/Singapore');
+      expect(result.localTimeZone, isNull,
+          reason: 'the two leaves clobber each other in the firmware, so only '
+              'one may be sent');
     });
 
-    test('non-DST timezone → toggle should be disabled', () {
-      const settings = TimeSettingsUIModel(
-        enable: true,
-        status: 'Synchronized',
-        currentLocalTime: '',
-        localTimeZone: 'UTC-8', // GMT+8, no DST
-        ntpServer1: '',
-        ntpServer2: '',
+    test('an unnamed zone falls back to its POSIX string', () {
+      // Brazil East has no `ianaName`: Brazil abolished DST in 2019, so no IANA
+      // zone matches this entry's `observesDST: true`.
+      final br =
+          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'BRT3');
+      final result = TimezoneEditResult(
+        zoneName: br.ianaName,
+        localTimeZone: br.ianaName == null
+            ? br.posixFor(dstEnabled: br.observesDST)
+            : null,
       );
-      final tz = matchTimezone(settings.localTimeZone);
-      expect(tz, isNotNull);
-      expect(tz!.observesDST, isFalse);
+      expect(result.zoneName, isNull);
+      expect(result.localTimeZone, br.posixWithDST);
+    });
+
+    test('every named zone round-trips to the entry it came from', () {
+      for (final tz in kTimeZoneDefinitions.where((t) => t.ianaName != null)) {
+        expect(matchByZoneName(tz.ianaName!)?.timeZoneID, tz.timeZoneID,
+            reason: '${tz.timeZoneID} does not read back as itself');
+      }
     });
   });
 

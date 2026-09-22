@@ -20,8 +20,31 @@ class TimeZoneInfo {
   final int utcOffsetMinutes;
   final bool observesDST;
   final String description;
+
+  /// Legacy POSIX forms, kept for *reading* only (#1609).
+  ///
+  /// These are what releases up to 2.7.1 wrote, so routers in the field still
+  /// hold them and [matchTimezone] must go on recognising them. They are no
+  /// longer what we write, because `UTC±N` carries an offset but no identity:
+  /// eleven of these strings are each shared by two or three zones, so a saved
+  /// zone came back wearing another zone's name.
   final String posixNoDST;
   final String posixWithDST;
+
+  /// The IANA zone we write to `Device.Time.X_LINKSYS_LocalTimeZoneName`, or
+  /// null when this entry has no faithful one.
+  ///
+  /// This is the identity that fixes the relabelling: the firmware derives the
+  /// POSIX string from it (`Asia/Taipei` → `CST-8`, `America/New_York` →
+  /// `EST5EDT,M3.2.0,M11.1.0`, DST rule included) and hands the name straight
+  /// back on a read, so what was chosen is what returns. A POSIX string cannot
+  /// do that — `EST5` *is* Panama as far as the device is concerned.
+  ///
+  /// Null on the three entries whose own offset or DST flag disagrees with the
+  /// tz database, where no IANA name would mean what the label says; those keep
+  /// writing [posixNoDST]/[posixWithDST] until the data is settled. See
+  /// `kTimeZoneDefinitions` for which and why.
+  final String? ianaName;
 
   const TimeZoneInfo({
     required this.timeZoneID,
@@ -30,6 +53,7 @@ class TimeZoneInfo {
     required this.description,
     required this.posixNoDST,
     required this.posixWithDST,
+    this.ianaName,
   });
 
   /// Human-readable name without the leading "(GMT±HH:MM) " prefix.

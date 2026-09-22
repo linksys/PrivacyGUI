@@ -4,12 +4,14 @@ import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 TimeSettingsUIModel _model({
   String currentLocalTime = '',
   String localTimeZone = '',
+  String localTimeZoneName = '',
 }) {
   return TimeSettingsUIModel(
     enable: true,
     status: 'Synchronized',
     currentLocalTime: currentLocalTime,
     localTimeZone: localTimeZone,
+    localTimeZoneName: localTimeZoneName,
     ntpServer1: 'pool.ntp.org',
     ntpServer2: '',
   );
@@ -152,35 +154,75 @@ void main() {
     // box, `<+08>-8` once anything sets the zone from the device's own list.
     group('reportedOffsetMinutes', () {
       test('reads a positive offset', () {
-        expect(_model(currentLocalTime: '2026-09-22T18:30:00+08:00')
-            .reportedOffsetMinutes, 480);
+        expect(
+            _model(currentLocalTime: '2026-09-22T18:30:00+08:00')
+                .reportedOffsetMinutes,
+            480);
       });
 
       test('reads a negative offset', () {
-        expect(_model(currentLocalTime: '2026-07-15T14:00:00-07:00')
-            .reportedOffsetMinutes, -420);
+        expect(
+            _model(currentLocalTime: '2026-07-15T14:00:00-07:00')
+                .reportedOffsetMinutes,
+            -420);
       });
 
       test('reads a fractional offset', () {
-        expect(_model(currentLocalTime: '2026-09-22T18:30:00+05:30')
-            .reportedOffsetMinutes, 330);
+        expect(
+            _model(currentLocalTime: '2026-09-22T18:30:00+05:30')
+                .reportedOffsetMinutes,
+            330);
       });
 
       test('Z means zero, not absent', () {
-        expect(_model(currentLocalTime: '2026-09-22T10:30:00Z')
-            .reportedOffsetMinutes, 0);
+        expect(
+            _model(currentLocalTime: '2026-09-22T10:30:00Z')
+                .reportedOffsetMinutes,
+            0);
       });
 
       test('is null when the string carries no offset at all', () {
-        expect(_model(currentLocalTime: '2026-09-22T10:30:00')
-            .reportedOffsetMinutes, isNull);
+        expect(
+            _model(currentLocalTime: '2026-09-22T10:30:00')
+                .reportedOffsetMinutes,
+            isNull);
       });
 
       test('is null for an empty or unparseable string', () {
         expect(_model(currentLocalTime: '').reportedOffsetMinutes, isNull);
-        expect(
-            _model(currentLocalTime: 'not-a-date').reportedOffsetMinutes,
+        expect(_model(currentLocalTime: 'not-a-date').reportedOffsetMinutes,
             isNull);
+      });
+    });
+
+    // #1609. The identity the device hands back, alongside the POSIX string.
+    // It has to reach `props`, or a change of zone that leaves the offset alone
+    // — Singapore to Hong Kong — would not notify a watcher.
+    group('localTimeZoneName', () {
+      test('defaults to empty, which is what a 2.7.1-era router reports', () {
+        const m = TimeSettingsUIModel(
+          enable: true,
+          status: 'Synchronized',
+          currentLocalTime: '2026-09-22T18:30:00+08:00',
+          localTimeZone: 'UTC-8',
+          ntpServer1: '',
+          ntpServer2: '',
+        );
+        expect(m.localTimeZoneName, '');
+      });
+
+      test('two models differing only by zone name are not equal', () {
+        final sg = _model(
+          currentLocalTime: '2026-09-22T18:30:00+08:00',
+          localTimeZone: 'CST-8',
+          localTimeZoneName: 'Asia/Singapore',
+        );
+        final hk = _model(
+          currentLocalTime: '2026-09-22T18:30:00+08:00',
+          localTimeZone: 'CST-8',
+          localTimeZoneName: 'Asia/Hong_Kong',
+        );
+        expect(sg, isNot(hk));
       });
     });
 
