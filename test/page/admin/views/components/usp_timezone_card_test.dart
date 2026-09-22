@@ -155,7 +155,49 @@ void main() {
       await tester.pumpWidget(_buildTestWidget(timeSettings: unknownTz));
       await tester.pumpAndSettle();
 
-      expect(find.text('WEIRD_TZ_STRING'), findsOneWidget);
+      expect(find.text('WEIRD_TZ_STRING'), findsOneWidget,
+          reason: 'with no reported offset there is nothing truer to show, so '
+              'the raw string stays the last resort.');
+    });
+
+    // #1609 AC9. An unrecognized zone is the ordinary case on FLWRT 2.0, not an
+    // edge: the factory value is a bare `UTC` and 81 of the 89 zones the device
+    // publishes have no entry of ours. We cannot name the region, but the device
+    // reports its offset on every read, so show that rather than a POSIX string.
+    testWidgets('shows the reported offset, not the raw POSIX string',
+        (tester) async {
+      const unknownTz = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // `CST-8` is the device's own value for Asia/Taipei.
+        currentLocalTime: '2026-09-22T18:30:00+08:00',
+        localTimeZone: 'CST-8',
+        ntpServer1: '',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: unknownTz));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GMT+08:00'), findsOneWidget);
+      expect(find.text('CST-8'), findsNothing);
+    });
+
+    testWidgets('shows GMT+00:00 for the factory-default bare UTC',
+        (tester) async {
+      const factoryTz = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-09-22T03:10:17+00:00',
+        // What a factory-fresh FLWRT 2.0 box ships with. The table carries
+        // `UTC0`, not `UTC`, so it has never matched.
+        localTimeZone: 'UTC',
+        ntpServer1: '',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: factoryTz));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GMT+00:00'), findsOneWidget);
     });
 
     testWidgets('edit button triggers onEdit callback', (tester) async {

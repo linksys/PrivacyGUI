@@ -146,6 +146,44 @@ void main() {
       });
     });
 
+    // #1609 AC9. The device reports its offset on every read, so an
+    // unrecognized `LocalTimeZone` still has one true fact to show. Without
+    // this the cards printed the raw POSIX string — `UTC` on a factory-fresh
+    // box, `<+08>-8` once anything sets the zone from the device's own list.
+    group('reportedOffsetMinutes', () {
+      test('reads a positive offset', () {
+        expect(_model(currentLocalTime: '2026-09-22T18:30:00+08:00')
+            .reportedOffsetMinutes, 480);
+      });
+
+      test('reads a negative offset', () {
+        expect(_model(currentLocalTime: '2026-07-15T14:00:00-07:00')
+            .reportedOffsetMinutes, -420);
+      });
+
+      test('reads a fractional offset', () {
+        expect(_model(currentLocalTime: '2026-09-22T18:30:00+05:30')
+            .reportedOffsetMinutes, 330);
+      });
+
+      test('Z means zero, not absent', () {
+        expect(_model(currentLocalTime: '2026-09-22T10:30:00Z')
+            .reportedOffsetMinutes, 0);
+      });
+
+      test('is null when the string carries no offset at all', () {
+        expect(_model(currentLocalTime: '2026-09-22T10:30:00')
+            .reportedOffsetMinutes, isNull);
+      });
+
+      test('is null for an empty or unparseable string', () {
+        expect(_model(currentLocalTime: '').reportedOffsetMinutes, isNull);
+        expect(
+            _model(currentLocalTime: 'not-a-date').reportedOffsetMinutes,
+            isNull);
+      });
+    });
+
     group('formattedDateTime', () {
       test('returns N/A for empty currentLocalTime', () {
         final m = _model(currentLocalTime: '');

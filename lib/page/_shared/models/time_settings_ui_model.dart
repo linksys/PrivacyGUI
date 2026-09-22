@@ -21,28 +21,25 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
 
   bool get isSynchronized => status == 'Synchronized';
 
+  // `Z` is captured rather than merely matched so that "the device said UTC"
+  // stays distinguishable from "the device sent no offset" — see
+  // [reportedOffsetMinutes].
+  static final _isoPattern = RegExp(
+    r'(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})'
+    r'(?:(Z)|([+-])(\d{2}):(\d{2}))?',
+  );
+
+  RegExpMatch? get _isoMatch => currentLocalTime.isEmpty
+      ? null
+      : _isoPattern.firstMatch(currentLocalTime);
+
   DateTime? get parsedLocalTime {
-    if (currentLocalTime.isEmpty) return null;
-    final match = RegExp(
-      r'(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})'
-      r'(?:Z|([+-])(\d{2}):(\d{2}))?',
-    ).firstMatch(currentLocalTime);
+    final match = _isoMatch;
     if (match == null) return null;
 
-    var dt = DateTime(
-      int.parse(match[1]!),
-      int.parse(match[2]!),
-      int.parse(match[3]!),
-      int.parse(match[4]!),
-      int.parse(match[5]!),
-      int.parse(match[6]!),
-    );
-
-    // The captured offset is deliberately not applied (#1609). `dt` already
-    // holds the device's wall clock, which is the only thing either consumer
-    // wants: `formatDateTime` prints the fields, and `LocalTimeTicker` advances
-    // them. The offset groups stay in the pattern so both `Z` and `+HH:MM`
-    // forms keep parsing.
+    // The captured offset is deliberately not applied (#1609). The wall clock
+    // below is the only thing either consumer wants: `formatDateTime` prints
+    // the fields, and `LocalTimeTicker` advances them.
     //
     // What used to happen here was a round trip — subtract the reported offset
     // to reach UTC, then add back `matchTimezone(localTimeZone)!
@@ -61,7 +58,36 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
     // `Device.Time.*` paths in one `Get` under a single `BridgeRequestThrottler`
     // cacheKey, so the offset and the zone are always the same snapshot — the
     // divergence cannot enter here to begin with.
-    return dt;
+    return DateTime(
+      int.parse(match[1]!),
+      int.parse(match[2]!),
+      int.parse(match[3]!),
+      int.parse(match[4]!),
+      int.parse(match[5]!),
+      int.parse(match[6]!),
+    );
+  }
+
+  /// The UTC offset the device reported alongside [currentLocalTime], in
+  /// minutes, or null when the string carried none.
+  ///
+  /// This is the one true fact still available when [localTimeZone] is a POSIX
+  /// string `kTimeZoneDefinitions` does not carry — which on FLWRT 2.0 is the
+  /// common case rather than the exotic one. The factory value is a bare `UTC`,
+  /// and 81 of the 89 zones the device publishes in
+  /// `Device.Time.X_LINKSYS_SupportedZones` have no entry of ours. The cards
+  /// render `GMT±HH:MM` from this instead of printing the raw POSIX string at
+  /// the user (#1609).
+  ///
+  /// Unlike the clock, this is a property of the *string*, so it is DST-correct
+  /// for free: the firmware has already applied the rule.
+  int? get reportedOffsetMinutes {
+    final match = _isoMatch;
+    if (match == null) return null;
+    if (match[7] != null) return 0;
+    if (match[8] == null) return null;
+    final sign = match[8] == '+' ? 1 : -1;
+    return sign * (int.parse(match[9]!) * 60 + int.parse(match[10]!));
   }
 
   String get formattedDateTime {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -52,11 +53,20 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
   Widget build(BuildContext context) {
     final tzInfo = matchTimezone(widget.timeSettings.localTimeZone);
     final dstEnabled = inferDstEnabled(widget.timeSettings.localTimeZone);
+    // Three tiers, because an unmatched zone is ordinary on FLWRT 2.0 rather
+// than exotic — the factory value is a bare `UTC` and 81 of the 89 zones the
+    // device publishes have no entry of ours (#1609). When we cannot name the
+    // region we still know the offset, because the device reports it with every
+    // clock reading; the raw POSIX string is the last resort, for a reading that
+    // carried no offset either.
+    final reportedOffset = widget.timeSettings.reportedOffsetMinutes;
     final tzDisplay = tzInfo != null
         ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
-        : widget.timeSettings.localTimeZone.isNotEmpty
-            ? widget.timeSettings.localTimeZone
-            : 'Not set';
+        : reportedOffset != null
+            ? formatGmtOffset(reportedOffset)
+            : widget.timeSettings.localTimeZone.isNotEmpty
+                ? widget.timeSettings.localTimeZone
+                : 'Not set';
 
     final timeDisplay = currentTime != null
         ? TimeSettingsUIModel.formatDateTime(currentTime!)

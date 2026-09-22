@@ -124,6 +124,30 @@ void main() {
       expect(find.text('Not set'), findsOneWidget);
     });
 
+    // #1609 AC9, the dashboard half. Same three tiers as the Administration
+    // card: name the region when we can, otherwise show the offset the device
+    // reported, and keep the raw POSIX string only for a reading that carried
+    // no offset at all.
+    testWidgets('shows the reported offset for an unrecognized zone',
+        (tester) async {
+      const unknownTz = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // `CST-8` is the device's own value for Asia/Taipei.
+        currentLocalTime: '2026-09-22T18:30:00+08:00',
+        localTimeZone: 'CST-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(unknownTz));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GMT+08:00'), findsOneWidget,
+          reason: 'once, in the name row — the dedicated UTC-offset row stays '
+              'hidden rather than repeating it.');
+      expect(find.text('CST-8'), findsNothing);
+    });
+
     testWidgets('shows skeleton when data is null', (tester) async {
       // Override with a notifier that never resolves
       await tester.pumpWidget(
