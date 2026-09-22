@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
 
 /// Tests for the timezone edit dialog's data model and logic.
@@ -230,16 +231,22 @@ void main() {
     // result that reads back as the zone the user was looking at, not as the
     // sibling non-DST zone at the same offset. These mirror what the dialog's
     // `event` callback builds.
+    // Mirrors what the dialog's `event` callback builds, so both switch
+    // positions go through one expression rather than two copies of it — and so
+    // neither `dstEnabled` is a compile-time constant, which made one arm
+    // unreachable and the analyzer call it dead.
+    TimezoneEditResult resultFor(TimeZoneInfo tz, {required bool dstEnabled}) {
+      final posix = tz.observesDST && !dstEnabled ? tz.standardTimePosix : null;
+      return TimezoneEditResult(
+        zoneName: posix == null ? tz.ianaName : null,
+        localTimeZone: posix,
+      );
+    }
+
     test('daylight savings off sends the POSIX abbreviation, not the name', () {
       final eastern =
           kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
-      const dstEnabled = false;
-      final posix =
-          eastern.observesDST && !dstEnabled ? eastern.standardTimePosix : null;
-      final result = TimezoneEditResult(
-        zoneName: posix == null ? eastern.ianaName : null,
-        localTimeZone: posix,
-      );
+      final result = resultFor(eastern, dstEnabled: false);
 
       expect(result.localTimeZone, 'EST5');
       expect(result.zoneName, isNull,
@@ -252,16 +259,22 @@ void main() {
     test('daylight savings on sends the name', () {
       final eastern =
           kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
-      const dstEnabled = true;
-      final posix =
-          eastern.observesDST && !dstEnabled ? eastern.standardTimePosix : null;
-      final result = TimezoneEditResult(
-        zoneName: posix == null ? eastern.ianaName : null,
-        localTimeZone: posix,
-      );
+      final result = resultFor(eastern, dstEnabled: true);
 
       expect(result.zoneName, 'America/New_York');
       expect(result.localTimeZone, isNull);
+    });
+
+    test('a non-DST zone sends its name whichever way the flag is set', () {
+      // The switch is disabled for these, so `dstEnabled` cannot be true in
+      // practice; pinned both ways because nothing in the types says so.
+      final sg = kTimeZoneDefinitions
+          .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
+      for (final flag in [false, true]) {
+        final result = resultFor(sg, dstEnabled: flag);
+        expect(result.zoneName, 'Asia/Singapore');
+        expect(result.localTimeZone, isNull);
+      }
     });
 
     test('a zone whose switch is disabled always sends the name', () {
