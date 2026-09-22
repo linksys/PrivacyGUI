@@ -46,6 +46,26 @@ class TimeZoneInfo {
   /// `kTimeZoneDefinitions` for which and why.
   final String? ianaName;
 
+  /// What to write when the user switches daylight savings **off** on a zone
+  /// that observes it — this zone's own standard-time POSIX string.
+  ///
+  /// Null on a zone whose daylight savings cannot be switched off, which is a
+  /// firmware limit and not a choice: the validator accepts a string only if it
+  /// is in `X_LINKSYS_SupportedZones` or parses as POSIX, and it rejects `CLT4`,
+  /// `NST3:30`, `BRT3` and `AZOT1` on both counts — those abbreviations are
+  /// obsolete in modern tzdata, which now spells those zones `-04`, `-03` and
+  /// `-01`. The switch is disabled for them. Measured on the bench, 2026-09-22.
+  ///
+  /// This is what makes the switch safe to keep at all (#1609). Switching off
+  /// used to write [posixNoDST], a bare `UTC±N` that carries an offset and no
+  /// identity, so the zone came back as whichever of the two or three zones
+  /// sharing that string `matchTimezone` reached first. A zone's own
+  /// abbreviation is unambiguous, because [matchTimezone] tries `timeZoneID`
+  /// before anything else and these strings *are* the ids. The sibling non-DST
+  /// zone at the same offset is not in the way either: it writes its
+  /// [ianaName], on the other leaf entirely.
+  final String? standardTimePosix;
+
   const TimeZoneInfo({
     required this.timeZoneID,
     required this.utcOffsetMinutes,
@@ -54,7 +74,11 @@ class TimeZoneInfo {
     required this.posixNoDST,
     required this.posixWithDST,
     this.ianaName,
+    this.standardTimePosix,
   });
+
+  /// Whether the daylight-savings switch can be operated for this zone.
+  bool get canSwitchDstOff => observesDST && standardTimePosix != null;
 
   /// Human-readable name without the leading "(GMT±HH:MM) " prefix.
   /// e.g. "(GMT+08:00) Singapore, Taiwan, Russia" → "Singapore, Taiwan, Russia"

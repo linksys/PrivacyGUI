@@ -19,7 +19,13 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     localTimeZone: current.localTimeZone,
     reportedOffsetMinutes: current.reportedOffsetMinutes,
   );
+  final currentDst = dstInEffect(
+    zoneName: current.localTimeZoneName,
+    localTimeZone: current.localTimeZone,
+    reportedOffsetMinutes: current.reportedOffsetMinutes,
+  );
   TimeZoneInfo? selected = currentTz;
+  bool dstEnabled = currentDst;
   String searchQuery = '';
   bool advancedExpanded = false;
   final ntpController = TextEditingController(text: current.ntpServer1);
@@ -47,9 +53,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               return false;
             }).toList();
 
-      // Whether the *selected* zone observes DST, which is all this row says
-      // now — see the switch below.
-      final observesDST = selected?.observesDST ?? false;
+      // Operable only where the firmware will take the string we would write —
+      // see `TimeZoneInfo.standardTimePosix` for the four zones it will not.
+      final canSwitch = selected?.canSwitchDstOff ?? false;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -66,48 +72,38 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             },
           ),
           AppGap.md(),
-          // Daylight savings, as a read-only property of the selected zone
-          // rather than a switch (#1609).
+          // Daylight savings stays a switch (#1609), but what switching it off
+          // *writes* has changed, and that is what makes it safe.
           //
-          // It used to be writable, and that is what made a saved zone come
-          // back wearing another zone's name. Switching it off wrote the
-          // zone's no-DST POSIX string — and "Eastern Time without DST" is not
-          // a distinguishable thing: it is the same clock rule as Panama, which
-          // is exactly what the device's own `EST5` row is. So the zone read
-          // back as Panama. Six of the eleven collisions could not be spelled
-          // apart by any POSIX string for that reason.
+          // It used to write `posixNoDST` — a bare `UTC±N`, an offset with no
+          // identity. Eleven of those strings are each shared by two or three
+          // zones, so the saved zone came back as whichever one `matchTimezone`
+          // reached first: pick Eastern Time, switch daylight savings off, and
+          // the card said "Indiana East, Colombia, Panama". It now writes
+          // `standardTimePosix`, the zone's own abbreviation, which is
+          // unambiguous because `matchTimezone` tries `timeZoneID` first and
+          // these strings are the ids. The sibling non-DST zone is not in
+          // competition either: it writes its IANA name, on the other leaf.
           //
-          // The list already carries both variants as separate entries, so
-          // nothing is lost: "Eastern Time (USA & Canada)" and "Indiana East,
-          // Colombia, Panama" are both there to pick. 1.x worked this way too —
-          // its 40 zone ids bake DST into the entry and it had no switch. What
-          // this removes is a capability 2.x invented, and with it an input the
-          // data model cannot represent.
+          // Disabled on four zones the firmware will not take a standard-time
+          // string for — see `TimeZoneInfo.standardTimePosix`.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: AppText.bodyMedium(loc(context).daylightSavingsTime),
               ),
-              // The `AppSwitch` this replaced carried `identifier:
-              // 'admin-timezone-dst'`, and that identifier is deliberately not
-              // carried over. It has no references in this repo, but the E2E
-              // specs live in another one and harvest identifiers out of Dart
-              // source text, so a spec may well tap it. Keeping the name on a
-              // node that no longer does anything would make that spec tap a
-              // dead control and fail somewhere unrelated — or pass vacuously.
-              // Dropping it makes the lookup fail and point straight here. Any
-              // spec that toggled daylight savings has to change regardless,
-              // because the toggle is gone.
-              KeyedSubtree(
-                key: const Key('dstIndicator'),
-                child: AppText.bodyMedium(
-                  observesDST ? loc(context).on : loc(context).off,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
-                ),
+              AppSwitch(
+                key: const Key('dstToggle'),
+                identifier: 'admin-timezone-dst',
+                value: dstEnabled,
+                onChanged: canSwitch
+                    ? (value) {
+                        setState(() {
+                          dstEnabled = value;
+                        });
+                      }
+                    : null,
               ),
             ],
           ),
@@ -131,6 +127,12 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                         onTap: () {
                           setState(() {
                             selected = tz;
+                            // A zone that cannot report daylight savings, or
+                            // cannot be switched out of it, must not carry a
+                            // stale `true` into the save.
+                            if (!tz.canSwitchDstOff) {
+                              dstEnabled = tz.observesDST;
+                            }
                           });
                         },
                       );
@@ -155,27 +157,34 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
       final tz = selected!;
       final ntpServer1 = ntpValue != current.ntpServer1 ? ntpValue : null;
 
-      // Writing nothing when the zone was not changed is load-bearing, not an
-      // optimisation (#1609). The device may be holding a legacy `UTC±N`, which
-      // is ambiguous — `UTC-8` resolves to Hong Kong although it may have been
-      // saved as Singapore, and `UTC8` resolves to Pacific although the string
-      // has no DST transitions in it. Writing the resolved zone's name back
-      // would commit that guess: an edit that only touched the NTP server would
-      // permanently relabel a Singapore router as Hong Kong, and switch daylight
-      // savings on for a router deliberately left at fixed UTC-8.
-      if (tz == currentTz) {
+      // Writing nothing when neither the zone nor the daylight-savings state
+      // changed is load-bearing, not an optimisation (#1609). The device may be
+      // holding a legacy `UTC±N`, which is ambiguous — `UTC-8` resolves to Hong
+      // Kong although it may have been saved as Singapore, and `UTC8` resolves
+      // to Pacific although the string has no DST transitions in it. Writing the
+      // resolved zone back would commit that guess: an edit that only touched
+      // the NTP server would permanently relabel a Singapore router as Hong
+      // Kong, and switch daylight savings on for a router deliberately left at
+      // a fixed UTC-8.
+      if (tz == currentTz && dstEnabled == currentDst) {
         return TimezoneEditResult.ntpOnly(ntpServer1: ntpServer1);
       }
 
+      // Daylight savings off on a zone that observes it is the one case that
+      // goes out as a POSIX string: there is no IANA zone meaning "Eastern Time
+      // but ignore the DST rule", so the identity channel cannot express it.
+      // `standardTimePosix` can, and unambiguously — see the switch above.
+      final offOnADstZone = tz.observesDST && !dstEnabled;
+      final posix = offOnADstZone ? tz.standardTimePosix : null;
+
       return TimezoneEditResult(
-        // The name when the entry has one, so the choice reads back as itself;
-        // the POSIX string for the three entries whose own offset or DST flag
-        // disagrees with the tz database. Never both — they clobber each other
-        // in the firmware (#1609).
-        zoneName: tz.ianaName,
-        localTimeZone: tz.ianaName == null
-            ? tz.posixFor(dstEnabled: tz.observesDST)
-            : null,
+        // The name otherwise, so the choice reads back as itself. Falls through
+        // to the legacy POSIX form for the three entries whose own offset or DST
+        // flag disagrees with the tz database and so have no faithful name.
+        // Never both — the two leaves clobber each other in the firmware.
+        zoneName: posix == null ? tz.ianaName : null,
+        localTimeZone: posix ??
+            (tz.ianaName == null ? tz.posixFor(dstEnabled: dstEnabled) : null),
         ntpServer1: ntpServer1,
       );
     },

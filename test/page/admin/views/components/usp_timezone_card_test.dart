@@ -134,6 +134,32 @@ void main() {
       expect(find.text('On'), findsNothing);
     });
 
+    // #1609. The shape switching daylight savings off now writes: the zone's own
+    // abbreviation. It has to read back as the zone the user was looking at, not
+    // as the non-DST sibling at the same offset — which is exactly what the old
+    // `UTC5` did.
+    testWidgets('Eastern Time with daylight savings off stays Eastern Time',
+        (tester) async {
+      const dstOff = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // The firmware clears the zone name when the POSIX leaf is written, so
+        // this is exactly what the device reports afterwards.
+        currentLocalTime: '2026-09-22T09:30:00-05:00',
+        localTimeZone: 'EST5',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: dstOff));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Eastern Time'), findsOneWidget);
+      expect(find.textContaining('Indiana East'), findsNothing);
+      expect(find.text('Daylight Savings Time'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+      expect(find.text('2026-09-22 09:30:00'), findsOneWidget);
+    });
+
     // #1609 AC5: the pair that no POSIX string could tell apart.
     testWidgets('the zone name picks Singapore over Hong Kong', (tester) async {
       const sg = TimeSettingsUIModel(

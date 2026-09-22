@@ -272,6 +272,65 @@ void main() {
     // disagree: the label comes from the POSIX string because the clock
     // contradicts the name, while the DST state still comes off the name. The
     // card would then show Hong Kong with daylight savings on.
+    // Switching daylight savings off is what used to relabel the zone, and it is
+    // safe again because of *what* it writes. `standardTimePosix` is the zone's
+    // own abbreviation, which is also its `timeZoneID`, and `matchTimezone` tries
+    // ids before anything else — so it comes back as itself rather than as
+    // whichever zone happened to share the old `UTC±N`.
+    test('every switchable zone round-trips with daylight savings off', () {
+      final switchable =
+          kTimeZoneDefinitions.where((tz) => tz.canSwitchDstOff).toList();
+      expect(switchable, hasLength(11));
+      for (final tz in switchable) {
+        final written = tz.standardTimePosix!;
+        expect(matchTimezone(written)?.timeZoneID, tz.timeZoneID,
+            reason: '${tz.timeZoneID} does not read back as itself');
+        expect(dstInEffect(zoneName: '', localTimeZone: written), isFalse,
+            reason: '$written must not read as daylight savings on');
+      }
+    });
+
+    test('it stays distinguishable from the sibling non-DST zone', () {
+      // The pairs that shared a `UTC±N` and so swapped labels. One goes out as a
+      // POSIX abbreviation, the other as an IANA name, on different leaves.
+      const pairs = {
+        'EST5': 'America/Panama',
+        'MST7': 'America/Phoenix',
+        'CST6': 'America/Mexico_City',
+        'AST4': 'America/Caracas',
+        'GMT0': 'Africa/Monrovia',
+        'CET-1': 'Africa/Tunis',
+      };
+      pairs.forEach((posix, name) {
+        final dstOff = resolveTimezone(zoneName: '', localTimeZone: posix);
+        final sibling = resolveTimezone(zoneName: name, localTimeZone: posix);
+        expect(dstOff?.timeZoneID, posix);
+        expect(sibling?.ianaName, name);
+        expect(dstOff!.timeZoneID, isNot(sibling!.timeZoneID),
+            reason:
+                '$posix and $name must not resolve to the same entry — that '
+                'was the defect');
+      });
+    });
+
+    test('the four zones the firmware refuses cannot be switched', () {
+      // `CLT4`, `NST3:30`, `BRT3` and `AZOT1` are rejected by the validator:
+      // obsolete abbreviations that modern tzdata spells `-04`, `-03`, `-01`,
+      // and no supported-zone row to fall back on. Bench-measured.
+      final unswitchable = kTimeZoneDefinitions
+          .where((tz) => tz.observesDST && !tz.canSwitchDstOff)
+          .map((tz) => tz.timeZoneID)
+          .toSet();
+      expect(unswitchable, {'CLT4', 'NST03:30', 'BRT3', 'AZOT1'});
+    });
+
+    test('no non-DST zone carries a standardTimePosix', () {
+      for (final tz in kTimeZoneDefinitions.where((t) => !t.observesDST)) {
+        expect(tz.standardTimePosix, isNull,
+            reason: '${tz.timeZoneID} has no daylight savings to switch off');
+      }
+    });
+
     test('a vetoed name does not get to decide the DST state', () {
       const args = (
         zoneName: 'America/New_York', // observes DST, standard -300

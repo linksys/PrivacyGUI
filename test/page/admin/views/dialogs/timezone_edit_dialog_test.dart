@@ -102,13 +102,10 @@ void main() {
     });
   });
 
-  // #1609 replaces the old `Dialog DST toggle logic` group. Daylight savings is
-  // no longer an input: it was writable, and switching it off wrote the zone's
-  // no-DST POSIX string — which is not a distinguishable thing, because
-  // "Eastern Time without DST" is the same clock rule as Panama and the device's
-  // own `EST5` row *is* Panama. The zone therefore came back relabelled. The
-  // list already carries both variants as separate entries, so the choice is
-  // still there; it is made by picking a zone, the way 1.x did it.
+  // #1609. Daylight savings is still an input. What changed is what switching it
+  // off *writes*: `standardTimePosix`, the zone's own abbreviation, instead of
+  // the ambiguous `UTC±N` that made the zone come back relabelled. The switch is
+  // disabled on the four zones the firmware refuses a standard-time string for.
   group('Dialog daylight-savings display', () {
     test('a DST zone read from the device reports DST on', () {
       const settings = TimeSettingsUIModel(
@@ -223,10 +220,57 @@ void main() {
         () {
       // `UTC-8` was saved as Singapore but resolves to Hong Kong. If the dialog
       // wrote the resolved zone on an NTP-only edit, that is the relabelling it
-      // would commit — which is why it writes nothing when the selection is
-      // unchanged.
+      // would commit — which is why it writes nothing when neither the zone nor
+      // the daylight-savings state changed.
       final resolved = resolveTimezone(zoneName: '', localTimeZone: 'UTC-8');
       expect(resolved?.ianaName, 'Asia/Hong_Kong');
+    });
+
+    // The whole point of keeping the switch: turning it off must produce a
+    // result that reads back as the zone the user was looking at, not as the
+    // sibling non-DST zone at the same offset. These mirror what the dialog's
+    // `event` callback builds.
+    test('daylight savings off sends the POSIX abbreviation, not the name', () {
+      final eastern =
+          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
+      const dstEnabled = false;
+      final posix =
+          eastern.observesDST && !dstEnabled ? eastern.standardTimePosix : null;
+      final result = TimezoneEditResult(
+        zoneName: posix == null ? eastern.ianaName : null,
+        localTimeZone: posix,
+      );
+
+      expect(result.localTimeZone, 'EST5');
+      expect(result.zoneName, isNull,
+          reason: 'the name would carry the DST rule back in');
+      expect(matchTimezone(result.localTimeZone!)?.timeZoneID, 'EST5');
+      expect(dstInEffect(zoneName: '', localTimeZone: result.localTimeZone!),
+          isFalse);
+    });
+
+    test('daylight savings on sends the name', () {
+      final eastern =
+          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
+      const dstEnabled = true;
+      final posix =
+          eastern.observesDST && !dstEnabled ? eastern.standardTimePosix : null;
+      final result = TimezoneEditResult(
+        zoneName: posix == null ? eastern.ianaName : null,
+        localTimeZone: posix,
+      );
+
+      expect(result.zoneName, 'America/New_York');
+      expect(result.localTimeZone, isNull);
+    });
+
+    test('a zone whose switch is disabled always sends the name', () {
+      // Chile: the firmware refuses `CLT4`, so there is no off state to send.
+      final chile =
+          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'CLT4');
+      expect(chile.canSwitchDstOff, isFalse);
+      expect(chile.standardTimePosix, isNull);
+      expect(chile.ianaName, 'America/Santiago');
     });
   });
 
