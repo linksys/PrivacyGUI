@@ -35,8 +35,14 @@ class MascotTriggerState {
   /// Previous WAN status for change detection.
   final bool? previousWanUp;
 
-  /// Previous device count for change detection.
-  final int? previousDeviceCount;
+  /// Previous client MACs for change detection.
+  ///
+  /// A set rather than a count, because the trigger has to *name* the device
+  /// that joined: a count says only that one did, and picking a name out of the
+  /// current list means guessing which entry is new (#1531). It also catches a
+  /// swap — one device leaves, another joins between two published snapshots —
+  /// which a count is blind to.
+  final Set<String>? previousClientMacs;
 
   /// Previous firewall status for change detection.
   final bool? previousFirewallEnabled;
@@ -48,7 +54,7 @@ class MascotTriggerState {
     this.lastTrigger,
     this.lastTriggerTime,
     this.previousWanUp,
-    this.previousDeviceCount,
+    this.previousClientMacs,
     this.previousFirewallEnabled,
     this.previousDisabledRadios,
   });
@@ -57,7 +63,7 @@ class MascotTriggerState {
     MascotTrigger? lastTrigger,
     DateTime? lastTriggerTime,
     bool? previousWanUp,
-    int? previousDeviceCount,
+    Set<String>? previousClientMacs,
     bool? previousFirewallEnabled,
     Set<String>? previousDisabledRadios,
   }) {
@@ -65,7 +71,7 @@ class MascotTriggerState {
       lastTrigger: lastTrigger ?? this.lastTrigger,
       lastTriggerTime: lastTriggerTime ?? this.lastTriggerTime,
       previousWanUp: previousWanUp ?? this.previousWanUp,
-      previousDeviceCount: previousDeviceCount ?? this.previousDeviceCount,
+      previousClientMacs: previousClientMacs ?? this.previousClientMacs,
       previousFirewallEnabled:
           previousFirewallEnabled ?? this.previousFirewallEnabled,
       previousDisabledRadios:
@@ -123,7 +129,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
     return MascotTriggerState(
       previousWanUp: wan?.model.isUp,
-      previousDeviceCount: devices?.clientDevices.length,
+      previousClientMacs: _macsOf(devices),
       previousFirewallEnabled: firewall?.firewallModel.isIPv4FirewallEnabled,
       previousDisabledRadios: disabledRadios,
     );
@@ -209,30 +215,42 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     final devices = ref.read(devicesDataProvider).valueOrNull;
     if (devices == null) return null;
 
-    final currentCount = devices.clientDevices.length;
-    final previousCount = state.previousDeviceCount;
+    final currentMacs = _macsOf(devices)!;
+    final previousMacs = state.previousClientMacs;
 
     // Update state for next comparison
-    state = state.copyWith(previousDeviceCount: currentCount);
+    state = state.copyWith(previousClientMacs: currentMacs);
 
-    // Only trigger when new device joins (count increases)
-    if (previousCount == null) return null;
-    if (currentCount <= previousCount) return null;
+    // Only trigger when a MAC appears that was not there before
+    if (previousMacs == null) return null;
+    final joined = currentMacs.difference(previousMacs);
+    if (joined.isEmpty) return null;
 
-    // Find the newest device (last in list by convention)
-    final newDevice = devices.clientDevices.isNotEmpty
-        ? (devices.clientDevices.last.hostName.isNotEmpty
-            ? devices.clientDevices.last.hostName
-            : devices.clientDevices.last.mac)
-        : 'Unknown device';
+    // The device that owns the first new MAC. `firstWhere` cannot miss: every
+    // MAC in `joined` came from this same list a few lines up.
+    //
+    // `displayName` rather than an inlined hostName-else-MAC, so the bubble
+    // names the device the way every other screen does — it prefers
+    // `friendlyName`, which a user who renamed a device expects to see.
+    final newDevice = devices.clientDevices
+        .firstWhere((d) => d.mac == joined.first)
+        .displayName;
 
     // The device *name* is deliberately absent from this line. `debugPrint` is
     // not stripped in release builds, so on web it reaches the browser console —
-    // and `newDevice` is a friendly name, a hostname or, failing both, a MAC.
+    // and `displayName` is a friendly name, a hostname or, failing both, a MAC.
     // The count is enough to tell the trigger fired; the name is on screen.
-    logger.d('[Mascot][Trigger]: New device joined (now $currentCount clients)');
+    logger.d('[Mascot][Trigger]: New device joined '
+        '(${joined.length} new, ${currentMacs.length} clients)');
     return TriggerDefinitions.newDeviceJoined(newDevice);
   }
+
+  /// The MAC set of [devices]' clients, or null when there is no data to read.
+  ///
+  /// Null and empty are different states here: null means "no baseline yet", and
+  /// the evaluators use it to skip the very first comparison.
+  static Set<String>? _macsOf(DevicesData? devices) =>
+      devices?.clientDevices.map((d) => d.mac).toSet();
 
   MascotTrigger? _evaluateFirewallChanges() {
     final firewall = ref.read(firewallDataProvider).valueOrNull;

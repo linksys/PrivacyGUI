@@ -172,7 +172,7 @@ void main() {
         final state = container.read(mascotTriggerProvider);
         expect(state.lastTrigger, isNull);
         expect(state.previousWanUp, isTrue);
-        expect(state.previousDeviceCount, 2);
+        expect(state.previousClientMacs, hasLength(2));
         expect(state.previousFirewallEnabled, isTrue);
         expect(state.previousDisabledRadios, isEmpty);
 
@@ -395,7 +395,8 @@ void main() {
         settle(async);
 
         expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).previousDeviceCount, 1);
+        expect(container.read(mascotTriggerProvider).previousClientMacs,
+            hasLength(1));
 
         container.dispose();
       });
@@ -414,6 +415,135 @@ void main() {
         wan.setData(SystemHealthTestData.createWanData(isUp: false));
         settle(async);
         expect(fired.map((t) => t.id), ['wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    // A2 (#1531): the announced device. The baseline holds the MAC *set*, not a
+    // count, because a count cannot name which device arrived — the old code
+    // took `clientDevices.last` on a list `MeshNetwork.allClients` builds as
+    // master's clients, then each slave's, then unassigned, which is ordered by
+    // node and never by join time.
+    test('the joining device is named, not the last one in the list', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Old-B'),
+          ],
+        ));
+        final container = mount(async);
+
+        // The newcomer is inserted at the *front*, so `.last` would name 'Old-B'.
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'BB:BB:BB:BB:BB:BB', hostName: 'Newcomer'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Old-B'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['new_device_joined']);
+        expect(fired.single.message, contains('Newcomer'));
+        expect(fired.single.message, isNot(contains('Old-B')));
+
+        container.dispose();
+      });
+    });
+
+    // The count is blind to this: one device leaves and another joins in the
+    // same published snapshot, so `currentCount <= previousCount` swallowed it.
+    test('a swap at an unchanged count still fires for the newcomer', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Stays'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Leaves'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Stays'),
+            MascotTestData.createClient(
+                mac: 'CC:CC:CC:CC:CC:CC', hostName: 'Arrives'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['new_device_joined']);
+        expect(fired.single.message, contains('Arrives'));
+
+        container.dispose();
+      });
+    });
+
+    // `ClientDevice.displayName` prefers friendlyName, then hostName, then the
+    // MAC. The trigger used to inline hostName-else-MAC, so a renamed device was
+    // announced under a name the rest of the UI does not show it by.
+    test('the announced name is the one the rest of the UI shows', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+              mac: 'BB:BB:BB:BB:BB:BB',
+              hostName: 'raw-hostname',
+              friendlyName: "Ada's Laptop",
+            ),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.single.message, contains("Ada's Laptop"));
+        expect(fired.single.message, isNot(contains('raw-hostname')));
+
+        container.dispose();
+      });
+    });
+
+    // Nothing to name, so nothing is claimed: a device with neither name falls
+    // back to its MAC, which is what `displayName` does.
+    test('a nameless device is announced by its MAC', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(mac: 'BB:BB:BB:BB:BB:BB'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.single.message, contains('BB:BB:BB:BB:BB:BB'));
 
         container.dispose();
       });
