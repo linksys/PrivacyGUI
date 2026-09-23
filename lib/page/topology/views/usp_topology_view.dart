@@ -80,6 +80,11 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     final asyncDevices = ref.watch(devicesDataProvider);
 
     return UiKitPageView.withSliver(
+      // Stays scrollable. Turning it off does not give the graph an unbounded
+      // parent to fill — `withSliver` puts the body in a `SliverToBoxAdapter`
+      // either way, so the incoming height is infinite and an `Expanded` there
+      // throws on every frame. The graph therefore keeps an explicit height, and
+      // the page keeps its scroll.
       scrollable: true,
       title: loc(context).networkTopology,
       topbar: const PreferredSize(
@@ -166,8 +171,16 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
         ),
         AppGap.sm(),
         // Topology view
+        // An explicit height, because the sliver body above it is unbounded.
+        //
+        // 0.78 rather than 0.7: the graph now pans, so it is worth more of the
+        // viewport — but it cannot have all of it. The page scrolls, and a graph
+        // that filled the viewport exactly would leave a vertical drag ambiguous
+        // between panning the mesh and scrolling the page. Leaving a margin keeps
+        // the page's own scroll reachable beside the graph rather than only
+        // through it.
         SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7,
+          height: MediaQuery.of(context).size.height * 0.78,
           // The width decides which view `auto` resolves to, and that decides
           // which of the two tap reactions is live — so it has to be read from the
           // same box the kit measures, not from the screen.
@@ -179,12 +192,43 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 topology: topology,
                 viewMode: TopologyViewMode.auto,
                 layoutMode: LayoutRecommendation.auto,
+                // Adaptive, not `always`: a leaf is drawn while its disc is at
+                // least 44px across and held behind an aggregate below that, so a
+                // crowded parent folds instead of stacking devices nobody can hit.
+                //
+                // ui_kit measured what the alternatives cost. `always` keeps every
+                // device on screen at any density — 9% of taps opened the wrong
+                // device at ten leaves per parent, 61% at twelve. `clustered` asks a
+                // *count* to answer a question about room and fires at thirteen,
+                // which is past both. Adaptive asks about the room directly.
+                //
+                // Its escape hatch is zoom, and this page has one despite
+                // `interactive: false`: that flag only disables the InteractiveViewer's
+                // gestures, while the transformation controller stays live — so
+                // `TopologyController.focusOn` still zooms to a device and opens
+                // whatever aggregate was holding it. The search field is that route.
+                //
+                // Off means `collapsed`, not `onHover`. `onHover` reveals a
+                // parent's leaves whenever the pointer crosses it, so on a desktop
+                // the devices the viewer just asked to hide come back under the
+                // cursor and cannot be got rid of. `collapsed` is the mode that
+                // means what the switch says — and it is also the one that leaves
+                // the count on each node, because `LeafOrbitRing` draws its number
+                // whenever the leaves are not expanded.
                 leafVisibility: _showDevices
-                    ? LeafVisibility.always
-                    : LeafVisibility.onHover,
+                    ? LeafVisibility.adaptive
+                    : LeafVisibility.collapsed,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
-                interactive: false,
+                // Pan and zoom. The page above does not scroll, so the gesture
+                // arena has one claimant.
+                //
+                // This is also what `LeafVisibility.adaptive` needs to be usable
+                // rather than merely correct: it aggregates a parent's leaves when
+                // their drawn size falls under 44px and reopens them when the
+                // viewer zooms in, the way zooming a map opens its pins. Without a
+                // pinch the only route back into a cluster was the search field.
+                interactive: true,
                 controller: _controller,
                 // One reaction per tap, and which reaction depends on which view is
                 // on screen.
