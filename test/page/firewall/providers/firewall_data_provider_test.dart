@@ -86,6 +86,62 @@ void main() {
       ]);
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test below passes, and passed before the fix too, because it holds
+    // `container.listen(firewallDataProvider, …)` for the whole test. The old
+    // `invalidateSelf()` only SCHEDULED a rebuild — riverpod runs `build()` again when
+    // something READS the provider, and that listener guaranteed something did. So the
+    // passing test could not tell "the refresh works" apart from "the refresh works
+    // BECAUSE a subscriber was held".
+    //
+    // Production does not guarantee one. This provider's only dashboard consumer is the
+    // `firewall_overview` card, which the `essential` preset omits — so a user on that
+    // preset who left the Firewall page had no watcher at all, and the first matching
+    // notification would then have disabled the mechanism permanently, because the
+    // `ref.listen` lives inside `build()` and was never re-registered.
+    //
+    // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
+    //
+    // The provider is read once up front so the notifier is constructed and its
+    // `ref.listen` registered — a one-shot `read` rather than a `listen` is deliberately
+    // what a widget that has since stopped watching looks like.
+    // -----------------------------------------------------------------------
+    test(
+        '#1615: firewallRules re-fetches with NO listener held on the provider',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sseController.stream);
+
+        container.read(firewallDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Proves build() completed, so the ref.listen inside it is registered and the
+        // event below has something to reach. Asserting on the VALUE rather than a
+        // verify() count, because mocktail's verify CONSUMES the calls it matches:
+        // calling it here would leave nothing for the assertion that matters.
+        expect(container.read(firewallDataProvider).hasValue, isTrue,
+            reason:
+                'build() must have completed, or this test asserts nothing');
+
+        clearInteractions(mockService);
+
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockService.fetch()).called(1);
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
     test('SSE firewallRules domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -96,10 +97,52 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     );
   }
 
+  /// Schedule a re-fetch that does NOT depend on anyone reading this provider.
+  ///
+  /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
+  /// and marks the provider for rebuild; riverpod runs `build()` again **when something
+  /// reads the provider**. Nothing guarantees a reader when the debounce timer fires,
+  /// and when there is none:
+  ///
+  ///   - `build()` does not run, so no re-fetch happens, and
+  ///   - the two `ref.listen` calls above — which live INSIDE `build()` — are not
+  ///     re-registered, so the NEXT notification does not even reach a listener.
+  ///
+  /// The second consequence is what makes it worse than a missed refresh: **the first
+  /// matching notification disables the mechanism.** Measured for this provider:
+  /// holding a subscriber gave 2 fetches → 4 after a `dhcpClients` event; holding none
+  /// gave 2 → 2.
+  ///
+  /// THIS PROVIDER WAS THE ONE ACTUALLY BROKEN IN PRODUCTION. Its only dashboard
+  /// consumer is the `dhcp_reservations` card, which appears solely in the
+  /// `professional` preset (`usp_dashboard_preset.dart`), so on the default `standard`
+  /// preset nothing watched it once the user left the Local Network page — exactly
+  /// `wanDataProvider`'s situation in #1615.
+  ///
+  /// Assigning `state` directly removes the dependency: the value is published whether
+  /// or not anything is watching, and `build()` — with its listeners — is never torn
+  /// down. `ref.onDispose` still cancels the timer, which matters for efficiency (a
+  /// disposed notifier would otherwise issue one more USP fetch); it is not needed for
+  /// correctness, because riverpod 2.6.1 accepts a post-dispose `state` assignment
+  /// silently rather than throwing (measured).
   void _debouncedInvalidate() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.invalidateSelf();
-    });
+    _debounce =
+        Timer(const Duration(milliseconds: 500), () => _refreshFromPush());
+  }
+
+  /// Re-read the device and publish the result, keeping the previous value on failure.
+  ///
+  /// An error state would render as "unknown" to every consumer (all read through
+  /// `valueOrNull`), so a transient device hiccup would blank the client and
+  /// reservation lists. A stale-but-plausible value is the better failure here — the
+  /// same reasoning `wanDataProvider` records for #1615.
+  Future<void> _refreshFromPush() async {
+    try {
+      state = AsyncData(await _fetch());
+    } catch (e, st) {
+      logger.w('[DHCP] push-triggered refetch failed, keeping previous value',
+          error: e, stackTrace: st);
+    }
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
@@ -134,10 +135,50 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
     );
   }
 
+  /// Schedule a re-fetch that does NOT depend on anyone reading this provider.
+  ///
+  /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
+  /// and marks the provider for rebuild; riverpod runs `build()` again **when something
+  /// reads the provider**. When the debounce timer fires with no reader:
+  ///
+  ///   - `build()` does not run, so no re-fetch happens, and
+  ///   - the `ref.listen` above — which lives INSIDE `build()` — is not re-registered,
+  ///     so the NEXT notification does not even reach a listener.
+  ///
+  /// So the first matching notification disables the mechanism. Measured: a held
+  /// subscriber gave 1 fetch → 2 after a `firewallRules` event; no subscriber, 1 → 1.
+  ///
+  /// WAS THIS REACHABLE? Yes, on one preset. The only dashboard consumer is the
+  /// `firewall_overview` card, which the `essential` preset omits
+  /// (`usp_dashboard_preset.dart`) — so a user on `essential` had no watcher once they
+  /// left the Firewall page. On the other presets a card happened to hold a
+  /// subscription, which made this correct BY COINCIDENCE: the guarantee was a
+  /// `const` list in a preset definition, not anything this provider controls.
+  ///
+  /// Assigning `state` directly removes the dependency entirely. `ref.onDispose` still
+  /// cancels the timer, which matters for efficiency (a disposed notifier would
+  /// otherwise issue one more USP fetch); it is not needed for correctness, because
+  /// riverpod 2.6.1 accepts a post-dispose `state` assignment silently rather than
+  /// throwing (measured).
   void _debouncedInvalidate() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.invalidateSelf();
-    });
+    _debounce =
+        Timer(const Duration(milliseconds: 500), () => _refreshFromPush());
+  }
+
+  /// Re-read the device and publish the result, keeping the previous value on failure.
+  ///
+  /// Every consumer reads this through `valueOrNull`, so an error state renders as
+  /// "unknown" — a transient hiccup would blank the firewall and DMZ summaries. A
+  /// stale-but-plausible value is the better failure here.
+  Future<void> _refreshFromPush() async {
+    try {
+      state = AsyncData(await _fetch());
+    } catch (e, st) {
+      logger.w(
+          '[Firewall] push-triggered refetch failed, keeping previous value',
+          error: e,
+          stackTrace: st);
+    }
   }
 }

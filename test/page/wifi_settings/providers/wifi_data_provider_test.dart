@@ -86,6 +86,62 @@ void main() {
       InvalidationDomain.wifiAccessPoints,
       InvalidationDomain.wifiClients,
     ]) {
+      // ---------------------------------------------------------------------
+      // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+      //
+      // The test below it passes, and passed before the fix too, because it holds
+      // `container.listen(wifiDataProvider, …)` for the whole test. The old
+      // `invalidateSelf()` only SCHEDULED a rebuild — riverpod runs `build()` again when
+      // something READS the provider, and that listener guaranteed something did. So the
+      // passing test could not tell "the refresh works" apart from "the refresh works
+      // BECAUSE a subscriber was held".
+      //
+      // On every current dashboard preset something DOES watch this provider —
+      // `stats_panel` reads it and appears in all five presets. So this was correct BY
+      // COINCIDENCE: the guarantee was five `const` lists in `usp_dashboard_preset.dart`
+      // all happening to include one card, not anything this provider controls. And no
+      // test would have caught the coincidence breaking, because every test in this file
+      // holds a subscriber.
+      //
+      // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
+      //
+      // Run for each watched domain, like the test below, so a guard that regressed for
+      // only one of the four is still caught.
+      // ---------------------------------------------------------------------
+      test('#1615: ${domain.name} re-fetches with NO listener held', () {
+        fakeAsync((async) {
+          final sseController = StreamController<InvalidationEvent>.broadcast();
+          final container = createContainer(sseStream: sseController.stream);
+
+          // A one-shot read rather than a listen: what a widget that has since stopped
+          // watching looks like. It still constructs the notifier, so build()'s
+          // `ref.listen` is registered.
+          container.read(wifiDataProvider);
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 1));
+          async.flushMicrotasks();
+
+          // Asserting on the VALUE, not a verify() count — mocktail's verify CONSUMES
+          // the calls it matches, so a count-based guard would eat the evidence the
+          // real assertion needs.
+          expect(container.read(wifiDataProvider).hasValue, isTrue,
+              reason:
+                  'build() must have completed, or this test asserts nothing');
+
+          clearInteractions(mockService);
+
+          sseController.add((domain: domain, seq: 0));
+          async.flushMicrotasks();
+          async.elapse(const Duration(milliseconds: 500));
+          async.flushMicrotasks();
+
+          verify(() => mockService.fetch()).called(1);
+
+          sseController.close();
+          container.dispose();
+        });
+      });
+
       test('SSE ${domain.name} domain triggers debounced re-fetch', () {
         fakeAsync((async) {
           final sseController = StreamController<InvalidationEvent>.broadcast();

@@ -73,6 +73,62 @@ void main() {
       expect(a.props, [a.ruleModels]);
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test below passes, and passed before the fix too, because it holds
+    // `container.listen(portForwardingDataProvider, …)` for the whole test. The old
+    // `invalidateSelf()` only SCHEDULED a rebuild — riverpod runs `build()` again when
+    // something READS the provider, and that listener guaranteed something did. So the
+    // passing test could not tell "the refresh works" apart from "the refresh works
+    // BECAUSE a subscriber was held".
+    //
+    // On every current dashboard preset something DOES watch this provider —
+    // `stats_panel` reads it for the Port Rules tile and appears in all five presets. So
+    // this was correct BY COINCIDENCE: the guarantee was five `const` lists in
+    // `usp_dashboard_preset.dart` all happening to include one card, not anything this
+    // provider controls. Removing that card from a preset, or adding a preset without it,
+    // would have silently broken push refresh here — and no test would have gone red,
+    // because every test in this file holds a subscriber.
+    //
+    // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
+    // -----------------------------------------------------------------------
+    test(
+        '#1615: portForwarding re-fetches with NO listener held on the provider',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sseController.stream);
+
+        // A one-shot read rather than a listen: deliberately what a widget that has
+        // since stopped watching looks like. It still constructs the notifier, so the
+        // `ref.listen` inside build() is registered.
+        container.read(portForwardingDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Asserting on the VALUE rather than a verify() count, because mocktail's verify
+        // CONSUMES the calls it matches — a count-based guard here would leave nothing
+        // for the assertion that matters.
+        expect(container.read(portForwardingDataProvider).hasValue, isTrue,
+            reason:
+                'build() must have completed, or this test asserts nothing');
+
+        clearInteractions(mockService);
+
+        sseController.add((domain: InvalidationDomain.portForwarding, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockService.fetch()).called(1);
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
     test('SSE portForwarding domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

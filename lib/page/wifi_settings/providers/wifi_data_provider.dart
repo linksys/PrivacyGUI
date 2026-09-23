@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
@@ -106,10 +107,47 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     );
   }
 
+  /// Schedule a re-fetch that does NOT depend on anyone reading this provider.
+  ///
+  /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
+  /// and marks the provider for rebuild; riverpod runs `build()` again **when something
+  /// reads the provider**. When the debounce timer fires with no reader:
+  ///
+  ///   - `build()` does not run, so no re-fetch happens, and
+  ///   - the `ref.listen` above — which lives INSIDE `build()` — is not re-registered,
+  ///     so the NEXT notification does not even reach a listener.
+  ///
+  /// So the first matching notification disables the mechanism. Measured: a held
+  /// subscriber gave 1 fetch → 2 after a `wifiAccessPoints` event; no subscriber, 1 → 1.
+  ///
+  /// WAS THIS REACHABLE? Not on any current preset — `stats_panel` watches this provider
+  /// and appears in all five (`usp_dashboard_preset.dart`), so something was always
+  /// subscribed. That made this correct BY COINCIDENCE: the guarantee was five `const`
+  /// lists all happening to include one card, not anything this provider controls, and
+  /// no test would have caught its removal because every existing test holds a
+  /// `container.listen`.
+  ///
+  /// Assigning `state` directly removes the dependency. `ref.onDispose` still cancels
+  /// the timer, which matters for efficiency (a disposed notifier would otherwise issue
+  /// one more USP fetch); it is not needed for correctness, because riverpod 2.6.1
+  /// accepts a post-dispose `state` assignment silently rather than throwing (measured).
   void _debouncedInvalidate() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.invalidateSelf();
-    });
+    _debounce =
+        Timer(const Duration(milliseconds: 500), () => _refreshFromPush());
+  }
+
+  /// Re-read the device and publish the result, keeping the previous value on failure.
+  ///
+  /// Every consumer reads this through `valueOrNull`, so an error state renders as
+  /// "unknown" — a transient hiccup would blank the radio list and client counts on the
+  /// dashboard. A stale-but-plausible value is the better failure here.
+  Future<void> _refreshFromPush() async {
+    try {
+      state = AsyncData(await _fetch());
+    } catch (e, st) {
+      logger.w('[WiFi] push-triggered refetch failed, keeping previous value',
+          error: e, stackTrace: st);
+    }
   }
 }

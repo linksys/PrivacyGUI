@@ -152,6 +152,40 @@ void main() {
       return (container, notifier);
     }
 
+    // linksys/PrivacyGUI#1615 — the devices path, without a subscriber.
+    //
+    // The SSE group has the equivalent test for the SSE listener. This one exists
+    // separately because the old defect disabled BOTH listeners at once: `build()` not
+    // re-running meant neither `ref.listen` was re-registered, whichever one fired. So
+    // proving the SSE path recovered does not prove this one did.
+    test('#1615: a device-list change re-fetches with NO listener held',
+        () async {
+      final client = DevicesTestData.createWiredClient();
+      final (container, notifier) = pushableContainer(_devicesWith([client]));
+      addTearDown(container.dispose);
+
+      // Settle devices first so the boot race does not muddle the count (same reason
+      // as the test below).
+      await container.read(devicesDataProvider.future);
+
+      // A one-shot read, NOT container.listen — the whole point of this test.
+      final data = await container.read(ethernetDataProvider.future);
+      expect(data.ethernetPortModels, isNotEmpty,
+          reason: 'build() must have completed, or this test asserts nothing');
+
+      clearInteractions(mockEthernetSvc);
+
+      // A different list, so the equality guard in the listener does not skip it.
+      notifier.emit(_devicesWith([]));
+      for (var i = 0; i < 4; i++) {
+        await Future.delayed(Duration.zero);
+      }
+
+      verify(() => mockEthernetSvc.fetch(
+            deviceModels: any(named: 'deviceModels'),
+          )).called(1);
+    });
+
     test('does not re-fetch when clientDevices is unchanged', () async {
       final client = DevicesTestData.createWiredClient();
       final (container, notifier) = pushableContainer(_devicesWith([client]));
@@ -165,10 +199,13 @@ void main() {
       // emission re-fetches. That race has its own tests further down.
       await container.read(devicesDataProvider.future);
 
-      // A permanent subscription is required: invalidateSelf() on a provider
-      // with no listeners only marks it dirty, and the rebuild is deferred to
-      // the next read — so without this, the unguarded version would look
-      // identical to the guarded one here.
+      // A subscription used to be required here: the old `invalidateSelf()` on a
+      // provider with no listeners only marked it dirty and deferred the rebuild to
+      // the next read, so without one the unguarded version looked identical to the
+      // guarded one. As of #1615 the listener assigns `state` directly and no longer
+      // needs an audience — the subscription is kept because this test is about the
+      // equality guard, and a standing listener makes a stray emission visible
+      // immediately rather than at the next read.
       container.listen(ethernetDataProvider, (_, __) {});
       await container.read(ethernetDataProvider.future);
       verify(() => mockEthernetSvc.fetch(
@@ -307,15 +344,21 @@ void main() {
   // the repeat below stops re-fetching. So the repeat is the assertion that
   // pins the tag end-to-end at the consumer, not just at the producer.
   //
-  // Every test here keeps a standing `container.listen`: `invalidateSelf()` is
-  // lazy on a provider with no active listeners — it only marks it dirty and
-  // defers the rebuild to the next read — so without one, a "did it re-fetch"
-  // assertion passes against a broken listener too.
+  // The pre-existing tests here keep a standing `container.listen`, which used to be
+  // required: the old `invalidateSelf()` was lazy on a provider with no active
+  // listeners — it only marked it dirty and deferred the rebuild to the next read — so
+  // without one, a "did it re-fetch" assertion passed against a broken listener too.
+  //
+  // That requirement is gone as of #1615: the listener now assigns `state` directly, so a
+  // re-fetch no longer needs an audience. The subscriptions are kept anyway, because
+  // these tests are about domain routing and coalescing rather than about subscribers,
+  // and the two `#1615:` tests below assert the no-subscriber case head on. Holding a
+  // listener is no longer load-bearing here, but it is not wrong either.
   // -------------------------------------------------------------------------
   group('EthernetDataNotifier SSE invalidation', () {
     /// Drains enough microtasks for an SSE event to travel
-    /// stream -> provider state -> `ref.listen` -> `invalidateSelf()` ->
-    /// rebuild -> `_fetch()`. A single `Duration.zero` is not enough here (it is
+    /// stream -> provider state -> `ref.listen` -> `_refreshFromPush()` ->
+    /// `_fetch()` -> `state =`. A single `Duration.zero` is not enough here (it is
     /// for the notifiers that call `fetch()` directly), and awaiting
     /// `provider.future` instead does NOT work: it resolves against the future
     /// that is already complete, before the event has propagated at all.
@@ -337,6 +380,53 @@ void main() {
             deviceModels: any(named: 'deviceModels'),
           )).called(count);
     }
+
+    // ---------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test below passes, and passed before the fix too, because it holds
+    // `container.listen(ethernetDataProvider, …)`. The old `invalidateSelf()` only
+    // SCHEDULED a rebuild — riverpod runs `build()` again when something READS the
+    // provider, and that listener guaranteed something did. So the passing test could
+    // not tell "the refresh works" apart from "the refresh works BECAUSE a subscriber
+    // was held".
+    //
+    // On every current dashboard preset something DOES watch this provider —
+    // `stats_panel` (in all five presets) and the `ethernet_ports` card. So this was
+    // correct BY COINCIDENCE: the guarantee was a `const` list in
+    // `usp_dashboard_preset.dart`, not anything this provider controls, and no test
+    // would have caught that coincidence breaking, because every test in this group
+    // holds a subscriber.
+    //
+    // Measured before the fix: with a listener 1 fetch -> 2; without, 1 -> 1. This
+    // provider has no debounce, which made no difference — the defect is the pattern,
+    // not the timing.
+    // ---------------------------------------------------------------------
+    test('#1615: ethernetInterfaces re-fetches with NO listener held',
+        () async {
+      final sse = StreamController<InvalidationEvent>();
+      final container = createContainer(sse: sse.stream);
+      // A one-shot read rather than a listen: deliberately what a widget that has
+      // since stopped watching looks like. Awaiting the future guarantees build() —
+      // and therefore its two `ref.listen` calls — has actually run.
+      final data = await container.read(ethernetDataProvider.future);
+
+      // Guards against vacuity by asserting the VALUE, not a fetch count:
+      // `verifyFetches` uses `verify`, and mocktail's verify CONSUMES the calls it
+      // matches, so counting here would leave nothing for the assertion below.
+      expect(data.ethernetPortModels, isNotEmpty,
+          reason: 'build() must have completed, or this test asserts nothing');
+
+      clearInteractions(mockEthernetSvc);
+
+      sse.add((domain: InvalidationDomain.ethernetInterfaces, seq: 0));
+      await settle();
+
+      verifyFetches(1);
+
+      await sse.close();
+      container.dispose();
+    });
 
     test('ethernetInterfaces domain re-fetches, and a repeat re-fetches again',
         () async {
