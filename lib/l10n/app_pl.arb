@@ -433,6 +433,7 @@
   "backToDevices": "Powrót do urządzeń",
   "backToTopology": "Powrót do topologii",
   "backhaulConnection": "Połączenie backhaul",
+  "backhaulRateNotInternetSpeed": "Szybkość łącza między węzłami mesh — to nie szybkość internetu.",
   "badgeNew": "NOWE",
   "badgeUser": "UŻYTKOWNIK",
   "band": "Pasmo",

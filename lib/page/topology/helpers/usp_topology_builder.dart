@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart'
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/topology/helpers/backhaul_parent_graph.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -74,28 +75,87 @@ class UspTopologyBuilder {
     final extenderNodeIdsNormalized = <String>{};
     final normalizedToOriginal = <String, String>{};
     final deviceIdToExtenderId = <String, String>{};
+    final parentQueries = <BackhaulParentQuery>[];
 
     for (final slave in meshNetwork.slaves) {
       final extenderId = 'extender-${slave.deviceId}';
-      final normalizedHostsMac =
-          slave.deviceId.toUpperCase().replaceAll(':', '');
+      // `normalizeMac` rather than a hand-written
+      // `toUpperCase().replaceAll(':', '')`, which is what these five sites used
+      // to spell: it strips *every* separator, so a dashed or spaced identifier
+      // — firmware writes MACs in more than one shape — keys the same entry
+      // instead of missing the lookup and losing a hop (#1441). The keys and the
+      // value probed against them must be normalised the same way, which is the
+      // whole reason it is one named function — and it already existed in
+      // `node_identifier.dart`, which this file imports.
+      final normalizedHostsMac = normalizeMac(slave.deviceId);
       extenderNodeIdsNormalized.add(normalizedHostsMac);
       normalizedToOriginal[normalizedHostsMac] = slave.deviceId;
       deviceIdToExtenderId[normalizedHostsMac] = extenderId;
 
       if (slave.dataElementsId != null && slave.dataElementsId!.isNotEmpty) {
-        final normalizedDeMac =
-            slave.dataElementsId!.toUpperCase().replaceAll(':', '');
+        final normalizedDeMac = normalizeMac(slave.dataElementsId!);
         if (normalizedDeMac != normalizedHostsMac) {
           extenderNodeIdsNormalized.add(normalizedDeMac);
           normalizedToOriginal[normalizedDeMac] = slave.deviceId;
           deviceIdToExtenderId[normalizedDeMac] = extenderId;
         }
       }
+      parentQueries.add((
+        extenderId: extenderId,
+        parentDeviceId: slave.backhaul.parentNodeId,
+      ));
       logger.t('[USP][TopologyBuilder]: Slave ${slave.deviceId} '
           '→ hostsMac: $normalizedHostsMac, '
           'dataElementsId: ${slave.dataElementsId}, '
           'backhaulParentDeviceId: ${slave.backhaul.parentNodeId}');
+    }
+
+    // Parent resolution, as a graph rather than a lookup per slave (#1441).
+    //
+    // Two things that `deviceIdToExtenderId[parent] ?? gatewayId` could not do,
+    // and neither is about how the parent of one node is found:
+    //
+    // 1. **A cycle must not be emitted.** Nothing here walks the graph, so
+    //    nothing here can loop — but ui_kit's layout walks it with no visited set
+    //    and no depth bound, so A→B→A overflows the stack there, inside widgets
+    //    we may not hand-roll around (constitution Article XV).
+    // 2. **A failed lookup must not read like a correct one.** The gateway's own
+    //    MAC is not a key in the map above — it has no `extender-` id — so a node
+    //    correctly parented by the gateway took the same `??` fallback as a node
+    //    whose parent is missing from the tree. The master's identifiers are
+    //    passed in for exactly that distinction.
+    final parentGraph = resolveBackhaulParents(
+      // Collected in the loop above rather than re-derived here: a second pass
+      // would re-spell `extender-<deviceId>`, and an id built two ways is an id
+      // that can differ in one of them.
+      slaves: parentQueries,
+      extenderIdByNodeMac: deviceIdToExtenderId,
+      gatewayNodeMacs: {
+        for (final mac in [master.deviceId, master.dataElementsId])
+          if (mac != null && mac.isNotEmpty) normalizeMac(mac),
+      },
+      gatewayId: gatewayId,
+    );
+
+    // Hoisted: the getter builds a fresh map, so reading it inside the loop
+    // below would rebuild it once per slave.
+    final parentIdByExtenderId = parentGraph.parentIdByExtenderId;
+
+    // Warning level, and once per finding: both states mean the rendered topology
+    // is not the one firmware described, and a support bundle is the only place
+    // anyone will see it. `logger.t` is filtered out of release builds, which is
+    // where the bundles come from.
+    for (final miss in parentGraph.misses) {
+      logger.w('[USP][TopologyBuilder]: backhaul parent MISS — '
+          '${miss.extenderId} names ${miss.reportedParentDeviceId}, which is '
+          'not a node in this topology; attaching it to the gateway. A hop is '
+          'lost, so the tree renders flatter than the network is.');
+    }
+    for (final broken in parentGraph.brokenCycles) {
+      logger.w('[USP][TopologyBuilder]: backhaul parent cycle — '
+          '${broken.cycle.join(' → ')} → ${broken.cycle.first}; '
+          'attaching ${broken.extenderId} to the gateway to break it. '
+          'Emitting the cycle would overflow the layout\'s recursion.');
     }
 
     // Stable, data-derived E2E identifier keys (Article XVI §16.3): shortest
@@ -108,14 +168,9 @@ class UspTopologyBuilder {
     for (final slave in meshNetwork.slaves) {
       final extenderId = 'extender-${slave.deviceId}';
 
-      // Resolve parent
-      String parentId = gatewayId;
-      final parentDeviceId = slave.backhaul.parentNodeId;
-      if (parentDeviceId != null && parentDeviceId.isNotEmpty) {
-        final normalizedParentId =
-            parentDeviceId.toUpperCase().replaceAll(':', '');
-        parentId = deviceIdToExtenderId[normalizedParentId] ?? gatewayId;
-      }
+      // Resolved above, for the whole graph at once — a cycle is a property of
+      // the set, not of one node.
+      final parentId = parentIdByExtenderId[extenderId] ?? gatewayId;
 
       final extenderIconName = routerIconTestByModel(modelNumber: slave.model);
       nodes.add(MeshNode(
@@ -146,28 +201,7 @@ class UspTopologyBuilder {
       links.add(MeshLink(
         sourceId: parentId,
         targetId: extenderId,
-        // An absent backhaul (`!hasInfo`) is neither Ethernet nor Wi-Fi, but
-        // ui_kit's `ConnectionType` has only those two members and
-        // `MeshLink.connectionType` is non-nullable, so one of them must be
-        // claimed. `wifi` is the lesser claim of the two: the tree view never
-        // reads `connectionType` (it styles purely from `linkQuality`, see
-        // `topology_tree_view.dart`'s `linkStyleFor(item.link!.linkQuality)`),
-        // and the graph view routes a non-Ethernet link through
-        // `linkStyleFor(link.linkQuality)` too — so `unknown` below lands both
-        // views on the neutral `wifiUnknownStyle`. Picking `ethernet` instead
-        // would hard-wire `ethernetLinkStyle` and assert a wired backhaul.
-        //
-        // The one residue is that `wifiUnknownStyle.animationType` is
-        // `LinkAnimationType.flow`, so the graph view animates traffic along a
-        // link we know nothing about. That cannot be suppressed from here —
-        // `MeshLink` carries no per-link style or animation override — so it
-        // needs `ConnectionType.unknown` plus a non-animating `LinkStyle` in
-        // ui_kit: tracked as `linksys/privacyGUI-UI-kit#87` (verified still
-        // open against v3.1.0). Do not hand-roll a link widget here
-        // (constitution Article XV).
-        connectionType: slave.backhaul.isEthernet
-            ? ConnectionType.ethernet
-            : ConnectionType.wifi,
+        connectionType: _connectionTypeFor(slave.backhaul),
         rssi: slave.backhaul.signalStrength,
         // Never derived from `connectionType`: an absent backhaul has no RSSI,
         // so this resolves to `unknown` and both views fall back to the neutral
@@ -189,8 +223,14 @@ class UspTopologyBuilder {
       // Determine parent node
       String parentId = gatewayId;
       if (meshNetwork.hasMesh && client.parentNodeId != null) {
-        final parentNormalized =
-            client.parentNodeId!.toUpperCase().replaceAll(':', '');
+        // Normalised the same way as the keys it is probed against, which is why
+        // this site moved to `normalizeMac` with the node-side ones (#1441): the
+        // set below is built in the slave loop above, so leaving this probe on the
+        // old `toUpperCase().replaceAll(':', '')` would make the two disagree on
+        // any identifier that is not colon-separated — the mismatch #1441 is
+        // about, pointed at clients. Client *attribution* logic is #1439's and is
+        // untouched.
+        final parentNormalized = normalizeMac(client.parentNodeId!);
         logger.t('[USP][TopologyBuilder]: Device ${client.displayName} '
             'parentNodeId=${client.parentNodeId}, '
             'normalized=$parentNormalized, '
@@ -261,6 +301,51 @@ class UspTopologyBuilder {
   static LinkQuality _resolveLinkQualityForClient(ClientDevice client) {
     if (!client.isWifi) return LinkQuality.stable;
     return _rssiToLinkQuality(client.signalStrength);
+  }
+
+  /// The medium to draw a slave's backhaul link with.
+  ///
+  /// Three arms, because the medium has three states and not two. A backhaul
+  /// firmware named no medium for is neither Ethernet nor Wi-Fi, and until
+  /// ui_kit v3.2.0 there was nowhere to say so: `ConnectionType` had two members
+  /// and `MeshLink.connectionType` is non-nullable, so this site claimed `wifi`
+  /// as the lesser of two wrong answers — and paid for it, because
+  /// `wifiUnknownStyle.animationType` is `LinkAnimationType.flow`, so the graph
+  /// view animated traffic along a link nothing was known about.
+  ///
+  /// [ConnectionType.unknown] (ui_kit#87, shipped in v3.2.0; this repo resolves
+  /// v3.3.2) closes it: every renderer resolves its style through
+  /// `MeshLink.styleFrom`, which switches on the medium *first* and routes this
+  /// member to `TopologySpec.unknownConnectionLinkStyle` — a style per visual
+  /// language whose one cross-language guarantee is no flow animation. Nothing is
+  /// hand-rolled here (constitution Article XV).
+  ///
+  /// **The quality axis is left alone, deliberately.** `MeshLink.linkQuality`
+  /// would discard an RSSI carried beside an unknown medium, but only when no
+  /// override is given, and this builder gives one (`_rssiToLinkQuality`). That is
+  /// the right call and not an oversight: `Backhaul.Stats.SignalStrength` is a
+  /// reading of *this* link, and a wired backhaul has none, so a row with an RSSI
+  /// and no named medium is a link we measured and firmware did not label. We know
+  /// its quality by another route, which is what the override is for. Medium
+  /// unknown, quality graded — two axes, pinned as a pair in
+  /// `usp_topology_builder_test.dart` so the next reader does not have to
+  /// re-derive it.
+  ///
+  /// Keyed on **absence** of a medium, not on failing to match `Ethernet`: a
+  /// value firmware named and we do not recognise stays `wifi`. The practical
+  /// vocabulary is closed at `Wi-Fi` / `Ethernet` / `None` (#1464 AC1, measured
+  /// against `beerocks_controller`), so an unrecognised medium is not a state
+  /// this build produces, while an absent one is the *ordinary* state on FL-WRT
+  /// 2.0 — the controller row reports `LinkType = None`, which
+  /// `meshBackhaulLinkType` maps to null.
+  ///
+  /// [BackhaulInfo.isWifi] is deliberately not the test: it is true for a link
+  /// known only by its parent ID, which is exactly the row that must not claim a
+  /// medium here. See its doc and [BackhaulInfo.hasMedium].
+  static ConnectionType _connectionTypeFor(BackhaulInfo backhaul) {
+    if (backhaul.isEthernet) return ConnectionType.ethernet;
+    if (!backhaul.hasMedium) return ConnectionType.unknown;
+    return ConnectionType.wifi;
   }
 
   /// Converts a slave node's backhaul to a display level.

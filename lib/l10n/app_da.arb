@@ -435,6 +435,7 @@
   "backToDevices": "Tilbage til enheder",
   "backToTopology": "Tilbage til topologi",
   "backhaulConnection": "Backhaul-forbindelse",
+  "backhaulRateNotInternetSpeed": "Forbindelseshastighed mellem mesh-noder – ikke din internethastighed.",
   "badgeNew": "NY",
   "badgeUser": "BRUGER",
   "band": "Bånd",

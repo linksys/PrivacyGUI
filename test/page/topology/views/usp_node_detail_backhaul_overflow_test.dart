@@ -4,6 +4,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -87,9 +89,21 @@ import '../../../util/overflow_probe.dart';
 /// overflows. Do not add an Ethernet fixture here to "complete" the matrix: it
 /// would pump untouched code that cannot fail.
 ///
-/// The throughput cards in the same card are `DetailSpeedCard`s, guarded by
-/// `usp_device_detail_speed_card_overflow_test.dart`; neither fixture here sets
-/// `uplinkRate`/`downlinkRate`, so they do not render.
+/// ## The throughput row, added by #1442
+///
+/// It used to be out of reach here: the two `DetailSpeedCard`s are behind
+/// `uplinkRate != null || downlinkRate != null` and no `UspNodeDetailState`
+/// carried either rate, so this file said they were "guarded by
+/// `usp_device_detail_speed_card_overflow_test.dart`". That was true of the
+/// *widget* and never of this page: the two pages pass different `label`s into it
+/// and grant it different widths — 70.5dp per caption here at 1241px against
+/// 172dp there — so the device page's nine cells said nothing about this one.
+///
+/// #1442 needed a fixture with rates (`slaveNodeWithBackhaulRates`) to place its
+/// qualifier, so the row is now reachable and measured here for the first time.
+/// Its own sweep is below, and the ledger records what fails without the caption
+/// fix: 13 of 16 cells, `fr` by 65px at 1241px — more than double the +30px the
+/// device page measured, which is the geometry difference stated as a number.
 ///
 /// ## Mutation ledger
 ///
@@ -105,6 +119,8 @@ import '../../../util/overflow_probe.dart';
 ///   | last-contact caption's `Expanded` removed | **nothing** — 24 of 24 green. The measurement that retired the 12-cell group |
 ///   | last-contact caption's `Expanded`, `maxLines` and ellipsis all removed | only caption-shortens-value-does-not, which reads the widget's properties rather than measuring the layout. Still zero overflow cells |
 ///   | last-contact tile given a sibling `Expanded` in its `Row` (the pre-#1555 shape) | the full-width headroom test: 72.5dp granted against 111.8dp needed, a ratio of 0.65 |
+///   | speed-card caption's `Expanded` removed (the pre-#1302 shape) | **13 of 16 throughput cells** — `fr` at all four widths (+65px at 1241, +59px at 1280, +55px at 320, +11px at 480), `fr_CA` / `pl` / `tr` at 1241 / 1280 / 320 and clean at 480 |
+///   | the #1442 qualifier moved into the cards' `Row` as a third `Expanded` | the full-width test: the sentence is granted a third of the row instead of all of it |
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is square and the
@@ -118,6 +134,10 @@ void main() {
   final interfaceNode = interfaceState.node as SlaveNode;
   final timingState = slaveNodeWithBackhaulTiming;
   final timingNode = timingState.node as SlaveNode;
+  // The only scene that carries both backhaul rates, and therefore the only one
+  // that reaches the throughput row (#1442).
+  final ratesState = slaveNodeWithBackhaulRates;
+  final ratesNode = ratesState.node as SlaveNode;
 
   test('both fixtures render the rows under test', () {
     // The interface row is behind `if (isWifiBackhaul)` and the last-contact row
@@ -151,6 +171,20 @@ void main() {
     );
   });
 
+  test('the rates fixture reaches the throughput row (#1442)', () {
+    // Same argument as the test above: the row is behind the two rates, and a
+    // fixture that lost them would make every cell in the sweep below pass
+    // against a page that renders no speed card at all. The sweep's own premise
+    // cannot catch that — an absent row overflows nothing.
+    expect(ratesNode.backhaul.uplinkRate, isNotNull);
+    expect(ratesNode.backhaul.downlinkRate, isNotNull);
+    expect(
+      ratesNode.backhaul.isEthernet,
+      isFalse,
+      reason: 'the Ethernet arm builds no throughput row either',
+    );
+  });
+
   /// Pumps the real node-detail page for [state] once at [screenWidth] and
   /// returns the RenderFlex overflows beyond the gate's own tolerance.
   Future<List<OverflowIncident>> overflowsAt({
@@ -166,6 +200,116 @@ void main() {
         screenWidth: screenWidth,
         locale: localeForTag(tag),
       );
+
+  group('throughput row is clean (#1442)', () {
+    /// All four widths carry signal here, unlike the interface tile's three:
+    /// `fr` fails at 480px too (+11px), because two captions share the row rather
+    /// than one caption sharing it with a signal indicator.
+    ///
+    /// - **1241px** — the desktop pinch (the page's 200px margins open just above
+    ///   1240px, so the row is laid out *narrower* here than at 1240px). Worst
+    ///   case: `fr` +65px.
+    /// - **1280px** — the golden suite's desktop coordinate. `fr` +59px.
+    /// - **480px** — the golden suite's phone coordinate, and the only width where
+    ///   the caption has real room (161dp against 70.5dp at 1241px).
+    /// - **320px** — the narrowest supported screen. `fr` +55px.
+    const widths = <double>[1241.0, 1280.0, 480.0, 320.0];
+
+    // The four locales that overflow the pre-fix caption shape on this page,
+    // measured by sweeping all 26 across all four widths (104 cells, zero
+    // overflows as shipped; 13 red under the mutation). They are the same four the
+    // device-detail suite sweeps, which is a measured result and not an
+    // assumption carried over: #1442 did not lengthen the `label`, so the ranking
+    // of the captions did not move — only the room they get did.
+    //
+    // The full cross-product, for the reason the sibling group gives: the three
+    // cells that pass under the mutation (`fr_CA`, `pl`, `tr` at 480px) are the
+    // near misses, held against a translation growing later.
+    for (final tag in ['fr', 'fr_CA', 'pl', 'tr']) {
+      for (final width in widths) {
+        testWidgets('no overflow at ${width.toStringAsFixed(0)}px in $tag', (
+          tester,
+        ) async {
+          final overflows = await overflowsAt(
+            tester: tester,
+            state: ratesState,
+            screenWidth: width,
+            tag: tag,
+          );
+          expect(
+            overflows,
+            isEmpty,
+            reason: 'the backhaul throughput row overflows in $tag at '
+                '${width.toStringAsFixed(0)}px: ${overflows.join(', ')}',
+          );
+        });
+      }
+    }
+  });
+
+  testWidgets(
+      'the not-internet-speed qualifier gets the whole card width (#1442)',
+      (tester) async {
+    // The property that makes the sentence readable, asserted instead of the
+    // absence of an overflow stripe — a full-width `Text` with no line cap cannot
+    // overflow, so a width sweep can never fail on this row and would report it
+    // as pinned.
+    //
+    // This is also where the placement decision is held. #1442's AC2 put the
+    // qualifier inside `DetailSpeedCard`'s `label`; measured, that slot is 70.5dp
+    // at this width while `Download` alone needs 297dp in `fr`, so the sentence
+    // would be ellipsized away in about twenty locales. Moving it into the cards'
+    // `Row` as a third `Expanded` is the same mistake in a new shape, and is what
+    // this test fails on.
+    //
+    // `ru` at 1241px: the longest qualifier translation at the narrowest desktop
+    // row. Measured there, the sentence needs more than the row is wide and wraps
+    // to two lines — which is why the companion assertion in
+    // `usp_node_detail_backhaul_rate_test.dart` (no `maxLines`, no ellipsis) is
+    // load-bearing rather than defensive.
+    await overflowsAt(
+      tester: tester,
+      state: ratesState,
+      screenWidth: 1241.0,
+      tag: 'ru',
+    );
+
+    final loc = await AppLocalizations.delegate.load(localeForTag('ru'));
+    final qualifier = find.text(loc.backhaulRateNotInternetSpeed);
+    expect(
+      qualifier,
+      findsOneWidget,
+      reason: 'the qualifier must render beside the rates it qualifies',
+    );
+
+    // Asserted structurally rather than by comparing widths. A wrapped paragraph
+    // reports its box as the full constraint, so `width == row.width` does hold
+    // here (197dp at this coordinate against 400dp+ of `ru` text) — but it holds
+    // *because* the sentence is long, and a shorter translation would fail it
+    // while sitting in exactly the right place. The property is where the widget
+    // is, not how wide its glyphs happen to run.
+    final cardsRow = find
+        .ancestor(
+            of: find.byType(DetailSpeedCard).first, matching: find.byType(Row))
+        .first;
+    expect(
+      find.descendant(of: cardsRow, matching: qualifier),
+      findsNothing,
+      reason: 'the qualifier is inside the cards\' Row, so it is granted a '
+          'fraction of the width instead of all of it — the same mistake as '
+          'putting it in the card caption, which is what this placement exists '
+          'to avoid (see the comment above)',
+    );
+    expect(
+      find.descendant(
+        of: find.ancestor(of: cardsRow, matching: find.byType(Column)).first,
+        matching: qualifier,
+      ),
+      findsOneWidget,
+      reason: 'it must still be in the card that holds the rates: a sentence '
+          'elsewhere on the page qualifies nothing',
+    );
+  });
 
   group('backhaul interface tile is clean (#1302)', () {
     /// The widths that carry signal, from sweeping all 26 locales against the

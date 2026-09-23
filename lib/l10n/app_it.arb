@@ -435,6 +435,7 @@
   "backToDevices": "Torna ai dispositivi",
   "backToTopology": "Torna alla topologia",
   "backhaulConnection": "Connessione backhaul",
+  "backhaulRateNotInternetSpeed": "Velocità del collegamento tra i nodi mesh: non la velocità di Internet.",
   "badgeNew": "NUOVO",
   "badgeUser": "UTENTE",
   "band": "Banda",
