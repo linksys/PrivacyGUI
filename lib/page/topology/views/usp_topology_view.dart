@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
@@ -297,78 +298,4 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       child: child,
     );
   }
-}
-
-/// A resolved navigation target for a tapped topology node: the named route
-/// plus its query parameters.
-@immutable
-class TopologyNavTarget {
-  const TopologyNavTarget(this.route, this.queryParameters);
-
-  final String route;
-  final Map<String, String> queryParameters;
-}
-
-/// Pure mapping from a tapped [GraphNode] to its navigation target, or `null`
-/// when the node is not navigable.
-///
-/// Extracted so the decision is unit-testable without a widget/router.
-///
-/// The two node families are deliberately treated differently:
-///
-/// - **Clients** are navigable regardless of status. An offline client opens
-///   its Device Detail page just like it does from the device list and from a
-///   node's "Connected devices" list; the destination already renders the
-///   correct online/offline state, so there is nothing to gate against.
-/// - **Master / slave nodes** keep an offline gate. Their Node Detail page still
-///   hardcodes an active status badge, so opening it for a powered-off node
-///   would show a wrong (green) status. That is tracked by #1465; until it is
-///   fixed, the node arm stays gated. Do NOT "tidy" the leaf arm to match
-///   the node arm — the difference is intentional.
-@visibleForTesting
-TopologyNavTarget? topologyNavTargetFor(GraphNode node) {
-  // The external node is drawn beside the hierarchy and has no page.
-  if (node.isExternal) return null;
-
-  switch (node.styleSlot) {
-    case 'primary':
-    case 'secondary':
-      // Offline gate for mesh nodes only — see #1465 (doc above).
-      if (node.status == NodeState.inactive) return null;
-      final deviceId = node.metadata?['deviceId'] as String?;
-      if (deviceId == null || deviceId.isEmpty) return null;
-      return TopologyNavTarget(
-        RouteNamed.uspNodeDetail,
-        {'deviceId': deviceId},
-      );
-    case 'leaf':
-      final mac = node.metadata?['mac'] as String?;
-      if (mac == null || mac.isEmpty) return null;
-      return TopologyNavTarget(
-        RouteNamed.uspDeviceDetail,
-        {'mac': mac},
-      );
-    default:
-      // A slot this app does not assign. Not reachable from
-      // `UspTopologyBuilder`, which states one of the three above on every node,
-      // so there is no destination to guess at.
-      return null;
-  }
-}
-
-/// Sort rank for [node]: master, then slave, then device, then external.
-///
-/// Reads the slot the builder **stated**, which is this app's own classification.
-/// The obvious-looking alternative is wrong: deriving from structure ranks the
-/// gateway as an interior node, because its parent is the external internet node,
-/// and ranks a slave carrying no clients as a device. Both were measured (#1614).
-@visibleForTesting
-int topologyRolePriority(GraphNode node) {
-  if (node.isExternal) return 3;
-  return switch (node.styleSlot) {
-    'primary' => 0,
-    'secondary' => 1,
-    'leaf' => 2,
-    _ => 2,
-  };
 }

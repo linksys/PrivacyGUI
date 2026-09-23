@@ -275,8 +275,32 @@ class UspTopologyBuilder {
         // not fed: measured zero reads across the whole kit on both 3.3.3 and
         // 3.4.0. The edge below carries the strength, and that one is read.
         level: _rssiToLevelForClient(client),
+        // The facts a leaf's detail panel shows. ui_kit 3.4.0 opens a panel for a
+        // leaf — it used to refuse one — so what the builder puts here is now
+        // visible rather than dead weight, and a leaf carrying only its MAC gave
+        // the viewer a panel with nothing in it (#1614).
+        //
+        // Written as a device's own facts, not as a mesh node's: the role,
+        // model, serial and backhaul rows belong to a node and a leaf has none
+        // of them. `isLeaf` is what the panel keys that split on, rather than
+        // inferring it from which keys happen to be absent.
         metadata: {
+          'isLeaf': true,
           'mac': client.mac,
+          if (client.ip.isNotEmpty) 'ip': client.ip,
+          'isWifi': client.isWifi,
+          // Only for a wireless client: a wired one has no RSSI by design, and a
+          // present-but-null entry would still draw an empty row.
+          if (client.isWifi && client.signalStrength != null)
+            'signalStrength': client.signalStrength,
+          if (client.band != null && client.band!.isNotEmpty)
+            'band': client.band,
+          if (client.ssidName != null && client.ssidName!.isNotEmpty)
+            'ssid': client.ssidName,
+          // The node this device hangs off, by name where firmware gave one.
+          if (client.parentNodeName != null &&
+              client.parentNodeName!.isNotEmpty)
+            'parentNodeName': client.parentNodeName,
           'hasMultipleInterfaces': client.hasMultipleInterfaces,
           'interfaceCount': client.interfaceCount,
           'allMacAddresses': client.allMacAddresses,

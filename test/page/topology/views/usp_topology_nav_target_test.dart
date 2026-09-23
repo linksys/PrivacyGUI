@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
