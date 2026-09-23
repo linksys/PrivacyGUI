@@ -1,5 +1,4 @@
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 import '../mascot_config.dart';
 import 'mascot_trigger.dart';
 
@@ -73,22 +72,4 @@ abstract final class TriggerDefinitions {
         interruptCurrent: true,
         autoHideDuration: TriggerAutoHide.critical,
       );
-}
-
-/// Mapping from InvalidationDomain to trigger evaluation.
-///
-/// Determines which domains should trigger immediate health re-evaluation.
-abstract final class TriggerDomainMapping {
-  /// Domains that require immediate health re-evaluation when invalidated.
-  static const Set<InvalidationDomain> healthCriticalDomains = {
-    InvalidationDomain.wanStatus,
-    InvalidationDomain.connectedDevices,
-    InvalidationDomain.wifiRadios,
-    InvalidationDomain.firewallRules,
-    InvalidationDomain.dmz,
-  };
-
-  /// Check if a domain should trigger health re-evaluation.
-  static bool isHealthCritical(InvalidationDomain domain) =>
-      healthCriticalDomains.contains(domain);
 }

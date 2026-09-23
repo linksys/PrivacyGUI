@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 import 'package:privacy_gui/page/dashboard/mascot/triggers/mascot_trigger.dart';
 import 'package:privacy_gui/page/dashboard/mascot/triggers/trigger_definitions.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -45,34 +44,6 @@ void main() {
       expect(trigger.id, 'firewall_disabled');
       expect(trigger.priority, TriggerPriority.high);
       expect(trigger.interruptCurrent, true);
-    });
-  });
-
-  group('TriggerDomainMapping', () {
-    test('healthCriticalDomains contains expected domains', () {
-      expect(
-        TriggerDomainMapping.healthCriticalDomains,
-        contains(InvalidationDomain.wanStatus),
-      );
-      expect(
-        TriggerDomainMapping.healthCriticalDomains,
-        contains(InvalidationDomain.connectedDevices),
-      );
-      expect(
-        TriggerDomainMapping.healthCriticalDomains,
-        contains(InvalidationDomain.wifiRadios),
-      );
-    });
-
-    test('isHealthCritical returns true for critical domains', () {
-      expect(
-        TriggerDomainMapping.isHealthCritical(InvalidationDomain.wanStatus),
-        true,
-      );
-      expect(
-        TriggerDomainMapping.isHealthCritical(InvalidationDomain.dhcpClients),
-        false,
-      );
     });
   });
 }
