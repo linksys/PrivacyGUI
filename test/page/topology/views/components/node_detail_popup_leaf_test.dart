@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
-import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
@@ -11,6 +10,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../mocks/test_data/devices_test_data.dart';
+import '../../../../mocks/test_data/system_info_test_data.dart';
 
 /// What the panel shows for a leaf, now that ui_kit 3.4.0 opens one for it.
 ///
@@ -33,17 +33,7 @@ void main() {
 
   tearDownAll(OuiLookup.reset);
 
-  const sysInfo = SystemInfoUIModel(
-    manufacturer: 'Linksys',
-    modelName: 'MR7500',
-    hardwareVersion: '1.0',
-    serialNumber: 'SN123456',
-    softwareVersion: '1.0.16.26013014',
-    uptime: 3600,
-    totalMemory: 512000,
-    freeMemory: 256000,
-    cpuUsage: 25,
-  );
+  final sysInfo = SystemInfoTestData.create();
 
   /// The leaf a real build produces for [client].
   GraphNode leafFor(ClientDevice client) {

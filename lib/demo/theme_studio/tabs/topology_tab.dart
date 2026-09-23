@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import '../widgets/section_header.dart';
@@ -54,7 +55,7 @@ class TopologyTab extends ConsumerWidget {
     final gw = GraphNode(
       id: 'gw',
       name: 'Gateway',
-      styleSlot: 'primary',
+      styleSlot: TopologySlots.master,
       status: NodeState.active,
     );
 
@@ -63,7 +64,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'ex_eth',
       parentId: 'gw',
       name: 'Ex (Eth)',
-      styleSlot: 'secondary',
+      styleSlot: TopologySlots.slave,
       status: NodeState.active,
     );
 
@@ -72,7 +73,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'ex_wifi',
       parentId: 'gw',
       name: 'Ex (WiFi)',
-      styleSlot: 'secondary',
+      styleSlot: TopologySlots.slave,
       status: NodeState.active,
     );
 
@@ -81,7 +82,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'cl_strong',
       parentId: 'ex_eth',
       name: 'Strong',
-      styleSlot: 'leaf',
+      styleSlot: TopologySlots.device,
       status: NodeState.active,
     );
 
@@ -90,7 +91,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'cl_weak',
       parentId: 'ex_wifi',
       name: 'Weak',
-      styleSlot: 'leaf',
+      styleSlot: TopologySlots.device,
       status: NodeState.active,
     );
 
@@ -99,7 +100,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'cl_med',
       parentId: 'ex_eth',
       name: 'Medium',
-      styleSlot: 'leaf',
+      styleSlot: TopologySlots.device,
       status: NodeState.active,
     );
 
@@ -108,7 +109,7 @@ class TopologyTab extends ConsumerWidget {
       id: 'cl_off',
       // parentId: 'gw',
       name: 'Offline',
-      styleSlot: 'leaf',
+      styleSlot: TopologySlots.device,
       status: NodeState.inactive,
     );
 

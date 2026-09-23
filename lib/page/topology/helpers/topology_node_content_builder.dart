@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shared node content builder for topology views.
@@ -28,7 +29,7 @@ class TopologyNodeContentBuilder {
     final iconColor = isOffline ? colorScheme.outline : style.iconColor;
 
     // For non-leaf nodes, use default rendering (image or icon)
-    if (node.styleSlot != 'leaf') {
+    if (!TopologySlots.isDevice(node)) {
       if (node.image != null) {
         return Image(
           image: node.image!,

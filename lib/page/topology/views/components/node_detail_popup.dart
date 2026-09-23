@@ -40,7 +40,10 @@ class NodeDetailPopup extends StatelessWidget {
     // `topologyNavTargetFor` already answers this for every kind of node — and
     // carries the offline gate for mesh nodes (#1465) — so reusing it is also
     // what keeps the two routes from drifting apart.
-    final target = topologyNavTargetFor(node);
+    // Resolved from the same metadata the rows below read, not from
+    // `node.metadata` — see `topologyNavTargetFor`'s own note on why those are
+    // two things.
+    final target = topologyNavTargetFor(node, metadata: metadata);
 
     return NodeDetailPopup(
       node: node,
@@ -111,38 +114,44 @@ class NodeDetailPopup extends StatelessWidget {
           if (parentNodeName != null)
             _row(loc(context).connectedTo, parentNodeName),
         ] else ...[
+          // Everything below belongs to a mesh node, so it all sits inside this
+          // arm. It used to trail after the `if`/`else` as five separate
+          // `!isLeaf && …` guards, which is the same condition restated by a
+          // block that already exists — and one a later row could forget.
           _row(loc(context).role,
               isMaster ? loc(context).master : loc(context).slave),
           if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
             _row('MAC', deviceId),
-        ],
-        if (!isLeaf && model.isNotEmpty) _row(loc(context).model, model),
-        if (!isLeaf && manufacturer.isNotEmpty)
-          _row(loc(context).manufacturer, manufacturer),
-        if (!isLeaf && serialNumber.isNotEmpty) _row('S/N', serialNumber),
-        if (!isLeaf && softwareVersion.isNotEmpty)
-          _row(loc(context).firmware, softwareVersion),
-        // Backhaul info for Slave nodes
-        if (!isLeaf && !isMaster) ...[
-          if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
-            _row('Backhaul', backhaulLinkType),
-          // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
-          // reading, so a wired node whose medium is spelled unexpectedly must
-          // not fall into it (#1555).
-          if (backhaulSignalStrength != null &&
-              !isMeshBackhaulEthernet(backhaulLinkType))
-            _row('Signal', '$backhaulSignalStrength dBm'),
-          if (backhaulUplinkRate != null && backhaulDownlinkRate != null)
-            _row(
-              'Speed',
-              'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)} / '
-                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}',
-            )
-          else if (backhaulUplinkRate != null)
-            _row('Speed', 'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)}')
-          else if (backhaulDownlinkRate != null)
-            _row('Speed',
-                'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
+          if (model.isNotEmpty) _row(loc(context).model, model),
+          if (manufacturer.isNotEmpty)
+            _row(loc(context).manufacturer, manufacturer),
+          if (serialNumber.isNotEmpty) _row('S/N', serialNumber),
+          if (softwareVersion.isNotEmpty)
+            _row(loc(context).firmware, softwareVersion),
+          // Backhaul info for slave nodes only — the master has no uplink of this
+          // kind to report.
+          if (!isMaster) ...[
+            if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
+              _row('Backhaul', backhaulLinkType),
+            // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
+            // reading, so a wired node whose medium is spelled unexpectedly must
+            // not fall into it (#1555).
+            if (backhaulSignalStrength != null &&
+                !isMeshBackhaulEthernet(backhaulLinkType))
+              _row('Signal', '$backhaulSignalStrength dBm'),
+            if (backhaulUplinkRate != null && backhaulDownlinkRate != null)
+              _row(
+                'Speed',
+                'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)} / '
+                    'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}',
+              )
+            else if (backhaulUplinkRate != null)
+              _row('Speed',
+                  'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)}')
+            else if (backhaulDownlinkRate != null)
+              _row('Speed',
+                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
+          ],
         ],
         // Details button (optional)
         if (showDetailsButton && node.status == NodeState.active)

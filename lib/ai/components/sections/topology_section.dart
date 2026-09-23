@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_edge_strength.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Network topology visualization section.
@@ -184,7 +186,7 @@ class TopologySection extends StatelessWidget {
       name: gatewayName,
       // Stated at the origin, like `UspTopologyBuilder` — this builder also knows
       // which of its three sources each node came from.
-      styleSlot: 'primary',
+      styleSlot: TopologySlots.master,
       status: NodeState.active,
       level: 1.0,
       extra: gatewayModel,
@@ -205,7 +207,7 @@ class TopologySection extends StatelessWidget {
         nodes.add(GraphNode(
           id: extId,
           name: name,
-          styleSlot: 'secondary',
+          styleSlot: TopologySlots.slave,
           parentId: gatewayId,
           status: _parseStatus(status),
           level: _rssiToLevel(rssi),
@@ -222,7 +224,7 @@ class TopologySection extends StatelessWidget {
           sourceId: gatewayId,
           targetId: extId,
           kind: EdgeKind.indirect,
-          strength: _rssiToStrength(rssi),
+          strength: edgeStrengthFromRssi(rssi),
         ));
       }
     }
@@ -261,7 +263,7 @@ class TopologySection extends StatelessWidget {
         nodes.add(GraphNode(
           id: clientId,
           name: name,
-          styleSlot: 'leaf',
+          styleSlot: TopologySlots.device,
           parentId: resolvedParentId,
           status: _parseStatus(status),
           level: _rssiToLevel(rssi),
@@ -284,7 +286,7 @@ class TopologySection extends StatelessWidget {
           kind: isWifi ? EdgeKind.indirect : EdgeKind.direct,
           // Null for a wired edge: wiredness is the kind axis, and a direct
           // edge's strength is never read.
-          strength: isWifi ? _rssiToStrength(rssi) : null,
+          strength: isWifi ? edgeStrengthFromRssi(rssi) : null,
         ));
       }
     }
@@ -319,26 +321,6 @@ class TopologySection extends StatelessWidget {
       NodeSignalLevel.poor => 0.2,
       NodeSignalLevel.none => 0.0,
       NodeSignalLevel.wired => 1.0,
-    };
-  }
-
-  /// Classifies an RSSI into an [EdgeStrength].
-  ///
-  /// Ours to state since ui_kit 3.4.0, which dropped its own dBm-derived
-  /// classification — a general graph has no radio to read. The boundaries are
-  /// unchanged; only who applies them moved.
-  ///
-  /// [NodeSignalLevel.wired] maps to null rather than a strength: wiredness is the
-  /// *kind* axis ([EdgeKind.direct]), which is why the old `stable` member was
-  /// deleted.
-  EdgeStrength? _rssiToStrength(int? rssi) {
-    return switch (getWifiSignalLevel(rssi)) {
-      NodeSignalLevel.excellent => EdgeStrength.strong,
-      NodeSignalLevel.good => EdgeStrength.strong,
-      NodeSignalLevel.fair => EdgeStrength.good,
-      NodeSignalLevel.poor => EdgeStrength.weak,
-      NodeSignalLevel.none => EdgeStrength.unknown,
-      NodeSignalLevel.wired => null,
     };
   }
 

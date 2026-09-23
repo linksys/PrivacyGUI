@@ -10,7 +10,9 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
@@ -63,10 +65,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       return;
     }
 
-    final matches = topology.nodes
-        .where((node) => _matches(node, needle))
-        .map((node) => node.id)
-        .toSet();
+    final matches = TopologySearch.match(topology, needle);
 
     _controller.highlight(matches);
     if (matches.isNotEmpty) {
@@ -74,19 +73,6 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       // makes a match inside a collapsed cluster reachable at all.
       _controller.focusOn(matches.first, scale: 2);
     }
-  }
-
-  bool _matches(GraphNode node, String needle) {
-    if (node.name.toLowerCase().contains(needle)) return true;
-    // `extra` carries the IP on a leaf and the manufacturer on a node.
-    if ((node.extra ?? '').toLowerCase().contains(needle)) return true;
-    final metadata = node.metadata;
-    if (metadata == null) return false;
-    for (final key in const ['mac', 'deviceId']) {
-      final value = metadata[key];
-      if (value is String && value.toLowerCase().contains(needle)) return true;
-    }
-    return false;
   }
 
   @override
@@ -141,14 +127,18 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             Expanded(
               child: AppTextFormField(
                 controller: _searchController,
+                identifier: kTopologySearchFieldIdentifier,
                 hintText: loc(context).searchByNameMacIp,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
-                    : IconButton(
+                    : AppIconButton(
                         icon: const Icon(Icons.clear, size: 18),
+                        identifier: kTopologySearchClearIdentifier,
                         tooltip: loc(context).clear,
-                        onPressed: () {
+                        styleVariant: ButtonStyleVariant.text,
+                        size: AppButtonSize.small,
+                        onTap: () {
                           _searchController.clear();
                           _search(topology, '');
                           setState(() {});

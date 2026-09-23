@@ -798,9 +798,11 @@ void main() {
         // `wifi` was the claim that at least routed both views through the
         // neutral `wifiUnknownStyle` instead of asserting a wire.
         //
-        // v3.2.0 shipped `null` (this repo resolves v3.3.2), so
-        // the claim is no longer forced and this row now asserts the medium as
-        // well as the quality. They are different axes and both are unknown here:
+        // ui_kit v3.2.0 added a third `ConnectionType` member for the
+        // medium-unknown case, and 3.4.0 replaced it with `null` on an optional
+        // `GraphEdge.kind` — an undeclared kind and an unknown one being the same
+        // thing. Either way the claim is no longer forced, so this row asserts the
+        // medium as well as the strength. They are different axes and both are unknown here:
         // no medium reported, and no RSSI to grade.
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),

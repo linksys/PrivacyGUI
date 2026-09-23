@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
-import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/test_data/devices_test_data.dart';
+import '../../../mocks/test_data/system_info_test_data.dart';
 
 /// The one line under a node's name in tree view.
 ///
@@ -33,17 +33,7 @@ void main() {
 
   tearDownAll(OuiLookup.reset);
 
-  const sysInfo = SystemInfoUIModel(
-    manufacturer: 'Linksys',
-    modelName: 'MR7500',
-    hardwareVersion: '1.0',
-    serialNumber: 'SN123456',
-    softwareVersion: '1.0.16.26013014',
-    uptime: 3600,
-    totalMemory: 512000,
-    freeMemory: 256000,
-    cpuUsage: 25,
-  );
+  final sysInfo = SystemInfoTestData.create();
 
   GraphNode nodeOf(GraphData topology, String slot) =>
       topology.nodes.firstWhere((n) => n.styleSlot == slot);

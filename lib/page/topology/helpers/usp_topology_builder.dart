@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/backhaul_parent_graph.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_edge_strength.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [GraphData] from USP dashboard state for [AppTopology] widget.
@@ -50,7 +52,7 @@ class UspTopologyBuilder {
       // node — which `GraphNode.external` exists for — gives the gateway a parent
       // and silently demotes it to an interior appearance. Every origin states its
       // own slot so that none of them depends on the shape of the others.
-      styleSlot: 'primary',
+      styleSlot: TopologySlots.master,
       status: master.isOnline ? NodeState.active : NodeState.inactive,
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
       extra: _subtitle([
@@ -196,7 +198,7 @@ class UspTopologyBuilder {
         // with none is a structural leaf, and a derived slot would shrink it and
         // let an aggregate fold it away — the information that it is a node of
         // its own is not in the graph, only in the loop we are standing in.
-        styleSlot: 'secondary',
+        styleSlot: TopologySlots.slave,
         status: slave.isOnline ? NodeState.active : NodeState.inactive,
         parentId: parentId,
         image: DeviceImageHelper.getRouterImage(extenderIconName),
@@ -235,7 +237,7 @@ class UspTopologyBuilder {
         // no medium is a link we graded and firmware did not label. Only read for
         // an indirect edge, so a wired backhaul's value is ignored rather than
         // needing to be suppressed here.
-        strength: _rssiToEdgeStrength(slave.backhaul.signalStrength),
+        strength: edgeStrengthFromRssi(slave.backhaul.signalStrength),
       ));
     }
 
@@ -280,7 +282,7 @@ class UspTopologyBuilder {
         id: clientId,
         identifier: topologyClientIdentifier(clientIdKeys[client.mac] ?? ''),
         name: client.displayName,
-        styleSlot: 'leaf',
+        styleSlot: TopologySlots.device,
         status: client.isOnline ? NodeState.active : NodeState.inactive,
         parentId: parentId,
         iconData: category.icon,
@@ -336,7 +338,7 @@ class UspTopologyBuilder {
         // quality, which is why 3.4.0 deleted that member. `EdgeKind.direct`
         // already carries "wired", and `strength` is not read for it.
         strength:
-            isEthernet ? null : _rssiToEdgeStrength(client.signalStrength),
+            isEthernet ? null : edgeStrengthFromRssi(client.signalStrength),
         distanceFactor: _rssiToDistanceFactor(client.signalStrength),
       ));
     }
@@ -484,35 +486,6 @@ class UspTopologyBuilder {
       NodeSignalLevel.poor => 0.1,
       NodeSignalLevel.none => 0.0,
       NodeSignalLevel.wired => 1.0,
-    };
-  }
-
-  /// Classifies an RSSI into an [EdgeStrength], using wifi.dart's thresholds.
-  ///
-  /// **The classification is ours now.** ui_kit used to derive this itself from a
-  /// dBm reading with thresholds hardcoded at -50 and -70; 3.4.0 dropped that,
-  /// because a general graph has no radio to read. It is no loss — this app never
-  /// used the kit's derivation, it already passed its own, and [getWifiSignalLevel]
-  /// stays the single source of truth for where the boundaries sit.
-  ///
-  /// Thresholds from [signalThresholdRSSI]: [-65, -71, -78]
-  /// - >= -65: strong
-  /// - >= -71: good
-  /// - >= -78: weak
-  /// - < -78: unknown — a reading too poor to grade, not an absent one
-  ///
-  /// [NodeSignalLevel.wired] maps to null rather than to a strength: wiredness is
-  /// the *kind* axis ([EdgeKind.direct]), which is precisely why 3.4.0 deleted the
-  /// old `stable` member. A wired edge's strength is never read.
-  static EdgeStrength? _rssiToEdgeStrength(int? rssi) {
-    if (rssi == null) return EdgeStrength.unknown;
-    return switch (getWifiSignalLevel(rssi)) {
-      NodeSignalLevel.excellent => EdgeStrength.strong,
-      NodeSignalLevel.good => EdgeStrength.good,
-      NodeSignalLevel.fair => EdgeStrength.weak,
-      NodeSignalLevel.poor => EdgeStrength.unknown,
-      NodeSignalLevel.none => EdgeStrength.unknown,
-      NodeSignalLevel.wired => null,
     };
   }
 
