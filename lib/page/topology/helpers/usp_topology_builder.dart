@@ -53,9 +53,15 @@ class UspTopologyBuilder {
       styleSlot: 'primary',
       status: master.isOnline ? NodeState.active : NodeState.inactive,
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
-      extra: master.manufacturer.isNotEmpty
-          ? master.manufacturer
-          : info.manufacturer,
+      extra: _subtitle([
+        // Model first: it is what distinguishes this row from the slaves under
+        // it, whereas the manufacturer is the same word on every row in a
+        // single-vendor mesh.
+        master.model.isNotEmpty ? master.model : info.modelName,
+        master.manufacturer.isNotEmpty
+            ? master.manufacturer
+            : info.manufacturer,
+      ]),
       level: 1.0,
       metadata: {
         'deviceId': master.deviceId,
@@ -194,6 +200,14 @@ class UspTopologyBuilder {
         status: slave.isOnline ? NodeState.active : NodeState.inactive,
         parentId: parentId,
         image: DeviceImageHelper.getRouterImage(extenderIconName),
+        // A slave used to carry no subtitle at all, so its tree row was a name
+        // and nothing else. Model, then the backhaul — the one fact that
+        // differs between two otherwise identical extenders — and its signal
+        // where the medium is wireless and firmware measured one.
+        extra: _subtitle([
+          slave.model,
+          _backhaulSummary(slave.backhaul),
+        ]),
         level: _backhaulLevel(slave.backhaul),
         metadata: {
           'deviceId': slave.deviceId,
@@ -270,7 +284,13 @@ class UspTopologyBuilder {
         status: client.isOnline ? NodeState.active : NodeState.inactive,
         parentId: parentId,
         iconData: category.icon,
-        extra: client.ip,
+        // IP leads: it is what a viewer scans a list of devices for. The band
+        // follows where there is one, because two rows for the same device on
+        // different radios are otherwise identical.
+        extra: _subtitle([
+          client.ip,
+          if (client.isWifi) client.band,
+        ]),
         // `GraphNode.edgeStrength` (was `MeshNode.linkQuality`) is deliberately
         // not fed: measured zero reads across the whole kit on both 3.3.3 and
         // 3.4.0. The edge below carries the strength, and that one is read.
@@ -326,6 +346,43 @@ class UspTopologyBuilder {
       edges: edges,
       lastUpdated: DateTime.now(),
     );
+  }
+
+  /// The one line a tree row shows under a node's name.
+  ///
+  /// Two or three facts, joined with a middle dot, skipping the ones this node
+  /// has nothing for — so a row never leads with a separator and never shows a
+  /// dangling one, which is what a naive `join` of a list containing empties
+  /// produces. Null when nothing is known, because [GraphNode.extra] is nullable
+  /// and an empty string is a subtitle the tree would still lay out.
+  ///
+  /// Deliberately short. It competes with the row's own slot label and status
+  /// badge for a single line, and the detail panel is where the full field set
+  /// lives.
+  static String? _subtitle(List<String?> parts) {
+    final kept =
+        parts.map((p) => p?.trim() ?? '').where((p) => p.isNotEmpty).toList();
+    return kept.isEmpty ? null : kept.join(' · ');
+  }
+
+  /// A slave's backhaul as one phrase: the medium, and its signal when that is
+  /// both meaningful and measured.
+  ///
+  /// Null rather than a placeholder when firmware named no medium. `LinkType =
+  /// None` is the ordinary state on FL-WRT 2.0, not an error, and claiming
+  /// `Wi-Fi` for it is the defect #1464 closed — a subtitle is no place to
+  /// re-introduce it. The caller drops the null, so such a row falls back to its
+  /// model alone.
+  ///
+  /// The signal is withheld for a wired backhaul on the same grounds the link
+  /// style is: a wire has no RSSI by design, so a reading beside `Ethernet`
+  /// would be describing something else.
+  static String? _backhaulSummary(BackhaulInfo backhaul) {
+    final linkType = backhaul.linkType?.trim() ?? '';
+    if (linkType.isEmpty || linkType.toLowerCase() == 'none') return null;
+    final rssi = backhaul.signalStrength;
+    if (backhaul.isEthernet || rssi == null) return linkType;
+    return '$linkType $rssi dBm';
   }
 
   static double _rssiToLevelForClient(ClientDevice client) {
