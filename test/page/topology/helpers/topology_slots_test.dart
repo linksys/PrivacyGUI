@@ -54,10 +54,9 @@ void main() {
       // among the devices. Refusing to call it a device is the half that matters,
       // because that is what would have given it a device's page.
       for (final unknown in [null, '', 'tertiary', 'typo', 'Leaf']) {
-        expect(TopologySlots.isDevice(node(unknown)), isFalse,
-            reason: '${unknown ?? "null"}');
-        expect(TopologySlots.isMeshNode(node(unknown)), isFalse,
-            reason: '${unknown ?? "null"}');
+        final label = unknown ?? 'null';
+        expect(TopologySlots.isDevice(node(unknown)), isFalse, reason: label);
+        expect(TopologySlots.isMeshNode(node(unknown)), isFalse, reason: label);
       }
     });
 

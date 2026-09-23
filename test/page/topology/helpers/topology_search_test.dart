@@ -13,13 +13,13 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// the subtitle, which carries a leaf's IP and a node's model.
 void main() {
   final topology = GraphData(
-    nodes: [
+    nodes: const [
       GraphNode(
         id: 'gateway',
         name: 'Living Room Router',
         styleSlot: 'primary',
         extra: 'MR7500 · Linksys',
-        metadata: const {'deviceId': 'AA:BB:CC:DD:EE:00'},
+        metadata: {'deviceId': 'AA:BB:CC:DD:EE:00'},
       ),
       GraphNode(
         id: 'extender-1',
@@ -27,7 +27,7 @@ void main() {
         styleSlot: 'secondary',
         parentId: 'gateway',
         extra: 'MX2000 · Wi-Fi -55 dBm',
-        metadata: const {'deviceId': 'AA:BB:CC:DD:EE:01'},
+        metadata: {'deviceId': 'AA:BB:CC:DD:EE:01'},
       ),
       GraphNode(
         id: 'client-1',
@@ -35,7 +35,7 @@ void main() {
         styleSlot: 'leaf',
         parentId: 'extender-1',
         extra: '192.168.1.50 · 5GHz',
-        metadata: const {'mac': '11:22:33:44:55:01'},
+        metadata: {'mac': '11:22:33:44:55:01'},
       ),
       GraphNode(
         id: 'client-2',
@@ -122,12 +122,12 @@ void main() {
 
     test('a non-String metadata value does not match or throw', () {
       final withNumbers = GraphData(
-        nodes: [
+        nodes: const [
           GraphNode(
             id: 'n1',
             name: 'Node',
             styleSlot: 'leaf',
-            metadata: const {'mac': 42, 'deviceId': true},
+            metadata: {'mac': 42, 'deviceId': true},
           ),
         ],
         edges: const [],
