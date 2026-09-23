@@ -5,10 +5,17 @@ import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_renew_action_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Release & Renew DHCP lease section.
+///
+/// The address shown here is READ-ONLY, so it comes from L1 (#1587 Phase 2). It used to
+/// read `state.readOnlyInfo.staticIpAddress`, which is the page's L2 snapshot and
+/// therefore froze at page-entry — stale for the same reason, and from the same cause,
+/// as the status banner above it. Same TR-181 parameter either way; `wanDataProvider`
+/// is the copy that a `wanStatus` push refreshes.
 class UspRenewSection extends ConsumerWidget {
   final InternetSettingsFeatureState state;
 
@@ -22,7 +29,7 @@ class UspRenewSection extends ConsumerWidget {
     final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
     final l = loc(context);
-    final wanIp = state.readOnlyInfo.staticIpAddress;
+    final wanIp = ref.watch(wanDataProvider).valueOrNull?.model.ipAddress ?? '';
     final iconColor = Theme.of(context).colorScheme.primary;
 
     return AppCard(
