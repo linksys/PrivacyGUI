@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
+import 'package:privacy_gui/page/dashboard/mascot/widgets/parked_mascot_overlay.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
@@ -252,7 +253,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         // E2E mock builds (kept in sync with the General Settings toggle).
         if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled)
           Positioned.fill(
-            child: MascotOverlay(
+            // `ParkedMascotOverlay`, not `MascotOverlay`: the overlay holds its
+            // x as an absolute pixel offset, so widening the viewport leaves the
+            // mascot stranded where it was — measured at 480px from the right
+            // edge after 1440→1920, and 1420px after 500→1920. The wrapper
+            // remounts it so the corner is re-applied. See its own doc.
+            child: ParkedMascotOverlay(
               controller: mascotController,
               dialogProvider: dialogProvider,
               // Parked bottom-right, and it stays there unless the user moves

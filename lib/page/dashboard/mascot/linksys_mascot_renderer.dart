@@ -29,11 +29,16 @@ class LinksysMascotRenderer extends MascotCharacterRenderer {
 
   /// What the mascot occupies on the dashboard.
   ///
-  /// 68×94 rather than the artwork's 80×110: at the 320px screen floor the
-  /// original took 25% of the width, and the mascot is a hit-testing
-  /// `GestureDetector`, so that quarter of the screen was width the controls
-  /// underneath could not be reached through (#1531).
-  static const Size defaultSize = Size(68, 94);
+  /// 48×66 rather than the artwork's 80×110, which is 15% of the 320px screen
+  /// floor instead of 25%. The mascot is a hit-testing `GestureDetector`, so its
+  /// width is width the controls underneath cannot be reached through, and a
+  /// quarter of the narrowest supported screen was too much to spend on an
+  /// ambient character (#1531).
+  ///
+  /// The floor is the face, not the silhouette: the eyes are drawn with a 3px
+  /// stroke and the mouths are 4–20px wide, so below roughly 40px of width those
+  /// details fall under 2px and the expression stops reading. 48 keeps them.
+  static const Size defaultSize = Size(48, 66);
 
   @override
   final Size size;

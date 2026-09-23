@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
+import 'package:privacy_gui/page/dashboard/mascot/widgets/parked_mascot_overlay.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Where the mascot sits, and how much of the screen it takes.
@@ -40,8 +41,9 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: MascotOverlay(
-          controller: controller,
+        body: ParkedMascotOverlay(
+          controller: controller ?? MascotController(),
+          dialogProvider: null,
           spec: MascotSpec(
             renderer: const LinksysMascotRenderer(),
             behavior: behavior,
@@ -70,6 +72,13 @@ void main() {
     of: find.byType(MascotOverlay),
     matching: find.byType(GestureDetector),
   );
+
+  /// Re-lays out at [width] without remounting the harness, the way a browser
+  /// window resize does.
+  Future<void> resizeTo(WidgetTester tester, Size size) async {
+    tester.view.physicalSize = size;
+    await tester.pump(const Duration(milliseconds: 16));
+  }
 
   Rect mascotRect(WidgetTester tester) => tester.getRect(mascotFinder.first);
 
@@ -143,6 +152,80 @@ void main() {
     });
   });
 
+  // Resizing the viewport, which is where parking alone was not enough.
+  //
+  // The overlay stores x as an absolute pixel offset and only clamps it against
+  // the current width, so the two directions behave differently: shrinking pulls
+  // the mascot back to the right edge (the clamp bites), growing does not (it
+  // stops biting and the old offset stands). Measured before the fix, parked
+  // bottom-right: 1440→800→320 held a 0px gap at every step, while 1440→1920
+  // left a 480px gap and 500→1920 left 1420px — a quarter of the way across the
+  // screen for anyone who starts small and maximises.
+  group('mascot re-parks on resize', () {
+    testWidgets('stays in the corner when the window shrinks', (tester) async {
+      await pumpOverlay(tester, screen: const Size(1440, 900));
+
+      for (final width in [800.0, 500.0, 320.0]) {
+        await resizeTo(tester, Size(width, 900));
+        expect(mascotRect(tester).right, closeTo(width, 1.0),
+            reason: 'shrinking to $width must keep it flush right');
+      }
+    });
+
+    testWidgets('re-parks when the window grows', (tester) async {
+      await pumpOverlay(tester, screen: const Size(1440, 900));
+
+      await resizeTo(tester, const Size(1920, 900));
+
+      expect(mascotRect(tester).right, closeTo(1920, 1.0),
+          reason: 'was stranded 480px from the right edge before the fix');
+    });
+
+    testWidgets('re-parks after starting small and maximising', (tester) async {
+      await pumpOverlay(tester, screen: const Size(500, 800));
+
+      await resizeTo(tester, const Size(1920, 1080));
+
+      expect(mascotRect(tester).right, closeTo(1920, 1.0),
+          reason: 'was stranded 1420px from the right edge before the fix');
+    });
+
+    testWidgets('survives a shrink-then-grow round trip', (tester) async {
+      await pumpOverlay(tester, screen: const Size(1440, 900));
+
+      await resizeTo(tester, const Size(320, 640));
+      await resizeTo(tester, const Size(1440, 900));
+
+      expect(mascotRect(tester).right, closeTo(1440, 1.0));
+    });
+
+    // The reason the remount fires on shrink too, which is not about where the
+    // mascot appears — after a shrink it already appears in the corner.
+    //
+    // The clamp is applied to a local and never written back, so `_positionX`
+    // keeps the old wide value and a drag has to spend the difference before
+    // anything moves. Measured at 1440→800 without the remount: `_positionX`
+    // 1392 against a ceiling of 752, so the first 640px of leftward drag were
+    // swallowed — a 100px drag moved nothing at all, and 400px hit the left
+    // edge. The mascot looked stuck, then leapt.
+    //
+    // A drag this small is the assertion: it is well inside the old dead zone,
+    // so it moves the mascot only if `_positionX` was refreshed.
+    testWidgets('a small drag still moves it right after a shrink',
+        (tester) async {
+      await pumpOverlay(tester, screen: const Size(1440, 900));
+      await resizeTo(tester, const Size(800, 900));
+
+      final before = mascotRect(tester).left;
+      await tester.drag(mascotFinder.first, const Offset(-100, 0));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(mascotRect(tester).left, lessThan(before - 50),
+          reason: 'a 100px drag moved 0px while the stale offset stood');
+    });
+  });
+
   group('mascot footprint', () {
     // 320px is the narrowest width the app claims to support, and the width the
     // layout gate uses as its floor. The mascot is a hit-testing
@@ -154,10 +237,10 @@ void main() {
       final width = mascotRect(tester).width;
       expect(width, LinksysMascotRenderer.defaultSize.width);
 
-      // 68/320 = 21.25%, down from the artwork's 80/320 = 25%. Both numbers are
-      // asserted rather than a round target, because the honest claim here is
-      // "less of the floor than before", not a fraction chosen after the fact.
-      expect(width / 320, closeTo(0.2125, 0.0001));
+      // 48/320 = 15%, down from the artwork's 80/320 = 25%. Asserted as the
+      // measured fraction rather than a round target, so a later size change has
+      // to restate what it costs at the floor.
+      expect(width / 320, closeTo(0.15, 0.0001));
       expect(
           width / 320, lessThan(LinksysMascotRenderer.artworkSize.width / 320));
     });
@@ -184,7 +267,9 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: MascotOverlay(
+          body: ParkedMascotOverlay(
+            controller: MascotController(),
+            dialogProvider: null,
             spec: const MascotSpec(
               renderer: LinksysMascotRenderer(size: Size(40, 55)),
               behavior: shellBehavior,
