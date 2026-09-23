@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 /// but NOT user-editable.
 ///
 /// Decouples the model layer from codegen types (`WanSettings`, `Ipv6Settings`).
+///
 /// AUDIT, #1587 Phase 2 — which of these still belong here.
 ///
 /// This whole object is populated by the same `service.fetch()` that fills the L2 form,

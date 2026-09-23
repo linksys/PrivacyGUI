@@ -16,6 +16,10 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// therefore froze at page-entry — stale for the same reason, and from the same cause,
 /// as the status banner above it. Same TR-181 parameter either way; `wanDataProvider`
 /// is the copy that a `wanStatus` push refreshes.
+///
+/// Reading L1 here also picks up something L2 did not: `usp_internet_settings_notifier`
+/// already calls `ref.invalidate(wanDataProvider)` after a save and after a DHCP renew,
+/// so those two paths now refresh this address as well.
 class UspRenewSection extends ConsumerWidget {
   final InternetSettingsFeatureState state;
 

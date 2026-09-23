@@ -35,6 +35,18 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// The alternative — giving the notifier an `onSseInvalidation()` listener — was
 /// rejected in #1587: the dirty guard skips the refresh exactly when the page is
 /// dirty, which is the one state where stale values get written back on save.
+///
+/// ⚠️ KNOWN INCONSISTENCY WITH THE DASHBOARD CARD, LEFT AS IT WAS.
+/// `usp_network_status_card.dart` renders online/offline from `wan.isUp` (the TR-181
+/// `Status` field); this banner infers it from the address being non-empty. The two
+/// disagree while a link is UP BUT HAS NO ADDRESS YET — mid-DHCP, mid-PPPoE — where the
+/// card says Online and this says offline.
+///
+/// That predates this change: the banner drew the same inference from
+/// `readOnlyInfo.staticIpAddress`. It is deliberately not fixed here, because switching
+/// to `isUp` would change BEHAVIOUR while this change is only about where the value is
+/// read from, and "what should a connecting link look like" is a product question. Both
+/// now read the same provider, which is what makes the difference easy to close later.
 class UspConnectionStatusBanner extends ConsumerWidget {
   final InternetSettingsFeatureState state;
   final bool isEditing;
