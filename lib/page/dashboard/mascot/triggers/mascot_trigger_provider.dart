@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -225,7 +226,11 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
             : devices.clientDevices.last.mac)
         : 'Unknown device';
 
-    debugPrint('[Mascot][Trigger]: New device joined — $newDevice');
+    // The device *name* is deliberately absent from this line. `debugPrint` is
+    // not stripped in release builds, so on web it reaches the browser console —
+    // and `newDevice` is a friendly name, a hostname or, failing both, a MAC.
+    // The count is enough to tell the trigger fired; the name is on screen.
+    logger.d('[Mascot][Trigger]: New device joined (now $currentCount clients)');
     return TriggerDefinitions.newDeviceJoined(newDevice);
   }
 
