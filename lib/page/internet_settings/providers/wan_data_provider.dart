@@ -57,14 +57,50 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.wanStatus) {
         logger.d('[WAN] wanStatus invalidation (seq=${next.valueOrNull?.seq}) '
-            '→ invalidateSelf()');
-        ref.invalidateSelf();
+            '→ refetch');
+        _refreshFromPush();
       } else {
         logger.t('[WAN] ignoring ${domain?.name ?? 'no-domain'} invalidation');
       }
     });
 
     return _fetch();
+  }
+
+  /// Re-read the device and publish the result, WITHOUT depending on anyone reading
+  /// this provider afterwards.
+  ///
+  /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
+  /// and marks the provider for rebuild, and riverpod runs `build()` again **when
+  /// something reads the provider**. Nothing guarantees a reader at the moment an SSE
+  /// notification arrives, and when there is none:
+  ///
+  ///   - `build()` does not run, so no re-fetch happens, and
+  ///   - the `ref.listen` above — which lives INSIDE `build()` — is not re-registered,
+  ///     so the NEXT notification does not even reach the listener.
+  ///
+  /// That second consequence is what makes it worse than a missed refresh: **the first
+  /// matching notification disables the mechanism.** Measured on FW 2.0 (the listener
+  /// fires once, `invalidateSelf()` is called, and no fetch ever follows), and pinned in
+  /// `wan_data_provider_test.dart` by a test that holds no listener.
+  ///
+  /// Assigning `state` directly is what removes the dependency: the new value is
+  /// published whether or not anything is watching, and `build()` — with its
+  /// `ref.listen` — stays alive because it is never torn down.
+  ///
+  /// ON FAILURE IT KEEPS THE PREVIOUS VALUE rather than moving to `AsyncError`. Every
+  /// consumer reads this through `valueOrNull` (see `wanIsUpProvider`), so an error
+  /// state renders as "unknown" — a transient device hiccup would blank the WAN address
+  /// on the dashboard. A stale-but-plausible value is the better failure here, and the
+  /// same reasoning is already recorded for the loading case (#1143).
+  Future<void> _refreshFromPush() async {
+    try {
+      state = AsyncData(await _fetch());
+    } catch (e, st) {
+      // Deliberately not rethrown and not surfaced as AsyncError — see above.
+      logger.w('[WAN] push-triggered refetch failed, keeping previous value',
+          error: e, stackTrace: st);
+    }
   }
 
   Future<WanData> _fetch() async {

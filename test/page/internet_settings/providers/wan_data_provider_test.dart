@@ -339,6 +339,69 @@ void main() {
       container.dispose();
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test above passes, yet on FW 2.0 this same path does not re-fetch on real
+    // hardware. `createContainer()` differs from production in one way that matters:
+    // it calls `container.listen(wanDataProvider, …)`, holding a subscriber for the
+    // whole test. `invalidateSelf()` only SCHEDULES a rebuild — riverpod runs `build()`
+    // again when something READS the provider, and that listener guarantees something
+    // does.
+    //
+    // So the passing test cannot tell "invalidateSelf() re-fetches" apart from
+    // "invalidateSelf() re-fetches BECAUSE a listener was held". This one removes the
+    // listener and asks the narrower question. If it fails, hypothesis A in #1615 is
+    // confirmed: the defect is the pattern, not the library.
+    //
+    // The provider is read once up front so the notifier is constructed and its
+    // `ref.listen` registered — without that there is nothing to invalidate and the
+    // test would be vacuous. A one-shot `read` rather than a `listen` is deliberately
+    // what a widget that has since stopped watching looks like.
+    // -----------------------------------------------------------------------
+    test('#1615: wanStatus re-fetches with NO listener held on the provider',
+        () async {
+      final sse = StreamController<InvalidationEvent>();
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sseInvalidationProvider.overrideWith((_) => sse.stream),
+        ],
+      );
+      // `await …future` rather than a bare `read`: reading an AsyncNotifierProvider
+      // returns the current AsyncValue without waiting for build() to finish, and the
+      // fetch inside it needs more than a few microtasks. Awaiting the future is what
+      // guarantees build() — and therefore its ref.listen — has actually run.
+      final d = await container.read(wanDataProvider.future);
+      // Proves build() ran and fetched — the ref.listen inside it is therefore
+      // registered, so the event below has something to invalidate. Asserting on the
+      // VALUE rather than on a verify() count, because `fetchRounds()` uses
+      // `verify(…)`, and mocktail's verify CONSUMES the calls it matches: calling it
+      // here would leave nothing for the assertion that matters.
+      expect(d.model.ipAddress, '100.64.0.10',
+          reason: 'build() must have completed, or this test asserts nothing');
+
+      clearInteractions(mockUsp);
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 0));
+      await settle();
+
+      expect(
+        fetchRounds(),
+        1,
+        reason:
+            'a push-triggered refresh must re-read the device even when nothing is '
+            'listening. A zero here means the notifier is back to depending on a '
+            'subscriber — which production does not guarantee, and which also stops the '
+            'ref.listen from being re-registered, disabling the mechanism entirely. '
+            'See #1615.',
+      );
+
+      await sse.close();
+      container.dispose();
+    });
+
     test('a neighbouring domain does not re-fetch', () async {
       final sse = StreamController<InvalidationEvent>();
       final container = createContainer(sse: sse.stream);
