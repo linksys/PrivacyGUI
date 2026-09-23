@@ -900,9 +900,10 @@ class UspClient {
           await _withAuthRetry(() => _client.operate(command, args: args));
       sw.stop();
 
-      // Extract commandKey and outputArgs from WASM v0.11.0 unified format:
-      // { success, result: { data: { commandKey, outputArgs }, error? } }
-      final response = _extractOperateResult(rawResponse);
+      // usp-client 0.13.0 unified format:
+      // { success, result: { data: { commandKey, requestPath, outputArgs }, error? } }
+      // Throws when the agent refused the command — see extractOperateResult.
+      final response = extractOperateResult(rawResponse);
       final label = _idLabel(id);
       logger.d('$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
           '${_prettyMap(response)}');
@@ -915,10 +916,46 @@ class UspClient {
     }
   }
 
-  /// Extracts commandKey and outputArgs from WASM v0.11.0 unified format.
-  Map<String, dynamic> _extractOperateResult(Map<String, dynamic> raw) {
+  /// Reads the usp-client unified Operate response: `{ success, result: { data,
+  /// error? } }`.
+  ///
+  /// Returns `commandKey`, `requestPath` and the flattened output arguments —
+  /// and **throws when the agent refused the command**.
+  ///
+  /// Throwing is the point (#1533). usp-client 0.13.0 reports a refusal as
+  /// `success: false` with the agent's code in band, and the JS Promise
+  /// *fulfils*: the reject path across the Wasm boundary replaces the agent's
+  /// code with a `9999` transport sentinel, so a caller can only see the refusal
+  /// by reading the value. This method used to read `data` and nothing else, so a
+  /// refusal returned `{}` and every caller reported success — a firmware chunk
+  /// the router rejected completed normally in the UI, with no error anywhere.
+  ///
+  /// It throws a **string in the USP layer's own shape**, not a [ServiceError]:
+  /// `Operate failed: Operation error: … (code: N)`. That keeps two contracts
+  /// intact — `parseUspError` reads it as an *operation* failure carrying the
+  /// agent's code, so every existing `catch (e) => mapUspErrorToServiceError(e)`
+  /// classifies it without change; and mapping to `ServiceError` stays in the
+  /// service layer where constitution Article XIII puts it, not here in transport.
+  @visibleForTesting
+  static Map<String, dynamic> extractOperateResult(Map<String, dynamic> raw) {
+    // **The refusal check runs first, and the order is the correctness.** It used
+    // to sit after the `result == null` fallback, which made the guard fail *open*:
+    // a `{ "success": false }` carrying no `result` returned the raw map instead of
+    // throwing, and a caller reading `{}` cannot tell a refusal from a success —
+    // the exact defect #1533 exists to fix, reintroduced for one response shape.
+    //
+    // Whether the agent can produce that shape is not something this file can
+    // settle: `success` is assembled inside `usp_client_bg.wasm`, and the JS shim
+    // contains no `success: false` literal to read. So the shape is neither proven
+    // reachable nor proven impossible — which is the argument for checking it
+    // rather than against. Four lines, and being wrong the other way means this
+    // PR's own bug comes back silently.
+    if (raw['success'] == false) {
+      throw _operateRefusal((raw['result'] as Map?)?['error']);
+    }
+
     final result = raw['result'] as Map?;
-    if (result == null) return raw; // fallback to raw if not v0.11.0 format
+    if (result == null) return raw; // fallback to raw if not the unified format
 
     final data = result['data'] as Map?;
     if (data == null) return {};
@@ -928,6 +965,12 @@ class UspClient {
     if (commandKey != null && commandKey.isNotEmpty) {
       output['commandKey'] = commandKey;
     }
+    // New in 0.13.0 (`OperateResp.req_obj_path`): the only server-assigned handle
+    // for an accepted asynchronous command when not subscribed to Notify.
+    final requestPath = data['requestPath']?.toString();
+    if (requestPath != null && requestPath.isNotEmpty) {
+      output['requestPath'] = requestPath;
+    }
     final rawOutputArgs = data['outputArgs'];
     if (rawOutputArgs is Map) {
       for (final entry in rawOutputArgs.entries) {
@@ -935,6 +978,86 @@ class UspClient {
       }
     }
     return output;
+  }
+
+  /// Builds the refusal string from the unified response's `error` member.
+  ///
+  /// The member is keyed by the path that failed, each entry carrying
+  /// `errorCode` / `errorMessage`. Everything is optional on purpose: a
+  /// `success: false` with no readable detail must still throw, because a caller
+  /// handed `{}` cannot tell a refusal from a success.
+  static String _operateRefusal(Object? error) {
+    String? path;
+    Object? code;
+    String? message;
+
+    if (error is Map && error.isNotEmpty) {
+      final first = error.entries.first;
+      path = first.key.toString();
+      final detail = first.value;
+      if (detail is Map) {
+        code = detail['errorCode'];
+        message = detail['errorMessage']?.toString();
+      } else if (detail != null) {
+        message = detail.toString();
+      }
+    }
+
+    final what = path ?? 'the command';
+    // **The router's own message is requoted so it cannot be read as our suffix.**
+    //
+    // `parseUspError` recovers the fault code with `\(code:\s*(\d+)\)` over the whole
+    // string, and this method appends its suffix *after* the message — so a vendor
+    // message echoing an upstream `(code: N)` was being adopted as the code. Measured
+    // on head before this change: a refusal with **no** `errorCode` whose message read
+    // `upstream said (code: 9001)` parsed as fault code 9001 and mapped to
+    // `UspCompleteFailureError`, telling the user "request denied" about a refusal the
+    // router gave no code for. Inventing a specific wrong answer is worse than the
+    // generic one it replaced.
+    //
+    // Requoted rather than anchoring the consumer's pattern to end-of-string, which is
+    // what a reviewer proposed: **measured, that breaks the protocol path**, where the
+    // code legitimately sits mid-string (`… (code: 7004) for Device.X` must still
+    // parse as 7004). The producer owns this format, so the producer is where the
+    // ambiguity gets removed.
+    //
+    // Square brackets keep every character of what the router said while leaving
+    // exactly one parenthesised code in the string — ours.
+    final quoted = message?.replaceAllMapped(
+      RegExp(r'\(code:\s*(\d+)\)'),
+      (m) => '[code: ${m.group(1)}]',
+    );
+    final why = (quoted == null || quoted.isEmpty)
+        ? 'the router gave no reason'
+        : quoted;
+    // **Normalised to an integer literal, because the consumer reads it with a
+    // regex.** `parseUspError` recovers the code with `\(code:\s*(\d+)\)`, and
+    // `errorCode` arrives here untyped from a JS object: an integral JS number can
+    // cross the interop boundary as a Dart `double`, at which point `'$code'`
+    // renders `7022.0`, the `(\d+)` cannot match through the `.`, `faultCode` is
+    // null, and `_mapOperationError` sends the user back to "Something went wrong"
+    // — for the one code this change exists to give a message to.
+    //
+    // Fixed at the producer rather than by widening the regex: the regex serves
+    // every USP error string, and a `(\d+(?:\.\d+)?)` there would start accepting
+    // codes that are not codes. A non-integral value still falls through
+    // unnormalised, which is correct — that is not a fault code, and it should not
+    // be read as one.
+    final codeText = switch (code) {
+      null => null,
+      // `isFinite` first, and it is not belt-and-braces: `double.infinity
+      // .truncateToDouble()` **is** infinity, so `n == n.truncateToDouble()`
+      // passes for ±Infinity and `toInt()` then throws
+      // `UnsupportedError: Infinity or NaN toInt` — replacing the refusal string
+      // with a crash and losing both the code and the router's message. Measured.
+      // NaN is safe only by accident (`NaN != NaN` fails the guard), which is
+      // exactly the kind of accident worth not relying on.
+      final num n when n.isFinite && n == n.truncateToDouble() =>
+        n.toInt().toString(),
+      _ => code.toString(),
+    };
+    final suffix = codeText == null ? '' : ' (code: $codeText)';
+    return 'Operate failed: Operation error: $what refused: $why$suffix';
   }
 
   // ===========================================================================

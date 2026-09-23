@@ -28,8 +28,12 @@ class TracerouteDetailCard extends StatelessWidget {
                 children: [
                   Icon(Icons.route, size: 20, color: colorScheme.primary),
                   AppGap.sm(),
-                  AppText.labelLarge(
-                      loc(context).tracerouteTo(result.targetHost)),
+                  // #1602: interpolates a hostname, so its length is data rather
+                  // than translation — over by up to 120px at 320px without this.
+                  Flexible(
+                    child: AppText.labelLarge(
+                        loc(context).tracerouteTo(result.targetHost)),
+                  ),
                 ],
               ),
               AppGap.md(),

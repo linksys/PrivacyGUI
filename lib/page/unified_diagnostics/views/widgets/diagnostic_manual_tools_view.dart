@@ -457,10 +457,17 @@ class _DiagnosticManualToolsViewState
                     result.isComplete ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
-              AppText.titleSmall(
-                loc(context).tracerouteTo(result.host),
+              // `Expanded` replaces the `Spacer` rather than joining it (#1602).
+              // Both are flex:1, so a `Flexible` title beside a `Spacer` would be
+              // handed only half the free space and wrap while room was going
+              // unused. Expanding the title instead pushes the hop count to the
+              // right edge exactly as the `Spacer` did, and gives the title the
+              // whole of the remainder at 320px, where it was over by 90px.
+              Expanded(
+                child: AppText.titleSmall(
+                  loc(context).tracerouteTo(result.host),
+                ),
               ),
-              const Spacer(),
               AppText.bodySmall(
                 loc(context).nHops(result.hops.length),
                 color: colorScheme.onSurfaceVariant,
@@ -583,8 +590,13 @@ class _DiagnosticManualToolsViewState
                 color: isOk ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
-              AppText.titleSmall(loc(context).nsLookupHost(result.hostName)),
-              const Spacer(),
+              // Same shape and same fix as the traceroute header above — see there
+              // for why the `Spacer` goes rather than the title gaining a
+              // `Flexible` beside it. Over by 56px at 320px.
+              Expanded(
+                child: AppText.titleSmall(
+                    loc(context).nsLookupHost(result.hostName)),
+              ),
               AppText.bodySmall(
                 result.status,
                 color: colorScheme.onSurfaceVariant,

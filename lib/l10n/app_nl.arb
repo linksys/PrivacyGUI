@@ -642,6 +642,7 @@
   "errorTimeout": "De bewerking is verlopen. Probeer het opnieuw.",
   "errorUnauthorized": "U heeft geen toestemming om deze actie uit te voeren.",
   "errorUnexpected": "Er is iets misgegaan. Probeer het opnieuw.",
+  "errorCommandRefused": "De router heeft deze opdracht geweigerd. Probeer het over een moment opnieuw.",
   "errors": "Fouten",
   "estimatedTimeRemaining": "Geschatte resterende tijd: {time}",
   "ethernetPorts": "Ethernet-poorten",

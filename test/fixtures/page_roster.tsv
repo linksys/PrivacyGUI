@@ -343,6 +343,90 @@
 # second-state is now a PREFIX of page.pnp_setup_firmware, so --plain-name 'page.pnp_setup' matches
 # second-state both groups. Re-measuring the form case in isolation takes the trailing space -
 # second-state --plain-name 'page.pnp_setup ' - or the coordinate suffix.
+# second-state A THIRD AND FOURTH CASE ON THE SAME ROW (#1602, 2026-09-21), and the first pair this
+# second-state file has taken whose ABSENCE was found by joining two enumerations rather than by a
+# second-state nightly failure at a coordinate the gate already swept. pnp_setup_view.dart is a state
+# second-state machine - nine phases reaching seven builders - and the gate's unit is (page, one
+# second-state fixture), so this row read `swept` on the strength of two cases while six of the seven
+# second-state builders had no cell at any width in any locale. The golden suite #1586 gave this view
+# second-state enumerates the same thing independently, as eight `states:` keys; comparing the two
+# second-state lists is what showed 8 against 2. kPnpSetupCompleteSplitPageCase and
+# second-state kPnpSetupCompleteUnifiedPageCase are the two WizardWifiReady branches, and isSplitMode
+# second-state is derived (bands.length > 1) rather than stored, so each case's premise names the
+# second-state widget the other cannot build - LayoutBlock against QrImageView.
+# second-state This row therefore reads 34.3 while accounting for FOUR cases. Same mechanism as the
+# second-state pair above, same single row: page_roster_test.dart joins through view().runtimeType.
+# second-state Figures, this column's own basis (--plain-name 'page.pnp_setup_complete_<branch>
+# second-state screen_px', --reporter json, the nine coordinate tests' durations summed / 234, three
+# second-state runs, median), 2026-09-21:
+# second-state
+# second-state   pnp_setup_view.dart   row 34.3   complete_split  12.2 (12.2 / 12.1 / 13.8)
+# second-state                                    complete_unified  12.8 (12.8 / 13.1 / 12.8)
+# second-state
+# second-state split's spread is 13.9% against unified's 2.3%, on trees of the same kind, so read the
+# second-state median and not the difference between the two cases.
+# second-state THE CONTROL, AND WHY IT IS WHAT MAKES THOSE FIGURES MEAN ANYTHING. The same three-run
+# second-state protocol on the sibling form case read 27.1 (27.3 / 27.1 / 27.0, spread 1.1%) against
+# second-state the committed 34.3, i.e. -21.0% on a fixture whose tree did not change in this PR. The
+# second-state #1554 block above recorded -23.3% on the same case on a different day, so the two
+# second-state controls agree with each other and disagree with the row: it is the box, and the row is
+# second-state left alone for the reason stated there. So the claim here is the RATIO taken minutes
+# second-state apart on one box - 12.2/27.1 = 0.45 and 12.8/27.1 = 0.47 - i.e. the row OVER-projects
+# second-state each completion branch by ~2.2x, not the 12.2-against-34.3 figure a reader would form.
+# second-state AND IT CONFIRMS THE PAIR ABOVE ON A THIRD AND FOURTH TREE. #1554's pnp pair measured
+# second-state 0.38 and its firmware pair measured ~1.0, and the difference it attributed to how alike
+# second-state the two trees are rather than to the mechanism. These two are one centred card - an
+# second-state illustration, a heading, two or six credential rows and one or two buttons - against
+# second-state the same three-band form with six input fields and three rule lists, so the prediction
+# second-state was "near pnp's 0.38, not near firmware's 1.0". Measured 0.45 and 0.47. That is the
+# second-state third independent reading that inheritance error is a property of the TREES.
+# second-state ONE MORE PREFIX CONSEQUENCE, on top of the one above: page.pnp_setup_complete is itself
+# second-state a prefix of both completion groups, so --plain-name 'page.pnp_setup_complete' runs 468
+# second-state cells and --plain-name 'page.pnp_setup' now runs all four cases, 936.
+# second-state NINE CASES ON ONE ROW (#1602's second half, 2026-09-21) - the largest fan-out this
+# second-state column has had to absorb, and the first found the same way the pnp pair was: by
+# second-state joining the gate's case list to a golden suite's `states:` keys. unified_diagnostics_view.dart
+# second-state is a switch into seven arms, five of them separate page-sized widgets, and the case that
+# second-state existed swept `idle` on an EMPTY override list - nobody had picked a state. The golden suite
+# second-state enumerates 28 states against that one case.
+# second-state Eight were added rather than five or 28. Five would be one per builder and would leave
+# second-state three of the five fixed sites with no cell, because the DATA inside a results or
+# second-state manual-tools state decides which sub-widget renders: only tracerouteResultsState draws
+# second-state TracerouteDetailCard, and the three manual blocks are gated on state.activeTab. 28 would be
+# second-state 6,084 cells; these eight are 1,872.
+# second-state Figures, this column's own basis (--plain-name 'page.unified_diagnostics_', --reporter json,
+# second-state each group's nine coordinate tests summed / 234, three runs, median), 2026-09-21:
+# second-state
+# second-state   unified_diagnostics_view.dart   row 15.2   select_flow        13.8 (13.6 / 14.0 / 13.8)
+# second-state                                              manual_tools       14.4 (14.2 / 14.6 / 14.4)
+# second-state                                              manual_nslookup    12.6 (11.8 / 12.6 / 12.6)
+# second-state                                              manual_traceroute  12.3 (12.3 / 12.5 / 12.3)
+# second-state                                              results            10.9 (10.6 / 10.9 / 11.1)
+# second-state                                              results_traceroute 10.4 (10.2 / 10.4 / 10.8)
+# second-state                                              running             8.9 (8.6 / 8.9 / 9.1)
+# second-state                                              completed           5.8 (6.5 / 5.7 / 5.8)
+# second-state
+# second-state THE CONTROL AGREED WITH THE ROW, WHICH HAS NOT HAPPENED IN THIS FILE BEFORE. The same
+# second-state three-run protocol on the original idle case read 14.1 (13.8 / 14.3 / 14.1, spread 3.5%)
+# second-state against the committed 15.2 - -7.2%, inside this file's own noise. Both pnp controls
+# second-state disagreed with their row by more than 20% and were attributed to the box; this one does not,
+# second-state on the same box in the same session as those readings. So -21% there was not a standing
+# second-state property of this machine, and the row is left at 15.2 because it is right, not because a
+# second-state disagreement was unattributable.
+# second-state THE INHERITANCE ERROR IS MILD HERE, AND THE REASON IS THE THIRD READING OF THE SAME RULE.
+# second-state Ratios against the 14.1 control run minutes earlier: 0.41 (completed) to 1.02
+# second-state (manual_tools), median 0.80 - so the row over-projects most cases by a quarter or less,
+# second-state against the pnp completion pair's 2.2x. The `# tabs` and #1554 blocks both concluded the
+# second-state inheritance error is a property of how alike the two TREES are rather than of the
+# second-state mechanism, and this is the widest test of that yet: all nine cases are the same page shell
+# second-state with a different card stack inside it, which is the firmware pair's shape (~1.0) and not the
+# second-state pnp pair's form-against-card (0.38-0.47). `completed` at 0.41 is the one outlier and it is
+# second-state the exception that fits: an icon, a headline and one button is not a card stack.
+# second-state PREFIX CONSEQUENCE AGAIN, and it bites harder here than on pnp. page.unified_diagnostics is
+# second-state a prefix of all eight new group names, so --plain-name 'page.unified_diagnostics' runs 2,106
+# second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
+# second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
+# second-state and 'page.unified_diagnostics_' for the eight added ones.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart

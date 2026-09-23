@@ -640,6 +640,7 @@
   "errorTimeout": "Thao tác đã hết thời gian chờ. Vui lòng thử lại.",
   "errorUnauthorized": "Bạn không có quyền thực hiện thao tác này.",
   "errorUnexpected": "Đã xảy ra sự cố. Vui lòng thử lại.",
+  "errorCommandRefused": "Bộ định tuyến đã từ chối lệnh này. Vui lòng thử lại sau một lát.",
   "errors": "Lỗi",
   "estimatedTimeRemaining": "Thời gian còn lại ước tính: {time}",
   "ethernetPorts": "Cổng Ethernet",

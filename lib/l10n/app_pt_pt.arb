@@ -642,6 +642,7 @@
   "errorTimeout": "A operação excedeu o tempo limite. Tente novamente.",
   "errorUnauthorized": "Não tem permissão para realizar esta ação.",
   "errorUnexpected": "Algo correu mal. Tente novamente.",
+  "errorCommandRefused": "O router recusou este comando. Tente novamente dentro de instantes.",
   "errors": "Erros",
   "estimatedTimeRemaining": "Tempo restante estimado: {time}",
   "ethernetPorts": "Portas Ethernet",

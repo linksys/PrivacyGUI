@@ -285,25 +285,55 @@ class _SummaryCard extends StatelessWidget {
       identifier: 'diagnostic-results',
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
+        // A `Wrap` of two groups rather than one flat `Row` (#1602). The `Row`
+        // carried a 40px icon, three intrinsic-width counts and two gaps besides
+        // the title, so at the 320px floor the `Expanded` title collapsed to zero
+        // and the fixed children still went over — by up to 120px, in every locale
+        // and on every results state including `en`. `spaceBetween` keeps the wide
+        // layout the `Row` had (title left, counts hard right, one line) and lets
+        // the counts drop to a second line instead of overflowing.
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: AppSpacing.md,
           children: [
-            Icon(icon, size: 40, color: color),
-            AppGap.lg(),
-            Expanded(child: AppText.titleLarge(title)),
-            _StatusCount(
-                label: loc(context).failed,
-                count: errorCount,
-                color: colorScheme.error),
-            AppGap.lg(),
-            _StatusCount(
-                label: loc(context).warning,
-                count: warningCount,
-                color: colorScheme.tertiary),
-            AppGap.lg(),
-            _StatusCount(
-                label: loc(context).passed,
-                count: passedCount,
-                color: colorScheme.primary),
+            // `Row`s inside a `Wrap` are handed the line's width as their
+            // constraint, so the `Flexible` below wraps the title rather than
+            // overflowing it — and each group still travels as one unit.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 40, color: color),
+                AppGap.lg(),
+                Flexible(child: AppText.titleLarge(title)),
+              ],
+            ),
+            // A `Wrap` too, and the reason is worth keeping: moving the counts
+            // onto their own run fixed 221 of the 302 red cells, and the
+            // remaining 81 moved to *this* group — three labels of
+            // `Fehlgeschlagen` / `Warnung` / `Bestanden` length do not fit a
+            // 320px line either, over by up to 64px in 9 locales across every
+            // results state. `spacing` replaces the two `AppGap.lg()`s so the
+            // gap does not survive a line break as leading whitespace.
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.lg,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _StatusCount(
+                    label: loc(context).failed,
+                    count: errorCount,
+                    color: colorScheme.error),
+                _StatusCount(
+                    label: loc(context).warning,
+                    count: warningCount,
+                    color: colorScheme.tertiary),
+                _StatusCount(
+                    label: loc(context).passed,
+                    count: passedCount,
+                    color: colorScheme.primary),
+              ],
+            ),
           ],
         ),
       ),

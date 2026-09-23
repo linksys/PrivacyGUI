@@ -640,6 +640,7 @@
   "errorTimeout": "Operasi melebihi batas waktu. Harap coba lagi.",
   "errorUnauthorized": "Anda tidak memiliki izin untuk melakukan tindakan ini.",
   "errorUnexpected": "Terjadi kesalahan. Harap coba lagi.",
+  "errorCommandRefused": "Router menolak perintah ini. Silakan coba lagi sebentar lagi.",
   "errors": "Kesalahan",
   "estimatedTimeRemaining": "Perkiraan waktu tersisa: {time}",
   "ethernetPorts": "Port Ethernet",

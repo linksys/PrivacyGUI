@@ -642,6 +642,7 @@
   "errorTimeout": "Bei dem Vorgang ist eine Zeitüberschreitung aufgetreten. Bitte versuchen Sie es erneut.",
   "errorUnauthorized": "Sie haben keine Berechtigung, diese Aktion auszuführen.",
   "errorUnexpected": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+  "errorCommandRefused": "Der Router hat diesen Befehl abgelehnt. Bitte versuchen Sie es in einem Moment erneut.",
   "errors": "Fehler",
   "estimatedTimeRemaining": "Geschätzte verbleibende Zeit: {time}",
   "ethernetPorts": "Ethernet-Ports",

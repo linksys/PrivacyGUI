@@ -643,6 +643,7 @@
   "errorTimeout": "انتهت مهلة العملية. يرجى المحاولة مرة أخرى.",
   "errorUnauthorized": "ليس لديك إذن لتنفيذ هذا الإجراء.",
   "errorUnexpected": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "errorCommandRefused": "رفض جهاز التوجيه هذا الأمر. يُرجى المحاولة مرة أخرى بعد لحظات.",
   "errors": "الأخطاء",
   "estimatedTimeRemaining": "الوقت المتبقي المقدّر: {time}",
   "ethernetPorts": "منافذ Ethernet",

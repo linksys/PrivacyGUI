@@ -642,6 +642,7 @@
   "errorTimeout": "Se agotó el tiempo de espera de la operación. Inténtelo de nuevo.",
   "errorUnauthorized": "No tiene permiso para realizar esta acción.",
   "errorUnexpected": "Algo salió mal. Inténtelo de nuevo.",
+  "errorCommandRefused": "El router rechazó este comando. Vuelve a intentarlo en un momento.",
   "errors": "Errores",
   "estimatedTimeRemaining": "Tiempo restante estimado: {time}",
   "ethernetPorts": "Puertos Ethernet",

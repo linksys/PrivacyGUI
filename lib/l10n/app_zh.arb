@@ -643,6 +643,7 @@
   "errorTimeout": "操作超时。请重试。",
   "errorUnauthorized": "您没有权限执行此操作。",
   "errorUnexpected": "出了点问题。请重试。",
+  "errorCommandRefused": "路由器拒绝了此命令。请稍后重试。",
   "errors": "错误",
   "estimatedTimeRemaining": "预计剩余时间：{time}",
   "ethernetPorts": "以太网端口",
