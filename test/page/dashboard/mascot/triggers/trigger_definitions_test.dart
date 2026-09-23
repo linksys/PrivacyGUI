@@ -32,29 +32,6 @@ void main() {
       expect(trigger.priority, TriggerPriority.medium);
     });
 
-    test('cpuHigh includes percentage', () {
-      final trigger = TriggerDefinitions.cpuHigh(95);
-
-      expect(trigger.id, 'cpu_high');
-      expect(trigger.message, contains('95%'));
-      expect(trigger.priority, TriggerPriority.high);
-    });
-
-    test('memoryHigh includes percentage', () {
-      final trigger = TriggerDefinitions.memoryHigh(90);
-
-      expect(trigger.id, 'memory_high');
-      expect(trigger.message, contains('90%'));
-    });
-
-    test('firmwareAvailable includes version', () {
-      final trigger = TriggerDefinitions.firmwareAvailable('1.0.17');
-
-      expect(trigger.id, 'firmware_available');
-      expect(trigger.message, contains('1.0.17'));
-      expect(trigger.priority, TriggerPriority.low);
-    });
-
     test('wifiRadioDisabled includes band', () {
       final trigger = TriggerDefinitions.wifiRadioDisabled('5GHz');
 
@@ -68,14 +45,6 @@ void main() {
       expect(trigger.id, 'firewall_disabled');
       expect(trigger.priority, TriggerPriority.high);
       expect(trigger.interruptCurrent, true);
-    });
-
-    test('dmzEnabled includes device name', () {
-      final trigger = TriggerDefinitions.dmzEnabled('Gaming PC');
-
-      expect(trigger.id, 'dmz_enabled');
-      expect(trigger.message, contains('Gaming PC'));
-      expect(trigger.priority, TriggerPriority.medium);
     });
   });
 

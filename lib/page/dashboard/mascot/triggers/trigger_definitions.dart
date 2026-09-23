@@ -5,7 +5,18 @@ import 'mascot_trigger.dart';
 
 /// Factory for creating predefined mascot triggers.
 ///
-/// Extensible: add new triggers by creating factory methods.
+/// Every definition here has an evaluator in `MascotTriggerNotifier`, and that
+/// is the rule for adding one. Four used to sit here without one — `cpuHigh`,
+/// `memoryHigh`, `firmwareAvailable`, `dmzEnabled` — each with a cooldown
+/// constant, an auto-hide duration and a unit test, which is exactly what made
+/// them look live. `manualTrigger` is the only other route to `_fireTrigger`
+/// and has no call site either, so there was no path to any of them (#1531).
+///
+/// All four subjects already reach the user through the health dimensions:
+/// CPU/memory via `SystemHealthDimension`, firmware via
+/// `FirmwareHealthDimension`, DMZ via `SecurityHealthDimension`. Writing the
+/// evaluators would have said the same thing twice — and `firmwareAvailable`
+/// specifically belongs to the firmware notification work, not here.
 abstract final class TriggerDefinitions {
   /// WAN connection lost — critical priority.
   static MascotTrigger wanDown() => const MascotTrigger(
@@ -41,41 +52,6 @@ abstract final class TriggerDefinitions {
         autoHideDuration: TriggerAutoHide.medium,
       );
 
-  /// CPU usage exceeded threshold.
-  static MascotTrigger cpuHigh(int percentage) => MascotTrigger(
-        id: 'cpu_high',
-        message:
-            'CPU usage is at $percentage%. System performance may be affected.',
-        priority: TriggerPriority.high,
-        cooldown: TriggerCooldowns.cpuHigh,
-        animation: MascotAnimationKey.think,
-        interruptCurrent: false,
-        autoHideDuration: TriggerAutoHide.high,
-      );
-
-  /// Memory usage exceeded threshold.
-  static MascotTrigger memoryHigh(int percentage) => MascotTrigger(
-        id: 'memory_high',
-        message:
-            'Memory usage is at $percentage%. Consider restarting the router.',
-        priority: TriggerPriority.high,
-        cooldown: TriggerCooldowns.memoryHigh,
-        animation: MascotAnimationKey.think,
-        interruptCurrent: false,
-        autoHideDuration: TriggerAutoHide.high,
-      );
-
-  /// Firmware update available.
-  static MascotTrigger firmwareAvailable(String version) => MascotTrigger(
-        id: 'firmware_available',
-        message: 'Firmware update $version is available.',
-        priority: TriggerPriority.low,
-        cooldown: TriggerCooldowns.firmwareAvailable,
-        animation: MascotAnimationKey.idle,
-        interruptCurrent: false,
-        autoHideDuration: TriggerAutoHide.low,
-      );
-
   /// WiFi radio disabled.
   static MascotTrigger wifiRadioDisabled(String band) => MascotTrigger(
         id: 'wifi_radio_disabled_$band',
@@ -96,18 +72,6 @@ abstract final class TriggerDefinitions {
         animation: MascotAnimationKey.sad,
         interruptCurrent: true,
         autoHideDuration: TriggerAutoHide.critical,
-      );
-
-  /// DMZ enabled warning.
-  static MascotTrigger dmzEnabled(String deviceName) => MascotTrigger(
-        id: 'dmz_enabled',
-        message:
-            'DMZ is enabled for "$deviceName". This device is exposed to the internet.',
-        priority: TriggerPriority.medium,
-        cooldown: TriggerCooldowns.dmzEnabled,
-        animation: MascotAnimationKey.think,
-        interruptCurrent: false,
-        autoHideDuration: TriggerAutoHide.high,
       );
 }
 
