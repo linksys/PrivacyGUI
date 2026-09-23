@@ -91,6 +91,102 @@ void main() {
 
   // buildTimeSettingsUIModel — moved to UspTimeDataService
 
+  // #1609. The two timezone leaves are wired together in the firmware and
+  // clobber each other — writing the IANA name derives the POSIX string, and
+  // writing the POSIX string clears the name — so exactly one may be sent, and
+  // which one it is decides whether the saved zone reads back as itself.
+  group('UspAdminService — updateTimezone', () {
+    const zonePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
+    const ok = {
+      'success': true,
+      'result': {'data': <String, dynamic>{}},
+    };
+
+    test('writes the IANA name and not the POSIX leaf', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.updateTimezone(zoneName: 'Asia/Singapore');
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final written = <String, dynamic>{};
+      for (final c in captured) {
+        written.addAll(c as Map<String, dynamic>);
+      }
+      expect(written[zonePath], 'Asia/Singapore');
+      expect(written.containsKey('Device.Time.LocalTimeZone'), isFalse);
+    });
+
+    test('a zone change alone is still a single request', () async {
+      // `TimeSettings.update` short-circuits on an empty param map, so nothing
+      // is lost by the name needing its own `Set` in the common case.
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.updateTimezone(zoneName: 'Asia/Taipei');
+
+      verify(() => mockUsp.set(any())).called(1);
+    });
+
+    test('writes the POSIX leaf for an entry with no IANA name', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.updateTimezone(localTimeZone: 'UTC3');
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final written = <String, dynamic>{};
+      for (final c in captured) {
+        written.addAll(c as Map<String, dynamic>);
+      }
+      expect(written['Device.Time.LocalTimeZone'], 'UTC3');
+      expect(written.containsKey(zonePath), isFalse);
+    });
+
+    test('sends the name and an NTP server together', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.updateTimezone(
+        zoneName: 'Asia/Singapore',
+        ntpServer1: 'time.cloudflare.com',
+      );
+
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final written = <String, dynamic>{};
+      for (final c in captured) {
+        written.addAll(c as Map<String, dynamic>);
+      }
+      expect(written[zonePath], 'Asia/Singapore');
+      expect(written['Device.Time.NTPServer1'], 'time.cloudflare.com');
+    });
+
+    test('a failure writing the name surfaces, it is not swallowed', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'error': {'err_code': 7012, 'err_msg': 'Invalid value'}
+            },
+          });
+
+      expect(
+        () => service.updateTimezone(zoneName: 'Asia/Singapore'),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('refuses to write both leaves', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      // Thrown rather than asserted, so the guard survives the release web
+      // build where asserts are stripped.
+      expect(
+        () => service.updateTimezone(
+          zoneName: 'Asia/Singapore',
+          localTimeZone: 'UTC-8',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      verifyNever(() => mockUsp.set(any()));
+    });
+  });
+
   group('UspAdminService — error handling', () {
     test('fetchAdmin maps USP error to ServiceError', () {
       when(() => mockUsp.get(any()))
