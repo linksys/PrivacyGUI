@@ -44,7 +44,7 @@ class TopologySection extends StatelessWidget {
           topology: topology,
           viewMode: TopologyViewMode.graph,
           layoutMode: LayoutRecommendation.auto,
-          clientVisibility: ClientVisibility.always,
+          leafVisibility: LeafVisibility.always,
           nodeRendererRegistry: NodeRendererRegistry.unified,
           enableAnimation: true,
           interactive: false,
@@ -53,7 +53,10 @@ class TopologySection extends StatelessWidget {
             subtitleBuilder: (node) => node.extra ?? '',
             preferAnimationNode: true,
             showStatusIndicator: true,
-            showStatusText: true,
+            // `showType` / `showStatusText` are left at their 3.4.0 default of
+            // false: this section pins `viewMode: graph`, so the tree row those
+            // labels belong to is never built, and wiring builders here would be
+            // wiring something nothing draws.
             expanded: false,
           ),
           nodeDetailConfig: NodeDetailConfig(
@@ -67,7 +70,7 @@ class TopologySection extends StatelessWidget {
 
   Widget _buildNodeDetailPopup(
     BuildContext context,
-    MeshNode node,
+    GraphNode node,
     Map<String, dynamic>? metadata,
   ) {
     final mac = metadata?['mac'] as String? ?? '';
@@ -170,17 +173,19 @@ class TopologySection extends StatelessWidget {
     );
   }
 
-  MeshTopology _buildTopology(BuildContext context) {
-    final nodes = <MeshNode>[];
-    final links = <MeshLink>[];
+  GraphData _buildTopology(BuildContext context) {
+    final nodes = <GraphNode>[];
+    final edges = <GraphEdge>[];
 
     // Gateway node
     const gatewayId = 'gateway';
-    nodes.add(MeshNode(
+    nodes.add(GraphNode(
       id: gatewayId,
       name: gatewayName,
-      type: MeshNodeType.gateway,
-      status: MeshNodeStatus.online,
+      // Stated at the origin, like `UspTopologyBuilder` — this builder also knows
+      // which of its three sources each node came from.
+      styleSlot: 'primary',
+      status: NodeState.active,
       level: 1.0,
       extra: gatewayModel,
     ));
@@ -197,10 +202,10 @@ class TopologySection extends StatelessWidget {
         final mac = ext['mac'] as String?;
         final model = ext['model'] as String?;
 
-        nodes.add(MeshNode(
+        nodes.add(GraphNode(
           id: extId,
           name: name,
-          type: MeshNodeType.extender,
+          styleSlot: 'secondary',
           parentId: gatewayId,
           status: _parseStatus(status),
           level: _rssiToLevel(rssi),
@@ -213,13 +218,11 @@ class TopologySection extends StatelessWidget {
           },
         ));
 
-        links.add(MeshLink(
+        edges.add(GraphEdge(
           sourceId: gatewayId,
           targetId: extId,
-          connectionType: ConnectionType.wifi,
-          rssi: rssi,
-          linkQuality: _rssiToQuality(rssi),
-          throughput: uplinkRate != null ? uplinkRate / 1000.0 : null, // Kbps
+          kind: EdgeKind.indirect,
+          strength: _rssiToStrength(rssi),
         ));
       }
     }
@@ -240,7 +243,6 @@ class TopologySection extends StatelessWidget {
         final mac = client['mac'] as String?;
         final ip = client['ip'] as String?;
         final band = client['band'] as String?;
-        final totalThroughput = (downlinkRate ?? 0) + (uplinkRate ?? 0);
 
         // Resolve parent ID
         String resolvedParentId = gatewayId;
@@ -256,10 +258,10 @@ class TopologySection extends StatelessWidget {
           }
         }
 
-        nodes.add(MeshNode(
+        nodes.add(GraphNode(
           id: clientId,
           name: name,
-          type: MeshNodeType.client,
+          styleSlot: 'leaf',
           parentId: resolvedParentId,
           status: _parseStatus(status),
           level: _rssiToLevel(rssi),
@@ -276,22 +278,20 @@ class TopologySection extends StatelessWidget {
           },
         ));
 
-        links.add(MeshLink(
+        edges.add(GraphEdge(
           sourceId: resolvedParentId,
           targetId: clientId,
-          connectionType:
-              isWifi ? ConnectionType.wifi : ConnectionType.ethernet,
-          rssi: isWifi ? rssi : null,
-          linkQuality: isWifi ? _rssiToQuality(rssi) : LinkQuality.stable,
-          throughput:
-              totalThroughput > 0 ? totalThroughput / 1000.0 : null, // Kbps
+          kind: isWifi ? EdgeKind.indirect : EdgeKind.direct,
+          // Null for a wired edge: wiredness is the kind axis, and a direct
+          // edge's strength is never read.
+          strength: isWifi ? _rssiToStrength(rssi) : null,
         ));
       }
     }
 
-    return MeshTopology(
+    return GraphData(
       nodes: nodes,
-      links: links,
+      edges: edges,
       lastUpdated: DateTime.now(),
     );
   }
@@ -301,12 +301,12 @@ class TopologySection extends StatelessWidget {
   /// The tokens matched here (and the `'online'` default applied at the call
   /// sites) are wire values supplied by the model, never rendered text, so they
   /// stay English on purpose.
-  MeshNodeStatus _parseStatus(String status) {
+  NodeState _parseStatus(String status) {
     return switch (status.toLowerCase()) {
-      'online' || 'connected' || 'up' => MeshNodeStatus.online,
-      'offline' || 'disconnected' || 'down' => MeshNodeStatus.offline,
-      'highload' || 'busy' => MeshNodeStatus.highLoad,
-      _ => MeshNodeStatus.online,
+      'online' || 'connected' || 'up' => NodeState.active,
+      'offline' || 'disconnected' || 'down' => NodeState.inactive,
+      'highload' || 'busy' => NodeState.alert,
+      _ => NodeState.active,
     };
   }
 
@@ -322,15 +322,23 @@ class TopologySection extends StatelessWidget {
     };
   }
 
-  LinkQuality _rssiToQuality(int? rssi) {
-    final level = getWifiSignalLevel(rssi);
-    return switch (level) {
-      NodeSignalLevel.excellent => LinkQuality.excellent,
-      NodeSignalLevel.good => LinkQuality.excellent,
-      NodeSignalLevel.fair => LinkQuality.good,
-      NodeSignalLevel.poor => LinkQuality.fair,
-      NodeSignalLevel.none => LinkQuality.unknown,
-      NodeSignalLevel.wired => LinkQuality.stable,
+  /// Classifies an RSSI into an [EdgeStrength].
+  ///
+  /// Ours to state since ui_kit 3.4.0, which dropped its own dBm-derived
+  /// classification — a general graph has no radio to read. The boundaries are
+  /// unchanged; only who applies them moved.
+  ///
+  /// [NodeSignalLevel.wired] maps to null rather than a strength: wiredness is the
+  /// *kind* axis ([EdgeKind.direct]), which is why the old `stable` member was
+  /// deleted.
+  EdgeStrength? _rssiToStrength(int? rssi) {
+    return switch (getWifiSignalLevel(rssi)) {
+      NodeSignalLevel.excellent => EdgeStrength.strong,
+      NodeSignalLevel.good => EdgeStrength.strong,
+      NodeSignalLevel.fair => EdgeStrength.good,
+      NodeSignalLevel.poor => EdgeStrength.weak,
+      NodeSignalLevel.none => EdgeStrength.unknown,
+      NodeSignalLevel.wired => null,
     };
   }
 

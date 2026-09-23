@@ -51,115 +51,116 @@ class TopologyTab extends ConsumerWidget {
       {TopologyColorOverride? override}) {
     final now = DateTime.now();
 
-    final gw = MeshNode(
+    final gw = GraphNode(
       id: 'gw',
       name: 'Gateway',
-      type: MeshNodeType.gateway,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.excellent,
+      styleSlot: 'primary',
+      status: NodeState.active,
     );
 
     // Extender with Ethernet Backhaul
-    final exEth = MeshNode(
+    final exEth = GraphNode(
       id: 'ex_eth',
       parentId: 'gw',
       name: 'Ex (Eth)',
-      type: MeshNodeType.extender,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.stable,
+      styleSlot: 'secondary',
+      status: NodeState.active,
     );
 
     // Extender with WiFi Backhaul (Medium)
-    final exWifi = MeshNode(
+    final exWifi = GraphNode(
       id: 'ex_wifi',
       parentId: 'gw',
       name: 'Ex (WiFi)',
-      type: MeshNodeType.extender,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.good,
+      styleSlot: 'secondary',
+      status: NodeState.active,
     );
 
     // Client with Strong Signal
-    final clStrong = MeshNode(
+    final clStrong = GraphNode(
       id: 'cl_strong',
       parentId: 'ex_eth',
       name: 'Strong',
-      type: MeshNodeType.client,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.excellent,
+      styleSlot: 'leaf',
+      status: NodeState.active,
     );
 
     // Client with Weak Signal
-    final clWeak = MeshNode(
+    final clWeak = GraphNode(
       id: 'cl_weak',
       parentId: 'ex_wifi',
       name: 'Weak',
-      type: MeshNodeType.client,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.fair,
+      styleSlot: 'leaf',
+      status: NodeState.active,
     );
 
     // Client with Medium Signal (Moved to Ex Eth to balance layout)
-    final clMed = MeshNode(
+    final clMed = GraphNode(
       id: 'cl_med',
       parentId: 'ex_eth',
       name: 'Medium',
-      type: MeshNodeType.client,
-      status: MeshNodeStatus.online,
-      linkQuality: LinkQuality.good,
+      styleSlot: 'leaf',
+      status: NodeState.active,
     );
 
     // Offline Client
-    final clOff = MeshNode(
+    final clOff = GraphNode(
       id: 'cl_off',
       // parentId: 'gw',
       name: 'Offline',
-      type: MeshNodeType.client,
-      status: MeshNodeStatus.offline,
-      linkQuality: LinkQuality.unknown,
+      styleSlot: 'leaf',
+      status: NodeState.inactive,
     );
 
     final nodes = [gw, exEth, exWifi, clStrong, clWeak, clMed, clOff];
-    final links = [
-      MeshLink(
+    // One edge per authored style, so the preview shows every dial this tab can
+    // change. Strengths are **stated** rather than implied by an RSSI: ui_kit
+    // 3.4.0 stopped deriving them from dBm, which suits a theme preview — it was
+    // always the resulting style this fixture cared about, not the radio reading
+    // that happened to produce it. A direct edge states no strength, because none
+    // is read for one.
+    final edges = [
+      GraphEdge(
         sourceId: 'gw',
         targetId: 'ex_eth',
-        connectionType: ConnectionType.ethernet,
-        throughput: 1000,
+        kind: EdgeKind.direct,
       ),
-      MeshLink(
+      GraphEdge(
         sourceId: 'gw',
         targetId: 'ex_wifi',
-        connectionType: ConnectionType.wifi,
-        rssi: -65, // Medium (-50 to -70)
-        throughput: 150,
+        kind: EdgeKind.indirect,
+        strength: EdgeStrength.good,
       ),
-      MeshLink(
+      GraphEdge(
         sourceId: 'ex_eth',
         targetId: 'cl_strong',
-        connectionType: ConnectionType.wifi,
-        rssi: -40, // Strong > -50
-        throughput: 300,
+        kind: EdgeKind.indirect,
+        strength: EdgeStrength.strong,
       ),
-      MeshLink(
+      GraphEdge(
         sourceId: 'ex_wifi',
         targetId: 'cl_weak',
-        connectionType: ConnectionType.wifi,
-        rssi: -80, // Weak < -70
-        throughput: 50,
+        kind: EdgeKind.indirect,
+        strength: EdgeStrength.weak,
       ),
-      MeshLink(
+      GraphEdge(
         sourceId: 'ex_eth',
         targetId: 'cl_med',
-        connectionType: ConnectionType.wifi,
-        rssi: -60, // Medium (-50 to -70)
-        throughput: 100,
+        kind: EdgeKind.indirect,
+        strength: EdgeStrength.good,
+      ),
+      // The kind-undeclared case, which has its own authored style and no flow
+      // animation. It had no representation here before 3.4.0 made null the way
+      // to say it.
+      GraphEdge(
+        sourceId: 'gw',
+        targetId: 'cl_off',
       ),
     ];
 
-    final topology = MeshTopology(
+    final topology = GraphData(
       nodes: nodes,
-      links: links,
+      edges: edges,
       lastUpdated: now,
     );
 
@@ -188,9 +189,9 @@ class TopologyTab extends ConsumerWidget {
             Expanded(
               child: Wrap(
                 spacing: 8,
-                children: LinkAnimationType.values.map((type) {
-                  final isSelected = (override?.ethernetAnimationType ??
-                          LinkAnimationType.none) ==
+                children: EdgeAnimationType.values.map((type) {
+                  final isSelected = (override?.directEdgeAnimationType ??
+                          EdgeAnimationType.none) ==
                       type;
                   return AppTag(
                     label: type.name.toUpperCase(),
@@ -198,7 +199,7 @@ class TopologyTab extends ConsumerWidget {
                     onTap: () {
                       ref
                           .read(themeStudioConfigProvider.notifier)
-                          .updateTopologyColors(ethernetAnimationType: type);
+                          .updateTopologyColors(directEdgeAnimationType: type);
                     },
                   );
                 }).toList(),
@@ -206,10 +207,10 @@ class TopologyTab extends ConsumerWidget {
             ),
             CompactColorPicker(
               label: 'Color',
-              color: override?.ethernetLinkColor,
+              color: override?.directEdgeColor,
               onChanged: (c) => ref
                   .read(themeStudioConfigProvider.notifier)
-                  .updateTopologyColors(ethernetLinkColor: c),
+                  .updateTopologyColors(directEdgeColor: c),
             ),
           ],
         ),
@@ -229,9 +230,9 @@ class TopologyTab extends ConsumerWidget {
                 children: [
                   Wrap(
                     spacing: 8,
-                    children: LinkAnimationType.values.map((type) {
-                      final isSelected = (override?.wifiAnimationType ??
-                              LinkAnimationType.none) ==
+                    children: EdgeAnimationType.values.map((type) {
+                      final isSelected = (override?.indirectEdgeAnimationType ??
+                              EdgeAnimationType.none) ==
                           type;
                       return AppTag(
                         label: type.name.toUpperCase(),
@@ -239,7 +240,8 @@ class TopologyTab extends ConsumerWidget {
                         onTap: () {
                           ref
                               .read(themeStudioConfigProvider.notifier)
-                              .updateTopologyColors(wifiAnimationType: type);
+                              .updateTopologyColors(
+                                  indirectEdgeAnimationType: type);
                         },
                       );
                     }).toList(),
@@ -251,24 +253,24 @@ class TopologyTab extends ConsumerWidget {
                     children: [
                       CompactColorPicker(
                         label: 'Strong',
-                        color: override?.wifiStrongColor,
+                        color: override?.strongEdgeColor,
                         onChanged: (c) => ref
                             .read(themeStudioConfigProvider.notifier)
-                            .updateTopologyColors(wifiStrongColor: c),
+                            .updateTopologyColors(strongEdgeColor: c),
                       ),
                       CompactColorPicker(
                         label: 'Medium',
-                        color: override?.wifiMediumColor,
+                        color: override?.goodEdgeColor,
                         onChanged: (c) => ref
                             .read(themeStudioConfigProvider.notifier)
-                            .updateTopologyColors(wifiMediumColor: c),
+                            .updateTopologyColors(goodEdgeColor: c),
                       ),
                       CompactColorPicker(
                         label: 'Weak',
-                        color: override?.wifiWeakColor,
+                        color: override?.weakEdgeColor,
                         onChanged: (c) => ref
                             .read(themeStudioConfigProvider.notifier)
-                            .updateTopologyColors(wifiWeakColor: c),
+                            .updateTopologyColors(weakEdgeColor: c),
                       ),
                     ],
                   ),
@@ -288,10 +290,10 @@ class TopologyTab extends ConsumerWidget {
         _buildNodeConfigRow(
           context,
           'Gateway',
-          override?.gatewayRenderer,
+          override?.primaryRenderer,
           (type) => ref
               .read(themeStudioConfigProvider.notifier)
-              .updateTopologyColors(gatewayRenderer: type),
+              .updateTopologyColors(primaryRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
@@ -312,10 +314,10 @@ class TopologyTab extends ConsumerWidget {
         _buildNodeConfigRow(
           context,
           'Extender',
-          override?.extenderRenderer,
+          override?.secondaryRenderer,
           (type) => ref
               .read(themeStudioConfigProvider.notifier)
-              .updateTopologyColors(extenderRenderer: type),
+              .updateTopologyColors(secondaryRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
@@ -336,10 +338,10 @@ class TopologyTab extends ConsumerWidget {
         _buildNodeConfigRow(
           context,
           'Client',
-          override?.clientRenderer,
+          override?.leafRenderer,
           (type) => ref
               .read(themeStudioConfigProvider.notifier)
-              .updateTopologyColors(clientRenderer: type),
+              .updateTopologyColors(leafRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
@@ -363,8 +365,8 @@ class TopologyTab extends ConsumerWidget {
   Widget _buildNodeConfigRow(
     BuildContext context,
     String label,
-    MeshNodeRendererType? currentType,
-    ValueChanged<MeshNodeRendererType> onTypeChanged,
+    NodeRendererType? currentType,
+    ValueChanged<NodeRendererType> onTypeChanged,
     List<Widget> colorPickers,
   ) {
     return Row(
@@ -379,9 +381,9 @@ class TopologyTab extends ConsumerWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: MeshNodeRendererType.values.map((type) {
+                children: NodeRendererType.values.map((type) {
                   final isSelected =
-                      (currentType ?? MeshNodeRendererType.ripple) == type;
+                      (currentType ?? NodeRendererType.ripple) == type;
                   return AppTag(
                     label: type.name.toUpperCase(),
                     isSelected: isSelected,

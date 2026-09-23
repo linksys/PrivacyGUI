@@ -11,7 +11,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Used by both Dashboard topology card and Topology page.
 class NodeDetailPopup extends StatelessWidget {
-  final MeshNode node;
+  final GraphNode node;
   final Map<String, dynamic>? metadata;
   final bool showDetailsButton;
   final VoidCallback? onDetailsTap;
@@ -27,7 +27,7 @@ class NodeDetailPopup extends StatelessWidget {
   /// Factory for use with AppTopology's detailBuilder.
   static Widget builder(
     BuildContext context,
-    MeshNode node,
+    GraphNode node,
     Map<String, dynamic>? metadata, {
     bool showDetailsButton = false,
   }) {
@@ -56,6 +56,14 @@ class NodeDetailPopup extends StatelessWidget {
     final manufacturer = metadata?['manufacturer'] as String? ?? '';
     final serialNumber = metadata?['serialNumber'] as String? ?? '';
     final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
+    // Whether this node has a master/slave role at all.
+    //
+    // `containsKey`, not `?? false`: a leaf carries no `isMaster` entry, and the
+    // fallback silently answered "false" — which this widget prints as `Slave`.
+    // Harmless while the kit refused to open a panel for a leaf; from ui_kit
+    // 3.4.0 it opens one for any node the consumer configured a panel for, so a
+    // laptop reached this row and was labelled a mesh node (#1614 D2).
+    final hasRole = metadata?.containsKey('isMaster') ?? false;
     final isMaster = metadata?['isMaster'] as bool? ?? false;
 
     // Backhaul info for Slave nodes
@@ -68,8 +76,9 @@ class NodeDetailPopup extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _row(loc(context).role,
-            isMaster ? loc(context).master : loc(context).slave),
+        if (hasRole)
+          _row(loc(context).role,
+              isMaster ? loc(context).master : loc(context).slave),
         if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
           _row('MAC', deviceId),
         if (model.isNotEmpty) _row(loc(context).model, model),
@@ -79,7 +88,7 @@ class NodeDetailPopup extends StatelessWidget {
         if (softwareVersion.isNotEmpty)
           _row(loc(context).firmware, softwareVersion),
         // Backhaul info for Slave nodes
-        if (!isMaster) ...[
+        if (hasRole && !isMaster) ...[
           if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
             _row('Backhaul', backhaulLinkType),
           // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
@@ -101,7 +110,7 @@ class NodeDetailPopup extends StatelessWidget {
                 'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
         ],
         // Details button (optional)
-        if (showDetailsButton && node.status == MeshNodeStatus.online)
+        if (showDetailsButton && node.status == NodeState.active)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
             child: Align(

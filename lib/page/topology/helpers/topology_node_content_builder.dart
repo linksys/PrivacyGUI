@@ -4,26 +4,31 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shared node content builder for topology views.
 ///
-/// Renders client nodes with multi-interface badge overlay when applicable.
-/// Gateway and extender nodes use default image/icon rendering.
+/// Renders leaf nodes with multi-interface badge overlay when applicable.
+/// Master and slave nodes use default image/icon rendering.
 class TopologyNodeContentBuilder {
   TopologyNodeContentBuilder._();
 
   /// Builds node content with multi-interface badge support.
   ///
-  /// For client nodes, checks `hasMultipleInterfaces` in metadata and
+  /// For leaf nodes, checks `hasMultipleInterfaces` in metadata and
   /// displays a hub badge overlay on the device icon.
+  ///
+  /// The leaf test reads the slot the builder **stated** ([GraphNode.styleSlot]),
+  /// not a structure the kit would derive: a slave carrying no clients is a
+  /// structural leaf and must not be given a client's badge treatment. See
+  /// `UspTopologyBuilder`, which states the slot at each of its three origins.
   static Widget build(
     BuildContext context,
-    MeshNode node,
+    GraphNode node,
     NodeStyle style,
     bool isOffline,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final iconColor = isOffline ? colorScheme.outline : style.iconColor;
 
-    // For non-client nodes, use default rendering (image or icon)
-    if (node.type != MeshNodeType.client) {
+    // For non-leaf nodes, use default rendering (image or icon)
+    if (node.styleSlot != 'leaf') {
       if (node.image != null) {
         return Image(
           image: node.image!,
@@ -39,7 +44,7 @@ class TopologyNodeContentBuilder {
       );
     }
 
-    // For client nodes, check for multi-interface badge
+    // For leaf nodes, check for multi-interface badge
     final hasMultipleInterfaces =
         node.metadata?['hasMultipleInterfaces'] as bool? ?? false;
 

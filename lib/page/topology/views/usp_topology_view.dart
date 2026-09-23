@@ -9,7 +9,9 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -28,6 +30,63 @@ class UspTopologyView extends ConsumerStatefulWidget {
 
 class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   bool _showDevices = true;
+
+  /// The handle the search field drives the graph through.
+  ///
+  /// The graph view held selection, expansion and the viewport privately until
+  /// ui_kit 3.4.0, so "type a name, go to that device" — the one thing a mesh of
+  /// any size asks for — had nowhere to be built. This page still passes
+  /// `interactive: false`, because it sits in a scrollable and an
+  /// `InteractiveViewer` there swallows the scroll; the controller is what makes
+  /// focus reachable anyway, which pan and zoom never were.
+  final TopologyController _controller = TopologyController();
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Highlight every node matching [query], and move the viewport to the first.
+  ///
+  /// Matching is this app's business, not the kit's: name, MAC and IP are the
+  /// three things a viewer knows a device by, which is the same set the device
+  /// list searches (`searchByNameMacIp`).
+  void _search(GraphData topology, String query) {
+    final needle = query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      _controller.highlight(const {});
+      _controller.fitAll();
+      return;
+    }
+
+    final matches = topology.nodes
+        .where((node) => _matches(node, needle))
+        .map((node) => node.id)
+        .toSet();
+
+    _controller.highlight(matches);
+    if (matches.isNotEmpty) {
+      // `focusOn` also expands whatever aggregate holds the node, which is what
+      // makes a match inside a collapsed cluster reachable at all.
+      _controller.focusOn(matches.first, scale: 2);
+    }
+  }
+
+  bool _matches(GraphNode node, String needle) {
+    if (node.name.toLowerCase().contains(needle)) return true;
+    // `extra` carries the IP on a leaf and the manufacturer on a node.
+    if ((node.extra ?? '').toLowerCase().contains(needle)) return true;
+    final metadata = node.metadata;
+    if (metadata == null) return false;
+    for (final key in const ['mac', 'deviceId']) {
+      final value = metadata[key];
+      if (value is String && value.toLowerCase().contains(needle)) return true;
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,19 +127,43 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     );
   }
 
-  Widget _buildTopologyCard(BuildContext context, MeshTopology topology) {
+  Widget _buildTopologyCard(BuildContext context, GraphData topology) {
     final router = GoRouter.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with toggle
+        // Header: search, then the devices toggle
         Row(
           children: [
-            Expanded(child: const SizedBox.shrink()),
+            Expanded(
+              child: AppTextFormField(
+                controller: _searchController,
+                hintText: loc(context).searchByNameMacIp,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        tooltip: loc(context).clear,
+                        onPressed: () {
+                          _searchController.clear();
+                          _search(topology, '');
+                          setState(() {});
+                        },
+                      ),
+                onChanged: (value) {
+                  _search(topology, value);
+                  // Only to swap the clear button in and out; the graph is driven
+                  // by the controller, not by this rebuild.
+                  setState(() {});
+                },
+              ),
+            ),
+            AppGap.md(),
             AppText.labelMedium(
-              'Show Devices',
+              loc(context).devices,
               color: colorScheme.onSurfaceVariant,
             ),
             AppGap.sm(),
@@ -94,47 +177,80 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
         // Topology view
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.7,
-          child: _withTopologyAnimation(
-            context,
-            AppTopology(
-              topology: topology,
-              viewMode: TopologyViewMode.auto,
-              layoutMode: LayoutRecommendation.auto,
-              clientVisibility: _showDevices
-                  ? ClientVisibility.always
-                  : ClientVisibility.onHover,
-              nodeRendererRegistry: NodeRendererRegistry.unified,
-              enableAnimation: true,
-              interactive: false,
-              onNodeTap: (nodeId) =>
-                  _navigateByNodeId(router, nodeId, topology),
-              nodeContentBuilder: TopologyNodeContentBuilder.build,
-              treeConfig: TopologyTreeConfiguration(
-                titleBuilder: (node) => node.name,
-                subtitleBuilder: (node) => node.extra ?? '',
-                preferAnimationNode: true,
-                showStatusIndicator: true,
-                showStatusText: true,
-                expanded: true,
+          // The width decides which view `auto` resolves to, and that decides
+          // which of the two tap reactions is live — so it has to be read from the
+          // same box the kit measures, not from the screen.
+          child: LayoutBuilder(builder: (context, constraints) {
+            final isTree = constraints.maxWidth < AppTopology.defaultBreakpoint;
+            return _withTopologyAnimation(
+              context,
+              AppTopology(
+                topology: topology,
+                viewMode: TopologyViewMode.auto,
+                layoutMode: LayoutRecommendation.auto,
+                leafVisibility: _showDevices
+                    ? LeafVisibility.always
+                    : LeafVisibility.onHover,
+                nodeRendererRegistry: NodeRendererRegistry.unified,
+                enableAnimation: true,
+                interactive: false,
+                controller: _controller,
+                // One reaction per tap, and which reaction depends on which view is
+                // on screen.
+                //
+                // ui_kit 3.4.0 reports every tap AND opens the panel when one is
+                // configured; its old silence meant "tapped, and there was nothing
+                // else to do with it", which is not what the callback is documented
+                // to mean. So in the graph view, navigating from here as well would
+                // push a route and then open a panel over the page being left.
+                //
+                // The tree view, though, does not read `nodeDetailConfig` at all —
+                // it only calls `onNodeTap`. Passing null unconditionally would
+                // therefore leave every tree row pressable and inert, which is the
+                // narrow viewport this page resolves to. Hence the width test, using
+                // the kit's own published breakpoint and the same `<` it applies.
+                onNodeTap: isTree
+                    ? (nodeId) => _navigateByNodeId(router, nodeId, topology)
+                    : null,
+                nodeContentBuilder: TopologyNodeContentBuilder.build,
+                treeConfig: TopologyTreeConfiguration(
+                  titleBuilder: (node) => node.name,
+                  subtitleBuilder: (node) => node.extra ?? '',
+                  preferAnimationNode: true,
+                  showStatusIndicator: true,
+                  // Our words, localised — see TopologyTreeLabels. The kit used to
+                  // print its own enum names here, unconditionally in this variant.
+                  showType: true,
+                  slotLabelBuilder: (node, slot) =>
+                      TopologyTreeLabels.slot(context, node, slot),
+                  showStatusText: true,
+                  statusLabelBuilder: (node, state) =>
+                      TopologyTreeLabels.status(context, state),
+                  expanded: true,
+                ),
+                nodeDetailConfig: NodeDetailConfig(
+                  trigger: NodeDetailTrigger.tap,
+                  mode: NodeDetailMode.floatingPanel,
+                  detailBuilder: (ctx, node, metadata) =>
+                      NodeDetailPopup.builder(ctx, node, metadata,
+                          showDetailsButton: true),
+                ),
+                // The external node is the one node with nothing to show, and it
+                // became tappable in 3.4.0.
+                nodeTapFilter: (node) => !node.isExternal,
+                onClusterToggled: (nodeId, expanded) => logger.d(
+                    '[Topology]: viewer ${expanded ? 'opened' : 'closed'} $nodeId'),
+                nodeComparator: _nodeComparator,
               ),
-              nodeDetailConfig: NodeDetailConfig(
-                trigger: NodeDetailTrigger.tap,
-                mode: NodeDetailMode.floatingPanel,
-                detailBuilder: (ctx, node, metadata) => NodeDetailPopup.builder(
-                    ctx, node, metadata,
-                    showDetailsButton: true),
-              ),
-              nodeComparator: _nodeComparator,
-            ),
-          ),
+            );
+          }),
         ),
       ],
     );
   }
 
-  /// Navigate by MeshNode id — used by tree view onNodeTap.
-  void _navigateByNodeId(
-      GoRouter router, String nodeId, MeshTopology topology) {
+  /// Navigate by node id — used by the tree view's `onNodeTap`.
+  void _navigateByNodeId(GoRouter router, String nodeId, GraphData topology) {
     final node = topology.nodes.where((n) => n.id == nodeId).firstOrNull;
     if (node == null) return;
 
@@ -144,24 +260,18 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     router.pushNamed(target.route, queryParameters: target.queryParameters);
   }
 
-  /// Comparator for sorting nodes: online first, then infra nodes before clients, then alphabetical.
-  static int _nodeComparator(MeshNode a, MeshNode b) {
-    // 1. Online before offline
-    if (a.isOffline && !b.isOffline) return 1;
-    if (!a.isOffline && b.isOffline) return -1;
-    // 2. Node type priority: gateway > extender > client > internet
-    final typePriority = _nodeTypePriority(a.type) - _nodeTypePriority(b.type);
-    if (typePriority != 0) return typePriority;
+  /// Comparator for sorting nodes: online first, then nodes before devices, then
+  /// alphabetical.
+  static int _nodeComparator(GraphNode a, GraphNode b) {
+    // 1. Active before inactive
+    if (a.isInactive && !b.isInactive) return 1;
+    if (!a.isInactive && b.isInactive) return -1;
+    // 2. Role priority: master > slave > device > external
+    final rolePriority = topologyRolePriority(a) - topologyRolePriority(b);
+    if (rolePriority != 0) return rolePriority;
     // 3. Alphabetical by name
     return a.name.compareTo(b.name);
   }
-
-  static int _nodeTypePriority(MeshNodeType type) => switch (type) {
-        MeshNodeType.gateway => 0,
-        MeshNodeType.extender => 1,
-        MeshNodeType.client => 2,
-        MeshNodeType.internet => 3,
-      };
 
   Widget _withTopologyAnimation(BuildContext context, Widget child) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();
@@ -173,11 +283,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            // Increase spacing to prevent client nodes overlapping with gateway
-            topologySpec: appTheme.topologySpec.copyWith(
-              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.2,
-              orbitRadius: appTheme.topologySpec.orbitRadius * 2.2,
-            ),
+            // The x2.2 spacing multiplier is gone. It was here to stop leaves
+            // overlapping the gateway, which ui_kit 3.4.0 makes structurally
+            // impossible: every ring is sized from the discs going on it, and the
+            // pitch measured 51.5px at x1.0, x2.0 and x2.2 alike, at 5 through 70
+            // leaves. Past the fit-to-screen step the multiplier is actively
+            // worse — it grows the bounds into the 0.5 fit floor, so the drawn
+            // pitch fell from 29.1px to 25.9px and the discs with it. See
+            // `UspNetworkTopologyCard._withTopologyAnimation` for the numbers.
           ),
         ],
       ),
@@ -196,7 +309,7 @@ class TopologyNavTarget {
   final Map<String, String> queryParameters;
 }
 
-/// Pure mapping from a tapped [MeshNode] to its navigation target, or `null`
+/// Pure mapping from a tapped [GraphNode] to its navigation target, or `null`
 /// when the node is not navigable.
 ///
 /// Extracted so the decision is unit-testable without a widget/router.
@@ -207,32 +320,55 @@ class TopologyNavTarget {
 ///   its Device Detail page just like it does from the device list and from a
 ///   node's "Connected devices" list; the destination already renders the
 ///   correct online/offline state, so there is nothing to gate against.
-/// - **Gateway / extender** keep an offline gate. Their Node Detail page still
+/// - **Master / slave nodes** keep an offline gate. Their Node Detail page still
 ///   hardcodes an active status badge, so opening it for a powered-off node
 ///   would show a wrong (green) status. That is tracked by #1465; until it is
-///   fixed, the node arm stays gated. Do NOT "tidy" the client arm to match
+///   fixed, the node arm stays gated. Do NOT "tidy" the leaf arm to match
 ///   the node arm — the difference is intentional.
 @visibleForTesting
-TopologyNavTarget? topologyNavTargetFor(MeshNode node) {
-  switch (node.type) {
-    case MeshNodeType.gateway:
-    case MeshNodeType.extender:
-      // Offline gate for infra nodes only — see #1465 (doc above).
-      if (node.status == MeshNodeStatus.offline) return null;
+TopologyNavTarget? topologyNavTargetFor(GraphNode node) {
+  // The external node is drawn beside the hierarchy and has no page.
+  if (node.isExternal) return null;
+
+  switch (node.styleSlot) {
+    case 'primary':
+    case 'secondary':
+      // Offline gate for mesh nodes only — see #1465 (doc above).
+      if (node.status == NodeState.inactive) return null;
       final deviceId = node.metadata?['deviceId'] as String?;
       if (deviceId == null || deviceId.isEmpty) return null;
       return TopologyNavTarget(
         RouteNamed.uspNodeDetail,
         {'deviceId': deviceId},
       );
-    case MeshNodeType.client:
+    case 'leaf':
       final mac = node.metadata?['mac'] as String?;
       if (mac == null || mac.isEmpty) return null;
       return TopologyNavTarget(
         RouteNamed.uspDeviceDetail,
         {'mac': mac},
       );
-    case MeshNodeType.internet:
+    default:
+      // A slot this app does not assign. Not reachable from
+      // `UspTopologyBuilder`, which states one of the three above on every node,
+      // so there is no destination to guess at.
       return null;
   }
+}
+
+/// Sort rank for [node]: master, then slave, then device, then external.
+///
+/// Reads the slot the builder **stated**, which is this app's own classification.
+/// The obvious-looking alternative is wrong: deriving from structure ranks the
+/// gateway as an interior node, because its parent is the external internet node,
+/// and ranks a slave carrying no clients as a device. Both were measured (#1614).
+@visibleForTesting
+int topologyRolePriority(GraphNode node) {
+  if (node.isExternal) return 3;
+  return switch (node.styleSlot) {
+    'primary' => 0,
+    'secondary' => 1,
+    'leaf' => 2,
+    _ => 2,
+  };
 }

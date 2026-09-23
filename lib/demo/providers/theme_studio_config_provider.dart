@@ -553,21 +553,21 @@ class ThemeStudioConfigNotifier extends StateNotifier<ThemeStudioConfig> {
     Color? clientNormalBorderColor,
     Color? clientNormalIconColor,
     Color? clientNormalGlowColor,
-    Color? ethernetLinkColor,
-    Color? wifiStrongColor,
-    Color? wifiMediumColor,
-    Color? wifiWeakColor,
-    LinkAnimationType? ethernetAnimationType,
-    LinkAnimationType? wifiAnimationType,
-    MeshNodeRendererType? gatewayRenderer,
-    MeshNodeRendererType? extenderRenderer,
-    MeshNodeRendererType? clientRenderer,
+    Color? directEdgeColor,
+    Color? strongEdgeColor,
+    Color? goodEdgeColor,
+    Color? weakEdgeColor,
+    EdgeAnimationType? directEdgeAnimationType,
+    EdgeAnimationType? indirectEdgeAnimationType,
+    NodeRendererType? primaryRenderer,
+    NodeRendererType? secondaryRenderer,
+    NodeRendererType? leafRenderer,
   }) {
     final current = state.overrides?.component?.topology;
     final newTopology = TopologyColorOverride(
-      gatewayRenderer: gatewayRenderer ?? current?.gatewayRenderer,
-      extenderRenderer: extenderRenderer ?? current?.extenderRenderer,
-      clientRenderer: clientRenderer ?? current?.clientRenderer,
+      primaryRenderer: primaryRenderer ?? current?.primaryRenderer,
+      secondaryRenderer: secondaryRenderer ?? current?.secondaryRenderer,
+      leafRenderer: leafRenderer ?? current?.leafRenderer,
       gatewayNormalBackgroundColor:
           gatewayNormalBackgroundColor ?? current?.gatewayNormalBackgroundColor,
       gatewayNormalBorderColor:
@@ -592,13 +592,14 @@ class ThemeStudioConfigNotifier extends StateNotifier<ThemeStudioConfig> {
           clientNormalIconColor ?? current?.clientNormalIconColor,
       clientNormalGlowColor:
           clientNormalGlowColor ?? current?.clientNormalGlowColor,
-      ethernetLinkColor: ethernetLinkColor ?? current?.ethernetLinkColor,
-      wifiStrongColor: wifiStrongColor ?? current?.wifiStrongColor,
-      wifiMediumColor: wifiMediumColor ?? current?.wifiMediumColor,
-      wifiWeakColor: wifiWeakColor ?? current?.wifiWeakColor,
-      ethernetAnimationType:
-          ethernetAnimationType ?? current?.ethernetAnimationType,
-      wifiAnimationType: wifiAnimationType ?? current?.wifiAnimationType,
+      directEdgeColor: directEdgeColor ?? current?.directEdgeColor,
+      strongEdgeColor: strongEdgeColor ?? current?.strongEdgeColor,
+      goodEdgeColor: goodEdgeColor ?? current?.goodEdgeColor,
+      weakEdgeColor: weakEdgeColor ?? current?.weakEdgeColor,
+      directEdgeAnimationType:
+          directEdgeAnimationType ?? current?.directEdgeAnimationType,
+      indirectEdgeAnimationType:
+          indirectEdgeAnimationType ?? current?.indirectEdgeAnimationType,
     );
     _updateComponent((c) => ComponentOverrides(
           topology: newTopology,

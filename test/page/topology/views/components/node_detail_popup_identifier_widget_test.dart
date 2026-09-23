@@ -47,21 +47,21 @@ void main() {
     'hasMultipleInterfaces': false,
   };
 
-  MeshNode node({
-    required MeshNodeType type,
-    MeshNodeStatus status = MeshNodeStatus.online,
+  GraphNode node({
+    required String slot,
+    NodeState status = NodeState.active,
   }) =>
-      MeshNode(
+      GraphNode(
         id: 'node-1',
         name: 'Test Node',
-        type: type,
+        styleSlot: slot,
         status: status,
       );
 
   // Mirrors the production call in usp_topology_view.dart:123-125, which is
   // the only site that passes `showDetailsButton: true`.
   Widget wrap(
-    MeshNode target,
+    GraphNode target,
     Map<String, dynamic> metadata, {
     required bool showDetailsButton,
   }) {
@@ -100,7 +100,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.gateway),
+        node(slot: 'primary'),
         masterMetadata,
         showDetailsButton: true,
       ));
@@ -116,7 +116,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender),
+        node(slot: 'secondary'),
         slaveMetadata,
         showDetailsButton: true,
       ));
@@ -135,7 +135,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender),
+        node(slot: 'secondary'),
         slaveMetadata,
         showDetailsButton: false,
       ));
@@ -152,7 +152,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender, status: MeshNodeStatus.offline),
+        node(slot: 'secondary', status: NodeState.inactive),
         slaveMetadata,
         showDetailsButton: true,
       ));
@@ -187,7 +187,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.client),
+        node(slot: 'leaf'),
         clientMetadata,
         showDetailsButton: true,
       ));

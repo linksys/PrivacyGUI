@@ -3,15 +3,17 @@ import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-MeshNode _node({
-  required MeshNodeType type,
-  required MeshNodeStatus status,
+GraphNode _node({
+  String? slot,
+  bool external = false,
+  required NodeState status,
   Map<String, dynamic>? metadata,
 }) =>
-    MeshNode(
+    GraphNode(
       id: 'n1',
       name: 'n1',
-      type: type,
+      styleSlot: slot,
+      external: external,
       status: status,
       metadata: metadata,
     );
@@ -20,8 +22,8 @@ void main() {
   group('topologyNavTargetFor', () {
     test('offline client -> uspDeviceDetail with its mac', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.client,
-        status: MeshNodeStatus.offline,
+        slot: 'leaf',
+        status: NodeState.inactive,
         metadata: {'mac': 'AA:BB:CC:DD:EE:FF'},
       ));
       expect(target, isNotNull);
@@ -31,8 +33,8 @@ void main() {
 
     test('online client -> uspDeviceDetail with its mac', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.client,
-        status: MeshNodeStatus.online,
+        slot: 'leaf',
+        status: NodeState.active,
         metadata: {'mac': 'AA:BB:CC:DD:EE:FF'},
       ));
       expect(target, isNotNull);
@@ -42,8 +44,8 @@ void main() {
 
     test('offline extender -> null (gate kept until #1465)', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.extender,
-        status: MeshNodeStatus.offline,
+        slot: 'secondary',
+        status: NodeState.inactive,
         metadata: {'deviceId': 'dev-1'},
       ));
       expect(target, isNull);
@@ -51,8 +53,8 @@ void main() {
 
     test('offline gateway -> null (gate kept until #1465)', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.gateway,
-        status: MeshNodeStatus.offline,
+        slot: 'primary',
+        status: NodeState.inactive,
         metadata: {'deviceId': 'dev-0'},
       ));
       expect(target, isNull);
@@ -60,8 +62,8 @@ void main() {
 
     test('online extender -> uspNodeDetail with its deviceId', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.extender,
-        status: MeshNodeStatus.online,
+        slot: 'secondary',
+        status: NodeState.active,
         metadata: {'deviceId': 'dev-1'},
       ));
       expect(target, isNotNull);
@@ -71,8 +73,8 @@ void main() {
 
     test('online gateway -> uspNodeDetail with its deviceId', () {
       final target = topologyNavTargetFor(_node(
-        type: MeshNodeType.gateway,
-        status: MeshNodeStatus.online,
+        slot: 'primary',
+        status: NodeState.active,
         metadata: {'deviceId': 'dev-0'},
       ));
       expect(target, isNotNull);
@@ -83,16 +85,16 @@ void main() {
     test('client missing mac metadata -> null', () {
       expect(
         topologyNavTargetFor(_node(
-          type: MeshNodeType.client,
-          status: MeshNodeStatus.online,
+          slot: 'leaf',
+          status: NodeState.active,
           metadata: null,
         )),
         isNull,
       );
       expect(
         topologyNavTargetFor(_node(
-          type: MeshNodeType.client,
-          status: MeshNodeStatus.online,
+          slot: 'leaf',
+          status: NodeState.active,
           metadata: {'mac': ''},
         )),
         isNull,
@@ -102,16 +104,16 @@ void main() {
     test('node missing deviceId metadata -> null', () {
       expect(
         topologyNavTargetFor(_node(
-          type: MeshNodeType.extender,
-          status: MeshNodeStatus.online,
+          slot: 'secondary',
+          status: NodeState.active,
           metadata: null,
         )),
         isNull,
       );
       expect(
         topologyNavTargetFor(_node(
-          type: MeshNodeType.gateway,
-          status: MeshNodeStatus.online,
+          slot: 'primary',
+          status: NodeState.active,
           metadata: {'deviceId': ''},
         )),
         isNull,
@@ -121,8 +123,8 @@ void main() {
     test('internet node -> null', () {
       expect(
         topologyNavTargetFor(_node(
-          type: MeshNodeType.internet,
-          status: MeshNodeStatus.online,
+          external: true,
+          status: NodeState.active,
         )),
         isNull,
       );
@@ -135,8 +137,8 @@ void main() {
     test('mutation guard: deleting the offline gate breaks the extender case',
         () {
       final offlineExtender = _node(
-        type: MeshNodeType.extender,
-        status: MeshNodeStatus.offline,
+        slot: 'secondary',
+        status: NodeState.inactive,
         metadata: {'deviceId': 'dev-1'},
       );
       // With the gate present this is null; without it, it would be a target.
