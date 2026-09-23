@@ -34,9 +34,9 @@ final wanDataProvider =
 ///
 /// Defaults to `true` while [wanDataProvider] has never produced a value
 /// (first load), so a momentarily-unavailable link state does not read as a
-/// false disconnect. During an SSE-triggered `invalidateSelf()` refresh the
-/// previous value is preserved (seamless refresh), so this keeps reporting the
-/// last known state rather than flipping to the loading default. See #1143.
+/// false disconnect. An SSE-triggered refresh never passes through loading at
+/// all — it assigns the new value directly (see `_refreshFromPush`) — so this
+/// keeps reporting the last known state throughout. See #1143 and #1615.
 final wanIsUpProvider = Provider<bool>(
   (ref) => ref.watch(wanDataProvider).valueOrNull?.model.isUp ?? true,
 );
@@ -48,11 +48,12 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   Future<WanData> build() async {
     // SSE listener: WAN status changes (link up/down, IP changes)
     // Logged on both sides of the branch. Knowing the listener RAN but did not match is
-    // a different fact from it never running, and on FW 2.0 the distinction mattered:
-    // this listener fires, `invalidateSelf()` is called, and `build()` is then never
-    // re-entered — so nothing below this line is reached again. Without a log here that
-    // is indistinguishable from the notification never arriving. See
-    // linksys/PrivacyGUI-RealRouter-E2E's R20 spec header for the measurement.
+    // a different fact from it never running, and that distinction is what identified
+    // #1615: the listener fired, the old `invalidateSelf()` was called, and `build()`
+    // was never re-entered — so nothing below this line ran again and the listener was
+    // never re-registered. Without a log here that was indistinguishable from the
+    // notification never arriving. See linksys/PrivacyGUI-RealRouter-E2E's R20 spec
+    // header for the measurement.
     ref.listen(sseInvalidationProvider, (_, next) {
       final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.wanStatus) {
