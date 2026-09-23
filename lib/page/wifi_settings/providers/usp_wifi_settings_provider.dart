@@ -47,9 +47,14 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   @override
   UspWifiSettingsState build() {
     // SSE: when WiFi data provider updates, trigger dirty guard.
-    // The isLoading check excludes the re-run frame, which carries the previous
-    // value forward and would otherwise trigger a second forceRemote fetch per
-    // refetch. See doc/riverpod/listen_site_audit.md.
+    // The isLoading check excluded the re-run frame that `invalidateSelf()` published
+    // (previous value carried forward, `isLoading` set), which would otherwise have
+    // triggered a second forceRemote fetch per refetch — #1502 AC-4.
+    //
+    // As of #1615 `wifiDataProvider` assigns `state` directly, so there is no such frame
+    // and this guard filters nothing: measured 1 notification per push, versus 2 before.
+    // Kept deliberately — zero cost, and it still protects against a producer that
+    // publishes a refresh frame again. See doc/riverpod/listen_site_audit.md.
     ref.listen(wifiDataProvider, (_, next) {
       if (next.isLoading) return;
       if (next.hasValue) onSseInvalidation();

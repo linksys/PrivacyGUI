@@ -107,9 +107,27 @@ population.
 
 ### `wifiDataProvider` — 3
 
-`wifiDataProvider` refetches via a 500 ms debounced `ref.invalidateSelf()`
-(`wifi_settings/providers/wifi_data_provider.dart:109-114`), so it **does** emit a refresh frame ⇒
-consequence 2 applies to all three listeners: each runs twice per refetch.
+`wifiDataProvider` **used to** refetch via a 500 ms debounced `ref.invalidateSelf()`, so it emitted a
+refresh frame ⇒ consequence 2 applied to all three listeners: each ran twice per refetch. That is the
+state this audit measured, and the `Guard` column below records each site as it was then.
+
+**As of #1615 this producer no longer emits a refresh frame.** It assigns `state` directly
+(`WifiDataNotifier._refreshFromPush`), so a push now delivers exactly ONE settled frame. Measured after
+that change: 1 notification per push carrying `isLoading=false`, versus 2 (`isLoading` true then false)
+before. The same applies to `firewallDataProvider`, `portForwardingDataProvider`,
+`ethernetDataProvider` and `dhcpDataProvider`, which were changed together for the same reason.
+
+Two things follow, and they point in opposite directions:
+
+- **The doubling described in sites 9-12 is gone at the source.** Those sites were fixed in #1502 by
+  adding `if (next.isLoading) return;`, which filtered the refresh frame; now there is no refresh frame
+  to filter, so the guard is inert rather than load-bearing. It is deliberately kept — it costs nothing,
+  and it still protects against a producer that goes back to publishing one (a `ref.refresh` from
+  anywhere, or a future `invalidateSelf` reintroduced by someone reading consequence 1 as current).
+- **Consequence 1 no longer holds for these five producers**, so two consecutive equal settled frames CAN
+  now collapse under `==` where an unequal refresh frame previously separated them. This is why those
+  providers' listeners must stay edge-triggered on payload rather than on frame count — the property
+  sites 7 and 8 already rely on.
 
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
@@ -319,6 +337,13 @@ Five things this exercise established that the audit alone had not:
    .future)` alone and so passed against the *unguarded* source too. Every one of these tests needs a
    standing `container.listen(...)` to make invalidation eager. This is a trap for anyone writing a
    "should not re-fetch" test in this repo.
+
+   **This laziness turned out to be a live defect, not just a testing trap — #1615.** A provider whose
+   `ref.listen` is registered inside `build()` does not merely miss the refresh when nothing is watching:
+   the listener is not re-registered either, so the FIRST unobserved notification disables the mechanism
+   permanently. Six L1 providers had that shape and all six now assign `state` directly. The testing
+   consequence inverts with it: a "should re-fetch" test for those providers must now hold **no**
+   listener, because holding one is what hid the defect for a year.
 3. **Sites 9–11 already fetch twice at boot**, independently of this bug: the data provider's first
    `loading → data` settle is itself a listener firing, so `build()`'s own `fetch()` is followed by an
    `onSseInvalidation()` → `fetch(forceRemote: true)`. The `isLoading` guard does not address that (the first
