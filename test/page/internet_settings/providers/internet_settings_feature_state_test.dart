@@ -26,11 +26,13 @@ void main() {
     connectionType: UspWanConnectionType.bridge,
   );
 
+  // `staticIpAddress` was removed from this model in #1613: the two views that read it
+  // now read `wanDataProvider` instead, so the L2 copy was dead weight whose only
+  // remaining effect was to make an otherwise-identical state unequal.
   const readOnlyInfo = InternetSettingsReadOnlyInfo(
     currentMacAddress: 'AA:BB:CC:DD:EE:FF',
     pppConnectionStatus: 'Connected',
     dhcpv6Duid: '00:01:02:03',
-    staticIpAddress: '10.0.0.1',
   );
 
   InternetSettingsFeatureState createState({

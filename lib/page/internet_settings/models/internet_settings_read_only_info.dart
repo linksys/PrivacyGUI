@@ -14,14 +14,15 @@ import 'package:equatable/equatable.dart';
 ///
 /// | field                 | rendered by                          | status |
 /// |-----------------------|--------------------------------------|--------|
-/// | `staticIpAddress`     | status banner, Release & Renew        | **moved to L1** — both now read `wanDataProvider`. Same TR-181 parameter, but the copy a `wanStatus` push refreshes. This field is now UNUSED by the views and is kept only because `_buildReadOnlyInfo` still fills it; removing it is safe once nothing reads it |
+/// | ~~`staticIpAddress`~~ | was: status banner, Release & Renew   | **DELETED here.** Both views now read `wanDataProvider` — same TR-181 parameter, but the copy a `wanStatus` push refreshes. The field was kept for one review round with a paragraph explaining why; deleting it is the smaller diff and, more to the point, the only version the analyzer enforces. It also removed a genuine hazard: `UspInternetSettingsForm.staticIpAddress` is LIVE (the editable input at `usp_ipv4_section.dart`), so two identically-named fields coexisted with only a doc comment separating them |
 /// | `pppConnectionStatus` | IPv4 section, PPPoE/PPTP/L2TP rows   | **still stale, deliberately not fixed here.** It comes from `Device.PPP.Interface.{i}.ConnectionStatus`, and L1 has no PPP data at all — `WanStatusUIModel` carries only status/ip/mask/addressingType. Fixing it means extending that model, which dashboard, Statistics and health scoring also consume, so it is a decision of its own rather than a follow-on. **A connection STATUS that does not update is the most surprising of these**, so it is worth doing |
 /// | `dhcpv6Duid`          | IPv6 section                         | stale, low value. A DUID is stable for the life of the device |
 /// | `hostName`            | bridge-mode redirect hint and dialog | stale, low value. Changes only when the user renames the router, which is not this page |
-/// | `currentMacAddress`   | nothing — the MAC Clone row is commented out | dead; `_buildReadOnlyInfo` hardcodes `''` |
+/// | `currentMacAddress`   | nothing — the MAC Clone row is commented out | dead in the views, but NOT deletable as a one-liner: `InternetSettingsFeatureState.currentMacAddress` forwards it and a test asserts that getter. Removing it means deleting the getter and the test too, which is unrelated cleanup rather than this PR's subject |
 ///
 /// So two fields are still page-entry snapshots on purpose (`dhcpv6Duid`, `hostName`),
-/// one is a known gap with a real cost (`pppConnectionStatus`), and one is dead.
+/// one is a known gap with a real cost (`pppConnectionStatus`), and one is dead-but-wired
+/// (`currentMacAddress`).
 class InternetSettingsReadOnlyInfo extends Equatable {
   /// Current WAN MAC address (may differ from configured MAC clone).
   final String currentMacAddress;
@@ -32,9 +33,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
   /// DHCPv6 DUID (read-only, assigned by server).
   final String dhcpv6Duid;
 
-  /// Current static IP address — displayed in the status banner and renew section.
-  final String staticIpAddress;
-
   /// Router hostname (`Device.DeviceInfo.HostName`). Display-only; used to build
   /// the `https://<hostName>.local` bridge-mode management address.
   final String hostName;
@@ -43,7 +41,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
     this.currentMacAddress = '',
     this.pppConnectionStatus = '',
     this.dhcpv6Duid = '',
-    this.staticIpAddress = '',
     this.hostName = '',
   });
 
@@ -52,7 +49,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
         currentMacAddress,
         pppConnectionStatus,
         dhcpv6Duid,
-        staticIpAddress,
         hostName,
       ];
 }

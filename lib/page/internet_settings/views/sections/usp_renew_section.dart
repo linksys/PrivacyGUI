@@ -20,6 +20,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Reading L1 here also picks up something L2 did not: `usp_internet_settings_notifier`
 /// already calls `ref.invalidate(wanDataProvider)` after a save and after a DHCP renew,
 /// so those two paths now refresh this address as well.
+///
+/// That external `ref.invalidate` does NOT blink the address to '--' while the refetch
+/// runs, which is worth stating because `invalidate` and `invalidateSelf` are not
+/// interchangeable and only one of them was obviously safe. Measured on riverpod 2.6.1
+/// with a listener on this provider: the frame during the refetch is
+/// `isLoading: true, hasValue: true` still carrying the previous address, and only the
+/// completion swaps in the new one. So the user does not see a flash of "unknown" in the
+/// middle of the renew they just triggered.
 class UspRenewSection extends ConsumerWidget {
   final InternetSettingsFeatureState state;
 
@@ -33,7 +41,14 @@ class UspRenewSection extends ConsumerWidget {
     final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
     final l = loc(context);
-    final wanIp = ref.watch(wanDataProvider).valueOrNull?.model.ipAddress ?? '';
+    // `null`, not `''`, when L1 has no value: `UspRenewActionCard` renders both as '--',
+    // but keeping them distinct here means this widget never claims to have read an
+    // address it could not read. `AsyncError` is reachable on an ordinary path —
+    // `uspWanDataServiceProvider` throws when `uspClientProvider` is null (session not
+    // yet established, re-auth, dropped socket) — and this provider has no retry, so
+    // collapsing it into "empty address" would have been indefinitely wrong rather than
+    // briefly wrong. Same reasoning as the status banner above; see its `isKnown`.
+    final wanIp = ref.watch(wanDataProvider).valueOrNull?.model.ipAddress;
     final iconColor = Theme.of(context).colorScheme.primary;
 
     return AppCard(

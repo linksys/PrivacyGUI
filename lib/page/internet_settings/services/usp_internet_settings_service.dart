@@ -196,7 +196,6 @@ class UspInternetSettingsService {
     return InternetSettingsReadOnlyInfo(
       currentMacAddress: '', // MAC Clone disabled
       pppConnectionStatus: ppp?.connectionStatus ?? '',
-      staticIpAddress: wan.staticIpAddress,
       hostName: hostName,
     );
   }

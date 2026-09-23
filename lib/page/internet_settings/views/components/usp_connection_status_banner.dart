@@ -62,12 +62,35 @@ class UspConnectionStatusBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionType = state.connectionType;
-    // `valueOrNull` rather than a `when`: while L1 is loading for the first time this
-    // renders '--' and a dim dot, which is what an unknown address should look like.
-    // During an SSE-triggered refresh riverpod preserves the previous value, so the
-    // address does not blink back to '--' on every notification.
-    final wanIp = ref.watch(wanDataProvider).valueOrNull?.model.ipAddress ?? '';
-    final isConnected = wanIp.isNotEmpty;
+    final wanAsync = ref.watch(wanDataProvider);
+    final wanIp = wanAsync.valueOrNull?.model.ipAddress ?? '';
+
+    // UNKNOWN IS NOT OFFLINE. `valueOrNull` is null for three different states, and
+    // reading the dot straight off `wanIp.isNotEmpty` claimed "disconnected" for all
+    // three — including `AsyncError`, which is reachable on an ordinary path:
+    // `uspWanDataServiceProvider` throws `ServiceNotInitializedError` whenever
+    // `uspClientProvider` is null (session not yet established, re-auth, dropped
+    // socket), and any transport failure inside `fetch()` arrives as a `ServiceError`.
+    // Measured: that state rendered a dim dot and '--' with no error surfaced, and
+    // because this provider is not autoDispose and has no retry, it stayed that way
+    // until a `wanStatus` push or a save happened to invalidate it.
+    //
+    // `hasValue` is the discriminator, not `hasError`: during a refresh riverpod keeps
+    // the previous value (measured — an external `ref.invalidate` from a save or DHCP
+    // renew yields `isLoading: true, hasValue: true` carrying the old address), so
+    // `hasValue` covers "settled" and "refreshing with a value" and excludes only the
+    // two states where we genuinely do not know.
+    //
+    // WHY THIS IS NOT AN EARLY-RETURN SKELETON, even though the dashboard's
+    // `UspNetworkStatusCard` does exactly that for `wan == null`. This banner also hosts
+    // the page's edit toggle, whose identifier `internet-settings-edit-toggle` is the
+    // arrival hook two real-router specs depend on (`R01-boot-smoke` asserts the page was
+    // reached by it; `R20-sse-push` waits on it). Replacing the banner with a skeleton
+    // takes that control off the page — and in the `AsyncError` case it never comes back,
+    // because this provider has no retry. So the unknown state degrades the READING and
+    // keeps the CONTROL.
+    final isKnown = wanAsync.hasValue;
+    final isConnected = isKnown && wanIp.isNotEmpty;
 
     return AppCard(
       child: Padding(
@@ -77,7 +100,9 @@ class UspConnectionStatusBanner extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Status indicator
+            // Status indicator. `isActive` is false for both "offline" and "unknown";
+            // the address line below is what distinguishes them, and a third dot state
+            // is a design question rather than something to invent here.
             UspStatusDot(isActive: isConnected, size: 12),
             AppGap.md(),
             // Connection info
@@ -89,8 +114,16 @@ class UspConnectionStatusBanner extends ConsumerWidget {
                     connectionType.localizedLabel(context),
                   ),
                   AppGap.xs(),
+                  // Three readings, not two: an address, a known-empty address, and
+                  // "we could not read it". The third used to render as '--', which is
+                  // what a genuinely absent address looks like — so a failed read was
+                  // indistinguishable from a successful read of "no address".
                   AppText.bodySmall(
-                    isConnected ? wanIp : '--',
+                    !isKnown
+                        ? loc(context).unknown
+                        : isConnected
+                            ? wanIp
+                            : '--',
                   ),
                 ],
               ),
