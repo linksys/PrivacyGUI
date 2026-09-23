@@ -57,10 +57,39 @@ class ParkedMascotOverlay extends StatelessWidget {
   final MascotSpec spec;
   final Widget child;
 
+  /// Gap between the parked mascot and the screen edges.
+  ///
+  /// Flush against the corner reads as clipped rather than placed. `AppSpacing.lg`
+  /// is the same inset the page gutters use, so the mascot sits on the grid the
+  /// rest of the UI is on.
+  static const double edgeInset = AppSpacing.lg;
+
+  /// The `initialPositionRatio` that leaves [edgeInset] free at [width].
+  ///
+  /// A ratio is the only horizontal placement the behaviour config exposes —
+  /// there is no `rightOffset` to go with `bottomOffset` — and a *fixed* ratio
+  /// cannot express a fixed gap, because the overlay multiplies it by
+  /// `width - mascotWidth`. One value would mean four different gaps: 0.99 leaves
+  /// 18.7px at 1920 and 2.7px at 320, so the narrow screens that need the gap most
+  /// are the ones that would not get it. Solving for the ratio per width gives the
+  /// same visual inset everywhere, and the wrapper already has the width in hand.
+  ///
+  /// Clamped to `[0, 1]`: below `2 * edgeInset + mascotWidth` the arithmetic wants
+  /// a negative ratio, and there the right answer is simply flush right.
+  static double ratioForInset(double width, double mascotWidth) {
+    final travel = width - mascotWidth;
+    if (travel <= 0) return 1.0;
+    return (1 - edgeInset / travel).clamp(0.0, 1.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final mascotWidth =
+            (spec.renderer ?? const DefaultMascotRenderer()).size.width;
+
         // The width *is* the key, so this holds no state: two builds at the same
         // width produce the same key and nothing remounts, which makes the
         // remount a pure function of the constraints. A "bump a counter when the
@@ -69,10 +98,15 @@ class ParkedMascotOverlay extends StatelessWidget {
         // Keyed on every change rather than only on growth, because both
         // directions leave `_positionX` wrong — see the class doc.
         return MascotOverlay(
-          key: ValueKey(constraints.maxWidth),
+          key: ValueKey(width),
           controller: controller,
           dialogProvider: dialogProvider,
-          spec: spec,
+          spec: spec.copyWith(
+            behavior: spec.behavior.copyWith(
+              initialPositionRatio: ratioForInset(width, mascotWidth),
+              bottomOffset: edgeInset,
+            ),
+          ),
           child: child,
         );
       },

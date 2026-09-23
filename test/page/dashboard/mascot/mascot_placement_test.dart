@@ -24,7 +24,6 @@ void main() {
   const shellBehavior = MascotBehaviorConfig(
     autoWalk: false,
     allowDrag: true,
-    initialPositionRatio: 1.0,
   );
 
   Future<void> pumpOverlay(
@@ -88,10 +87,11 @@ void main() {
       await pumpOverlay(tester, screen: screen);
 
       final rect = mascotRect(tester);
-      expect(rect.right, closeTo(screen.width, 1.0),
-          reason: 'initialPositionRatio: 1.0 means flush with the right edge');
-      expect(rect.bottom, closeTo(screen.height - 8, 1.0),
-          reason: 'the default bottomOffset is 8');
+      const inset = ParkedMascotOverlay.edgeInset;
+      expect(rect.right, closeTo(screen.width - inset, 1.0),
+          reason: 'parked with an inset, not flush against the edge');
+      expect(rect.bottom, closeTo(screen.height - inset, 1.0),
+          reason: 'the same inset below, so the corner reads as placed');
     });
 
     // The defect this fixes: with the default behaviour the mascot starts at a
@@ -139,7 +139,6 @@ void main() {
         behavior: const MascotBehaviorConfig(
           autoWalk: false,
           allowDrag: false,
-          initialPositionRatio: 1.0,
         ),
       );
       final before = mascotRect(tester);
@@ -167,8 +166,9 @@ void main() {
 
       for (final width in [800.0, 500.0, 320.0]) {
         await resizeTo(tester, Size(width, 900));
-        expect(mascotRect(tester).right, closeTo(width, 1.0),
-            reason: 'shrinking to $width must keep it flush right');
+        expect(mascotRect(tester).right,
+            closeTo(width - ParkedMascotOverlay.edgeInset, 1.0),
+            reason: 'shrinking to $width must keep the same inset');
       }
     });
 
@@ -177,7 +177,8 @@ void main() {
 
       await resizeTo(tester, const Size(1920, 900));
 
-      expect(mascotRect(tester).right, closeTo(1920, 1.0),
+      expect(mascotRect(tester).right,
+          closeTo(1920 - ParkedMascotOverlay.edgeInset, 1.0),
           reason: 'was stranded 480px from the right edge before the fix');
     });
 
@@ -186,7 +187,8 @@ void main() {
 
       await resizeTo(tester, const Size(1920, 1080));
 
-      expect(mascotRect(tester).right, closeTo(1920, 1.0),
+      expect(mascotRect(tester).right,
+          closeTo(1920 - ParkedMascotOverlay.edgeInset, 1.0),
           reason: 'was stranded 1420px from the right edge before the fix');
     });
 
@@ -196,7 +198,8 @@ void main() {
       await resizeTo(tester, const Size(320, 640));
       await resizeTo(tester, const Size(1440, 900));
 
-      expect(mascotRect(tester).right, closeTo(1440, 1.0));
+      expect(mascotRect(tester).right,
+          closeTo(1440 - ParkedMascotOverlay.edgeInset, 1.0));
     });
 
     // The reason the remount fires on shrink too, which is not about where the
@@ -223,6 +226,47 @@ void main() {
 
       expect(mascotRect(tester).left, lessThan(before - 50),
           reason: 'a 100px drag moved 0px while the stale offset stood');
+    });
+  });
+
+  group('the parked inset is a gap, not a ratio', () {
+    // A single `initialPositionRatio` cannot express a fixed gap: the overlay
+    // multiplies it by `width - mascotWidth`, so 0.99 leaves 18.7px at 1920 and
+    // 2.7px at 320 — the narrow screens that need the gap most would be the ones
+    // that barely get it. The wrapper solves for the ratio per width instead, and
+    // this is what pins that.
+    testWidgets('is the same number of pixels at every width', (tester) async {
+      await pumpOverlay(tester, screen: const Size(1920, 1080));
+
+      for (final width in [1920.0, 1440.0, 800.0, 500.0, 320.0]) {
+        await resizeTo(tester, Size(width, 900));
+        expect(width - mascotRect(tester).right,
+            closeTo(ParkedMascotOverlay.edgeInset, 1.0),
+            reason: 'gap at ${width}px');
+      }
+    });
+
+    // Degenerate widths: there is no room for two insets plus the mascot, and the
+    // arithmetic would ask for a negative ratio. Flush right is the right answer,
+    // and it must not throw or leave the mascot off-screen.
+    testWidgets('degrades to flush right when there is no room',
+        (tester) async {
+      await pumpOverlay(tester, screen: const Size(60, 400));
+
+      final rect = mascotRect(tester);
+      expect(rect.left, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(60));
+    });
+
+    testWidgets('ratioForInset stays within bounds', (tester) async {
+      // Unit-level, because the boundary is arithmetic rather than layout.
+      expect(
+          ParkedMascotOverlay.ratioForInset(1920, 48), closeTo(0.99145, 1e-4));
+      expect(
+          ParkedMascotOverlay.ratioForInset(320, 48), closeTo(0.94118, 1e-4));
+      expect(ParkedMascotOverlay.ratioForInset(60, 48), 0.0);
+      expect(ParkedMascotOverlay.ratioForInset(48, 48), 1.0);
+      expect(ParkedMascotOverlay.ratioForInset(20, 48), 1.0);
     });
   });
 

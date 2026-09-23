@@ -277,12 +277,16 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
               // is horizontal only — the overlay has no vertical axis — so it
               // does not clear a full-width bottom bar; that is the remaining
               // gap, and it is not fixed by moving this constant around.
+              //
+              // The corner itself is `ParkedMascotOverlay`'s to set: it computes
+              // `initialPositionRatio` and `bottomOffset` per width so the inset
+              // is the same at every size. Passing a ratio here would be
+              // overwritten, so it is deliberately absent.
               spec: const MascotSpec(
                 renderer: LinksysMascotRenderer(),
                 behavior: MascotBehaviorConfig(
                   autoWalk: false,
                   allowDrag: true,
-                  initialPositionRatio: 1.0,
                 ),
               ),
               // Nothing to wrap now that the page is a sibling; the overlay
