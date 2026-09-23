@@ -433,6 +433,7 @@
   "backToDevices": "Назад к устройствам",
   "backToTopology": "Назад к топологии",
   "backhaulConnection": "Транзитное подключение",
+  "backhaulRateNotInternetSpeed": "Скорость соединения между узлами mesh — это не скорость интернета.",
   "badgeNew": "НОВОЕ",
   "badgeUser": "ПОЛЬЗОВАТЕЛЬ",
   "band": "Диапазон",

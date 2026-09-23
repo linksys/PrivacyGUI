@@ -436,6 +436,7 @@
   "backToDevices": "返回裝置",
   "backToTopology": "返回拓撲",
   "backhaulConnection": "回程連線",
+  "backhaulRateNotInternetSpeed": "網狀節點之間的連線速率，不是您的網際網路速度。",
   "badgeNew": "新增",
   "badgeUser": "使用者",
   "band": "頻段",

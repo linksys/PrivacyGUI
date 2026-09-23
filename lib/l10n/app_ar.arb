@@ -436,6 +436,7 @@
   "backToDevices": "العودة إلى الأجهزة",
   "backToTopology": "العودة إلى الطوبولوجيا",
   "backhaulConnection": "اتصال النقل الخلفي",
+  "backhaulRateNotInternetSpeed": "معدل الاتصال بين عُقد الشبكة — وليست سرعة الإنترنت.",
   "badgeNew": "جديد",
   "badgeUser": "مستخدم",
   "band": "النطاق",

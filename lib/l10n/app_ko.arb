@@ -433,6 +433,7 @@
   "backToDevices": "장치로 돌아가기",
   "backToTopology": "토폴로지로 돌아가기",
   "backhaulConnection": "백홀 연결",
+  "backhaulRateNotInternetSpeed": "메시 노드 간 링킬 속도입니다. 인탄넷 속도가 아닙니다.",
   "badgeNew": "신규",
   "badgeUser": "사용자",
   "band": "대역",

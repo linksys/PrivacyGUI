@@ -433,6 +433,7 @@
   "backToDevices": "Takaisin laitteisiin",
   "backToTopology": "Takaisin topologiaan",
   "backhaulConnection": "Runkoverkkoyhteys",
+  "backhaulRateNotInternetSpeed": "Mesh-solmujen välinen linkkinopeus – ei internet-nopeutesi.",
   "badgeNew": "UUSI",
   "badgeUser": "KÄYTTÄJÄ",
   "band": "Taajuusalue",

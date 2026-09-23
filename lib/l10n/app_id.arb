@@ -433,6 +433,7 @@
   "backToDevices": "Kembali ke Perangkat",
   "backToTopology": "Kembali ke Topologi",
   "backhaulConnection": "Koneksi Backhaul",
+  "backhaulRateNotInternetSpeed": "Kecepatan tautan antar-node mesh — bukan kecepatan internet Anda.",
   "badgeNew": "BARU",
   "badgeUser": "PENGGUNA",
   "band": "Pita",
