@@ -255,8 +255,29 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
             child: MascotOverlay(
               controller: mascotController,
               dialogProvider: dialogProvider,
+              // Parked bottom-right, and it stays there unless the user moves
+              // it. Only `renderer` used to be given, so `MascotBehaviorConfig`
+              // came from its defaults — `autoWalk: true` with no
+              // `initialPositionRatio`, which starts the mascot at a random x
+              // and re-picks a random target every 2–5 seconds across the whole
+              // shell width. The overlay is mounted on the `ShellRoute`, so that
+              // wandering happened over all 29 routes under it, and the mascot
+              // is a hit-testing `GestureDetector`: wherever it stood, the
+              // controls beneath it could not be reached (#1531).
+              //
+              // `allowDrag` stays on deliberately. Parking it in one corner is
+              // what makes the mascot predictable; being able to move it is what
+              // makes a corner it happens to be covering recoverable. Dragging
+              // is horizontal only — the overlay has no vertical axis — so it
+              // does not clear a full-width bottom bar; that is the remaining
+              // gap, and it is not fixed by moving this constant around.
               spec: const MascotSpec(
                 renderer: LinksysMascotRenderer(),
+                behavior: MascotBehaviorConfig(
+                  autoWalk: false,
+                  allowDrag: true,
+                  initialPositionRatio: 1.0,
+                ),
               ),
               // Nothing to wrap now that the page is a sibling; the overlay
               // still lays its own children out against the full shell.
