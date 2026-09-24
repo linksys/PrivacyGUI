@@ -93,13 +93,27 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   /// Update timezone and optionally NTP server (used by timezone edit dialog).
+  ///
+  /// Exactly one of [zoneName] and [localTimeZone] is set — the dialog sends the
+  /// IANA name for the 36 zones that have one and the POSIX string for the three
+  /// that do not. See `UspAdminService.updateTimezone` for why they cannot both
+  /// go in one write.
   Future<void> updateTimezone({
-    required String localTimeZone,
+    String? zoneName,
+    String? localTimeZone,
     String? ntpServer1,
   }) async {
+    // With both leaves optional, a call that supplies neither and no NTP server
+    // writes nothing: the service skips the name and `TimeSettings.update`
+    // short-circuits an empty param map into a synthetic success. The caller
+    // would then show "saved" for a write that never happened.
+    if (zoneName == null && localTimeZone == null && ntpServer1 == null) {
+      throw ArgumentError('updateTimezone was given nothing to write');
+    }
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.updateTimezone(
+          zoneName: zoneName,
           localTimeZone: localTimeZone,
           ntpServer1: ntpServer1,
         );
@@ -107,8 +121,18 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
     } on ServiceError catch (e) {
       logger.e('[USP][Admin]: Timezone update failed', error: e);
       rethrow;
+    } finally {
+      // `finally`, not after the `try`: a failure here can still have changed the
+      // device. The zone name and the NTP server go out as two `Set`s, so the
+      // first can land and the second fail, and re-reading is the only way the
+      // card stops showing a zone that is no longer set. Refreshing after a
+      // failure that changed nothing costs one `Get`; not refreshing after one
+      // that did leaves the user looking at a lie.
+      //
+      // The nothing-to-write guard above throws before this block, so a
+      // programmer error does not trigger a pointless fetch.
+      ref.invalidate(timeDataProvider);
     }
-    ref.invalidate(timeDataProvider);
   }
 
   // ---------------------------------------------------------------------------

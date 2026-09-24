@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -57,12 +58,30 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     _syncIfChanged(timeData);
 
-    final tzInfo = matchTimezone(time.localTimeZone);
+    // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    final reportedOffset = time.reportedOffsetMinutes;
+    final tzInfo = resolveTimezone(
+      zoneName: time.localTimeZoneName,
+      localTimeZone: time.localTimeZone,
+      reportedOffsetMinutes: reportedOffset,
+    );
+    // Three tiers, matching `usp_timezone_card.dart` (#1609). An unmatched zone
+    // is ordinary on FLWRT 2.0, not exotic — the factory value is a bare `UTC`
+    // and 81 of the 89 zones the device publishes have no entry of ours — so
+    // when we cannot name the region we show the offset the device reported with
+    // its clock, and keep the raw POSIX string for a reading with no offset.
     final tzDisplay = tzInfo != null
         ? tzInfo.friendlyName
-        : time.localTimeZone.isNotEmpty
-            ? time.localTimeZone
-            : 'Not set';
+        : reportedOffset != null
+            ? formatGmtOffset(reportedOffset)
+            : time.localTimeZone.isNotEmpty
+                ? time.localTimeZone
+                : 'Not set';
+    // The zone's standard offset, deliberately, not the one the device is on
+    // right now — see the note at the same row in `usp_timezone_card.dart`.
+    //
+    // Left empty on the unmatched path on purpose: the offset has gone into the
+    // name row above, and this row would only repeat it.
     final offsetDisplay = tzInfo?.offsetDisplayText ?? '';
 
     final timeDisplay = currentTime != null
@@ -140,7 +159,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
               if (offsetDisplay.isNotEmpty)
                 InfoGridItem(
                     label: loc(context).utcOffset, value: offsetDisplay),
-              if (tzInfo != null && tzInfo.observesDST)
+              // Shown for any zone we can name, not only DST-observing ones —
+              // see the note at the same row in `usp_timezone_card.dart` (#1609).
+              if (tzInfo != null)
                 InfoGridItem(
                   // Deliberately unlocalized, and recorded as arguable in
                   // §2.10d point 6 rather than fixed here: unlike the `Enabled`
@@ -150,7 +171,13 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                   // (`Sommerzeit`), which is a width change in a cell this
                   // branch has not measured. The value beside it is localized.
                   label: 'DST',
-                  value: inferDstEnabled(time.localTimeZone)
+                  // `dstInEffect`, not `observesDST` — see the note at the same
+                  // row in `usp_timezone_card.dart`.
+                  value: dstInEffect(
+                    zoneName: time.localTimeZoneName,
+                    localTimeZone: time.localTimeZone,
+                    reportedOffsetMinutes: reportedOffset,
+                  )
                       ? loc(context).on
                       : loc(context).off,
                 ),
@@ -173,6 +200,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       ref,
       loadingKey: 'time',
       mutation: () => ref.read(uspAdminProvider.notifier).updateTimezone(
+            zoneName: result.zoneName,
             localTimeZone: result.localTimeZone,
             ntpServer1: result.ntpServer1,
           ),

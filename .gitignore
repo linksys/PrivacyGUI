@@ -32,6 +32,10 @@
 .pub/
 /build/
 
+# Local-only dependency redirection (e.g. pointing ui_kit_library at a local
+# checkout). Machine-specific absolute paths; must never reach a branch.
+pubspec_overrides.yaml
+
 # Android related
 **/android/**/gradle-wrapper.jar
 **/android/.gradle
