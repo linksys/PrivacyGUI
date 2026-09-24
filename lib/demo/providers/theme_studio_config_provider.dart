@@ -540,6 +540,14 @@ class ThemeStudioConfigNotifier extends StateNotifier<ThemeStudioConfig> {
         ));
   }
 
+  /// The `gateway*` / `extender*` / `client*` names here are **ui_kit's**, not ours.
+  ///
+  /// 3.4.0 renamed the topology vocabulary everywhere else — this file's edge and
+  /// renderer parameters moved to `direct*` / `primary*` / `leaf*` with it — but
+  /// `AppThemeOverrides` kept these Dart field names and made the migration at the
+  /// JSON boundary instead: `_parseSlotColor` reads `primaryNormalBackgroundColor`
+  /// first and falls back to `gatewayNormalBackgroundColor`. So these are not names
+  /// this PR missed; renaming them would stop compiling.
   void updateTopologyColors({
     Color? gatewayNormalBackgroundColor,
     Color? gatewayNormalBorderColor,

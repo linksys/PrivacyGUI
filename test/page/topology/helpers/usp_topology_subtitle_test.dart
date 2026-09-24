@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
-import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -51,7 +50,7 @@ void main() {
       expect(master.extra, contains(DevicesTestData.defaultModel));
     });
 
-    test('a Wi-Fi slave shows its model and its backhaul, with the signal', () {
+    test('a slave shows its model, and states nothing it cannot word', () {
       final topology = UspTopologyBuilder.buildFromMeshNetwork(
         meshNetwork: DevicesTestData.createMeshNetwork(),
         info: sysInfo,
@@ -62,43 +61,31 @@ void main() {
       expect(slave.extra, isNotNull);
       expect(slave.extra, isNotEmpty);
       expect(slave.extra, contains(DevicesTestData.defaultModel));
-      // The backhaul is the fact that distinguishes one slave from another, so it
-      // earns the second slot.
-      expect(slave.extra, contains('Wi-Fi'));
-      expect(slave.extra, contains('dBm'));
-    });
 
-    test('an Ethernet slave names the medium and carries no signal', () {
-      final topology = UspTopologyBuilder.buildFromMeshNetwork(
-        meshNetwork: DevicesTestData.createMeshNetwork(
-          slave: DevicesTestData.createEthernetSlave(),
-        ),
-        info: sysInfo,
-      );
-      final slave = nodeOf(topology, 'secondary');
-
-      expect(slave.extra, contains('Ethernet'));
-      // A wired backhaul has no RSSI by design, not by absence.
+      // The backhaul medium belongs in this line too, and it is **not** here. It
+      // arrives as a firmware string (`MultiAPDevice.Backhaul.LinkType`), so
+      // putting it in `extra` printed `Ethernet` on the screen in all 26 locales.
+      // Wording it needs a `BuildContext`, which this builder deliberately does
+      // not have, so `TopologySubtitle` appends it from the fields recorded in
+      // metadata — see `topology_subtitle_test.dart`, which owns that half
+      // including the locale assertion.
+      expect(slave.extra, isNot(contains('Wi-Fi')));
+      expect(slave.extra, isNot(contains('Ethernet')));
       expect(slave.extra, isNot(contains('dBm')));
     });
 
-    test('a slave whose backhaul firmware did not name shows the model alone',
-        () {
+    test('the fields the medium is worded from are recorded', () {
       final topology = UspTopologyBuilder.buildFromMeshNetwork(
-        meshNetwork: DevicesTestData.createMeshNetwork(
-          slave: DevicesTestData.createWifiSlave(backhaul: BackhaulInfo.none),
-        ),
+        meshNetwork: DevicesTestData.createMeshNetwork(),
         info: sysInfo,
       );
       final slave = nodeOf(topology, 'secondary');
 
-      // Still not empty — the model is knowable whatever the backhaul says.
-      expect(slave.extra, isNotNull);
-      expect(slave.extra, contains(DevicesTestData.defaultModel));
-      // And no invented medium: `LinkType = None` is the ordinary state on
-      // FL-WRT 2.0, and claiming Wi-Fi for it is the defect #1464 closed.
-      expect(slave.extra, isNot(contains('Wi-Fi')));
-      expect(slave.extra, isNot(contains('Ethernet')));
+      // Moving the wording out is only safe while the raw facts still reach the
+      // consumer. They were already recorded here for the detail panel; this pins
+      // that the subtitle now depends on them too.
+      expect(slave.metadata!['backhaulLinkType'], isNotNull);
+      expect(slave.metadata!['backhaulSignalStrength'], isNotNull);
     });
 
     test('a leaf keeps its IP first, and adds the band when there is one', () {

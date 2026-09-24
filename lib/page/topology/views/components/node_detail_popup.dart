@@ -4,6 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -69,12 +70,15 @@ class NodeDetailPopup extends StatelessWidget {
     final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
     // Which kind of thing this panel is describing.
     //
-    // Stated by the builder rather than inferred from which keys are missing: a
-    // leaf and a mesh node have disjoint field sets, and keying on absence made
-    // every added field a place for the split to drift. Before ui_kit 3.4.0 the
-    // question did not arise — the kit refused a leaf its panel — so this widget
-    // read `isMaster` unguarded and printed `Slave` for a laptop (#1614 D2).
-    final isLeaf = metadata?['isLeaf'] as bool? ?? false;
+    // Asked of the node, not of a `'isLeaf'` key in its metadata. The widget holds
+    // the node, `TopologySlots` already owns this question for the whole app, and a
+    // metadata flag beside a `styleSlot` is the same fact stored twice — settable
+    // independently, and a third spelling of a vocabulary that exists to have one.
+    //
+    // Before ui_kit 3.4.0 the question did not arise at all: the kit refused a leaf
+    // its panel, so this widget read `isMaster` unguarded and printed `Slave` for a
+    // laptop (#1614 D2).
+    final isLeaf = TopologySlots.isDevice(node);
     final isMaster = metadata?['isMaster'] as bool? ?? false;
 
     // A device's own facts, for a leaf.
@@ -131,26 +135,50 @@ class NodeDetailPopup extends StatelessWidget {
           // Backhaul info for slave nodes only — the master has no uplink of this
           // kind to report.
           if (!isMaster) ...[
-            if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
-              _row('Backhaul', backhaulLinkType),
+            // The medium is named in the viewer's language, not echoed. What
+            // arrives here is `MultiAPDevice.Backhaul.LinkType` — a firmware
+            // string — and printing it put `Ethernet` on the screen in all 26
+            // locales, which is the same defect as the kit printing its own enum
+            // names (the one `TopologyTreeLabels` exists to close). The medium is
+            // read through the shared predicate rather than compared to a literal,
+            // so a build spelling the value differently still says "Ethernet"
+            // here and does not acquire a signal row below (#1555).
+            //
+            // Labelled `connectionType`, which is what the leaf branch above calls
+            // the same fact, so the two halves of one panel agree.
+            if (backhaulLinkType != null && backhaulLinkType.trim().isNotEmpty)
+              _row(
+                  loc(context).connectionType,
+                  isMeshBackhaulEthernet(backhaulLinkType)
+                      ? loc(context).ethernet
+                      : loc(context).wifi),
             // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
             // reading, so a wired node whose medium is spelled unexpectedly must
             // not fall into it (#1555).
             if (backhaulSignalStrength != null &&
                 !isMeshBackhaulEthernet(backhaulLinkType))
-              _row('Signal', '$backhaulSignalStrength dBm'),
+              _row(
+                  loc(context).signal,
+                  loc(context)
+                      .signalStrengthDbm(backhaulSignalStrength.toString())),
             if (backhaulUplinkRate != null && backhaulDownlinkRate != null)
               _row(
-                'Speed',
-                'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)} / '
-                    'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}',
+                loc(context).speed,
+                '${loc(context).upload}: '
+                '${NetworkUtils.formatSpeed(backhaulUplinkRate)} / '
+                '${loc(context).download}: '
+                '${NetworkUtils.formatSpeed(backhaulDownlinkRate)}',
               )
             else if (backhaulUplinkRate != null)
-              _row('Speed',
-                  'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)}')
+              _row(
+                  loc(context).speed,
+                  '${loc(context).upload}: '
+                  '${NetworkUtils.formatSpeed(backhaulUplinkRate)}')
             else if (backhaulDownlinkRate != null)
-              _row('Speed',
-                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
+              _row(
+                  loc(context).speed,
+                  '${loc(context).download}: '
+                  '${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
           ],
         ],
         // Details button (optional).

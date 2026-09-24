@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,9 +11,10 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_node_order.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
@@ -46,8 +49,33 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   final TopologyController _controller = TopologyController();
   final TextEditingController _searchController = TextEditingController();
 
+  /// Coalesces keystrokes before the graph is searched.
+  ///
+  /// A search is a full node scan plus `highlight`, plus a camera animation to the
+  /// match. At `mesh-at-scale` sizes — 55 nodes — running that per keystroke means
+  /// the viewport chases each letter while the viewer is still typing the word.
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    // The build reads `_searchController.text` to decide whether the clear button
+    // exists, so it has to listen: the two empty `setState(() {})` calls this
+    // replaces were hand-invalidating a Listenable the build depended on, which is
+    // the shape that leaves a stale read the moment a path forgets one.
+    _searchController.addListener(_onQueryChanged);
+  }
+
+  void _onQueryChanged() {
+    // Only the clear button's presence depends on this rebuild; the graph is driven
+    // by the controller.
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onQueryChanged);
     _searchController.dispose();
     _controller.dispose();
     super.dispose();
@@ -58,6 +86,25 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   /// Matching is this app's business, not the kit's: name, MAC and IP are the
   /// three things a viewer knows a device by, which is the same set the device
   /// list searches (`searchByNameMacIp`).
+  /// Search after a short quiet period, so a word costs one scan rather than one
+  /// per letter.
+  ///
+  /// 250ms: long enough to swallow ordinary typing, short enough that the graph
+  /// still feels like it is answering. An empty query skips the wait — clearing the
+  /// field is a request to see everything again, and making that lag reads as the
+  /// clear having not worked.
+  void _searchDebounced(GraphData topology, String query) {
+    _searchDebounce?.cancel();
+    if (query.trim().isEmpty) {
+      _search(topology, query);
+      return;
+    }
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 250),
+      () => _search(topology, query),
+    );
+  }
+
   void _search(GraphData topology, String query) {
     // The query goes in raw: `TopologySearch` owns trimming and case-folding, and
     // normalising here as well would be the same work done twice in two places
@@ -109,9 +156,17 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             onRetry: () => ref.invalidate(devicesDataProvider),
           ),
           data: (data) {
-            final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;
+            // Watched, not read. `ref.read` took a one-time snapshot, so a
+            // system-info fetch that landed after the devices one left this page
+            // on whatever it saw first — and with the branch below that meant a
+            // blank page that never recovered.
+            final sysInfo =
+                ref.watch(systemInfoDataProvider).valueOrNull?.model;
             if (sysInfo == null) {
-              return const SizedBox.shrink();
+              // Still arriving, or failed. Either way the graph cannot be built
+              // without the gateway's own identity, and an empty box says nothing
+              // and offers nothing — the state a viewer reads as a broken page.
+              return const Center(child: AppLoader());
             }
             final topology = UspTopologyBuilder.buildFromMeshNetwork(
               meshNetwork: data.meshNetwork,
@@ -150,17 +205,12 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                         styleVariant: ButtonStyleVariant.text,
                         size: AppButtonSize.small,
                         onTap: () {
+                          // Clearing notifies the listener, which rebuilds.
                           _searchController.clear();
                           _search(topology, '');
-                          setState(() {});
                         },
                       ),
-                onChanged: (value) {
-                  _search(topology, value);
-                  // Only to swap the clear button in and out; the graph is driven
-                  // by the controller, not by this rebuild.
-                  setState(() {});
-                },
+                onChanged: (value) => _searchDebounced(topology, value),
               ),
             ),
             AppGap.md(),
@@ -255,7 +305,8 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 nodeContentBuilder: TopologyNodeContentBuilder.build,
                 treeConfig: TopologyTreeConfiguration(
                   titleBuilder: (node) => node.name,
-                  subtitleBuilder: (node) => node.extra ?? '',
+                  subtitleBuilder: (node) =>
+                      TopologySubtitle.build(context, node),
                   preferAnimationNode: true,
                   showStatusIndicator: true,
                   // Our words, localised — see TopologyTreeLabels. The kit used to
@@ -278,9 +329,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // The external node is the one node with nothing to show, and it
                 // became tappable in 3.4.0.
                 nodeTapFilter: (node) => !node.isExternal,
-                onClusterToggled: (nodeId, expanded) => logger.d(
-                    '[Topology]: viewer ${expanded ? 'opened' : 'closed'} $nodeId'),
-                nodeComparator: _nodeComparator,
+                nodeComparator: TopologyNodeOrder.compare,
               ),
             );
           }),
@@ -298,19 +347,6 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     if (target == null) return;
 
     router.pushNamed(target.route, queryParameters: target.queryParameters);
-  }
-
-  /// Comparator for sorting nodes: online first, then nodes before devices, then
-  /// alphabetical.
-  static int _nodeComparator(GraphNode a, GraphNode b) {
-    // 1. Active before inactive
-    if (a.isInactive && !b.isInactive) return 1;
-    if (!a.isInactive && b.isInactive) return -1;
-    // 2. Role priority: master > slave > device > external
-    final rolePriority = topologyRolePriority(a) - topologyRolePriority(b);
-    if (rolePriority != 0) return rolePriority;
-    // 3. Alphabetical by name
-    return a.name.compareTo(b.name);
   }
 
   Widget _withTopologyAnimation(BuildContext context, Widget child) {

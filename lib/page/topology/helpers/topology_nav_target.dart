@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -5,12 +6,26 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// A resolved navigation target for a tapped topology node: the named route
 /// plus its query parameters.
+///
+/// `Equatable` for the reason the tests need rather than the one Article XI names:
+/// that article governs UI models and provider state, and this is neither — it is a
+/// function's return value, gone by the next frame. But `==` on identity meant every
+/// assertion about a destination had to be written as two field comparisons, which
+/// is how a test ends up checking the route and forgetting the parameters.
+///
+/// [queryParameters] is handed to the constructor and exposed directly, so a caller
+/// that mutates the map it passed in mutates this. Every caller passes a literal;
+/// the field stays a plain `Map` because `go_router` wants one, and wrapping it
+/// would trade a real dependency for a theoretical one.
 @immutable
-class TopologyNavTarget {
+class TopologyNavTarget extends Equatable {
   const TopologyNavTarget(this.route, this.queryParameters);
 
   final String route;
   final Map<String, String> queryParameters;
+
+  @override
+  List<Object?> get props => [route, queryParameters];
 }
 
 /// Pure mapping from a tapped [GraphNode] to its navigation target, or `null`
@@ -73,27 +88,4 @@ TopologyNavTarget? topologyNavTargetFor(
   // which states one of the three on every node, so there is no destination to
   // guess at.
   return null;
-}
-
-/// Sort rank for [node]: master, then slave, then device, then external.
-///
-/// Reads the slot the builder **stated**, which is this app's own classification.
-/// Deriving from structure instead would rank a slave carrying no clients as a
-/// device, which is measured and reachable today; and it would demote the gateway
-/// the moment an upstream external node is added above it. See
-/// `usp_topology_slot_origin_test.dart`, which pins both (#1614).
-int topologyRolePriority(GraphNode node) {
-  if (node.isExternal) return 3;
-  return switch (TopologySlots.of(node)) {
-    NodeStyleSlot.primary => 0,
-    NodeStyleSlot.secondary => 1,
-    // A device, and — deliberately — a node whose slot this app did not assign.
-    // It sorts last among the non-external nodes rather than being promoted above
-    // the ones we did classify. `topologyNavTargetFor` gives the same input no
-    // page; the two answers differ because the questions do, and both now read
-    // the unknown case from one place.
-    NodeStyleSlot.leaf => 2,
-    NodeStyleSlot.tertiary => 2,
-    null => 2,
-  };
 }

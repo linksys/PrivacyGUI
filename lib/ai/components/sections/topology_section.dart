@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_edge_strength.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -52,7 +53,7 @@ class TopologySection extends StatelessWidget {
           interactive: false,
           treeConfig: TopologyTreeConfiguration(
             titleBuilder: (node) => node.name,
-            subtitleBuilder: (node) => node.extra ?? '',
+            subtitleBuilder: (node) => TopologySubtitle.build(context, node),
             preferAnimationNode: true,
             showStatusIndicator: true,
             // `showType` / `showStatusText` are left at their 3.4.0 default of

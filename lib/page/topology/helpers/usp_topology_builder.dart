@@ -206,10 +206,13 @@ class UspTopologyBuilder {
         // and nothing else. Model, then the backhaul — the one fact that
         // differs between two otherwise identical extenders — and its signal
         // where the medium is wireless and firmware measured one.
-        extra: _subtitle([
-          slave.model,
-          _backhaulSummary(slave.backhaul),
-        ]),
+        // Model only. The backhaul medium belongs in this line too — it is the
+        // one fact that differs between two otherwise identical extenders — but
+        // it arrives as a firmware string (`LinkType`), and naming it in the
+        // viewer's language needs a `BuildContext` this builder deliberately
+        // does not have. `TopologySubtitle` appends it, reading the fields
+        // recorded in `metadata` below.
+        extra: _subtitle([slave.model]),
         level: _backhaulLevel(slave.backhaul),
         metadata: {
           'deviceId': slave.deviceId,
@@ -302,12 +305,13 @@ class UspTopologyBuilder {
         // visible rather than dead weight, and a leaf carrying only its MAC gave
         // the viewer a panel with nothing in it (#1614).
         //
-        // Written as a device's own facts, not as a mesh node's: the role,
-        // model, serial and backhaul rows belong to a node and a leaf has none
-        // of them. `isLeaf` is what the panel keys that split on, rather than
-        // inferring it from which keys happen to be absent.
+        // Written as a device's own facts, not as a mesh node's: the role, model,
+        // serial and backhaul rows belong to a node and a leaf has none of them.
+        //
+        // No `isLeaf` flag: the panel asks `TopologySlots.isDevice(node)`, which
+        // reads the slot this build already states. A flag here would be the same
+        // fact in two places, free to disagree.
         metadata: {
-          'isLeaf': true,
           'mac': client.mac,
           if (client.ip.isNotEmpty) 'ip': client.ip,
           'isWifi': client.isWifi,
@@ -365,26 +369,6 @@ class UspTopologyBuilder {
     final kept =
         parts.map((p) => p?.trim() ?? '').where((p) => p.isNotEmpty).toList();
     return kept.isEmpty ? null : kept.join(' · ');
-  }
-
-  /// A slave's backhaul as one phrase: the medium, and its signal when that is
-  /// both meaningful and measured.
-  ///
-  /// Null rather than a placeholder when firmware named no medium. `LinkType =
-  /// None` is the ordinary state on FL-WRT 2.0, not an error, and claiming
-  /// `Wi-Fi` for it is the defect #1464 closed — a subtitle is no place to
-  /// re-introduce it. The caller drops the null, so such a row falls back to its
-  /// model alone.
-  ///
-  /// The signal is withheld for a wired backhaul on the same grounds the link
-  /// style is: a wire has no RSSI by design, so a reading beside `Ethernet`
-  /// would be describing something else.
-  static String? _backhaulSummary(BackhaulInfo backhaul) {
-    final linkType = backhaul.linkType?.trim() ?? '';
-    if (linkType.isEmpty || linkType.toLowerCase() == 'none') return null;
-    final rssi = backhaul.signalStrength;
-    if (backhaul.isEthernet || rssi == null) return linkType;
-    return '$linkType $rssi dBm';
   }
 
   static double _rssiToLevelForClient(ClientDevice client) {

@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
@@ -121,7 +122,8 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                 nodeContentBuilder: TopologyNodeContentBuilder.build,
                 treeConfig: TopologyTreeConfiguration(
                   titleBuilder: (node) => node.name,
-                  subtitleBuilder: (node) => node.extra ?? '',
+                  subtitleBuilder: (node) =>
+                      TopologySubtitle.build(context, node),
                   preferAnimationNode: true,
                   showStatusIndicator: true,
                   // Our words, localised. ui_kit 3.4.0 stopped shipping label
