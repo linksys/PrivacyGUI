@@ -62,12 +62,17 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   /// So the first matching notification disables the mechanism. Measured: a held
   /// subscriber gave 1 fetch → 2 after a `portForwarding` event; no subscriber, 1 → 1.
   ///
-  /// WAS THIS REACHABLE? Not on any current preset — `stats_panel` watches this provider
-  /// (for its Port Rules tile) and appears in all five (`usp_dashboard_preset.dart`), so
-  /// something was always subscribed. That made this correct BY COINCIDENCE: the
-  /// guarantee was five `const` lists all happening to include one card, and no test
-  /// would have caught its removal because every existing test holds a
-  /// `container.listen`.
+  /// WAS THIS REACHABLE? **No, and for a more basic reason than the subscriber question.**
+  /// `portForwarding` is produced only from `Device.NAT.PortMapping.`
+  /// (`sse_invalidation_provider.dart`), which is NOT among the five paths the app
+  /// subscribes to (`lib/generated/subscriptions.g.dart`) — so the notification never
+  /// arrives, and whether anything was watching is moot.
+  ///
+  /// (`stats_panel` does read this provider on every preset, so a subscriber generally
+  /// existed too. That is a second reason rather than the reason.)
+  ///
+  /// Fixed anyway, because the defect is in the pattern: a subscription added later would
+  /// otherwise make a dormant bug live with nothing to catch it.
   ///
   /// Assigning `state` directly removes the dependency. `ref.onDispose` still cancels
   /// the timer, which matters for efficiency (a disposed notifier would otherwise issue

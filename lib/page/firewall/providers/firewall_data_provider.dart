@@ -148,12 +148,23 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   /// So the first matching notification disables the mechanism. Measured: a held
   /// subscriber gave 1 fetch → 2 after a `firewallRules` event; no subscriber, 1 → 1.
   ///
-  /// WAS THIS REACHABLE? Yes, on one preset. The only dashboard consumer is the
-  /// `firewall_overview` card, which the `essential` preset omits
-  /// (`usp_dashboard_preset.dart`) — so a user on `essential` had no watcher once they
-  /// left the Firewall page. On the other presets a card happened to hold a
-  /// subscription, which made this correct BY COINCIDENCE: the guarantee was a
-  /// `const` list in a preset definition, not anything this provider controls.
+  /// WAS THIS REACHABLE? **No — and the earlier claim here that it was, on the
+  /// `essential` preset, was wrong.** Both domains this listener watches are produced
+  /// only from `Device.Firewall.DMZ.` and `Device.Firewall.Chain.`
+  /// (`sse_invalidation_provider.dart`), and NEITHER path is in the five the app
+  /// subscribes to (`lib/generated/subscriptions.g.dart`). So no `firewallRules` or `dmz`
+  /// notification can arrive at all, and "does anyone hold a subscription when it does"
+  /// never gets asked.
+  ///
+  /// The measurement that suggested otherwise injected the event by hand in a test. That
+  /// proves the code path is defective; it does not prove the path is reachable — a
+  /// distinction worth keeping, because the opposite mistake (constructing a condition
+  /// production cannot produce, then declaring a defect) is the mirror image of the one
+  /// #1615 was about.
+  ///
+  /// It is fixed anyway: the defect is in the pattern, and a subscription added later —
+  /// or a firmware that starts pushing these paths — would otherwise turn a dormant bug
+  /// live with nothing to catch it.
   ///
   /// Assigning `state` directly removes the dependency entirely. `ref.onDispose` still
   /// cancels the timer, which matters for efficiency (a disposed notifier would

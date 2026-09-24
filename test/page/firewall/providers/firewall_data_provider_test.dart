@@ -96,11 +96,14 @@ void main() {
     // passing test could not tell "the refresh works" apart from "the refresh works
     // BECAUSE a subscriber was held".
     //
-    // Production does not guarantee one. This provider's only dashboard consumer is the
-    // `firewall_overview` card, which the `essential` preset omits — so a user on that
-    // preset who left the Firewall page had no watcher at all, and the first matching
-    // notification would then have disabled the mechanism permanently, because the
-    // `ref.listen` lives inside `build()` and was never re-registered.
+    // ⚠️ THIS EVENT CANNOT REACH PRODUCTION TODAY, and the test says so rather than
+    // implying otherwise: `firewallRules` and `dmz` come only from `Device.Firewall.*`,
+    // which is not among the five paths in `subscriptions.g.dart`. This test injects the
+    // event by hand, so it pins the CODE PATH, not a live defect.
+    //
+    // It is worth having for exactly that reason. The pattern is defective, and the day a
+    // subscription is added — or firmware starts pushing those paths — this is what keeps
+    // the bug from arriving with it.
     //
     // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
     //

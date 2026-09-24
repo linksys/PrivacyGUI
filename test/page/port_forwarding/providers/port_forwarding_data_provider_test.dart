@@ -83,13 +83,14 @@ void main() {
     // passing test could not tell "the refresh works" apart from "the refresh works
     // BECAUSE a subscriber was held".
     //
-    // On every current dashboard preset something DOES watch this provider —
-    // `stats_panel` reads it for the Port Rules tile and appears in all five presets. So
-    // this was correct BY COINCIDENCE: the guarantee was five `const` lists in
-    // `usp_dashboard_preset.dart` all happening to include one card, not anything this
-    // provider controls. Removing that card from a preset, or adding a preset without it,
-    // would have silently broken push refresh here — and no test would have gone red,
-    // because every test in this file holds a subscriber.
+    // ⚠️ THIS EVENT CANNOT REACH PRODUCTION TODAY: `portForwarding` comes only from
+    // `Device.NAT.PortMapping.`, which is not among the five paths in
+    // `subscriptions.g.dart`. This test injects it by hand, so it pins the CODE PATH
+    // rather than a live defect. (`stats_panel` also reads this provider on every preset,
+    // so a subscriber generally existed too — a second reason, not the reason.)
+    //
+    // Kept because the pattern is defective: a subscription added later would otherwise
+    // bring the bug with it, silently.
     //
     // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
     // -----------------------------------------------------------------------
