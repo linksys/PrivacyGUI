@@ -1176,7 +1176,6 @@
   "cardFormPopup": "彈出式",
   "cardFormForNamed": "{name} 的卡片樣式",
   "notificationHistory": "通知記錄",
-  "menuNotificationHistoryDesc": "本次支援工作階段期間儲存的通知",
   "notificationHistoryLastBoot": "上次開機",
   "notificationHistoryLastActivity": "上次 USP 活動",
   "notificationHistoryEmpty": "本次支援工作階段尚未產生任何通知",

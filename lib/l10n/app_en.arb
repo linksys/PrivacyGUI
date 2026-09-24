@@ -1911,7 +1911,6 @@
   "cardFormForNamed": "Card form for {name}",
   "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}},
   "notificationHistory": "Notification History",
-  "menuNotificationHistoryDesc": "Notifications stored during this support session",
   "notificationHistoryLastBoot": "Last boot",
   "notificationHistoryLastActivity": "Last USP activity",
   "notificationHistoryEmpty": "This support session has not produced any notifications yet",

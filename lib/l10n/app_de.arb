@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Pop-up",
   "cardFormForNamed": "Kartenformat für {name}",
   "notificationHistory": "Benachrichtigungsverlauf",
-  "menuNotificationHistoryDesc": "Während dieser Support-Sitzung gespeicherte Benachrichtigungen",
   "notificationHistoryLastBoot": "Letzter Start",
   "notificationHistoryLastActivity": "Letzte USP-Aktivität",
   "notificationHistoryEmpty": "Diese Support-Sitzung hat noch keine Benachrichtigungen erzeugt",

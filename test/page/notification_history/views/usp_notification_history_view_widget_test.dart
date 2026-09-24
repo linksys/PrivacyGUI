@@ -10,8 +10,9 @@
 //   3. Opening a row fetches its body; a 404 reports "no longer available" rather
 //      than crashing or reading as a broken session.
 //   4. A `notificationType: Unknown` row is rendered. It is a real stored value.
-//   6. A local build shows no entry point, and the page degrades explicitly if
-//      reached by URL.
+//   6. A local build shows no entry point (the popup that carries it is mounted
+//      only by the remote surface — see `remote_session_chip_widget_test.dart`),
+//      and the page degrades explicitly if reached by URL.
 //
 // Row 5 (no timed request) is asserted where it can be counted, in
 // `usp_notification_history_notifier_test.dart`.

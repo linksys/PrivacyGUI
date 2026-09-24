@@ -1176,7 +1176,6 @@
   "cardFormPopup": "منبثق",
   "cardFormForNamed": "تنسيق البطاقة لـ {name}",
   "notificationHistory": "سجل الإشعارات",
-  "menuNotificationHistoryDesc": "الإشعارات المخزَّنة خلال جلسة الدعم هذه",
   "notificationHistoryLastBoot": "آخر تشغيل",
   "notificationHistoryLastActivity": "آخر نشاط USP",
   "notificationHistoryEmpty": "لم تُنتج جلسة الدعم هذه أي إشعارات بعد",

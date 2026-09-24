@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Kortformat for {name}",
   "notificationHistory": "Varslingshistorikk",
-  "menuNotificationHistoryDesc": "Varsler lagret under denne støttesesjonen",
   "notificationHistoryLastBoot": "Sist oppstart",
   "notificationHistoryLastActivity": "Siste USP-aktivitet",
   "notificationHistoryEmpty": "Denne støttesesjonen har ennå ikke produsert noen varsler",

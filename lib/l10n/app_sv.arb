@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Kortformat för {name}",
   "notificationHistory": "Aviseringshistorik",
-  "menuNotificationHistoryDesc": "Aviseringar som sparats under den här supportsessionen",
   "notificationHistoryLastBoot": "Senaste start",
   "notificationHistoryLastActivity": "Senaste USP-aktivitet",
   "notificationHistoryEmpty": "Den här supportsessionen har ännu inte gett några aviseringar",

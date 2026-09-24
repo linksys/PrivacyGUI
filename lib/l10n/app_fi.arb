@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Ponnahdus",
   "cardFormForNamed": "Kortin muoto: {name}",
   "notificationHistory": "Ilmoitushistoria",
-  "menuNotificationHistoryDesc": "Tämän tukisession aikana tallennetut ilmoitukset",
   "notificationHistoryLastBoot": "Viimeinen käynnistys",
   "notificationHistoryLastActivity": "Viimeisin USP-toiminta",
   "notificationHistoryEmpty": "Tämä tukisessio ei ole vielä tuottanut ilmoituksia",

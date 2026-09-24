@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Ventana emergente",
   "cardFormForNamed": "Formato de tarjeta para {name}",
   "notificationHistory": "Historial de notificaciones",
-  "menuNotificationHistoryDesc": "Notificaciones almacenadas durante esta sesión de asistencia",
   "notificationHistoryLastBoot": "Último arranque",
   "notificationHistoryLastActivity": "Última actividad USP",
   "notificationHistoryEmpty": "Esta sesión de asistencia aún no ha generado notificaciones",

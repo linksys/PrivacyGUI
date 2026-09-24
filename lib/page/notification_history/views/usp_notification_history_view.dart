@@ -51,6 +51,11 @@ class UspNotificationHistoryView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
+      // Entered by a push from the Remote Assistance popup, which can be opened
+      // over any page, so back normally pops to wherever that was. This is only
+      // what a deep link or a refresh lands on, where there is no page the user
+      // came from — so the hub, which is what the navigation invariants require
+      // of every page (#1434: none may name the Dashboard).
       backFallback: RouteNamed.uspMenu,
       onRefresh: available
           ? () => ref.read(uspNotificationHistoryProvider.notifier).refresh()

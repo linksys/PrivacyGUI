@@ -1176,7 +1176,6 @@
   "cardFormPopup": "ป๊อปอัป",
   "cardFormForNamed": "รูปแบบการ์ดของ {name}",
   "notificationHistory": "ประวัติการแจ้งเตือน",
-  "menuNotificationHistoryDesc": "การแจ้งเตือนที่จัดเก็บระหว่างเซสชันการสนับสนุนนี้",
   "notificationHistoryLastBoot": "การบูตครั้งล่าสุด",
   "notificationHistoryLastActivity": "กิจกรรม USP ครั้งล่าสุด",
   "notificationHistoryEmpty": "เซสชันการสนับสนุนนี้ยังไม่มีการแจ้งเตือน",

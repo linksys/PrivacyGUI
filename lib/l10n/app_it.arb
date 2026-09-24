@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Formato scheda per {name}",
   "notificationHistory": "Cronologia notifiche",
-  "menuNotificationHistoryDesc": "Notifiche memorizzate durante questa sessione di assistenza",
   "notificationHistoryLastBoot": "Ultimo avvio",
   "notificationHistoryLastActivity": "Ultima attività USP",
   "notificationHistoryEmpty": "Questa sessione di assistenza non ha ancora prodotto notifiche",

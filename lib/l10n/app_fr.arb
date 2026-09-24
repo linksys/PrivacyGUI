@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Fenêtre contextuelle",
   "cardFormForNamed": "Format de carte pour {name}",
   "notificationHistory": "Historique des notifications",
-  "menuNotificationHistoryDesc": "Notifications enregistrées pendant cette session d'assistance",
   "notificationHistoryLastBoot": "Dernier démarrage",
   "notificationHistoryLastActivity": "Dernière activité USP",
   "notificationHistoryEmpty": "Cette session d'assistance n'a encore produit aucune notification",

@@ -190,8 +190,9 @@ final uspDashboardRoute = ShellRoute(
     // in a remote build. The page reads `BridgeConfig.remoteReads` and renders an
     // explicit "not available in this mode" state, which beats the developer
     // error page a route that declined the location would produce. The *entry
-    // point* is what the mode decides: `SurfaceStrategy
-    // .notificationHistoryMenuEntry`.
+    // point* is the Remote Assistance chip's popup (`RemoteSessionChip`), which
+    // only the remote surface mounts — so the mode decides it without a member
+    // of its own.
     LinksysRoute(
       name: RouteNamed.uspNotificationHistory,
       path: RoutePath.uspNotificationHistory,

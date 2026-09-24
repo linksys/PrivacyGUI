@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Pop-up",
   "cardFormForNamed": "Kaartindeling voor {name}",
   "notificationHistory": "Meldingsgeschiedenis",
-  "menuNotificationHistoryDesc": "Meldingen die tijdens deze ondersteuningssessie zijn opgeslagen",
   "notificationHistoryLastBoot": "Laatste keer opgestart",
   "notificationHistoryLastActivity": "Laatste USP-activiteit",
   "notificationHistoryEmpty": "Deze ondersteuningssessie heeft nog geen meldingen opgeleverd",

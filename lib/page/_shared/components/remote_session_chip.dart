@@ -11,6 +11,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Floating draggable chip that displays Remote Assistance session status.
@@ -195,11 +196,33 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
         width: popupWidth,
         state: state,
         onClose: _removePopup,
+        onOpenHistory: () => _openHistory(context),
         onDisconnect: () => _disconnect(context, ref),
       ),
     );
 
     Overlay.of(context).insert(_popupEntry!);
+  }
+
+  /// Open this session's notification history (#1580).
+  ///
+  /// The entry lives here rather than in the menu because the history *is* the
+  /// session's: Guardian scopes it by the session id, so it can only be read while
+  /// this session exists — which is exactly the lifetime of this chip. It needs no
+  /// mode check either: only the remote surface mounts the chip.
+  ///
+  /// The verb is `pushNamedIfNotCurrent`, the one for global chrome. A push, not a
+  /// `go`, because the popup opens over whatever page is showing and back has to
+  /// return to that page. And the guarded push rather than a plain one, because
+  /// this chip is on the history page too — a second tap there would stack a
+  /// duplicate the screen does not show, and back would need an extra press.
+  ///
+  /// The popup is closed first: it is an [OverlayEntry] above the router's pages,
+  /// so left open its full-screen backdrop would sit over the history page and
+  /// take the first tap.
+  void _openHistory(BuildContext context) {
+    _removePopup();
+    context.pushNamedIfNotCurrent(RouteNamed.uspNotificationHistory);
   }
 
   /// End the session because the user pressed Disconnect.
@@ -259,6 +282,7 @@ class _SessionPopup extends StatelessWidget {
   final double width;
   final RemoteAccessState state;
   final VoidCallback onClose;
+  final VoidCallback onOpenHistory;
   final VoidCallback onDisconnect;
 
   const _SessionPopup({
@@ -267,6 +291,7 @@ class _SessionPopup extends StatelessWidget {
     required this.width,
     required this.state,
     required this.onClose,
+    required this.onOpenHistory,
     required this.onDisconnect,
   });
 
@@ -376,6 +401,21 @@ class _SessionPopup extends StatelessWidget {
                     colorScheme,
                   ),
                   AppGap.lg(),
+
+                  // Notification history. Neutral rather than danger styling, so
+                  // reading the session's record and ending the session do not
+                  // look like the same kind of action.
+                  SizedBox(
+                    width: double.infinity,
+                    child: AppButton.secondaryOutline(
+                      label: loc(context).notificationHistory,
+                      icon: AppIcon.font(Icons.notifications_none, size: 16),
+                      size: AppButtonSize.small,
+                      identifier: 'ra-notification-history',
+                      onTap: onOpenHistory,
+                    ),
+                  ),
+                  AppGap.sm(),
 
                   // Disconnect button
                   SizedBox(

@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Pop op",
   "cardFormForNamed": "Kortformat for {name}",
   "notificationHistory": "Notifikationshistorik",
-  "menuNotificationHistoryDesc": "Notifikationer gemt under denne supportsession",
   "notificationHistoryLastBoot": "Sidste opstart",
   "notificationHistoryLastActivity": "Seneste USP-aktivitet",
   "notificationHistoryEmpty": "Denne supportsession har endnu ikke genereret nogen notifikationer",

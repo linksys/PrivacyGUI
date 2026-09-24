@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Açılır pencere",
   "cardFormForNamed": "{name} için kart biçimi",
   "notificationHistory": "Bildirim Geçmişi",
-  "menuNotificationHistoryDesc": "Bu destek oturumu sırasında saklanan bildirimler",
   "notificationHistoryLastBoot": "Son açılış",
   "notificationHistoryLastActivity": "Son USP etkinliği",
   "notificationHistoryEmpty": "Bu destek oturumu henüz bildirim üretmedi",

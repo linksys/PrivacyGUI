@@ -1176,7 +1176,6 @@
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Format kartu untuk {name}",
   "notificationHistory": "Riwayat Notifikasi",
-  "menuNotificationHistoryDesc": "Notifikasi yang tersimpan selama sesi dukungan ini",
   "notificationHistoryLastBoot": "Boot terakhir",
   "notificationHistoryLastActivity": "Aktivitas USP terakhir",
   "notificationHistoryEmpty": "Sesi dukungan ini belum menghasilkan notifikasi apa pun",

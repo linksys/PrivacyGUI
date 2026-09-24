@@ -238,6 +238,9 @@ final List<_NavSite> _navSites = () {
 /// the same location, so they are idempotent by construction.
 const _globalChromeFiles = <String>{
   'lib/page/shell/usp_top_bar.dart',
+  // Floats over every page in a Remote Assistance session, the notification
+  // history page it opens included (#1580).
+  'lib/page/_shared/components/remote_session_chip.dart',
 };
 
 /// Every named-navigation call in `lib/` whose target is NOT a literal, as
