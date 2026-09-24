@@ -115,8 +115,12 @@ void main() {
       });
 
       test('readOnlyInfo is part of equality', () {
-        const info1 = InternetSettingsReadOnlyInfo(currentMacAddress: 'AA');
-        const info2 = InternetSettingsReadOnlyInfo(currentMacAddress: 'BB');
+        // Any differing field will do — this test is about `readOnlyInfo` participating
+        // in `InternetSettingsStatus`'s equality, not about which field differs. It used
+        // `currentMacAddress` until that field was deleted in #1613; `dhcpv6Duid` is the
+        // replacement because it is still a live read-only value.
+        const info1 = InternetSettingsReadOnlyInfo(dhcpv6Duid: 'AA');
+        const info2 = InternetSettingsReadOnlyInfo(dhcpv6Duid: 'BB');
         const a = InternetSettingsStatus(readOnlyInfo: info1);
         const b = InternetSettingsStatus(readOnlyInfo: info2);
         expect(a, isNot(equals(b)));

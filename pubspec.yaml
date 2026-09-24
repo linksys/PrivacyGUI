@@ -80,6 +80,11 @@ dependencies:
   image: ^4.1.0
   collection: ^1.19.0
   flutter_secure_storage: ^10.3.1
+  # Promoted from transitive so `TriggerCooldownState` can read `clock.now()`
+  # instead of `DateTime.now()`: `fakeAsync` moves the former and not the latter,
+  # which is what makes a cooldown's expiry assertable (#1531). Behaviour in
+  # production is unchanged — the default clock *is* `DateTime.now()`.
+  clock: ^1.1.1
 
   # One repository, two entries — `generative_ui` only adds `path:`. Bump both or
   # neither. A mismatch is loud rather than silent today: both halves pull the same

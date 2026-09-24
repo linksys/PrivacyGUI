@@ -22,7 +22,10 @@ class MascotHeroWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: size,
-      height: size * 1.375, // aspect ratio from LinksysMascotRenderer (80x110)
+      // 110/80, the aspect ratio of `LinksysMascotRenderer.artworkSize`. Tied to
+      // the artwork rather than to the overlay's on-screen size, which shrank to
+      // 68×94 and must not drag every hero along with it.
+      height: size * 1.375,
       child: CustomPaint(
         painter: _StaticMascotPainter(animation: animation),
       ),

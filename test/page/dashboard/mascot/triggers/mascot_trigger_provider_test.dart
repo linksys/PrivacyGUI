@@ -172,7 +172,7 @@ void main() {
         final state = container.read(mascotTriggerProvider);
         expect(state.lastTrigger, isNull);
         expect(state.previousWanUp, isTrue);
-        expect(state.previousDeviceCount, 2);
+        expect(state.previousClientMacs, hasLength(2));
         expect(state.previousFirewallEnabled, isTrue);
         expect(state.previousDisabledRadios, isEmpty);
 
@@ -395,7 +395,8 @@ void main() {
         settle(async);
 
         expect(fired, isEmpty);
-        expect(container.read(mascotTriggerProvider).previousDeviceCount, 1);
+        expect(container.read(mascotTriggerProvider).previousClientMacs,
+            hasLength(1));
 
         container.dispose();
       });
@@ -414,6 +415,233 @@ void main() {
         wan.setData(SystemHealthTestData.createWanData(isUp: false));
         settle(async);
         expect(fired.map((t) => t.id), ['wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    // A1 (#1531): the cooldown must not consume the change.
+    //
+    // The evaluator advanced the baseline before `_onDomainData` asked about the
+    // cooldown, so a suppressed notification was dropped *and* the baseline had
+    // moved — from then on there was no delta left to detect, and nothing
+    // re-announced it when the cooldown expired. `firewallDisabled` is the worst
+    // of the five: a 30-minute cooldown on a setting a user can toggle twice in
+    // a minute.
+    //
+    // Elapsing past the cooldown works because `TriggerCooldownState` reads
+    // `clock.now()`. `fakeAsync` does *not* move `DateTime.now()` — measured, it
+    // advances the zone clock by the full 31 minutes and the wall clock by under
+    // a millisecond — so while the cooldown was written against `DateTime.now()`
+    // this assertion was unwritable, which is part of why the defect survived.
+    test('a change suppressed by a cooldown is announced when it expires', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        // Fires: the firewall goes off for the first time.
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        // Back on, then off again inside the 30-minute window: suppressed.
+        firewall.setData(FirewallTestData.createFirewallData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        expect(fired.map((t) => t.id), ['firewall_disabled'],
+            reason: 'still inside the cooldown, so nothing new is announced');
+
+        // Past the cooldown. The firewall is still off and was never announced,
+        // so the next published value has a delta to report.
+        async.elapse(const Duration(minutes: 31));
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+
+        expect(
+            fired.map((t) => t.id), ['firewall_disabled', 'firewall_disabled'],
+            reason: 'the suppressed change was deferred, not consumed');
+
+        container.dispose();
+      });
+    });
+
+    // The other side of the same rule: a suppressed trigger must not leave the
+    // baseline stale in a way that fires on a *return to normal*. The firewall
+    // goes off (fires), on, off (suppressed), then on again and stays on — once
+    // the cooldown expires there is nothing to announce, because the current
+    // state matches what was last announced.
+    test('a state that returns to normal while suppressed announces nothing',
+        () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallData());
+        settle(async);
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        async.elapse(const Duration(minutes: 31));
+        firewall.setData(FirewallTestData.createFirewallData());
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled'],
+            reason: 'the firewall is on; there is nothing to warn about');
+
+        container.dispose();
+      });
+    });
+
+    // A suppressed trigger on one domain must not hold up another's baseline.
+    test('a suppressed trigger on one domain does not block another', () {
+      fakeAsync((async) {
+        final container = mount(async);
+
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallData());
+        settle(async);
+        firewall.setData(FirewallTestData.createFirewallDisabledData());
+        settle(async);
+        expect(fired.map((t) => t.id), ['firewall_disabled']);
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['firewall_disabled', 'wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    // A2 (#1531): the announced device. The baseline holds the MAC *set*, not a
+    // count, because a count cannot name which device arrived — the old code
+    // took `clientDevices.last` on a list `MeshNetwork.allClients` builds as
+    // master's clients, then each slave's, then unassigned, which is ordered by
+    // node and never by join time.
+    test('the joining device is named, not the last one in the list', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Old-B'),
+          ],
+        ));
+        final container = mount(async);
+
+        // The newcomer is inserted at the *front*, so `.last` would name 'Old-B'.
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'BB:BB:BB:BB:BB:BB', hostName: 'Newcomer'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Old-B'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['new_device_joined']);
+        expect(fired.single.message, contains('Newcomer'));
+        expect(fired.single.message, isNot(contains('Old-B')));
+
+        container.dispose();
+      });
+    });
+
+    // The count is blind to this: one device leaves and another joins in the
+    // same published snapshot, so `currentCount <= previousCount` swallowed it.
+    test('a swap at an unchanged count still fires for the newcomer', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Stays'),
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:02', hostName: 'Leaves'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Stays'),
+            MascotTestData.createClient(
+                mac: 'CC:CC:CC:CC:CC:CC', hostName: 'Arrives'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.map((t) => t.id), ['new_device_joined']);
+        expect(fired.single.message, contains('Arrives'));
+
+        container.dispose();
+      });
+    });
+
+    // `ClientDevice.displayName` prefers friendlyName, then hostName, then the
+    // MAC. The trigger used to inline hostName-else-MAC, so a renamed device was
+    // announced under a name the rest of the UI does not show it by.
+    test('the announced name is the one the rest of the UI shows', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(
+              mac: 'BB:BB:BB:BB:BB:BB',
+              hostName: 'raw-hostname',
+              friendlyName: "Ada's Laptop",
+            ),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.single.message, contains("Ada's Laptop"));
+        expect(fired.single.message, isNot(contains('raw-hostname')));
+
+        container.dispose();
+      });
+    });
+
+    // Nothing to name, so nothing is claimed: a device with neither name falls
+    // back to its MAC, which is what `displayName` does.
+    test('a nameless device is announced by its MAC', () {
+      fakeAsync((async) {
+        devices = _MutableDevicesNotifier(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+          ],
+        ));
+        final container = mount(async);
+
+        devices.setData(MascotTestData.createDevicesData(
+          clients: [
+            MascotTestData.createClient(
+                mac: 'AA:AA:AA:AA:AA:01', hostName: 'Old-A'),
+            MascotTestData.createClient(mac: 'BB:BB:BB:BB:BB:BB'),
+          ],
+        ));
+        settle(async);
+
+        expect(fired.single.message, contains('BB:BB:BB:BB:BB:BB'));
 
         container.dispose();
       });
