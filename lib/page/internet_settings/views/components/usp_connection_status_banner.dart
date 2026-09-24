@@ -36,17 +36,10 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// rejected in #1587: the dirty guard skips the refresh exactly when the page is
 /// dirty, which is the one state where stale values get written back on save.
 ///
-/// ⚠️ KNOWN INCONSISTENCY WITH THE DASHBOARD CARD, LEFT AS IT WAS.
-/// `usp_network_status_card.dart` renders online/offline from `wan.isUp` (the TR-181
-/// `Status` field); this banner infers it from the address being non-empty. The two
-/// disagree while a link is UP BUT HAS NO ADDRESS YET — mid-DHCP, mid-PPPoE — where the
-/// card says Online and this says offline.
-///
-/// That predates this change: the banner drew the same inference from
-/// `readOnlyInfo.staticIpAddress`. It is deliberately not fixed here, because switching
-/// to `isUp` would change BEHAVIOUR while this change is only about where the value is
-/// read from, and "what should a connecting link look like" is a product question. Both
-/// now read the same provider, which is what makes the difference easy to close later.
+/// ⚠️ This banner infers online/offline from the address being non-empty, while
+/// `usp_network_status_card.dart` uses `wan.isUp`. The two disagree while a link is up
+/// with no address yet. Predates this change, tracked in #1620 — it needs one definition
+/// for the app, which is a product decision rather than a read-source change.
 class UspConnectionStatusBanner extends ConsumerWidget {
   final InternetSettingsFeatureState state;
   final bool isEditing;
@@ -62,19 +55,13 @@ class UspConnectionStatusBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionType = state.connectionType;
-    // `wanIpReadingProvider` rather than flattening the AsyncValue here: the three device
-    // states this page has to tell apart (an address, no address, could-not-read) used to
-    // be collapsed into two by `?? ''` one line after the read, and after that no
-    // consumer could recover the difference. See that provider for the measurement.
+    // Three states, kept apart by `wanIpReadingProvider` rather than flattened here —
+    // see that provider for why (#1613).
     //
-    // WHY THIS IS NOT AN EARLY-RETURN SKELETON for the unknown case, even though the
-    // dashboard's `UspNetworkStatusCard` does exactly that for `wan == null`. This banner
-    // also hosts the page's edit toggle, whose identifier `internet-settings-edit-toggle`
-    // is the arrival hook two real-router specs depend on (`R01-boot-smoke` asserts the
-    // page was reached by it; `R20-sse-push` waits on it). Replacing the banner with a
-    // skeleton takes that control off the page — and in the `AsyncError` case it never
-    // comes back, because this provider has no retry. So the unknown state degrades the
-    // READING and keeps the CONTROL.
+    // NOT an early-return skeleton for the unknown state, though the dashboard's
+    // `UspNetworkStatusCard` does that for `wan == null`: this banner hosts the page's
+    // edit toggle, and `internet-settings-edit-toggle` is the arrival hook R01 and R20
+    // depend on. The unknown state degrades the reading and keeps the control.
     final reading = ref.watch(wanIpReadingProvider);
 
     return AppCard(
@@ -85,15 +72,11 @@ class UspConnectionStatusBanner extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // `isOnline`, not `!isOffline`: the dot lights only when the device actually
-            // reported an address, so `unknown` falls through to neither claim.
-            //
-            // OFFLINE AND UNKNOWN SHARE THE DIM DOT, and that is a decision rather than a
-            // deferral — confirmed on #1613's review, 2026-09-24. A third dot state would
-            // need a colour, a meaning and a place in the design system; the address line
-            // below already carries the distinction ('--' versus `unknown`), which is what
-            // the defect needed. The dot says "not confirmed online", which is true of
-            // both.
+            // `isOnline`, not `!isOffline`, so `unknown` claims neither. Offline and
+            // unknown deliberately share the dim dot (decided 2026-09-24): a third dot
+            // state needs a colour and a meaning the design system does not have, and the
+            // address line below already separates the two. The dot reads "not confirmed
+            // online", true of both.
             UspStatusDot(isActive: reading.isOnline, size: 12),
             AppGap.md(),
             // Connection info
@@ -105,10 +88,8 @@ class UspConnectionStatusBanner extends ConsumerWidget {
                     connectionType.localizedLabel(context),
                   ),
                   AppGap.xs(),
-                  // Three readings, not two. '--' means the device said there is no
-                  // address; `unknown` means we could not ask it. Rendering the second as
-                  // '--' made a failed read indistinguishable from a successful read of
-                  // "no address" — the #1613 defect.
+                  // '--' means the device said there is no address; `unknown` means we
+                  // could not ask it. Rendering both as '--' was the #1613 defect.
                   AppText.bodySmall(switch (reading) {
                     WanIpAddress(:final value) => value,
                     WanIpNone() => '--',

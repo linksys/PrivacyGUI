@@ -21,13 +21,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// already calls `ref.invalidate(wanDataProvider)` after a save and after a DHCP renew,
 /// so those two paths now refresh this address as well.
 ///
-/// That external `ref.invalidate` does NOT blink the address to '--' while the refetch
-/// runs, which is worth stating because `invalidate` and `invalidateSelf` are not
-/// interchangeable and only one of them was obviously safe. Measured on riverpod 2.6.1
-/// with a listener on this provider: the frame during the refetch is
-/// `isLoading: true, hasValue: true` still carrying the previous address, and only the
-/// completion swaps in the new one. So the user does not see a flash of "unknown" in the
-/// middle of the renew they just triggered.
+/// That external `ref.invalidate` does NOT blink the address while the refetch runs —
+/// riverpod carries the previous value through, so there is no flash of "unknown" in the
+/// middle of the renew the user just triggered. `invalidate` and `invalidateSelf` are not
+/// interchangeable here, so it is pinned by a test rather than assumed:
+/// `wan_ip_reading_test.dart`.
 class UspRenewSection extends ConsumerWidget {
   final InternetSettingsFeatureState state;
 
@@ -62,12 +60,11 @@ class UspRenewSection extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: UspRenewActionCard(
               protocolLabel: l.ipv4,
-              // The card renders `null` and `''` identically as '--', so passing the
-              // address alone cannot express "we could not read it" — an earlier version
-              // of this fix passed `null` and changed no pixel at all. `addressLabel`
-              // carries the third reading, and the button is disabled with it: inviting a
-              // renew of a lease whose current state we could not read is a worse offer
-              // than no offer.
+              // `addressLabel` carries the unknown state: the card renders `null` and
+              // `''` identically as '--', so the address alone cannot express it.
+              // Renew is disabled with it — offering to renew a lease whose current
+              // state could not be read is a worse offer than no offer. IPv4 only; an
+              // unreadable IPv4 says nothing about the IPv6 lease.
               ipAddress: reading.addressOrNull,
               addressLabel: reading is WanIpUnknown ? l.unknown : null,
               isLoading: activeMutation == 'renewIpv4',
