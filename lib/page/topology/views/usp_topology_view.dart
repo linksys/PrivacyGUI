@@ -38,10 +38,11 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   ///
   /// The graph view held selection, expansion and the viewport privately until
   /// ui_kit 3.4.0, so "type a name, go to that device" — the one thing a mesh of
-  /// any size asks for — had nowhere to be built. This page still passes
-  /// `interactive: false`, because it sits in a scrollable and an
-  /// `InteractiveViewer` there swallows the scroll; the controller is what makes
-  /// focus reachable anyway, which pan and zoom never were.
+  /// any size asks for — had nowhere to be built.
+  ///
+  /// The page now also passes `interactive: true`, so pan and zoom reach the same
+  /// viewport by hand. The controller is still what a *search* needs: a query has
+  /// no gesture, and `focusOn` opens whatever aggregate was holding the match.
   final TopologyController _controller = TopologyController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -58,20 +59,25 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   /// three things a viewer knows a device by, which is the same set the device
   /// list searches (`searchByNameMacIp`).
   void _search(GraphData topology, String query) {
-    final needle = query.trim().toLowerCase();
-    if (needle.isEmpty) {
-      _controller.highlight(const {});
+    // The query goes in raw: `TopologySearch` owns trimming and case-folding, and
+    // normalising here as well would be the same work done twice in two places
+    // that then have to agree.
+    final matches = TopologySearch.match(topology, query);
+    _controller.highlight(matches);
+
+    if (matches.isEmpty) {
       _controller.fitAll();
       return;
     }
 
-    final matches = TopologySearch.match(topology, needle);
-
-    _controller.highlight(matches);
-    if (matches.isNotEmpty) {
+    // Which match to move to is `focusTarget`'s decision — nearest the anchor,
+    // ties by name — not `.first` off a Set, which would be insertion order
+    // dressed up as a choice.
+    final target = TopologySearch.focusTarget(topology, query);
+    if (target != null) {
       // `focusOn` also expands whatever aggregate holds the node, which is what
       // makes a match inside a collapsed cluster reachable at all.
-      _controller.focusOn(matches.first, scale: 2);
+      _controller.focusOn(target, scale: 2);
     }
   }
 
@@ -202,11 +208,10 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // *count* to answer a question about room and fires at thirteen,
                 // which is past both. Adaptive asks about the room directly.
                 //
-                // Its escape hatch is zoom, and this page has one despite
-                // `interactive: false`: that flag only disables the InteractiveViewer's
-                // gestures, while the transformation controller stays live — so
-                // `TopologyController.focusOn` still zooms to a device and opens
-                // whatever aggregate was holding it. The search field is that route.
+                // Its escape hatch is zoom, and this page has two: a pinch
+                // (`interactive: true` below) and the search field, which reaches
+                // the same viewport through `TopologyController.focusOn`. Either
+                // reopens an aggregate the rule had closed.
                 //
                 // Off means `collapsed`, not `onHover`. `onHover` reveals a
                 // parent's leaves whenever the pointer crosses it, so on a desktop

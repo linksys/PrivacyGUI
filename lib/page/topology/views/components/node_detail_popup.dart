@@ -153,8 +153,19 @@ class NodeDetailPopup extends StatelessWidget {
                   'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
           ],
         ],
-        // Details button (optional)
-        if (showDetailsButton && node.status == NodeState.active)
+        // Details button (optional).
+        //
+        // No liveness gate here. Whether a node has a reachable page is
+        // `topologyNavTargetFor`'s question, and `builder` has already asked it —
+        // that function keeps the offline gate for mesh nodes (#1465) and
+        // deliberately does *not* apply one to a leaf, because an offline device
+        // opens its Device Detail page from the device list too and that page
+        // renders the correct state.
+        //
+        // Re-testing `status` here re-imposed the gate on leaves, so an offline
+        // device's panel showed no way to reach the page the resolver had just
+        // said was reachable. Two places answering one question, disagreeing.
+        if (showDetailsButton)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
             child: Align(

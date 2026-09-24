@@ -14,6 +14,11 @@ class TopologySearch {
 
   /// The ids of every node in [topology] matching [query].
   ///
+  /// Takes the query **raw** — trimming and case-folding happen here, so a caller
+  /// passes what the viewer typed and nothing else. That split is the point: a
+  /// caller that normalises first would be doing the work twice and would have to
+  /// keep its own idea of "normalised" in step with this one.
+  ///
   /// An empty or whitespace-only query matches nothing, rather than everything:
   /// the caller's contract is "these are the matches to emphasise", and
   /// emphasising all of them is the same as emphasising none while costing a
@@ -25,6 +30,32 @@ class TopologySearch {
         .where((node) => matchesNode(node, needle))
         .map((node) => node.id)
         .toSet();
+  }
+
+  /// The match a viewer should be taken to, or null when [query] matches nothing.
+  ///
+  /// Stated as its own function because "which match" is a decision, and reading
+  /// `.first` off the set [match] returns would make it an accident: that is
+  /// `LinkedHashSet` insertion order, which is the order `GraphData.nodes`
+  /// happens to be in, which is the order the builder happens to emit. None of
+  /// those are promises.
+  ///
+  /// The promise made instead: **the match closest to the anchor**, breaking ties
+  /// by name. A viewer who types a partial name and gets moved somewhere expects
+  /// the nearest thing it could have meant, not whichever row the data started
+  /// with.
+  static String? focusTarget(GraphData topology, String query) {
+    final matched = match(topology, query);
+    if (matched.isEmpty) return null;
+
+    final structure = topology.structure;
+    final nodes = topology.nodes.where((n) => matched.contains(n.id)).toList()
+      ..sort((a, b) {
+        final byDepth = structure[a.id].depth.compareTo(structure[b.id].depth);
+        if (byDepth != 0) return byDepth;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+    return nodes.first.id;
   }
 
   /// Whether one node matches an already-normalised [needle].

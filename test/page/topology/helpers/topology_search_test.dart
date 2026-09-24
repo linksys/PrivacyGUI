@@ -93,6 +93,59 @@ void main() {
     });
   });
 
+  group('which match a viewer is taken to', () {
+    test('the one nearest the anchor, not whichever the data listed first', () {
+      // 'a' appears in the gateway's subtitle (Linksys), the extender's name
+      // (Study) and the laptop's name (Alex's) — three matches at three depths.
+      final matched = TopologySearch.match(topology, 'a');
+      expect(matched.length, greaterThan(1),
+          reason: 'the point of this case is a tie to break');
+
+      // Depth wins: the gateway is depth 0.
+      expect(TopologySearch.focusTarget(topology, 'a'), 'gateway');
+    });
+
+    test('ties at one depth break by name', () {
+      // Two leaves under the same parent, so depth cannot separate them.
+      final tied = GraphData(
+        nodes: const [
+          GraphNode(id: 'gw', name: 'Router', styleSlot: 'primary'),
+          GraphNode(
+              id: 'z',
+              name: 'Zebra Printer',
+              styleSlot: 'leaf',
+              parentId: 'gw'),
+          GraphNode(
+              id: 'a', name: 'Apple TV', styleSlot: 'leaf', parentId: 'gw'),
+        ],
+        edges: const [],
+      );
+
+      // Both match 'r' (Printer, Router...) — assert the leaf pair specifically.
+      expect(TopologySearch.focusTarget(tied, 'e'), 'gw',
+          reason: 'Router is depth 0 and matches too');
+      // Restricted to the two leaves: alphabetical, so Apple before Zebra.
+      final leafOnly = GraphData(
+        nodes: tied.nodes.where((n) => n.id != 'gw').toList(),
+        edges: const [],
+      );
+      expect(TopologySearch.focusTarget(leafOnly, 'e'), 'a');
+    });
+
+    test('a miss has no target', () {
+      expect(TopologySearch.focusTarget(topology, 'no such device'), isNull);
+      expect(TopologySearch.focusTarget(topology, ''), isNull);
+    });
+
+    test('the target is always one of the matches', () {
+      for (final q in ['a', 'e', 'router', '192.168']) {
+        final target = TopologySearch.focusTarget(topology, q);
+        if (target == null) continue;
+        expect(TopologySearch.match(topology, q), contains(target), reason: q);
+      }
+    });
+  });
+
   group('what a query does not match', () {
     test('an empty query matches nothing, not everything', () {
       // The caller's contract is "these are the matches to emphasise".

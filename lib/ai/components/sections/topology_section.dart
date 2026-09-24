@@ -78,7 +78,14 @@ class TopologySection extends StatelessWidget {
     final mac = metadata?['mac'] as String? ?? '';
     final ip = metadata?['ip'] as String? ?? '';
     final model = metadata?['model'] as String? ?? '';
-    final connectionType = metadata?['connectionType'] as String? ?? '';
+    // Resolved here, not stored. `connectionType` used to be written into the
+    // metadata as a localised word at construction time, which froze it: a viewer
+    // switching language saw the node rebuilt with the string chosen under the
+    // previous locale. The map carries the fact (`isWifi`); this picks the word.
+    final isWifi = metadata?['isWifi'] as bool?;
+    final connectionType = isWifi == null
+        ? ''
+        : (isWifi ? loc(context).wifi : loc(context).ethernet);
     final band = metadata?['band'] as String? ?? '';
     final rssi = metadata?['rssi'] as int?;
     final downlinkRate = metadata?['downlinkRate'] as int?;
@@ -164,10 +171,12 @@ class TopologySection extends StatelessWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            topologySpec: appTheme.topologySpec.copyWith(
-              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
-              orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
-            ),
+            // No spacing multiplier. The card and the full page both had one to
+            // stop nodes crowding, and both measured it out: ui_kit 3.4.0 sizes
+            // every ring from the discs going on it, so the pitch is 51.5px at
+            // x1.0, x2.0 and x2.2 alike — and past fit-to-screen the multiplier
+            // grows the bounds into the 0.5 fit floor, drawing a *smaller* graph.
+            // This section was missed when the other two were changed.
           ),
         ],
       ),
@@ -216,7 +225,7 @@ class TopologySection extends StatelessWidget {
             if (model != null) 'model': model,
             if (rssi != null) 'rssi': rssi,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType': loc(context).wifi,
+            'isWifi': true,
           },
         ));
 
@@ -275,8 +284,7 @@ class TopologySection extends StatelessWidget {
             if (rssi != null) 'rssi': rssi,
             if (downlinkRate != null) 'downlinkRate': downlinkRate,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType':
-                isWifi ? loc(context).wifi : loc(context).ethernet,
+            'isWifi': isWifi,
           },
         ));
 
