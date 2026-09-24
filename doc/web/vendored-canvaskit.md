@@ -190,7 +190,7 @@ Do all of this in **one** commit.
    diagnostic under `analyzer: errors:` in `analysis_options.yaml`. Do not reach
    for `--no-fatal-warnings`.
 
-   Two more things the same SDK swap can move, both cheap to re-check and both
+   Three more things the same SDK swap can move, all cheap to re-check and all
    silent when they drift:
 
    * `analysis_options.yaml`'s `exclude:` block — `flutter pub get` rewrites it,
@@ -198,6 +198,13 @@ Do all of this in **one** commit.
    * the `serviceWorkerVersion` reasoning in `web/flutter_bootstrap.js`, which is
      measured against the SDK's own `flutter_js/flutter.js`. That comment names
      the one-line grep that re-verifies it.
+   * what the build's generated `flutter_service_worker.js` *does*. Read the file,
+     not just its size. Between 3.38 and 3.41 it went from a caching worker to a
+     cleanup worker that reloads every page it controls; this repo first pinned
+     it at 3.44.0, #1316 checked only its size, and it shipped as a reload loop
+     (#1623). The template is
+     `packages/flutter_tools/lib/src/web/file_generators/js/flutter_service_worker.js`
+     in the SDK. `web/service_worker.js` must not import it.
 
 7. Golden baselines are SDK-sensitive: the first 3.47.0 run in
    `linksys/PrivacyGUI-golden-ci` produced 312 failures against a baseline
