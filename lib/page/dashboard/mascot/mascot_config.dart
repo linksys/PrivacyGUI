@@ -47,12 +47,8 @@ abstract final class TriggerCooldowns {
   static const Duration wanDown = Duration(minutes: 5);
   static const Duration wanRestored = Duration(minutes: 1);
   static const Duration newDevice = Duration(seconds: 30);
-  static const Duration cpuHigh = Duration(minutes: 10);
-  static const Duration memoryHigh = Duration(minutes: 10);
-  static const Duration firmwareAvailable = Duration(hours: 24);
   static const Duration wifiRadioDisabled = Duration(minutes: 5);
   static const Duration firewallDisabled = Duration(minutes: 30);
-  static const Duration dmzEnabled = Duration(hours: 1);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -121,29 +121,64 @@ class UspWanDataService {
     try {
       return await WanStatus.fetch(_usp);
     } catch (e) {
-      final message = e.toString();
-      final looksLikeMissingAddress =
-          message.contains('Required fields missing') &&
-              message.contains('IPv4Address.1.');
-      if (!looksLikeMissingAddress) rethrow;
-
-      // Confirm with the device rather than trusting the error string alone: if it
-      // reports address entries, the fields should have been there and something else is
-      // wrong — so let the original error stand.
+      // FAULT CODE, NOT A SUBSTRING. `9998` is the codegen's required-leaf failure
+      // (`usp_error.dart`, source 3) and `parseUspError` already extracts it. An earlier
+      // version of this matched `'Required fields missing'` in the message text — a
+      // string owned by another repository's generator, which would drift silently the
+      // next time that template is reworded, and would then make this tolerance
+      // disappear without a failing test anywhere.
       //
+      // The path is still read out of the message, because the code alone does not say
+      // WHICH field was missing and only the address fields may be absent legitimately.
+      final parsed = parseUspError(e);
+      if (parsed?.faultCode != 9998) rethrow;
+
       // The instance is resolved from the error message rather than queried with a
       // wildcard. A wildcard read returns every interface, and this router has two with
       // one address each — so "any interface reports zero" would call the WAN down
       // because the LAN happened to have no address. Only the interface the failure was
       // actually about counts.
+      //
+      // Anchored on `Device.IP.Interface.` and requiring the `IPv4Address.1.` suffix, so
+      // a 9998 about some other leaf on the same object cannot satisfy it. `.1.` rather
+      // than `.\d+.`: the model reads address instance 1 only, so a missing `.2.` is not
+      // a state this method is about.
       final instance = RegExp(r'(Device\.IP\.Interface\.\d+\.)IPv4Address\.1\.')
-          .firstMatch(message)
+          .firstMatch(e.toString())
           ?.group(1);
       if (instance == null) rethrow;
 
-      final entries = await _usp.get(['${instance}IPv4AddressNumberOfEntries']);
-      final reported = entries['${instance}IPv4AddressNumberOfEntries'];
-      if (reported?.toString() != '0') rethrow;
+      // Confirm with the device rather than trusting the error alone: if it reports
+      // address entries, the fields should have been there and something else is wrong —
+      // so the original error must stand.
+      //
+      // WRAPPED, because this confirmation can itself fail. Unguarded, a transport error
+      // here would replace the original — which is both more accurate and the one a
+      // triager needs. A failed confirmation is not a confirmation.
+      //
+      // `throw e`, NOT `rethrow`: inside this inner catch, `rethrow` rethrows
+      // `confirmFailure` — the exact substitution this block exists to prevent. Caught by
+      // a test; the first version of this guard had `rethrow` here and inverted its own
+      // stated purpose.
+      final Object? reported;
+      try {
+        final entries =
+            await _usp.get(['${instance}IPv4AddressNumberOfEntries']);
+        reported = entries['${instance}IPv4AddressNumberOfEntries'];
+      } catch (confirmFailure) {
+        logger.w(
+            '[USP][WanData]: could not confirm '
+            '${instance}IPv4AddressNumberOfEntries; surfacing the original error',
+            error: confirmFailure);
+        throw e;
+      }
+
+      // Parsed as a NUMBER, not compared as a string. The device's value arrives untyped
+      // — `int`, `'0'`, and `'0 '` are all shapes it has been seen to use across
+      // firmware — and a string comparison fails CLOSED, turning a down WAN back into a
+      // fetch error. Anything unparseable is treated as "not confirmed zero" and rethrows.
+      final count = int.tryParse(reported?.toString().trim() ?? '');
+      if (count != 0) rethrow;
 
       logger.d('[USP][WanData]: ${instance}IPv4Address.1.* absent and '
           'IPv4AddressNumberOfEntries=0 — treating as WAN down, not an error');

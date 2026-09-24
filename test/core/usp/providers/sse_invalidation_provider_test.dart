@@ -255,6 +255,21 @@ void main() {
       );
     });
 
+    // This branch was the only one in `_mapToDomain` with no test, and it is one of
+    // the few whose path IS actually subscribed (`subscriptions.g.dart` requests
+    // ValueChange on `Device.Ethernet.Interface.`). So until now, deleting the
+    // `ethernetInterfaces` branch would have left every test in this file green
+    // while breaking a mapping the device really exercises.
+    //
+    // Coverage here ran inverse to reachability: eleven branches were tested, seven
+    // of them for domains no subscription can produce, and the untested one was live.
+    test('Device.Ethernet.Interface.* → ethernetInterfaces', () async {
+      await sendAndExpect(
+        'Device.Ethernet.Interface.1.Status',
+        InvalidationDomain.ethernetInterfaces,
+      );
+    });
+
     test('path with .Stats. → filtered out (null)', () async {
       await sendAndExpectEmpty(
           'Device.WiFi.SSID.2.Stats.UnicastPacketsReceived');

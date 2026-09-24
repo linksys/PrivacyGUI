@@ -94,9 +94,48 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   /// state renders as "unknown" — a transient device hiccup would blank the WAN address
   /// on the dashboard. A stale-but-plausible value is the better failure here, and the
   /// same reasoning is already recorded for the loading case (#1143).
+  /// Which push refresh is allowed to publish. See [_refreshFromPush].
+  int _pushGeneration = 0;
+
+  /// ONLY THE NEWEST PUSH REFRESH MAY PUBLISH — and this is what `invalidateSelf()` used
+  /// to give for free, so dropping it created a hazard that had to be replaced rather
+  /// than merely noted.
+  ///
+  /// Measured: two `invalidateSelf()` calls inside one fetch window produce ONE rebuild
+  /// (riverpod coalesces them), whereas two bare `async` calls run two overlapping
+  /// fetches and the LAST TO COMPLETE wins. `_fetch()` fans out over several USP `get`s
+  /// through a throttler against a single-threaded OBUSPA, so that window is wide enough
+  /// to matter:
+  ///
+  ///   seq=N   link DOWN  → fetch A starts
+  ///   seq=N+1 link UP    → fetch B starts while A is in flight
+  ///   B completes        → state = up      (correct)
+  ///   A completes        → state = DOWN    (the older device read wins)
+  ///
+  /// And it does not self-correct: this provider is push-driven only — not autoDispose,
+  /// no polling, and this method deliberately avoids invalidation — so a settled WAN that
+  /// sends no further notification leaves the dashboard, Statistics and health scoring
+  /// reporting a dead link indefinitely. Reproduced in
+  /// `wan_data_provider_test.dart` before fixing it.
+  ///
+  /// A LOCAL COUNTER, NOT THE EVENT'S `seq`. `seq` comes from the device and this code
+  /// does not own its ordering guarantees; a monotonic counter incremented here is true
+  /// by construction. The comparison is `!=` rather than `<` for the same reason — it
+  /// asks "am I still the newest?", which needs no assumption about ordering at all.
+  ///
+  /// The stale fetch's RESULT is discarded, not its request: cancelling an in-flight USP
+  /// read is not something the client offers, and the wasted round trip is cheaper than
+  /// the wrong value.
   Future<void> _refreshFromPush() async {
+    final generation = ++_pushGeneration;
     try {
-      state = AsyncData(await _fetch());
+      final data = await _fetch();
+      if (generation != _pushGeneration) {
+        logger.d('[WAN] discarding push refresh $generation, superseded by '
+            '$_pushGeneration');
+        return;
+      }
+      state = AsyncData(data);
     } catch (e, st) {
       // Deliberately not rethrown and not surfaced as AsyncError — see above.
       logger.w('[WAN] push-triggered refetch failed, keeping previous value',

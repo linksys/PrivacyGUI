@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -34,8 +35,14 @@ class MascotTriggerState {
   /// Previous WAN status for change detection.
   final bool? previousWanUp;
 
-  /// Previous device count for change detection.
-  final int? previousDeviceCount;
+  /// Previous client MACs for change detection.
+  ///
+  /// A set rather than a count, because the trigger has to *name* the device
+  /// that joined: a count says only that one did, and picking a name out of the
+  /// current list means guessing which entry is new (#1531). It also catches a
+  /// swap — one device leaves, another joins between two published snapshots —
+  /// which a count is blind to.
+  final Set<String>? previousClientMacs;
 
   /// Previous firewall status for change detection.
   final bool? previousFirewallEnabled;
@@ -47,7 +54,7 @@ class MascotTriggerState {
     this.lastTrigger,
     this.lastTriggerTime,
     this.previousWanUp,
-    this.previousDeviceCount,
+    this.previousClientMacs,
     this.previousFirewallEnabled,
     this.previousDisabledRadios,
   });
@@ -56,7 +63,7 @@ class MascotTriggerState {
     MascotTrigger? lastTrigger,
     DateTime? lastTriggerTime,
     bool? previousWanUp,
-    int? previousDeviceCount,
+    Set<String>? previousClientMacs,
     bool? previousFirewallEnabled,
     Set<String>? previousDisabledRadios,
   }) {
@@ -64,7 +71,7 @@ class MascotTriggerState {
       lastTrigger: lastTrigger ?? this.lastTrigger,
       lastTriggerTime: lastTriggerTime ?? this.lastTriggerTime,
       previousWanUp: previousWanUp ?? this.previousWanUp,
-      previousDeviceCount: previousDeviceCount ?? this.previousDeviceCount,
+      previousClientMacs: previousClientMacs ?? this.previousClientMacs,
       previousFirewallEnabled:
           previousFirewallEnabled ?? this.previousFirewallEnabled,
       previousDisabledRadios:
@@ -72,6 +79,16 @@ class MascotTriggerState {
     );
   }
 }
+
+/// What one domain's evaluation produced: the trigger to announce, if any, and
+/// the state its baseline would advance to.
+///
+/// The two are separate so the cooldown can suppress the first without
+/// committing the second — see [MascotTriggerNotifier._onDomainData].
+typedef DomainEvaluation = ({
+  MascotTrigger? trigger,
+  MascotTriggerState advanced,
+});
 
 class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
   final _cooldownState = TriggerCooldownState();
@@ -122,7 +139,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
     return MascotTriggerState(
       previousWanUp: wan?.model.isUp,
-      previousDeviceCount: devices?.clientDevices.length,
+      previousClientMacs: _macsOf(devices),
       previousFirewallEnabled: firewall?.firewallModel.isIPv4FirewallEnabled,
       previousDisabledRadios: disabledRadios,
     );
@@ -173,109 +190,145 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
   /// failure rather than publishing an error — but a failure in the provider's own
   /// `build()` still surfaces as `AsyncError` here.
   ///
-  /// Each `_evaluateXxx` compares against the stored baseline *before*
-  /// overwriting it, so these four sites are edge-triggered by construction and
-  /// unaffected by riverpod 3 collapsing two equal `AsyncData` frames into one
-  /// notification (#1512 P2) — the suppressed frame carried no delta anyway.
+  /// Each `_evaluateXxx` compares against the stored baseline and hands back what
+  /// that baseline would become, without writing it — so these four sites are
+  /// edge-triggered by construction and unaffected by riverpod 3 collapsing two
+  /// equal `AsyncData` frames into one notification (#1512 P2); the suppressed
+  /// frame carried no delta anyway.
+  ///
+  /// Committing the baseline is *this* method's job, and it is skipped for a
+  /// trigger the cooldown suppresses (#1531). The evaluators used to advance the
+  /// baseline themselves, before the cooldown was consulted, which dropped the
+  /// notification *and* the delta that produced it: from then on the current
+  /// state matched the baseline, so nothing re-announced it when the cooldown
+  /// expired. Cooldowns are long relative to the settings feeding them —
+  /// `firewallDisabled` is 30 minutes on a switch a user can flip twice in a
+  /// minute — so the lost change was not a rare one.
+  ///
+  /// Leaving the baseline in place makes a suppressed change *pending* rather
+  /// than lost: it is announced on the next value this domain publishes after
+  /// the cooldown expires. That is a deferral, not a timer — if the router
+  /// reverts the state in the meantime, the next evaluation finds no delta and
+  /// correctly announces nothing.
   void _onDomainData(
     AsyncValue<Object?> next,
-    MascotTrigger? Function() evaluate,
+    DomainEvaluation? Function() evaluate,
   ) {
     if (next.isLoading || next.hasError || !next.hasValue) return;
 
-    final trigger = evaluate();
+    final evaluation = evaluate();
+    if (evaluation == null) return;
+
+    final trigger = evaluation.trigger;
+    if (trigger != null && _cooldownState.isInCooldown(trigger)) return;
+
+    state = evaluation.advanced;
     if (trigger == null) return;
-    if (_cooldownState.isInCooldown(trigger)) return;
 
     _fireTrigger(trigger);
   }
 
-  MascotTrigger? _evaluateWanStatus() {
+  DomainEvaluation? _evaluateWanStatus() {
     final wan = ref.read(wanDataProvider).valueOrNull;
     if (wan == null) return null;
 
     final currentUp = wan.model.isUp;
     final previousUp = state.previousWanUp;
-
-    // Update state for next comparison
-    state = state.copyWith(previousWanUp: currentUp);
+    final advanced = state.copyWith(previousWanUp: currentUp);
 
     // Only trigger on actual state change
-    if (previousUp == null) return null;
-    if (currentUp == previousUp) return null;
+    if (previousUp == null || currentUp == previousUp) {
+      return (trigger: null, advanced: advanced);
+    }
 
     if (!currentUp) {
       debugPrint('[Mascot][Trigger]: WAN went down');
-      return TriggerDefinitions.wanDown();
-    } else {
-      debugPrint('[Mascot][Trigger]: WAN restored');
-      return TriggerDefinitions.wanRestored();
+      return (trigger: TriggerDefinitions.wanDown(), advanced: advanced);
     }
+    debugPrint('[Mascot][Trigger]: WAN restored');
+    return (trigger: TriggerDefinitions.wanRestored(), advanced: advanced);
   }
 
-  MascotTrigger? _evaluateDeviceChanges() {
+  DomainEvaluation? _evaluateDeviceChanges() {
     final devices = ref.read(devicesDataProvider).valueOrNull;
     if (devices == null) return null;
 
-    final currentCount = devices.clientDevices.length;
-    final previousCount = state.previousDeviceCount;
+    final currentMacs = _macsOf(devices)!;
+    final previousMacs = state.previousClientMacs;
+    final advanced = state.copyWith(previousClientMacs: currentMacs);
 
-    // Update state for next comparison
-    state = state.copyWith(previousDeviceCount: currentCount);
+    // Only trigger when a MAC appears that was not there before
+    if (previousMacs == null) return (trigger: null, advanced: advanced);
+    final joined = currentMacs.difference(previousMacs);
+    if (joined.isEmpty) return (trigger: null, advanced: advanced);
 
-    // Only trigger when new device joins (count increases)
-    if (previousCount == null) return null;
-    if (currentCount <= previousCount) return null;
+    // The device that owns the first new MAC. `firstWhere` cannot miss: every
+    // MAC in `joined` came from this same list a few lines up.
+    //
+    // `displayName` rather than an inlined hostName-else-MAC, so the bubble
+    // names the device the way every other screen does — it prefers
+    // `friendlyName`, which a user who renamed a device expects to see.
+    final newDevice = devices.clientDevices
+        .firstWhere((d) => d.mac == joined.first)
+        .displayName;
 
-    // Find the newest device (last in list by convention)
-    final newDevice = devices.clientDevices.isNotEmpty
-        ? (devices.clientDevices.last.hostName.isNotEmpty
-            ? devices.clientDevices.last.hostName
-            : devices.clientDevices.last.mac)
-        : 'Unknown device';
-
-    debugPrint('[Mascot][Trigger]: New device joined — $newDevice');
-    return TriggerDefinitions.newDeviceJoined(newDevice);
+    // The device *name* is deliberately absent from this line. `debugPrint` is
+    // not stripped in release builds, so on web it reaches the browser console —
+    // and `displayName` is a friendly name, a hostname or, failing both, a MAC.
+    // The count is enough to tell the trigger fired; the name is on screen.
+    logger.d('[Mascot][Trigger]: New device joined '
+        '(${joined.length} new, ${currentMacs.length} clients)');
+    return (
+      trigger: TriggerDefinitions.newDeviceJoined(newDevice),
+      advanced: advanced,
+    );
   }
 
-  MascotTrigger? _evaluateFirewallChanges() {
+  /// The MAC set of [devices]' clients, or null when there is no data to read.
+  ///
+  /// Null and empty are different states here: null means "no baseline yet", and
+  /// the evaluators use it to skip the very first comparison.
+  static Set<String>? _macsOf(DevicesData? devices) =>
+      devices?.clientDevices.map((d) => d.mac).toSet();
+
+  DomainEvaluation? _evaluateFirewallChanges() {
     final firewall = ref.read(firewallDataProvider).valueOrNull;
     if (firewall == null) return null;
 
     final currentEnabled = firewall.firewallModel.isIPv4FirewallEnabled;
     final previousEnabled = state.previousFirewallEnabled;
-
-    // Update state for next comparison
-    state = state.copyWith(previousFirewallEnabled: currentEnabled);
+    final advanced = state.copyWith(previousFirewallEnabled: currentEnabled);
 
     // Only trigger when firewall becomes disabled
-    if (previousEnabled == null) return null;
-    if (currentEnabled || !previousEnabled) return null;
+    if (previousEnabled == null || currentEnabled || !previousEnabled) {
+      return (trigger: null, advanced: advanced);
+    }
 
     debugPrint('[Mascot][Trigger]: Firewall disabled');
-    return TriggerDefinitions.firewallDisabled();
+    return (trigger: TriggerDefinitions.firewallDisabled(), advanced: advanced);
   }
 
-  MascotTrigger? _evaluateWifiChanges() {
+  DomainEvaluation? _evaluateWifiChanges() {
     final wifi = ref.read(wifiDataProvider).valueOrNull;
     if (wifi == null) return null;
 
     final currentDisabled =
         wifi.radioModels.where((r) => !r.enable).map((r) => r.band).toSet();
     final previousDisabled = state.previousDisabledRadios;
-
-    // Update state for next comparison
-    state = state.copyWith(previousDisabledRadios: currentDisabled);
+    final advanced = state.copyWith(previousDisabledRadios: currentDisabled);
 
     // Only trigger on actual state change (newly disabled radios)
-    if (previousDisabled == null) return null;
+    if (previousDisabled == null) return (trigger: null, advanced: advanced);
 
     final newlyDisabled = currentDisabled.difference(previousDisabled);
-    if (newlyDisabled.isEmpty) return null;
+    if (newlyDisabled.isEmpty) return (trigger: null, advanced: advanced);
 
     final band = newlyDisabled.first;
     debugPrint('[Mascot][Trigger]: WiFi radio disabled — $band');
-    return TriggerDefinitions.wifiRadioDisabled(band);
+    return (
+      trigger: TriggerDefinitions.wifiRadioDisabled(band),
+      advanced: advanced,
+    );
   }
 
   void _fireTrigger(MascotTrigger trigger) {
