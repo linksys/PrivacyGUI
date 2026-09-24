@@ -142,6 +142,14 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/healthcheck/GetSupportedHealthCheckModules'),
   runHealthCheck(value: 'http://linksys.com/jnap/healthcheck/RunHealthCheck'),
   stopHealthCheck(value: 'http://linksys.com/jnap/healthcheck/StopHealthCheck'),
+  getSmartQoSSettings(
+      value: 'http://linksys.com/jnap/smartqos/GetSmartQoSSettings'),
+  setSmartQoSSettings(
+      value: 'http://linksys.com/jnap/smartqos/SetSmartQoSSettings'),
+  getSmartQoSRecommendation(
+      value: 'http://linksys.com/jnap/smartqos/GetSmartQoSRecommendation'),
+  storeSmartQoSSpeedTestResult(
+      value: 'http://linksys.com/jnap/smartqos/StoreSpeedTestResult'),
   getLocalTime(value: 'http://linksys.com/jnap/locale/GetLocalTime'),
   getTimeSettings(value: 'http://linksys.com/jnap/locale/GetTimeSettings'),
   getLocale(value: 'http://linksys.com/jnap/locale/GetLocale'),
