@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
@@ -46,9 +47,20 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   @override
   Future<WanData> build() async {
     // SSE listener: WAN status changes (link up/down, IP changes)
+    // Logged on both sides of the branch. Knowing the listener RAN but did not match is
+    // a different fact from it never running, and on FW 2.0 the distinction mattered:
+    // this listener fires, `invalidateSelf()` is called, and `build()` is then never
+    // re-entered — so nothing below this line is reached again. Without a log here that
+    // is indistinguishable from the notification never arriving. See
+    // linksys/PrivacyGUI-RealRouter-E2E's R20 spec header for the measurement.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull?.domain == InvalidationDomain.wanStatus) {
+      final domain = next.valueOrNull?.domain;
+      if (domain == InvalidationDomain.wanStatus) {
+        logger.d('[WAN] wanStatus invalidation (seq=${next.valueOrNull?.seq}) '
+            '→ invalidateSelf()');
         ref.invalidateSelf();
+      } else {
+        logger.t('[WAN] ignoring ${domain?.name ?? 'no-domain'} invalidation');
       }
     });
 
@@ -58,6 +70,10 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   Future<WanData> _fetch() async {
     final svc = ref.read(uspWanDataServiceProvider);
     final model = await svc.fetch();
+    // The counterpart to the listener log above: together they show whether an
+    // invalidation actually produced a re-fetch, which is the link that was broken on
+    // FW 2.0.
+    logger.d('[WAN] fetched: isUp=${model.isUp} ip="${model.ipAddress}"');
 
     return WanData(model: model);
   }
