@@ -5,7 +5,7 @@ import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/wan_ip_reading.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_renew_action_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -41,14 +41,7 @@ class UspRenewSection extends ConsumerWidget {
     final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
     final l = loc(context);
-    // `null`, not `''`, when L1 has no value: `UspRenewActionCard` renders both as '--',
-    // but keeping them distinct here means this widget never claims to have read an
-    // address it could not read. `AsyncError` is reachable on an ordinary path —
-    // `uspWanDataServiceProvider` throws when `uspClientProvider` is null (session not
-    // yet established, re-auth, dropped socket) — and this provider has no retry, so
-    // collapsing it into "empty address" would have been indefinitely wrong rather than
-    // briefly wrong. Same reasoning as the status banner above; see its `isKnown`.
-    final wanIp = ref.watch(wanDataProvider).valueOrNull?.model.ipAddress;
+    final reading = ref.watch(wanIpReadingProvider);
     final iconColor = Theme.of(context).colorScheme.primary;
 
     return AppCard(
@@ -69,9 +62,16 @@ class UspRenewSection extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: UspRenewActionCard(
               protocolLabel: l.ipv4,
-              ipAddress: wanIp,
+              // The card renders `null` and `''` identically as '--', so passing the
+              // address alone cannot express "we could not read it" — an earlier version
+              // of this fix passed `null` and changed no pixel at all. `addressLabel`
+              // carries the third reading, and the button is disabled with it: inviting a
+              // renew of a lease whose current state we could not read is a worse offer
+              // than no offer.
+              ipAddress: reading.addressOrNull,
+              addressLabel: reading is WanIpUnknown ? l.unknown : null,
               isLoading: activeMutation == 'renewIpv4',
-              onRenew: isBridge
+              onRenew: isBridge || reading is WanIpUnknown
                   ? null
                   : () => _renewDhcp(context, ref, isIpv6: false),
             ),

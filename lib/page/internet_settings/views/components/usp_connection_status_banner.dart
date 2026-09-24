@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
-import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/wan_ip_reading.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -62,35 +62,20 @@ class UspConnectionStatusBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionType = state.connectionType;
-    final wanAsync = ref.watch(wanDataProvider);
-    final wanIp = wanAsync.valueOrNull?.model.ipAddress ?? '';
-
-    // UNKNOWN IS NOT OFFLINE. `valueOrNull` is null for three different states, and
-    // reading the dot straight off `wanIp.isNotEmpty` claimed "disconnected" for all
-    // three — including `AsyncError`, which is reachable on an ordinary path:
-    // `uspWanDataServiceProvider` throws `ServiceNotInitializedError` whenever
-    // `uspClientProvider` is null (session not yet established, re-auth, dropped
-    // socket), and any transport failure inside `fetch()` arrives as a `ServiceError`.
-    // Measured: that state rendered a dim dot and '--' with no error surfaced, and
-    // because this provider is not autoDispose and has no retry, it stayed that way
-    // until a `wanStatus` push or a save happened to invalidate it.
+    // `wanIpReadingProvider` rather than flattening the AsyncValue here: the three device
+    // states this page has to tell apart (an address, no address, could-not-read) used to
+    // be collapsed into two by `?? ''` one line after the read, and after that no
+    // consumer could recover the difference. See that provider for the measurement.
     //
-    // `hasValue` is the discriminator, not `hasError`: during a refresh riverpod keeps
-    // the previous value (measured — an external `ref.invalidate` from a save or DHCP
-    // renew yields `isLoading: true, hasValue: true` carrying the old address), so
-    // `hasValue` covers "settled" and "refreshing with a value" and excludes only the
-    // two states where we genuinely do not know.
-    //
-    // WHY THIS IS NOT AN EARLY-RETURN SKELETON, even though the dashboard's
-    // `UspNetworkStatusCard` does exactly that for `wan == null`. This banner also hosts
-    // the page's edit toggle, whose identifier `internet-settings-edit-toggle` is the
-    // arrival hook two real-router specs depend on (`R01-boot-smoke` asserts the page was
-    // reached by it; `R20-sse-push` waits on it). Replacing the banner with a skeleton
-    // takes that control off the page — and in the `AsyncError` case it never comes back,
-    // because this provider has no retry. So the unknown state degrades the READING and
-    // keeps the CONTROL.
-    final isKnown = wanAsync.hasValue;
-    final isConnected = isKnown && wanIp.isNotEmpty;
+    // WHY THIS IS NOT AN EARLY-RETURN SKELETON for the unknown case, even though the
+    // dashboard's `UspNetworkStatusCard` does exactly that for `wan == null`. This banner
+    // also hosts the page's edit toggle, whose identifier `internet-settings-edit-toggle`
+    // is the arrival hook two real-router specs depend on (`R01-boot-smoke` asserts the
+    // page was reached by it; `R20-sse-push` waits on it). Replacing the banner with a
+    // skeleton takes that control off the page — and in the `AsyncError` case it never
+    // comes back, because this provider has no retry. So the unknown state degrades the
+    // READING and keeps the CONTROL.
+    final reading = ref.watch(wanIpReadingProvider);
 
     return AppCard(
       child: Padding(
@@ -100,10 +85,11 @@ class UspConnectionStatusBanner extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Status indicator. `isActive` is false for both "offline" and "unknown";
-            // the address line below is what distinguishes them, and a third dot state
-            // is a design question rather than something to invent here.
-            UspStatusDot(isActive: isConnected, size: 12),
+            // `isOnline`, not `!isOffline`: the dot lights only when the device actually
+            // reported an address. Unknown shares the dim dot with offline — a third dot
+            // state is a design question, and the address line below is what separates
+            // the two meanings today.
+            UspStatusDot(isActive: reading.isOnline, size: 12),
             AppGap.md(),
             // Connection info
             Expanded(
@@ -114,17 +100,15 @@ class UspConnectionStatusBanner extends ConsumerWidget {
                     connectionType.localizedLabel(context),
                   ),
                   AppGap.xs(),
-                  // Three readings, not two: an address, a known-empty address, and
-                  // "we could not read it". The third used to render as '--', which is
-                  // what a genuinely absent address looks like — so a failed read was
-                  // indistinguishable from a successful read of "no address".
-                  AppText.bodySmall(
-                    !isKnown
-                        ? loc(context).unknown
-                        : isConnected
-                            ? wanIp
-                            : '--',
-                  ),
+                  // Three readings, not two. '--' means the device said there is no
+                  // address; `unknown` means we could not ask it. Rendering the second as
+                  // '--' made a failed read indistinguishable from a successful read of
+                  // "no address" — the #1613 defect.
+                  AppText.bodySmall(switch (reading) {
+                    WanIpAddress(:final value) => value,
+                    WanIpNone() => '--',
+                    WanIpUnknown() => loc(context).unknown,
+                  }),
                 ],
               ),
             ),
