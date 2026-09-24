@@ -18,15 +18,11 @@ import 'package:equatable/equatable.dart';
 /// | `pppConnectionStatus` | IPv4 section, PPPoE/PPTP/L2TP rows   | **still stale, deliberately not fixed here.** It comes from `Device.PPP.Interface.{i}.ConnectionStatus`, and L1 has no PPP data at all — `WanStatusUIModel` carries only status/ip/mask/addressingType. Fixing it means extending that model, which dashboard, Statistics and health scoring also consume, so it is a decision of its own rather than a follow-on. **A connection STATUS that does not update is the most surprising of these**, so it is worth doing |
 /// | `dhcpv6Duid`          | IPv6 section                         | stale, low value. A DUID is stable for the life of the device |
 /// | `hostName`            | bridge-mode redirect hint and dialog | stale, low value. Changes only when the user renames the router, which is not this page |
-/// | `currentMacAddress`   | nothing — the MAC Clone row is commented out | dead in the views, but NOT deletable as a one-liner: `InternetSettingsFeatureState.currentMacAddress` forwards it and a test asserts that getter. Removing it means deleting the getter and the test too, which is unrelated cleanup rather than this PR's subject |
+/// | ~~`currentMacAddress`~~ | nothing                             | **DELETED here**, together with `InternetSettingsFeatureState.currentMacAddress`. The MAC Clone row that read it was commented out on 2026-03-20 because *the USP data model does not support the write* — a protocol limit, not a pause — and `_buildReadOnlyInfo` hardcoded `''`, so the getter could only ever return an empty string. Checked before deleting: no production reader in this repo, nothing in the real-router E2E repo |
 ///
-/// So two fields are still page-entry snapshots on purpose (`dhcpv6Duid`, `hostName`),
-/// one is a known gap with a real cost (`pppConnectionStatus`), and one is dead-but-wired
-/// (`currentMacAddress`).
+/// So two fields are still page-entry snapshots on purpose (`dhcpv6Duid`, `hostName`) and
+/// one is a known gap with a real cost (`pppConnectionStatus`).
 class InternetSettingsReadOnlyInfo extends Equatable {
-  /// Current WAN MAC address (may differ from configured MAC clone).
-  final String currentMacAddress;
-
   /// PPP connection status string (e.g. 'Connected', 'Disconnected').
   final String pppConnectionStatus;
 
@@ -38,7 +34,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
   final String hostName;
 
   const InternetSettingsReadOnlyInfo({
-    this.currentMacAddress = '',
     this.pppConnectionStatus = '',
     this.dhcpv6Duid = '',
     this.hostName = '',
@@ -46,7 +41,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-        currentMacAddress,
         pppConnectionStatus,
         dhcpv6Duid,
         hostName,

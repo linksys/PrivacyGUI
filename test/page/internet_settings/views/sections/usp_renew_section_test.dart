@@ -1,20 +1,17 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_settings.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_status.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
-import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_renew_section.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+import '../../../../mocks/provider_overrides/mock_wan_data.dart';
 
 /// Widget tests for the Release & Renew section's WAN address — #1587 Phase 2 and the
 /// #1613 review.
@@ -34,22 +31,6 @@ final _testTheme = AppTheme.create(
   designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
 );
 
-const _wanUp = WanStatusUIModel(
-  isUp: true,
-  ipAddress: '100.64.0.10',
-  subnetMask: '255.255.255.0',
-  addressingType: 'DHCP',
-  mtu: 1500,
-);
-
-const _wanNoAddress = WanStatusUIModel(
-  isUp: false,
-  ipAddress: '',
-  subnetMask: '',
-  addressingType: '',
-  mtu: 1500,
-);
-
 InternetSettingsFeatureState _state({
   UspWanConnectionType type = UspWanConnectionType.dhcp,
 }) {
@@ -63,30 +44,12 @@ InternetSettingsFeatureState _state({
   );
 }
 
-class _FixedWan extends WanDataNotifier {
-  _FixedWan(this._model);
-  final WanStatusUIModel _model;
-  @override
-  Future<WanData> build() async => WanData(model: _model);
-}
-
-class _ErrorWan extends WanDataNotifier {
-  @override
-  Future<WanData> build() async => throw const ServiceNotInitializedError(
-      detail: 'USP service not available');
-}
-
-class _LoadingWan extends WanDataNotifier {
-  @override
-  Future<WanData> build() => Completer<WanData>().future;
-}
-
 Widget _host(
-  WanDataNotifier Function() notifier, {
+  Override wanOverride, {
   UspWanConnectionType type = UspWanConnectionType.dhcp,
 }) {
   return ProviderScope(
-    overrides: [wanDataProvider.overrideWith(notifier)],
+    overrides: [wanOverride],
     child: MaterialApp(
       theme: _testTheme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -109,14 +72,14 @@ Finder _renewButtons() =>
 void main() {
   group('UspRenewSection — the address comes from L1', () {
     testWidgets('renders the address L1 reported', (t) async {
-      await t.pumpWidget(_host(() => _FixedWan(_wanUp)));
+      await t.pumpWidget(_host(wanDataOverride()));
       await t.pumpAndSettle();
 
       expect(find.text('100.64.0.10'), findsOneWidget);
     });
 
     testWidgets('a device-reported empty address renders --', (t) async {
-      await t.pumpWidget(_host(() => _FixedWan(_wanNoAddress)));
+      await t.pumpWidget(_host(wanDataOverride(wanNoAddressModel)));
       await t.pumpAndSettle();
 
       // Two cards, and IPv6 never gets an address, so '--' appears twice here.
@@ -126,7 +89,7 @@ void main() {
 
   group('UspRenewSection — unknown is not "no address" (#1613 round 2)', () {
     testWidgets('a fetch error renders "unknown", not --', (t) async {
-      await t.pumpWidget(_host(() => _ErrorWan()));
+      await t.pumpWidget(_host(wanDataErrorOverride()));
       await t.pumpAndSettle();
 
       // THE REGRESSION THIS BLOCKS: passing `null` here instead of `''` rendered '--'
@@ -140,7 +103,7 @@ void main() {
     });
 
     testWidgets('the first load also renders "unknown"', (t) async {
-      await t.pumpWidget(_host(() => _LoadingWan()));
+      await t.pumpWidget(_host(wanDataLoadingOverride()));
       await t.pump();
 
       expect(find.text('Unknown'), findsOneWidget);
@@ -156,7 +119,7 @@ void main() {
       // about the IPv6 lease. Disabling both would have been a wider behaviour change
       // than the finding called for — so the count here is 1, not 0, and that 1 is the
       // IPv6 button.
-      await t.pumpWidget(_host(() => _ErrorWan()));
+      await t.pumpWidget(_host(wanDataErrorOverride()));
       await t.pumpAndSettle();
       expect(_renewButtons(), findsOneWidget,
           reason:
@@ -167,7 +130,7 @@ void main() {
     // `ProviderScope` into the same tester reuses the element and the override does not
     // take effect, which showed up as a confusing "found 1, expected 2".
     testWidgets('a readable address allows both renews', (t) async {
-      await t.pumpWidget(_host(() => _FixedWan(_wanUp)));
+      await t.pumpWidget(_host(wanDataOverride()));
       await t.pumpAndSettle();
       expect(_renewButtons(), findsNWidgets(2));
     });
@@ -176,7 +139,7 @@ void main() {
         (t) async {
       // This is precisely when a user reaches for Renew, so the unknown-state guard must
       // not catch this case too.
-      await t.pumpWidget(_host(() => _FixedWan(_wanNoAddress)));
+      await t.pumpWidget(_host(wanDataOverride(wanNoAddressModel)));
       await t.pumpAndSettle();
       expect(_renewButtons(), findsNWidgets(2));
     });
@@ -186,7 +149,7 @@ void main() {
     testWidgets('bridge disables renew even with a readable address',
         (t) async {
       await t.pumpWidget(
-          _host(() => _FixedWan(_wanUp), type: UspWanConnectionType.bridge));
+          _host(wanDataOverride(), type: UspWanConnectionType.bridge));
       await t.pumpAndSettle();
 
       expect(_renewButtons(), findsNothing);

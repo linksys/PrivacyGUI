@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/models/wan_ip_reading.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+
+import '../../../mocks/provider_overrides/mock_wan_data.dart';
 
 /// The three-state WAN address reading — linksys/PrivacyGUI#1613.
 ///
@@ -12,35 +13,6 @@ import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.d
 /// FALSE reading for one of the three states it collapsed. The provider below keeps them
 /// apart, and the case that matters most is the one no other test covered: a refresh
 /// in flight, which must keep reporting the last known address rather than "unknown".
-
-const _wanUp = WanStatusUIModel(
-  isUp: true,
-  ipAddress: '100.64.0.10',
-  subnetMask: '255.255.255.0',
-  addressingType: 'DHCP',
-  mtu: 1500,
-);
-
-const _wanNoAddress = WanStatusUIModel(
-  isUp: false,
-  ipAddress: '',
-  subnetMask: '',
-  addressingType: '',
-  mtu: 1500,
-);
-
-class _FixedWan extends WanDataNotifier {
-  _FixedWan(this._model);
-  final WanStatusUIModel _model;
-  @override
-  Future<WanData> build() async => WanData(model: _model);
-}
-
-class _ErrorWan extends WanDataNotifier {
-  @override
-  Future<WanData> build() async => throw const ServiceNotInitializedError(
-      detail: 'USP service not available');
-}
 
 /// Completes only when told to — lets a refresh be observed mid-flight.
 class _SlowWan extends WanDataNotifier {
@@ -61,26 +33,26 @@ class _SlowWan extends WanDataNotifier {
   }
 }
 
-ProviderContainer _container(WanDataNotifier Function() notifier) =>
-    ProviderContainer(overrides: [wanDataProvider.overrideWith(notifier)]);
+ProviderContainer _container(Override wanOverride) =>
+    ProviderContainer(overrides: [wanOverride]);
 
 void main() {
   group('wanIpReadingProvider', () {
     test('an address the device reported is online', () async {
-      final c = _container(() => _FixedWan(_wanUp));
+      final c = _container(wanDataOverride());
       addTearDown(c.dispose);
       await c.read(wanDataProvider.future);
 
       final r = c.read(wanIpReadingProvider);
       expect(r, isA<WanIpAddress>());
-      expect(r.addressOrNull, '100.64.0.10');
+      expect(r.addressOrNull, wanUpModel.ipAddress);
       expect(r.isOnline, isTrue);
       expect(r.isOffline, isFalse);
     });
 
     test('an empty address the device reported is offline, not unknown',
         () async {
-      final c = _container(() => _FixedWan(_wanNoAddress));
+      final c = _container(wanDataOverride(wanNoAddressModel));
       addTearDown(c.dispose);
       await c.read(wanDataProvider.future);
 
@@ -93,7 +65,7 @@ void main() {
     });
 
     test('a fetch error is unknown, and is NOT offline', () async {
-      final c = _container(() => _ErrorWan());
+      final c = _container(wanDataErrorOverride());
       addTearDown(c.dispose);
       try {
         await c.read(wanDataProvider.future);
@@ -113,7 +85,7 @@ void main() {
     });
 
     test('the first load, before any value, is unknown', () {
-      final c = _container(() => _ErrorWan());
+      final c = _container(wanDataErrorOverride());
       addTearDown(c.dispose);
       // Read without awaiting: build() has not completed.
       expect(c.read(wanIpReadingProvider), isA<WanIpUnknown>());
@@ -132,7 +104,7 @@ void main() {
     test('a refresh in flight keeps reporting the last known address',
         () async {
       _SlowWan.builds = 0;
-      final c = _container(() => _SlowWan());
+      final c = _container(wanDataProvider.overrideWith(() => _SlowWan()));
       addTearDown(c.dispose);
       // A standing subscription, so the invalidate below rebuilds eagerly.
       c.listen(wanIpReadingProvider, (_, __) {});

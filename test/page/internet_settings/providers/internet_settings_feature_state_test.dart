@@ -30,7 +30,6 @@ void main() {
   // now read `wanDataProvider` instead, so the L2 copy was dead weight whose only
   // remaining effect was to make an otherwise-identical state unequal.
   const readOnlyInfo = InternetSettingsReadOnlyInfo(
-    currentMacAddress: 'AA:BB:CC:DD:EE:FF',
     pppConnectionStatus: 'Connected',
     dhcpv6Duid: '00:01:02:03',
   );
@@ -120,7 +119,9 @@ void main() {
     test('readOnlyInfo convenience getters delegate to status', () {
       final state = createState(info: readOnlyInfo);
 
-      expect(state.currentMacAddress, 'AA:BB:CC:DD:EE:FF');
+      // `currentMacAddress` was the third getter here until #1613 deleted it and the
+      // field behind it — dead in the views since 2026-03-20, and only ever '' because
+      // the service hardcoded that.
       expect(state.pppConnectionStatus, 'Connected');
       expect(state.dhcpv6Duid, '00:01:02:03');
     });

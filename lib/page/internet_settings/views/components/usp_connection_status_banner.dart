@@ -86,9 +86,14 @@ class UspConnectionStatusBanner extends ConsumerWidget {
         child: Row(
           children: [
             // `isOnline`, not `!isOffline`: the dot lights only when the device actually
-            // reported an address. Unknown shares the dim dot with offline — a third dot
-            // state is a design question, and the address line below is what separates
-            // the two meanings today.
+            // reported an address, so `unknown` falls through to neither claim.
+            //
+            // OFFLINE AND UNKNOWN SHARE THE DIM DOT, and that is a decision rather than a
+            // deferral — confirmed on #1613's review, 2026-09-24. A third dot state would
+            // need a colour, a meaning and a place in the design system; the address line
+            // below already carries the distinction ('--' versus `unknown`), which is what
+            // the defect needed. The dot says "not confirmed online", which is true of
+            // both.
             UspStatusDot(isActive: reading.isOnline, size: 12),
             AppGap.md(),
             // Connection info

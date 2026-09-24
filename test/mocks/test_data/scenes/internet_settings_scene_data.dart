@@ -96,26 +96,22 @@ const ipv6EnabledForm = UspInternetSettingsForm(
 // =============================================================================
 
 const defaultReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '',
 );
 
 const bridgeReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '',
   hostName: 'Community00080',
 );
 
 const pppoeReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: 'Connected',
   dhcpv6Duid: '',
 );
 
 const ipv6ReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '00:01:00:01:2a:3b:4c:5d:aa:bb:cc:dd:ee:ff',
 );
@@ -241,7 +237,6 @@ const gateInternetSettingsForm = UspInternetSettingsForm(
 /// not override it. Any cell that wants a rendered address must override
 /// `wanDataProvider` itself; see `usp_connection_status_banner_test.dart` for the shape.
 const gateInternetSettingsReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: 'Connected',
   dhcpv6Duid: '00:01:00:01:2a:3b:4c:5d:aa:bb:cc:dd:ee:ff',
 );
