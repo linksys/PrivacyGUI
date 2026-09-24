@@ -15,8 +15,6 @@ class FirmwareUpdateState extends Equatable {
   final String? selectedFileMd5;
   final int uploadedChunks;
   final int totalChunks;
-  final String? targetStatus;
-  final Duration? rebootRemaining;
 
   /// Why the update failed, as a value the view localizes.
   ///
@@ -75,8 +73,6 @@ class FirmwareUpdateState extends Equatable {
     this.selectedFileMd5,
     this.uploadedChunks = 0,
     this.totalChunks = 0,
-    this.targetStatus,
-    this.rebootRemaining,
     this.failure,
     this.uploadMethod,
     this.otaCheck = const FirmwareOtaCheckResult.notChecked(),
@@ -113,8 +109,6 @@ class FirmwareUpdateState extends Equatable {
     String? selectedFileMd5,
     int? uploadedChunks,
     int? totalChunks,
-    String? targetStatus,
-    Duration? rebootRemaining,
     FirmwareFailure? failure,
     UploadMethod? uploadMethod,
     FirmwareOtaCheckResult? otaCheck,
@@ -133,8 +127,6 @@ class FirmwareUpdateState extends Equatable {
       selectedFileMd5: selectedFileMd5 ?? this.selectedFileMd5,
       uploadedChunks: uploadedChunks ?? this.uploadedChunks,
       totalChunks: totalChunks ?? this.totalChunks,
-      targetStatus: targetStatus ?? this.targetStatus,
-      rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       // The clear wins when both are given: it is the more explicit of the two,
       // where a value can also arrive from an unrelated `??` further up.
       failure: clearFailure ? null : failure ?? this.failure,
@@ -156,8 +148,6 @@ class FirmwareUpdateState extends Equatable {
         selectedFileMd5,
         uploadedChunks,
         totalChunks,
-        targetStatus,
-        rebootRemaining,
         failure,
         uploadMethod,
         otaCheck,

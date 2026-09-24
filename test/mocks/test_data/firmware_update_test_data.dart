@@ -28,17 +28,6 @@ class FirmwareUpdateTestData {
         'Device.DeviceInfo.FirmwareImage.2.Available': true,
       };
 
-  /// Single-bank response (no available alternate) — used for negative tests.
-  static Map<String, dynamic> singleBankResponse({
-    String version = '1.0.16.26013014',
-  }) =>
-      <String, dynamic>{
-        'Device.DeviceInfo.FirmwareImage.1.Name': 'Bank1',
-        'Device.DeviceInfo.FirmwareImage.1.Version': version,
-        'Device.DeviceInfo.FirmwareImage.1.Status': 'Active',
-        'Device.DeviceInfo.FirmwareImage.1.Available': true,
-      };
-
   /// Three-instance response as measured on the target firmware: two physical
   /// NAND banks (`fw1`/`fw2`) plus the virtual `ota` instance.
   ///
@@ -81,22 +70,6 @@ class FirmwareUpdateTestData {
         'Device.DeviceInfo.FirmwareImage.3.Version': '',
         'Device.DeviceInfo.FirmwareImage.3.Status': '',
         'Device.DeviceInfo.FirmwareImage.3.Available': false,
-      };
-
-  /// Post-flash response where bank 2 is now Active running [newVersion].
-  static Map<String, dynamic> postFlashResponse({
-    String newVersion = '1.0.17.26050100',
-    String oldVersion = '1.0.16.26013014',
-  }) =>
-      <String, dynamic>{
-        'Device.DeviceInfo.FirmwareImage.1.Name': 'Bank1',
-        'Device.DeviceInfo.FirmwareImage.1.Version': oldVersion,
-        'Device.DeviceInfo.FirmwareImage.1.Status': 'Available',
-        'Device.DeviceInfo.FirmwareImage.1.Available': true,
-        'Device.DeviceInfo.FirmwareImage.2.Name': 'Bank2',
-        'Device.DeviceInfo.FirmwareImage.2.Version': newVersion,
-        'Device.DeviceInfo.FirmwareImage.2.Status': 'Active',
-        'Device.DeviceInfo.FirmwareImage.2.Available': true,
       };
 
   // ---------------------------------------------------------------------------

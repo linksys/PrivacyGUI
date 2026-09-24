@@ -75,22 +75,10 @@ class FixedFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
       {Duration cooldown = const Duration(seconds: 60)}) {}
 
   @override
-  void enterRebooting(Duration estimated) {}
-
-  @override
   Future<void> verify({
     required String expectedVersion,
     required int expectedActiveInstance,
   }) async {}
-
-  @override
-  void updateUploadProgress(int sent, int total) {}
-
-  @override
-  void updateTargetStatus(String status) {}
-
-  @override
-  void updateRebootCountdown(Duration remaining) {}
 }
 
 class FixedFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
