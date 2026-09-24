@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
@@ -109,11 +110,13 @@ void main() {
         // The positive control, on every width rather than only the wide one: a
         // fix that simply stopped opening anything would satisfy the no-throw
         // assertion above at every narrow width and be indistinguishable from a
-        // working card. `S/N` is rendered by nothing on this card except the node
-        // detail — in the panel where there is room for it, in a dialog where
-        // there is not.
+        // working card. The serial-number label is rendered by nothing on this card
+        // except the node detail — in the panel where there is room for it, in a
+        // dialog where there is not. Read from the ARB rather than spelled: the label
+        // was a literal `S/N` until it was localised, and a spelled `findsOneWidget`
+        // would have gone red there while a spelled `findsNothing` went silently inert.
         expect(
-          find.text('S/N'),
+          find.text(_serialLabel),
           findsOneWidget,
           reason: 'the node detail did not appear',
         );
@@ -177,7 +180,7 @@ void main() {
       // No role, and none of the mesh-node rows a leaf has no data for.
       expect(find.text('Master'), findsNothing);
       expect(find.text('Slave'), findsNothing);
-      expect(find.text('S/N'), findsNothing);
+      expect(find.text(_serialLabel), findsNothing);
       expect(find.text('Backhaul'), findsNothing);
     });
 
@@ -209,7 +212,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(
-        find.text('S/N'),
+        find.text(_serialLabel),
         findsOneWidget,
         reason: 'the node detail did not appear',
       );
@@ -380,3 +383,7 @@ void main() {
     });
   });
 }
+
+/// The node detail's serial-number label, as the English ARB words it.
+final _serialLabel =
+    lookupAppLocalizations(const Locale('en')).serialNumberLabel;

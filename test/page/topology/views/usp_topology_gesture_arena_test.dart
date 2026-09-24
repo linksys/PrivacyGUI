@@ -11,7 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// It is not one here, and the reason is a framework behaviour this app does not
 /// control — Flutter's gesture arena separates the two claimants by pointer count.
 /// So it is pinned rather than argued: if a Flutter upgrade changes how the arena
-/// resolves this, the comments at `usp_topology_view.dart:136` and `:286` become
+/// resolves this, the comments on `scrollable:` and `interactive:` in
+/// `usp_topology_view.dart` become
 /// false and this is what says so.
 ///
 /// Built from the primitives rather than by pumping the page. The page needs a
@@ -22,6 +23,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   /// The page's shape: a scrollable whose first sliver is a fixed-height graph
   /// area, and a second sliver below it so there is somewhere to scroll to.
+  ///
+  /// Keyed by [interactive]. Two hosts pumped in one test with the same key keep the
+  /// first one's `Scrollable` state, so a second drag starts where the first ended —
+  /// measured: 280 then 560 with one key, 280 and 280 with two. That is why the
+  /// comparison below can live in one test.
   Future<({ScrollController scroll, TransformationController graph})> pump(
     WidgetTester tester, {
     required bool interactive,
@@ -30,6 +36,7 @@ void main() {
     final graph = TransformationController();
 
     await tester.pumpWidget(MaterialApp(
+      key: ValueKey('host-interactive-$interactive'),
       home: Scaffold(
         body: CustomScrollView(
           controller: scroll,
@@ -74,28 +81,24 @@ void main() {
           reason: 'the graph must not also pan — that is the conflict');
     });
 
-    // The two halves of one comparison, deliberately in separate tests rather than
-    // one: a second `pumpWidget` in the same test rebuilds the tree but does not
-    // reset the scroll a previous drag already applied, so measuring both in one
-    // body read 560 against 280 and looked like the flag costing the page half its
-    // scroll. It was the harness, not the flag.
-    //
-    // 280px for a 300px drag either way — the shortfall is touch slop, and that it
-    // is *identical* is the point: `interactive` takes nothing from the page.
-    testWidgets('a 300px drag scrolls 280px with pan enabled', (tester) async {
-      final c = await pump(tester, interactive: true);
+    testWidgets('pan costs the page none of its scroll', (tester) async {
+      // Compared, not pinned. The distance itself (280px for a 300px drag) is touch
+      // slop arithmetic and moves with the framework; what this file claims is that
+      // turning pan on takes nothing from the page, and that is a comparison. A
+      // pinned `280.0` would fail on a Flutter upgrade that changed nothing about the
+      // behaviour, and fail saying "wrong number" rather than "lost the scroll".
+      final off = await pump(tester, interactive: false);
+      await tester.drag(find.byType(InteractiveViewer), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      final withoutPan = off.scroll.offset;
+
+      final on = await pump(tester, interactive: true);
       await tester.drag(find.byType(InteractiveViewer), const Offset(0, -300));
       await tester.pumpAndSettle();
 
-      expect(c.scroll.offset, 280.0);
-    });
-
-    testWidgets('and 280px with pan disabled', (tester) async {
-      final c = await pump(tester, interactive: false);
-      await tester.drag(find.byType(InteractiveViewer), const Offset(0, -300));
-      await tester.pumpAndSettle();
-
-      expect(c.scroll.offset, 280.0);
+      expect(withoutPan, greaterThan(0),
+          reason: 'the baseline must scroll, or the comparison proves nothing');
+      expect(on.scroll.offset, withoutPan);
     });
   });
 

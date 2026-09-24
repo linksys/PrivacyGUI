@@ -88,7 +88,10 @@ void main() {
       // And none of the mesh-node rows, which it has no data for.
       expect(find.text('Master'), findsNothing);
       expect(find.text('Slave'), findsNothing);
-      expect(find.text('S/N'), findsNothing);
+      expect(
+          find.text(
+              lookupAppLocalizations(const Locale('en')).serialNumberLabel),
+          findsNothing);
     });
 
     testWidgets('a wired leaf says Ethernet and shows no signal',
@@ -104,6 +107,27 @@ void main() {
       // A wired client has no RSSI by design, so the row must be absent rather
       // than showing a zero.
       expect(find.textContaining('dBm'), findsNothing);
+    });
+
+    testWidgets('a leaf whose medium nobody reported draws no connection row',
+        (tester) async {
+      // The contract the panel's `isWifi` read now carries: absent means unknown,
+      // not "wired". `UspTopologyBuilder` always writes the key, so this is the AI
+      // section's case — it builds its own nodes, and its client schema lets the
+      // model leave `isWifi` out. Defaulting it put `Ethernet` on the screen for a
+      // device nothing had described that way.
+      const node = GraphNode(
+        id: 'client-0',
+        name: 'Laptop',
+        styleSlot: 'leaf',
+        metadata: {'mac': '11:22:33:44:55:0A', 'ip': '192.168.1.60'},
+      );
+      await pump(tester, node);
+
+      expect(find.text('192.168.1.60'), findsOneWidget,
+          reason: 'the rows it does have are still drawn');
+      expect(find.text('Ethernet'), findsNothing);
+      expect(find.text('WiFi'), findsNothing);
     });
 
     testWidgets('an offline leaf still shows what it has', (tester) async {

@@ -137,7 +137,14 @@ class NodeDetailPopup extends StatelessWidget {
           if (model.isNotEmpty) _row(loc(context).model, model),
           if (manufacturer.isNotEmpty)
             _row(loc(context).manufacturer, manufacturer),
-          if (serialNumber.isNotEmpty) _row('S/N', serialNumber),
+          // `serialNumberLabel`, the key the node's own detail page uses for this
+          // field (`usp_node_detail_view.dart`), so the panel and the page it opens
+          // name it the same way. It was a hard-coded `S/N` after every other label
+          // here had moved to the ARB; an earlier note deferred it as needing
+          // translations, having searched for `serialNumber` and missed the key that
+          // already existed in all 26.
+          if (serialNumber.isNotEmpty)
+            _row(loc(context).serialNumberLabel, serialNumber),
           if (softwareVersion.isNotEmpty)
             _row(loc(context).firmware, softwareVersion),
           // Backhaul info for slave nodes only — the master has no uplink of this

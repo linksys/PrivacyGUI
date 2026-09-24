@@ -217,6 +217,7 @@ class TopologySection extends StatelessWidget {
           styleSlot: TopologySlots.slave,
           parentId: gatewayId,
           status: _parseStatus(status),
+          // No `wired:` — the extender schema has no medium field to pass.
           level: _rssiToLevel(rssi),
           metadata: {
             if (mac != null) 'mac': mac,
@@ -245,7 +246,10 @@ class TopologySection extends StatelessWidget {
           sourceId: gatewayId,
           targetId: extId,
           kind: rssi == null ? null : EdgeKind.indirect,
-          strength: edgeStrengthFromRssi(rssi),
+          // Null alongside the null kind, not `EdgeStrength.unknown`. The helper maps
+          // a null reading to `unknown`, which is a grade — and grading an edge this
+          // same line declines to classify says two things about one absent field.
+          strength: rssi == null ? null : edgeStrengthFromRssi(rssi),
         ));
       }
     }
@@ -292,7 +296,9 @@ class TopologySection extends StatelessWidget {
           styleSlot: TopologySlots.device,
           parentId: resolvedParentId,
           status: _parseStatus(status),
-          level: _rssiToLevel(rssi),
+          // A client's schema does carry the medium, so it is passed: known-wired is
+          // full, and anything else is graded on the reading or left empty.
+          level: _rssiToLevel(rssi, wired: isWifi == null ? null : !isWifi),
           deviceCategory: _inferCategory(name),
           metadata: {
             if (mac != null) 'mac': mac,
@@ -344,7 +350,22 @@ class TopologySection extends StatelessWidget {
     };
   }
 
-  double _rssiToLevel(int? rssi) {
+  /// The fill level for a node, given what the model told us about its link.
+  ///
+  /// [wired] is explicit because `getWifiSignalLevel(null)` answers `wired`: that
+  /// helper treats a missing reading as "no radio", which is right for the host table
+  /// it was written for and wrong here, where a missing `rssi` usually means the model
+  /// left it out. Routing an absent reading through it drew a full ring — "wired, full
+  /// strength" — for an extender whose edge, one line below, had just declined to say
+  /// what the link is. So the three cases are separated:
+  ///
+  /// - known wired → 1.0, as `UspTopologyBuilder` does for a wired client;
+  /// - wireless or unknown, with no reading → 0.0, the kit's own default for `level`
+  ///   and what `UspTopologyBuilder._rssiValueToLevel(null)` answers;
+  /// - a reading → graded.
+  double _rssiToLevel(int? rssi, {bool? wired}) {
+    if (wired == true) return 1.0;
+    if (rssi == null) return 0.0;
     final level = getWifiSignalLevel(rssi);
     return switch (level) {
       NodeSignalLevel.excellent => 0.9,
