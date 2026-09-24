@@ -352,6 +352,186 @@ void main() {
   // Error handling
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // A WAN with no address instance — linksys/PrivacyGUI#1615
+  //
+  // Measured on FW 2.0.2.26091803 with the interface down: `Status` is `Dormant`,
+  // `IPv4AddressNumberOfEntries` is `0`, and `IPv4Address.1.*` do not exist as
+  // parameters at all. The generated `WanStatus._fromResponse` treats three of those as
+  // required and throws, so every refresh while the WAN is down failed — the very
+  // refresh that should tell the UI to stop showing a dead address.
+  //
+  // Translating that into "no address" is a domain judgement, which is why it lives in
+  // the service layer rather than in the generated model (constitution Article VI).
+  // These three tests pin the shape of that judgement: it applies in the measured case,
+  // and NOT in either way of getting the same error for a different reason.
+  // ---------------------------------------------------------------------------
+  group('UspWanDataService — WAN with no address instance (#1615)', () {
+    /// The device as measured with the WAN down: the address parameters are absent from
+    /// the response, and the interface reports zero address entries.
+    /// Same as [stubWanDownNoAddress] but returns `entries` with its real type rather
+    /// than as a string — the device does both, depending on firmware.
+    void stubWanDownNoAddressTyped(Object entries) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('IPv4AddressNumberOfEntries'))) {
+          return {'Device.IP.Interface.2.IPv4AddressNumberOfEntries': entries};
+        }
+        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
+          return {
+            'Device.IP.Interface.2.Status': 'Dormant',
+            'Device.IP.Interface.2.MaxMTUSize': '1500',
+            'Device.IP.Interface.2.IPv6Enable': false,
+          };
+        }
+        return {};
+      });
+    }
+
+    void stubWanDownNoAddress({String entries = '0'}) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+
+        if (paths.any((p) => p.contains('IPv4AddressNumberOfEntries'))) {
+          return {'Device.IP.Interface.2.IPv4AddressNumberOfEntries': entries};
+        }
+        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
+          // IPv4Address.1.* deliberately absent — this is what the device returns.
+          return {
+            'Device.IP.Interface.2.Status': 'Dormant',
+            'Device.IP.Interface.2.MaxMTUSize': '1500',
+            'Device.IP.Interface.2.IPv6Enable': false,
+          };
+        }
+        if (paths.any((p) => p.contains('Routing'))) return {};
+        if (paths.any((p) => p.contains('IPv6Address'))) return {};
+        return {};
+      });
+    }
+
+    test('reports the WAN as down with an empty address, rather than throwing',
+        () async {
+      stubWanDownNoAddress();
+      final service = UspWanDataService(mockUsp);
+
+      final model = await service.fetch();
+
+      expect(model.isUp, isFalse);
+      expect(model.ipAddress, isEmpty,
+          reason:
+              'an absent address must read as no address — the whole point is that '
+              'the UI stops showing the one that no longer exists');
+      expect(model.subnetMask, isEmpty);
+      expect(model.addressingType, isEmpty);
+    });
+
+    // The three branches added when this tolerance was reviewed. Each was reachable and
+    // none was covered — the existing tests all passed against the looser version.
+    test('entries reported as a NUMBER, not a string, still reads as WAN down',
+        () async {
+      // The device's value arrives untyped and its shape varies across firmware. A string
+      // comparison against '0' failed CLOSED — an `int` 0 was read as "not zero", turning
+      // a down WAN back into a fetch error, which is the defect this whole method exists
+      // to prevent.
+      stubWanDownNoAddressTyped(0);
+      final service = UspWanDataService(mockUsp);
+
+      final model = await service.fetch();
+      expect(model.isUp, isFalse);
+      expect(model.ipAddress, isEmpty);
+    });
+
+    test('entries with surrounding whitespace still reads as WAN down',
+        () async {
+      stubWanDownNoAddress(entries: ' 0 ');
+      final service = UspWanDataService(mockUsp);
+
+      final model = await service.fetch();
+      expect(model.isUp, isFalse);
+    });
+
+    test('an unparseable entries value throws rather than guessing', () async {
+      // "Not confirmed zero" is not "confirmed zero". If the device answers something
+      // this code cannot read, the original validation error is the honest outcome.
+      stubWanDownNoAddress(entries: 'unexpected');
+      final service = UspWanDataService(mockUsp);
+
+      await expectLater(service.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test(
+        'a failed confirmation surfaces the ORIGINAL error, not the confirmation\'s',
+        () async {
+      // The confirming `get` can fail on its own. Unguarded it replaced the original
+      // error — which is both more accurate and the one a triager needs. A failed
+      // confirmation is not a confirmation.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('IPv4AddressNumberOfEntries'))) {
+          throw const NetworkError(detail: 'socket closed mid-confirmation');
+        }
+        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
+          return {
+            'Device.IP.Interface.2.Status': 'Dormant',
+            'Device.IP.Interface.2.MaxMTUSize': '1500',
+            'Device.IP.Interface.2.IPv6Enable': false,
+          };
+        }
+        return {};
+      });
+      final service = UspWanDataService(mockUsp);
+
+      await expectLater(
+        service.fetch(),
+        throwsA(
+          isA<ServiceError>().having(
+            (e) => e.toString(),
+            'message',
+            contains('9998'),
+          ),
+        ),
+        reason:
+            'the codegen validation error must survive, not the socket failure',
+      );
+    });
+
+    test('still throws when the device reports it HAS an address', () async {
+      // Same validation error, but the device contradicts it: entries is 1, so the
+      // fields should have been in the response and something else is wrong. Swallowing
+      // this would render a real fault as "the WAN is down".
+      stubWanDownNoAddress(entries: '1');
+      final service = UspWanDataService(mockUsp);
+
+      await expectLater(service.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test('still throws for a validation error about a different field',
+        () async {
+      // `MaxMTUSize` missing is not an addressing state, and must not be absorbed.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
+          return {
+            'Device.IP.Interface.2.Status': 'Up',
+            'Device.IP.Interface.2.IPv4Address.1.IPAddress': '203.0.113.1',
+            'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
+            'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
+            'Device.IP.Interface.2.IPv6Enable': false,
+            // MaxMTUSize absent
+          };
+        }
+        return {};
+      });
+      final service = UspWanDataService(mockUsp);
+
+      await expectLater(service.fetch(), throwsA(isA<ServiceError>()));
+    });
+  });
+
   group('UspWanDataService — error handling', () {
     test('fetch maps USP error to ServiceError', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))

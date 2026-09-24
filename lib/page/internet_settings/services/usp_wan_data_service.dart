@@ -44,13 +44,28 @@ class UspWanDataService {
   Future<WanStatusUIModel> fetch() async {
     try {
       final results = await Future.wait([
-        WanStatus.fetch(_usp),
+        _fetchWanStatusTolerantOfNoAddress(),
         _fetchGatewayAndIpv6Addresses(),
       ]);
 
-      final wanStatus = results[0] as WanStatus;
+      final wanStatus = results[0] as WanStatus?;
       final extra =
           results[1] as ({String gateway, List<String> ipv6Addresses});
+
+      // A down WAN has no address instance at all, so there is no WanStatus to read
+      // fields off. That is a valid state, not a failure — see the helper below.
+      if (wanStatus == null) {
+        return WanStatusUIModel(
+          isUp: false,
+          ipAddress: '',
+          subnetMask: '',
+          addressingType: '',
+          mtu: 0,
+          gateway: extra.gateway,
+          ipv6Enabled: false,
+          ipv6Addresses: extra.ipv6Addresses,
+        );
+      }
 
       return WanStatusUIModel(
         isUp: wanStatus.status.toLowerCase() == 'up',
@@ -64,6 +79,110 @@ class UspWanDataService {
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// `WanStatus.fetch` but returning `null` instead of throwing when the device has no
+  /// IPv4 address instance.
+  ///
+  /// WHY THIS IS THE SERVICE LAYER'S JOB — linksys/PrivacyGUI#1615.
+  ///
+  /// **A WAN with no address is a normal device state, not an error.** Measured on
+  /// FW 2.0.2.26091803 with the interface taken down:
+  ///
+  /// ```
+  /// Device.IP.Interface.2.Status                     => Dormant
+  /// Device.IP.Interface.2.IPv4AddressNumberOfEntries => 0
+  /// Device.IP.Interface.2.IPv4Address.1.IPAddress    => (the parameter does not exist)
+  /// ```
+  ///
+  /// The generated `WanStatus._fromResponse` treats `IPv4Address.1.IPAddress`,
+  /// `.SubnetMask` and `.AddressingType` as REQUIRED and throws when they are absent. So
+  /// every refresh triggered while the WAN is down fails — which is precisely the refresh
+  /// a user most needs, because it is the one that would tell the UI to stop showing an
+  /// address that no longer exists.
+  ///
+  /// **Why here and not in the codegen.** The generated file comes from yaml in
+  /// `linksys/usp_framework`, so relaxing the requirement there is a cross-repository
+  /// change affecting every consumer of that model. And it would be the wrong place even
+  /// if it were cheap: the codegen's job is to report faithfully what the device returned,
+  /// and "these three parameters were absent" IS what it returned. Deciding that absence
+  /// means "no address" rather than "broken response" is a **domain** judgement, and the
+  /// service layer is where this project puts device-reality-to-UI-model translation
+  /// (constitution Article VI).
+  ///
+  /// **Why it is narrow.** Only the specific validation error about missing IPv4 address
+  /// fields is swallowed, and only when the device also reports zero address entries —
+  /// the device's own confirmation that there is nothing to read. Anything else
+  /// propagates, so a genuine transport failure, an auth error or a different missing
+  /// field still surfaces as a `ServiceError` rather than being rendered as "the WAN is
+  /// down".
+  Future<WanStatus?> _fetchWanStatusTolerantOfNoAddress() async {
+    try {
+      return await WanStatus.fetch(_usp);
+    } catch (e) {
+      // FAULT CODE, NOT A SUBSTRING. `9998` is the codegen's required-leaf failure
+      // (`usp_error.dart`, source 3) and `parseUspError` already extracts it. An earlier
+      // version of this matched `'Required fields missing'` in the message text — a
+      // string owned by another repository's generator, which would drift silently the
+      // next time that template is reworded, and would then make this tolerance
+      // disappear without a failing test anywhere.
+      //
+      // The path is still read out of the message, because the code alone does not say
+      // WHICH field was missing and only the address fields may be absent legitimately.
+      final parsed = parseUspError(e);
+      if (parsed?.faultCode != 9998) rethrow;
+
+      // The instance is resolved from the error message rather than queried with a
+      // wildcard. A wildcard read returns every interface, and this router has two with
+      // one address each — so "any interface reports zero" would call the WAN down
+      // because the LAN happened to have no address. Only the interface the failure was
+      // actually about counts.
+      //
+      // Anchored on `Device.IP.Interface.` and requiring the `IPv4Address.1.` suffix, so
+      // a 9998 about some other leaf on the same object cannot satisfy it. `.1.` rather
+      // than `.\d+.`: the model reads address instance 1 only, so a missing `.2.` is not
+      // a state this method is about.
+      final instance = RegExp(r'(Device\.IP\.Interface\.\d+\.)IPv4Address\.1\.')
+          .firstMatch(e.toString())
+          ?.group(1);
+      if (instance == null) rethrow;
+
+      // Confirm with the device rather than trusting the error alone: if it reports
+      // address entries, the fields should have been there and something else is wrong —
+      // so the original error must stand.
+      //
+      // WRAPPED, because this confirmation can itself fail. Unguarded, a transport error
+      // here would replace the original — which is both more accurate and the one a
+      // triager needs. A failed confirmation is not a confirmation.
+      //
+      // `throw e`, NOT `rethrow`: inside this inner catch, `rethrow` rethrows
+      // `confirmFailure` — the exact substitution this block exists to prevent. Caught by
+      // a test; the first version of this guard had `rethrow` here and inverted its own
+      // stated purpose.
+      final Object? reported;
+      try {
+        final entries =
+            await _usp.get(['${instance}IPv4AddressNumberOfEntries']);
+        reported = entries['${instance}IPv4AddressNumberOfEntries'];
+      } catch (confirmFailure) {
+        logger.w(
+            '[USP][WanData]: could not confirm '
+            '${instance}IPv4AddressNumberOfEntries; surfacing the original error',
+            error: confirmFailure);
+        throw e;
+      }
+
+      // Parsed as a NUMBER, not compared as a string. The device's value arrives untyped
+      // — `int`, `'0'`, and `'0 '` are all shapes it has been seen to use across
+      // firmware — and a string comparison fails CLOSED, turning a down WAN back into a
+      // fetch error. Anything unparseable is treated as "not confirmed zero" and rethrows.
+      final count = int.tryParse(reported?.toString().trim() ?? '');
+      if (count != 0) rethrow;
+
+      logger.d('[USP][WanData]: ${instance}IPv4Address.1.* absent and '
+          'IPv4AddressNumberOfEntries=0 — treating as WAN down, not an error');
+      return null;
     }
   }
 

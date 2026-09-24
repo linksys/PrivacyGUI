@@ -10,8 +10,15 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+/// A service-level mock, used only by the ordering group at the bottom of this file: those
+/// tests need to control which of two overlapping fetches COMPLETES first, and the
+/// `UspClient` mock the rest of the file uses cannot express that — one `get` stub serves
+/// every round trip.
+class MockWanSvc extends Mock implements UspWanDataService {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -339,6 +346,69 @@ void main() {
       container.dispose();
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test above passes, yet on FW 2.0 this same path does not re-fetch on real
+    // hardware. `createContainer()` differs from production in one way that matters:
+    // it calls `container.listen(wanDataProvider, …)`, holding a subscriber for the
+    // whole test. `invalidateSelf()` only SCHEDULES a rebuild — riverpod runs `build()`
+    // again when something READS the provider, and that listener guarantees something
+    // does.
+    //
+    // So the passing test cannot tell "invalidateSelf() re-fetches" apart from
+    // "invalidateSelf() re-fetches BECAUSE a listener was held". This one removes the
+    // listener and asks the narrower question. If it fails, hypothesis A in #1615 is
+    // confirmed: the defect is the pattern, not the library.
+    //
+    // The provider is read once up front so the notifier is constructed and its
+    // `ref.listen` registered — without that there is nothing to invalidate and the
+    // test would be vacuous. A one-shot `read` rather than a `listen` is deliberately
+    // what a widget that has since stopped watching looks like.
+    // -----------------------------------------------------------------------
+    test('#1615: wanStatus re-fetches with NO listener held on the provider',
+        () async {
+      final sse = StreamController<InvalidationEvent>();
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sseInvalidationProvider.overrideWith((_) => sse.stream),
+        ],
+      );
+      // `await …future` rather than a bare `read`: reading an AsyncNotifierProvider
+      // returns the current AsyncValue without waiting for build() to finish, and the
+      // fetch inside it needs more than a few microtasks. Awaiting the future is what
+      // guarantees build() — and therefore its ref.listen — has actually run.
+      final d = await container.read(wanDataProvider.future);
+      // Proves build() ran and fetched — the ref.listen inside it is therefore
+      // registered, so the event below has something to invalidate. Asserting on the
+      // VALUE rather than on a verify() count, because `fetchRounds()` uses
+      // `verify(…)`, and mocktail's verify CONSUMES the calls it matches: calling it
+      // here would leave nothing for the assertion that matters.
+      expect(d.model.ipAddress, '100.64.0.10',
+          reason: 'build() must have completed, or this test asserts nothing');
+
+      clearInteractions(mockUsp);
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 0));
+      await settle();
+
+      expect(
+        fetchRounds(),
+        1,
+        reason:
+            'a push-triggered refresh must re-read the device even when nothing is '
+            'listening. A zero here means the notifier is back to depending on a '
+            'subscriber — which production does not guarantee, and which also stops the '
+            'ref.listen from being re-registered, disabling the mechanism entirely. '
+            'See #1615.',
+      );
+
+      await sse.close();
+      container.dispose();
+    });
+
     test('a neighbouring domain does not re-fetch', () async {
       final sse = StreamController<InvalidationEvent>();
       final container = createContainer(sse: sse.stream);
@@ -355,6 +425,152 @@ void main() {
 
       await sse.close();
       container.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Ordering — linksys/PrivacyGUI#1615, found while reviewing the fix itself.
+  //
+  // Replacing `invalidateSelf()` with a direct `state` assignment removed a guarantee
+  // nobody had written down: riverpod COALESCES invalidations. Measured — two
+  // `invalidateSelf()` calls inside one fetch window produce ONE rebuild, whereas two
+  // bare `async` calls run two overlapping fetches with last-COMPLETION-wins semantics.
+  //
+  // Reachable because `_fetch()` fans out over several USP `get`s through a throttler
+  // against a single-threaded OBUSPA, so the window is wide. And it does not self-correct:
+  // the provider is push-driven only, so a wrong value survives until the next
+  // notification — on a settled WAN, possibly never.
+  // ---------------------------------------------------------------------------
+  group('WanDataNotifier — overlapping push refreshes', () {
+    late MockWanSvc svc;
+
+    WanStatusUIModel model({required bool isUp, required String ip}) =>
+        WanStatusUIModel(
+          isUp: isUp,
+          ipAddress: ip,
+          subnetMask: '255.255.255.0',
+          addressingType: 'DHCP',
+          mtu: 1500,
+        );
+
+    setUp(() => svc = MockWanSvc());
+
+    ProviderContainer makeContainer(Stream<InvalidationEvent> sse) =>
+        ProviderContainer(overrides: [
+          uspWanDataServiceProvider.overrideWithValue(svc),
+          sseInvalidationProvider.overrideWith((_) => sse),
+        ]);
+
+    Future<void> tick() => Future<void>.delayed(Duration.zero);
+
+    test('the LATER push wins even when its fetch completes FIRST', () async {
+      // The full scenario: the link goes down, then returns before the first read has
+      // finished. The device's newer answer (up) arrives first and the older answer
+      // (down) arrives second — which must be discarded, not published.
+      final slowDown = Completer<WanStatusUIModel>();
+      final fastUp = Completer<WanStatusUIModel>();
+      var call = 0;
+      when(() => svc.fetch()).thenAnswer((_) {
+        call++;
+        if (call == 1) return Future.value(model(isUp: true, ip: '100.64.0.1'));
+        if (call == 2) return slowDown.future;
+        return fastUp.future;
+      });
+
+      final sse = StreamController<InvalidationEvent>.broadcast();
+      final c = makeContainer(sse.stream);
+      c.listen(wanDataProvider, (_, __) {});
+      await c.read(wanDataProvider.future);
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tick();
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 2));
+      await tick();
+      expect(call, 3,
+          reason:
+              'both refreshes must be in flight, or this test proves nothing');
+
+      fastUp.complete(model(isUp: true, ip: '100.64.0.9'));
+      await tick();
+      slowDown.complete(model(isUp: false, ip: ''));
+      await tick();
+
+      final end = c.read(wanDataProvider).valueOrNull!.model;
+      expect(end.isUp, isTrue,
+          reason:
+              'the older read completed last and must have been discarded — otherwise the '
+              'dashboard reports a dead link until the next notification, which on a '
+              'settled WAN may never arrive');
+      expect(end.ipAddress, '100.64.0.9');
+
+      await sse.close();
+      c.dispose();
+    });
+
+    test('a single push still publishes — the guard is not simply blocking',
+        () async {
+      // The mirror of the test above: a generation check that rejected everything would
+      // also satisfy it, and would reintroduce #1615 itself.
+      when(() => svc.fetch())
+          .thenAnswer((_) async => model(isUp: true, ip: '100.64.0.2'));
+
+      final sse = StreamController<InvalidationEvent>.broadcast();
+      final c = makeContainer(sse.stream);
+      c.listen(wanDataProvider, (_, __) {});
+      await c.read(wanDataProvider.future);
+
+      when(() => svc.fetch())
+          .thenAnswer((_) async => model(isUp: false, ip: ''));
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tick();
+      await tick();
+
+      expect(c.read(wanDataProvider).valueOrNull!.model.isUp, isFalse,
+          reason: 'one push in flight is the newest, so it must publish');
+
+      await sse.close();
+      c.dispose();
+    });
+
+    test('a failed push keeps the previous value and does not block later ones',
+        () async {
+      // The failure path the review noted had no test, asserting two things: the previous
+      // value survives, AND the failed attempt does not leave the generation counter in a
+      // state that discards the next success.
+      when(() => svc.fetch())
+          .thenAnswer((_) async => model(isUp: true, ip: '100.64.0.3'));
+
+      final sse = StreamController<InvalidationEvent>.broadcast();
+      final c = makeContainer(sse.stream);
+      c.listen(wanDataProvider, (_, __) {});
+      await c.read(wanDataProvider.future);
+
+      when(() => svc.fetch()).thenThrow(
+          const ServiceNotInitializedError(detail: 'transport gone'));
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tick();
+      await tick();
+
+      final afterFailure = c.read(wanDataProvider);
+      expect(afterFailure.hasError, isFalse,
+          reason:
+              'a push failure must not surface as AsyncError — consumers read through '
+              'valueOrNull, so that would render as "unknown"');
+      expect(afterFailure.valueOrNull!.model.ipAddress, '100.64.0.3',
+          reason: 'the previous value must survive');
+
+      when(() => svc.fetch())
+          .thenAnswer((_) async => model(isUp: true, ip: '100.64.0.4'));
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 2));
+      await tick();
+      await tick();
+
+      expect(c.read(wanDataProvider).valueOrNull!.model.ipAddress, '100.64.0.4',
+          reason:
+              'a later push must still be able to publish after a failed one');
+
+      await sse.close();
+      c.dispose();
     });
   });
 }
