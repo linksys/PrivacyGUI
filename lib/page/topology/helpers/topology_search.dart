@@ -34,28 +34,55 @@ class TopologySearch {
 
   /// The match a viewer should be taken to, or null when [query] matches nothing.
   ///
-  /// Stated as its own function because "which match" is a decision, and reading
-  /// `.first` off the set [match] returns would make it an accident: that is
-  /// `LinkedHashSet` insertion order, which is the order `GraphData.nodes`
-  /// happens to be in, which is the order the builder happens to emit. None of
-  /// those are promises.
+  /// Its own function because "which match" is a decision. `.first` off the set
+  /// [match] returns would make it an accident — that is insertion order, which is
+  /// the order the builder happens to emit.
   ///
-  /// The promise made instead: **the match closest to the anchor**, breaking ties
-  /// by name. A viewer who types a partial name and gets moved somewhere expects
-  /// the nearest thing it could have meant, not whichever row the data started
-  /// with.
-  static String? focusTarget(GraphData topology, String query) {
-    final matched = match(topology, query);
+  /// The promise made instead: **the shallowest match**, breaking ties by name.
+  ///
+  /// Shallowest, stated as such: an earlier wording here said "closest to the
+  /// anchor", which is a different rule and not the one implemented — nothing
+  /// consults `GraphData.anchorNode`. On this app's graphs the two coincide, because
+  /// the anchor *is* the depth-0 gateway, but a graph with several roots would
+  /// separate them and the code would follow depth.
+  static String? focusTarget(GraphData topology, String query) =>
+      targetAmong(topology, match(topology, query));
+
+  /// The same decision, over matches the caller already has.
+  ///
+  /// The view computes the set to highlight and then needs one of them to move to.
+  /// Going back through [focusTarget] scanned every node a second time per
+  /// keystroke — and worse, it was a *second evaluation*: the graph comes from a
+  /// provider, so the two passes could disagree and the view could highlight one
+  /// set while focusing a node outside it.
+  ///
+  /// Kept as a fold rather than a sort: only the best candidate is wanted, and a
+  /// comparator over a list is both more work and more surface.
+  static String? targetAmong(GraphData topology, Set<String> matched) {
     if (matched.isEmpty) return null;
 
     final structure = topology.structure;
-    final nodes = topology.nodes.where((n) => matched.contains(n.id)).toList()
-      ..sort((a, b) {
-        final byDepth = structure[a.id].depth.compareTo(structure[b.id].depth);
-        if (byDepth != 0) return byDepth;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
-    return nodes.first.id;
+    GraphNode? best;
+    int? bestDepth;
+
+    for (final node in topology.nodes) {
+      if (!matched.contains(node.id)) continue;
+
+      // `structure[]` never returns null — the kit answers an unknown id with
+      // `NodeStructure.unknown` (`depth: 0`) rather than throwing, because its own
+      // callers are layout and paint. So an orphan sorts as if it were a root,
+      // which is a real ordering and not an error to guard.
+      final depth = structure[node.id].depth;
+      if (best == null ||
+          depth < bestDepth! ||
+          (depth == bestDepth &&
+              node.name.toLowerCase().compareTo(best.name.toLowerCase()) < 0)) {
+        best = node;
+        bestDepth = depth;
+      }
+    }
+
+    return best?.id;
   }
 
   /// Whether one node matches an already-normalised [needle].

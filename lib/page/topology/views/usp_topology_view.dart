@@ -117,10 +117,13 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       return;
     }
 
-    // Which match to move to is `focusTarget`'s decision — nearest the anchor,
-    // ties by name — not `.first` off a Set, which would be insertion order
-    // dressed up as a choice.
-    final target = TopologySearch.focusTarget(topology, query);
+    // Which match to move to is the helper's decision — shallowest, ties by name —
+    // not `.first` off a Set, which would be insertion order dressed up as a
+    // choice. Handed the set just highlighted, rather than the query: going back
+    // through `focusTarget` scanned every node a second time per keystroke, and the
+    // graph comes from a provider, so two evaluations could disagree and leave the
+    // view highlighting one set while focusing a node outside it.
+    final target = TopologySearch.targetAmong(topology, matches);
     if (target != null) {
       // `focusOn` also expands whatever aggregate holds the node, which is what
       // makes a match inside a collapsed cluster reachable at all.
@@ -138,6 +141,10 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       // either way, so the incoming height is infinite and an `Expanded` there
       // throws on every frame. The graph therefore keeps an explicit height, and
       // the page keeps its scroll.
+      //
+      // The graph inside it still takes `interactive: true`. That is measured, not
+      // assumed: the arena splits the two by pointer count, so neither gesture
+      // reaches both. See the note at that flag.
       scrollable: true,
       title: loc(context).networkTopology,
       topbar: const PreferredSize(
@@ -275,8 +282,16 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                     : LeafVisibility.collapsed,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
-                // Pan and zoom. The page above does not scroll, so the gesture
-                // arena has one claimant.
+                // Pan and zoom, inside a page that **does** scroll (`:94`). That
+                // combination is normally refused — an `InteractiveViewer` in a
+                // scrollable is the textbook way to lose the scroll — so it was
+                // measured rather than reasoned about, and Flutter's gesture arena
+                // splits the two by pointer count: a one-finger vertical drag gave
+                // the page 280px of scroll and moved the graph 0, and a two-finger
+                // pinch scaled the graph to 2.0 and scrolled the page 0. Neither
+                // gesture reaches both. Pinned in
+                // `usp_topology_gesture_arena_test.dart`, because the claim is
+                // about a framework behaviour we do not control.
                 //
                 // This is also what `LeafVisibility.adaptive` needs to be usable
                 // rather than merely correct: it aggregates a parent's leaves when

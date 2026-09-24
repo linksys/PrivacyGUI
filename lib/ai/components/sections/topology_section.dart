@@ -172,12 +172,9 @@ class TopologySection extends StatelessWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            // No spacing multiplier. The card and the full page both had one to
-            // stop nodes crowding, and both measured it out: ui_kit 3.4.0 sizes
-            // every ring from the discs going on it, so the pitch is 51.5px at
-            // x1.0, x2.0 and x2.2 alike — and past fit-to-screen the multiplier
-            // grows the bounds into the 0.5 fit floor, drawing a *smaller* graph.
-            // This section was missed when the other two were changed.
+            // No spacing multiplier — the third of three sites that carried one,
+            // and the one the issue did not list. The measurement that retired all
+            // three is recorded once, at `usp_network_topology_card.dart:212`.
           ),
         ],
       ),
@@ -226,14 +223,28 @@ class TopologySection extends StatelessWidget {
             if (model != null) 'model': model,
             if (rssi != null) 'rssi': rssi,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'isWifi': true,
+            // No `isWifi`. The prompt's extender schema
+            // (`router_system_prompt.dart:223`) is
+            // `{name, status?, rssi?, uplinkRate?, mac?, model?}` — it has no such
+            // field, so the model cannot tell us, and an extender's backhaul is
+            // genuinely sometimes wired. This used to be hardcoded `true`, which
+            // asserted Wi-Fi about every one of them.
+            //
+            // `rssi` is the honest signal: a model that reported one is describing
+            // a wireless link, and the panel already draws a Signal row from it.
           },
         ));
 
         edges.add(GraphEdge(
+          // Keyed on the evidence, not asserted. `EdgeKind.indirect` used to be
+          // hardcoded here, which said "wireless backhaul" about every extender a
+          // model described — and the schema (`:223`) gives no medium field to base
+          // that on. An `rssi` is the one thing in it that implies a radio link; a
+          // model that reported none has not told us, and 3.4.0 lets the edge say
+          // so instead of guessing.
           sourceId: gatewayId,
           targetId: extId,
-          kind: EdgeKind.indirect,
+          kind: rssi == null ? null : EdgeKind.indirect,
           strength: edgeStrengthFromRssi(rssi),
         ));
       }
@@ -247,7 +258,12 @@ class TopologySection extends StatelessWidget {
         final clientId = 'client-$i';
         final name = client['name'] as String? ?? loc(context).deviceN(i + 1);
         final parentId = client['parentId'] as String? ?? gatewayId;
-        final isWifi = client['isWifi'] as bool? ?? true;
+        // Nullable. `isWifi?` **is** in the prompt's client schema (`:224`), so an
+        // absent one means the model chose not to say — and the panel now omits the
+        // row rather than defaulting it. `?? true` printed "WiFi" for a device
+        // nothing had described that way, which on a wired client is wrong in the
+        // one direction a viewer would act on.
+        final isWifi = client['isWifi'] as bool?;
         final rssi = client['rssi'] as int?;
         final status = client['status'] as String? ?? 'online';
         final downlinkRate = client['downlinkRate'] as int?; // bps
@@ -285,17 +301,24 @@ class TopologySection extends StatelessWidget {
             if (rssi != null) 'rssi': rssi,
             if (downlinkRate != null) 'downlinkRate': downlinkRate,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'isWifi': isWifi,
+            if (isWifi != null) 'isWifi': isWifi,
           },
         ));
 
         edges.add(GraphEdge(
           sourceId: resolvedParentId,
           targetId: clientId,
-          kind: isWifi ? EdgeKind.indirect : EdgeKind.direct,
-          // Null for a wired edge: wiredness is the kind axis, and a direct
-          // edge's strength is never read.
-          strength: isWifi ? edgeStrengthFromRssi(rssi) : null,
+          // Null when the model did not say, which 3.4.0 made expressible: the kit
+          // draws an undeclared edge in `undeclaredEdgeStyle` — neutral and never
+          // animated, "because a flow animation is a claim about movement and an
+          // undeclared edge supports none". Picking `direct` or `indirect` here
+          // would be inventing that claim to satisfy a non-null type.
+          kind: isWifi == null
+              ? null
+              : (isWifi ? EdgeKind.indirect : EdgeKind.direct),
+          // Only graded for a link we know is wireless. A wired edge has no RSSI by
+          // design and an undeclared one has no medium to grade.
+          strength: isWifi == true ? edgeStrengthFromRssi(rssi) : null,
         ));
       }
     }

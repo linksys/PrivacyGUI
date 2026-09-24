@@ -84,7 +84,12 @@ class NodeDetailPopup extends StatelessWidget {
     // A device's own facts, for a leaf.
     final mac = metadata?['mac'] as String? ?? '';
     final ip = metadata?['ip'] as String? ?? '';
-    final isWifi = metadata?['isWifi'] as bool? ?? false;
+    // Nullable, not `?? false`. `UspTopologyBuilder` writes this key
+    // unconditionally for every leaf it builds, so a missing one does not mean
+    // "wired" — it means this node came from somewhere else (the AI section builds
+    // its own) and the fact is unknown. Defaulting it put `Ethernet` on the screen
+    // for a device nothing had said that about.
+    final isWifi = metadata?['isWifi'] as bool?;
     final signalStrength = metadata?['signalStrength'] as int?;
     final band = metadata?['band'] as String?;
     final ssid = metadata?['ssid'] as String?;
@@ -104,8 +109,11 @@ class NodeDetailPopup extends StatelessWidget {
         if (isLeaf) ...[
           if (ip.isNotEmpty) _row(loc(context).ipAddress, ip),
           if (mac.isNotEmpty) _row(loc(context).macAddress, mac),
-          _row(loc(context).connectionType,
-              isWifi ? loc(context).wifi : loc(context).ethernet),
+          // Omitted rather than guessed when the medium is unknown, which is how
+          // every other row in this arm already behaves.
+          if (isWifi != null)
+            _row(loc(context).connectionType,
+                isWifi ? loc(context).wifi : loc(context).ethernet),
           if (ssid != null) _row(loc(context).wifiName, ssid),
           if (band != null) _row(loc(context).band, band),
           // Wireless only, and only when measured — a wired device has no RSSI

@@ -94,19 +94,47 @@ void main() {
   });
 
   group('which match a viewer is taken to', () {
-    test('the one nearest the anchor, not whichever the data listed first', () {
-      // 'a' appears in the gateway's subtitle (Linksys), the extender's name
-      // (Study) and the laptop's name (Alex's) — three matches at three depths.
-      final matched = TopologySearch.match(topology, 'a');
-      expect(matched.length, greaterThan(1),
-          reason: 'the point of this case is a tie to break');
+    test('the shallowest, not whichever the data listed first', () {
+      // The match set is pinned, not merely counted. An earlier version asserted
+      // `length > 1`, which is a precondition rather than an assertion — and it was
+      // wrong about the fixture besides: the comment said three matches at three
+      // depths, and measuring it gives four. `Thermostat` contains an 'a' too.
+      // Pinning the set is what made that visible.
+      expect(TopologySearch.match(topology, 'a'),
+          {'gateway', 'extender-1', 'client-1', 'client-2'});
 
-      // Depth wins: the gateway is depth 0.
+      // Depth decides: the gateway is the only depth 0.
       expect(TopologySearch.focusTarget(topology, 'a'), 'gateway');
     });
 
+    test('a deeper match loses to a shallower one whatever its name', () {
+      // The case that isolates the depth rule, chosen by measuring which needles
+      // land where rather than by reading the fixture and guessing. 'x' matches the
+      // extender (depth 1, `Study Extender`) and the laptop (depth 2,
+      // `Alex's MacBook`) and **not** the gateway.
+      expect(TopologySearch.match(topology, 'x'), {'extender-1', 'client-1'});
+
+      // Alphabetically `Alex's` wins; by depth `Study` does. So a target of
+      // `extender-1` can only have come from consulting depth first.
+      expect(TopologySearch.focusTarget(topology, 'x'), 'extender-1');
+    });
+
+    test('two matches at one depth in the real fixture break by name', () {
+      // 'st' matches `Study Extender` and `Thermostat`, both depth 1 — the
+      // tie-break on the same graph every other case here uses, rather than only on
+      // the hand-made one below.
+      expect(TopologySearch.match(topology, 'st'), {'extender-1', 'client-2'});
+      expect(TopologySearch.focusTarget(topology, 'st'), 'extender-1',
+          reason: 'Study Extender before Thermostat');
+    });
+
     test('ties at one depth break by name', () {
-      // Two leaves under the same parent, so depth cannot separate them.
+      // Two leaves under one parent, so depth cannot separate them — and the parent
+      // is **present**, which it needs to be for the depths to be real. An earlier
+      // version of this case built the pair with their `gw` parent filtered out of
+      // the node list; the kit answers a missing id with `NodeStructure.unknown`
+      // (`depth: 0`), so both leaves were depth 0 and the case passed for the wrong
+      // reason — it was exercising the orphan path, not the tie-break.
       final tied = GraphData(
         nodes: const [
           GraphNode(id: 'gw', name: 'Router', styleSlot: 'primary'),
@@ -121,15 +149,32 @@ void main() {
         edges: const [],
       );
 
-      // Both match 'r' (Printer, Router...) — assert the leaf pair specifically.
-      expect(TopologySearch.focusTarget(tied, 'e'), 'gw',
-          reason: 'Router is depth 0 and matches too');
-      // Restricted to the two leaves: alphabetical, so Apple before Zebra.
-      final leafOnly = GraphData(
-        nodes: tied.nodes.where((n) => n.id != 'gw').toList(),
+      // 'p' matches only the two leaves (Printer, Apple) — the router does not, so
+      // depth 1 is a genuine tie and the name breaks it.
+      expect(TopologySearch.match(tied, 'p'), {'z', 'a'});
+      expect(TopologySearch.focusTarget(tied, 'p'), 'a',
+          reason: 'Apple before Zebra');
+    });
+
+    test('an orphan sorts as a root rather than throwing', () {
+      // The behaviour the case above used to depend on by accident, asserted here
+      // on purpose. A node whose `parentId` names something absent gets
+      // `NodeStructure.unknown` — the kit answers layout and paint harmlessly
+      // rather than throwing mid-frame — so it reads as depth 0.
+      final orphaned = GraphData(
+        nodes: const [
+          GraphNode(id: 'gw', name: 'Router', styleSlot: 'primary'),
+          GraphNode(
+              id: 'lost',
+              name: 'Aaa Orphan',
+              styleSlot: 'leaf',
+              parentId: 'no-such-node'),
+        ],
         edges: const [],
       );
-      expect(TopologySearch.focusTarget(leafOnly, 'e'), 'a');
+
+      // Both read as depth 0, so the name decides: 'Aaa Orphan' before 'Router'.
+      expect(TopologySearch.focusTarget(orphaned, 'r'), 'lost');
     });
 
     test('a miss has no target', () {
@@ -138,10 +183,40 @@ void main() {
     });
 
     test('the target is always one of the matches', () {
+      // Counted, not `continue`d past. The earlier version skipped a null target,
+      // so a regression that returned null for everything would have passed this
+      // silently while asserting nothing.
+      var checked = 0;
       for (final q in ['a', 'e', 'router', '192.168']) {
+        final matches = TopologySearch.match(topology, q);
+        expect(matches, isNotEmpty, reason: 'fixture must match "$q"');
+
         final target = TopologySearch.focusTarget(topology, q);
-        if (target == null) continue;
-        expect(TopologySearch.match(topology, q), contains(target), reason: q);
+        expect(target, isNotNull, reason: 'a non-empty match set has a target');
+        expect(matches, contains(target), reason: q);
+        checked++;
+      }
+      expect(checked, 4);
+    });
+
+    test('targetAmong is the same decision as focusTarget', () {
+      // The view calls `targetAmong` with the set it already computed; every other
+      // caller and all the cases above go through `focusTarget`. They must not be
+      // able to drift apart.
+      for (final q in [
+        'a',
+        'e',
+        'router',
+        'thermostat',
+        'no such device',
+        ''
+      ]) {
+        expect(
+          TopologySearch.targetAmong(
+              topology, TopologySearch.match(topology, q)),
+          TopologySearch.focusTarget(topology, q),
+          reason: q,
+        );
       }
     });
   });

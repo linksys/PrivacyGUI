@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -158,6 +159,59 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Details'), findsOneWidget);
+    });
+
+    testWidgets('is offered for an offline leaf, which has a page to reach',
+        (tester) async {
+      // The gate that is deliberately absent. An offline mesh node is unreachable
+      // (#1465), but an offline *device* opens its Device Detail page from the
+      // device list too and that page renders the correct state — so re-testing
+      // liveness here would contradict the resolver that has already said yes.
+      final node = leafFor(
+          DevicesTestData.createOfflineClient(mac: '11:22:33:44:55:04'));
+      expect(node.status, NodeState.inactive);
+      expect(topologyNavTargetFor(node), isNotNull);
+
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.create(brightness: Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => NodeDetailPopup.builder(
+              context,
+              node,
+              node.metadata,
+              showDetailsButton: true,
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Details'), findsOneWidget);
+    });
+
+    testWidgets('a button with no destination renders disabled, not dead',
+        (tester) async {
+      // A caller can construct the widget directly with `showDetailsButton: true`
+      // and no callback, which `builder` never does. Measured rather than assumed:
+      // `AppButton` drops the label to 38% alpha and clears the enabled/tappable
+      // semantics flags, so it reads as unavailable to both a viewer and a screen
+      // reader. That is why the `if (showDetailsButton)` gate does not also need to
+      // test the callback.
+      await pump(tester, leafFor(DevicesTestData.createWifiClient()),
+          showDetailsButton: true);
+
+      final label = tester.widget<Text>(find.text('Details'));
+      expect(label.style?.color?.a, lessThan(1.0),
+          reason: 'a button with nowhere to go must not look live');
+      expect(
+          tester
+              .getSemantics(find.text('Details'))
+              .getSemanticsData()
+              .hasFlag(SemanticsFlag.isEnabled),
+          isFalse);
     });
 
     testWidgets('is not drawn for a node with nowhere to go', (tester) async {
