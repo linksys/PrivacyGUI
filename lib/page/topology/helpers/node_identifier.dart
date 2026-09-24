@@ -28,6 +28,19 @@ String topologyClientIdentifier(String macSuffix) =>
 const String kTopologyNodeDetailButtonIdentifier =
     'topology-node-detail-button';
 
+/// The full-page topology's search field.
+///
+/// A spec types a device's name here and asserts the graph moved to it, so the
+/// field needs a hook of its own (constitution Article XVI §16.2 — form inputs
+/// are required). Singleton: one search field per page.
+const String kTopologySearchFieldIdentifier = 'topology-search-field';
+
+/// The button that empties [kTopologySearchFieldIdentifier].
+///
+/// Only mounted while the field has text, which is itself the thing a spec
+/// checks — so it is located rather than derived from the field.
+const String kTopologySearchClearIdentifier = 'topology-search-clear';
+
 /// Normalizes a MAC / device id to uppercase hex with every separator removed.
 ///
 /// `aa:bb:cc:dd:ee:ff` → `AABBCCDDEEFF`. Any non-hex character (`:`, `-`, `.`,
