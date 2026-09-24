@@ -145,4 +145,47 @@ void main() {
       expect(topologyNavTargetFor(offlineExtender), isNull);
     });
   });
+
+  group('TopologyNavTarget is a value', () {
+    test('two targets with the same destination are equal', () {
+      // `Equatable` for the reason the tests need rather than the one Article XI
+      // names: identity `==` meant every assertion about a destination had to be two
+      // field comparisons, which is how a test checks the route and forgets the
+      // parameters.
+      final a = TopologyNavTarget('r', {'mac': 'AA'});
+      final b = TopologyNavTarget('r', {'mac': 'AA'});
+
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('the map is compared by value, not by identity', () {
+      // Not a given: `props` holding a `Map` only works because Equatable compares
+      // collections deeply. Measured, because the whole point of adding it was to be
+      // able to assert a destination in one line.
+      expect(TopologyNavTarget('r', {'mac': 'AA'}),
+          isNot(TopologyNavTarget('r', {'mac': 'BB'})));
+      expect(TopologyNavTarget('r', {'mac': 'AA'}),
+          isNot(TopologyNavTarget('other', {'mac': 'AA'})));
+    });
+
+    test('a caller mutating its own map cannot change a target', () {
+      // The invariant `Map.unmodifiable` makes enforced rather than documented: this
+      // class is `@immutable` and its `hashCode` derives from the map, so an aliased
+      // one would let an object change identity after construction.
+      final source = {'mac': 'AA'};
+      final target = TopologyNavTarget('r', source);
+
+      source['mac'] = 'ZZ';
+
+      expect(target.queryParameters['mac'], 'AA');
+    });
+
+    test('the exposed map rejects writes', () {
+      final target = TopologyNavTarget('r', {'mac': 'AA'});
+
+      expect(
+          () => target.queryParameters['mac'] = 'ZZ', throwsUnsupportedError);
+    });
+  });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -240,6 +241,75 @@ void main() {
       expect(subtitle, isNotEmpty);
       expect(subtitle, isNot(startsWith('·')));
       expect(subtitle, isNot(startsWith(' ')));
+    });
+  });
+
+  group('the rendered subtitle is what search reads', () {
+    testWidgets('a wired extender is findable by the word on its row',
+        (tester) async {
+      // The gap this closes. The medium is worded at render time, so it is not in
+      // `node.extra` — and `TopologySearch.match` reading `extra` alone matched
+      // nothing for `ethernet` while `backhaulLinkType: Ethernet` sat in the
+      // metadata. Measured before the fix.
+      final context = await contextFor(tester, const Locale('en'));
+      final topology = UspTopologyBuilder.buildFromMeshNetwork(
+        meshNetwork: DevicesTestData.createMeshNetwork(
+          slave: DevicesTestData.createEthernetSlave(),
+        ),
+        info: sysInfo,
+      );
+      final slave = nodeOf(topology, 'secondary');
+
+      String subtitleOf(GraphNode node) =>
+          TopologySubtitle.build(context, node);
+
+      expect(TopologySearch.match(topology, 'ethernet'), isEmpty,
+          reason: 'without the rendered subtitle there is nothing to match');
+      expect(
+        TopologySearch.match(topology, 'ethernet', subtitleOf: subtitleOf),
+        contains(slave.id),
+      );
+    });
+
+    testWidgets('and by the word for it in their own language', (tester) async {
+      // The reason the *rendered* subtitle is the right thing to search rather than
+      // the raw field: a viewer types what they can see. In zh the row says 以太网,
+      // and the firmware spelling is not on screen at all.
+      final context = await contextFor(
+          tester, const Locale.fromSubtags(languageCode: 'zh'));
+      final topology = UspTopologyBuilder.buildFromMeshNetwork(
+        meshNetwork: DevicesTestData.createMeshNetwork(
+          slave: DevicesTestData.createEthernetSlave(),
+        ),
+        info: sysInfo,
+      );
+      final slave = nodeOf(topology, 'secondary');
+
+      String subtitleOf(GraphNode node) =>
+          TopologySubtitle.build(context, node);
+
+      expect(
+        TopologySearch.match(topology, '以太网', subtitleOf: subtitleOf),
+        contains(slave.id),
+      );
+    });
+
+    testWidgets('a Wi-Fi extender is findable by its signal too',
+        (tester) async {
+      final context = await contextFor(tester, const Locale('en'));
+      final topology = UspTopologyBuilder.buildFromMeshNetwork(
+        meshNetwork: DevicesTestData.createMeshNetwork(),
+        info: sysInfo,
+      );
+      final slave = nodeOf(topology, 'secondary');
+
+      String subtitleOf(GraphNode node) =>
+          TopologySubtitle.build(context, node);
+
+      expect(
+        TopologySearch.match(topology, 'dbm', subtitleOf: subtitleOf),
+        contains(slave.id),
+      );
     });
   });
 

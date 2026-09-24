@@ -14,12 +14,20 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// is how a test ends up checking the route and forgetting the parameters.
 ///
 /// [queryParameters] is handed to the constructor and exposed directly, so a caller
-/// that mutates the map it passed in mutates this. Every caller passes a literal;
-/// the field stays a plain `Map` because `go_router` wants one, and wrapping it
-/// would trade a real dependency for a theoretical one.
+/// [queryParameters] is copied, not aliased. This class is `@immutable` and its
+/// `hashCode` derives from that map, so a caller mutating what it passed in would
+/// change this object's identity after construction. Every caller passes a literal
+/// today, which makes the defect theoretical — an argument for closing it cheaply
+/// rather than describing it, which is what an earlier version of this comment did.
+/// `Map.unmodifiable` also makes the promise enforced: a later caller that tries to
+/// write through the getter fails loudly instead of silently succeeding.
+///
+/// The constructor is no longer `const`. No call site wanted it — every target is
+/// built from runtime values.
 @immutable
 class TopologyNavTarget extends Equatable {
-  const TopologyNavTarget(this.route, this.queryParameters);
+  TopologyNavTarget(this.route, Map<String, String> queryParameters)
+      : queryParameters = Map.unmodifiable(queryParameters);
 
   final String route;
   final Map<String, String> queryParameters;

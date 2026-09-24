@@ -34,6 +34,27 @@ const meshBackhaulLinkTypeEthernet = 'ethernet';
 bool isMeshBackhaulEthernet(String? linkType) =>
     linkType?.trim().toLowerCase() == meshBackhaulLinkTypeEthernet;
 
+/// Whether [linkType] names a medium at all, as opposed to saying there is none.
+///
+/// **The single "is there a medium" test**, and the companion to
+/// [isMeshBackhaulEthernet]: that one answers *which* medium, this one answers
+/// *whether*. Both are needed because `LinkType` has three states, not two —
+/// a medium, the literal `None` (prplMesh's positive statement on the controller
+/// row), and absent.
+///
+/// Written once because it was written twice and the two copies disagreed. Two
+/// readers of the same field added in one commit — the tree subtitle and the detail
+/// panel — spelled this differently, and the panel's version let `None` through to
+/// be classified by [isMeshBackhaulEthernet], which answers `false` for it and so
+/// drew `Wi-Fi` for a node that had just said it has no backhaul.
+///
+/// Case-folded and trimmed for the same reason [isMeshBackhaulEthernet] is: a value
+/// test that recognises one spelling is the same bug written once per caller.
+bool hasNamedMeshBackhaulMedium(String? linkType) {
+  final normalised = linkType?.trim().toLowerCase() ?? '';
+  return normalised.isNotEmpty && normalised != meshBackhaulLinkTypeNone;
+}
+
 /// Whether [node] has a backhaul link of its own — i.e. it is an agent
 /// (extender), not the controller (gateway).
 ///

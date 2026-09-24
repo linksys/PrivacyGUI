@@ -154,7 +154,14 @@ class NodeDetailPopup extends StatelessWidget {
             //
             // Labelled `connectionType`, which is what the leaf branch above calls
             // the same fact, so the two halves of one panel agree.
-            if (backhaulLinkType != null && backhaulLinkType.trim().isNotEmpty)
+            // `hasNamedMeshBackhaulMedium`, not `isNotEmpty`. `LinkType` has three
+            // states: a medium, the literal `None` that prplMesh reports on a row
+            // with no backhaul, and absent. An `isNotEmpty` test passes `None`
+            // through to the classifier below, which answers "not Ethernet" and so
+            // drew `Wi-Fi` for a node that had just said it has no backhaul —
+            // measured, and shipped for one round because this reader and the tree
+            // subtitle each spelled the same test and only one of them got it right.
+            if (hasNamedMeshBackhaulMedium(backhaulLinkType))
               _row(
                   loc(context).connectionType,
                   isMeshBackhaulEthernet(backhaulLinkType)
@@ -163,6 +170,14 @@ class NodeDetailPopup extends StatelessWidget {
             // Shared predicate, not `!= 'Ethernet'`: this row draws a signal
             // reading, so a wired node whose medium is spelled unexpectedly must
             // not fall into it (#1555).
+            //
+            // And **not** gated on `hasNamedMeshBackhaulMedium` like the row above.
+            // `Backhaul.Stats.SignalStrength` measures this link whether or not
+            // firmware named what carries it, so an RSSI with no medium is a reading
+            // we have and a label we do not. The subtitle drops it in that case for
+            // a different reason: it has one line, shaped "medium, then its signal",
+            // so with no medium there is nothing to hang it on. Two interfaces, one
+            // fact, two honest answers.
             if (backhaulSignalStrength != null &&
                 !isMeshBackhaulEthernet(backhaulLinkType))
               _row(

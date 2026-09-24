@@ -30,6 +30,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspTopologyView extends ConsumerStatefulWidget {
   const UspTopologyView({super.key});
 
+  /// How long the search field stays quiet before a query is run.
+  ///
+  /// Long enough to swallow ordinary typing, short enough that the graph still feels
+  /// like it is answering. On the widget rather than its `State` so a timing test can
+  /// reference it: a test that hardcoded 250 would keep passing if this changed,
+  /// which is how a timing test goes quietly stale.
+  static const searchDebounce = Duration(milliseconds: 250);
+
   @override
   ConsumerState<UspTopologyView> createState() => _UspTopologyViewState();
 }
@@ -56,6 +64,15 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   /// the viewport chases each letter while the viewer is still typing the word.
   Timer? _searchDebounce;
 
+  /// The graph as of the most recent build.
+  ///
+  /// Held so a debounced search reads the current one rather than whichever was in
+  /// scope when the keystroke landed. Assigned in `build`, which is the only place
+  /// that knows it — a `State` field written during build is normally a smell, but
+  /// this one is never read during build and never triggers one; it exists purely so
+  /// a callback firing later has a defined answer to "which graph".
+  GraphData? _topology;
+
   @override
   void initState() {
     super.initState();
@@ -81,35 +98,55 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     super.dispose();
   }
 
-  /// Highlight every node matching [query], and move the viewport to the first.
+  /// Search for [query] after a short quiet period, so a word costs one scan rather
+  /// than one per letter.
   ///
-  /// Matching is this app's business, not the kit's: name, MAC and IP are the
-  /// three things a viewer knows a device by, which is the same set the device
-  /// list searches (`searchByNameMacIp`).
-  /// Search after a short quiet period, so a word costs one scan rather than one
-  /// per letter.
+  /// **The only entry point.** Every path in — typing, and the clear button — comes
+  /// through here, because the cancel is a duty and a second entry point is a place
+  /// to forget it: the clear button used to call `_search` directly, so clearing the
+  /// field within the window left the pending timer to fire 250ms later and
+  /// re-highlight and re-zoom what the viewer had just dismissed.
   ///
-  /// 250ms: long enough to swallow ordinary typing, short enough that the graph
-  /// still feels like it is answering. An empty query skips the wait — clearing the
-  /// field is a request to see everything again, and making that lag reads as the
-  /// clear having not worked.
-  void _searchDebounced(GraphData topology, String query) {
+  /// An empty query skips the wait. Clearing the field is a request to see
+  /// everything again, and making that lag reads as the clear having not worked.
+  void _searchDebounced(String query) {
     _searchDebounce?.cancel();
     if (query.trim().isEmpty) {
-      _search(topology, query);
+      _search(query);
       return;
     }
-    _searchDebounce = Timer(
-      const Duration(milliseconds: 250),
-      () => _search(topology, query),
-    );
+    _searchDebounce =
+        Timer(UspTopologyView.searchDebounce, () => _search(query));
   }
 
-  void _search(GraphData topology, String query) {
+  /// Highlight every node matching [query], and move the viewport to one of them.
+  ///
+  /// Matching is this app's business, not the kit's: name, MAC and IP are the three
+  /// things a viewer knows a device by, which is the same set the device list
+  /// searches (`searchByNameMacIp`).
+  ///
+  /// Reads the topology from [_topology] rather than taking it as a parameter. A
+  /// deferred call must run over the graph as it is when it fires: the graph is
+  /// rebuilt from watched providers, so a `GraphData` captured in the timer's closure
+  /// can be a discarded one by the time the 250ms is up, and the highlight would name
+  /// nodes the kit no longer has.
+  void _search(String query) {
+    final topology = _topology;
+    if (topology == null) return;
+
     // The query goes in raw: `TopologySearch` owns trimming and case-folding, and
     // normalising here as well would be the same work done twice in two places
     // that then have to agree.
-    final matches = TopologySearch.match(topology, query);
+    // The subtitle as this build draws it, so the medium — worded at render time
+    // from a firmware string — is findable by the word on the row rather than only
+    // by the raw `LinkType`. `mounted` because a deferred search can outlive the
+    // element: reading `context` after that is the disposal bug this guard closes.
+    final matches = TopologySearch.match(
+      topology,
+      query,
+      subtitleOf:
+          mounted ? (node) => TopologySubtitle.build(context, node) : null,
+    );
     _controller.highlight(matches);
 
     if (matches.isEmpty) {
@@ -167,20 +204,38 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             // system-info fetch that landed after the devices one left this page
             // on whatever it saw first — and with the branch below that meant a
             // blank page that never recovered.
-            final sysInfo =
-                ref.watch(systemInfoDataProvider).valueOrNull?.model;
-            if (sysInfo == null) {
-              // Still arriving, or failed. Either way the graph cannot be built
-              // without the gateway's own identity, and an empty box says nothing
-              // and offers nothing — the state a viewer reads as a broken page.
-              return const Center(child: AppLoader());
-            }
-            final topology = UspTopologyBuilder.buildFromMeshNetwork(
-              meshNetwork: data.meshNetwork,
-              info: sysInfo,
-            );
+            //
+            // The three states are kept apart. `valueOrNull == null` collapses
+            // loading and error into one branch, and the only thing it can draw for
+            // both is a spinner — which for a failed fetch never stops and offers no
+            // retry. The devices provider one level up already answers this shape
+            // with `ServiceErrorView`; so does this.
+            final sysInfoAsync = ref.watch(systemInfoDataProvider);
+            return sysInfoAsync.when(
+              loading: () => const Center(child: AppLoader()),
+              error: (error, _) => ServiceErrorView(
+                error: error is ServiceError ? error : null,
+                title: loc(context).unableToLoadTopology,
+                onRetry: () => ref.invalidate(systemInfoDataProvider),
+              ),
+              // `model` is non-nullable on the provider's state, so a resolved
+              // system-info always has one — which is why the `valueOrNull?.model ==
+              // null` test this replaces could only ever have been true while loading
+              // or after a failure, and drew a spinner for both.
+              data: (info) {
+                final sysInfo = info.model;
 
-            return _buildTopologyCard(context, topology);
+                final topology = UspTopologyBuilder.buildFromMeshNetwork(
+                  meshNetwork: data.meshNetwork,
+                  info: sysInfo,
+                );
+                // Recorded for the debounced search, which fires after this build
+                // and must scan the graph as it is then, not as it was.
+                _topology = topology;
+
+                return _buildTopologyCard(context, topology);
+              },
+            );
           },
         );
       },
@@ -212,12 +267,15 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                         styleVariant: ButtonStyleVariant.text,
                         size: AppButtonSize.small,
                         onTap: () {
-                          // Clearing notifies the listener, which rebuilds.
+                          // Clearing notifies the listener, which rebuilds. Then
+                          // through the debounced path like every other entry, so
+                          // the pending timer is cancelled rather than left to fire
+                          // over a query the viewer just dismissed.
                           _searchController.clear();
-                          _search(topology, '');
+                          _searchDebounced('');
                         },
                       ),
-                onChanged: (value) => _searchDebounced(topology, value),
+                onChanged: _searchDebounced,
               ),
             ),
             AppGap.md(),

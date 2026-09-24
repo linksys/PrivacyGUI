@@ -42,11 +42,18 @@ class TopologyNodeOrder {
     return switch (TopologySlots.of(node)) {
       NodeStyleSlot.primary => 0,
       NodeStyleSlot.secondary => 1,
-      // A device, and — deliberately — a node whose slot this app did not
-      // assign. It sorts last among the non-external nodes rather than being
-      // promoted above the ones we did classify. `topologyNavTargetFor` gives the
-      // same input no page; the two answers differ because the questions do, and
-      // both read the unknown case from one place.
+      // A device, and — deliberately — a node whose slot this app did not assign.
+      // It sorts last among the non-external nodes rather than being promoted above
+      // the ones we did classify.
+      //
+      // `topologyNavTargetFor` answers the same input differently, and that is
+      // intended: it routes only a `leaf`, so an unassigned node gets no page, while
+      // here it gets a rank. Two questions, two answers — what they share is
+      // `TopologySlots.of`, so neither can disagree about what the *slot* is, only
+      // about what to do with an absent one. (An earlier version of this comment
+      // claimed both read the unknown case "from one place"; after the sort moved out
+      // of `topology_nav_target.dart` that is two switches in two files, so it is
+      // stated as a difference rather than a shared rule.)
       NodeStyleSlot.leaf => 2,
       NodeStyleSlot.tertiary => 2,
       null => 2,

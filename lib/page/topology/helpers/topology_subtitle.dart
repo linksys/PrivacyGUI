@@ -48,11 +48,8 @@ class TopologySubtitle {
   /// describing something else.
   static String? _backhaul(
       BuildContext context, Map<String, dynamic>? metadata) {
-    final linkType = (metadata?['backhaulLinkType'] as String?)?.trim() ?? '';
-    if (linkType.isEmpty ||
-        linkType.toLowerCase() == meshBackhaulLinkTypeNone) {
-      return null;
-    }
+    final linkType = metadata?['backhaulLinkType'] as String?;
+    if (!hasNamedMeshBackhaulMedium(linkType)) return null;
 
     final wired = isMeshBackhaulEthernet(linkType);
     final medium = wired ? loc(context).ethernet : loc(context).wifi;

@@ -23,11 +23,22 @@ class TopologySearch {
   /// the caller's contract is "these are the matches to emphasise", and
   /// emphasising all of them is the same as emphasising none while costing a
   /// relayout.
-  static Set<String> match(GraphData topology, String query) {
+  ///
+  /// [subtitleOf] supplies each node's subtitle **as drawn**, which is what a viewer
+  /// types from. Optional because part of a subtitle is worded at render time and
+  /// this function has no locale; without it, matching falls back to `node.extra`,
+  /// and a fact that only exists in the rendered string is unfindable. The page
+  /// passes `TopologySubtitle.build`.
+  static Set<String> match(
+    GraphData topology,
+    String query, {
+    String Function(GraphNode node)? subtitleOf,
+  }) {
     final needle = query.trim().toLowerCase();
     if (needle.isEmpty) return const {};
     return topology.nodes
-        .where((node) => matchesNode(node, needle))
+        .where((node) =>
+            matchesNode(node, needle, renderedSubtitle: subtitleOf?.call(node)))
         .map((node) => node.id)
         .toSet();
   }
@@ -45,8 +56,12 @@ class TopologySearch {
   /// consults `GraphData.anchorNode`. On this app's graphs the two coincide, because
   /// the anchor *is* the depth-0 gateway, but a graph with several roots would
   /// separate them and the code would follow depth.
-  static String? focusTarget(GraphData topology, String query) =>
-      targetAmong(topology, match(topology, query));
+  static String? focusTarget(
+    GraphData topology,
+    String query, {
+    String Function(GraphNode node)? subtitleOf,
+  }) =>
+      targetAmong(topology, match(topology, query, subtitleOf: subtitleOf));
 
   /// The same decision, over matches the caller already has.
   ///
@@ -90,10 +105,21 @@ class TopologySearch {
   /// [needle] must be trimmed and lower-cased — [match] is what does that, and
   /// this is exposed beside it so a caller filtering its own list does not have to
   /// re-derive the field set.
-  static bool matchesNode(GraphNode node, String needle) {
+  static bool matchesNode(GraphNode node, String needle,
+      {String? renderedSubtitle}) {
     if (node.name.toLowerCase().contains(needle)) return true;
-    // The subtitle: a leaf's IP and band, a node's model and backhaul.
-    if ((node.extra ?? '').toLowerCase().contains(needle)) return true;
+    // What the row actually says, when the caller can tell us.
+    //
+    // `node.extra` is only part of it: the backhaul medium is worded at render time
+    // (`TopologySubtitle`), because it arrives as a firmware string and naming it
+    // needs a locale. Reading `extra` alone therefore made a wired extender
+    // unfindable by the word printed on its own row — measured: `ethernet` matched
+    // nothing while `backhaulLinkType: Ethernet` sat in the metadata.
+    //
+    // The subtitle as rendered is the right thing to search, not the raw field: a
+    // viewer types what they can see, which in a French locale is not `Ethernet`.
+    final subtitle = renderedSubtitle ?? node.extra ?? '';
+    if (subtitle.toLowerCase().contains(needle)) return true;
     final metadata = node.metadata;
     if (metadata == null) return false;
     // A device is as often known by its address as by its name, and the two kinds
