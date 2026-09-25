@@ -532,6 +532,57 @@ void main() {
       c.dispose();
     });
 
+    test('a save-triggered rebuild wins over a push that was already in flight',
+        () async {
+      // The other way a value reaches `state`: `build()` returns it directly, bypassing
+      // `_refreshFromPush` and its guard. Without bumping the counter in `build()` too, a
+      // push that started before a WAN save completes afterwards and republishes pre-save
+      // data — on this provider that is the address the user just changed, right after they
+      // changed it. Save paths: `usp_internet_settings_notifier.dart`'s `ref.invalidate`
+      // after a WAN save and after a DHCP renew.
+      final pushGate = Completer<WanStatusUIModel>();
+      final rebuildGate = Completer<WanStatusUIModel>();
+      var call = 0;
+      when(() => svc.fetch()).thenAnswer((_) {
+        call++;
+        if (call == 1) return Future.value(model(isUp: true, ip: '100.64.0.1'));
+        return call == 2 ? pushGate.future : rebuildGate.future;
+      });
+
+      final sse = StreamController<InvalidationEvent>.broadcast();
+      final c = makeContainer(sse.stream);
+      c.listen(wanDataProvider, (_, __) {});
+      await c.read(wanDataProvider.future);
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tick();
+      expect(call, 2,
+          reason: 'the push must be in flight, or this test proves nothing');
+
+      // The user saves.
+      c.invalidate(wanDataProvider);
+      await tick();
+      expect(call, 3, reason: 'the rebuild must have started its own fetch');
+
+      // Post-save rebuild completes first, with the NEW address.
+      rebuildGate.complete(model(isUp: true, ip: '100.64.0.77'));
+      await tick();
+      await tick();
+      // Then the stale push completes, carrying the OLD one.
+      pushGate.complete(model(isUp: true, ip: '100.64.0.1'));
+      await tick();
+      await tick();
+
+      expect(
+          c.read(wanDataProvider).valueOrNull!.model.ipAddress, '100.64.0.77',
+          reason:
+              'the rebuild published after the push started, so the push is stale — '
+              'otherwise the user saves an address and watches it revert');
+
+      await sse.close();
+      c.dispose();
+    });
+
     test('a failed push keeps the previous value and does not block later ones',
         () async {
       // The failure path the review noted had no test, asserting two things: the previous

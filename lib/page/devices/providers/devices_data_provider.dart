@@ -121,10 +121,16 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     });
 
     // WiFi data changes → rebuild MeshNetwork with updated enrichment.
-    // Skip the re-run frame: it carries the previous WifiData forward with
-    // isLoading set, so rebuilding on it would recompute the mesh from stale
-    // data and emit an extra state — which this provider's own three listeners
-    // then see as well. See doc/riverpod/listen_site_audit.md.
+    //
+    // The isLoading guard skipped the re-run frame `invalidateSelf()` published: it
+    // carried the previous WifiData forward with isLoading set, so rebuilding on it
+    // recomputed the mesh from stale data and emitted an extra state — which this
+    // provider's own three listeners then saw as well (#1502 AC-4).
+    //
+    // As of #1615 `wifiDataProvider` assigns `state` directly, so that frame no longer
+    // exists and this guard filters nothing: measured at most 1 notification per refresh that survives, versus 2
+    // before. Kept deliberately — zero cost, and it still protects against a producer
+    // that publishes a refresh frame again. See doc/riverpod/listen_site_audit.md.
     ref.listen(wifiDataProvider, (_, next) {
       if (next.isLoading) return;
       final wd = next.valueOrNull;
