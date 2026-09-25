@@ -44,6 +44,19 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
 
   @override
   Future<DhcpData> build() async {
+    // A REBUILD SUPERSEDES ANY PUSH IN FLIGHT, so it bumps the same counter.
+    //
+    // `build()` publishes through its return value, not through `_refreshFromPush`, so
+    // without this a push that started BEFORE a save could complete after the post-save
+    // rebuild and overwrite fresh data with pre-save data — measured, and on this provider
+    // no later push arrives to correct it. Save paths that rebuild:
+    // `ref.invalidate`/`ref.refresh` from the page notifiers and the retry buttons.
+    //
+    // Cancelling the debounce here too: a timer armed before the rebuild would otherwise
+    // fire afterwards and re-fetch data the rebuild just read.
+    _pushGeneration++;
+    _debounce?.cancel();
+
     ref.listen(sseInvalidationProvider, (prev, next) {
       final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.dhcpReservations ||

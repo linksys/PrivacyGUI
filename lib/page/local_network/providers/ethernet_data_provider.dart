@@ -56,6 +56,17 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
   @override
   Future<EthernetData> build() async {
+    // A REBUILD SUPERSEDES ANY PUSH IN FLIGHT, so it bumps the same counter.
+    //
+    // `build()` publishes through its return value, not through `_refreshFromPush`, so
+    // without this a push that started BEFORE a save could complete after the post-save
+    // rebuild and overwrite fresh data with pre-save data — measured, and on this provider
+    // no later push arrives to correct it. Save paths that rebuild:
+    // `ref.invalidate`/`ref.refresh` from the page notifiers and the retry buttons.
+    //
+    // (No debounce on this provider, so there is no timer to cancel.)
+    _pushGeneration++;
+
     // SSE listener: Ethernet interface status changes (link up/down)
     //
     // `_refreshFromPush()`, not `invalidateSelf()` — see that method for why.

@@ -220,6 +220,80 @@ void main() {
       });
     });
 
+    // A rebuild is the other way a value gets published, and the generation guard has to
+    // cover it: `build()` returns its result directly rather than going through
+    // `_refreshFromPush`. Measured before the fix — a push that started before a save
+    // completed afterwards and overwrote post-save data with pre-save data, and on this
+    // provider no later push arrives to correct it (its SSE domains are not subscribed).
+    //
+    // Save paths that rebuild this provider: `usp_firewall_notifier.dart`'s
+    // `ref.invalidate` after a save, and `usp_stats_panel.dart`'s retry button.
+    test('a save-triggered rebuild wins over a push that was already in flight',
+        () async {
+      final pushGate = Completer<FirewallDataFetchResult>();
+      final rebuildGate = Completer<FirewallDataFetchResult>();
+      var call = 0;
+      when(() => mockService.fetch()).thenAnswer((_) {
+        call++;
+        if (call == 1) {
+          return Future.value(FirewallTestData.createFetchResult());
+        }
+        return call == 2 ? pushGate.future : rebuildGate.future;
+      });
+
+      final sseController = StreamController<InvalidationEvent>.broadcast();
+      final container = createContainer(sseStream: sseController.stream);
+      container.listen(firewallDataProvider, (_, __) {});
+      await container.read(firewallDataProvider.future);
+
+      // A push starts, carrying PRE-save data, and does not finish yet.
+      sseController.add((domain: InvalidationDomain.firewallRules, seq: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(call, 2,
+          reason: 'the push must be in flight, or this test proves nothing');
+
+      // The user saves.
+      container.invalidate(firewallDataProvider);
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(call, 3, reason: 'the rebuild must have started its own fetch');
+
+      // The post-save rebuild completes first, with the firewall now DISABLED.
+      rebuildGate.complete(FirewallTestData.createFetchResult(
+        firewallModel: FirewallTestData.createFirewallUIModel(
+          isIPv4FirewallEnabled: false,
+        ),
+      ));
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      // Then the stale push completes, still reporting ENABLED.
+      pushGate.complete(FirewallTestData.createFetchResult());
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(
+        container
+            .read(firewallDataProvider)
+            .valueOrNull!
+            .firewallModel
+            .isIPv4FirewallEnabled,
+        isFalse,
+        reason:
+            'the rebuild published after the push started, so the push is stale and must '
+            'be discarded — otherwise the user saves a change and watches the page revert',
+      );
+
+      await sseController.close();
+      container.dispose();
+    });
+
     test('SSE firewallRules domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

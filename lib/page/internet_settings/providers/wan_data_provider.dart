@@ -46,6 +46,16 @@ final wanIsUpProvider = Provider<bool>(
 class WanDataNotifier extends AsyncNotifier<WanData> {
   @override
   Future<WanData> build() async {
+    // A REBUILD SUPERSEDES ANY PUSH IN FLIGHT, so it bumps the same counter.
+    //
+    // `build()` publishes through its return value rather than through
+    // `_refreshFromPush`, so without this a push that started BEFORE a save could complete
+    // after the post-save rebuild and overwrite fresh data with pre-save data. Measured on
+    // `firewallDataProvider`, which has the identical shape; the save paths here are
+    // `usp_internet_settings_notifier.dart`'s `ref.invalidate` after a WAN save and after a
+    // DHCP renew — the two moments a user is most likely to be watching the address.
+    _pushGeneration++;
+
     // SSE listener: WAN status changes (link up/down, IP changes)
     // Logged on both sides of the branch. Knowing the listener RAN but did not match is
     // a different fact from it never running, and that distinction is what identified
