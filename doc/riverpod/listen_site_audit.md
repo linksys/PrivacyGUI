@@ -113,8 +113,11 @@ state this audit measured, and the `Guard` column below records each site as it 
 
 **As of #1615 this producer no longer emits a refresh frame.** It assigns `state` directly
 (`WifiDataNotifier._refreshFromPush`), so a push now delivers exactly ONE settled frame. Measured after
-that change: 1 notification per push carrying `isLoading=false`, versus 2 (`isLoading` true then false)
-before. The same applies to `firewallDataProvider`, `portForwardingDataProvider`,
+that change: at most 1 notification per refresh that survives, carrying `isLoading=false`, versus 2
+(`isLoading` true then false) before. **At most**, because an ordering guard added with the same fix
+(#1618) discards a refresh that has been superseded, and a discarded refresh publishes nothing — so
+two overlapping pushes deliver ONE notification, not two. That is a reduction for these consumers,
+not a loss: the discarded one carried a device read that was already out of date. The same applies to `firewallDataProvider`, `portForwardingDataProvider`,
 `ethernetDataProvider` and `dhcpDataProvider`, which were changed together for the same reason.
 
 Two things follow, and they point in opposite directions:

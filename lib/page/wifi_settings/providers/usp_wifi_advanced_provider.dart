@@ -47,9 +47,9 @@ class UspWifiAdvancedNotifier
     // upstream fetch was still in flight (#1502 AC-4).
     //
     // As of #1615 `wifiDataProvider` assigns `state` directly, so that intermediate
-    // frame no longer exists and this guard filters nothing: measured 1 notification
-    // per push, versus 2 before. Kept deliberately — zero cost, and it still protects
-    // against a producer that publishes a refresh frame again.
+    // frame no longer exists and this guard filters nothing: measured at most 1
+    // notification per refresh that survives, versus 2 before. Kept deliberately — zero
+    // cost, and it still protects against a producer that publishes a refresh frame again.
     // See doc/riverpod/listen_site_audit.md.
     ref.listen(wifiDataProvider, (_, next) {
       if (next.isLoading) return;

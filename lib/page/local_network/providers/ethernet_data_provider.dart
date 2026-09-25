@@ -173,6 +173,22 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   /// still the newest?", which needs no ordering assumption at all.
   ///
   /// Same guard and same reasoning as `wan_data_provider` (#1615/#1618).
+  ///
+  /// ONE COUNTER FOR BOTH LISTENERS, which is correct rather than merely convenient: they
+  /// publish to the same `state`, so what matters is which refresh completes last,
+  /// regardless of which listener started it.
+  ///
+  /// AND `_consumedDevices` IS DELIBERATELY NOT ROLLED BACK when a fetch is discarded.
+  /// `_fetch()` writes it before its await, so a discarded fetch still moves it — which
+  /// looks like it should be able to make the devices listener skip a real change. It
+  /// cannot, and the reason is structural rather than lucky: every `_fetch()` reads the
+  /// SAME `devicesDataProvider`, so the last fetch to START always wrote the newest device
+  /// list, and that is exactly what the listener compares against. Checked with two and
+  /// then three overlapping pushes; a subsequent real device change was noticed in both.
+  ///
+  /// This holds only while `_fetch()` takes its device list from the provider rather than
+  /// from an argument. If that ever changes, the two pieces of state stop agreeing and the
+  /// rollback becomes necessary.
   Future<void> _refreshFromPush() async {
     final generation = ++_pushGeneration;
     try {

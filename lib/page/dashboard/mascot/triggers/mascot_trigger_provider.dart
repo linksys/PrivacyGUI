@@ -181,7 +181,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
   ///
   /// As of #1615 all four of these producers assign `state` directly rather than calling
   /// `invalidateSelf()`, so there is no re-run frame left for the `isLoading` half to
-  /// filter: measured 1 notification per push, versus 2 before. It is kept deliberately —
+  /// filter: measured at most 1 notification per refresh that survives, versus 2 before. It is kept deliberately —
   /// zero cost, and it still protects against a producer that publishes a refresh frame
   /// again (a `ref.refresh` from anywhere).
   ///
