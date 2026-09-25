@@ -416,8 +416,10 @@ outputs:
   //
   // Three things were frozen by that, and none of them announce themselves:
   // an embedded 3.27-era flutter.js, an engineRevision belonging to no SDK this
-  // repo has ever pinned, and a constant serviceWorkerVersion — so returning
-  // clients could hold a stale bundle across releases.
+  // repo has ever pinned, and a constant serviceWorkerVersion. The last one
+  // turned out to be inert here (see the note on that key in the file), so
+  // restoring it fixed no staleness bug; the service worker problem that did
+  // exist is #1623, guarded by the group at the end of this file.
   //
   // Hand-setting the literals to 3.47.0 values would only recreate this at the
   // next bump, so the fix is placeholders and this test is what keeps them.
@@ -526,21 +528,110 @@ outputs:
     // the group above asserts the same two lines for the same reason, and this
     // is deliberately not deduplicated with it: that group is about the variant
     // decision and would still be right if this template were reverted.
+    //
+    // Comments are dropped first, as in the test above. On the raw text a
+    // line that has been commented out still contains the string, so the
+    // check passed with the key disabled (measured for serviceWorkerUrl).
     test('our own config: block survived the template restore', () {
-      expect(bootstrap, contains('canvasKitBaseUrl: "./assets/"'));
-      expect(bootstrap, contains('canvasKitVariant: "full"'));
-      expect(bootstrap, contains('fontFallbackBaseUrl:'));
+      final code = _withoutLineComments(bootstrap, '//');
+      expect(code, contains('canvasKitBaseUrl: "./assets/"'));
+      expect(code, contains('canvasKitVariant: "full"'));
+      expect(code, contains('fontFallbackBaseUrl:'));
       expect(
-        bootstrap,
+        code,
         contains('serviceWorkerUrl: "service_worker.js"'),
         reason:
-            'We ship our own web/service_worker.js, which importScripts the '
-            'generated flutter_service_worker.js and adds skipWaiting + '
-            'clients.claim on top. Dropping this line sends the loader straight '
-            'at the generated file, losing both — and also switches it from '
-            'registering unconditionally to registering only when a '
-            'registration already exists.',
+            'The loader must register our own web/service_worker.js. Dropping '
+            'this line sends it to the generated flutter_service_worker.js '
+            'instead, a cleanup worker that reloads every page it controls. '
+            'See the #1623 group below.',
       );
+    });
+  });
+
+  // ------------------------------------------------------------------------
+  // #1623. The one full account of this bug; web/service_worker.js,
+  // web/flutter_bootstrap.js and doc/web/vendored-canvaskit.md point here.
+  //
+  // The flutter_service_worker.js the build emits is a cleanup worker
+  // (flutter/flutter#176834): on activate it unregisters itself and calls
+  // client.navigate(client.url) on every window it controls. It is meant to
+  // run once, to remove the caching worker older SDKs installed. It first
+  // shipped in a stable release in 3.41 (784 bytes; 3.38.9 still has the
+  // 6,163-byte caching worker). 3.44.0 is the first version this repo pinned
+  // that has it, which is why every 2.x branch has the bug, 2.5.0 onwards.
+  //
+  // web/service_worker.js used to importScripts it and add clients.claim() on
+  // top. Together with serviceWorkerUrl, which makes the loader register on
+  // every page load, that turned a one-off reload into a loop: register,
+  // activate, claim, unregister, reload, register again. Each reload cut off
+  // the canvaskit.wasm download, so the page never left its splash screen
+  // (CLOUD_GUARDIANS#218, Remote Assistance after the PIN).
+  //
+  // These are source checks because nothing else can see it. The loop happens
+  // in the browser's service-worker runtime before Flutter starts, and no test
+  // in this repo runs a browser. They are written against plain spellings and
+  // do not try to defeat deliberate obfuscation (`self['importScripts']`).
+  // ------------------------------------------------------------------------
+  group('service_worker.js does not reload the page it controls (#1623)', () {
+    late final String worker = _withoutLineComments(
+      File('web/service_worker.js').readAsStringSync(),
+      '//',
+    );
+
+    test('does not import the generated cleanup worker', () {
+      expect(
+        worker,
+        isNot(contains('importScripts')),
+        reason: 'The generated flutter_service_worker.js unregisters itself '
+            'and reloads every window it controls. Imported into a worker the '
+            'loader registers on every load, it reloads the page on every '
+            'load. The worker must stand alone.',
+      );
+    });
+
+    // `\s*(\?\.)?\s*\(` so that `unregister ()` and `unregister?.()` count as
+    // calls too — the optional-call form is how a worker guards an API that
+    // may be missing, so it is the likely way this comes back.
+    test('never unregisters itself or navigates a client', () {
+      expect(
+        worker,
+        isNot(matches(RegExp(r'unregister\s*(\?\.)?\s*\('))),
+        reason: 'A worker the loader registers on every load must not '
+            'unregister itself, or the next load installs a fresh one and the '
+            'install/activate cycle repeats on every page load.',
+      );
+      expect(
+        worker,
+        isNot(
+            matches(RegExp(r'''navigate\s*(\?\.)?\s*\(|\[\s*['"`]navigate'''))),
+        reason: 'client.navigate() in a worker is a page reload. Any reload '
+            'that runs on activate re-runs the loader, which registers and '
+            'activates again.',
+      );
+    });
+
+    // What the worker is for: it is what the loader waits on before it
+    // starts the app. It keeps the old wrapper's two lines and adds nothing.
+    //
+    // The two negative checks are about caching, not about the PWA prompt.
+    // If Android or a DU model turns out to need a fetch handler for
+    // beforeinstallprompt, an empty pass-through one is the fix and the first
+    // check should be narrowed to it. A handler that answers from a cache is
+    // the stale-bundle problem the cleanup worker exists to remove.
+    test('activates at once and does not cache', () {
+      expect(worker, contains('skipWaiting()'));
+      expect(worker, contains('clients.claim()'));
+      expect(
+        worker,
+        isNot(matches(
+            RegExp(r'''addEventListener\s*\(\s*['"`]fetch['"`]|onfetch'''))),
+        reason: 'web/service_worker.js has no fetch handler: the old wrapper '
+            'had none either, so adding one changes what the browser does on '
+            'every request. See the comment above this test before relaxing '
+            'it.',
+      );
+      expect(worker, isNot(matches(RegExp(r'''\bcaches\b'''))));
     });
   });
 }
@@ -555,16 +646,34 @@ String _sha256(File file) => sha256.convert(file.readAsBytesSync()).toString();
 /// comments too would forbid recording the reason, which is the part that stops
 /// the next person putting X back.
 ///
-/// Whole-line only, and that is a scoping decision rather than a proof. A `/* */`
-/// block and a same-line trailing comment both slip through, so this strips less
-/// than "the comments" — it is enough because every caller asserts the ABSENCE of
-/// a key, and stripping less can only make such an assertion stricter, never
-/// blinder. Do not reuse it for a check that asserts something is present.
-String _withoutLineComments(String source, String marker) =>
-    const LineSplitter()
+/// Whole-line comments were enough while every caller asserted the ABSENCE of a
+/// key, because stripping less can only make that stricter. #1623 added checks
+/// that a line is PRESENT, and for those a leftover comment is a false pass:
+/// `/* serviceWorkerUrl: "service_worker.js" */`, or `// self.skipWaiting()`
+/// trailing some other statement, reads as the line still being there. So for
+/// the `//` marker, `/* */` blocks and trailing `//` comments go as well.
+///
+/// The trailing cut is a text match, not a parser. It skips a `//` that follows
+/// a `:`, because the one string literal with `//` in these files is a URL
+/// (`fontFallbackBaseUrl: "https://fonts.gstatic.com/s/"`). Any other `//`
+/// inside a string would cut the line short; a shortened line can only make a
+/// presence check fail, never pass, so that failure is loud. `#` is still
+/// whole-line only: YAML has no block comments, and `#` is legal inside YAML
+/// scalars.
+String _withoutLineComments(String source, String marker) {
+  if (marker != '//') {
+    return const LineSplitter()
         .convert(source)
         .where((line) => !line.trimLeft().startsWith(marker))
         .join('\n');
+  }
+  final trailing = RegExp(r'(?<!:)//.*$');
+  return const LineSplitter()
+      .convert(source.replaceAll(RegExp(r'/\*[\s\S]*?\*/'), ''))
+      .where((line) => !line.trimLeft().startsWith(marker))
+      .map((line) => line.replaceFirst(trailing, ''))
+      .join('\n');
+}
 
 /// The single workflow step in [yaml] whose `uses:` mentions [action], as text.
 ///

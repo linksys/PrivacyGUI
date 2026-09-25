@@ -102,16 +102,23 @@ _flutter.loader.load({
     // returns 1 today, and a second occurrence means the reasoning changed. That
     // file is a precached artifact, so `flutter precache --web` first.
     serviceWorkerVersion: {{flutter_service_worker_version}},
-    // Ours, and it does more than rename the file. web/service_worker.js
-    // importScripts the generated flutter_service_worker.js (the build DOES emit
-    // it — 784 bytes, and identical in 3.44 and 3.47) and adds skipWaiting +
-    // clients.claim on top, which is what the PWA install prompt needs.
+    // Ours, and it must point at a worker that stands alone. web/service_worker.js
+    // only does skipWaiting + clients.claim. It must NOT import the generated
+    // flutter_service_worker.js: the build still emits that file (784 bytes,
+    // identical in 3.44 and 3.47), but it is a cleanup worker that unregisters
+    // itself and reloads every page it controls, and importing it here is what
+    // made Remote Assistance reload itself in a loop on its splash screen
+    // (#1623; the full account is in test/web/canvaskit_variant_test.dart).
     //
     // Setting this key at all also changes registration: the loader registers
     // unconditionally when a custom URL is given, whereas the default path first
-    // checks getRegistration() and does nothing if there is none. It logs
-    // flutter/flutter#156910 ("loading the service worker using Flutter
-    // bootstrap is deprecated") for exactly that reason, so this line is a known
+    // checks getRegistration() and does nothing if there is none. So deleting
+    // this line would not remove our worker from browsers that have it: the
+    // default path would find that registration and register the cleanup worker
+    // over it, which reloads the page once and then leaves no worker at all.
+    //
+    // It logs flutter/flutter#156910 ("loading the service worker using Flutter
+    // bootstrap is deprecated") for exactly this route, so the line is a known
     // future migration and not a settled decision.
     serviceWorkerUrl: "service_worker.js"
   }

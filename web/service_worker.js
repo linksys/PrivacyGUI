@@ -1,16 +1,27 @@
-// Custom service worker loader for Linksys PWA
-// This file acts as a wrapper around the auto-generated flutter_service_worker.js
-// to ensure we satisfy PWA requirements while maintaining Flutter's asset caching.
+// Service worker for the Linksys PWA. flutter_bootstrap.js registers it on every
+// page load (serviceWorkerUrl), and the loader waits up to 4 s for it to
+// activate before it starts the app. It caches nothing.
+//
+// It must not import the build's flutter_service_worker.js. That file is a
+// cleanup worker that unregisters itself and reloads every page it controls;
+// imported here, it reloaded the page on every load (#1623). The full account
+// is the #1623 group in test/web/canvaskit_variant_test.dart, which also guards
+// this file.
+//
+// No fetch handler. The old wrapper had none either, so this keeps today's
+// install behaviour rather than changing it. Desktop Chrome 154 fired
+// beforeinstallprompt for this manifest with no handler; Android and the DU
+// models were not measured. If they need one, see the note on that check in
+// the test before adding it.
 
-// Import the auto-generated service worker
-importScripts('flutter_service_worker.js');
-
-// Force immediate activation when a new SW is installed
-self.addEventListener('install', (event) => {
-    self.skipWaiting();
+// Activate as soon as it is installed, instead of waiting for every tab still
+// running an older worker to close.
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
+// Take control of pages that are already open, so they do not keep the
+// previous worker.
 self.addEventListener('activate', (event) => {
-    // Claim any clients immediately, so the new SW controls the page ASAP
-    event.waitUntil(clients.claim());
+  event.waitUntil(clients.claim());
 });
