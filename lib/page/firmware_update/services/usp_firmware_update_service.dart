@@ -32,28 +32,6 @@ class UspFirmwareUpdateService {
     }
   }
 
-  Future<FirmwareImageUIModel> fetchActiveBank() async {
-    final all = await fetchAllBanks();
-    return all.firstWhere(
-      (b) => b.isActive,
-      orElse: () => throw UspCompleteFailureError(
-        summary: 'No active firmware bank found',
-        failures: const [],
-      ),
-    );
-  }
-
-  Future<FirmwareImageUIModel> fetchAvailableBank() async {
-    final all = await fetchAllBanks();
-    return all.firstWhere(
-      (b) => b.available && !b.isActive,
-      orElse: () => throw UspCompleteFailureError(
-        summary: 'No available firmware bank found',
-        failures: const [],
-      ),
-    );
-  }
-
   Future<void> triggerLocalDownload({
     required int targetInstance,
     String localPath = localFirmwarePath,
@@ -212,88 +190,6 @@ class UspFirmwareUpdateService {
       logger.d('[FirmwareUpdate] OTA install dispatched on instance '
           '$otaInstance (commandKey=$commandKey)');
       return commandKey;
-    } on ServiceError {
-      rethrow;
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
-  /// One firmware image's `Status`, by instance.
-  ///
-  /// **Not a verdict, and not read by anything.** Zero production call sites since
-  /// #1549 split the two flows; kept because the tests below document what the router
-  /// reports per slot, which is worth having written down.
-  ///
-  /// It was also a hazard until `linksys/usp_framework#66`: `sysmngr` returned
-  /// `InstallationFailed` for the ota row at `fwup_state=5`, which is the *reboot*, so
-  /// anything reaching for "a status to decide from" got an install failure out of
-  /// every successful install. The definition no longer says that — but the rule this
-  /// ticket establishes stands either way: **the failure verdict comes from
-  /// `fwup_error_code`, never from a row's `Status`.**
-  Future<String> pollStatus(int instance) async {
-    try {
-      final images = await FirmwareImages.fetch(_usp);
-      final match = images.items.firstWhere(
-        (i) => _instanceFromPath(i.instancePath) == instance,
-        orElse: () => throw UspCompleteFailureError(
-          summary: 'Firmware bank instance $instance not found',
-          failures: const [],
-        ),
-      );
-      return match.status;
-    } on ServiceError {
-      rethrow;
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
-  /// Verifies a successful firmware activation after a reboot.
-  ///
-  /// Primary signal: the bank at [expectedActiveInstance] has flipped to
-  /// `Active`. Bank flip — not version equality — is the rigorous check,
-  /// because dev/QA scenarios legitimately flash the same version onto a
-  /// different bank to validate the boot path.
-  ///
-  /// Returns `true` when the expected bank is Active and reports the
-  /// expected version, `false` for version mismatch, and throws a
-  /// [ServiceError] for the more serious classes of failure (router did
-  /// not boot the new image; inconsistent multi-Active state).
-  Future<bool> verifyAfterReboot({
-    required String expectedVersion,
-    required int expectedActiveInstance,
-  }) async {
-    try {
-      final images = await FirmwareImages.fetch(_usp);
-      logger.d(
-          '[FirmwareUpdate] service.verifyAfterReboot: banks=${images.items.map((i) => '${i.instancePath}:${i.status}').join(', ')}'
-          ', expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
-      final activeBanks =
-          images.items.where((i) => i.status == 'Active').toList();
-      if (activeBanks.length > 1) {
-        throw UspCompleteFailureError(
-          summary:
-              'Inconsistent firmware state: ${activeBanks.length} banks reported Active',
-          failures: const [],
-        );
-      }
-      final match = images.items.firstWhere(
-        (i) => _instanceFromPath(i.instancePath) == expectedActiveInstance,
-        orElse: () => throw UspCompleteFailureError(
-          summary: 'Expected firmware bank instance $expectedActiveInstance '
-              'not present after reboot',
-          failures: const [],
-        ),
-      );
-      if (match.status != 'Active') {
-        throw UspCompleteFailureError(
-          summary: 'Router restarted but did not boot the new image (instance '
-              '$expectedActiveInstance status=${match.status})',
-          failures: const [],
-        );
-      }
-      return match.version == expectedVersion;
     } on ServiceError {
       rethrow;
     } catch (e) {
