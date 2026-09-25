@@ -97,6 +97,9 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     );
   }
 
+  /// Which push refresh is allowed to publish — see [_refreshFromPush].
+  int _pushGeneration = 0;
+
   /// Schedule a re-fetch that does NOT depend on anyone reading this provider.
   ///
   /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
@@ -137,9 +140,30 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   /// `valueOrNull`), so a transient device hiccup would blank the client and
   /// reservation lists. A stale-but-plausible value is the better failure here — the
   /// same reasoning `wanDataProvider` records for #1615.
+  /// ONLY THE NEWEST PUSH REFRESH MAY PUBLISH. `invalidateSelf()` used to give this for
+  /// free — measured: riverpod coalesces repeated invalidations into one rebuild, whereas
+  /// two bare `async` calls run overlapping fetches and the LAST TO COMPLETE wins. An
+  /// older read then overwrites a newer one and nothing corrects it, because these
+  /// providers are push-driven only.
+  ///
+  /// THE DEBOUNCE DOES NOT PREVENT THIS, which is worth stating because it looks like it
+  /// should. `_debounce?.cancel()` only cancels a timer that has not fired yet; once it
+  /// has fired and this method is awaiting, a later event starts a NEW timer and a second
+  /// fetch. Measured on this provider's own shape: two events 600ms apart produced three
+  /// fetches with two of them in flight together.
+  ///
+  /// A local counter rather than the event's `seq`: `seq` comes from the device and this
+  /// code does not own its ordering guarantees, while a counter incremented here is
+  /// monotonic by construction. `!=` rather than `<` for the same reason — it asks "am I
+  /// still the newest?", which needs no ordering assumption at all.
+  ///
+  /// Same guard and same reasoning as `wan_data_provider` (#1615/#1618).
   Future<void> _refreshFromPush() async {
+    final generation = ++_pushGeneration;
     try {
-      state = AsyncData(await _fetch());
+      final data = await _fetch();
+      if (generation != _pushGeneration) return;
+      state = AsyncData(data);
     } catch (e, st) {
       logger.w('[DHCP] push-triggered refetch failed, keeping previous value',
           error: e, stackTrace: st);

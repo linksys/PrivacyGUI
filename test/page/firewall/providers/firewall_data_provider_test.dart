@@ -145,6 +145,81 @@ void main() {
       });
     });
 
+    // -----------------------------------------------------------------------
+    // Ordering — the same hazard as #1618's C1, which applies here too.
+    //
+    // Replacing `invalidateSelf()` with a direct `state` assignment dropped riverpod's
+    // invalidation coalescing, so two overlapping refreshes finish in completion order and
+    // an older device read can overwrite a newer one.
+    //
+    // THE DEBOUNCE DOES NOT PREVENT IT, and that is the part worth pinning: measured on
+    // this provider, two events 600ms apart produce THREE fetches with two in flight
+    // together, because `_debounce?.cancel()` only cancels a timer that has not fired yet.
+    // -----------------------------------------------------------------------
+    test('the LATER push wins even when its fetch completes FIRST', () {
+      fakeAsync((async) {
+        final slow = Completer<FirewallDataFetchResult>();
+        final fast = Completer<FirewallDataFetchResult>();
+        var call = 0;
+        when(() => mockService.fetch()).thenAnswer((_) {
+          call++;
+          if (call == 1) {
+            return Future.value(FirewallTestData.createFetchResult());
+          }
+          return call == 2 ? slow.future : fast.future;
+        });
+
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sseController.stream);
+        container.listen(firewallDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Event 1 -> its timer fires -> fetch A starts and hangs.
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 1));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Event 2, past the window, so a NEW timer and a second fetch.
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 2));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expect(call, 3,
+            reason:
+                'two refreshes must be in flight, or this test proves nothing');
+
+        // The NEWER one completes first, with firewall DISABLED.
+        fast.complete(FirewallTestData.createFetchResult(
+          firewallModel: FirewallTestData.createFirewallUIModel(
+            isIPv4FirewallEnabled: false,
+          ),
+        ));
+        async.flushMicrotasks();
+        // Then the OLDER one completes, still reporting ENABLED.
+        slow.complete(FirewallTestData.createFetchResult());
+        async.flushMicrotasks();
+
+        expect(
+          container
+              .read(firewallDataProvider)
+              .valueOrNull!
+              .firewallModel
+              .isIPv4FirewallEnabled,
+          isFalse,
+          reason:
+              'the older read completed last and must have been discarded — otherwise the '
+              'card reports a firewall state the device no longer has, with nothing to '
+              'correct it until the next notification',
+        );
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
     test('SSE firewallRules domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

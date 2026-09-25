@@ -48,6 +48,9 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
     return _fetch();
   }
 
+  /// Which push refresh is allowed to publish — see [_refreshFromPush].
+  int _pushGeneration = 0;
+
   /// Re-read the device and publish the result, WITHOUT depending on anyone reading this
   /// provider afterwards.
   ///
@@ -81,9 +84,30 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   ///
   /// ON FAILURE IT KEEPS THE PREVIOUS VALUE. Consumers read through `valueOrNull`, so an
   /// error state renders as "unknown" — a transient hiccup would empty the rule list.
+  /// ONLY THE NEWEST PUSH REFRESH MAY PUBLISH. `invalidateSelf()` used to give this for
+  /// free — measured: riverpod coalesces repeated invalidations into one rebuild, whereas
+  /// two bare `async` calls run overlapping fetches and the LAST TO COMPLETE wins. An
+  /// older read then overwrites a newer one and nothing corrects it, because these
+  /// providers are push-driven only.
+  ///
+  /// THE DEBOUNCE DOES NOT PREVENT THIS, which is worth stating because it looks like it
+  /// should. `_debounce?.cancel()` only cancels a timer that has not fired yet; once it
+  /// has fired and this method is awaiting, a later event starts a NEW timer and a second
+  /// fetch. Measured on this provider's own shape: two events 600ms apart produced three
+  /// fetches with two of them in flight together.
+  ///
+  /// A local counter rather than the event's `seq`: `seq` comes from the device and this
+  /// code does not own its ordering guarantees, while a counter incremented here is
+  /// monotonic by construction. `!=` rather than `<` for the same reason — it asks "am I
+  /// still the newest?", which needs no ordering assumption at all.
+  ///
+  /// Same guard and same reasoning as `wan_data_provider` (#1615/#1618).
   Future<void> _refreshFromPush() async {
+    final generation = ++_pushGeneration;
     try {
-      state = AsyncData(await _fetch());
+      final data = await _fetch();
+      if (generation != _pushGeneration) return;
+      state = AsyncData(data);
     } catch (e, st) {
       logger.w(
           '[PortForwarding] push-triggered refetch failed, keeping previous value',
