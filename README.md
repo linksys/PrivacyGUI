@@ -16,12 +16,41 @@ The web shell contains one deferred reference to
   bundle and must not create a duplicate loader.
 - Keep the tag root-relative and deferred so it works independently of the
   Flutter base path and does not block application startup.
+- After local `CheckAdminPassword3` succeeds, PrivacyGUI posts the password once
+  to `/cgi-bin/ai-session.cgi`. The endpoint validates it natively and returns
+  an HttpOnly cookie; the chat JavaScript never receives the password. Logout
+  revokes that server-side AI session. Failure or absence of the optional AI
+  endpoint must not break the normal router login/logout workflow.
 
 Run the loader contract before submitting a web-shell change:
 
 ```bash
 python3 tools/test_router_ai_loader.py
 ```
+
+## Optional AI sessions
+
+The optional AI session bootstrap and revocation run independently of native
+router login/logout. Each AI request has a five-second deadline; logout aborts
+pending bootstrap requests before revocation so a delayed response cannot
+restore the browser session. AI unavailability leaves native authentication
+usable. Revocation retries transient failures (three attempts with backoff),
+a newer login supersedes a pending retry loop, and every GUI startup without
+a restored local login sends a revocation so a stale cookie from a failed
+logout cannot be resurrected by the widget's status poll. Successful
+server-side revocation still requires the endpoint to be reachable within
+the retry window.
+
+Run the native-auth and transport regression tests with:
+
+```bash
+flutter test --no-pub test/core/ai_session/ai_session_service_test.dart test/providers/auth/ai_session_auth_bridge_test.dart test/providers/auth/ai_session_stall_test.dart
+python3 tools/test_ai_session_browser.py
+```
+
+The browser test uses a loopback fixture and synthetic credentials. Set
+`CHROME_EXECUTABLE` when Chrome is not on the default path; use `--flutter` to
+select the Flutter executable.
 
 ## JNAP firmware build path
 
