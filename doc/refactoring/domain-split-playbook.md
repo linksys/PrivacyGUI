@@ -271,10 +271,11 @@ final usp{Domain}Provider =
   Usp{Domain}Notifier.new,
 );
 
-final preservableUsp{Domain}Provider = AutoDisposeProvider<
-    PreservableContract<{Domain}Settings, {Domain}Status>>(
-  (ref) => ref.watch(usp{Domain}Provider.notifier),
-);
+// 不需要另外宣告 preservable provider：mixin 已經讓 notifier 本身就是
+// PreservableContract，route 直接傳 usp{Domain}Provider.notifier（#1622）。
+// 唯一的例外：同一頁的 dirty 狀態橫跨多個 notifier 時，才自己寫一個合併它們的
+// provider —— 參考 Wi-Fi 頁的 `_WifiPageDirtyProxy`
+// （lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart）。
 
 // ── Notifier ──
 
@@ -402,8 +403,8 @@ LinksysRoute(
   name: RouteNamed.usp{Domain},
   path: RouteNamed.usp{Domain},
   builder: (context, state) => const Usp{Domain}View(),
-  enableDirtyCheck: true,
-  preservableProvider: preservableUsp{Domain}Provider,
+  // 傳入它就是開啟 dirty check，沒有另外的開關
+  preservableProvider: usp{Domain}Provider.notifier,
 ),
 ```
 
@@ -419,9 +420,8 @@ import 'package:privacy_gui/page/{domain}/providers/usp_{domain}_notifier.dart';
 - [ ] `{Domain}Status` — 瞬態部分
 - [ ] `{Domain}FeatureState` — 組合 + `initial()` factory
 - [ ] `Usp{Domain}Notifier` — `performFetch` + `performSave` + `updateSetting`
-- [ ] `preservableUsp{Domain}Provider` — route dirty check 用
 - [ ] View — `UiKitBottomBarConfig` bottom bar
-- [ ] Route — `enableDirtyCheck: true`
+- [ ] Route — `preservableProvider: usp{Domain}Provider.notifier`（傳入就是開啟 dirty check）
 - [ ] Dashboard card — 改用 `{domain}DataProvider`
 - [ ] Dashboard notifier — 移除相關 fetch / state / SSE / mutations
 - [ ] `flutter analyze` — 0 errors
@@ -530,9 +530,8 @@ final usp{Domain}ListProvider =
   Usp{Domain}ListNotifier.new,
 );
 
-final preservableUsp{Domain}ListProvider = AutoDisposeProvider<PreservableContract>(
-  (ref) => ref.watch(usp{Domain}ListProvider.notifier),
-);
+// 同 Type A：route 直接傳 usp{Domain}ListProvider.notifier，不另外宣告 preservable
+// provider；只有 dirty 狀態橫跨多個 notifier 時才例外（見 A 節）。
 
 class Usp{Domain}ListNotifier extends AutoDisposeNotifier<{Domain}ListFeatureState>
     with PreservableAutoDisposeNotifierMixin<
@@ -709,8 +708,7 @@ LinksysRoute(
   name: RouteNamed.usp{Domain},
   path: RouteNamed.usp{Domain},
   builder: (context, state) => const Usp{Domain}ListView(),
-  enableDirtyCheck: true,
-  preservableProvider: preservableUsp{Domain}ListProvider,
+  preservableProvider: usp{Domain}ListProvider.notifier,
 ),
 ```
 
@@ -721,9 +719,8 @@ LinksysRoute(
 - [ ] `{Domain}ListStatus` — 瞬態狀態（含 `maxItems`）
 - [ ] `{Domain}ListFeatureState` — 組合 + `initial()` factory
 - [ ] `Usp{Domain}ListNotifier` — `addItem` / `editItem` / `deleteItem` + diff-based `performSave`
-- [ ] `preservableUsp{Domain}ListProvider` — route dirty check 用
 - [ ] View — `UiKitBottomBarConfig` bottom bar（Save + Cancel）
-- [ ] Route — `enableDirtyCheck: true`
+- [ ] Route — `preservableProvider: usp{Domain}ListProvider.notifier`（傳入就是開啟 dirty check）
 - [ ] Dashboard card — 改用 `{domain}DataProvider`
 - [ ] Dashboard notifier — 移除相關 fetch / state / mutations
 - [ ] `flutter analyze` — 0 errors
