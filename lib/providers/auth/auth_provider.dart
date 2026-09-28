@@ -180,6 +180,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         restored?.loginType == LoginType.local &&
         restored?.localPassword != null) {
       unawaited(_bootstrapAiSession(restored!.localPassword!));
+    } else {
+      // No restored local login means nothing will bootstrap, so revoke any
+      // AI session cookie left by a logout whose revocation never reached the
+      // router — otherwise the widget's status poll resurrects the chat and
+      // keeps sliding the server idle timeout.
+      unawaited(_logoutAiSession());
     }
     return restored;
   }

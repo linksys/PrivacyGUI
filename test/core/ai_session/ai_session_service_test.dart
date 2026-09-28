@@ -68,15 +68,47 @@ void main() {
   test('logout notifies the browser before server revocation can fail',
       () async {
     var notifications = 0;
+    var attempts = 0;
     final service = HttpAiSessionService(
-      clientFactory: () =>
-          MockClient((_) async => throw StateError('router unavailable')),
+      clientFactory: () => MockClient((_) async {
+        attempts++;
+        throw StateError('router unavailable');
+      }),
       baseUri: Uri.parse('https://192.168.1.1/'),
+      logoutRetryBackoff: Duration.zero,
       onLogout: () => notifications++,
     );
 
     await expectLater(service.logout(), throwsStateError);
     expect(notifications, 1);
+    expect(attempts, 3,
+        reason: 'revocation retries transient failures before giving up');
+  });
+
+  test('a newer login supersedes logout retries', () async {
+    final heldLogout = Completer<http.Response>();
+    var logoutPosts = 0;
+    final service = HttpAiSessionService(
+      clientFactory: () => MockClient((request) async {
+        if (jsonDecode(request.body)['action'] == 'logout') {
+          logoutPosts++;
+          return heldLogout.future;
+        }
+        return http.Response('{}', 200);
+      }),
+      baseUri: Uri.parse('https://router.invalid/'),
+      logoutRetryBackoff: Duration.zero,
+    );
+    addTearDown(service.close);
+
+    final logout = service.logout();
+    await Future<void>.delayed(Duration.zero);
+    expect(await service.bootstrap('FixtureOnly'), isTrue);
+    await logout;
+    expect(logoutPosts, 1,
+        reason: 'a superseded logout must not retry and revoke the session '
+            'the newer login now owns');
+    heldLogout.complete(http.Response('{}', 200));
   });
 
   testWidgets('timeout closes a stalled transport and permits a fresh login',

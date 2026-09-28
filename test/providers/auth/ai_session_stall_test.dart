@@ -111,4 +111,65 @@ void main() {
       }
     });
   }
+
+  test('logout retries revocation after a stalled response times out',
+      () async {
+    // Production deadline is 5 s; the injected 40 ms deadline exercises the
+    // same timeout-then-retry path without a slow test.
+    final held = Completer<http.Response>();
+    var requests = 0;
+    final service = HttpAiSessionService(
+      baseUri: Uri.parse('https://router.invalid/'),
+      requestTimeout: const Duration(milliseconds: 40),
+      logoutRetryBackoff: Duration.zero,
+      clientFactory: () => MockClient((request) async {
+        expect(jsonDecode(request.body)['action'], 'logout');
+        requests++;
+        if (requests == 1) return held.future;
+        return http.Response('{}', 200);
+      }),
+    );
+    await service.logout();
+    expect(requests, 2,
+        reason: 'a second revocation POST must follow a held response that '
+            'exceeds the request deadline');
+    held.complete(http.Response('{}', 200));
+  });
+
+  test('init() with no restored login revokes a stale AI session cookie',
+      () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
+    final actions = <String>[];
+    final service = HttpAiSessionService(
+      baseUri: Uri.parse('https://router.invalid/'),
+      clientFactory: () => MockClient((request) async {
+        actions.add(jsonDecode(request.body)['action'] as String);
+        return http.Response('{}', 200);
+      }),
+    );
+    final router = MockRouterRepository();
+    when(router.send(any,
+            data: anyNamed('data'),
+            extraHeaders: anyNamed('extraHeaders'),
+            auth: anyNamed('auth'),
+            type: anyNamed('type'),
+            fetchRemote: anyNamed('fetchRemote'),
+            cacheLevel: anyNamed('cacheLevel'),
+            timeoutMs: anyNamed('timeoutMs'),
+            retries: anyNamed('retries'),
+            sideEffectOverrides: anyNamed('sideEffectOverrides')))
+        .thenAnswer((_) async => JNAPSuccess(result: jnapResultOk));
+    final container = ProviderContainer(overrides: [
+      routerRepositoryProvider.overrideWithValue(router),
+      aiSessionServiceProvider.overrideWithValue(service),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(authProvider.future);
+    await container.read(authProvider.notifier).init();
+    await drain();
+    expect(actions, ['logout'],
+        reason: 'every GUI startup without a restored local login must send '
+            '{"action":"logout"} so a stale cookie cannot be resurrected');
+  });
 }
