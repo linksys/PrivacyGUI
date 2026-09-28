@@ -34,8 +34,12 @@ The optional AI session bootstrap and revocation run independently of native
 router login/logout. Each AI request has a five-second deadline; logout aborts
 pending bootstrap requests before revocation so a delayed response cannot
 restore the browser session. AI unavailability leaves native authentication
-usable. Successful server-side revocation still requires the endpoint to be
-available.
+usable. Revocation retries transient failures (three attempts with backoff),
+a newer login supersedes a pending retry loop, and every GUI startup without
+a restored local login sends a revocation so a stale cookie from a failed
+logout cannot be resurrected by the widget's status poll. Successful
+server-side revocation still requires the endpoint to be reachable within
+the retry window.
 
 Run the native-auth and transport regression tests with:
 
