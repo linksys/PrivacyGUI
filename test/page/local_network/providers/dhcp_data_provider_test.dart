@@ -235,6 +235,71 @@ void main() {
       container.dispose();
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // THIS PROVIDER IS THE ONE THAT WAS ACTUALLY BROKEN IN PRODUCTION, and the reason
+    // is worth stating precisely. The SSE tests below hold
+    // `container.listen(dhcpDataProvider, …)` for the whole test, which supplies the
+    // subscriber the old `invalidateSelf()` silently needed: that call only SCHEDULED a
+    // rebuild, and riverpod runs `build()` again when something READS the provider.
+    //
+    // Production supplied no such reader. The only dashboard consumer of this provider
+    // is the `dhcp_reservations` card, which appears in the `professional` preset ALONE
+    // (`usp_dashboard_preset.dart`) — so on the default `standard` preset, once the user
+    // navigated away from Local Network, nothing watched it. The first `dhcpClients` or
+    // `dhcpReservations` notification then did worse than miss a refresh: the two
+    // `ref.listen` calls live INSIDE `build()`, so not re-running it left them
+    // unregistered and every later notification unreachable.
+    //
+    // Measured before the fix: with a listener 2 fetches -> 4 after a `dhcpClients`
+    // event; without one, 2 -> 2.
+    // -----------------------------------------------------------------------
+    test('#1615: dhcpClients re-fetches with NO listener held on the provider',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspClientProvider.overrideWithValue(mockUsp),
+            uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+            devicesDataProvider.overrideWith(
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        // A one-shot read rather than a listen: deliberately what a widget that has
+        // since stopped watching looks like. It still constructs the notifier, so
+        // build()'s two `ref.listen` calls are registered.
+        container.read(dhcpDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Asserting on the VALUE rather than a call count, because mocktail's verify
+        // CONSUMES the calls it matches — counting here would leave nothing for the
+        // assertion that matters.
+        expect(container.read(dhcpDataProvider).hasValue, isTrue,
+            reason:
+                'build() must have completed, or this test asserts nothing');
+
+        clearInteractions(mockUsp);
+
+        sseController.add((domain: InvalidationDomain.dhcpClients, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
     test('SSE dhcpReservations domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

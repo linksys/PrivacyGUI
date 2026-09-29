@@ -9,7 +9,9 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -87,7 +89,6 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       content: ClipRect(
         child: _withTopologyAnimation(
           context,
-          presented: presented,
           // The panel the graph view opens in place is sized in absolute pixels,
           // so whether it fits is a question about this card's box — hence a
           // `LayoutBuilder` here, reading the very constraints the graph view
@@ -108,9 +109,8 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                 topology: topology,
                 viewMode: TopologyViewMode.graph,
                 layoutMode: LayoutRecommendation.auto,
-                clientVisibility: useRing
-                    ? ClientVisibility.onHover
-                    : ClientVisibility.always,
+                leafVisibility:
+                    useRing ? LeafVisibility.onHover : LeafVisibility.always,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
                 // Pan and zoom, but only in the presentation. On the dashboard
@@ -122,10 +122,20 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                 nodeContentBuilder: TopologyNodeContentBuilder.build,
                 treeConfig: TopologyTreeConfiguration(
                   titleBuilder: (node) => node.name,
-                  subtitleBuilder: (node) => node.extra ?? '',
+                  subtitleBuilder: (node) =>
+                      TopologySubtitle.build(context, node),
                   preferAnimationNode: true,
                   showStatusIndicator: true,
+                  // Our words, localised. ui_kit 3.4.0 stopped shipping label
+                  // text: a library knows which appearance a node wears, not
+                  // what that is called in our domain — and its own enum names
+                  // ("PRIMARY", "active") were reaching the user in English.
+                  showType: true,
+                  slotLabelBuilder: (node, slot) =>
+                      TopologyTreeLabels.slot(context, node, slot),
                   showStatusText: true,
+                  statusLabelBuilder: (node, state) =>
+                      TopologyTreeLabels.status(context, state),
                   expanded: false,
                 ),
                 // Exactly one of the two is ever live. With a `nodeDetailConfig`
@@ -161,14 +171,21 @@ class UspNetworkTopologyCard extends ConsumerWidget {
   /// not a card drawn inside a card.
   void _showNodeDetail(
     BuildContext context,
-    MeshTopology topology,
+    GraphData topology,
     String nodeId,
   ) {
     final node = topology.nodes.firstWhereOrNull((n) => n.id == nodeId);
-    // Clients and the internet node get no detail on a wide card either — the
-    // graph view fires `onNodeTap` for them and skips the panel — so both
-    // presentations answer exactly the same taps.
-    if (node == null || node.isClient || node.isInternet) return;
+    // The external node has nothing to show; a leaf now does, on both
+    // presentations.
+    //
+    // This used to refuse leaves as well, on the grounds that the wide card's
+    // in-place panel refused them too, so the two answered the same taps. ui_kit
+    // 3.4.0 removed that refusal — whether a node has a panel is decided by
+    // whether one was configured, never by what kind of node it is — so keeping
+    // the leaf arm here would make the narrow card the only presentation that
+    // ignores a tap on a device. `NodeDetailPopup` drops its role-only rows for a
+    // node with no role (#1614 D2), which is what makes a leaf's panel truthful.
+    if (node == null || node.isExternal) return;
 
     showAppDialog<void>(
       context: context,
@@ -185,20 +202,30 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     );
   }
 
-  /// Wraps [child] in a local Theme override that enables topology animation
-  /// and — on the dashboard only — spreads the client nodes out.
+  /// Wraps [child] in a local Theme override that enables topology animation.
   ///
-  /// The spread is sized for the box the grid gives this card, whose preferred
-  /// realization is 700px+ of width. A [presented] card is a fixed
-  /// `kCardPresentationWidth`, so the same doubling spends the box on gaps and
-  /// pushes the outer nodes under the `ClipRect` above — which is half of what
-  /// "topology 也是太小" was (#1299). The animation is enabled in both, so the
-  /// override is still built either way.
-  Widget _withTopologyAnimation(
-    BuildContext context,
-    Widget child, {
-    required bool presented,
-  }) {
+  /// **The dashboard's spacing multiplier is gone, and it was measured out rather
+  /// than tidied away.** It doubled `nodeSpacing` and `orbitRadius` to stop nodes
+  /// crowding at the width the grid gives this card (#1299) — a real fix while the
+  /// layout divided whatever had to be placed into a fixed circle. ui_kit 3.4.0
+  /// sizes every ring from the discs going on it, so the pitch is already
+  /// guaranteed: measured 51.5px at 5, 12, 30 and 70 leaves, with x1.0, x2.0 and
+  /// x2.2 all producing **the same 51.5**. The multiplier buys no separation.
+  ///
+  /// What it does buy is a bigger bounding box, and after fit-to-screen that is a
+  /// *loss*. Measured on this card's 700x392 content box at 30 leaves: x1.0 fits
+  /// at 0.564 and draws a 29.1px pitch, x2.0 hits the kit's 0.5 fit floor and
+  /// draws 25.9px. The discs shrink with it, 36.1px to 32.2px. So the spread now
+  /// makes the graph slightly *smaller* than leaving it alone — the opposite of
+  /// what it was added to do, because the crowding it compensated for no longer
+  /// exists.
+  ///
+  /// The animation flag is why this override still exists at all — and it was
+  /// always enabled for both presentations, so with the spacing gone this method
+  /// no longer distinguishes them and its `presented` parameter went with the
+  /// multiplier. The two presentations still differ elsewhere in this widget
+  /// (`interactive`, and which detail surface answers a tap).
+  Widget _withTopologyAnimation(BuildContext context, Widget child) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();
     if (appTheme == null) return child;
 
@@ -208,12 +235,6 @@ class UspNetworkTopologyCard extends ConsumerWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            topologySpec: presented
-                ? appTheme.topologySpec
-                : appTheme.topologySpec.copyWith(
-                    nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
-                    orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
-                  ),
           ),
         ],
       ),

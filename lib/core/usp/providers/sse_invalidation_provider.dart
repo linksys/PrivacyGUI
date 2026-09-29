@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
@@ -40,6 +41,34 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
     final wanPath = ref.read(wanInterfacePathProvider).valueOrNull ??
         kWanInterfaceFallbackPath;
     final domain = _mapToDomain(notification, wanPath);
+
+    // This is the ONLY place a notification becomes (or fails to become) a domain,
+    // and until now it logged nothing — so "the app never got it", "it arrived and
+    // mapped to nothing", and "it mapped correctly but no listener acted" were
+    // indistinguishable from outside. That is the same unobservability as the
+    // discarded `_debug` events (#1524), and it cost a debugging session on FW 2.0.
+    //
+    // `.Stats.` paths are dropped deliberately and arrive in the hundreds — on FW 2.0
+    // the WAN interface emits them every second — so they log at trace (filtered out of
+    // release) while everything else logs at debug. That keeps the line readable without
+    // hiding the drop: a path that vanishes silently is the case this is here to end.
+    //
+    // ⚠️ IN A RELEASE BUILD THIS REACHES THE IN-MEMORY LOG, NOT THE BROWSER CONSOLE.
+    // `CustomOutput` gates `print` on `kDebugMode` and otherwise caches (see
+    // `core/utils/logger.dart`). So this is diagnosable from the app's own log view, but
+    // NOT by reading `console` from Playwright against a release build — which is how
+    // the E2E suite runs. Establishing the FW 2.0 chain needed a temporary `print` for
+    // exactly that reason. If a future investigation needs console visibility again,
+    // add the `print` deliberately and temporarily rather than assuming this line covers
+    // it.
+    final path = _extractPath(notification);
+    if (path != null && path.contains('.Stats.')) {
+      logger.t('[SSE] notification $path → filtered (.Stats.)');
+    } else {
+      logger.d('[SSE] notification ${path ?? '<no path>'} '
+          '(${notification.type}) → ${domain?.name ?? 'UNMAPPED'}');
+    }
+
     if (domain != null && !controller.isClosed) {
       controller.add((domain: domain, seq: seq++));
     }

@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
-import 'package:ui_kit_library/ui_kit.dart' hide ConnectionType;
+import 'package:ui_kit_library/ui_kit.dart';
 
 String _signalLabel(BuildContext context, DeviceSignalLevel level) {
   final nodeLevel = nodeLevelOf(level);

@@ -23,17 +23,41 @@ import 'package:http/http.dart' as http;
 /// 'populated' = clean base (no override file). Lives here (the validation
 /// consumer) so both [DemoUspDataLoader.load] and the picker gate against it
 /// without a pages→usp circular import.
+///
+/// **This list had drifted from the export, in both directions.** The E2E table
+/// grew to 15 scenarios while this stayed at 9: eight files were being written
+/// into `web/data/` that neither the picker offered nor `applyScenario` accepted,
+/// so they were unreachable rather than broken — including both mesh shapes, which
+/// is how a topology with an extender came to be untestable in demo mode. And
+/// `dmz-enabled` was renamed `dmz-on` upstream, so this end kept offering a name
+/// whose file no longer exists.
+///
+/// The drift is silent by construction: a name listed here with no file 404s at
+/// fetch time, and a file with no name here is simply never asked for. Nothing
+/// compares the two — the doc comment above was the only thing asserting they
+/// match, and prose cannot fail. `demo_scenario_parity_test.dart` now does.
 const List<String> kDemoScenarios = [
   'populated',
   'empty-devices',
   'empty-port-forwarding',
   'wifi-disabled',
   'wifi-empty',
+  'wifi-all-off',
   'wan-no-internet',
   'wan-static',
+  'wan-down-lan-up',
   'firewall-spi-off',
-  'dmz-enabled',
+  'dmz-on',
   'dhcp-off',
+  'mesh-with-slave',
+  'mesh-with-offline-slave',
+  'mesh-at-scale',
+  'mesh-dense-single-node',
+  'mesh-daisy-chain',
+  'mesh-hybrid',
+  'static-routing-empty',
+  'pf-rule-orphan-client',
+  'firmware-empty',
 ];
 
 class DemoUspDataLoader {
