@@ -117,8 +117,8 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
-  final SseOperationStrategy strategy =
-      ref.watch(appModeProfileProvider).transport.sseStrategy(bridge);
+  final profile = ref.watch(appModeProfileProvider);
+  final SseOperationStrategy strategy = profile.transport.sseStrategy(bridge);
 
   final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 
@@ -145,6 +145,19 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
 
   authCoordinator.onForceLogout = forceLogout;
   usp.onForceLogout = forceLogout;
+
+  // #1627: what a 401 on a USP command means, and so whether the client may try
+  // to recover it — the same answer the bridge was built with for its own REST
+  // 401s. Set beside `onForceLogout` because under Remote Assistance that callback
+  // *is* the answer: the Guardian token cannot be refreshed, so the client ends
+  // the session instead of running the local reauth, whose `restoreSession()`
+  // step would return without logging out.
+  //
+  // Not reset on dispose, unlike the callback above: the mode is fixed for the
+  // build, so between a dispose and the rebuild after a Remote Assistance
+  // re-activation the value is still `AuthBehavior.remote`, and resetting it
+  // would reopen the local reauth for exactly that window.
+  usp.authBehavior = profile.credential.authBehavior;
 
   ref.onDispose(() {
     authCoordinator.onForceLogout = null;

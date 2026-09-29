@@ -19,9 +19,14 @@ abstract class CredentialStrategy {
   ///
   /// [AuthBehavior] predates #1474 and already carries exactly this
   /// distinction — `AuthBehavior.local` retries, `AuthBehavior.remote` does
-  /// not — so the strategy *returns* it rather than restating it. That keeps
-  /// `UspBridgeClient`'s existing parameter and its 1 read site untouched: this
-  /// phase moves the `if` that chose the value, not the value.
+  /// not — so the strategy *returns* it rather than restating it. #1474 phase 4
+  /// moved the `if` that chose the value, not the value.
+  ///
+  /// Two consumers since #1627, both reading the one flag: `UspBridgeClient`
+  /// for its REST 401s (constructor, via `BridgeConfig`) and `UspClient` for a
+  /// USP command's 401 (`sseManagerProvider` assigns it). Ending up with one
+  /// answer for both paths is the point — before #1627 the second path ran the
+  /// local reauth in every mode.
   AuthBehavior get authBehavior;
 
   /// Put the credential back to work after the router was unreachable, and say

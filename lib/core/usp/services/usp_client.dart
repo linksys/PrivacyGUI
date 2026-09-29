@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
+import 'sse_operation_strategy.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -269,9 +270,27 @@ class UspClient {
   /// NOT related to SSE reconnect — see [onTokenRefreshed] for that.
   VoidCallback? onRefreshTokenSuccess;
 
-  /// Called when all reauth stages fail — session is unrecoverable.
+  /// Called when the session is unrecoverable: all reauth stages failed, or —
+  /// when [authBehavior] says the credential cannot be refreshed — the first 401.
   /// Set by provider layer to trigger navigation to login screen.
   VoidCallback? onForceLogout;
+
+  /// What a 401 from a command means — the same value `UspBridgeClient` has
+  /// always used for its own REST 401s, and #1627 is this façade learning it.
+  ///
+  /// [AuthBehavior.local] (the default, and every local build): the router's
+  /// session token expired and [reauth] can refresh it, so the command is retried.
+  /// [AuthBehavior.remote]: the credential is Guardian's `temporaryAccessToken`,
+  /// minted for one support session, and a 401 means that session is over. There
+  /// is nothing to refresh, so there is no retry — [onForceLogout] fires and the
+  /// error reaches the caller.
+  ///
+  /// Not constructor state, for the same reason as [onForceLogout]: the mode is
+  /// the provider layer's knowledge, and this façade is built in `di.dart` and by
+  /// Remote Assistance's `activate()`, neither of which should have to ask. Set by
+  /// `sseManagerProvider`, beside [onForceLogout], so "whether to retry" and "who
+  /// ends the session" are wired in one place.
+  AuthBehavior authBehavior = AuthBehavior.local;
 
   /// SSE subscription delegate. Set by [SseManager] to route subscriptions
   /// through SSE instead of polling. When null, falls back to polling.
@@ -445,16 +464,45 @@ class UspClient {
     }
   }
 
-  /// Wraps an async operation with automatic 401 retry.
+  /// Wraps an async operation with automatic 401 retry — when [authBehavior]
+  /// says the credential can be refreshed. When it cannot, the 401 ends the
+  /// session instead (#1627).
   Future<T> _withAuthRetry<T>(Future<T> Function() action) async {
+    final generation = _generation;
     try {
       return await action();
     } catch (e) {
       if (!_isAuthError(e)) rethrow;
+      if (!authBehavior.shouldRetryOnFailure) {
+        _endSessionOn401(generation);
+        rethrow;
+      }
       logger.w('$_tag 401 detected, attempting reauth...');
       await reauth();
       _lastCallRetried = true;
       return await action();
+    }
+  }
+
+  /// The remote answer to a 401: nothing to refresh, so no [reauth] — its Stage 2
+  /// is `restoreSession()`, whose network-error branch returns without logging
+  /// out, which is how a rejected Guardian token used to fail silently.
+  ///
+  /// Only for the connection the request was sent on, by the rule [reauth] keeps:
+  /// a 401 from a transport [rebindTransport] has since replaced is that token
+  /// being dead, not this one, and must not sign the operator out of a new
+  /// support session that is working. The caller still gets its error either way.
+  void _endSessionOn401(int generation) {
+    if (_superseded(generation)) {
+      logger.w('$_tag 401 on a superseded connection — not ending the session');
+      return;
+    }
+    logger.w('$_tag 401 on a credential that cannot be refreshed — '
+        'ending the session');
+    try {
+      onForceLogout?.call();
+    } catch (cbError) {
+      logger.w('$_tag onForceLogout callback error: $cbError');
     }
   }
 

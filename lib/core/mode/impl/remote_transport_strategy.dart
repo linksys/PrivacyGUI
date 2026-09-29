@@ -145,6 +145,11 @@ class RemoteTransportStrategy implements TransportStrategy {
   /// compared to anything; see [RemoteCredentialStrategy] for why identity needs
   /// no check here, and #1576 for why comparing the serial `/usp/health` now
   /// returns is a separate decision from this one.
+  ///
+  /// A `401` here ends the session (#1627) before the `catch` turns it into
+  /// `false` — the same outcome as a `401` on [UspBridgeClient.health] above,
+  /// which the bridge's `onAuthFailed` already signs out on. A rejected token is
+  /// not an outage to wait out, so probing on would only have hidden it.
   Future<bool> _reachableViaSerialNumber(Ref ref) async {
     final usp = ref.read(uspClientProvider);
     if (usp == null) return false;
