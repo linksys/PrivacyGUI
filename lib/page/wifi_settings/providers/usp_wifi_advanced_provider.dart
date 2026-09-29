@@ -124,14 +124,19 @@ class UspWifiAdvancedNotifier
       // autoDispose and has no retry of its own, so if its `build()` ever threw, every
       // later `.future` rethrows that same error — and DFS-disable saves would keep
       // failing until something else happened to invalidate L1. `refresh` forces one
-      // real re-read. The error is already a `ServiceError` (mapped in
-      // `usp_wifi_data_service`), so it needs no further mapping; if the retry also
-      // fails it propagates, which is correct — the remediation cannot be skipped
-      // silently, and skipping it leaves a radio parked on a DFS channel with DFS off.
+      // real re-read. If the retry also fails it propagates, which is correct — the
+      // remediation cannot be skipped silently, and skipping it leaves a radio parked on
+      // a DFS channel with DFS off.
+      // `catch (e)`, not `on ServiceError`: today both paths into L1 throw a
+      // `ServiceError` — the service maps USP errors and its provider throws
+      // `ServiceNotInitializedError` — but that is what the current implementation
+      // happens to do, not something the type signature promises. A narrower catch
+      // would turn the day that changes into a save that fails without retrying, which
+      // is the failure this block exists to prevent.
       WifiData wifiData;
       try {
         wifiData = await ref.read(wifiDataProvider.future);
-      } on ServiceError catch (e) {
+      } catch (e) {
         logger.w(
             '[USP][WiFi][Advanced]: L1 read failed before DFS remediation, '
             'retrying once',

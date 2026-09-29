@@ -481,6 +481,59 @@ void main() {
           reason: 'the radio on DFS channel 52 must be forced to auto-channel');
     });
 
+    test('the retry catches an error L1 is not documented to throw', () async {
+      // WHY THIS IS SEPARATE FROM THE TEST BELOW. That one throws `NetworkError`, a
+      // `ServiceError` subclass — so it passes under both `on ServiceError` and
+      // `catch (e)` and cannot distinguish them. Today every path into L1 does throw a
+      // `ServiceError` (the service maps USP errors; its provider throws
+      // `ServiceNotInitializedError`), but that is the current implementation, not a
+      // guarantee in any signature. A narrower catch would turn the day that changes
+      // into a save that fails without retrying.
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          wifiDataProvider.overrideWith(() => _FlakyWifiDataNotifier(
+                onBuild: () {},
+                // Deliberately NOT a ServiceError.
+                firstError: StateError('codegen blew up'),
+                radios: [
+                  _radioModel(
+                    instancePath: 'Device.WiFi.Radio.1.',
+                    band: '5GHz',
+                    channel: 52,
+                    autoChannelEnable: false,
+                  ),
+                ],
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      container.read(uspWifiAdvancedProvider.notifier).setDfsEnabled(false);
+      await container.read(uspWifiAdvancedProvider.notifier).save();
+
+      final captured = verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: false,
+            forceAutoChannelPaths: captureAny(named: 'forceAutoChannelPaths'),
+          )).captured.single as List<String>;
+      expect(captured, ['Device.WiFi.Radio.1.'],
+          reason: 'a non-ServiceError must be retried too, not propagated');
+    });
+
     test('a cached L1 failure is retried once rather than failing the save',
         () async {
       when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
@@ -597,10 +650,19 @@ class _StubWifiDataNotifier extends WifiDataNotifier {
 
 /// Throws on its first build and succeeds afterwards — for the retry contract.
 class _FlakyWifiDataNotifier extends WifiDataNotifier {
-  _FlakyWifiDataNotifier({required this.onBuild, required this.radios});
+  _FlakyWifiDataNotifier({
+    required this.onBuild,
+    required this.radios,
+    this.firstError = const NetworkError(detail: 'L1 unreachable'),
+  });
 
   final void Function() onBuild;
   final List<WifiRadioUIModel> radios;
+
+  /// A parameter rather than a fixed `ServiceError`, because the retry deliberately
+  /// catches everything: a test that only throws a `ServiceError` subclass cannot tell
+  /// `catch (e)` from `on ServiceError`.
+  final Object firstError;
   var _failed = false;
 
   @override
@@ -608,7 +670,7 @@ class _FlakyWifiDataNotifier extends WifiDataNotifier {
     onBuild();
     if (!_failed) {
       _failed = true;
-      throw const NetworkError(detail: 'L1 unreachable');
+      throw firstError;
     }
     return WifiData(
       codegenContext: WifiCodegenContext.empty,
