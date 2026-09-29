@@ -33,22 +33,6 @@ class UspWifiAdvancedNotifier
 
   @override
   WifiAdvancedFeatureState build() {
-    // SSE: when WiFi data provider updates, trigger dirty guard.
-    // `hasValue` alone is not enough: a re-running provider emits
-    // AsyncData(isLoading: true, value: previous) before the new value, so
-    // without the isLoading check this fired twice per refetch — once while the
-    // upstream fetch was still in flight (#1502 AC-4).
-    //
-    // As of #1615 `wifiDataProvider` assigns `state` directly, so that intermediate
-    // frame no longer exists and this guard filters nothing: measured at most 1
-    // notification per refresh that survives, versus 2 before. Kept deliberately — zero
-    // cost, and it still protects against a producer that publishes a refresh frame again.
-    // See doc/riverpod/listen_site_audit.md.
-    ref.listen(wifiDataProvider, (_, next) {
-      if (next.isLoading) return;
-      if (next.hasValue) onSseInvalidation();
-    });
-
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return WifiAdvancedFeatureState.initial();
@@ -119,7 +103,17 @@ class UspWifiAdvancedNotifier
     // currently sitting on a manual DFS channel are affected.
     final forceAutoChannelPaths = <String>[];
     if (!enabled) {
-      final radios = ref.read(wifiDataProvider).valueOrNull?.radioModels ?? [];
+      // `await …future`, not `ref.read(...).valueOrNull`. This worked before only
+      // because the `onSseInvalidation()` wiring held a `ref.listen` on
+      // `wifiDataProvider`, which kept it initialised and settled for this notifier's
+      // whole lifetime. That wiring was deleted in #1587 Phase 1, and a bare `ref.read`
+      // then returned `AsyncLoading` with no value — so `radioModels` was empty, no radio
+      // was recognised as parked on a DFS channel, and the remediation silently did
+      // nothing.
+      //
+      // Awaiting the future is the fix rather than re-adding a listener: this is a
+      // one-shot read at save time and it needs the value to EXIST, not to be watched.
+      final radios = (await ref.read(wifiDataProvider.future)).radioModels;
       final radioByPath = {
         for (final r in radios) ensureTrailingDot(r.instancePath): r,
       };

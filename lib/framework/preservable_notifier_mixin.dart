@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'feature_state.dart';
 import 'preservable.dart';
@@ -98,20 +97,6 @@ class _PreservableDelegate<
     return await fetch(forceRemote: true);
   }
 
-  // --- SSE Invalidation Guard ---
-
-  /// Called when an SSE event indicates external data has changed.
-  /// If the user has unsaved edits (isDirty), the update is ignored
-  /// to avoid clobbering their work. Otherwise, re-fetches fresh data.
-  void onSseInvalidation() {
-    if (!isDirty()) {
-      unawaited(fetch(forceRemote: true).catchError((Object e, StackTrace st) {
-        logger.e('[USP][SSE]: invalidation fetch failed', error: e);
-        return _getState();
-      }));
-    }
-  }
-
   // --- Internal Logic ---
 
   void revert() {
@@ -157,8 +142,6 @@ mixin PreservableNotifierMixin<
   /// know the confirming read failed. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
 
-  void onSseInvalidation() => _delegate.onSseInvalidation();
-
   @override
   void revert() => _delegate.revert();
 
@@ -196,8 +179,6 @@ mixin PreservableAutoDisposeNotifierMixin<
   /// `status.error` of the returned state. Inspect it if the caller needs to
   /// know the confirming read failed. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
-
-  void onSseInvalidation() => _delegate.onSseInvalidation();
 
   @override
   void revert() => _delegate.revert();
