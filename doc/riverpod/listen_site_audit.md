@@ -457,7 +457,6 @@ inside a PR whose subject is a deletion would bury the deletion.
 ⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
 holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
 
-
 ## #1587 Phase 2 audit — read-only values sourced from L2 (2026-09-29)
 
 The question: do Local Network, Devices or Wi-Fi show a live value through their L2 working copy,
@@ -473,8 +472,18 @@ wifi_settings   wifiDataProvider · devicesDataProvider
 
 `readOnlyInfo` — the field that carried the defect — exists only in `internet_settings`, and the
 two `readOnly:` references in `usp_local_network_view.dart` are a text field's input property,
-not a data source. The `Status` halves of those pages' `FeatureState` hold UI state only
-(loading, saving, validation errors, a derived octet-lock count), which is what belongs there.
+not a data source.
+
+⚠️ **The `Status` halves are not purely UI state, which is the part worth stating precisely.**
+Local Network and Wi-Fi Advanced hold only loading/saving/error plus derived values
+(`validationErrors`, `lockedOctetCount`), but `wifi_settings_status.dart` also carries
+`quickSetupMainAggregate` / `quickSetupGuestAggregate` — device data, not UI state.
+
+They are not a counterexample, and the reason is what the rule actually turns on: **no view
+reads them.** They hold the SSID and access-point instance paths a fan-out save needs
+(`usp_wifi_settings_service.dart:241`), consumed only by the notifier and the service. Nothing
+about them is displayed, so nothing about them can go stale on screen. Device data living in L2
+is fine when it feeds the save path; it is a defect when it feeds the screen.
 
 Recorded because the answer is "nothing to change": without this the next person re-runs the
 search, and a Phase 2 item stays open forever because its result was never written down.

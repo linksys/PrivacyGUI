@@ -449,7 +449,7 @@ Examples: System Info, WAN Status, Time Settings
 **A read-only value on a Type A or Type B page still comes from L1.** L2 is a page-entry
 snapshot that deliberately does not move under the user, so a live value routed through it
 freezes. The test is **"can the user edit this value?"** — if not, `ref.watch` the L1 provider,
-including from a status widget sitting inside the form. See #1587 Phase 2 for the audit.
+including from a status widget sitting inside the form. Audit: `doc/riverpod/listen_site_audit.md`.
 
 **Dirty Guard Implementation (Type A and Type B)**:
 - Use `PreservableAutoDisposeNotifierMixin` with the Notifier class
