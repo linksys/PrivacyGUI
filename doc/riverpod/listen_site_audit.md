@@ -105,6 +105,23 @@ population.
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
 | 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here**, comparing against the input the last `_fetch()` consumed rather than against `prev`; the `state.hasValue` half of this guard was also dropping settles that raced the fetch — see "The one caveat on the zero" above. |
 
+> ⚠️ **SITES 10, 11 AND 12 NO LONGER EXIST.** They were the three `ref.listen` calls that
+> drove `onSseInvalidation()` from an L1 provider — in `usp_wifi_advanced_provider`,
+> `usp_wifi_settings_provider` and `usp_firewall_notifier`. The whole mechanism was **deleted in
+> #1587 Phase 1** (2026-09-29), together with the four SSE-domain wirings in `usp_dmz_notifier`,
+> `usp_dhcp_reservations_notifier`, `usp_port_forwarding_page_notifier` and
+> `usp_static_routing_notifier`.
+>
+> Their rows and the code samples below are kept as the record of what was measured, not as a
+> description of the current tree. The `isLoading` guards discussed here went with them.
+>
+> One thing that outlived the deletion and is worth carrying forward: `performSave` in
+> `usp_wifi_advanced_provider` read `ref.read(wifiDataProvider).valueOrNull` and only worked
+> because site 10's `ref.listen` kept that provider subscribed. With the listener gone the read
+> returned `AsyncLoading`, and the DFS channel remediation silently did nothing. It now awaits
+> `.future`. **A `ref.read` of an L1 provider is only safe while something else holds a
+> subscription** — the same lesson as #1615, from the other direction.
+
 ### `wifiDataProvider` — 3
 
 `wifiDataProvider` **used to** refetch via a 500 ms debounced `ref.invalidateSelf()`, so it emitted a
