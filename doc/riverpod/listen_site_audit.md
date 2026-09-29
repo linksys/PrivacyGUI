@@ -457,6 +457,28 @@ inside a PR whose subject is a deletion would bury the deletion.
 ⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
 holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
 
+
+## #1587 Phase 2 audit — read-only values sourced from L2 (2026-09-29)
+
+The question: do Local Network, Devices or Wi-Fi show a live value through their L2 working copy,
+the way the Internet Settings banner did before #1613?
+
+**No. All three already read their L1 providers directly.**
+
+```
+local_network   lanDataProvider · ethernetDataProvider · dhcpDataProvider
+devices         devicesDataProvider
+wifi_settings   wifiDataProvider · devicesDataProvider
+```
+
+`readOnlyInfo` — the field that carried the defect — exists only in `internet_settings`, and the
+two `readOnly:` references in `usp_local_network_view.dart` are a text field's input property,
+not a data source. The `Status` halves of those pages' `FeatureState` hold UI state only
+(loading, saving, validation errors, a derived octet-lock count), which is what belongs there.
+
+Recorded because the answer is "nothing to change": without this the next person re-runs the
+search, and a Phase 2 item stays open forever because its result was never written down.
+
 ## Verification
 
 - `./run_tests.sh` → **6524/6524 pass, exit 0** (6513 baseline + the 11 new tests)
