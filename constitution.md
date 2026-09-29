@@ -486,7 +486,11 @@ final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxDa
 
 **Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
 
-`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy, and a conflict with the device is detected when the user saves (#1587).
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy (#1587).
+
+**A save does NOT currently detect that the device changed while the user was editing.** Every save compares the draft against the page-entry snapshot, never against the device's current value, so a value the device altered mid-edit is overwritten silently.
+
+Deferred deliberately, not overlooked: the editable fields on these pages are values a user sets, so the ordinary way to reach a conflict is a second editor. Detection belongs in `Preservable` and would therefore change the save behaviour of every form that uses it, and it needs a product decision about what to show. **The first observed conflict reopens it** — see #1587 Phase 3 for the measurements behind that judgement.
 
 ```dart
 // ✅ Correct — one-time clone, no live tracking

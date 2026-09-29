@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
@@ -31,14 +30,6 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
 
   @override
   DmzFeatureState build() {
-    // SSE invalidation: re-fetch when DMZ config changes externally.
-    // Uses the framework's onSseInvalidation() — skips if dirty.
-    ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull?.domain == InvalidationDomain.dmz) {
-        onSseInvalidation();
-      }
-    });
-
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return DmzFeatureState.initial();
