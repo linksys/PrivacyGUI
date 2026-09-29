@@ -23,7 +23,7 @@ The proposed solution is a framework built on a principle of composition and con
 
 This generic class tracks the state of user-configurable settings. It holds `original` and `current` versions of the data and contains the core `isDirty` logic. It also includes serialization helpers.
 
-**File:** `lib/providers/preservable.dart`
+**File:** `lib/framework/preservable.dart`
 ```dart
 import 'dart:convert';
 import 'package:equatable/equatable.dart';
@@ -81,7 +81,7 @@ class Preservable<T extends Equatable> extends Equatable {
 
 This abstract class provides a standardized structure for a feature's state object, separating `settings` from `status`. It now includes contracts for `copyWith` and serialization.
 
-**File:** `lib/providers/feature_state.dart`
+**File:** `lib/framework/feature_state.dart`
 ```dart
 import 'dart:convert';
 import 'package:equatable/equatable.dart';
@@ -113,7 +113,7 @@ abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatab
 
 To provide reusable logic and a clear contract, we use an interface (`PreservableContract`) and a mixin (`PreservableNotifierMixin`) that implements the Template Method design pattern for `fetch` and `save` operations.
 
-**File:** `lib/providers/preservable_contract.dart`
+**File:** `lib/framework/preservable_contract.dart`
 ```dart
 import 'package:equatable/equatable.dart';
 
@@ -130,7 +130,7 @@ abstract class PreservableContract<TSettings extends Equatable, TStatus extends 
 }
 ```
 
-**File:** `lib/providers/preservable_notifier_mixin.dart`
+**File:** `lib/framework/preservable_notifier_mixin.dart`
 ```dart
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -191,17 +191,17 @@ The custom route class is updated to check for the `PreservableContract` and cal
 **File:** `lib/route/route_model.dart`
 ```dart
 // ... imports ...
-import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
 
 class LinksysRoute extends GoRoute {
   // ... constructor ...
   LinksysRoute({
     // ... other parameters
-    Provider<PreservableContract>? preservableProvider, // The provider is now generic
-    bool enableDirtyCheck = false,
+    // Passing it is what enables the guard — there is no separate flag (#1622).
+    ProviderListenable<PreservableContract>? preservableProvider,
   }) : super(
           onExit: (context, state) async {
-            if (enableDirtyCheck && preservableProvider != null) {
+            if (preservableProvider != null) {
               final container = ProviderScope.containerOf(context);
               final notifier = container.read(preservableProvider);
 
@@ -230,7 +230,7 @@ To apply this framework to a new feature:
 2.  **Create Feature State**: Extend `FeatureState` and implement the `copyWith` and `toMap` methods.
 3.  **Create Notifier**: Create a `Notifier` that `extends Notifier<YourState>` and add `with PreservableNotifierMixin`.
 4.  **Implement Template Methods**: In your Notifier, implement the required `performFetch` and `performSave` methods with your feature-specific logic.
-5.  **Update Route**: Use `LinksysRoute` in your router configuration, passing the `provider` (which should expose the `PreservableContract`) and setting `enableDirtyCheck: true`.
+5.  **Update Route**: Use `LinksysRoute` in your router configuration and pass your notifier provider's `.notifier` as `preservableProvider`. The mixin already makes the notifier a `PreservableContract`, and passing it is what enables the guard. Write a separate provider only when one page's dirty state spans more than one notifier — see `_WifiPageDirtyProxy` in `lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart`.
 
 **Example `InstantSafetyNotifier`:**
 ```dart

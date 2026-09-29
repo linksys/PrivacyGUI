@@ -41,8 +41,8 @@ Applying this framework to a new Feature is straightforward. Follow these five s
 **Step 5: Configure the Route (`LinksysRoute`) and UI**
 *   In your route configuration file, locate the route definition for the page.
 *   Ensure it uses `LinksysRoute`.
-*   Pass the `preservableProvider` parameter (pointing to your Notifier).
-*   Set `enableDirtyCheck: true`.
+*   Pass your notifier provider's `.notifier` as `preservableProvider` (e.g. `preservableProvider: myFeatureProvider.notifier`). The mixin already makes the notifier a `PreservableContract`, so no second provider is needed — and passing it is what turns the guard on; there is no separate flag.
+*   Only if one page's dirty state spans more than one notifier, write a provider of your own that combines them (see `_WifiPageDirtyProxy` in `lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart`) and pass that instead.
 *   **For Tabbed Interfaces (e.g., `StyledAppPageView`):** If your feature uses tabs, implement a listener on the `TabController` in your UI layer (e.g., `_YourViewState` for `YourView`). In this listener, check `ref.read(yourProvider.notifier).isDirty()`. If dirty, show a confirmation dialog (save/discard/cancel) before allowing the tab change.
 
 #### **3. Code Example**
@@ -102,9 +102,6 @@ class MyFeatureState extends FeatureState<MyFeatureSettings, MyFeatureStatus> {
 final myFeatureProvider = NotifierProvider<MyFeatureNotifier, MyFeatureState>(() {
   return MyFeatureNotifier();
 });
-final preservableMyFeatureProvider = Provider<PreservableContract<MyFeatureSettings, MyFeatureStatus>>((ref) {
-  return ref.watch(myFeatureProvider.notifier);
-});
 
 class MyFeatureNotifier extends Notifier<MyFeatureState>
     with PreservableNotifierMixin<MyFeatureSettings, MyFeatureStatus, MyFeatureState> {
@@ -161,8 +158,7 @@ class MyFeatureNotifier extends Notifier<MyFeatureState>
 // In lib/route/route_menu.dart:
 LinksysRoute(
   path: '/my-feature',
-  preservableProvider: preservableMyFeatureProvider,
-  enableDirtyCheck: true,
+  preservableProvider: myFeatureProvider.notifier, // passing it enables the guard
   builder: (context, state) => const MyFeatureView(), // MyFeatureView would be a ConsumerStatefulWidget
 ),
 

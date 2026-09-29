@@ -67,10 +67,10 @@ void main() {
         'Device.WiFi.Radio.1.': true,
         'Device.WiFi.Radio.2.': false,
       });
-      // Called at least once from build(); may be called again if SSE listener
-      // triggers due to wifiDataProvider stub emitting a value.
-      verify(() => mockService.fetchIeee80211h())
-          .called(greaterThanOrEqualTo(1));
+      // EXACTLY once. This used to be `greaterThanOrEqualTo(1)` with a comment about
+      // an SSE listener re-triggering the fetch — that listener was deleted in #1587
+      // Phase 1, and the loose matcher would pass whether or not one came back.
+      verify(() => mockService.fetchIeee80211h()).called(1);
       container.dispose();
     });
 
@@ -415,6 +415,178 @@ void main() {
     });
   });
 
+  // -------------------------------------------------------------------------
+  // linksys/PrivacyGUI#1587 Phase 1 — the two contracts the deletion created.
+  //
+  // Phase 1 removed `onSseInvalidation()` and, with it, the `ref.listen` that this
+  // notifier's DFS remediation had been relying on WITHOUT SAYING SO. Both facts below
+  // were true only by accident before, and nothing failed when they stopped being true:
+  // the remediation went silent, and no test noticed.
+  // -------------------------------------------------------------------------
+  group('UspWifiAdvancedNotifier - #1587 Phase 1 contracts', () {
+    test('DFS remediation reads L1 by value, not by an incidental subscription',
+        () async {
+      // WHAT THIS PINS. The remediation used to read `ref.read(wifiDataProvider).valueOrNull`,
+      // which returns null unless L1 happens to be built AND settled. Nothing in this
+      // notifier guaranteed either — the deleted `onSseInvalidation()` wiring did, as a
+      // side effect of holding a `ref.listen`. With it gone, `radioModels` came back empty
+      // and the radio parked on a DFS channel was never recognised.
+      //
+      // The container below subscribes to L2 (which is autoDispose and needs a subscriber
+      // to survive between reads at all) but NEVER to `wifiDataProvider`. So L1 is cold
+      // when `performSave` reaches it, which is exactly the production shape: a save is the
+      // first thing to touch L1 on a page whose widgets never watched it.
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          wifiDataProvider.overrideWith(() => _StubWifiDataNotifier([
+                // Radio 1 parked on a manual DFS channel — the case remediation exists for.
+                _radioModel(
+                  instancePath: 'Device.WiFi.Radio.1.',
+                  band: '5GHz',
+                  channel: 52,
+                  autoChannelEnable: false,
+                ),
+              ])),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // L2 only. Nothing subscribes to `wifiDataProvider`.
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      container.read(uspWifiAdvancedProvider.notifier).setDfsEnabled(false);
+      await container.read(uspWifiAdvancedProvider.notifier).save();
+
+      // Before the fix this list was EMPTY: the bare `ref.read` returned AsyncLoading,
+      // `radioModels` was empty, and the radio parked on channel 52 was never recognised
+      // — DFS went off and the radio stayed on a DFS channel.
+      final captured = verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: false,
+            forceAutoChannelPaths: captureAny(named: 'forceAutoChannelPaths'),
+          )).captured.single as List<String>;
+      expect(captured, ['Device.WiFi.Radio.1.'],
+          reason: 'the radio on DFS channel 52 must be forced to auto-channel');
+    });
+
+    test('the retry catches an error L1 is not documented to throw', () async {
+      // WHY THIS IS SEPARATE FROM THE TEST BELOW. That one throws `NetworkError`, a
+      // `ServiceError` subclass — so it passes under both `on ServiceError` and
+      // `catch (e)` and cannot distinguish them. Today every path into L1 does throw a
+      // `ServiceError` (the service maps USP errors; its provider throws
+      // `ServiceNotInitializedError`), but that is the current implementation, not a
+      // guarantee in any signature. A narrower catch would turn the day that changes
+      // into a save that fails without retrying.
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          wifiDataProvider.overrideWith(() => _FlakyWifiDataNotifier(
+                onBuild: () {},
+                // Deliberately NOT a ServiceError.
+                firstError: StateError('codegen blew up'),
+                radios: [
+                  _radioModel(
+                    instancePath: 'Device.WiFi.Radio.1.',
+                    band: '5GHz',
+                    channel: 52,
+                    autoChannelEnable: false,
+                  ),
+                ],
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      container.read(uspWifiAdvancedProvider.notifier).setDfsEnabled(false);
+      await container.read(uspWifiAdvancedProvider.notifier).save();
+
+      final captured = verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: false,
+            forceAutoChannelPaths: captureAny(named: 'forceAutoChannelPaths'),
+          )).captured.single as List<String>;
+      expect(captured, ['Device.WiFi.Radio.1.'],
+          reason: 'a non-ServiceError must be retried too, not propagated');
+    });
+
+    test('a cached L1 failure is retried once rather than failing the save',
+        () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      // Fails the first build, succeeds after a refresh. `wifiDataProvider` is not
+      // autoDispose and has no retry, so without the one refresh in `performSave` every
+      // later `.future` would replay this same error and DFS saves would stay broken.
+      var builds = 0;
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          wifiDataProvider.overrideWith(() => _FlakyWifiDataNotifier(
+                onBuild: () => builds++,
+                radios: [
+                  _radioModel(
+                    instancePath: 'Device.WiFi.Radio.1.',
+                    band: '5GHz',
+                    channel: 52,
+                    autoChannelEnable: false,
+                  ),
+                ],
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      container.read(uspWifiAdvancedProvider.notifier).setDfsEnabled(false);
+      await container.read(uspWifiAdvancedProvider.notifier).save();
+
+      expect(builds, greaterThanOrEqualTo(2),
+          reason:
+              'the failed L1 read must be retried, not replayed from cache');
+      final captured = verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: false,
+            forceAutoChannelPaths: captureAny(named: 'forceAutoChannelPaths'),
+          )).captured.single as List<String>;
+      expect(captured, ['Device.WiFi.Radio.1.'],
+          reason: 'remediation must still happen after the retry');
+    });
+  });
+
   group('UspWifiAdvancedNotifier - isDfsEnabled', () {
     test('true when all radios enabled', () async {
       when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
@@ -456,44 +628,6 @@ void main() {
       container.dispose();
     });
   });
-
-  // -------------------------------------------------------------------------
-  // The wifiDataProvider listener drives onSseInvalidation() once per upstream
-  // settle, not once per notification.
-  //
-  // `hasValue` alone is not an edge trigger: re-running an AsyncNotifier that
-  // already holds a value emits AsyncData(isLoading: true, value: prev) via
-  // copyWithPrevious before the fresh value, and that frame has hasValue true
-  // too. onSseInvalidation() calls unawaited(fetch(forceRemote: true)), which
-  // does NOT coalesce the way invalidateSelf() does — so the unguarded listener
-  // ran two full fetches per upstream refetch, the first against the stale
-  // value. See doc/riverpod/listen_site_audit.md (#1502 AC-4).
-  // -------------------------------------------------------------------------
-  group('UspWifiAdvancedNotifier — data provider re-notification', () {
-    test('an upstream refetch triggers exactly one extra fetch', () async {
-      when(() => mockService.fetchIeee80211h())
-          .thenAnswer((_) async => {'Device.WiFi.Radio.1.': true});
-
-      final container = createContainer();
-      addTearDown(container.dispose);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
-
-      // Consume the boot fetches (build()'s own fetch, plus the listener firing
-      // on the data provider's first loading→data settle) so the verify below
-      // counts only what the refetch caused.
-      verify(() => mockService.fetchIeee80211h())
-          .called(greaterThanOrEqualTo(1));
-
-      container.invalidate(wifiDataProvider);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
-
-      // Two listener firings (loading-with-previous, then the fresh value),
-      // one fetch. Without the isLoading guard this is 2.
-      verify(() => mockService.fetchIeee80211h()).called(1);
-    });
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -512,4 +646,35 @@ class _StubWifiDataNotifier extends WifiDataNotifier {
           codegenContext: WifiCodegenContext.empty,
           radioModels: _radios,
         );
+}
+
+/// Throws on its first build and succeeds afterwards — for the retry contract.
+class _FlakyWifiDataNotifier extends WifiDataNotifier {
+  _FlakyWifiDataNotifier({
+    required this.onBuild,
+    required this.radios,
+    this.firstError = const NetworkError(detail: 'L1 unreachable'),
+  });
+
+  final void Function() onBuild;
+  final List<WifiRadioUIModel> radios;
+
+  /// A parameter rather than a fixed `ServiceError`, because the retry deliberately
+  /// catches everything: a test that only throws a `ServiceError` subclass cannot tell
+  /// `catch (e)` from `on ServiceError`.
+  final Object firstError;
+  var _failed = false;
+
+  @override
+  Future<WifiData> build() async {
+    onBuild();
+    if (!_failed) {
+      _failed = true;
+      throw firstError;
+    }
+    return WifiData(
+      codegenContext: WifiCodegenContext.empty,
+      radioModels: radios,
+    );
+  }
 }

@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_feature_state.dart';
@@ -23,13 +21,6 @@ final uspPortForwardingPageProvider = AutoDisposeNotifierProvider<
   UspPortForwardingPageNotifier.new,
 );
 
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspPortForwardingPageProvider = AutoDisposeProvider<
-    PreservableContract<PortForwardingPageSettings, PortForwardingPageStatus>>(
-  (ref) => ref.watch(uspPortForwardingPageProvider.notifier),
-);
-
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
@@ -44,13 +35,6 @@ class UspPortForwardingPageNotifier
 
   @override
   PortForwardingPageFeatureState build() {
-    // SSE invalidation: re-fetch when port forwarding changes externally.
-    ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull?.domain == InvalidationDomain.portForwarding) {
-        onSseInvalidation();
-      }
-    });
-
     Future.microtask(() => fetch());
     return PortForwardingPageFeatureState.initial();
   }

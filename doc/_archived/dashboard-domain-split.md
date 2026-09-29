@@ -1,5 +1,10 @@
 # USP Dashboard 架構重構計畫
 
+> ⚠️ **歷史記錄，不是現行設計。** 本文描述的 `onSseInvalidation()` 與它的 dirty guard
+> **已在 #1587 Phase 1 刪除** —— 那個機制在頁面 idle 時重新取值(本來也沒人會被害),
+> 在頁面 dirty 時刻意不動(而那正是舊值被寫回裝置的那一刻)。本文的程式碼片段**不可當範本複製**。
+> 現行規則見 `constitution.md` Article IV。
+
 ## 背景
 
 `UspDashboardNotifier`（1119 行）是一個 God Notifier：一次性 fetch 17+ 資料源、包含所有 mutation 方法、管理所有 SSE invalidation。所有 card 必須等待全部 fetch 完成，任何 state 變更都觸發全部 card 重新評估。本次重構將其拆分為 domain-specific data providers，並將 USP page notifiers 遷移至 `FeatureState` + `Preservable` 框架，建立輕量的 dashboard orchestrator。

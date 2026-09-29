@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-09-07
+**Last Amended:** 2026-09-29
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -450,24 +450,18 @@ Examples: System Info, WAN Status, Time Settings
 - Use `PreservableAutoDisposeNotifierMixin` with the Notifier class
 - State MUST extend `FeatureState<TSettings, TStatus>`
 - Implement `performFetch()` and `performSave()` template methods
-- Expose `preservableProvider` for route dirty check:
-
-```dart
-final preservable{Domain}Provider =
-    AutoDisposeProvider<PreservableContract<{Domain}Settings, {Domain}Status>>(
-  (ref) => ref.watch(usp{Domain}Provider.notifier),
-);
-```
+- Pass the notifier provider's `.notifier` to the route — the mixin already makes the notifier a `PreservableContract`, so no second provider is needed
 
 **Route Configuration**:
 ```dart
 LinksysRoute(
   path: '{domain}',
   builder: (context, state) => const {Domain}View(),
-  enableDirtyCheck: true,
-  preservableProvider: preservable{Domain}Provider,
+  preservableProvider: usp{Domain}Provider.notifier,
 )
 ```
+
+Passing `preservableProvider` **is** what turns the guard on; there is no separate flag. Write a provider of your own only when one page's dirty state spans more than one notifier — the Wi-Fi page's `preservableUspWifiPageProvider` combines two tabs through `_WifiPageDirtyProxy` and is the one example (#1622).
 
 Reference implementation: `lib/page/dmz/providers/usp_dmz_notifier.dart`
 Detailed Guide: `doc/dirty_guard/dirty_guard_framework_guide.md`
@@ -492,7 +486,11 @@ final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxDa
 
 **Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
 
-`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy, and a conflict with the device is detected when the user saves (#1587).
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy (#1587).
+
+**A save does NOT currently detect that the device changed while the user was editing.** Every save compares the draft against the page-entry snapshot, never against the device's current value, so a value the device altered mid-edit is overwritten silently.
+
+Deferred deliberately, not overlooked: the editable fields on these pages are values a user sets, so the ordinary way to reach a conflict is a second editor. Detection belongs in `Preservable` and would therefore change the save behaviour of every form that uses it, and it needs a product decision about what to show. **The first observed conflict reopens it** — see #1587 Phase 3 for the measurements behind that judgement.
 
 ```dart
 // ✅ Correct — one-time clone, no live tracking
