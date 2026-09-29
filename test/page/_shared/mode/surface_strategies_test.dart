@@ -1,4 +1,4 @@
-// #1497 (phase 7 of epic #1474): cause 5's fourteen members, both modes side by
+// #1497 (phase 7 of epic #1474): cause 5's fifteen members, both modes side by
 // side.
 //
 // One file for both, same reason as `test/core/mode/impl/session_strategies_test
@@ -18,7 +18,7 @@
 //
 // WHY NOT `expect(local.assistanceBanner(), isNotNull)` AND STOP. Because "hidden
 // in RA" is the wrong summary of this contract and a nullability-only assertion
-// would encode it. Three of the fourteen return a widget in *both* modes with
+// would encode it. Three of the fifteen return a widget in *both* modes with
 // different content (`sessionGuard`, `sessionExitAction`,
 // `connectionBannerLevel`), and those are the members that make the contract a
 // composition and not a capability table. They get the most detailed assertions
@@ -43,7 +43,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 
-/// The fourteen members, spelled as they appear in a call site.
+/// The fifteen members, spelled as they appear in a call site.
 ///
 /// A roster rather than a count: the count is in the guide doc and drifts, while
 /// this list is what the "every member has a caller" group iterates. Adding a
@@ -59,6 +59,7 @@ const _members = <String>[
   'accountActions',
   'fixedDashboardLayout',
   'layoutEditor',
+  'internetSettingsEditor',
   'firstRunPresetFlow',
   'firmwareManualEntry',
   'sessionExitAction',
@@ -254,6 +255,20 @@ void main() {
               'dashboard-edit action at all. It used to take an `isRemoteMode` '
               'bool AND a required `onEdit` — the same condition spelled twice, '
               'with the remote build passing a callback it never used.');
+    });
+
+    test('internet settings editor: the callback itself, or a page to read',
+        () {
+      void enterEditMode() {}
+
+      expect(local.internetSettingsEditor(enterEditMode), same(enterEditMode),
+          reason: 'local keeps the pencil and Release & Renew exactly as they '
+              'were — the callback comes back unchanged');
+      expect(remote.internetSettingsEditor(enterEditMode), isNull,
+          reason: 'a WAN write or a lease release can drop the uplink the RA '
+              'session itself runs over, with no LAN path to recover on. `null` '
+              'is ONE decision the view reads for both the edit toggle and the '
+              'renew section — two checks would let them drift apart (#1626).');
     });
 
     test('first-run preset flow: the whole flow, or none of it', () {

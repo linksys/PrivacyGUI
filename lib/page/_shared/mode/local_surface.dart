@@ -72,6 +72,12 @@ class LocalSurface implements SurfaceStrategy {
   @override
   VoidCallback? layoutEditor(VoidCallback enterEditMode) => enterEditMode;
 
+  /// The router is on this viewer's LAN, so a WAN change that drops the uplink
+  /// leaves the page reachable: editing runs the callback the page handed over.
+  @override
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode) =>
+      enterEditMode;
+
   @override
   Future<void> Function(BuildContext context, WidgetRef ref)?
       firstRunPresetFlow() => runFirstRunPresetFlow;

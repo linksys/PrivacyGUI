@@ -36,7 +36,8 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///   would buy back the `?? const SizedBox.shrink()` this contract exists to
 ///   remove. Same reasoning as [sessionExitAction]'s non-nullable return, arrived
 ///   at from the opposite direction.
-/// * An *action* a mode lacks is a **`null` callback** ([layoutEditor]) or a
+/// * An *action* a mode lacks is a **`null` callback** ([layoutEditor],
+///   [internetSettingsEditor]) or a
 ///   **`null` flow** ([firstRunPresetFlow]). The call site can render the
 ///   affordance only if it was handed something to run, so there is nothing to
 ///   forget to guard.
@@ -206,6 +207,20 @@ abstract class SurfaceStrategy {
   /// and once as `onEdit`, a required callback that a remote build passed and
   /// never used.
   VoidCallback? layoutEditor(VoidCallback enterEditMode);
+
+  /// This surface's way into editing Internet Settings, wired to
+  /// [enterEditMode], or `null` where the page is for reading only.
+  ///
+  /// One answer for two affordances: the banner's edit toggle AND the Release &
+  /// Renew section. They share a member because they share the risk — a WAN
+  /// write and a lease release can both drop the uplink the viewer's own session
+  /// runs over — and a second member (or a second check at the call site) is how
+  /// the two would drift apart. The view renders neither when handed `null`.
+  ///
+  /// Not an `OperationGuard` seam, on purpose (#1626): nothing is refused
+  /// underneath. The page simply offers no way in, which is what "view-only"
+  /// means, and the dashboard's network card keeps its own renew action.
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode);
 
   /// This surface's first-run dashboard personalisation, or `null` where the
   /// preset is fixed.

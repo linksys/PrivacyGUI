@@ -90,6 +90,14 @@ class RemoteSurface implements SurfaceStrategy {
   @override
   VoidCallback? layoutEditor(VoidCallback enterEditMode) => null;
 
+  /// Read-only (Austin, 2026-09-24): the agent sees every value and changes none.
+  /// This session reaches the router *over its WAN*, so a connection-type change,
+  /// a bad static address or a lease release can cut the link the agent would
+  /// need to put it back — with no LAN path to recover on. `null` removes the
+  /// edit toggle and Release & Renew together.
+  @override
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode) => null;
+
   /// The preset is fixed (`UspDashboardPreset.remote`), so there is nothing to
   /// ask a first-time user — and the agent is not the user whose preference a
   /// picker would be storing.
