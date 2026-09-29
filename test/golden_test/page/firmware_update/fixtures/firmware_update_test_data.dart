@@ -219,7 +219,6 @@ FirmwareUpdateState get rebootingState => const FirmwareUpdateState(
       phase: FirmwareUpdatePhase.rebooting,
       activeBank: testActiveBank,
       targetBank: testAvailableBank,
-      rebootRemaining: Duration(minutes: 3, seconds: 45),
     );
 
 FirmwareUpdateState get verifyingState => const FirmwareUpdateState(

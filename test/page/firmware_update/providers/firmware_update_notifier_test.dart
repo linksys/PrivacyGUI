@@ -239,6 +239,27 @@ void main() {
     return bytes;
   }
 
+  /// Stubs a successful upload of [bytes] that reports each `(sent, total)` in
+  /// [ticks] through `onProgress`, in order. The chunk count is the last tick's
+  /// `total`, so a test names its progress once.
+  void stubUploadTicks(Uint8List bytes, List<(int, int)> ticks) {
+    when(() => mockUploader.totalFragmentsFor(bytes.length))
+        .thenReturn(ticks.last.$2);
+    when(() => mockUploader.uploadFile(
+          bytes: any(named: 'bytes'),
+          md5: any(named: 'md5'),
+          commandKey: any(named: 'commandKey'),
+          isCancelled: any(named: 'isCancelled'),
+          onProgress: any(named: 'onProgress'),
+        )).thenAnswer((invocation) async {
+      final onProgress =
+          invocation.namedArguments[#onProgress] as void Function(int, int)?;
+      for (final (sent, total) in ticks) {
+        onProgress?.call(sent, total);
+      }
+    });
+  }
+
   group('FirmwareUpdateNotifier', () {
     test('initial state is idle with empty fields', () {
       final container = createContainer();
@@ -579,20 +600,7 @@ void main() {
 
     test('runUpload mirrors uploader progress into state', () async {
       final bytes = validImage();
-      when(() => mockUploader.totalFragmentsFor(bytes.length)).thenReturn(64);
-      when(() => mockUploader.uploadFile(
-            bytes: any(named: 'bytes'),
-            md5: any(named: 'md5'),
-            commandKey: any(named: 'commandKey'),
-            isCancelled: any(named: 'isCancelled'),
-            onProgress: any(named: 'onProgress'),
-          )).thenAnswer((invocation) async {
-        final onProgress =
-            invocation.namedArguments[#onProgress] as void Function(int, int)?;
-        onProgress?.call(0, 64);
-        onProgress?.call(32, 64);
-        onProgress?.call(64, 64);
-      });
+      stubUploadTicks(bytes, const [(0, 64), (32, 64), (64, 64)]);
       final container = createContainer(
         picker: _StubPickerService(
           FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
@@ -710,32 +718,6 @@ void main() {
         container.read(firmwareUpdateNotifierProvider).phase,
         FirmwareUpdatePhase.failed,
       );
-    });
-
-    test('updateUploadProgress reports chunk count and uploading phase', () {
-      final container = createContainer();
-      addTearDown(container.dispose);
-      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
-
-      notifier.updateUploadProgress(42, 100);
-
-      final state = container.read(firmwareUpdateNotifierProvider);
-      expect(state.phase, FirmwareUpdatePhase.uploading);
-      expect(state.uploadedChunks, 42);
-      expect(state.totalChunks, 100);
-      expect(state.uploadProgress, closeTo(0.42, 1e-9));
-    });
-
-    test('enterRebooting carries the estimated remaining duration', () {
-      final container = createContainer();
-      addTearDown(container.dispose);
-      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
-
-      notifier.enterRebooting(const Duration(minutes: 5));
-
-      final state = container.read(firmwareUpdateNotifierProvider);
-      expect(state.phase, FirmwareUpdatePhase.rebooting);
-      expect(state.rebootRemaining, const Duration(minutes: 5));
     });
 
     test('verify returns done on version match', () async {
@@ -1345,12 +1327,28 @@ void main() {
       expect(state.isUpdating, isFalse);
     });
 
-    test('cancel resets to initial state', () {
-      final container = createContainer();
+    test('cancel resets to initial state', () async {
+      // Seeded through a real upload, not a setter: the progress fields are only
+      // ever written by `runUpload`, so that is the state `cancel` has to undo.
+      final bytes = validImage();
+      stubUploadTicks(bytes, const [(10, 100)]);
+      final container = createContainer(
+        picker: _StubPickerService(
+          FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
+        ),
+      );
       addTearDown(container.dispose);
       final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
 
-      notifier.updateUploadProgress(10, 100);
+      await notifier.pickAndValidateFile();
+      await notifier.runUpload(commandKey: 'cmd-1');
+      // The precondition, so a seeding that silently stopped working cannot pass
+      // this test by leaving the state at its defaults all along.
+      final seeded = container.read(firmwareUpdateNotifierProvider);
+      expect(seeded.uploadedChunks, 10);
+      expect(seeded.totalChunks, 100);
+      expect(notifier.pickedBytes, isNotNull);
+
       notifier.cancel();
 
       final state = container.read(firmwareUpdateNotifierProvider);
