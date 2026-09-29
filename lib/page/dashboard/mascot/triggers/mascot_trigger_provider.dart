@@ -173,13 +173,22 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
   /// Runs [evaluate] once per settled frame, and announces what it returns.
   ///
-  /// The `isLoading` guard skips the re-run frame: `invalidateSelf()`
-  /// republishes the *previous* value with `isLoading` set, so evaluating on it
-  /// would compare the baseline against itself and then commit that stale value
-  /// as the new baseline — losing the change for good. Same guard and same
-  /// reason as `devices_data_provider.dart:128-131`; see
-  /// `doc/riverpod/listen_site_audit.md`. Error frames are skipped for the same
-  /// reason: `AsyncError` carries the previous value forward.
+  /// The `isLoading` guard skipped the re-run frame: `invalidateSelf()` republished the
+  /// *previous* value with `isLoading` set, so evaluating on it compared the baseline
+  /// against itself and then committed that stale value as the new baseline — losing the
+  /// change for good. Same guard and same reason as `devices_data_provider`'s wifi
+  /// listener; see `doc/riverpod/listen_site_audit.md`.
+  ///
+  /// As of #1615 all four of these producers assign `state` directly rather than calling
+  /// `invalidateSelf()`, so there is no re-run frame left for the `isLoading` half to
+  /// filter: measured at most 1 notification per refresh that survives, versus 2 before. It is kept deliberately —
+  /// zero cost, and it still protects against a producer that publishes a refresh frame
+  /// again (a `ref.refresh` from anywhere).
+  ///
+  /// The `hasError` half is NOT inert and must stay: `AsyncError` carries the previous
+  /// value forward, and `_refreshFromPush` deliberately keeps the previous value on
+  /// failure rather than publishing an error — but a failure in the provider's own
+  /// `build()` still surfaces as `AsyncError` here.
   ///
   /// Each `_evaluateXxx` compares against the stored baseline and hands back what
   /// that baseline would become, without writing it — so these four sites are

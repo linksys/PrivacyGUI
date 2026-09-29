@@ -45,7 +45,7 @@ void main() {
   tearDownAll(OuiLookup.reset);
 
   // Mirrors the production config in usp_topology_view.dart: animation path on.
-  Widget wrap(MeshTopology topology, TopologyViewMode mode) {
+  Widget wrap(GraphData topology, TopologyViewMode mode) {
     return MaterialApp(
       theme: AppTheme.create(brightness: Brightness.light),
       home: Scaffold(
@@ -55,7 +55,7 @@ void main() {
           child: AppTopology(
             topology: topology,
             viewMode: mode,
-            clientVisibility: ClientVisibility.always,
+            leafVisibility: LeafVisibility.always,
             nodeRendererRegistry: NodeRendererRegistry.unified,
             enableAnimation: true,
             interactive: false,

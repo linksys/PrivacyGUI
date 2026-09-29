@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
@@ -55,10 +56,23 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
   @override
   Future<EthernetData> build() async {
+    // A REBUILD SUPERSEDES ANY PUSH IN FLIGHT, so it bumps the same counter.
+    //
+    // `build()` publishes through its return value, not through `_refreshFromPush`, so
+    // without this a push that started BEFORE a save could complete after the post-save
+    // rebuild and overwrite fresh data with pre-save data — measured, and on this provider
+    // no later push arrives to correct it. Save paths that rebuild:
+    // `ref.invalidate`/`ref.refresh` from the page notifiers and the retry buttons.
+    //
+    // (No debounce on this provider, so there is no timer to cancel.)
+    _pushGeneration++;
+
     // SSE listener: Ethernet interface status changes (link up/down)
+    //
+    // `_refreshFromPush()`, not `invalidateSelf()` — see that method for why.
     ref.listen(sseInvalidationProvider, (_, next) {
       if (next.valueOrNull?.domain == InvalidationDomain.ethernetInterfaces) {
-        ref.invalidateSelf();
+        _refreshFromPush();
       }
     });
 
@@ -107,10 +121,97 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
           .equals(_consumedDevices, devices)) {
         return;
       }
-      ref.invalidateSelf();
+      // Same reason as the SSE listener above: this fires from outside a build, so
+      // `invalidateSelf()` would need a reader that nothing guarantees.
+      _refreshFromPush();
     });
 
     return _fetch();
+  }
+
+  /// Which push refresh is allowed to publish — see [_refreshFromPush].
+  int _pushGeneration = 0;
+
+  /// Re-read the device and publish the result, WITHOUT depending on anyone reading this
+  /// provider afterwards.
+  ///
+  /// WHY NOT `invalidateSelf()` — linksys/PrivacyGUI#1615. That call discards the state
+  /// and marks the provider for rebuild; riverpod runs `build()` again **when something
+  /// reads the provider**. Both listeners above fire from outside a build, and when
+  /// there is no reader at that moment:
+  ///
+  ///   - `build()` does not run, so no re-fetch happens, and
+  ///   - both `ref.listen` calls — which live INSIDE `build()` — are not re-registered,
+  ///     so the NEXT notification does not even reach a listener.
+  ///
+  /// So the first matching notification disables BOTH paths, not just the one that
+  /// fired. Measured: a held subscriber gave 1 fetch → 2 after an `ethernetInterfaces`
+  /// event; no subscriber, 1 → 1. This provider has no debounce, which makes no
+  /// difference — the defect is the pattern, not the timing.
+  ///
+  /// WAS THIS REACHABLE? Not on any current preset — both `stats_panel` and the
+  /// `ethernet_ports` card watch this provider and `stats_panel` appears in all five
+  /// (`usp_dashboard_preset.dart`), so something was always subscribed. That made this
+  /// correct BY COINCIDENCE: the guarantee was a `const` list in a preset definition,
+  /// and no test would have caught its removal because every existing test holds a
+  /// `container.listen`.
+  ///
+  /// Assigning `state` directly removes the dependency entirely.
+  ///
+  /// ON FAILURE IT KEEPS THE PREVIOUS VALUE. Consumers read through `valueOrNull`, so an
+  /// error state renders as "unknown" — a transient hiccup would blank the port list on
+  /// the dashboard and the Local Network page.
+  ///
+  /// NOTE ON `_consumedDevices`: `_fetch()` writes it before its await, so the devices
+  /// listener's equality guard still compares against what the last fetch really
+  /// consumed. Going through `state =` rather than a rebuild does not change that — the
+  /// same `_fetch()` runs either way, on the same notifier instance.
+  /// ONLY THE NEWEST PUSH REFRESH MAY PUBLISH. `invalidateSelf()` used to give this for
+  /// free — measured: riverpod coalesces repeated invalidations into one rebuild, whereas
+  /// two bare `async` calls run overlapping fetches and the LAST TO COMPLETE wins. An
+  /// older read then overwrites a newer one and nothing corrects it, because these
+  /// providers are push-driven only.
+  ///
+  /// THE DEBOUNCE DOES NOT PREVENT THIS, which is worth stating because it looks like it
+  /// should. `_debounce?.cancel()` only cancels a timer that has not fired yet; once it
+  /// has fired and this method is awaiting, a later event starts a NEW timer and a second
+  /// fetch. Measured on this provider's own shape: two events 600ms apart produced three
+  /// fetches with two of them in flight together.
+  ///
+  /// A local counter rather than the event's `seq`: `seq` comes from the device and this
+  /// code does not own its ordering guarantees, while a counter incremented here is
+  /// monotonic by construction. `!=` rather than `<` for the same reason — it asks "am I
+  /// still the newest?", which needs no ordering assumption at all.
+  ///
+  /// Same guard and same reasoning as `wan_data_provider` (#1615/#1618).
+  ///
+  /// ONE COUNTER FOR BOTH LISTENERS, which is correct rather than merely convenient: they
+  /// publish to the same `state`, so what matters is which refresh completes last,
+  /// regardless of which listener started it.
+  ///
+  /// AND `_consumedDevices` IS DELIBERATELY NOT ROLLED BACK when a fetch is discarded.
+  /// `_fetch()` writes it before its await, so a discarded fetch still moves it — which
+  /// looks like it should be able to make the devices listener skip a real change. It
+  /// cannot, and the reason is structural rather than lucky: every `_fetch()` reads the
+  /// SAME `devicesDataProvider`, so the last fetch to START always wrote the newest device
+  /// list, and that is exactly what the listener compares against. Checked with two and
+  /// then three overlapping pushes; a subsequent real device change was noticed in both.
+  ///
+  /// This holds only while `_fetch()` takes its device list from the provider rather than
+  /// from an argument. If that ever changes, the two pieces of state stop agreeing and the
+  /// rollback becomes necessary.
+  Future<void> _refreshFromPush() async {
+    final generation = ++_pushGeneration;
+    try {
+      final data = await _fetch();
+      if (generation != _pushGeneration) return;
+      state = AsyncData(data);
+    } catch (e, st) {
+      logger.w(
+          '[Ethernet] push-triggered refetch failed, keeping previous value',
+          error: e,
+          stackTrace: st);
+    }
   }
 
   Future<EthernetData> _fetch() async {

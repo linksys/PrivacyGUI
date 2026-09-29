@@ -47,21 +47,21 @@ void main() {
     'hasMultipleInterfaces': false,
   };
 
-  MeshNode node({
-    required MeshNodeType type,
-    MeshNodeStatus status = MeshNodeStatus.online,
+  GraphNode node({
+    required String slot,
+    NodeState status = NodeState.active,
   }) =>
-      MeshNode(
+      GraphNode(
         id: 'node-1',
         name: 'Test Node',
-        type: type,
+        styleSlot: slot,
         status: status,
       );
 
   // Mirrors the production call in usp_topology_view.dart:123-125, which is
   // the only site that passes `showDetailsButton: true`.
   Widget wrap(
-    MeshNode target,
+    GraphNode target,
     Map<String, dynamic> metadata, {
     required bool showDetailsButton,
   }) {
@@ -100,7 +100,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.gateway),
+        node(slot: 'primary'),
         masterMetadata,
         showDetailsButton: true,
       ));
@@ -116,7 +116,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender),
+        node(slot: 'secondary'),
         slaveMetadata,
         showDetailsButton: true,
       ));
@@ -135,7 +135,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender),
+        node(slot: 'secondary'),
         slaveMetadata,
         showDetailsButton: false,
       ));
@@ -152,7 +152,7 @@ void main() {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.extender, status: MeshNodeStatus.offline),
+        node(slot: 'secondary', status: NodeState.inactive),
         slaveMetadata,
         showDetailsButton: true,
       ));
@@ -163,31 +163,31 @@ void main() {
       handle.dispose();
     });
 
-    // CHARACTERIZATION TEST — documents a latent coupling, NOT a live bug.
+    // What this case used to characterise has happened, and been fixed.
     //
-    // A client node's metadata has no `deviceId` (only `mac`), so
-    // `NodeDetailPopup.builder` (node_detail_popup.dart:36-46) builds a
-    // non-null `onDetailsTap` whose body is a no-op: the `deviceId.isNotEmpty`
-    // guard fails and no navigation happens. The button renders and carries
-    // the identifier regardless.
+    // It was written as a latent coupling rather than a live bug: a leaf's
+    // metadata has no `deviceId`, so `builder` produced a non-null `onDetailsTap`
+    // whose body was a no-op, and the button rendered anyway. It was called
+    // unreachable because the kit short-circuited leaf nodes before the panel
+    // opened — and it said, correctly, that the guard lived in ui_kit and the case
+    // would matter "if it is relaxed".
     //
-    // Unreachable in production today: `TopologyGraphView._handleNodeTap`
-    // short-circuits client and internet nodes before the detail panel opens
-    // (ui_kit v2.34.5 topology_graph_view.dart:352-355), and all three app
-    // call sites use `NodeDetailTrigger.tap` with no hover path. So a client
-    // node never renders this popup.
+    // ui_kit 3.4.0 relaxed it: whether a node has a panel is now decided by
+    // whether one was configured, never by what kind of node it is. So a leaf does
+    // reach this popup, and #1614 gave it a destination — `topologyNavTargetFor`
+    // routes a leaf to Device Detail by its `mac`. The button is no longer a
+    // no-op, which is why this now asserts a *live* hook rather than a documented
+    // dead one.
     //
-    // Pinned here because that guard lives in ui_kit, not in this repo: if it
-    // is relaxed, or if this popup is wired into
-    // `TopologyTreeConfiguration.detailBuilder`, E2E gains a locatable button
-    // that does nothing when tapped. Flip to `findsNothing` if the render gate
-    // is ever extended with `deviceId.isNotEmpty`.
-    testWidgets('client node renders the hook despite having no deviceId',
+    // It still earns its place: a leaf reaching Device Detail depends on the
+    // resolver reading the same metadata the rows read, which is a coupling one
+    // refactor away from breaking again.
+    testWidgets('a leaf renders the hook, and it has somewhere to go',
         (tester) async {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
-        node(type: MeshNodeType.client),
+        node(slot: 'leaf'),
         clientMetadata,
         showDetailsButton: true,
       ));
