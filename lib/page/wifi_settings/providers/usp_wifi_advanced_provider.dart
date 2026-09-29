@@ -92,6 +92,12 @@ class UspWifiAdvancedNotifier
 
   @override
   Future<void> performSave() async {
+    // THIS SAVE WRITES TWO NAMED FIELDS, not the whole object. `setIeee80211hEnabled`
+    // sets `IEEE80211hEnabled` on the listed radios plus `AutoChannelEnable` on the
+    // remediated ones, so a value the device changed elsewhere while this page was open
+    // is not overwritten by saving here. The #1587 Phase 3 gap — comparing the draft
+    // against the page-entry snapshot rather than the device — still applies to the two
+    // fields this page owns, and nothing more.
     final current = state.settings.current;
     final radioPaths = current.ieee80211hByRadio.keys.toList();
     final enabled = current.isDfsEnabled;
@@ -113,7 +119,26 @@ class UspWifiAdvancedNotifier
       //
       // Awaiting the future is the fix rather than re-adding a listener: this is a
       // one-shot read at save time and it needs the value to EXIST, not to be watched.
-      final radios = (await ref.read(wifiDataProvider.future)).radioModels;
+      //
+      // ONE RETRY, BECAUSE `.future` REPLAYS A CACHED FAILURE. `wifiDataProvider` is not
+      // autoDispose and has no retry of its own, so if its `build()` ever threw, every
+      // later `.future` rethrows that same error — and DFS-disable saves would keep
+      // failing until something else happened to invalidate L1. `refresh` forces one
+      // real re-read. The error is already a `ServiceError` (mapped in
+      // `usp_wifi_data_service`), so it needs no further mapping; if the retry also
+      // fails it propagates, which is correct — the remediation cannot be skipped
+      // silently, and skipping it leaves a radio parked on a DFS channel with DFS off.
+      WifiData wifiData;
+      try {
+        wifiData = await ref.read(wifiDataProvider.future);
+      } on ServiceError catch (e) {
+        logger.w(
+            '[USP][WiFi][Advanced]: L1 read failed before DFS remediation, '
+            'retrying once',
+            error: e);
+        wifiData = await ref.refresh(wifiDataProvider.future);
+      }
+      final radios = wifiData.radioModels;
       final radioByPath = {
         for (final r in radios) ensureTrailingDot(r.instancePath): r,
       };
