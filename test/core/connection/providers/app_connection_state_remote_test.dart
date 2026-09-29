@@ -100,7 +100,8 @@ void main() {
     mockSseManager = MockSseManager();
     mockAuthNotifier = MockAuthNotifier();
 
-    when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+    when(() => mockSseManager.disconnectKeepingSubscriptions())
+        .thenAnswer((_) async {});
     when(() => mockSseManager.connect()).thenAnswer((_) async {});
     // Stubbed even in the tests that assert it is never called: an unstubbed
     // `logout()` returns null where a Future is expected, so a regression would
@@ -265,7 +266,7 @@ void main() {
       expect(waiting, isFalse);
       expect(container.read(appConnectionStateProvider),
           AppConnectionState.authenticated);
-      verifyNever(() => mockSseManager.disconnect());
+      verifyNever(() => mockSseManager.disconnectKeepingSubscriptions());
       await pumpEventQueue();
       verifyNever(() => mockUsp.get(any()));
     });
@@ -289,7 +290,7 @@ void main() {
       expect(waiting, isTrue);
       expect(container.read(appConnectionStateProvider),
           AppConnectionState.waitingForRecovery);
-      verify(() => mockSseManager.disconnect()).called(1);
+      verify(() => mockSseManager.disconnectKeepingSubscriptions()).called(1);
     });
 
     test('a changed serial still ends the session', () async {

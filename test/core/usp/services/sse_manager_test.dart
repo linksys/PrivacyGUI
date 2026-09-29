@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
@@ -440,6 +441,120 @@ void main() {
       await manager.disconnect();
       expect(manager.isConnected, isFalse);
 
+      await manager.dispose();
+    });
+
+    // A recovery wait (the router rebooting, the link dropping) closes the
+    // stream but is not the end of the session: when the probe reconnects, every
+    // subscription that was live before must be live again. `disconnect()` is
+    // the terminal path and forgets them, which is what left the dashboard
+    // frozen after a reboot.
+    test(
+        'disconnectKeepingSubscriptions keeps the records, so the next connect re-registers them',
+        () async {
+      final manager = createManager();
+      await manager.subscribe(
+        subscriptionId: 'widget-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Test.',
+        onNotification: (_) {},
+      );
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await manager.disconnectKeepingSubscriptions();
+      expect(manager.isConnected, isFalse);
+      expect(manager.registry.activeIds, contains('widget-sub'));
+
+      final reopened = StreamController<SseEvent>();
+      when(() => mockBridge.notifications()).thenAnswer((_) => reopened.stream);
+      clearInteractions(mockBridge);
+
+      await manager.connect();
+      reopened.add(heartbeatEvent());
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'widget-sub',
+            path: 'Device.Test.',
+            notifType: 1,
+          )).called(1);
+
+      await reopened.close();
+      await manager.dispose();
+    });
+
+    test(
+        'disconnectKeepingSubscriptions blocks auto-reconnect until connect is called',
+        () async {
+      final manager = createManager();
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(Duration.zero);
+
+      await manager.disconnectKeepingSubscriptions();
+
+      expect(await manager.tryReconnect(), isFalse);
+      expect(manager.isConnected, isFalse);
+
+      await manager.dispose();
+    });
+
+    // The remote arm restores on stream-open, not on the first event: Guardian
+    // sends no heartbeats, so a stream with nothing subscribed never produces
+    // the event the local arm waits for.
+    test(
+        'disconnectKeepingSubscriptions: remote re-registers when the stream '
+        'reopens, with no event arriving', () async {
+      when(() => mockBridge.listSubscriptions())
+          .thenAnswer((_) async => <String>[]);
+      final manager = SseManager(
+        usp: mockUsp,
+        bridge: mockBridge,
+        strategy: RemoteSseStrategy(mockBridge),
+      );
+      await manager.subscribe(
+        subscriptionId: 'widget-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Test.',
+        onNotification: (_) {},
+      );
+      await manager.connect();
+
+      await manager.disconnectKeepingSubscriptions();
+      verifyNever(() => mockBridge.listSubscriptions());
+
+      final reopened = StreamController<SseEvent>();
+      when(() => mockBridge.notifications()).thenAnswer((_) => reopened.stream);
+      clearInteractions(mockBridge);
+
+      await manager.connect();
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'remote-widget-sub',
+            path: 'Device.Test.',
+            notifType: 1,
+          )).called(1);
+
+      await reopened.close();
+      await manager.dispose();
+    });
+
+    test('disconnect still forgets the records (logout, bridge mode)',
+        () async {
+      final manager = createManager();
+      await manager.subscribe(
+        subscriptionId: 'widget-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Test.',
+        onNotification: (_) {},
+      );
+
+      await manager.disconnect();
+
+      expect(manager.registry.activeIds, isEmpty);
       await manager.dispose();
     });
 

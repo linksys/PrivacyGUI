@@ -100,7 +100,8 @@ void main() {
     });
 
     test('enterWaiting transitions to waitingForRecovery', () {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -121,7 +122,8 @@ void main() {
     });
 
     test('enterWaiting does nothing if already in waitingForRecovery', () {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -147,13 +149,14 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.waitingForRecovery,
       );
-      // disconnect should only be called once (first enterWaiting)
-      verify(() => mockSseManager.disconnect()).called(1);
+      // SSE should only be closed once (first enterWaiting)
+      verify(() => mockSseManager.disconnectKeepingSubscriptions()).called(1);
     });
 
     test('reportConnectivityFailure triggers waiting when SSE is suspended',
         () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -201,7 +204,8 @@ void main() {
     test(
         'reportConnectivityFailure does NOT trigger when not in authenticated state',
         () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -233,7 +237,8 @@ void main() {
         () async {
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.recovered);
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockSseManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer();
@@ -261,7 +266,8 @@ void main() {
         'without ending the session', () async {
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -297,7 +303,8 @@ void main() {
       // and came back with nothing of the session left in it.
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.recovered);
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -330,7 +337,8 @@ void main() {
         probeCallCount++;
         return ProbeResult.unreachable;
       });
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
 
       final container = createContainer();
       addTearDown(container.dispose);
@@ -353,7 +361,8 @@ void main() {
     });
 
     test('exitToLogout stops probe and reports userRequested', () {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -444,7 +453,8 @@ void main() {
     });
 
     test('consecutiveFailures increments on each unreachable probe', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -471,7 +481,8 @@ void main() {
     });
 
     test('consecutiveFailures resets to zero on recovered probe', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockSseManager.connect()).thenAnswer((_) async {});
       var callCount = 0;
       when(() => mockProbe.probe()).thenAnswer((_) async {
@@ -522,7 +533,8 @@ void main() {
     });
 
     test('retryNow forces an immediate probe while waiting', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -550,7 +562,8 @@ void main() {
     });
 
     test('exitToLogout resets recovery counters', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -576,7 +589,8 @@ void main() {
     test(
         'enterWaiting from a fresh authenticated state resets counters '
         'before kicking off probe', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -599,7 +613,8 @@ void main() {
 
     test('onReconnectFailed triggers enterWaiting after threshold (2) failures',
         () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -636,12 +651,13 @@ void main() {
             ?.trigger,
         RecoveryTrigger.natural,
       );
-      verify(() => mockSseManager.disconnect()).called(1);
+      verify(() => mockSseManager.disconnectKeepingSubscriptions()).called(1);
     });
 
     test('onReconnectFailed does NOT trigger if already in waitingForRecovery',
         () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -674,8 +690,8 @@ void main() {
             ?.trigger,
         RecoveryTrigger.operationalWifiChange,
       );
-      // disconnect called only once (from the manual enterWaiting)
-      verify(() => mockSseManager.disconnect()).called(1);
+      // SSE closed only once (from the manual enterWaiting)
+      verify(() => mockSseManager.disconnectKeepingSubscriptions()).called(1);
     });
 
     test('onReconnectFailed below threshold does NOT trigger recovery',
@@ -693,11 +709,12 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.authenticated,
       );
-      verifyNever(() => mockSseManager.disconnect());
+      verifyNever(() => mockSseManager.disconnectKeepingSubscriptions());
     });
 
     test('recoveryContext is cleared after ProbeResult.recovered', () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockSseManager.connect()).thenAnswer((_) async {});
       when(() => mockProbe.probe(healthOnly: any(named: 'healthOnly')))
           .thenAnswer((_) async => ProbeResult.recovered);
@@ -726,7 +743,8 @@ void main() {
 
     test('recoveryContext is cleared after ProbeResult.serialMismatch',
         () async {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
 
@@ -752,7 +770,8 @@ void main() {
     });
 
     test('recoveryContext getter exposes current context', () {
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -814,7 +833,8 @@ void main() {
       });
 
       test('re-login does NOT override an active waitingForRecovery', () async {
-        when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+        when(() => mockSseManager.disconnectKeepingSubscriptions())
+            .thenAnswer((_) async {});
         when(() => mockProbe.probe())
             .thenAnswer((_) async => ProbeResult.unreachable);
 

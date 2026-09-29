@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
@@ -113,6 +115,18 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       }
     });
 
+    // Back from a recovery wait (a reboot, a dropped link): every card is still
+    // showing what it read before the outage, and SSE only reports changes from
+    // here on, so read everything again. The subscriptions come back on their
+    // own — the wait keeps their records, and reopening the stream puts them
+    // back. A wait that ends in `loggedOut` has no session to read with.
+    ref.listen(appConnectionStateProvider, (prev, next) {
+      if (prev == AppConnectionState.waitingForRecovery &&
+          next == AppConnectionState.authenticated) {
+        _refreshAfterRecovery();
+      }
+    });
+
     try {
       return await _buildImpl();
     } catch (e, st) {
@@ -131,6 +145,25 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     }
     // Re-run orchestrator build (auth check + re-trigger providers).
     ref.invalidateSelf();
+  }
+
+  /// Re-reads every domain provider without rebuilding the orchestrator.
+  ///
+  /// Not [refreshAll]: a rebuild re-runs [_registerSSEAfterDomainReady], whose
+  /// `connect()` fires whenever the stream is not yet `connected` — and right
+  /// after recovery it is not, because `connected` is inferred from traffic and
+  /// Guardian sends none. That second `connect()` closes the stream the probe
+  /// has just opened while its subscriptions are still being put back.
+  ///
+  /// The backoff retry is the one piece of the rebuild it does keep: the router
+  /// answers the probe before every service on it is up, so the first reads can
+  /// fail exactly as they do at boot.
+  void _refreshAfterRecovery() {
+    logger.i('[USP][Orchestrator]: Recovered — re-reading domain data');
+    for (final (_, provider) in _allDomainProviders) {
+      ref.invalidate(provider);
+    }
+    _scheduleProviderRetry();
   }
 
   Future<DashboardOrchestratorState> _buildImpl() async {

@@ -177,7 +177,7 @@ class RemoteSseStrategy implements SseOperationStrategy {
       _fireAndForgetCleanup();
     } else {
       logger.d('[SSE]: onDisconnected (unintentional) — '
-          'will resubscribe on reconnect via orchestrator');
+          'records kept, re-registered when the stream reopens');
     }
   }
 

@@ -325,10 +325,27 @@ class SseManager {
   /// Starts the SSE connection.
   Future<void> connect() => connection.connect();
 
-  /// Disconnects SSE (intentional, stops reconnection).
+  /// Disconnects SSE (intentional, stops reconnection) and forgets every
+  /// subscription. For paths that end the session's subscriptions: logout,
+  /// bridge mode, a LAN IP change. A wait that expects the same session back
+  /// uses [disconnectKeepingSubscriptions] instead.
   Future<void> disconnect() async {
     await connection.disconnect();
     await registry.onSseDisconnected(intentional: true);
+  }
+
+  /// Closes the stream and blocks auto-reconnect like [disconnect], but keeps
+  /// the subscription records, so the next [connect] puts back everything that
+  /// was live — the core set, and what package widgets, the codegen delegate
+  /// and the operation awaiter registered on their own, which only this
+  /// registry knows about. The restore is the strategy's normal reconnect edge
+  /// (remote on stream-open, local on the first heartbeat).
+  ///
+  /// For the recovery wait (a reboot, a dropped link): calling [disconnect]
+  /// there is what left the dashboard frozen after the router came back.
+  Future<void> disconnectKeepingSubscriptions() async {
+    await connection.disconnect();
+    await registry.onSseDisconnected(intentional: false);
   }
 
   /// Attempts to reconnect from suspended/disconnected state.
