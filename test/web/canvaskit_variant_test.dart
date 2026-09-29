@@ -634,6 +634,56 @@ outputs:
       expect(worker, isNot(matches(RegExp(r'''\bcaches\b'''))));
     });
   });
+
+  // Every check above reads code through this helper, so a way to make it drop
+  // real code is a way to make any of them pass on a broken file. Tested on
+  // inputs rather than only through the files, because the files contain none
+  // of the shapes below today and the guard has to hold on the day one does.
+  group('_withoutLineComments keeps code and drops comments', () {
+    String strip(String s) => _withoutLineComments(s, '//');
+
+    test('a /* inside a line comment does not open a block', () {
+      // Found by review of #1623: the block regex ran before the line comments
+      // were dropped, so this `/*` paired with the later `*/` and removed the
+      // import between them, and the no-import check went green.
+      final code = strip("// TODO: /* fix later\n"
+          "importScripts('flutter_service_worker.js');\n"
+          "/* unrelated */\n");
+      expect(code, contains('importScripts'));
+    });
+
+    test('a /* after a trailing // does not open a block', () {
+      final code = strip("self.skipWaiting(); // was /* here\n"
+          "importScripts('x.js');\n"
+          "/* later */\n");
+      expect(code, contains('importScripts'));
+    });
+
+    test('drops whole-line, trailing and block comments', () {
+      final code = strip("// importScripts('a.js');\n"
+          "self.skipWaiting(); // importScripts('b.js');\n"
+          "/* importScripts('c.js'); */\n"
+          "/*\n importScripts('d.js');\n*/\n"
+          "clients.claim();\n");
+      expect(code, isNot(contains('importScripts')));
+      expect(code, contains('self.skipWaiting();'));
+      expect(code, contains('clients.claim();'));
+    });
+
+    test('keeps code on the line a block comment closes on', () {
+      final code = strip('/* note */ self.skipWaiting();\n'
+          '/* a\n b */ clients.claim();\n');
+      expect(code, contains('self.skipWaiting();'));
+      expect(code, contains('clients.claim();'));
+    });
+
+    test('keeps a URL after a colon', () {
+      expect(
+        strip('    fontFallbackBaseUrl: "https://fonts.gstatic.com/s/",\n'),
+        contains('https://fonts.gstatic.com/s/'),
+      );
+    });
+  });
 }
 
 String _sha256(File file) => sha256.convert(file.readAsBytesSync()).toString();
@@ -653,13 +703,20 @@ String _sha256(File file) => sha256.convert(file.readAsBytesSync()).toString();
 /// trailing some other statement, reads as the line still being there. So for
 /// the `//` marker, `/* */` blocks and trailing `//` comments go as well.
 ///
-/// The trailing cut is a text match, not a parser. It skips a `//` that follows
-/// a `:`, because the one string literal with `//` in these files is a URL
-/// (`fontFallbackBaseUrl: "https://fonts.gstatic.com/s/"`). Any other `//`
-/// inside a string would cut the line short; a shortened line can only make a
-/// presence check fail, never pass, so that failure is loud. `#` is still
-/// whole-line only: YAML has no block comments, and `#` is legal inside YAML
-/// scalars.
+/// One scan, left to right, so that whichever comment opens first owns the text
+/// after it. Removing `/* */` blocks in a separate pass before the `//` lines
+/// is wrong: a `/*` written inside a `//` comment then pairs with a later `*/`
+/// and deletes the real code between them (found in review of #1623; the tests
+/// under `_withoutLineComments keeps code` reproduce it).
+///
+/// A text scan, not a parser: it does not know about strings, template
+/// literals or regex literals. The two files read with `//` contain none of
+/// those around a comment marker, and a `//` that follows a `:` is kept,
+/// because the one string with `//` in them is a URL
+/// (`fontFallbackBaseUrl: "https://fonts.gstatic.com/s/"`). Any other `//` in
+/// a string would cut the line short, which can only make a presence check
+/// fail, never pass. `#` is still whole-line only: YAML has no block comments,
+/// and `#` is legal inside YAML scalars.
 String _withoutLineComments(String source, String marker) {
   if (marker != '//') {
     return const LineSplitter()
@@ -667,11 +724,27 @@ String _withoutLineComments(String source, String marker) {
         .where((line) => !line.trimLeft().startsWith(marker))
         .join('\n');
   }
-  final trailing = RegExp(r'(?<!:)//.*$');
+  final out = StringBuffer();
+  var i = 0;
+  while (i < source.length) {
+    if (source.startsWith('/*', i)) {
+      final end = source.indexOf('*/', i + 2);
+      if (end < 0) break;
+      // Keep the newlines a block spans, so line structure survives.
+      out.write('\n' * '\n'.allMatches(source.substring(i, end)).length);
+      i = end + 2;
+    } else if (source.startsWith('//', i) && (i == 0 || source[i - 1] != ':')) {
+      final end = source.indexOf('\n', i);
+      if (end < 0) break;
+      i = end;
+    } else {
+      out.write(source[i]);
+      i++;
+    }
+  }
   return const LineSplitter()
-      .convert(source.replaceAll(RegExp(r'/\*[\s\S]*?\*/'), ''))
-      .where((line) => !line.trimLeft().startsWith(marker))
-      .map((line) => line.replaceFirst(trailing, ''))
+      .convert(out.toString())
+      .where((line) => line.trim().isNotEmpty)
       .join('\n');
 }
 
