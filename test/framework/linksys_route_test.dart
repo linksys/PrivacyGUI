@@ -111,7 +111,11 @@ class TestNotifier extends Notifier<TestState>
 final testFeatureProvider =
     NotifierProvider<TestNotifier, TestState>(TestNotifier.new);
 
-// Add this new provider to expose the notifier as the correct contract type
+// A hand-written provider in the shape of the one exception production keeps —
+// the Wi-Fi page's composite. Most tests below use it because the guard must
+// work for that shape; a single-notifier page passes `testFeatureProvider
+// .notifier` instead, which the "accepts the notifier provider directly" test
+// covers (#1622).
 final preservableTestProvider = Provider<PreservableContract>((ref) {
   return ref.watch(testFeatureProvider.notifier);
 });
@@ -172,7 +176,6 @@ void main() {
           path: '/settings',
           builder: (context, state) => const SettingsPage(),
           preservableProvider: preservableTestProvider,
-          enableDirtyCheck: true,
         ),
       ],
     );
@@ -205,7 +208,6 @@ void main() {
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
-            enableDirtyCheck: true,
           ),
         ],
       );
@@ -227,7 +229,6 @@ void main() {
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
-            enableDirtyCheck: true,
             showAlertForTest: (context) async =>
                 false, // Simulate user pressing CANCEL
           ),
@@ -259,7 +260,6 @@ void main() {
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
-            enableDirtyCheck: true,
             showAlertForTest: (context) async =>
                 true, // Simulate user pressing DISCARD
           ),
@@ -306,7 +306,6 @@ void main() {
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
-            enableDirtyCheck: true,
             showAlertForTest: (context) async {
               alertShown++;
               return true; // would discard, if it were ever asked
@@ -350,6 +349,75 @@ void main() {
           reason:
               'the alert answered "discard", so the working copy is reverted '
               'at the point the page actually leaves');
+    }, tags: 'dirty-guard-framework');
+
+    testWidgets(
+        'the guard accepts the notifier provider directly, and passing it is '
+        'what turns the guard on', (tester) async {
+      // #1622. The notifier already is a PreservableContract (the mixin
+      // implements it), so a route passes `.notifier` itself rather than a
+      // second provider that re-exposes it. There is no separate switch: a
+      // route that names a provider is guarded, and one that does not is not.
+      var alertShown = 0;
+      final router = GoRouter(
+        initialLocation: '/settings',
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const HomePage()),
+          LinksysRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsPage(),
+            preservableProvider: testFeatureProvider.notifier,
+            showAlertForTest: (context) async {
+              alertShown++;
+              return false; // cancel, so the page must stay
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(createTestApp(router));
+      await tester.tap(find.byKey(const Key('make_dirty_button')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('go_home_button')));
+      await tester.pumpAndSettle();
+
+      expect(alertShown, 1, reason: 'a dirty page asks before it leaves');
+      expect(find.text('Settings'), findsOneWidget,
+          reason: 'cancelling the alert keeps the page');
+    }, tags: 'dirty-guard-framework');
+
+    testWidgets('a route that passes no provider has no guard, even when dirty',
+        (tester) async {
+      // The other half of the rule above. Nothing else can switch the guard on,
+      // so a route without a provider must let a dirty page leave unasked — this
+      // is what a Type C page, or the dashboard with its own onExit, relies on.
+      var alertShown = 0;
+      final router = GoRouter(
+        initialLocation: '/settings',
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const HomePage()),
+          LinksysRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsPage(),
+            showAlertForTest: (context) async {
+              alertShown++;
+              return false; // would keep the page, if it were ever asked
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(createTestApp(router));
+      await tester.tap(find.byKey(const Key('make_dirty_button')));
+      await tester.pump();
+      expect(find.text('Is Dirty: true'), findsOneWidget,
+          reason: 'the page is dirty, so only the missing provider explains a '
+              'silent exit');
+      await tester.tap(find.byKey(const Key('go_home_button')));
+      await tester.pumpAndSettle();
+
+      expect(alertShown, 0, reason: 'no provider, no question');
+      expect(find.text('Home Page'), findsOneWidget);
     }, tags: 'dirty-guard-framework');
   });
 }

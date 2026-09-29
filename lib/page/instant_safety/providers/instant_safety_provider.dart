@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_settings.dart';
@@ -18,13 +17,6 @@ import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart'
 final uspInstantSafetyProvider = AutoDisposeNotifierProvider<
     UspInstantSafetyNotifier, InstantSafetyFeatureState>(
   UspInstantSafetyNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspInstantSafetyProvider = AutoDisposeProvider<
-    PreservableContract<InstantSafetySettings, InstantSafetyStatus>>(
-  (ref) => ref.watch(uspInstantSafetyProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------

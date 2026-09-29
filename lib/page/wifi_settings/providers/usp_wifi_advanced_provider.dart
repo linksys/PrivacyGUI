@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
@@ -19,12 +18,6 @@ import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_servic
 final uspWifiAdvancedProvider = AutoDisposeNotifierProvider<
     UspWifiAdvancedNotifier, WifiAdvancedFeatureState>(
   UspWifiAdvancedNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for dirty-check integration.
-final preservableUspWifiAdvancedProvider = AutoDisposeProvider<
-    PreservableContract<WifiAdvancedSettings, WifiAdvancedStatus>>(
-  (ref) => ref.watch(uspWifiAdvancedProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------

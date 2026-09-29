@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
@@ -18,13 +17,6 @@ import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 final uspFirewallProvider =
     AutoDisposeNotifierProvider<UspFirewallNotifier, FirewallFeatureState>(
   UspFirewallNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspFirewallProvider =
-    AutoDisposeProvider<PreservableContract<FirewallSettings, FirewallStatus>>(
-  (ref) => ref.watch(uspFirewallProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------

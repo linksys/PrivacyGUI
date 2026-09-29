@@ -3,7 +3,6 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/static_routing/models/static_route_list.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
@@ -18,13 +17,6 @@ import 'package:privacy_gui/page/static_routing/services/usp_static_routing_serv
 final uspStaticRoutingProvider = AutoDisposeNotifierProvider<
     UspStaticRoutingNotifier, StaticRoutingFeatureState>(
   UspStaticRoutingNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspStaticRoutingProvider = AutoDisposeProvider<
-    PreservableContract<StaticRouteList, StaticRoutingStatus>>(
-  (ref) => ref.watch(uspStaticRoutingProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
