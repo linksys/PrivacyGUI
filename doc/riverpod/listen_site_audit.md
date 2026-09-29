@@ -424,6 +424,36 @@ drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
 
+
+## Bare `ref.read` of an L1 provider — the sites this audit did not cover (2026-09-29, #1634)
+
+`ref.read(xDataProvider).valueOrNull` returns null unless something else is holding L1 built
+and settled. Deleting `onSseInvalidation()` (#1587 Phase 1) removed one such holder and broke
+exactly one caller — the Wi-Fi Advanced DFS remediation, where an empty `radioModels` meant no
+radio was recognised as parked on a DFS channel and the remediation silently did nothing. Fixed
+by awaiting `.future` with one `refresh` retry, pinned by two tests that are red against the old
+code.
+
+**Two sibling files have the same shape and were NOT changed:**
+
+```
+lib/page/dashboard/providers/pdf_report_data_provider.dart:29-66   13 reads
+lib/page/dashboard/providers/system_info_data_provider.dart:62      1 read
+```
+
+Every provider they read is `watch`ed somewhere in `lib/`, so in practice a subscriber usually
+exists — but whether one exists *at that moment* depends on which dashboard preset is mounted,
+which is the "correct by coincidence" shape #1615 was about, and no test would catch the
+coincidence breaking.
+
+They are left alone deliberately, on severity rather than on principle: the PDF report's fields
+are nullable and a missing one drops a section from a generated document. The DFS case wrote a
+wrong configuration to the radio. Same defect, different blast radius — and rewriting 14 reads
+inside a PR whose subject is a deletion would bury the deletion.
+
+⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
+holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
+
 ## Verification
 
 - `./run_tests.sh` → **6524/6524 pass, exit 0** (6513 baseline + the 11 new tests)
