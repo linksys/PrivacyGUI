@@ -54,7 +54,6 @@ class InternetSettingsFeatureState
   bool get mtuModeSupported => status.mtuModeSupported;
 
   // --- Read-only convenience getters ---
-  String get currentMacAddress => readOnlyInfo.currentMacAddress;
   String get pppConnectionStatus => readOnlyInfo.pppConnectionStatus;
   String get dhcpv6Duid => readOnlyInfo.dhcpv6Duid;
 

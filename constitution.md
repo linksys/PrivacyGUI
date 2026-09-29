@@ -492,7 +492,7 @@ final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxDa
 
 **Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
 
-`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. SSE updates must flow through the `onSseInvalidation()` dirty guard path instead.
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy, and a conflict with the device is detected when the user saves (#1587).
 
 ```dart
 // ✅ Correct — one-time clone, no live tracking

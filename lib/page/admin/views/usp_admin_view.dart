@@ -196,6 +196,7 @@ class UspAdminView extends ConsumerWidget {
       await doSomethingWithSpinner(
         context,
         ref.read(uspAdminProvider.notifier).updateTimezone(
+              zoneName: result.zoneName,
               localTimeZone: result.localTimeZone,
               ntpServer1: result.ntpServer1,
             ),

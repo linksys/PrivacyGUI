@@ -9,8 +9,8 @@ import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_v
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import '../../golden_test/golden_framework/mocks/mock_unified_diagnostics.dart';
-import '../../golden_test/page/unified_diagnostics/fixtures/unified_diagnostics_test_data.dart';
+import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
+import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
 
 /// Verifies the E2E identifier hooks added to uspUnifiedDiagnostics for

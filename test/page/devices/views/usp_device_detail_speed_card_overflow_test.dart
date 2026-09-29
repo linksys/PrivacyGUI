@@ -41,6 +41,21 @@ import '../../../util/overflow_probe.dart';
 /// pumps it at its own widths — see `usp_node_detail_backhaul_overflow_test.dart`
 /// for the caption on the tile above it.
 ///
+/// ## Why #1442 left this file alone, having been sent here to change it
+///
+/// #1442 AC5 asked for this locale list to be re-measured, on the premise that its
+/// qualifier would lengthen `DetailSpeedCard`'s `label` and shift which locales are
+/// worst. The qualifier did not go into the `label`: the caption slot on the
+/// *node*-detail page is 70.5dp at 1241px while `Download` alone needs 297dp in
+/// `fr`, so a sentence there would be ellipsized away in about twenty locales, and
+/// it is a full-width row of its own instead. No label on this page changed, so the
+/// ranking here cannot have moved and the list stands as #1302 measured it.
+///
+/// The re-measurement happened on the page whose copy did change — all 26 locales
+/// × 4 widths against the node-detail throughput row, which returned the same four
+/// locales as this file and now carries 16 cells of its own. So this file is
+/// unchanged by measurement, not by omission.
+///
 /// ## Mutation ledger
 ///
 /// Every group here was shown to fail under a mutation of the code it guards; an

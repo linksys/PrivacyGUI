@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
+import 'package:privacy_gui/page/dashboard/mascot/widgets/parked_mascot_overlay.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
@@ -252,11 +253,41 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         // E2E mock builds (kept in sync with the General Settings toggle).
         if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled)
           Positioned.fill(
-            child: MascotOverlay(
+            // `ParkedMascotOverlay`, not `MascotOverlay`: the overlay holds its
+            // x as an absolute pixel offset, so widening the viewport leaves the
+            // mascot stranded where it was — measured at 480px from the right
+            // edge after 1440→1920, and 1420px after 500→1920. The wrapper
+            // remounts it so the corner is re-applied. See its own doc.
+            child: ParkedMascotOverlay(
               controller: mascotController,
               dialogProvider: dialogProvider,
+              // Parked bottom-right, and it stays there unless the user moves
+              // it. Only `renderer` used to be given, so `MascotBehaviorConfig`
+              // came from its defaults — `autoWalk: true` with no
+              // `initialPositionRatio`, which starts the mascot at a random x
+              // and re-picks a random target every 2–5 seconds across the whole
+              // shell width. The overlay is mounted on the `ShellRoute`, so that
+              // wandering happened over all 29 routes under it, and the mascot
+              // is a hit-testing `GestureDetector`: wherever it stood, the
+              // controls beneath it could not be reached (#1531).
+              //
+              // `allowDrag` stays on deliberately. Parking it in one corner is
+              // what makes the mascot predictable; being able to move it is what
+              // makes a corner it happens to be covering recoverable. Dragging
+              // is horizontal only — the overlay has no vertical axis — so it
+              // does not clear a full-width bottom bar; that is the remaining
+              // gap, and it is not fixed by moving this constant around.
+              //
+              // The corner itself is `ParkedMascotOverlay`'s to set: it computes
+              // `initialPositionRatio` and `bottomOffset` per width so the inset
+              // is the same at every size. Passing a ratio here would be
+              // overwritten, so it is deliberately absent.
               spec: const MascotSpec(
                 renderer: LinksysMascotRenderer(),
+                behavior: MascotBehaviorConfig(
+                  autoWalk: false,
+                  allowDrag: true,
+                ),
               ),
               // Nothing to wrap now that the page is a sibling; the overlay
               // still lays its own children out against the full shell.

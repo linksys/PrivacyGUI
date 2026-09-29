@@ -51,9 +51,9 @@ void main() {
 
         expect(topology.nodes, isNotEmpty);
         final gateway =
-            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+            topology.nodes.where((n) => n.styleSlot == 'primary').first;
         expect(gateway.id, 'gateway');
-        expect(gateway.status, MeshNodeStatus.online);
+        expect(gateway.status, NodeState.active);
       });
 
       test('creates extender nodes for mesh network', () {
@@ -65,7 +65,7 @@ void main() {
         );
 
         final extenders =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+            topology.nodes.where((n) => n.styleSlot == 'secondary');
         expect(extenders, hasLength(1));
         expect(extenders.first.id, startsWith('extender-'));
       });
@@ -78,8 +78,7 @@ void main() {
           info: sysInfo,
         );
 
-        final clients =
-            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        final clients = topology.nodes.where((n) => n.styleSlot == 'leaf');
         expect(clients, hasLength(2)); // WiFi + Wired from test data
       });
 
@@ -91,9 +90,9 @@ void main() {
           info: sysInfo,
         );
 
-        expect(topology.links, isNotEmpty);
+        expect(topology.edges, isNotEmpty);
         // Should have link from gateway to extender (sourceId=parent, targetId=child)
-        final extenderLink = topology.links
+        final extenderLink = topology.edges
             .where((l) => l.targetId.startsWith('extender-'))
             .firstOrNull;
         expect(extenderLink, isNotNull);
@@ -120,7 +119,7 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+            topology.nodes.where((n) => n.styleSlot == 'primary').first;
         expect(gateway.name, 'My Router');
       });
 
@@ -139,7 +138,7 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+            topology.nodes.where((n) => n.styleSlot == 'primary').first;
         // Falls back to model when displayName empty, or gatewayName from sysInfo
         expect(gateway.name, isNotEmpty);
       });
@@ -153,7 +152,7 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+            topology.nodes.where((n) => n.styleSlot == 'primary').first;
         expect(gateway.metadata?['deviceId'], isNotNull);
         expect(gateway.metadata?['isMaster'], isTrue);
       });
@@ -167,7 +166,7 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+            topology.nodes.where((n) => n.styleSlot == 'primary').first;
         expect(gateway.level, 1.0);
       });
     });
@@ -192,7 +191,7 @@ void main() {
         );
 
         final extender =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+            topology.nodes.where((n) => n.styleSlot == 'secondary').first;
         expect(extender.name, 'Living Room Extender');
       });
 
@@ -205,7 +204,7 @@ void main() {
         );
 
         final extender =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+            topology.nodes.where((n) => n.styleSlot == 'secondary').first;
         expect(extender.metadata?['backhaulLinkType'], isNotNull);
         expect(extender.metadata?['isMaster'], isFalse);
       });
@@ -225,7 +224,7 @@ void main() {
         );
 
         final extender =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+            topology.nodes.where((n) => n.styleSlot == 'secondary').first;
         // Excellent signal (-50) should have high level (0.9)
         expect(extender.level, 0.9);
       });
@@ -243,7 +242,7 @@ void main() {
         );
 
         final extender =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+            topology.nodes.where((n) => n.styleSlot == 'secondary').first;
         // Ethernet backhaul has no RSSI by design → full level, not a
         // fabricated 0.5 (#1430).
         expect(extender.level, 1.0);
@@ -258,7 +257,7 @@ void main() {
         );
 
         final extender =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+            topology.nodes.where((n) => n.styleSlot == 'secondary').first;
         expect(extender.parentId, 'gateway');
       });
     });
@@ -276,8 +275,7 @@ void main() {
           info: sysInfo,
         );
 
-        final clients =
-            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        final clients = topology.nodes.where((n) => n.styleSlot == 'leaf');
         for (final client in clients) {
           expect(client.id, startsWith('client-'));
         }
@@ -296,8 +294,7 @@ void main() {
           info: sysInfo,
         );
 
-        final client =
-            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        final client = topology.nodes.where((n) => n.styleSlot == 'leaf').first;
         // Excellent signal should have high level (0.9)
         expect(client.level, 0.9);
       });
@@ -313,8 +310,7 @@ void main() {
           info: sysInfo,
         );
 
-        final client =
-            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        final client = topology.nodes.where((n) => n.styleSlot == 'leaf').first;
         expect(client.level, 1.0);
       });
 
@@ -329,9 +325,8 @@ void main() {
           info: sysInfo,
         );
 
-        final client =
-            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
-        expect(client.status, MeshNodeStatus.offline);
+        final client = topology.nodes.where((n) => n.styleSlot == 'leaf').first;
+        expect(client.status, NodeState.inactive);
       });
 
       test('client parentId points to correct node', () {
@@ -349,7 +344,7 @@ void main() {
 
         final client = topology.nodes
             .where((n) =>
-                n.type == MeshNodeType.client &&
+                n.styleSlot == 'leaf' &&
                 n.metadata?['mac'] == DevicesTestData.clientMac5)
             .firstOrNull;
         expect(client, isNotNull);
@@ -364,8 +359,7 @@ void main() {
           info: sysInfo,
         );
 
-        final client =
-            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        final client = topology.nodes.where((n) => n.styleSlot == 'leaf').first;
         expect(client.metadata?['mac'], isNotNull);
       });
     });
@@ -385,7 +379,7 @@ void main() {
 
         // Link direction: sourceId=parent, targetId=child
         // extender → gateway means link with sourceId='gateway', targetId='extender-*'
-        final extenderLinks = topology.links
+        final extenderLinks = topology.edges
             .where((l) => l.targetId.startsWith('extender-'))
             .toList();
         expect(extenderLinks, isNotEmpty);
@@ -401,7 +395,7 @@ void main() {
         );
 
         // Link direction: sourceId=parent, targetId=child
-        final clientLinks = topology.links
+        final clientLinks = topology.edges
             .where((l) => l.targetId.startsWith('client-'))
             .toList();
         expect(clientLinks, hasLength(2)); // 2 clients in test data
@@ -425,11 +419,11 @@ void main() {
 
         // Link direction: sourceId=parent, targetId=child (client)
         final link =
-            topology.links.where((l) => l.targetId.startsWith('client-')).first;
-        expect(link.linkQuality, LinkQuality.excellent);
+            topology.edges.where((l) => l.targetId.startsWith('client-')).first;
+        expect(link.strength, EdgeStrength.strong);
       });
 
-      test('wired link has stable quality', () {
+      test('a wired edge states its kind and no strength', () {
         final wiredClient = DevicesTestData.createWiredClient();
         final meshNetwork = DevicesTestData.createSingleNodeNetwork(
           masterClients: [wiredClient],
@@ -440,10 +434,17 @@ void main() {
           info: sysInfo,
         );
 
-        // Link direction: sourceId=parent, targetId=child (client)
-        final link =
-            topology.links.where((l) => l.targetId.startsWith('client-')).first;
-        expect(link.linkQuality, LinkQuality.stable);
+        // Edge direction: sourceId=parent, targetId=child (leaf)
+        final edge =
+            topology.edges.where((l) => l.targetId.startsWith('client-')).first;
+
+        // This used to assert `LinkQuality.stable` — a *medium* named inside an
+        // enum about quality, which is why ui_kit 3.4.0 deleted that member. The
+        // two axes are now separate: the kind says wired, and the strength says
+        // nothing, because a direct edge's strength is never read.
+        expect(edge.kind, EdgeKind.direct);
+        expect(edge.isDirect, isTrue);
+        expect(edge.strength, isNull);
       });
     });
 
@@ -461,7 +462,7 @@ void main() {
         );
 
         final extenders =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+            topology.nodes.where((n) => n.styleSlot == 'secondary');
         expect(extenders, hasLength(2));
       });
 
@@ -475,15 +476,14 @@ void main() {
 
         // Master client should connect to gateway
         final masterClients = topology.nodes
-            .where(
-                (n) => n.type == MeshNodeType.client && n.parentId == 'gateway')
+            .where((n) => n.styleSlot == 'leaf' && n.parentId == 'gateway')
             .toList();
         expect(masterClients, isNotEmpty);
 
         // Slave clients should connect to extenders
         final slaveClients = topology.nodes
             .where((n) =>
-                n.type == MeshNodeType.client &&
+                n.styleSlot == 'leaf' &&
                 n.parentId != null &&
                 n.parentId!.startsWith('extender-'))
             .toList();
@@ -505,8 +505,7 @@ void main() {
         );
 
         expect(topology.nodes, hasLength(1)); // Gateway only
-        final clients =
-            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        final clients = topology.nodes.where((n) => n.styleSlot == 'leaf');
         expect(clients, isEmpty);
       });
 
@@ -519,8 +518,7 @@ void main() {
           info: sysInfo,
         );
 
-        final clients =
-            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        final clients = topology.nodes.where((n) => n.styleSlot == 'leaf');
         expect(clients, hasLength(2));
         // Unassigned clients should connect to gateway
         for (final client in clients) {
@@ -541,16 +539,15 @@ void main() {
           info: sysInfo,
         );
 
-        final client =
-            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        final client = topology.nodes.where((n) => n.styleSlot == 'leaf').first;
         // Poor signal (-85) should have low level (0.1)
         expect(client.level, 0.1);
 
         // Link direction: sourceId=parent, targetId=child (client)
         final link =
-            topology.links.where((l) => l.targetId.startsWith('client-')).first;
+            topology.edges.where((l) => l.targetId.startsWith('client-')).first;
         // Poor signal maps to unknown quality
-        expect(link.linkQuality, LinkQuality.unknown);
+        expect(link.strength, EdgeStrength.unknown);
       });
     });
 
@@ -567,7 +564,7 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'primary');
         expect(gateway.identifier, 'topology-node-master');
       });
 
@@ -578,8 +575,7 @@ void main() {
         );
 
         // slaveMac1 = AA:BB:CC:DD:EE:01, slaveMac2 = ...EE:02 → unique at 4.
-        final slaves =
-            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+        final slaves = topology.nodes.where((n) => n.styleSlot == 'secondary');
         expect(
           slaves.map((n) => n.identifier),
           containsAll(
@@ -587,8 +583,7 @@ void main() {
         );
 
         // client MACs 11:22:33:44:55:0X → unique at 4.
-        final clients =
-            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        final clients = topology.nodes.where((n) => n.styleSlot == 'leaf');
         for (final client in clients) {
           expect(client.identifier, startsWith('topology-node-client-'));
         }
@@ -623,9 +618,9 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'primary');
         final slave =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
         expect(gateway.name, slave.name); // labels collide
         expect(gateway.identifier, isNot(slave.identifier)); // ids do not
       });
@@ -655,15 +650,14 @@ void main() {
           info: sysInfo,
         );
 
-        String clientId(MeshTopology t) => t.nodes
-            .firstWhere((n) => n.type == MeshNodeType.client)
-            .identifier!;
+        String clientId(GraphData t) =>
+            t.nodes.firstWhere((n) => n.styleSlot == 'leaf').identifier!;
         expect(clientId(strong), clientId(weak));
       });
     });
 
     // =========================================================================
-    // Node liveness → MeshNodeStatus (#1430)
+    // Node liveness → NodeState (#1430)
     //
     // AC2: node status is mapped from isOnline, not hardcoded online.
     // AC1: slave liveness is a DataElements match (dataElementsId != null); the
@@ -671,14 +665,14 @@ void main() {
     //      whether the node is up or powered off). The master is the data source
     //      itself and stays online unconditionally.
     // AC5: an offline node carries no fabricated backhaul level.
-    // AC6: an offline node reaches MeshNodeStatus.offline, which is the gate for
+    // AC6: an offline node reaches NodeState.inactive, which is the gate for
     //      usp_topology_view.dart:142 (offline nodes are not navigable) and
     //      node_detail_popup.dart:99 (Details button hidden when not online) —
     //      previously dead code because nodes were always online.
     // =========================================================================
 
     group('node liveness → status (#1430)', () {
-      test('a DataElements-matched slave maps to MeshNodeStatus.online', () {
+      test('a DataElements-matched slave maps to NodeState.active', () {
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
           slaves: [
@@ -694,13 +688,13 @@ void main() {
         );
 
         final extender =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
-        expect(extender.status, MeshNodeStatus.online);
-        expect(extender.isOffline, isFalse);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
+        expect(extender.status, NodeState.active);
+        expect(extender.isInactive, isFalse);
       });
 
       test(
-          'an unmatched slave maps to MeshNodeStatus.offline with no signal '
+          'an unmatched slave maps to NodeState.inactive with no signal '
           'level', () {
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
@@ -719,10 +713,10 @@ void main() {
         );
 
         final extender =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
         // AC2 + AC6: reaches the offline state (was hardcoded online).
-        expect(extender.status, MeshNodeStatus.offline);
-        expect(extender.isOffline, isTrue);
+        expect(extender.status, NodeState.inactive);
+        expect(extender.isInactive, isTrue);
         // AC5: no backhaul data ⇒ no fabricated mid-strength level.
         expect(extender.level, 0.0);
       });
@@ -732,7 +726,7 @@ void main() {
           'for the whole network', () {
         // The C1 regression, at the layer that decides navigability. With
         // livenessKnown false the absent DataElements match is not a verdict, so
-        // the node must NOT reach MeshNodeStatus.offline — that state gates the
+        // the node must NOT reach NodeState.inactive — that state gates the
         // tap handler (usp_topology_view.dart:142) and the Details button
         // (node_detail_popup.dart:99), and nothing on the page recovers from it
         // (devices_data_provider's _fetchMeshAndUpdate bails on an empty
@@ -753,9 +747,9 @@ void main() {
         );
 
         final extender =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
-        expect(extender.status, MeshNodeStatus.online);
-        expect(extender.isOffline, isFalse);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
+        expect(extender.status, NodeState.active);
+        expect(extender.isInactive, isFalse);
         // Unknown liveness still fabricates no signal: no backhaul ⇒ 0.0.
         expect(extender.level, 0.0);
       });
@@ -787,8 +781,8 @@ void main() {
         );
 
         final extender =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
-        expect(extender.status, MeshNodeStatus.online);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
+        expect(extender.status, NodeState.active);
         expect(extender.level, 0.5,
             reason:
                 'a real WiFi backhaul with no reading is unknown, not dead');
@@ -797,17 +791,19 @@ void main() {
       test(
           'a slave with no backhaul info gets an unknown-quality link, not a '
           'graded one', () {
-        // AC3 / qodo#3. ui_kit's ConnectionType has only ethernet and wifi and
-        // MeshLink.connectionType is non-nullable, so an absent backhaul must
-        // claim one of them; `wifi` is chosen because it routes BOTH views
-        // through topologySpec.linkStyleFor(linkQuality) — with `unknown` that
-        // lands on the neutral wifiUnknownStyle, whereas `ethernet` would
-        // hard-wire ethernetLinkStyle and assert a wired backhaul.
+        // AC3 / qodo#3, and the change ui_kit#87 was waited on for (#1464 AC4).
+        // This test used to expect `wifi` and say so in the words of a forced
+        // choice: `EdgeKind` had two members and `GraphEdge.kind`
+        // is non-nullable, so an absent backhaul had to claim a medium, and
+        // `wifi` was the claim that at least routed both views through the
+        // neutral `wifiUnknownStyle` instead of asserting a wire.
         //
-        // So the assertion that carries the correctness is linkQuality, not
-        // connectionType: no RSSI ⇒ unknown ⇒ neutral. When ui_kit ships
-        // ConnectionType.unknown (linksys/privacyGUI-UI-kit#87), the
-        // connectionType expectation below is the one to change.
+        // ui_kit v3.2.0 added a third `ConnectionType` member for the
+        // medium-unknown case, and 3.4.0 replaced it with `null` on an optional
+        // `GraphEdge.kind` — an undeclared kind and an unknown one being the same
+        // thing. Either way the claim is no longer forced, so this row asserts the
+        // medium as well as the strength. They are different axes and both are unknown here:
+        // no medium reported, and no RSSI to grade.
         final meshNetwork = MeshNetwork(
           master: DevicesTestData.createMaster(),
           slaves: [
@@ -823,17 +819,16 @@ void main() {
           info: sysInfo,
         );
 
-        final link = topology.links
+        final link = topology.edges
             .firstWhere((l) => l.targetId.startsWith('extender-'));
-        expect(link.linkQuality, LinkQuality.unknown,
+        expect(link.strength, EdgeStrength.unknown,
             reason: 'no backhaul reading ⇒ neutral style in both views');
-        expect(link.rssi, isNull);
-        expect(link.throughput, isNull);
-        // The forced claim. Not correct, only least-wrong — see the comment
-        // above and at the call site.
-        expect(link.connectionType, ConnectionType.wifi);
-        expect(link.isEthernet, isFalse,
-            reason: 'an absent backhaul must not be styled as a wired link');
+        expect(link.kind, isNull,
+            reason: 'no medium reported ⇒ no medium claimed');
+        expect(link.isDirect, isFalse,
+            reason: 'an absent backhaul must not be styled as a wired edge');
+        expect(link.isIndirect, isFalse,
+            reason: 'nor as a wireless one — null is neither, not a default');
       });
 
       test(
@@ -853,11 +848,165 @@ void main() {
         );
 
         final gateway =
-            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-        expect(gateway.status, MeshNodeStatus.online);
+            topology.nodes.firstWhere((n) => n.styleSlot == 'primary');
+        expect(gateway.status, NodeState.active);
       });
     });
 
+    // The emitted graph, end to end (#1441). The rules themselves are pinned in
+    // `backhaul_parent_graph_test.dart`, which tests them as values; this group
+    // is the wiring — that the builder puts the resolved parent on the `GraphNode`
+    // *and* on the `GraphEdge`, which are two separate assignments and were the
+    // thing a pure-function test cannot see.
+    group('parent resolution (#1441)', () {
+      MeshNetwork networkOf(List<({String mac, String? parent})> slaves) =>
+          MeshNetwork(
+            master: DevicesTestData.createMaster(),
+            slaves: [
+              for (final s in slaves)
+                DevicesTestData.createWifiSlave(
+                  deviceId: s.mac,
+                  dataElementsId: s.mac,
+                  backhaul: BackhaulInfo(
+                    linkType: 'Wi-Fi',
+                    signalStrength: -55,
+                    parentNodeId: s.parent,
+                  ),
+                ),
+            ],
+          );
+
+      GraphData buildOf(List<({String mac, String? parent})> slaves) =>
+          UspTopologyBuilder.buildFromMeshNetwork(
+            meshNetwork: networkOf(slaves),
+            info: sysInfo,
+          );
+
+      String parentIdOf(GraphData topology, String mac) =>
+          topology.nodes.firstWhere((n) => n.id == 'extender-$mac').parentId!;
+
+      test(
+          'a node whose named parent is absent from the tree lands on the '
+          'gateway', () {
+        // AC3's second case. The attachment is what it always was; what this
+        // pins is that it still happens — the MISS is a log line, not a dropped
+        // node. A node the builder declines to emit disappears from the topology
+        // page, which is worse than a hop drawn one level too high.
+        final topology = buildOf([
+          (mac: DevicesTestData.slaveMac1, parent: '99:99:99:99:99:99'),
+        ]);
+
+        expect(parentIdOf(topology, DevicesTestData.slaveMac1), 'gateway');
+        expect(
+          topology.edges
+              .firstWhere((l) => l.targetId.endsWith(DevicesTestData.slaveMac1))
+              .sourceId,
+          'gateway',
+          reason: 'the link has to agree with the node it connects',
+        );
+      });
+
+      test('a 2-cycle is not emitted', () {
+        // AC1 + AC3's first case. Asserted as the property ui_kit's recursion
+        // needs — every node reaches the gateway by following `parentId` — rather
+        // than as "slave 1 is attached to the gateway", so it stays true if the
+        // deterministic victim ever changes.
+        final topology = buildOf([
+          (mac: DevicesTestData.slaveMac1, parent: DevicesTestData.slaveMac2),
+          (mac: DevicesTestData.slaveMac2, parent: DevicesTestData.slaveMac1),
+        ]);
+
+        final parentById = {
+          for (final n in topology.nodes) n.id: n.parentId,
+        };
+        for (final node in topology.nodes) {
+          var current = node.id;
+          final seen = <String>{};
+          while (parentById[current] != null) {
+            expect(seen.add(current), isTrue,
+                reason: 'following parentId from ${node.id} revisited $current '
+                    '— ui_kit\'s layout recursion would not terminate here');
+            current = parentById[current]!;
+          }
+        }
+        // And the cycle's own edge is the only thing that went.
+        expect(parentIdOf(topology, DevicesTestData.slaveMac2),
+            'extender-${DevicesTestData.slaveMac1}');
+      });
+
+      test('the links agree with the nodes after a cycle is broken', () {
+        // The wiring this group exists for: `parentId` and `GraphEdge.sourceId`
+        // are two assignments from one variable, and a fix applied to only one of
+        // them draws an edge the layout does not know about.
+        final topology = buildOf([
+          (mac: DevicesTestData.slaveMac1, parent: DevicesTestData.slaveMac2),
+          (mac: DevicesTestData.slaveMac2, parent: DevicesTestData.slaveMac1),
+        ]);
+
+        for (final node in topology.nodes.where((n) => n.parentId != null)) {
+          final link = topology.edges.firstWhere((l) => l.targetId == node.id);
+          expect(link.sourceId, node.parentId,
+              reason: '${node.id}: link source and node parent disagree');
+        }
+      });
+
+      test('a client whose parent MAC is dashed still attaches to its node',
+          () {
+        // The fifth site the normaliser swap touched, and the one on the client
+        // probe rather than the node one. It is not separable: the set it is
+        // probed against is built in the same loop as the node keys, so the two
+        // have to agree on the normal form — otherwise a dashed identifier misses
+        // and the client is drawn on the gateway, which is #1441's defect pointed
+        // at clients. Client attribution itself is #1439's and is untouched.
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createWifiSlave(
+              deviceId: DevicesTestData.slaveMac1,
+              dataElementsId: DevicesTestData.slaveMac1,
+              connectedClients: [
+                DevicesTestData.createSlaveConnectedClient(
+                  mac: DevicesTestData.clientMac3,
+                  // The slave's own MAC, written the other way round.
+                  parentNodeId: DevicesTestData.slaveMac1
+                      .replaceAll(':', '-')
+                      .toLowerCase(),
+                  parentNodeName: 'Extender-1',
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        expect(
+          topology.nodes
+              .firstWhere((n) => n.id == 'client-${DevicesTestData.clientMac3}')
+              .parentId,
+          'extender-${DevicesTestData.slaveMac1}',
+          reason: 'a dashed parent MAC must key the same entry as a colon one',
+        );
+      });
+
+      test(
+          'a node parented by the gateway resolves to it, and a real hop '
+          'survives', () {
+        // The false-positive guard for both halves: naming the master must not
+        // read as a miss, and a genuine two-hop chain must not be flattened.
+        final topology = buildOf([
+          (mac: DevicesTestData.slaveMac1, parent: DevicesTestData.masterMac),
+          (mac: DevicesTestData.slaveMac2, parent: DevicesTestData.slaveMac1),
+        ]);
+
+        expect(parentIdOf(topology, DevicesTestData.slaveMac1), 'gateway');
+        expect(parentIdOf(topology, DevicesTestData.slaveMac2),
+            'extender-${DevicesTestData.slaveMac1}');
+      });
+    });
     // The backhaul level's inputs used to be two independent strings and one
     // nullable int with nothing coupling them — `isEthernet` read `linkType`,
     // `hasInfo` read `mediaType` — so the table's whole point was the row the
@@ -883,7 +1032,7 @@ void main() {
     // firmware's `None` to null before a `BackhaulInfo` is built, so it arrives
     // here as the absent row. That mapping is pinned in
     // `mesh_topology_builder_test.dart`, which is where the wire string lives.
-    group('backhaul level decision table', () {
+    group('backhaul level and medium decision table', () {
       double levelFor(BackhaulInfo backhaul) {
         final topology = UspTopologyBuilder.buildFromMeshNetwork(
           meshNetwork: MeshNetwork(
@@ -898,11 +1047,11 @@ void main() {
           info: sysInfo,
         );
         return topology.nodes
-            .firstWhere((n) => n.type == MeshNodeType.extender)
+            .firstWhere((n) => n.styleSlot == 'secondary')
             .level;
       }
 
-      ConnectionType connectionTypeFor(BackhaulInfo backhaul) {
+      EdgeKind? edgeKindFor(BackhaulInfo backhaul) {
         final topology = UspTopologyBuilder.buildFromMeshNetwork(
           meshNetwork: MeshNetwork(
             master: DevicesTestData.createMaster(),
@@ -915,21 +1064,53 @@ void main() {
           ),
           info: sysInfo,
         );
-        return topology.links
+        return topology.edges
             .firstWhere((l) => l.targetId.startsWith('extender-'))
-            .connectionType;
+            .kind;
       }
 
-      const cases = <String, (BackhaulInfo, double)>{
-        'absent (no linkType) → 0.0': (BackhaulInfo.none, 0.0),
-        'Ethernet → 1.0': (BackhaulInfo(linkType: 'Ethernet'), 1.0),
-        'Wi-Fi with a reading → the RSSI level': (
+      // Both axes per row, because the failure this table exists for is the two
+      // being written apart — see the cross-check below. The medium column is
+      // #1464's AC4: a backhaul firmware named no medium for is
+      // [null], not the `wifi` this builder used to claim.
+      const cases = <String, (BackhaulInfo, double, EdgeKind?)>{
+        'absent (no linkType, no parent)': (
+          BackhaulInfo.none,
+          0.0,
+          null,
+        ),
+        'Ethernet': (
+          BackhaulInfo(linkType: 'Ethernet'),
+          1.0,
+          EdgeKind.direct,
+        ),
+        // Firmware spells it `Ethernet`; the fold is robustness, and it is the
+        // medium axis's half of what `isMeshBackhaulEthernet` already pins.
+        'ethernet, lower-cased': (
+          BackhaulInfo(linkType: 'ethernet'),
+          1.0,
+          EdgeKind.direct,
+        ),
+        'Wi-Fi with a reading': (
           BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
           0.9,
+          EdgeKind.indirect,
         ),
-        'Wi-Fi with no reading → neutral 0.5': (
+        'Wi-Fi with no reading': (
           BackhaulInfo(linkType: 'Wi-Fi'),
           0.5,
+          EdgeKind.indirect,
+        ),
+        // A medium *named* and not recognised stays `wifi`, deliberately: AC4
+        // moves the arm for a medium firmware did not name, and the practical
+        // vocabulary is closed at three values (`Wi-Fi`, `Ethernet`, `None` —
+        // measured against `beerocks_controller`, #1464 AC1), so this row is not
+        // a firmware state. It is here to pin that the change is keyed on
+        // *absence* of a medium rather than on failing to match `Ethernet`.
+        'a medium named but unrecognised': (
+          BackhaulInfo(linkType: 'Ethernet over Coax'),
+          0.5,
+          EdgeKind.indirect,
         ),
         // #1555. `LinkType` is nullable in the prplMesh definition and arrives
         // empty on rows that still carry a `BackhaulDeviceID`, so these two rows
@@ -937,22 +1118,71 @@ void main() {
         // 0.0 because `hasInfo` counts the parent: grading them dead here while
         // `UnifiedDiagnosticsService` defaults the medium to Wi-Fi and grades
         // them on RSSI is the disagreement the getter was rewritten to close.
-        'parent known, medium unnamed, no reading → neutral 0.5': (
+        //
+        // Their medium is `unknown` for the same reason the level is not 0.0:
+        // the link is real and the *medium* is the thing nobody reported. This
+        // is the row FL-WRT 2.0 makes ordinary rather than exotic — the
+        // controller reports `LinkType = None`.
+        'parent known, medium unnamed, no reading': (
           BackhaulInfo(parentNodeId: DevicesTestData.masterMac),
           0.5,
+          null,
         ),
-        'parent known, medium unnamed, with a reading → the RSSI level': (
+        'parent known, medium unnamed, with a reading': (
           BackhaulInfo(
             parentNodeId: DevicesTestData.masterMac,
             signalStrength: -50,
           ),
           0.9,
+          null,
         ),
       };
 
       cases.forEach((name, row) {
-        final (backhaul, expected) = row;
-        test(name, () => expect(levelFor(backhaul), expected));
+        final (backhaul, expectedLevel, expectedMedium) = row;
+        test('$name → level $expectedLevel',
+            () => expect(levelFor(backhaul), expectedLevel));
+        // `undeclared` rather than `null` in the label: null IS the undeclared
+        // medium in 3.4.0, and a test name reading "→ null edge" describes the
+        // Dart value instead of the behaviour.
+        test('$name → ${expectedMedium?.name ?? 'undeclared'} edge',
+            () => expect(edgeKindFor(backhaul), expectedMedium));
+      });
+
+      test('an unknown medium keeps the quality we measured (#1464)', () {
+        // The pair a reviewer had to re-derive across two packages, so it is
+        // pinned here. `GraphEdge.strength` discards an RSSI carried beside
+        // `null` — but only when the app gives no override, and
+        // this builder gives one.
+        //
+        // That is deliberate. `Backhaul.Stats.SignalStrength` is a reading of this
+        // link and a wired backhaul has none, so a row with an RSSI and no named
+        // medium is a link we measured and firmware did not label: medium unknown,
+        // quality known. Collapsing the quality to `unknown` as well would throw a
+        // real reading away to say something about a different axis.
+        const measuredButUnlabelled = BackhaulInfo(
+          parentNodeId: DevicesTestData.masterMac,
+          signalStrength: -50,
+        );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: MeshNetwork(
+            master: DevicesTestData.createMaster(),
+            slaves: [
+              DevicesTestData.createWifiSlave(
+                dataElementsId: DevicesTestData.slaveMac1,
+                backhaul: measuredButUnlabelled,
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+        final link = topology.edges
+            .firstWhere((l) => l.targetId.startsWith('extender-'));
+
+        expect(link.kind, isNull, reason: 'no medium was named');
+        expect(link.strength, EdgeStrength.strong,
+            reason: '-50 dBm was measured, and we state the grade ourselves — '
+                'the kit stopped deriving one from dBm in 3.4.0');
       });
 
       test('the level and the link agree on every row', () {
@@ -963,9 +1193,8 @@ void main() {
         // table's expectation: an assertion against `expected` would agree with
         // itself and pass under the very guard order that caused the split.
         for (final entry in cases.entries) {
-          final (backhaul, _) = entry.value;
-          final isWired =
-              connectionTypeFor(backhaul) == ConnectionType.ethernet;
+          final (backhaul, _, _) = entry.value;
+          final isWired = edgeKindFor(backhaul) == EdgeKind.direct;
           expect(isWired, levelFor(backhaul) == 1.0,
               reason: '${entry.key}: connectionType and level disagree');
         }

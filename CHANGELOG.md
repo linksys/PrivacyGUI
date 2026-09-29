@@ -2,6 +2,144 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.7.1] - 2026-09-18
+
+- 2e9969f2 - fix(session): read the base MAC off SystemInfo instead of a second Get (#1592)
+- 16072cb8 - chore(gate): restamp the page baseline after the rebase onto dev-2.7.1 (#1554)
+- 262ad56b - fix(login): the first-login spinner sits on the title it belongs to (#1554)
+- 6984f967 - test(firmware): the last three firmware surfaces without a picture (#1554)
+- 369133a8 - fix(firmware): the install card's title overflowed, and no cell rendered it (#1554)
+- 61bf97e4 - test(pnp): sweep the wizard's firmware stage, and re-measure five stale counts (#1554)
+- e028b277 - test(firmware,pnp): golden coverage for both firmware entry points and the wizard (#1554)
+- 8d5b68da - fix(remote): key the Guardian device-token cache on the serial it was issued for (#1582)
+- de939bd0 - docs(remote): answer three review notes at the sites they concern (#1582)
+- a927baa5 - fix(firmware): a busy-router refusal now stops the manual flow (#1572)
+- 3208aa2e - fix(internet-settings): MTU auto/manual via X_LINKSYS_MTUMode (#757) (#1563)
+- 2a62b275 - fix(remote): review remediation — normalise the MAC at the boundary, not at the read (#1582)
+- 3b3974e5 - fix(firmware): the OTA path's post-reboot backstop was dead code (#1572)
+- a00dcef8 - fix(remote): read the device UUID from LocalAgent, not the deleted Hosts leaf (#1582)
+- fb1f0105 - docs(firmware): the model number is M60 (#1572)
+- 033ce9ca - test(build): assert the landing footer's version line, not just its layout (#1573)
+- b5a700d9 - feat(firmware): the two install paths cannot both run (#1572)
+- c2c7468c - fix(firmware): report a refused image at once, not two minutes later (#1572)
+- 5fa0be74 - chore(build): take round 1's two structural findings (#1573)
+- b5e4e2f3 - feat(firmware): a manual upload the router refused says why (#1572)
+- bc6d78e8 - fix(firmware): eight defects the review found in the error-code work (#1572)
+- 41ba4e3b - fix(firmware): the history line's copy has to fit the slot it lives in (#1572)
+- f8bbb8cf - chore(build): stamp the source revision in the log header and the version line (#1573)
+- deb92f92 - feat(firmware): the OTA card says what the router remembers (#1572)
+- c7dabae2 - feat(firmware): an install that fails says so, instead of waiting out a reboot (#1572)
+- 9451bb4e - feat(firmware): the check says why it failed, and when it finished (#1572)
+- c8d90568 - feat(firmware): the router's own failure reason, in 26 locales (#1572)
+- 171bc290 - feat(firmware): map the router's error code and trigger source, once (#1572)
+- be60e930 - chore(usp): regenerate for the merged firmware diagnostics contract (#1572)
+- 2368ca7e - docs(firmware): "off the cloud" means off our own call, not off the cloud (#1550)
+- 4025f089 - refactor(firmware): delete the cloud OTA path — the feature is not coming (#1550)
+- 5bcf6bd1 - fix(firmware): lock the auto-update write, stop verify() trapping the page
+- e0c6b058 - fix(firmware): an update that is already running is not an update available (#1549)
+- 22ba625e - fix(firmware): dispatch the OTA check twice before reporting it did not start (#1550)
+- 175ca60e - refactor(pnp): delete the persisted WiFi credentials — nothing read them (#1553)
+- cb4c8dd1 - docs(firmware): stop naming a verdict that no longer exists (#1551)
+- a1f6217e - fix(firmware): fwup_state 5 is the reboot, not a failure (#1551)
+- c52d6155 - refactor(firmware,pnp): two helpers move out of services/ (#1551, #1553)
+- 0da25f08 - style(firmware): use the spacing token in the bank status row (#1551)
+- cef0a86f - chore(usp): confirm the firmware definitions against merged #63 (#1548)
+- 2dc71a83 - feat(firmware): the manual card's row is the entry, not a button (#1549)
+- 01712ae6 - feat(firmware): the OTA card's version block is the entry, and it names the new version (#1549)
+- 9311b1b4 - feat(firmware): the OTA page shows the router, its slots, and the offer already on it (#1551)
+- a218f381 - refactor(firmware): the dashboard update notice is a card, not a bar (#1552)
+- 099a065e - fix(firmware): three seams the wizard's firmware stage left open (#1553)
+- 12f95c72 - feat(pnp): first connection installs the firmware it finds, and locks while it does (#1553)
+- 841a6e34 - chore(deps): ui_kit 3.3.2, so a linear loader's value renders (#1551)
+- 49defd19 - fix(firmware): map the OTA check's mutation-lock timeout (#1550)
+- ae066e0a - feat(firmware): localize every update failure, in 26 locales (#1551)
+- 0d57062b - feat(firmware): real OTA progress, a router-side install trigger, and updates we did not start (#1551)
+- c4df8d31 - feat(firmware): Check for Updates asks the router, not the cloud API (#1550)
+- 44cc6c45 - feat(firmware): auto-update toggle and dashboard update banner (#1552)
+- 8ce4f7b5 - refactor(firmware): adopt AppButton.isLoading on the OTA check button (#1549)
+- 866851e7 - feat(firmware): split OTA and manual firmware update into two entry points (#1549)
+- 248c5aa6 - feat(firmware): map fwup_state to an app-layer auto-update status (#1548)
+- 34768425 - feat(firmware): model the virtual ota instance separately from NAND banks (#1548)
+- 79d994e8 - feat(usp): regenerate firmware definitions for the virtual ota instance (#1548)
+- ce6dbf9e - fix(port-forwarding): raise the numeric keyboard for every port range (#1537)
+- 0d4ccfa1 - fix(a11y): a saving switch says saving, not unavailable (#1542)
+- 1ab5d6f5 - fix(deps): pin objective_c to 9.6.0 to unbreak `flutter build web` (#1557)
+- 3b315a13 - fix(topology): stop inventing a backhaul medium, and share the ones we read (#1555)
+- 1256dd07 - refactor(topology): one `nonEmpty` for the two mesh graders (#1555)
+- 39bbacfc - fix(topology): regenerate DataElements post-#57 and re-source what it removed (#1555)
+- 4f3dacac - refactor(switch): adopt AppSwitch.isLoading, for #1542
+- 5369fd71 - fix(local_network): put the router-IP save confirmation in the app dialog frame
+- da1bc6c9 - fix(ui): give every dialog's confirming button the filled primary variant (#1224)
+- b2d16ed9 - fix(deps): bump ui_kit to v3.3.0 to close the dialog pass-through, for #970
+- 810dfd41 - fix(instant-privacy): Add device dialog input, IP search, and a busy loader on the toggle (#1059) (#1535)
+- 5f6fab05 - style(port-forwarding): one type ramp for the range group heading
+- 531aac20 - fix(port-triggering): add validation gate + document AppRangeInput keyboard note (#1081)
+- ff0a4ad0 - fix(dhcp): pass existing reservations to the Dashboard add dialog (#1070) (#1500)
+- a3d69c2a - fix(port-forwarding): use the 1.x field names, and put them in labels not hints, for #1081
+- 6609ef6f - fix(dashboard): keep the grid's scroll position and show the bars on arrival at the top (#1032)
+- 2436b8ad - fix(statistics): close the PR review's real findings, for #1488 #1489
+- 10ada9db - style: apply dart format to the two files CI flagged, for #1489
+- 0904acd2 - fix(layout-gate): close the review findings on #1489's tab sweep
+- f4cc833b - test(layout-gate): sweep the last three non-default tabs, for #1489
+- d9e09131 - test(layout-gate): sweep the statistics page's other two tabs, for #1489
+- 7f14d674 - fix(statistics): reflow the four legend rows the Devices and System tabs overflow, for #1488
+- 1af3a2d0 - fix(mascot): evaluate triggers on the L1 value, not on a 500 ms timer (#1509)
+- b245b018 - docs(mode): record that #1529's 401 copy split is declined, for #1474
+- a40b2297 - docs(mode): record the Feature Envy declination with its measurement, for #1474
+- 307d746c - docs(mode): move the exit sink's provenance into the guide, for #1474
+- d22059cb - fix(session): close round 3's code findings on the exit sink, for #1474
+- 95a17075 - style(dashboard): reflow four files dart format rewraps, for #1310
+- 0ae2fc87 - refactor(dashboard): type the layout interior as LayoutItem, for #1310
+- 64305928 - fix(session): defer the catch-up read off the build pass, for #1323
+- 127ab8c1 - fix(dashboard): reject a layout item the grid cannot import, for #1310
+- e6a5196c - docs(session): correct what a 401 shows under RA, for #1529
+- 7c18874b - chore(deps): pin sliver_dashboard to ^2.7.0, and hold the field it turns on
+- 363c6c4f - docs(session): mark the exit verb a test seam, not an API, for #1323
+- 9c65185f - docs(session): point the two waived 401 sites at an owner, for #1529
+- f42a6970 - fix(session): close round 2's review findings on the core session-exit report
+- 7a35b622 - fix(dashboard): encode an added card with toMap(), for #1310
+- d4ca02cf - test(mode): census the whole TR-181 operate surface, not 2 of 5 classes, for #1496
+- e4436122 - refactor(connection): report a session exit instead of ending it, for #1323
+- a4aa89cf - docs(usp): answer two review findings on the RA rebind path, for #1498
+- 0f17d866 - fix(auth): percent-encode the supporter link's session and token, for #1498
+- 736eeda8 - fix(dashboard): seed the mascot trigger baseline so the first SSE event can fire (#1509)
+- f3eb554c - style: drop the unnecessary string interpolation in the preset test
+- 6ba9dadf - docs(test): correct the authProvider `.value` census from 7 to 19 sites
+- 4f4fe089 - test(riverpod): address #1503 review — normalize 2 listener reads, drop an inert hop
+- a44965de - refactor(auth): move session entry behind SessionStrategy.start(), for #1498
+- 0acd0eb0 - style: wrap the ListEquality guard to satisfy dart format
+- 848de24a - fix(mode): guard the other three funnels a fixed layout leaks through, for #1497
+- 068fbb7a - fix(riverpod): diff site 8 against the consumed input, not the previous notification (#1502)
+- a258fa4d - fix(mode): close the review findings on fixedDashboardLayout(), for #1497
+- 68b78e1e - fix(riverpod): guard the site-8 boot race and correct the audit figures (#1502)
+- 0157a503 - test(mascot): address #1507 review — close the SSE controller, anchor the pin
+- f6a49a39 - refactor(mode): fold the preset axis into SurfaceStrategy — fixedDashboardLayout()
+- 05466915 - refactor(ui): SurfaceStrategy — 13 members replace the last 7 bare mode reads
+- 0c6d03f6 - test(usp): cover the 5 listeners with no test file (#1501 AC-A5)
+- 558fd9ab - test(usp): assert same-domain SSE repeats in the last 3 listener tests
+- 0c0c931d - test(usp): cover SSE invalidation at the 5 untested listener sites (#1501 AC-A5)
+- ee7b632a - refactor(usp): tag SSE invalidation events with a monotonic seq (#1501 AC-B1)
+- fc2adff1 - chore(lint): enable unrelated_type_equality_checks as an error
+- 158bd020 - feat(mode): OperationGuard — refuse credentialLoss and transportLoss in RA
+- bf6f948a - refactor(mode): fill SessionStrategy and route every RA exit through it
+- 5a11d47e - docs(riverpod): explain why site 13 stays unguarded (#1505)
+- 2faa8110 - docs(riverpod): link the two filed follow-ups (#1504, #1505)
+- bf33d4ba - test(riverpod): cover the 7 listener fixes, repair the inert ethernet diff
+- 6463b359 - fix(riverpod): stop 7 ref.listen sites doing work on unchanged data (#1502 AC-4)
+- 3b551c3b - docs(riverpod): audit all 25 unowned ref.listen sites (#1502 AC-1, AC-2)
+- a762fddd - docs(test): record the measured verdict for the double-fire on domain-ready
+- d0bdea78 - style: dart format usp_client_rebind_test.dart
+- e41422fd - fix(mode): make recovery ask the mode instead of assuming it is local
+- 65e9fc2f - test(riverpod): characterize provider-layer contracts before any 3.x move (#1501)
+- 1dec2a51 - fix(mode): close four defects the sub-agent review found in phase 3
+- c7a28bb5 - refactor(mode): add the lib/framework/mode contracts, guide and Article XVII
+- 3e25986a - fix(usp): rebind the UspClient transport instead of freeing the façade
+- b424f95c - refactor(config): delete the dead DeviceConfig apparatus and zero-consumer getters
+- eb4e6499 - fix(dashboard): stop offering the Remote Support preset in local builds
+- 443fac70 - fix(route): gate both Remote Assistance entries on the build mode
+- d484a23a - docs: backfill CHANGELOG for 2.7.0
+- 1dd5afa8 - chore: bump version to 2.7.1
+
 ## [2.7.0] - 2026-09-07
 
 - 533b8a7a - test(golden): the node_detail fold was cutting 245px, and #1465 only made it visible (#1482)

@@ -207,10 +207,15 @@ void main() {
         await pumpNarrowest(tester,
             cardId: kTimeSettings, locale: supportedLocaleFor(tag));
 
-        // Measured: 137.8px of value in a 133.4px cell, so it wraps to 2 lines
-        // and stays whole. `America/Los_Ang…` and `America/…` are both
-        // ambiguous between real zones, which is what "identifiable" rules out.
-        expect(tester.isTextClipped(find.text('America/Los_Angeles')), isFalse,
+        // The value used to be the raw `America/Los_Angeles` the fixture put in
+        // the POSIX leaf, which the device never reports there; the card now
+        // resolves the zone properly and shows its name (#1609). Longer than
+        // what it replaces, so it still wraps rather than fitting — which is
+        // what AC5 is about. `Pacific Time (USA & Can…` and `Pacific Time…` are
+        // both ambiguous between real zones, which is what "identifiable" rules
+        // out.
+        expect(tester.isTextClipped(find.text('Pacific Time (USA & Canada)')),
+            isFalse,
             reason: 'the timezone name was truncated. Zone names share long '
                 'prefixes, so a cut one names a region and not a zone '
                 '(#1237 AC 5).');

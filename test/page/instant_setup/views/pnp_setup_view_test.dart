@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/collector.dart';
 import '../../../layout_gate/families/page_surface_family.dart';
+import '../../../layout_gate/surface.dart';
+import '../../../util/dashboard/text_readability_probe.dart';
 import '../../../mocks/provider_overrides/mock_pnp.dart';
 import '../../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
@@ -181,5 +185,83 @@ void main() {
     // password field too.
     expect(find.text(pnpUnifiedWifiConfig.ssid), findsOneWidget);
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
+  });
+  testWidgets(
+      'neither completion-screen action button clips its label at 320px, in any '
+      'locale', (tester) async {
+    // **The assertion the layout gate structurally cannot make here, and the
+    // second thing #1602's fix needs pinned.** That fix turned the `Print` /
+    // `Done` `Row` into a `Wrap`, which removes the `RenderFlex` overflow the gate
+    // was reading. It does not remove the failure mode: `RenderWrap` hands each
+    // child the line's width as a *constraint*, so a button that wants more room
+    // than the line has does not overflow — it **shrinks, and squeezes its
+    // label**. Green gate, unreadable button.
+    //
+    // A first draft of this test asserted `buttonWidth <= wrap.constraints
+    // .maxWidth` and was **inert**: mutation-checked by wrapping the `Wrap` in a
+    // `SizedBox(width: 100)`, it stayed green, because that inequality is what
+    // `RenderWrap` already guarantees. The oracle has to be the label, not the box.
+    //
+    // Measured 2026-09-21 at 320px, all 26 locales: the line is **174.0px**, the
+    // widest button is `nl` at **146.0px** (`el` 143.1, `fr`/`fr_CA` 136.7), and
+    // every locale's `Wrap` lays out **two runs** (104.0px tall) — so the
+    // degradation really happens rather than the pair merely fitting, and no
+    // label is squeezed: tightest headroom **28.0px**, ~19% of the button.
+    //
+    // 320px is the product floor (`kMinSupportedScreenWidth`) and overflow is
+    // monotonic in width, so one width is the whole claim.
+    final offenders = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      await tester.pumpWidget(KeyedSubtree(
+        // A fresh subtree per locale, the same reason the gate's runner keys its
+        // cell hosts: reused render objects would measure the first locale's
+        // layout 26 times.
+        key: ValueKey(locale.toString()),
+        child: pageSurfaceHost(
+          view: const PnpSetupView(),
+          locale: locale,
+          overrides: pnpOverrides(pnpWizardWifiReadyUnifiedState),
+        ),
+      ));
+      await settle(tester);
+
+      // The unified completion screen builds exactly one `Wrap`. If a second ever
+      // appears this throws rather than silently measuring the wrong one.
+      final buttons = find.descendant(
+          of: find.byType(Wrap), matching: find.byType(AppButton));
+      expect(buttons, findsNWidgets(2),
+          reason: 'the action Wrap should hold Print and Done');
+
+      for (var i = 0; i < 2; i++) {
+        final label =
+            find.descendant(of: buttons.at(i), matching: find.byType(Text));
+        if (label.evaluate().length != 1) continue;
+        final paragraph = tester.paragraphOf(label);
+        final text = paragraph.text.toPlainText();
+        // Both verdicts, in the order rule 4 of the gate skill puts them: neither
+        // subsumes the other. An ellipsis leaves every surviving token fitting, and
+        // a mid-word break drops nothing, so `didExceedMaxLines` stays false.
+        if (tester.isTextClipped(label)) {
+          offenders.add('$locale: "$text" is truncated inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px');
+        } else if (!kLocalesWithoutWordSpaces.contains(locale.toString()) &&
+            tester.hasSplitToken(label)) {
+          offenders.add('$locale: "$text" broke mid-word inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px, widest token '
+              '${tester.widestTokenWidth(label).toStringAsFixed(1)}px');
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'a `Wrap` constrains its children to the line, so a button with too '
+          'little room squeezes its label instead of overflowing — invisible to '
+          'every one of the 234 cells in page.pnp_setup_complete_unified:\n'
+          '${offenders.join('\n')}',
+    );
   });
 }

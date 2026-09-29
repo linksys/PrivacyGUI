@@ -135,6 +135,41 @@ void main() {
   });
 
   group('mapUspErrorToServiceError', () {
+    // #1533: a refused synchronous Operate. usp-client 0.13.0 reports it as
+    // `success: false` with the agent's code in band, and `UspClient
+    // .extractOperateResult` throws it in this shape. Before that it read as a
+    // success, so a router-refused firmware chunk completed normally.
+    //
+    // The type matters as much as the code: `UnexpectedError` — the fallthrough
+    // this used to take — renders as "something went wrong", which is what a
+    // network blip looks like too. A refusal is the router answering, not the
+    // network failing.
+    test('maps a refused Operate (7022) to UspCompleteFailureError', () {
+      const raw = 'Operate failed: Operation error: '
+          'Device.LocalAgent.X_LINKSYS_Download() refused: Command Failure '
+          '(code: 7022)';
+
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isA<UspCompleteFailureError>());
+      expect(mapped.code, 7022);
+      expect(mapped.toString(), contains('Command Failure'));
+      expect(mapped.toString(),
+          contains('Device.LocalAgent.X_LINKSYS_Download()'));
+      expect(mapped, isNot(isA<NetworkError>()));
+      expect(mapped, isNot(isA<ConnectivityError>()));
+    });
+
+    test('an operation error without a known code still is not a network error',
+        () {
+      const raw = 'Operate failed: Operation error: the command refused: '
+          'the router gave no reason';
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isNot(isA<NetworkError>()));
+      expect(mapped, isNot(isA<ConnectivityError>()));
+    });
+
     test('maps auth Invalid credentials to InvalidCredentialsError', () {
       const raw = 'Login failed: Authentication error: Invalid credentials';
       expect(mapUspErrorToServiceError(raw), isA<InvalidCredentialsError>());

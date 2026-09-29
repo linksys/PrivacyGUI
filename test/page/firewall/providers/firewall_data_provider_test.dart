@@ -86,6 +86,214 @@ void main() {
       ]);
     });
 
+    // -----------------------------------------------------------------------
+    // linksys/PrivacyGUI#1615 — does the re-fetch survive WITHOUT a listener?
+    //
+    // The test below passes, and passed before the fix too, because it holds
+    // `container.listen(firewallDataProvider, …)` for the whole test. The old
+    // `invalidateSelf()` only SCHEDULED a rebuild — riverpod runs `build()` again when
+    // something READS the provider, and that listener guaranteed something did. So the
+    // passing test could not tell "the refresh works" apart from "the refresh works
+    // BECAUSE a subscriber was held".
+    //
+    // ⚠️ THIS EVENT CANNOT REACH PRODUCTION TODAY, and the test says so rather than
+    // implying otherwise: `firewallRules` and `dmz` come only from `Device.Firewall.*`,
+    // which is not among the five paths in `subscriptions.g.dart`. This test injects the
+    // event by hand, so it pins the CODE PATH, not a live defect.
+    //
+    // It is worth having for exactly that reason. The pattern is defective, and the day a
+    // subscription is added — or firmware starts pushing those paths — this is what keeps
+    // the bug from arriving with it.
+    //
+    // Measured before the fix: with a listener 1 fetch → 2; without, 1 → 1.
+    //
+    // The provider is read once up front so the notifier is constructed and its
+    // `ref.listen` registered — a one-shot `read` rather than a `listen` is deliberately
+    // what a widget that has since stopped watching looks like.
+    // -----------------------------------------------------------------------
+    test(
+        '#1615: firewallRules re-fetches with NO listener held on the provider',
+        () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sseController.stream);
+
+        container.read(firewallDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Proves build() completed, so the ref.listen inside it is registered and the
+        // event below has something to reach. Asserting on the VALUE rather than a
+        // verify() count, because mocktail's verify CONSUMES the calls it matches:
+        // calling it here would leave nothing for the assertion that matters.
+        expect(container.read(firewallDataProvider).hasValue, isTrue,
+            reason:
+                'build() must have completed, or this test asserts nothing');
+
+        clearInteractions(mockService);
+
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 0));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockService.fetch()).called(1);
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Ordering — the same hazard as #1618's C1, which applies here too.
+    //
+    // Replacing `invalidateSelf()` with a direct `state` assignment dropped riverpod's
+    // invalidation coalescing, so two overlapping refreshes finish in completion order and
+    // an older device read can overwrite a newer one.
+    //
+    // THE DEBOUNCE DOES NOT PREVENT IT, and that is the part worth pinning: measured on
+    // this provider, two events 600ms apart produce THREE fetches with two in flight
+    // together, because `_debounce?.cancel()` only cancels a timer that has not fired yet.
+    // -----------------------------------------------------------------------
+    test('the LATER push wins even when its fetch completes FIRST', () {
+      fakeAsync((async) {
+        final slow = Completer<FirewallDataFetchResult>();
+        final fast = Completer<FirewallDataFetchResult>();
+        var call = 0;
+        when(() => mockService.fetch()).thenAnswer((_) {
+          call++;
+          if (call == 1) {
+            return Future.value(FirewallTestData.createFetchResult());
+          }
+          return call == 2 ? slow.future : fast.future;
+        });
+
+        final sseController = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sseController.stream);
+        container.listen(firewallDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Event 1 -> its timer fires -> fetch A starts and hangs.
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 1));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Event 2, past the window, so a NEW timer and a second fetch.
+        sseController.add((domain: InvalidationDomain.firewallRules, seq: 2));
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+        expect(call, 3,
+            reason:
+                'two refreshes must be in flight, or this test proves nothing');
+
+        // The NEWER one completes first, with firewall DISABLED.
+        fast.complete(FirewallTestData.createFetchResult(
+          firewallModel: FirewallTestData.createFirewallUIModel(
+            isIPv4FirewallEnabled: false,
+          ),
+        ));
+        async.flushMicrotasks();
+        // Then the OLDER one completes, still reporting ENABLED.
+        slow.complete(FirewallTestData.createFetchResult());
+        async.flushMicrotasks();
+
+        expect(
+          container
+              .read(firewallDataProvider)
+              .valueOrNull!
+              .firewallModel
+              .isIPv4FirewallEnabled,
+          isFalse,
+          reason:
+              'the older read completed last and must have been discarded — otherwise the '
+              'card reports a firewall state the device no longer has, with nothing to '
+              'correct it until the next notification',
+        );
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    // A rebuild is the other way a value gets published, and the generation guard has to
+    // cover it: `build()` returns its result directly rather than going through
+    // `_refreshFromPush`. Measured before the fix — a push that started before a save
+    // completed afterwards and overwrote post-save data with pre-save data, and on this
+    // provider no later push arrives to correct it (its SSE domains are not subscribed).
+    //
+    // Save paths that rebuild this provider: `usp_firewall_notifier.dart`'s
+    // `ref.invalidate` after a save, and `usp_stats_panel.dart`'s retry button.
+    test('a save-triggered rebuild wins over a push that was already in flight',
+        () async {
+      final pushGate = Completer<FirewallDataFetchResult>();
+      final rebuildGate = Completer<FirewallDataFetchResult>();
+      var call = 0;
+      when(() => mockService.fetch()).thenAnswer((_) {
+        call++;
+        if (call == 1) {
+          return Future.value(FirewallTestData.createFetchResult());
+        }
+        return call == 2 ? pushGate.future : rebuildGate.future;
+      });
+
+      final sseController = StreamController<InvalidationEvent>.broadcast();
+      final container = createContainer(sseStream: sseController.stream);
+      container.listen(firewallDataProvider, (_, __) {});
+      await container.read(firewallDataProvider.future);
+
+      // A push starts, carrying PRE-save data, and does not finish yet.
+      sseController.add((domain: InvalidationDomain.firewallRules, seq: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(call, 2,
+          reason: 'the push must be in flight, or this test proves nothing');
+
+      // The user saves.
+      container.invalidate(firewallDataProvider);
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(call, 3, reason: 'the rebuild must have started its own fetch');
+
+      // The post-save rebuild completes first, with the firewall now DISABLED.
+      rebuildGate.complete(FirewallTestData.createFetchResult(
+        firewallModel: FirewallTestData.createFirewallUIModel(
+          isIPv4FirewallEnabled: false,
+        ),
+      ));
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      // Then the stale push completes, still reporting ENABLED.
+      pushGate.complete(FirewallTestData.createFetchResult());
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(
+        container
+            .read(firewallDataProvider)
+            .valueOrNull!
+            .firewallModel
+            .isIPv4FirewallEnabled,
+        isFalse,
+        reason:
+            'the rebuild published after the push started, so the push is stale and must '
+            'be discarded — otherwise the user saves a change and watches the page revert',
+      );
+
+      await sseController.close();
+      container.dispose();
+    });
+
     test('SSE firewallRules domain triggers debounced re-fetch', () {
       fakeAsync((async) {
         final sseController = StreamController<InvalidationEvent>.broadcast();

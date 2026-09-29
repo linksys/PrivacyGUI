@@ -123,13 +123,24 @@ class MeshTopologyBuilder {
             signalStrength: backhaulSignalStrength,
             uplinkRate: backhaulUplinkRate,
             downlinkRate: backhaulDownlinkRate,
-            // Both read through the all-zero guard: they are MACs from the same
+            // Read through the all-zero guard: it is a MAC from the same
             // `MultiAPDevice.Backhaul` object as the bench-measured sentinel, and
-            // `parentNodeId` is the field the master/slave discriminator keys on,
-            // so an unguarded `00:00:00:00:00:00` would build the controller as a
-            // slave whose parent nothing can resolve (#1555).
+            // it is the field the master/slave discriminator keys on, so an
+            // unguarded `00:00:00:00:00:00` would build the controller as a slave
+            // whose parent nothing can resolve (#1555).
+            //
+            // `Backhaul.MACAddress` used to be read here too, onto a
+            // `parentBssid` field. It is **not** the parent's BSSID — prplMesh's
+            // own datamodel declaration
+            // (`/opt/prplmesh/config/controller/odl/device.odl`) documents
+            // `Backhaul.ServingBSSID` as that, and says nothing of the sort about
+            // `MACAddress`, which is the node's own station address. Neither the
+            // field nor the correct one beside it had a display consumer, so
+            // #1441 AC4 deleted it rather than re-point it at a value no bench has
+            // ever seen populated. Surfacing the parent BSSID is separate scope
+            // and starts from `ServingBSSID` (already fetched as
+            // `prplServingBssid`), not from here.
             parentNodeId: meshBackhaulParentId(node),
-            parentBssid: nonUnsetMac(node.backhaulMacAddressMultiAp),
             lastContactTime:
                 nonEpoch(node.multiApLastContactTime)?.toIso8601String(),
             backhaulMacAddress: _backhaulStaMac(node),

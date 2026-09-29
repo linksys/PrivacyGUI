@@ -19,10 +19,29 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - celebrate: jumping with happy face
 /// - sad: drooping with dim LED
 class LinksysMascotRenderer extends MascotCharacterRenderer {
-  const LinksysMascotRenderer();
+  const LinksysMascotRenderer({this.size = defaultSize});
+
+  /// The coordinate space every `_draw*` below is written in.
+  ///
+  /// [paint] scales to whatever box it is given, so this is a design-time
+  /// constant, not a layout one — changing [size] must not change these numbers.
+  static const Size artworkSize = Size(80, 110);
+
+  /// What the mascot occupies on the dashboard.
+  ///
+  /// 48×66 rather than the artwork's 80×110, which is 15% of the 320px screen
+  /// floor instead of 25%. The mascot is a hit-testing `GestureDetector`, so its
+  /// width is width the controls underneath cannot be reached through, and a
+  /// quarter of the narrowest supported screen was too much to spend on an
+  /// ambient character (#1531).
+  ///
+  /// The floor is the face, not the silhouette: the eyes are drawn with a 3px
+  /// stroke and the mouths are 4–20px wide, so below roughly 40px of width those
+  /// details fall under 2px and the expression stops reading. 48 keeps them.
+  static const Size defaultSize = Size(48, 66);
 
   @override
-  Size get size => const Size(80, 110);
+  final Size size;
 
   @override
   Set<MascotAnimationKey> get supportedAnimations => {
@@ -44,6 +63,7 @@ class LinksysMascotRenderer extends MascotCharacterRenderer {
       animationKey: animationKey,
       controller: controller,
       facingRight: facingRight,
+      size: size,
     );
   }
 }
@@ -52,12 +72,18 @@ class _PixelBuddyWidget extends StatelessWidget {
   final MascotAnimationKey animationKey;
   final Animation<double> controller;
   final bool facingRight;
+  final Size size;
 
   const _PixelBuddyWidget({
     required this.animationKey,
     required this.controller,
     required this.facingRight,
+    required this.size,
   });
+
+  /// Animation offsets are written in artwork units, so they have to shrink with
+  /// the artwork or a smaller mascot would bob and jump proportionally further.
+  double get _scale => size.width / LinksysMascotRenderer.artworkSize.width;
 
   @override
   Widget build(BuildContext context) {
@@ -96,14 +122,14 @@ class _PixelBuddyWidget extends StatelessWidget {
         final flipX = facingRight ? 1.0 : -1.0;
 
         return Transform.translate(
-          offset: Offset(0, -bob - bounce - greetBob - jump + droop),
+          offset: Offset(0, (-bob - bounce - greetBob - jump + droop) * _scale),
           child: Transform.scale(
             scaleX: flipX,
             child: Transform.rotate(
               angle: tilt,
               child: SizedBox(
-                width: 80,
-                height: 110,
+                width: size.width,
+                height: size.height,
                 child: CustomPaint(
                   painter: _PixelBuddyPainter(
                     animationKey: animationKey,
@@ -149,12 +175,21 @@ class _PixelBuddyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
+    // Every `_draw*` below is written in `artworkSize` units — 56px bodies, 14px
+    // feet, a 32px LED — so the canvas is scaled once here instead of threading
+    // a factor through twenty literals. Same approach as
+    // `MascotHeroWidget._StaticMascotPainter`, which the overlay's painter did
+    // not share: it ignored the `Size` it was handed, so the box could shrink
+    // while the drawing stayed 80×110 and overflowed it.
+    const artwork = LinksysMascotRenderer.artworkSize;
+    canvas.scale(size.width / artwork.width, size.height / artwork.height);
+
+    final cx = artwork.width / 2;
 
     _drawBody(canvas, cx);
     _drawLed(canvas, cx);
     _drawFace(canvas, cx);
-    _drawFeet(canvas, cx, size);
+    _drawFeet(canvas, cx, artwork);
   }
 
   void _drawBody(Canvas canvas, double cx) {

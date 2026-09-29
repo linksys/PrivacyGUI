@@ -66,4 +66,59 @@ void main() {
       expect(() => svc.fetch(), throwsA(isA<UnauthorizedError>()));
     });
   });
+
+  // #1609. `Device.Time.X_LINKSYS_LocalTimeZoneName` is read in its own `Get`
+  // because `time_settings.yaml` does not declare it, so it is not on the
+  // codegen model.
+  group('UspTimeDataService — the zone name', () {
+    const zonePath = 'Device.Time.X_LINKSYS_LocalTimeZoneName';
+
+    test('is read and carried onto the model', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => timeResponse);
+      when(() => mockUsp.get([zonePath], priority: any(named: 'priority')))
+          .thenAnswer((_) async => {zonePath: 'Asia/Taipei'});
+
+      final model = await svc.fetch();
+
+      expect(model.localTimeZoneName, 'Asia/Taipei');
+      expect(model.localTimeZone, 'CST-8',
+          reason: 'the POSIX string is still carried — the name is additional');
+    });
+
+    test('is empty when the device does not carry the leaf', () async {
+      // Nothing under that key: a firmware without it, which must still render.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => timeResponse);
+
+      final model = await svc.fetch();
+
+      expect(model.localTimeZoneName, '');
+    });
+
+    test('a fault on the name does not fail the whole page', () async {
+      // The name only ever improves the label — `resolveTimezone` falls back to
+      // the POSIX string — so it must not be able to take the time card down.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => timeResponse);
+      when(() => mockUsp.get([zonePath], priority: any(named: 'priority')))
+          .thenThrow('Get failed: Invalid path');
+
+      final model = await svc.fetch();
+
+      expect(model.localTimeZoneName, '');
+      expect(model.status, 'Synchronized');
+    });
+
+    test('a non-string value is treated as absent', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => timeResponse);
+      when(() => mockUsp.get([zonePath], priority: any(named: 'priority')))
+          .thenAnswer((_) async => {zonePath: 0});
+
+      final model = await svc.fetch();
+
+      expect(model.localTimeZoneName, '');
+    });
+  });
 }

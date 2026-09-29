@@ -127,14 +127,12 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
               ],
             ],
           ],
-          // MAC Address Clone — disabled: USP data model does not support write
-          // AppGap.lg(),
-          // AppDivider(),
-          // AppGap.lg(),
-          // AppText.labelLarge(l.macAddressClone),
-          // AppGap.md(),
-          // UspInfoRow(
-          //     label: l.currentMac, value: widget.state.currentMacAddress),
+          // MAC Address Clone is not rendered: the USP data model does not support the
+          // write, so there is nothing for this page to offer. The commented-out row that
+          // used to sit here read `state.currentMacAddress`, which was deleted in #1613
+          // along with the field behind it — it could only ever return '' because
+          // `_buildReadOnlyInfo` hardcoded that. Reinstating the feature means a USP
+          // capability first, not uncommenting Dart.
         ],
       ),
     );

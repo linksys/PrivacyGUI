@@ -113,6 +113,22 @@ void main() {
       }
     });
 
+    // #1533. This is the assertion the fix exists for, and the one that was
+    // missing when the mapper first shipped: mapping a refusal to
+    // `UspCompleteFailureError` is not enough, because `_localizeBatch` answers
+    // `errorUnexpected` — "Something went wrong" — for an *empty* failures list.
+    // A refusal must name itself, and the negative half is what pins that.
+    testWidgets('7022 → errorCommandRefused, and never the generic fallback',
+        (tester) async {
+      final ctx = await pumpContext(tester);
+      expect(localizeServiceError(ctx, _completeWith(7022)),
+          loc(ctx).errorCommandRefused);
+      expect(localizeServiceError(ctx, _completeWith(7022)),
+          isNot(loc(ctx).errorUnexpected));
+      expect(localizeServiceError(ctx, _completeWith(7022)),
+          isNot(loc(ctx).errorNetwork));
+    });
+
     testWidgets('9001 → errorUnauthorized', (tester) async {
       final ctx = await pumpContext(tester);
       expect(localizeServiceError(ctx, _completeWith(9001)),

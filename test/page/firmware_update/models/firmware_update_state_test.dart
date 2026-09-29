@@ -119,6 +119,23 @@ void main() {
       expect(unreadable.isUpdating, isFalse);
     });
 
+    test(
+        'upload progress is the chunk fraction, and zero before any chunk count',
+        () {
+      // The manual page's progress bar renders this getter. Its only test used to go
+      // through `updateUploadProgress`, a notifier setter with no production caller
+      // (#1621); the arithmetic lives here, so the test does too.
+      expect(
+        const FirmwareUpdateState(uploadedChunks: 32, totalChunks: 64)
+            .uploadProgress,
+        closeTo(0.5, 1e-9),
+      );
+      // The guarded branch: a state that has not been told a chunk count yet must
+      // read 0, not divide by zero — which in Dart is NaN, and a NaN handed to a
+      // progress bar does not render as empty.
+      expect(const FirmwareUpdateState().uploadProgress, 0.0);
+    });
+
     test('both new fields are part of equality', () {
       // Riverpod compares with `==`, so a field left out of `props` is a field
       // whose change never repaints. A progress bar is exactly the widget that

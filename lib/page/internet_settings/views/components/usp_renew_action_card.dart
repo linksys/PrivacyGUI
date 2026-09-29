@@ -8,6 +8,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspRenewActionCard extends StatelessWidget {
   final String protocolLabel;
   final String? ipAddress;
+
+  /// What to show INSTEAD of an address when there is none to show.
+  ///
+  /// Exists because `ipAddress: null` and `ipAddress: ''` both rendered '--', so a caller
+  /// had no way to say "we could not read this" as distinct from "there is no address"
+  /// (linksys/PrivacyGUI#1613). Defaults to '--', which is the right label for a device
+  /// that reported no address.
+  final String? addressLabel;
   final bool isLoading;
   final VoidCallback? onRenew;
 
@@ -15,6 +23,7 @@ class UspRenewActionCard extends StatelessWidget {
     super.key,
     required this.protocolLabel,
     this.ipAddress,
+    this.addressLabel,
     this.isLoading = false,
     this.onRenew,
   });
@@ -30,7 +39,9 @@ class UspRenewActionCard extends StatelessWidget {
               AppText.bodySmall(loc(context).protocolDhcp(protocolLabel)),
               AppGap.xs(),
               AppText.labelLarge(
-                ipAddress?.isNotEmpty == true ? ipAddress! : '--',
+                ipAddress?.isNotEmpty == true
+                    ? ipAddress!
+                    : (addressLabel ?? '--'),
               ),
             ],
           ),

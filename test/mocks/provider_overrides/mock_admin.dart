@@ -40,7 +40,8 @@ class FixedAdminNotifier extends UspAdminNotifier {
 
   @override
   Future<void> updateTimezone({
-    required String localTimeZone,
+    String? zoneName,
+    String? localTimeZone,
     String? ntpServer1,
   }) async {}
 

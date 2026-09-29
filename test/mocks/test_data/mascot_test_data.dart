@@ -13,15 +13,38 @@ import 'devices_test_data.dart';
 class MascotTestData {
   /// Devices data holding exactly [clientCount] clients under the master node.
   ///
-  /// `newDeviceJoined` fires only when the count *increases*, so a test needs
-  /// two of these with different counts.
-  static DevicesData createDevicesData({int clientCount = 2}) {
+  /// `newDeviceJoined` fires only when the MAC set *gains* an address, so a test
+  /// needs two of these. The MACs [createClients] hands out are positional, so
+  /// two calls with different counts share a prefix — `clientCount: 3` is
+  /// `clientCount: 2` plus one new MAC, which is the shape of a device joining.
+  /// For a swap (one leaves, one joins, count unchanged) pass [clients].
+  static DevicesData createDevicesData({
+    int clientCount = 2,
+    List<ClientDevice>? clients,
+  }) {
     return DevicesData(
       meshNetwork: DevicesTestData.createSingleNodeNetwork(
-        masterClients: createClients(clientCount),
+        masterClients: clients ?? createClients(clientCount),
       ),
     );
   }
+
+  /// A single client, for composing a [clients] list by hand.
+  ///
+  /// [mac] is what the trigger identifies a device by; [hostName] and
+  /// [friendlyName] are what it announces, in the order
+  /// `ClientDevice.displayName` prefers them.
+  static ClientDevice createClient({
+    required String mac,
+    String hostName = '',
+    String? friendlyName,
+  }) =>
+      DevicesTestData.createWifiClient(
+        mac: mac,
+        ip: '192.168.1.200',
+        hostName: hostName,
+        friendlyName: friendlyName,
+      );
 
   /// [count] online WiFi clients with distinct MACs and IPs.
   ///

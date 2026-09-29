@@ -109,6 +109,7 @@ void main() {
     'slaveNodeOffline': slaveNodeOffline,
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,
     'slaveNodeWithBackhaulTiming': slaveNodeWithBackhaulTiming,
+    'slaveNodeWithBackhaulRates': slaveNodeWithBackhaulRates,
     'slaveNodeNoBackhaul': slaveNodeNoBackhaul,
     'slaveNodeGlobalIpv6': slaveNodeGlobalIpv6,
     'slaveNodeLinkLocalIpv6': slaveNodeLinkLocalIpv6,

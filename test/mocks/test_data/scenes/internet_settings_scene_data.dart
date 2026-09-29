@@ -96,32 +96,24 @@ const ipv6EnabledForm = UspInternetSettingsForm(
 // =============================================================================
 
 const defaultReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '',
-  staticIpAddress: '192.168.1.100',
 );
 
 const bridgeReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '',
-  staticIpAddress: '',
   hostName: 'Community00080',
 );
 
 const pppoeReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: 'Connected',
   dhcpv6Duid: '',
-  staticIpAddress: '',
 );
 
 const ipv6ReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: '',
   dhcpv6Duid: '00:01:00:01:2a:3b:4c:5d:aa:bb:cc:dd:ee:ff',
-  staticIpAddress: '192.168.1.100',
 );
 
 // =============================================================================
@@ -233,16 +225,20 @@ const gateInternetSettingsForm = UspInternetSettingsForm(
 
 /// Every read-only string the page can paint, all non-empty.
 ///
-/// Each one is a branch: `staticIpAddress` is what makes the banner's status dot
-/// active and the IPv4 renew card show an address instead of `--`,
-/// `pppConnectionStatus` fills the PPP status row, and `dhcpv6Duid` fills the DUID
-/// row — a 39-character value, the longest the page renders, and the reason this
-/// scene does not reuse `defaultReadOnlyInfo`, which leaves two of the three empty.
+/// Each one is a branch: `pppConnectionStatus` fills the PPP status row, and
+/// `dhcpv6Duid` fills the DUID row — a 39-character value, the longest the page renders,
+/// and the reason this scene does not reuse `defaultReadOnlyInfo`, which leaves it empty.
+///
+/// ⚠️ THE WAN ADDRESS IS NO LONGER ONE OF THESE BRANCHES. This scene used to carry
+/// `staticIpAddress`, and this comment used to say it was "what makes the banner's status
+/// dot active and the IPv4 renew card show an address instead of `--`". Since #1587
+/// Phase 2 both of those read `wanDataProvider` (L1), so the address a cell renders comes
+/// from that provider's override, NOT from here — and `internetSettingsOverrides()` does
+/// not override it. Any cell that wants a rendered address must override
+/// `wanDataProvider` itself; see `usp_connection_status_banner_test.dart` for the shape.
 const gateInternetSettingsReadOnlyInfo = InternetSettingsReadOnlyInfo(
-  currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: 'Connected',
   dhcpv6Duid: '00:01:00:01:2a:3b:4c:5d:aa:bb:cc:dd:ee:ff',
-  staticIpAddress: '192.168.1.100',
 );
 
 /// The router shape every `page.internet_settings` cell is measured against.

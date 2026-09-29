@@ -10,7 +10,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
@@ -911,6 +910,18 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// Attributed only when the code has **moved** since [_codeBeforeInstall], for the
   /// reason that field documents: on the manual path nothing clears it between runs
   /// inside a boot, so an unchanged code is as likely to be the previous upload's.
+  ///
+  /// **Whether an install failed, and why, comes from `fwup_error_code` — never
+  /// from a firmware row's `Status`.** Until `linksys/usp_framework#66`, `sysmngr`
+  /// reported `InstallationFailed` for the ota row at `fwup_state=5` — which is
+  /// the *reboot* — so a verdict read off that word turned every successful
+  /// install into a failure. The definition no longer says that, but the rule
+  /// stands either way: `Status` describes a slot, not the outcome of an install.
+  /// What a physical bank's `Status` *can* answer is which image is booted, and
+  /// [verify] reads it for exactly that — the bank-flip check behind
+  /// `bootedOldImage` — after this method has had the first word. (This rule used
+  /// to sit on a per-slot `Status` reader in the service, removed in #1621 for
+  /// having no caller.)
   Future<FirmwareUpdateErrorCode?> _routerNamedFailure() async {
     final before = _codeBeforeInstall;
     if (before == null) return null;
@@ -1058,13 +1069,6 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
             cooldown: cooldown,
           ),
         );
-  }
-
-  void enterRebooting(Duration estimated) {
-    _setState(state.copyWith(
-      phase: FirmwareUpdatePhase.rebooting,
-      rebootRemaining: estimated,
-    ));
   }
 
   Future<void> verify({
@@ -1232,22 +1236,6 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
   }
 
-  void updateUploadProgress(int sent, int total) {
-    state = state.copyWith(
-      phase: FirmwareUpdatePhase.uploading,
-      uploadedChunks: sent,
-      totalChunks: total,
-    );
-  }
-
-  void updateTargetStatus(String status) {
-    state = state.copyWith(targetStatus: status);
-  }
-
-  void updateRebootCountdown(Duration remaining) {
-    state = state.copyWith(rebootRemaining: remaining);
-  }
-
   /// Move to [FirmwareUpdatePhase.failed] carrying a reason the view can translate.
   ///
   /// Took a `String` until this was localized, and that signature was the defect:
@@ -1266,15 +1254,5 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       phase: FirmwareUpdatePhase.failed,
       failure: failure,
     ));
-  }
-
-  /// Test-only seam: directly seed an active/target bank pair without hitting
-  /// the service, useful for snapshot / golden tests in PR-5.
-  @visibleForTesting
-  void debugSeedBanks({
-    FirmwareImageUIModel? active,
-    FirmwareImageUIModel? target,
-  }) {
-    state = state.copyWith(activeBank: active, targetBank: target);
   }
 }

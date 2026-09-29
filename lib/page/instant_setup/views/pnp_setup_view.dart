@@ -827,8 +827,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 AppGap.xl(),
 
                 // Actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                //
+                // A `Wrap`, not a `Row`: at 320px the two buttons at their intrinsic
+                // widths overflowed in all 26 locales (#1602), and the honest
+                // degradation for a pair of actions is a second line rather than two
+                // squeezed labels — `Print` and `Done` are what the screen is for.
+                // Above ~480px this lays out exactly as the `Row` did.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.lg,
+                  runSpacing: AppSpacing.sm,
                   children: [
                     AppButton.text(
                       label: loc(context).print,
@@ -847,7 +856,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                         }
                       },
                     ),
-                    AppGap.lg(),
                     AppButton(
                       label: loc(context).done,
                       onTap: () => _onDone(context),
@@ -942,8 +950,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.bodyMedium('$label: '),
-        AppText.titleSmall(value),
+        // Both texts are `Flexible` rather than one of them, and neither
+        // ellipsizes: the value is an SSID or a passphrase the user has to read off
+        // this screen and type into another device, so dropping characters is not a
+        // degradation here. `FlexFit.loose` keeps every layout that already fitted
+        // byte-identical and lets the two strings wrap where they did not — which is
+        // the whole of the fix, at 320px in all 26 locales and at 480px in `el` and
+        // `fr_CA` (#1602). The copy affordance stays on the row's main axis so it
+        // never strands on a line of its own.
+        Flexible(child: AppText.bodyMedium('$label: ')),
+        Flexible(child: AppText.titleSmall(value)),
         AppGap.xs(),
         GestureDetector(
           onTap: () {
