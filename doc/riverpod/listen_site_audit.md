@@ -438,8 +438,11 @@ code.
 
 ```
 lib/page/dashboard/providers/pdf_report_data_provider.dart:29-66   13 reads
-lib/page/dashboard/providers/system_info_data_provider.dart:62      1 read
+lib/page/admin/providers/system_info_data_provider.dart:62          1 read (firmwareBanksDataProvider)
 ```
+
+⚠️ The second path is `page/admin/`, not `page/dashboard/` — the review that raised these
+said `dashboard`, and the file is not there. Counts and the line number check out.
 
 Every provider they read is `watch`ed somewhere in `lib/`, so in practice a subscriber usually
 exists — but whether one exists *at that moment* depends on which dashboard preset is mounted,
