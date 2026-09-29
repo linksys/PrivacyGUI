@@ -21,7 +21,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   bool _initiatingCA = false;
 
   static const int kActivePollIntervalSec = 5;
-  static const int kActiveSessionPollIntervalSec = 60;
+  static const int kActiveSessionPollIntervalSec = 30;
 
   // Cadence for the passive (client-side) session info stream. Was an
   // unexplained default of 3 on the private method; named here so the two

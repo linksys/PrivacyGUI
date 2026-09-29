@@ -227,9 +227,9 @@ void main() {
       expect(notifier.nextPollInterval(GRASessionStatus.invalid), 5);
     });
 
-    test('returns 60s once the session is active', () {
+    test('returns 30s once the session is active', () {
       final notifier = container.read(remoteClientProvider.notifier);
-      expect(notifier.nextPollInterval(GRASessionStatus.active), 60);
+      expect(notifier.nextPollInterval(GRASessionStatus.active), 30);
     });
   });
 

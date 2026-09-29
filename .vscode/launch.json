@@ -21,6 +21,16 @@
             "program": "lib/main.dart"
         },
         {
+            // Same as "linksys - Web (Local)" plus the client-side remote
+            // assistance entry points, which are off by default.
+            "name": "linksys - Web (Local, Remote Assistance)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--web-browser-flag", "--disable-web-security", "--web-port", "61672"],
+            "toolArgs": ["--dart-define","force=local","--dart-define","enable_remote_assistance=true"],
+            "program": "lib/main.dart"
+        },
+        {
             "name": "linksys - Android",
             "request": "launch",
             "type": "dart",

@@ -206,7 +206,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
   Widget _sessionExpireCounter(
       GRASessionInfo sessionInfo, int? expiredCountdown) {
-    var display = loc(context).remoteAssistanceSessionExpired;
+    // The short form: this sits in the top bar, which gives the text no width
+    // to wrap into, and the full explanation is in the dialog shown alongside.
+    var display = loc(context).remoteAssistanceSessionEnded;
     if (sessionInfo.status != GRASessionStatus.active) {
       return AppText.bodyMedium(
         display,
