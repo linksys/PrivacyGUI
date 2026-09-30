@@ -529,7 +529,7 @@ void main() {
       );
     });
 
-    test('the register reads 44 swept, 0 queued, 2 excluded', () {
+    test('the register reads 45 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -552,7 +552,7 @@ void main() {
       // never a commit where the page is reachable and unmeasured. A wave onboards
       // pages that were already reachable; this is the other direction.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(44));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(45));
       expect(roster.withDisposition(PageRosterDisposition.queued), isEmpty);
       expect(
         roster
@@ -644,7 +644,7 @@ void main() {
       );
     });
 
-    test('swept is 44 of 46 — every page but the two unreachable ones', () {
+    test('swept is 45 of 47 — every page but the two unreachable ones', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -711,6 +711,7 @@ void main() {
         'lib/page/login/views/local_reset_router_password_view.dart',
         'lib/page/login/views/local_router_recovery_view.dart',
         'lib/page/login/views/login_local_view.dart',
+        'lib/page/mac_filter/views/mac_filter_view.dart',
         'lib/page/menu/views/usp_menu_view.dart',
         'lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart',
         'lib/page/remote_assistance/views/remote_assistance_confirm_view.dart',

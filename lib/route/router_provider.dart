@@ -47,6 +47,8 @@ import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart'
     as usp_instant_privacy;
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart'
+    as usp_mac_filter;
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';

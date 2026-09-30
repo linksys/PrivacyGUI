@@ -12,7 +12,9 @@ void main() {
   late MockMacFilterService mockService;
 
   const device1 = MacFilterDeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:01', displayName: 'Laptop', ipAddress: '192.168.1.10');
+      mac: 'AA:BB:CC:DD:EE:01',
+      displayName: 'Laptop',
+      ipAddress: '192.168.1.10');
 
   final denyResult = MacFilterFetchResult(
     mode: MacFilterMode.deny,
@@ -72,8 +74,10 @@ void main() {
       final container = createContainer();
       await container.read(uspMacFilterProvider.future);
 
-      when(() => mockService.fetchAll()).thenAnswer((_) async => disabledResult);
-      await container.read(uspMacFilterProvider.notifier)
+      when(() => mockService.fetchAll())
+          .thenAnswer((_) async => disabledResult);
+      await container
+          .read(uspMacFilterProvider.notifier)
           .setMode(MacFilterMode.disabled);
 
       verify(() => mockService.setMacFilter(
@@ -83,7 +87,8 @@ void main() {
 
     test('surfaces a validation error and does not crash the notifier',
         () async {
-      when(() => mockService.fetchAll()).thenAnswer((_) async => disabledResult);
+      when(() => mockService.fetchAll())
+          .thenAnswer((_) async => disabledResult);
       when(() => mockService.setMacFilter(any(), any()))
           .thenThrow(const InvalidInputError(detail: 'Allow needs one'));
 
@@ -91,7 +96,8 @@ void main() {
       await container.read(uspMacFilterProvider.future);
 
       expect(
-        () => container.read(uspMacFilterProvider.notifier)
+        () => container
+            .read(uspMacFilterProvider.notifier)
             .setMode(MacFilterMode.allow),
         throwsA(isA<InvalidInputError>()),
       );
@@ -109,11 +115,13 @@ void main() {
       await container.read(uspMacFilterProvider.future);
       when(() => mockService.fetchAll()).thenAnswer((_) async => denyResult);
 
-      await container.read(uspMacFilterProvider.notifier)
+      await container
+          .read(uspMacFilterProvider.notifier)
           .addMac('AA:BB:CC:DD:EE:02');
 
-      verify(() => mockService.setMacFilter(MacFilterMode.deny,
-          ['AA:BB:CC:DD:EE:99', 'AA:BB:CC:DD:EE:02'])).called(1);
+      verify(() => mockService.setMacFilter(
+              MacFilterMode.deny, ['AA:BB:CC:DD:EE:99', 'AA:BB:CC:DD:EE:02']))
+          .called(1);
       container.dispose();
     });
 
@@ -126,7 +134,8 @@ void main() {
       await container.read(uspMacFilterProvider.future);
       when(() => mockService.fetchAll()).thenAnswer((_) async => denyResult);
 
-      await container.read(uspMacFilterProvider.notifier)
+      await container
+          .read(uspMacFilterProvider.notifier)
           .removeMac('AA:BB:CC:DD:EE:99');
 
       verify(() => mockService.setMacFilter(MacFilterMode.deny, [])).called(1);

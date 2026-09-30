@@ -461,6 +461,11 @@ void main() {
   );
 
   runOverflowSweep(
+    family: PageSurfaceFamily(kMacFilterPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
     family: PageSurfaceFamily(kInstantSafetyPageCase),
     expectedCellCount: 234,
   );

@@ -129,8 +129,13 @@ class UspMacFilterService {
       final list = raw.macFilterList.trim();
       final macs = list.isEmpty
           ? <String>[]
-          : list.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-      return MacFilterData(mode: MacFilterMode.fromWire(raw.macFilterMode), macs: macs);
+          : list
+              .split(',')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+      return MacFilterData(
+          mode: MacFilterMode.fromWire(raw.macFilterMode), macs: macs);
     } on ServiceError {
       rethrow;
     } catch (e) {
@@ -156,7 +161,8 @@ class UspMacFilterService {
     }
     if (normalized.length > maxAddresses) {
       throw InvalidInputError(
-          detail: 'At most $maxAddresses addresses (${normalized.length} given)');
+          detail:
+              'At most $maxAddresses addresses (${normalized.length} given)');
     }
 
     try {

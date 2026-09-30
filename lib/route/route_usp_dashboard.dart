@@ -154,6 +154,11 @@ final uspDashboardRoute = ShellRoute(
           const usp_instant_privacy.InstantPrivacyView(),
     ),
     LinksysRoute(
+      name: RouteNamed.uspMacFilter,
+      path: RoutePath.uspMacFilter,
+      builder: (context, state) => const usp_mac_filter.MacFilterView(),
+    ),
+    LinksysRoute(
       name: RouteNamed.uspAdmin,
       path: RoutePath.uspAdmin,
       builder: (context, state) => const UspAdminView(),

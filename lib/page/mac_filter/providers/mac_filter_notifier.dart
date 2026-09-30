@@ -40,11 +40,13 @@ class UspMacFilterNotifier extends AsyncNotifier<MacFilterState> {
   Future<void> addMac(String mac) {
     final current = state.value?.macs ?? const <String>[];
     final normalized = UspMacFilterService.normalizeMac(mac);
-    if (current.map((m) => m.toUpperCase()).contains(normalized.toUpperCase())) {
+    if (current
+        .map((m) => m.toUpperCase())
+        .contains(normalized.toUpperCase())) {
       return Future.value();
     }
-    return _write(state.value?.mode ?? MacFilterMode.disabled,
-        [...current, normalized]);
+    return _write(
+        state.value?.mode ?? MacFilterMode.disabled, [...current, normalized]);
   }
 
   /// Remove a MAC from the list and re-write.

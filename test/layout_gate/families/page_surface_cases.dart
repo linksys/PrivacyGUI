@@ -110,6 +110,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_available
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
@@ -199,6 +200,7 @@ import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../mocks/provider_overrides/mock_instant_privacy.dart';
+import '../../mocks/provider_overrides/mock_mac_filter.dart';
 import '../../mocks/provider_overrides/mock_instant_safety.dart';
 import '../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../mocks/provider_overrides/mock_ipv6_port_service.dart';
@@ -1984,6 +1986,24 @@ final kInstantPrivacyPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `mac_filter_view` — the network-wide MAC filter (#1636): a three-mode
+/// `AppRadioList` selector always on screen, plus a list editor (header + Add
+/// button + device rows) that appears when a mode is active. The gate scene
+/// (`gateMacFilterState`) is Deny with a populated list, so header, Add button
+/// and rows all render at once. Instant Privacy is the same page's Allow mode
+/// under a different route, so it keeps its own case above.
+final kMacFilterPageCase = PageSurfaceCase(
+  id: 'mac_filter',
+  view: () => const MacFilterView(),
+  overrides: () => macFilterOverrides(),
+  // AppRadioList is generic (`AppRadioList<MacFilterMode>`), which
+  // `find.byType` cannot match from a raw `Type` literal, so the anti-spinner
+  // sentinel uses the non-generic widgets the gate scene always renders. That
+  // the mode selector itself renders is asserted in mac_filter_view_test.dart.
+  requires: const [UspTopBar, AppButton],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `instant_safety_view` — one switch for OpenDNS safe browsing, and two lines of
 /// server prose that appear only while it is on.
 ///
@@ -2722,6 +2742,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kDmzPageCase,
   kFirewallPageCase,
   kInstantPrivacyPageCase,
+  kMacFilterPageCase,
   kInstantSafetyPageCase,
   kInternetSettingsPageCase,
   kIpv6PortServicePageCase,

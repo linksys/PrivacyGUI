@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
@@ -54,6 +56,11 @@ class UspMenuView extends ConsumerWidget {
     final lanData = ref.watch(lanDataProvider).valueOrNull;
     final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
 
+    // MAC Filtering is only offered on firmware that serves it (#1635).
+    final hasMacFilter = ref
+        .watch(deviceCapabilitiesProvider)
+        .has(DeviceCapability.wifiMacFilter);
+
     // Instant Safety is enabled when DNS is set to OpenDNS
     final isSafetyEnabled = lanData != null &&
         UspInstantSafetyService.isOpenDns(lanData.model.dnsServers);
@@ -100,6 +107,14 @@ class UspMenuView extends ConsumerWidget {
             : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),
+      if (hasMacFilter)
+        AppSectionItemData(
+          identifier: 'menu-mac-filter',
+          title: loc(context).macFilter,
+          description: loc(context).macFilterDesc,
+          iconData: Icons.filter_alt_outlined,
+          onTap: () => context.goNamed(RouteNamed.uspMacFilter),
+        ),
       AppSectionItemData(
         identifier: 'menu-administration',
         title: loc(context).administration,

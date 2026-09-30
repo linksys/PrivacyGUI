@@ -29,8 +29,8 @@ void main() {
   }
 
   void stubOperateOk() {
-    when(() => usp.operate(any(), args: any(named: 'args'))).thenAnswer(
-        (_) async => {
+    when(() => usp.operate(any(), args: any(named: 'args')))
+        .thenAnswer((_) async => {
               'success': true,
               'result': {
                 'data': {'commandKey': 'k'}
@@ -120,8 +120,10 @@ void main() {
       await service.setMacFilter(
           MacFilterMode.deny, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
 
-      final captured = verify(() => usp.operate(_cmdPath,
-          args: captureAny(named: 'args'))).captured.single as Map;
+      final captured =
+          verify(() => usp.operate(_cmdPath, args: captureAny(named: 'args')))
+              .captured
+              .single as Map;
       expect(captured['Mode'], 'Deny');
       expect(captured['MACAddressList'],
           jsonEncode(['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']));
@@ -133,8 +135,10 @@ void main() {
       await service.setMacFilter(MacFilterMode.deny,
           ['aa-bb-cc-dd-ee-01', 'AA:BB:CC:DD:EE:01', 'aa:bb:cc:dd:ee:02']);
 
-      final captured = verify(() => usp.operate(_cmdPath,
-          args: captureAny(named: 'args'))).captured.single as Map;
+      final captured =
+          verify(() => usp.operate(_cmdPath, args: captureAny(named: 'args')))
+              .captured
+              .single as Map;
       expect(captured['MACAddressList'],
           jsonEncode(['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']));
     });
@@ -144,8 +148,10 @@ void main() {
 
       await service.setMacFilter(MacFilterMode.disabled, []);
 
-      final captured = verify(() => usp.operate(_cmdPath,
-          args: captureAny(named: 'args'))).captured.single as Map;
+      final captured =
+          verify(() => usp.operate(_cmdPath, args: captureAny(named: 'args')))
+              .captured
+              .single as Map;
       expect(captured['Mode'], 'Disabled');
       expect(captured.containsKey('MACAddressList'), isFalse);
     });
@@ -153,7 +159,9 @@ void main() {
     test('rejects a list over the 64 limit before sending', () async {
       stubOperateOk();
       final tooMany = List.generate(
-          65, (i) => '02:00:00:00:${(i ~/ 256).toRadixString(16).padLeft(2, '0')}:${(i % 256).toRadixString(16).padLeft(2, '0')}');
+          65,
+          (i) =>
+              '02:00:00:00:${(i ~/ 256).toRadixString(16).padLeft(2, '0')}:${(i % 256).toRadixString(16).padLeft(2, '0')}');
 
       expect(
         () => service.setMacFilter(MacFilterMode.deny, tooMany),
@@ -165,7 +173,9 @@ void main() {
     test('exactly 64 is allowed', () async {
       stubOperateOk();
       final max = List.generate(
-          64, (i) => '02:00:00:00:${(i ~/ 256).toRadixString(16).padLeft(2, '0')}:${(i % 256).toRadixString(16).padLeft(2, '0')}');
+          64,
+          (i) =>
+              '02:00:00:00:${(i ~/ 256).toRadixString(16).padLeft(2, '0')}:${(i % 256).toRadixString(16).padLeft(2, '0')}');
 
       await service.setMacFilter(MacFilterMode.deny, max);
 
@@ -199,8 +209,10 @@ void main() {
       await service.setMacFilter(
           MacFilterMode.deny, List.filled(65, 'AA:BB:CC:DD:EE:01'));
 
-      final captured = verify(() => usp.operate(_cmdPath,
-          args: captureAny(named: 'args'))).captured.single as Map;
+      final captured =
+          verify(() => usp.operate(_cmdPath, args: captureAny(named: 'args')))
+              .captured
+              .single as Map;
       expect(captured['MACAddressList'], jsonEncode(['AA:BB:CC:DD:EE:01']));
     });
 

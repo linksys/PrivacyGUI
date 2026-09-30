@@ -249,8 +249,9 @@ class UspInstantPrivacyService {
   /// present (no write made).
   Future<bool> addMac(String mac, MacFilterContext ctx) async {
     final normalized = normalizeMac(mac);
-    final present =
-        ctx._currentMacs.map((m) => m.toUpperCase()).contains(normalized.toUpperCase());
+    final present = ctx._currentMacs
+        .map((m) => m.toUpperCase())
+        .contains(normalized.toUpperCase());
     if (present) return false;
     await _macFilter.setMacFilter(
       MacFilterMode.allow,
