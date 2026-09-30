@@ -457,7 +457,14 @@ inside a PR whose subject is a deletion would bury the deletion.
 ⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
 holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
 
-## #1587 Phase 2 audit — read-only values sourced from L2 (2026-09-29)
+## #1587 Phase 0 and Phase 2 — the rule, and the audit behind it (2026-09-29)
+
+**Phase 0's remaining item** was a gap in `constitution.md` Article IV's page-type
+classification: it told Type C pages to read L1 directly and said nothing about Type A or
+Type B, leaving the case this defect came from undescribed. Now stated there, scoped to the
+view layer so it cannot be read as bending Rule 2, which governs notifiers.
+
+**Phase 2's remaining items** were the audit below and the instruction to record it either way.
 
 The question: do Local Network, Devices or Wi-Fi show a live value through their L2 working copy,
 the way the Internet Settings banner did before #1613?
