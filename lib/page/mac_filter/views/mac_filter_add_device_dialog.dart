@@ -51,12 +51,14 @@ class _AddDeviceDialog extends StatefulWidget {
 
 class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   final _canConfirm = ValueNotifier<bool>(false);
   String? _errorKey;
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     _canConfirm.dispose();
     super.dispose();
   }
@@ -110,6 +112,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
             child: AppTextField(
               identifier: 'mac-filter-add-mac-input',
               controller: _controller,
+              focusNode: _focusNode,
               hintText: loc(context).searchByNameMacIp,
               errorText: _localizedError(context),
               onChanged: (_) {

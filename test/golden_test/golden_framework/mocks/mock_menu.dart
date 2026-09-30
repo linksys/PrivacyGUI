@@ -18,13 +18,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
   FixedInstantPrivacyNotifier(this._fixedState);
 
   @override
-  Future<UspInstantPrivacyState> build() async => _fixedState;
-
-  @override
-  Future<void> enable() async {}
-
-  @override
-  Future<void> disable() async {}
+  UspInstantPrivacyState build() => _fixedState;
 }
 
 List<Override> menuOverrides({

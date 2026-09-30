@@ -20,7 +20,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 // `FixedLanDataNotifier` is imported rather than restated. It is the same one-method
@@ -40,7 +43,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
   FixedInstantPrivacyNotifier(this._fixedState);
 
   @override
-  Future<UspInstantPrivacyState> build() async => _fixedState;
+  UspInstantPrivacyState build() => _fixedState;
 }
 
 /// Overrides for `usp_menu_view`.
@@ -61,10 +64,21 @@ List<Override> menuOverrides({
       uspInstantPrivacyProvider.overrideWith(
         () => FixedInstantPrivacyNotifier(
           UspInstantPrivacyState(
-            isEnabled: privacyEnabled,
-            connectedDevices: const [],
-            allowedDevices: const [],
-            macFilterContext: MacFilterContext.empty,
+            settings: Preservable(
+              original: MacFilterSettings(
+                mode: privacyEnabled
+                    ? MacFilterMode.allow
+                    : MacFilterMode.disabled,
+                macs: const [],
+              ),
+              current: MacFilterSettings(
+                mode: privacyEnabled
+                    ? MacFilterMode.allow
+                    : MacFilterMode.disabled,
+                macs: const [],
+              ),
+            ),
+            status: const MacFilterStatus(isLoading: false),
           ),
         ),
       ),

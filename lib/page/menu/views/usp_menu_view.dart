@@ -54,7 +54,7 @@ class UspMenuView extends ConsumerWidget {
       BuildContext context, WidgetRef ref) {
     // Read from L1 providers for applied state (not page-level pending state)
     final lanData = ref.watch(lanDataProvider).valueOrNull;
-    final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
+    final privacyState = ref.watch(uspInstantPrivacyProvider);
 
     // MAC Filtering is only offered on firmware that serves it (#1635).
     final hasMacFilter = ref
@@ -102,8 +102,12 @@ class UspMenuView extends ConsumerWidget {
         title: loc(context).instantPrivacy,
         description: loc(context).instantPrivacyDesc,
         iconData: Icons.lock_outlined,
-        badges: privacyState != null
-            ? [privacyState.isEnabled ? MenuBadge.on : MenuBadge.off]
+        badges: !privacyState.status.isLoading
+            ? [
+                privacyState.settings.current.isEnabled
+                    ? MenuBadge.on
+                    : MenuBadge.off
+              ]
             : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),

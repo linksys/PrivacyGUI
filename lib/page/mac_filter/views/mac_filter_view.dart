@@ -138,9 +138,8 @@ class MacFilterView extends ConsumerWidget {
               AppButton.text(
                 identifier: 'mac-filter-add-device',
                 label: loc(context).addDevice,
-                onTap: atLimit
-                    ? null
-                    : () => _showAddDialog(context, ref, state),
+                onTap:
+                    atLimit ? null : () => _showAddDialog(context, ref, state),
               ),
             ],
           ),
@@ -202,8 +201,8 @@ class MacFilterView extends ConsumerWidget {
     // Turning MAC Filter on while Instant Privacy (Allow) is on is mutually
     // exclusive — they share one device mode. Confirm before overriding.
     if (enable) {
-      final ipOn = ref.read(uspInstantPrivacyProvider).valueOrNull?.isEnabled ??
-          false;
+      final ipOn =
+          ref.read(uspInstantPrivacyProvider).settings.current.isEnabled;
       if (ipOn) {
         final ok = await showAppDialog<bool>(
           context: context,

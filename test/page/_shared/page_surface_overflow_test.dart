@@ -2868,13 +2868,13 @@ void main() {
           await settleIgnoringAnimations(tester);
 
           final loc = localizationsByTag[tag]!;
-          // Read off the ARB with the fixture's own count, so a fixture that stops
-          // rendering three devices fails here rather than measuring a different
+          // Read off the ARB with the fixture's own count, so a fixture whose
+          // allow-list changes size fails here rather than measuring a different
           // string. `allowedDevicesCount` appears once on the page — the toggle
           // card's label is `instantPrivacy` — so the finder is unscoped and the
           // count asserted.
           final countText = loc.allowedDevicesCount(
-              gateInstantPrivacyState.allowedDevices.length);
+              gateInstantPrivacyState.settings.current.macs.length);
           final label = find.text(countText);
           final button = find.widgetWithText(AppButton, loc.addDevice);
           if (label.evaluate().length != 1 || button.evaluate().length != 1) {

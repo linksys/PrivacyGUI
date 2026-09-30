@@ -1,58 +1,45 @@
-import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
-import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 
-/// State for the Instant Privacy feature page.
-class UspInstantPrivacyState extends Equatable {
-  /// Whether MAC address filtering is currently active on the router.
-  final bool isEnabled;
+/// FeatureState for the Instant Privacy page (Allow/Disabled).
+///
+/// Save-based via the Preservable framework, over the same shared
+/// [MacFilterSettings] / [MacFilterStatus] the MAC Filter page uses — Instant
+/// Privacy is that filter in Allow mode. Edits mutate `settings.current`; only
+/// [UspInstantPrivacyNotifier.save] writes.
+class UspInstantPrivacyState
+    extends FeatureState<MacFilterSettings, MacFilterStatus> {
+  const UspInstantPrivacyState(
+      {required super.settings, required super.status});
 
-  /// Devices currently connected to the router (isActive = true).
-  final List<InstantPrivacyDeviceUIModel> connectedDevices;
+  factory UspInstantPrivacyState.initial() {
+    return UspInstantPrivacyState(
+      settings: Preservable(
+        original: MacFilterSettings.empty(),
+        current: MacFilterSettings.empty(),
+      ),
+      status: const MacFilterStatus(isLoading: true),
+    );
+  }
 
-  /// Devices currently on the MAC whitelist.
-  final List<InstantPrivacyDeviceUIModel> allowedDevices;
+  /// The devices currently connected — the source for the "allow only these"
+  /// default and the add-device picker.
+  List<MacFilterDeviceUIModel> get connectedDevices => status.connectedDevices;
 
-  /// Whether the toggle is locked during a save operation.
-  final bool isToggleLocked;
-
-  /// Opaque context holding MAC filter AP data for service operations.
-  final MacFilterContext macFilterContext;
-
-  const UspInstantPrivacyState({
-    required this.isEnabled,
-    required this.connectedDevices,
-    required this.allowedDevices,
-    required this.macFilterContext,
-    this.isToggleLocked = false,
-  });
-
-  /// Whether the toggle should be disabled in the UI.
-  bool get isToggleDisabled =>
-      isToggleLocked || (!isEnabled && connectedDevices.isEmpty);
-
+  @override
   UspInstantPrivacyState copyWith({
-    bool? isEnabled,
-    List<InstantPrivacyDeviceUIModel>? connectedDevices,
-    List<InstantPrivacyDeviceUIModel>? allowedDevices,
-    bool? isToggleLocked,
-    MacFilterContext? macFilterContext,
+    Preservable<MacFilterSettings>? settings,
+    MacFilterStatus? status,
   }) {
     return UspInstantPrivacyState(
-      isEnabled: isEnabled ?? this.isEnabled,
-      connectedDevices: connectedDevices ?? this.connectedDevices,
-      allowedDevices: allowedDevices ?? this.allowedDevices,
-      isToggleLocked: isToggleLocked ?? this.isToggleLocked,
-      macFilterContext: macFilterContext ?? this.macFilterContext,
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
   @override
-  List<Object?> get props => [
-        isEnabled,
-        connectedDevices,
-        allowedDevices,
-        isToggleLocked,
-        macFilterContext,
-      ];
+  Map<String, dynamic> toMap() => {};
 }
