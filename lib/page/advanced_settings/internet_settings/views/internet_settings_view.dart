@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -432,14 +433,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               description: AppText.labelLarge(
                 wanStatus?.wanConnection?.ipAddress ?? '-',
               ),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap:
-                    isBridgeMode || _effectiveIpv4WanType(state) == WanType.ipoe
-                        ? null
-                        : () {
-                            _showRenewIPAlert(InternetSettingsViewType.ipv4);
-                          },
+              trailing: ReadOnlyTooltip(
+                child: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: ref.readOnlyGuard(isBridgeMode ||
+                          _effectiveIpv4WanType(state) == WanType.ipoe
+                      ? null
+                      : () {
+                          _showRenewIPAlert(InternetSettingsViewType.ipv4);
+                        }),
+                ),
               ),
             ),
           ),
@@ -451,15 +454,17 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               description: AppText.labelLarge(
                 wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ?? '-',
               ),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap: isBridgeMode ||
-                        _isIPv6LockedByAutoIPoE(state, autoIPoEState) ||
-                        wanIpv6Type == WanIPv6Type.passThrough
-                    ? null
-                    : () {
-                        _showRenewIPAlert(InternetSettingsViewType.ipv6);
-                      },
+              trailing: ReadOnlyTooltip(
+                child: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: ref.readOnlyGuard(isBridgeMode ||
+                          _isIPv6LockedByAutoIPoE(state, autoIPoEState) ||
+                          wanIpv6Type == WanIPv6Type.passThrough
+                      ? null
+                      : () {
+                          _showRenewIPAlert(InternetSettingsViewType.ipv6);
+                        }),
+                ),
               ),
             ),
           ),

@@ -11,6 +11,7 @@ import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
@@ -121,6 +122,9 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   }
 
   Widget _trailing(DeviceListItem device) {
+    // Both write to the router, and every caller shows them through here, so a
+    // read-only build hides them once rather than at each caller.
+    final readOnly = ref.watch(readOnlyModeProvider);
     return Row(
       children: [
         SharedWidgets.resolveSignalStrengthIcon(
@@ -130,6 +134,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           isWired: device.isWired,
         ),
         if (widget.enableDeauth &&
+            !readOnly &&
             !device.isWired &&
             serviceHelper.isSupportClientDeauth()) ...[
           const AppGap.medium(),
@@ -142,7 +147,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             },
           ),
         ],
-        if (widget.enableDelete) ...[
+        if (widget.enableDelete && !readOnly) ...[
           const AppGap.medium(),
           AppIconButton.noPadding(
             icon: LinksysIcons.delete,

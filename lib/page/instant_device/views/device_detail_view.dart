@@ -35,6 +35,7 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -252,7 +253,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 horizontal: Spacing.large2, vertical: Spacing.medium),
             title: loc(context).ipAddress,
             description: _formatEmptyValue(state.item.ipv4Address),
+            // Reserving writes the whole LAN configuration.
             trailing: !isBridge &&
+                    !ref.watch(readOnlyModeProvider) &&
                     state.item.isOnline &&
                     state.item.ipv4Address.isNotEmpty &&
                     state.item.type != WifiConnectionType.guest &&

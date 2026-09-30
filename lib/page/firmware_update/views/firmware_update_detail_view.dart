@@ -17,6 +17,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -117,13 +118,18 @@ class _FirmwareUpdateDetailViewState
               footer: isUpdateAvailable && !isWaitingChildren
                   ? Padding(
                       padding: const EdgeInsets.only(top: Spacing.large5),
-                      child: AppFilledButton(
-                        loc(context).updateAll,
-                        onTap: () {
-                          ref
-                              .read(firmwareUpdateProvider.notifier)
-                              .updateFirmware();
-                        },
+                      // Disabled rather than hidden: that an update exists is
+                      // worth seeing. Letting it through would mark the page as
+                      // updating before the refused send, and nothing clears it.
+                      child: ReadOnlyTooltip(
+                        child: AppFilledButton(
+                          loc(context).updateAll,
+                          onTap: ref.readOnlyGuard(() {
+                            ref
+                                .read(firmwareUpdateProvider.notifier)
+                                .updateFirmware();
+                          }),
+                        ),
                       ),
                     )
                   : null,

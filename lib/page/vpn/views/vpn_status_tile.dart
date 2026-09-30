@@ -15,6 +15,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 
 class VPNStatusTile extends ConsumerStatefulWidget {
   const VPNStatusTile({super.key});
@@ -60,10 +61,12 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                   children: [
                     AppText.titleMedium(loc(context).vpn),
                     const AppGap.small2(),
-                    AppSwitch(
+                    ReadOnlyTooltip(
+                      child: AppSwitch(
                         value:
                             vpnState.settings.serviceSettings?.enabled ?? false,
-                        onChanged: (value) {
+                        // Saves the moment it is flipped.
+                        onChanged: ref.readOnlyGuard((bool value) {
                           final settings = vpnState.settings.serviceSettings ??
                               VPNServiceSetSettings(
                                   enabled: false, autoConnect: false);
@@ -72,7 +75,9 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                               .setVPNService(settings.copyWith(enabled: value));
 
                           doSomethingWithSpinner(context, notifier.save());
-                        })
+                        }),
+                      ),
+                    ),
                   ],
                 ),
                 vpnStatus(

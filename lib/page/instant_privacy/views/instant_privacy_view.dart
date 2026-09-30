@@ -24,6 +24,8 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class InstantPrivacyView extends ArgumentsConsumerStatefulView {
   const InstantPrivacyView({
@@ -306,7 +308,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
             isOnline: device.isOnline,
             isWired: device.isWired,
           ),
-          if (isEnable) ...[
+          if (isEnable && !ref.watch(readOnlyModeProvider)) ...[
             const AppGap.medium(),
             AppIconButton.noPadding(
               icon: LinksysIcons.delete,
@@ -348,14 +350,17 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
-        AppSwitch(
-          semanticLabel: 'instant privacy',
-          value: state.settings.mode == MacFilterMode.allow,
-          onChanged: _isRefreshing
-              ? null
-              : (value) {
-                  _showEnableDialog(value);
-                },
+        ReadOnlyTooltip(
+          child: AppSwitch(
+            semanticLabel: 'instant privacy',
+            value: state.settings.mode == MacFilterMode.allow,
+            // Saves from its own confirm dialog; this page has no Save bar.
+            onChanged: ref.readOnlyGuard(_isRefreshing
+                ? null
+                : (bool value) {
+                    _showEnableDialog(value);
+                  }),
+          ),
         )
       ],
     ));

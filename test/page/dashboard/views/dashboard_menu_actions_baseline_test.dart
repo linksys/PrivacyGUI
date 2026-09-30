@@ -17,6 +17,7 @@ import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provide
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,10 +65,11 @@ void main() {
     initBetterActions();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableRouteShellWidget(
       child: const DashboardMenuView(),
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
         instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
         connectivityProvider.overrideWith(() => mockConnectivityNotifier),
@@ -105,4 +107,16 @@ void main() {
     await tester.pumpAndSettle();
     verify(mockTopologyNotifier.reboot()).called(1);
   }, variants: responsiveDesktopVariants);
+
+  testResponsiveWidgets('a read-only build offers no network menu',
+      (tester) async {
+    await pump(tester, readOnly: true);
+
+    expect(
+        tester
+            .widget<StyledAppPageView>(find.byType(StyledAppPageView).first)
+            .menu,
+        isNull);
+    expect(find.byIcon(LinksysIcons.restartAlt), findsNothing);
+  }, variants: responsiveAllVariants);
 }

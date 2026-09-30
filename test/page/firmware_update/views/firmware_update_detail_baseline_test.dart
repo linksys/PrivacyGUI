@@ -8,6 +8,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
@@ -33,10 +34,11 @@ void main() {
     when(mockFirmwareUpdateNotifier.updateFirmware()).thenAnswer((_) async {});
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       child: const FirmwareUpdateDetailView(),
@@ -61,5 +63,14 @@ void main() {
     await pump(tester);
 
     expect(updateAll, findsNothing);
+  });
+
+  testWidgets('a read-only build shows Update All disabled', (tester) async {
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
+    await pump(tester, readOnly: true);
+
+    expect(updateAll, findsOneWidget);
+    expect(tester.widget<AppFilledButton>(updateAll).onTap, isNull);
+    verifyNever(mockFirmwareUpdateNotifier.updateFirmware());
   });
 }

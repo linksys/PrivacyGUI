@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -34,9 +35,11 @@ void main() {
     WidgetTester tester, {
     required bool edited,
     required Future<void> Function() onSave,
+    bool readOnly = false,
   }) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         localNetworkSettingProvider.overrideWith(() => mockNotifier),
       ],
       extraRoutes: [
@@ -87,6 +90,18 @@ void main() {
       (tester) async {
     var saves = 0;
     await pump(tester, edited: false, onSave: () async => saves++);
+
+    await openReservations(tester);
+    expect(find.text('Save Changes?'), findsNothing);
+    expect(find.text('reservations page'), findsOneWidget);
+    expect(saves, 0);
+  });
+
+  testWidgets('a read-only build goes straight on without offering to save',
+      (tester) async {
+    var saves = 0;
+    await pump(tester,
+        edited: true, onSave: () async => saves++, readOnly: true);
 
     await openReservations(tester);
     expect(find.text('Save Changes?'), findsNothing);

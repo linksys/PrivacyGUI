@@ -10,6 +10,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -54,9 +55,10 @@ void main() {
         const CoreTransactionData(lastUpdate: 0, isReady: true, data: {}));
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         wifiListProvider.overrideWith(() => mockWifiListNotifier),
         pollingProvider.overrideWith(() => mockPollingNotifier),
@@ -128,5 +130,14 @@ void main() {
     verifyNever(mockWifiListNotifier.saveToggleEnabled(
         radios: anyNamed('radios'), enabled: anyNamed('enabled')));
     verifyNever(mockWifiListNotifier.save());
+  }, variants: responsiveDesktopVariants);
+
+  testResponsiveWidgets('a read-only build disables every switch',
+      (tester) async {
+    await pump(tester, readOnly: true);
+
+    final all = switches(tester);
+    expect(all, hasLength(3));
+    expect(all.every((s) => s.onChanged == null), isTrue);
   }, variants: responsiveDesktopVariants);
 }

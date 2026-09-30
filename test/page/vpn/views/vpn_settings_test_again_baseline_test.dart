@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
@@ -59,12 +60,15 @@ void main() {
 
   tearDown(() => reset(mockServiceHelper));
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     tester.view.physicalSize = const Size(1440, 3000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(testableSingleRoute(
-      overrides: [vpnProvider.overrideWith(() => vpn)],
+      overrides: [
+        vpnProvider.overrideWith(() => vpn),
+        readOnlyModeProvider.overrideWithValue(readOnly),
+      ],
       child: const VPNSettingsPage(),
     ));
     await tester.pumpAndSettle();
@@ -123,5 +127,19 @@ void main() {
 
     expect(vpn.saves, 0);
     expect(vpn.tests, 0);
+  });
+
+  testWidgets('a read-only build tests a changed page without saving',
+      (tester) async {
+    await pump(tester, readOnly: true);
+    await makeDirty(tester);
+
+    await tester.ensureVisible(testAgain);
+    await tester.tap(testAgain);
+    await tester.pumpAndSettle();
+
+    expect(find.text('You have unsaved changes on this page'), findsNothing);
+    expect(vpn.saves, 0);
+    expect(vpn.tests, 1);
   });
 }

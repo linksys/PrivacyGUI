@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -47,9 +48,10 @@ void main() {
         .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         vpnProvider.overrideWith(() => mockVPNNotifier),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
@@ -79,5 +81,11 @@ void main() {
         .single as VPNServiceSetSettings;
     expect(settings.enabled, isFalse);
     verify(mockVPNNotifier.save()).called(1);
+  });
+
+  testWidgets('a read-only build disables the switch', (tester) async {
+    await pump(tester, readOnly: true);
+
+    expect(vpnSwitch(tester).onChanged, isNull);
   });
 }

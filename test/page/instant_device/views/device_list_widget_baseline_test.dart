@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/di.dart';
@@ -35,12 +36,14 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
+    bool readOnly = false,
     bool enableDelete = false,
     bool enableDeauth = false,
     void Function(DeviceListItem)? onItemDelete,
     void Function(DeviceListItem)? onItemDeauth,
   }) async {
     await tester.pumpWidget(testableSingleRoute(
+      overrides: [readOnlyModeProvider.overrideWithValue(readOnly)],
       child: SizedBox(
         height: 400,
         child: DeviceListWidget(
@@ -90,6 +93,19 @@ void main() {
     when(mockServiceHelper.isSupportClientDeauth()).thenReturn(false);
     await pump(tester, enableDeauth: true, onItemDeauth: (_) {});
 
+    expect(deauthIcon, findsNothing);
+  });
+
+  testWidgets('a read-only build hides both however they are asked for',
+      (tester) async {
+    await pump(tester,
+        readOnly: true,
+        enableDelete: true,
+        enableDeauth: true,
+        onItemDelete: (_) {},
+        onItemDeauth: (_) {});
+
+    expect(deleteIcon, findsNothing);
     expect(deauthIcon, findsNothing);
   });
 }

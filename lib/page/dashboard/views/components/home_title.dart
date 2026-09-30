@@ -16,6 +16,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
   const DashboardHomeTitle({super.key});
@@ -75,7 +76,10 @@ class DashboardHomeTitle extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (!isLoading && !isOnline) _troubleshooting(context, ref),
+              // The troubleshooter is PnP, which a read-only build redirects
+              // away from; the card would lead nowhere.
+              if (!isLoading && !isOnline && !ref.watch(readOnlyModeProvider))
+                _troubleshooting(context, ref),
             ],
           );
   }

@@ -27,6 +27,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 
 class InstantAdminView extends ArgumentsConsumerStatefulView {
   const InstantAdminView({
@@ -177,7 +178,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             value: isFwAutoUpdate,
             title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
             semanticLabel: 'auto firmware update',
-            onChanged: (value) {},
+            // Saves the moment it is flipped; a null onChanged disables it.
+            onChanged: ref.readOnlyGuard((bool value) {}),
             event: (value) async {
               await ref
                   .read(firmwareUpdateProvider.notifier)
@@ -255,10 +257,13 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           ),
         ],
       ),
-      trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: () {
+      trailing: const ReadOnlyTooltip(child: Icon(LinksysIcons.chevronRight)),
+      // Disabled rather than hidden, so the current region stays visible.
+      // Letting it through would stop polling before the refused save, and
+      // nothing restarts it.
+      onTap: ref.readOnlyGuard(() {
         handleTransmitRegionTap(powerTableState);
-      },
+      }),
     );
   }
 

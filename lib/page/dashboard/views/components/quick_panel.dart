@@ -22,6 +22,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 
 class DashboardQuickPanel extends ConsumerStatefulWidget {
   const DashboardQuickPanel({super.key});
@@ -172,11 +173,14 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 ],
               ),
             ),
-            AppSwitch(
-              key: ValueKey(semantics),
-              value: value,
-              onChanged: onChanged,
-              semanticLabel: semantics,
+            ReadOnlyTooltip(
+              child: AppSwitch(
+                key: ValueKey(semantics),
+                value: value,
+                // Both quick switches save the moment they are flipped.
+                onChanged: ref.readOnlyGuard(onChanged),
+                semanticLabel: semantics,
+              ),
             ),
           ],
         ),

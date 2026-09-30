@@ -34,6 +34,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -55,20 +56,24 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       scrollable: true,
       backState: StyledBackState.none,
       title: loc(context).menu,
-      menu: PageMenu(title: loc(context).myNetwork, items: [
-        PageMenuItem(
-            label: loc(context).restartNetwork,
-            icon: LinksysIcons.restartAlt,
-            onTap: () {
-              _restartNetwork();
-            }),
-        PageMenuItem(
-            label: loc(context).menuSetupANewProduct,
-            icon: LinksysIcons.add,
-            onTap: () {
-              context.pushNamed(RouteNamed.addNodes);
-            })
-      ]),
+      // Both entries change the network, and they are the only ones, so a
+      // read-only build drops the menu altogether rather than show it empty.
+      menu: ref.watch(readOnlyModeProvider)
+          ? null
+          : PageMenu(title: loc(context).myNetwork, items: [
+              PageMenuItem(
+                  label: loc(context).restartNetwork,
+                  icon: LinksysIcons.restartAlt,
+                  onTap: () {
+                    _restartNetwork();
+                  }),
+              PageMenuItem(
+                  label: loc(context).menuSetupANewProduct,
+                  icon: LinksysIcons.add,
+                  onTap: () {
+                    context.pushNamed(RouteNamed.addNodes);
+                  })
+            ]),
       child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

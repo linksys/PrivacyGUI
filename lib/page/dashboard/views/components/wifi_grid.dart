@@ -25,6 +25,7 @@ import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_guard.dart';
 
 class DashboardWiFiGrid extends ConsumerStatefulWidget {
   const DashboardWiFiGrid({super.key});
@@ -172,18 +173,21 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                           .map((e) => e.replaceAll('RADIO_', ''))
                           .join('/')),
                 ),
-                AppSwitch(
-                  semanticLabel: widget.item.isGuest
-                      ? 'guest'
-                      : widget.item.radios
-                          .map((e) => e.replaceAll('RADIO_', ''))
-                          .join('/'),
-                  value: widget.item.isEnabled,
-                  onChanged: widget.item.isGuest ||
-                          !widget.item.isEnabled ||
-                          widget.canBeDisabled
-                      ? (value) => _handleWifiToggled(value)
-                      : null,
+                ReadOnlyTooltip(
+                  child: AppSwitch(
+                    semanticLabel: widget.item.isGuest
+                        ? 'guest'
+                        : widget.item.radios
+                            .map((e) => e.replaceAll('RADIO_', ''))
+                            .join('/'),
+                    value: widget.item.isEnabled,
+                    // Saves from its own confirm dialog, not a Save bar.
+                    onChanged: ref.readOnlyGuard(widget.item.isGuest ||
+                            !widget.item.isEnabled ||
+                            widget.canBeDisabled
+                        ? (bool value) => _handleWifiToggled(value)
+                        : null),
+                  ),
                 ),
               ],
             ),

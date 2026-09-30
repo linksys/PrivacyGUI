@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
@@ -64,9 +65,10 @@ void main() {
 
   tearDown(() => reset(mockServiceHelper));
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
         nodeLightSettingsProvider
             .overrideWith(() => mockNodeLightSettingsNotifier),
@@ -134,5 +136,14 @@ void main() {
     await pump(tester);
 
     expect(switches(tester), hasLength(1));
+  }, variants: responsiveDesktopVariants);
+
+  testResponsiveWidgets('a read-only build disables both switches',
+      (tester) async {
+    await pump(tester, readOnly: true);
+
+    final all = switches(tester);
+    expect(all, hasLength(2));
+    expect(all.every((s) => s.onChanged == null), isTrue);
   }, variants: responsiveDesktopVariants);
 }

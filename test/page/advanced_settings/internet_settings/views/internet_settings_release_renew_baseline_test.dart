@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -34,9 +35,11 @@ void main() {
         .thenAnswer((_) async {});
   });
 
-  Future<void> openReleaseAndRenewTab(WidgetTester tester) async {
+  Future<void> openReleaseAndRenewTab(WidgetTester tester,
+      {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         internetSettingsProvider
             .overrideWith(() => mockInternetSettingsNotifier),
       ],
@@ -87,5 +90,13 @@ void main() {
     await tester.tap(find.widgetWithText(AppTextButton, 'Cancel'));
     await tester.pumpAndSettle();
     verifyNever(mockInternetSettingsNotifier.renewDHCPWANLease());
+  });
+
+  testWidgets('a read-only build disables both renew buttons', (tester) async {
+    await openReleaseAndRenewTab(tester, readOnly: true);
+
+    final buttons = tester.widgetList<AppTextButton>(renewButtons()).toList();
+    expect(buttons, hasLength(2));
+    expect(buttons.every((b) => b.onTap == null), isTrue);
   });
 }

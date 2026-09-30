@@ -34,6 +34,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/lotties/mesh_wired_connection.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});
@@ -283,7 +284,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
 
-    return node.data.isMaster
+    final actions = node.data.isMaster
         ? [
             if (hasBlinkFunction &&
                 isCognitiveMeshRouter(
@@ -311,6 +312,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                     hardwareVersion: node.data.hardwareVersion))
               NodeInstantActions.reset,
           ];
+    // Blink is a diagnostic; reboot, pair and reset all change the network.
+    return ref.watch(readOnlyModeProvider)
+        ? actions.where((e) => e == NodeInstantActions.blink).toList()
+        : actions;
   }
 
   _handleSelectedNodeAction(
@@ -555,13 +560,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       context,
       title: loc(context).modalOfflineNodeTitle,
       actions: [
-        AppTextButton(
-          loc(context).modalOfflineRemoveNodeFromNetwork,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop('remove');
-          },
-        ),
+        if (!ref.read(readOnlyModeProvider))
+          AppTextButton(
+            loc(context).modalOfflineRemoveNodeFromNetwork,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              context.pop('remove');
+            },
+          ),
         AppTextButton(
           loc(context).close,
           onTap: () {

@@ -15,6 +15,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
@@ -45,11 +46,12 @@ void main() {
 
   tearDown(() => reset(mockServiceHelper));
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         pollingProvider.overrideWith(() => mockPollingNotifier),
+        readOnlyModeProvider.overrideWithValue(readOnly),
       ],
       child: const InstantTopologyView(),
     ));
@@ -135,6 +137,23 @@ void main() {
       await tester.tap(find.text('Yes, Factory Reset All'));
       await tester.pumpAndSettle();
       verify(mockTopologyNotifier.factoryReset(any)).called(1);
+    }, variants: ValueVariant({device1440w}));
+  });
+
+  group('read-only build', () {
+    testResponsiveWidgets('every node keeps only blink', (tester) async {
+      await pump(tester, readOnly: true);
+
+      expect(node(tester, 'Living room').actions, [NodeInstantActions.blink]);
+      expect(node(tester, 'Kitchen').actions, [NodeInstantActions.blink]);
+    }, variants: ValueVariant({device1440w}));
+
+    testResponsiveWidgets('blink still reaches the provider', (tester) async {
+      await pump(tester, readOnly: true);
+      node(tester, 'Living room').onActionTap!(NodeInstantActions.blink);
+      await tester.pumpAndSettle();
+
+      verify(mockTopologyNotifier.toggleBlinkNode(any)).called(1);
     }, variants: ValueVariant({device1440w}));
   });
 }

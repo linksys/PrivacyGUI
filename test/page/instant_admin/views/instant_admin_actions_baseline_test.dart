@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
@@ -65,9 +66,10 @@ void main() {
 
   tearDown(() => reset(mockServiceHelper));
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool readOnly = false}) async {
     await tester.pumpWidget(testableSingleRoute(
       overrides: [
+        readOnlyModeProvider.overrideWithValue(readOnly),
         routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
         timezoneProvider.overrideWith(() => mockTimezoneNotifier),
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
@@ -126,5 +128,25 @@ void main() {
     final button = find.byKey(const Key('manualUpdateButton'));
     await tester.ensureVisible(button);
     expect(tester.widget<AppTextButton>(button).onTap, isNotNull);
+  }, variants: responsiveDesktopVariants);
+
+  testResponsiveWidgets('a read-only build disables both direct writes',
+      (tester) async {
+    await pump(tester, readOnly: true);
+
+    final tile = find.byType(AppSwitchTriggerTile).first;
+    await tester.ensureVisible(tile);
+    expect(
+        tester
+            .widget<Switch>(
+                find.descendant(of: tile, matching: find.byType(Switch)))
+            .onChanged,
+        isNull);
+
+    final card = find.widgetWithText(AppListCard, 'Transmit Region');
+    await tester.ensureVisible(card);
+    expect(tester.widget<AppListCard>(card).onTap, isNull);
+    // Still shown, so the current region stays visible.
+    expect(find.text('Transmit Region'), findsOneWidget);
   }, variants: responsiveDesktopVariants);
 }
