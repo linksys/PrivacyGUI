@@ -451,7 +451,6 @@ snapshot that deliberately does not move under the user, so a live value routed 
 freezes. The test is **"can the user edit this value?"** — if not, **the view** `ref.watch`es the
 L1 provider directly, including from a status widget sitting inside the form. The notifier is not
 involved, so this does not bend Rule 2 below, which governs L2 notifiers reading L1.
-Audit: `doc/riverpod/listen_site_audit.md`.
 
 **Dirty Guard Implementation (Type A and Type B)**:
 - Use `PreservableAutoDisposeNotifierMixin` with the Notifier class
@@ -493,11 +492,11 @@ final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxDa
 
 **Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
 
-`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy (#1587).
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. An SSE notification MUST NOT refresh L2 at all: read-only values are read from L1 directly, so a push reaches the UI without touching the working copy.
 
 **A save does NOT currently detect that the device changed while the user was editing.** Every save compares the draft against the page-entry snapshot, never against the device's current value, so a value the device altered mid-edit is overwritten silently.
 
-Deferred deliberately, not overlooked: the editable fields on these pages are values a user sets, so the ordinary way to reach a conflict is a second editor. Detection belongs in `Preservable` and would therefore change the save behaviour of every form that uses it, and it needs a product decision about what to show. **The first observed conflict reopens it** — see #1587 Phase 3 for the measurements behind that judgement.
+This is a known gap, deferred deliberately rather than overlooked. Detection belongs in `Preservable`, so building it changes the save behaviour of every form at once and needs a product decision about what to show. **Do not work around it in a single page** — a per-page comparison puts a framework rule outside the framework, which is how the next page ends up without one.
 
 ```dart
 // ✅ Correct — one-time clone, no live tracking
