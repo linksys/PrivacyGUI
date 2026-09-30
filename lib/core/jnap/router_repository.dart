@@ -18,6 +18,7 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/command/bt_base_command.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/read_only_policy.dart';
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_queue.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -25,6 +26,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/ip_getter/get_local_ip.dart'
@@ -84,6 +86,7 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    _refuseInReadOnly([MapEntry(action, data)]);
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
@@ -117,6 +120,7 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    _refuseInReadOnly(builder.commands);
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
             ? CacheLevel.noCache
@@ -148,6 +152,27 @@ class RouterRepository {
       sideEffectManager.finishSideEffect();
       return record;
     }).then((result) => result as JNAPTransactionSuccessWrap);
+  }
+
+  // The one place a read-only build stops router writes. Everything that talks
+  // to the router goes through send or transaction - scheduledCommand calls
+  // send - so no caller needs a check of its own.
+  //
+  // A batch is refused whole: its results are paired back to actions by index,
+  // so sending the reads and dropping the write would misalign them.
+  //
+  // A plain JNAPError, not a subclass: several callers switch on the exact
+  // runtime type, and a subclass would fall through to "unknown error".
+  void _refuseInReadOnly(
+      Iterable<MapEntry<JNAPAction, Map<String, dynamic>>> commands) {
+    if (!ref.read(readOnlyModeProvider)) return;
+    final refused = commands
+        .where((entry) => !isAllowedInReadOnly(entry.key, entry.value))
+        .map((entry) => entry.key.name)
+        .toList();
+    if (refused.isEmpty) return;
+    logger.w('[ReadOnly]: refused ${refused.join(', ')}');
+    throw JNAPError(result: errorReadOnlyMode, error: refused.join(', '));
   }
 
   Future<TransactionHttpCommand> createTransaction(

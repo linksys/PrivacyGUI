@@ -44,6 +44,7 @@ String? errorCodeHelper(BuildContext context, String? code,
     errorVPNNotConnected => loc(context).vpnErrorVPNNotConnected,
     errorVPNUserAlreadyExists => loc(context).vpnErrorVPNUserAlreadyExists,
     errorVPNUserNotFound => loc(context).vpnErrorVPNUserNotFound,
+    errorReadOnlyMode => loc(context).readOnlyModeUnavailable,
     _ => unknownHandle(code),
   };
 }

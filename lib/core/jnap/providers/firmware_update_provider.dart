@@ -26,6 +26,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
@@ -369,6 +370,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
+    // The only router write that bypasses RouterRepository, so the read-only
+    // guard there cannot see it. Refused before polling is stopped below, which
+    // nothing would restart.
+    if (ref.read(readOnlyModeProvider)) {
+      throw ManualFirmwareUpdateException('ReadOnly');
+    }
     final client = LinksysHttpClient()
       ..timeoutMs = 300000
       ..retries = 0;

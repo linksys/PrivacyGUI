@@ -36,6 +36,9 @@ const errorInvalidDestinationIpAddress = "ErrorInvalidDestinationIPAddress";
 const errorMissingDestination = "ErrorMissingDestination";
 const errorRuleOverlap = "ErrorRulesOverlap";
 const errorGuestSSIDConflict = "ErrorGuestSSIDConflict";
+// Raised by the app itself, never by a router: a read-only build refused to
+// send a write.
+const errorReadOnlyMode = '_ErrorReadOnlyMode';
 // VPN
 const errorVPNNotConnected = "ErrorVPNNotConnected";
 const errorVPNUserAlreadyExists = "ErrorVPNUserAlreadyExists";

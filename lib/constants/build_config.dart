@@ -84,6 +84,13 @@ class BuildConfig {
   static const bool enableRemoteAssistance =
       bool.fromEnvironment('enable_remote_assistance', defaultValue: false);
 
+  // A read-only GUI: every router write is refused, and the controls that make
+  // one are disabled or hidden. Independent of `force` - a read-only build is
+  // expected to be a remote one, but nothing here assumes it. Read it through
+  // readOnlyModeProvider rather than directly, so a test can turn it on.
+  static const bool readOnly =
+      bool.fromEnvironment('read_only', defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

@@ -10,6 +10,10 @@ void main() {
       expect(BuildConfig.enableRemoteAssistance, isFalse);
     });
 
+    test('read-only stays off unless the build asks for it', () {
+      expect(BuildConfig.readOnly, isFalse);
+    });
+
     test('source revision is unknown when the build supplies none', () {
       expect(BuildConfig.sourceRevision, BuildConfig.unknownSourceRevision);
     });

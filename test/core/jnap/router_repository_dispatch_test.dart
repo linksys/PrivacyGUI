@@ -21,13 +21,16 @@ import 'package:http/http.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/read_only_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 /// Stands in for the HTTP client: records every command it is handed and
 /// answers OK, so a test can see exactly what left the repository.
@@ -42,10 +45,12 @@ class _RecordingExecutor with JNAPCommandExecutor<Response> {
       return Response(
           jsonEncode({
             keyJnapResult: jnapResultOk,
-            keyJnapResponses: List.generate(count, (i) => {
-                  keyJnapResult: jnapResultOk,
-                  keyJnapOutput: {'index': i},
-                }),
+            keyJnapResponses: List.generate(
+                count,
+                (i) => {
+                      keyJnapResult: jnapResultOk,
+                      keyJnapOutput: {'index': i},
+                    }),
           }),
           200);
     }
@@ -106,6 +111,14 @@ void main() {
   late ProviderContainer container;
   late RouterRepository repo;
 
+  ProviderContainer containerWith({required bool readOnly}) =>
+      ProviderContainer(overrides: [
+        connectivityProvider.overrideWith(() => _LocalConnectivityNotifier()),
+        readOnlyModeProvider.overrideWithValue(readOnly),
+        routerRepositoryProvider
+            .overrideWith((ref) => _TestRouterRepository(ref, recorder)),
+      ]);
+
   setUp(() {
     // Every service the app knows about, so that actions the app only enables
     // when the router advertises a service (clientDeauth, getWANExternal, ...)
@@ -113,11 +126,7 @@ void main() {
     buildBetterActions(
         JNAPService.appSupportedServices.map((s) => s.value).toList());
     recorder = _RecordingExecutor();
-    container = ProviderContainer(overrides: [
-      connectivityProvider.overrideWith(() => _LocalConnectivityNotifier()),
-      routerRepositoryProvider
-          .overrideWith((ref) => _TestRouterRepository(ref, recorder)),
-    ]);
+    container = containerWith(readOnly: false);
     repo = container.read(routerRepositoryProvider);
   });
 
@@ -193,7 +202,10 @@ void main() {
           .toList();
       expect(sent, [
         [JNAPAction.getWANSettings.actionValue, <String, dynamic>{}],
-        [JNAPAction.setWANSettings.actionValue, {'wanType': 'DHCP'}],
+        [
+          JNAPAction.setWANSettings.actionValue,
+          {'wanType': 'DHCP'}
+        ],
         [JNAPAction.reboot.actionValue, <String, dynamic>{}],
       ]);
       // Results are paired back to actions by index - which is why a guard must
@@ -203,8 +215,7 @@ void main() {
         JNAPAction.setWANSettings,
         JNAPAction.reboot,
       ]);
-      expect(
-          result.data.map((e) => (e.value as JNAPSuccess).output['index']),
+      expect(result.data.map((e) => (e.value as JNAPSuccess).output['index']),
           [0, 1, 2]);
     });
 
@@ -236,6 +247,78 @@ void main() {
       expect(results, hasLength(1));
       final command = recorder.executed.single as JNAPHttpCommand;
       expect(command.spec.action, JNAPAction.getDeviceInfo.actionValue);
+    });
+  });
+
+  // The same transport with the read-only guard switched on. The allowlist
+  // itself is pinned action by action in read_only_policy_test; what is pinned
+  // here is that the guard consults it, refuses before anything reaches the
+  // executor, and refuses in a form the app's error handling already knows.
+  group('read-only build', () {
+    late RouterRepository readOnlyRepo;
+
+    setUp(() {
+      container.dispose();
+      container = containerWith(readOnly: true);
+      readOnlyRepo = container.read(routerRepositoryProvider);
+    });
+
+    Matcher refusal() => isA<JNAPError>()
+        .having((e) => e.runtimeType, 'exact type', JNAPError)
+        .having((e) => e.result, 'result', errorReadOnlyMode);
+
+    final actions =
+        JNAPAction.values.where((a) => a != JNAPAction.transaction).toList();
+
+    for (final action in actions) {
+      final allowed = isAllowedInReadOnly(action, const {});
+      test('${allowed ? 'sends' : 'refuses'} ${action.name}', () async {
+        final future = readOnlyRepo.send(action,
+            fetchRemote: true, cacheLevel: CacheLevel.noCache);
+        if (allowed) {
+          await future;
+          expect(recorder.executed, hasLength(1));
+        } else {
+          await expectLater(future, throwsA(refusal()));
+          expect(recorder.executed, isEmpty);
+        }
+      });
+    }
+
+    test('sends the dashboard firmware check', () async {
+      await readOnlyRepo.send(JNAPAction.updateFirmwareNow,
+          data: {'onlyCheck': true},
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache);
+      expect(recorder.executed, hasLength(1));
+    });
+
+    test('sends a batch of reads', () async {
+      await readOnlyRepo.transaction(
+          JNAPTransactionBuilder(commands: [
+            const MapEntry(JNAPAction.getWANSettings, {}),
+            const MapEntry(JNAPAction.getDeviceInfo, {}),
+          ]),
+          fetchRemote: true);
+      expect(recorder.executed, hasLength(1));
+    });
+
+    test('refuses a whole batch that holds one write', () async {
+      // Results pair back to actions by index, so dropping the write and
+      // sending the rest would hand callers mismatched results.
+      await expectLater(
+          readOnlyRepo.transaction(
+              JNAPTransactionBuilder(commands: [
+                const MapEntry(JNAPAction.getWANSettings, {}),
+                const MapEntry(JNAPAction.setWANSettings, {'wanType': 'DHCP'}),
+              ]),
+              fetchRemote: true),
+          throwsA(refusal()));
+      expect(recorder.executed, isEmpty);
+    });
+
+    test('a refusal is not retried', () async {
+      expect(errorJNAPRetryList, isNot(contains(errorReadOnlyMode)));
     });
   });
 }
