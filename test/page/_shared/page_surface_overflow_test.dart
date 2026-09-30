@@ -164,6 +164,11 @@ void main() {
     expectedCellCount: 234,
   );
 
+  runOverflowSweep(
+    family: PageSurfaceFamily(kWifiSettingsMacFilterPageCase),
+    expectedCellCount: 234,
+  );
+
   // Wave 1 (#1377): five pages whose fixture was already written. See
   // `page_surface_cases.dart` for why these five, and `test/fixtures/page_roster.tsv`
   // for what is still queued.
@@ -457,11 +462,6 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kInstantPrivacyPageCase),
-    expectedCellCount: 234,
-  );
-
-  runOverflowSweep(
-    family: PageSurfaceFamily(kMacFilterPageCase),
     expectedCellCount: 234,
   );
 

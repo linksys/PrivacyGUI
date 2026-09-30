@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
-import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/families/page_surface_family.dart';
@@ -9,7 +9,7 @@ import '../../../mocks/provider_overrides/mock_mac_filter.dart';
 import '../../../mocks/test_data/scenes/mac_filter_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 
-/// The MAC Filter page: a single Deny/Off toggle (not a radio), and a list
+/// The MAC Filtering tab of Wi-Fi Settings: a single Deny/Off toggle (not a radio), and a list
 /// editor only when on. Untagged on purpose so `run_tests.sh` runs it. Hosted
 /// through the layout gate's [pageSurfaceHost] because `UspTopBar` reaches
 /// `GoRouter.of(context)` unguarded.
@@ -21,9 +21,10 @@ void main() {
   Widget host(String key, MacFilterState state) => KeyedSubtree(
         key: ValueKey(key),
         child: pageSurfaceHost(
-          view: const MacFilterView(),
+          view: const UspWifiSettingsView(
+              initialTab: UspWifiSettingsView.macFilterTab),
           locale: const Locale('en'),
-          overrides: macFilterOverrides(state),
+          overrides: wifiMacFilterTabOverrides(state: state),
         ),
       );
 

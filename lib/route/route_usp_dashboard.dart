@@ -155,12 +155,6 @@ final uspDashboardRoute = ShellRoute(
       preservableProvider: uspInstantPrivacyProvider.notifier,
     ),
     LinksysRoute(
-      name: RouteNamed.uspMacFilter,
-      path: RoutePath.uspMacFilter,
-      builder: (context, state) => const usp_mac_filter.MacFilterView(),
-      preservableProvider: uspMacFilterProvider.notifier,
-    ),
-    LinksysRoute(
       name: RouteNamed.uspAdmin,
       path: RoutePath.uspAdmin,
       builder: (context, state) => const UspAdminView(),

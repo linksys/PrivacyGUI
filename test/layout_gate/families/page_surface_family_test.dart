@@ -78,10 +78,10 @@ double _contentWidth(double screen) =>
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
   // "Cases" and not "pages", corrected by #1489: this list is sixty-two cases over
-  // forty-five pages, because six of those pages are swept more than once. The two
+  // forty-four pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -115,20 +115,23 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-two cases over forty-five pages, and which '
+      'the gate declares sixty-two cases over forty-four pages, and which '
       'sixty-two is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
-        'completion branches plus eight diagnostics screens, and #1636\'s new '
-        'page', () {
+        'completion branches plus eight diagnostics screens, and #1636\'s third '
+        'Wi-Fi tab', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
           'dhcp',
           'wifi_settings',
           'wifi_settings_advanced',
+          // #1636: MAC Filtering, the Wi-Fi page's third tab — beside its sibling
+          // tab, the placement #1489 set for tab cases.
+          'wifi_settings_mac_filter',
           'device_list',
           'device_detail',
           'topology',
@@ -195,9 +198,6 @@ void main() {
           'dmz',
           'firewall',
           'instant_privacy',
-          // #1636: a new page view, beside the page it shares one device filter
-          // with — see the note at the bottom of this comment.
-          'mac_filter',
           'instant_safety',
           'internet_settings',
           'ipv6_port_service',
@@ -363,16 +363,15 @@ void main() {
         // and a falsified limit. It is also the only one of the four where the count of
         // *pages* goes up without any page being newly reachable: 44 pages, 49 cases.
         //
-        // **#1636's one, which is a new page.** `mac_filter` is the fifth way: a
-        // page view that did not exist, added with its case rather than after it. It
-        // is Instant Privacy's `Deny` sibling over the same device filter, so its
-        // layout is the same toggle card and list editor at a different route — and
-        // being that close is the reason it gets a case of its own rather than
-        // inheriting `instant_privacy`'s: the list header's `Wrap` carries a
-        // different label, and an inherited clean result would be a claim about a
-        // string this page does not render. It arrived at zero, so `known_overflows
-        // .json` is unchanged. Recounted 2026-09-30: 62 cases, 45 swept pages of 47
-        // page-view files.
+        // **#1636's one, which is a tab and not a page.** `wifi_settings_mac_filter`
+        // is MAC Filtering, the Wi-Fi page's third tab — it shipped briefly as a page
+        // of its own (`mac_filter`) and moved under Wi-Fi Settings, so it adds a case
+        // and no page, the way #1489's tabs did. It is Instant Privacy's `Deny` sibling
+        // over the same device filter, and gets a case of its own rather than
+        // inheriting `instant_privacy`'s because the list header's `Wrap` carries a
+        // different label. The tab exists only when the device serves the filter
+        // (#1635), so the case grants that capability. Recounted 2026-09-30: 62
+        // cases, 44 swept pages of 46 page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

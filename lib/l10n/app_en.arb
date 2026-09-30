@@ -1496,7 +1496,6 @@
   "deviceAlreadyInAllowedList": "This device is already in the allowed list",
   "adding": "Adding…",
   "macFilter": "MAC Filtering",
-  "macFilterDesc": "Block devices by MAC address",
   "macFilterPageDesc": "Block the listed devices from joining your Wi-Fi by their MAC address. To let only chosen devices join instead, use Instant Privacy.",
   "macFilterModeDisabledDesc": "All devices can connect freely.",
   "macFilterModeDenyDesc": "Devices on the list are blocked; everyone else can connect.",

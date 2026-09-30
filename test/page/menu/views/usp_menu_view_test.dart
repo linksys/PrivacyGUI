@@ -12,12 +12,10 @@ import '../../../mocks/provider_overrides/mock_menu.dart';
 import '../../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../../util/app_test_fonts.dart';
 
-/// The menu's two entries onto the shared MAC filter (#1635, #1636).
+/// The menu's entries onto the shared MAC filter (#1636).
 ///
-/// The MAC Filter card is the first consumer of the capability layer, and the
-/// only thing that hides it on firmware without `X_LINKSYS_MACFilterMode` — so
-/// both directions are asserted here, off `deviceCapabilitiesProvider` alone,
-/// the way a feature is meant to ask.
+/// Only Instant Privacy has a card: MAC Filtering is a tab of Wi-Fi Settings,
+/// and its capability gate (#1635) lives on that page.
 ///
 /// The Instant Privacy badge reads the device's applied mode, and Instant
 /// Privacy is on only in `Allow` — MAC Filter's `Deny` must read as Off.
@@ -53,22 +51,15 @@ void main() {
   Finder card(String id) =>
       find.byWidgetPredicate((w) => w is AppMenuCard && w.identifier == id);
 
-  group('MAC Filter entry', () {
-    testWidgets('shown when the device serves the filter', (tester) async {
-      await pumpMenu(tester, 'cap-on',
-          capabilities:
-              DeviceCapabilities(const {DeviceCapability.wifiMacFilter}));
+  testWidgets('there is no MAC Filtering card — it is a Wi-Fi Settings tab',
+      (tester) async {
+    await pumpMenu(tester, 'no-mf-card',
+        capabilities:
+            DeviceCapabilities(const {DeviceCapability.wifiMacFilter}));
 
-      expect(card('menu-mac-filter'), findsOneWidget);
-    });
-
-    testWidgets('hidden when it does not', (tester) async {
-      await pumpMenu(tester, 'cap-off', capabilities: DeviceCapabilities.empty);
-
-      expect(card('menu-mac-filter'), findsNothing);
-      expect(card('menu-instant-privacy'), findsOneWidget,
-          reason: 'only the gated entry leaves; the rest of the menu stays');
-    });
+    expect(card('menu-mac-filter'), findsNothing,
+        reason: 'even on firmware that serves the filter (#1636)');
+    expect(card('menu-wifi-settings'), findsOneWidget);
   });
 
   group('Instant Privacy badge', () {

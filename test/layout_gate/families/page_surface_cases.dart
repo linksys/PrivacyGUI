@@ -110,7 +110,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_available
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
-import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
@@ -1988,20 +1988,25 @@ final kInstantPrivacyPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `mac_filter_view` — the network-wide MAC filter in `Deny` (#1636): one
-/// `AppSwitch` (Deny ⟷ Off — `Allow` is Instant Privacy's page), plus a list
-/// editor (header + Add button + device rows) that appears when it is on. The
-/// gate scene (`gateMacFilterState`) is Deny with a populated list, so header,
-/// Add button and rows all render at once. Instant Privacy is the same filter's
-/// Allow mode under a different route, so it keeps its own case above.
-final kMacFilterPageCase = PageSurfaceCase(
-  id: 'mac_filter',
-  view: () => const MacFilterView(),
-  overrides: () => macFilterOverrides(),
-  // The switch is always on screen and the Add button only when on, so the two
-  // together say the loaded, enabled page rendered — not a loader or the Off
-  // state, which would under-measure the list header.
-  requires: const [UspTopBar, AppSwitch, AppButton],
+/// `usp_wifi_settings_view` on its third tab — MAC Filtering (#1636), the
+/// network-wide MAC filter in `Deny`: one `AppSwitch` (Deny ⟷ Off — `Allow` is
+/// Instant Privacy's page), plus a list editor (header + Add button + device
+/// rows) that appears when it is on. The gate scene (`gateMacFilterState`) is Deny
+/// with a populated list, so header, Add button and rows all render at once.
+///
+/// A tab case like [kWifiSettingsAdvancedPageCase], so it opens the page on
+/// `initialTab: 2` and requires [MacFilterTab] — the one type no sibling case
+/// requires, which is how a cell knows it measured this tab. The tab exists only
+/// on firmware that serves the filter (#1635), so the case must also grant the
+/// capability: without it the page builds two tabs and `initialTab: 2` clamps
+/// onto Advanced, which [MacFilterTab] in `requires` turns into a red rather than
+/// 234 cells of the wrong tab.
+final kWifiSettingsMacFilterPageCase = PageSurfaceCase(
+  id: 'wifi_settings_mac_filter',
+  view: () =>
+      const UspWifiSettingsView(initialTab: UspWifiSettingsView.macFilterTab),
+  overrides: () => wifiMacFilterTabOverrides(),
+  requires: const [MacFilterTab, AppSwitch, AppButton],
   forbids: const [AppLoader, ServiceErrorView],
 );
 
@@ -2659,6 +2664,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
   kWifiSettingsAdvancedPageCase,
+  kWifiSettingsMacFilterPageCase,
   kDeviceListPageCase,
   kDeviceDetailPageCase,
   kTopologyPageCase,
@@ -2743,7 +2749,6 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kDmzPageCase,
   kFirewallPageCase,
   kInstantPrivacyPageCase,
-  kMacFilterPageCase,
   kInstantSafetyPageCase,
   kInternetSettingsPageCase,
   kIpv6PortServicePageCase,

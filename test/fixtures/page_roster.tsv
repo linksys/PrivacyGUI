@@ -431,10 +431,10 @@
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 47
-# swept 45
+# pages 46
+# swept 44
 # queued 0
-# measured 45
+# measured 44
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -471,7 +471,6 @@ lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	swept	19.9
 lib/page/login/views/local_reset_router_password_view.dart	swept	26.4
 lib/page/login/views/local_router_recovery_view.dart	swept	19.1
 lib/page/login/views/login_local_view.dart	swept	21.8
-lib/page/mac_filter/views/mac_filter_view.dart	swept	18.0
 lib/page/menu/views/usp_menu_view.dart	swept	23.0
 lib/page/port_forwarding/views/usp_port_forwarding_detail_view.dart	swept	21.6
 lib/page/remote_assistance/views/remote_assistance_confirm_view.dart	swept	13.4

@@ -321,8 +321,6 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspFirmwareOta,
   RouteNamed.uspSystemLog,
   RouteNamed.uspInstantPrivacy,
-  // #1636: Instant Privacy's Deny-mode sibling over the same device filter.
-  RouteNamed.uspMacFilter,
   RouteNamed.uspAdmin,
   RouteNamed.uspInstantSafety,
   RouteNamed.uspDhcpDetail,
@@ -422,7 +420,6 @@ void main() {
         RouteNamed.uspNodeDetail: '/uspTopology/uspNodeDetail',
         RouteNamed.uspInstantSafety: '/uspInstantSafety',
         RouteNamed.uspInstantPrivacy: '/uspInstantPrivacy',
-        RouteNamed.uspMacFilter: '/uspMacFilter',
         RouteNamed.uspAdmin: '/uspAdmin',
         RouteNamed.uspFirmwareUpdate: '/uspFirmwareUpdate',
         RouteNamed.uspFirmwareOta: '/uspFirmwareOta',
@@ -500,9 +497,6 @@ void main() {
             RouteNamed.uspFirmwareOta: RouteNamed.uspAdmin,
             RouteNamed.uspSystemLog: RouteNamed.uspMenu,
             RouteNamed.uspInstantPrivacy: RouteNamed.uspMenu,
-            // #1636 — its menu card is the entry, gated on the device's
-            // `wifiMacFilter` capability (#1635).
-            RouteNamed.uspMacFilter: RouteNamed.uspMenu,
             RouteNamed.uspAdmin: RouteNamed.uspMenu,
             RouteNamed.uspInstantSafety: RouteNamed.uspMenu,
             RouteNamed.uspDhcpDetail: RouteNamed.uspLocalNetwork,

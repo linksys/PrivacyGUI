@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
-import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/families/page_surface_family.dart';
@@ -275,23 +275,34 @@ void main() {
     });
   });
 
+  // MAC Filtering is a tab of Wi-Fi Settings: hosted on the real page so Save is
+  // the page's own bar, as a user meets it.
   group('MAC Filter', () {
-    const view = MacFilterView();
+    const view =
+        UspWifiSettingsView(initialTab: UspWifiSettingsView.macFilterTab);
     const toggleId = 'mac-filter-enable';
 
     testWidgets(
         'Allow (Instant Privacy on): off, and the allow list is not '
         'shown', (tester) async {
-      await pumpPage(tester, 'mf-allow', view,
-          macFilterOverrides(macFilter(MacFilterMode.allow, [allowed])));
+      await pumpPage(
+          tester,
+          'mf-allow',
+          view,
+          wifiMacFilterTabOverrides(
+              state: macFilter(MacFilterMode.allow, [allowed])));
 
       expect(toggle(tester, toggleId).value, isFalse);
       expect(find.text(allowed), findsNothing);
     });
 
     testWidgets('Allow: the page says Instant Privacy is on', (tester) async {
-      await pumpPage(tester, 'mf-allow-notice', view,
-          macFilterOverrides(macFilter(MacFilterMode.allow, [allowed])));
+      await pumpPage(
+          tester,
+          'mf-allow-notice',
+          view,
+          wifiMacFilterTabOverrides(
+              state: macFilter(MacFilterMode.allow, [allowed])));
 
       expect(find.text('Instant Privacy is currently on.', findRichText: true),
           findsOneWidget);
@@ -300,7 +311,7 @@ void main() {
     testWidgets('Deny / Disabled: no such notice', (tester) async {
       for (final mode in [MacFilterMode.deny, MacFilterMode.disabled]) {
         await pumpPage(tester, 'mf-no-notice-${mode.name}', view,
-            macFilterOverrides(macFilter(mode, [blocked])));
+            wifiMacFilterTabOverrides(state: macFilter(mode, [blocked])));
         expect(find.textContaining('is currently on.'), findsNothing,
             reason: mode.name);
       }
@@ -310,8 +321,12 @@ void main() {
         'Allow: the switch does not ask; Save does, and Cancel keeps '
         'the edit unsaved', (tester) async {
       final n = _RecordingMacFilter(macFilter(MacFilterMode.allow, [allowed]));
-      await pumpPage(tester, 'mf-allow-save-cancel', view,
-          [uspMacFilterProvider.overrideWith(() => n)]);
+      await pumpPage(
+          tester,
+          'mf-allow-save-cancel',
+          view,
+          wifiMacFilterTabOverrides(
+              macFilter: [uspMacFilterProvider.overrideWith(() => n)]));
 
       await tester.tap(find.byWidgetPredicate(
           (w) => w is AppSwitch && w.identifier == toggleId));
@@ -333,8 +348,12 @@ void main() {
 
     testWidgets('Allow: confirming on Save writes', (tester) async {
       final n = _RecordingMacFilter(macFilter(MacFilterMode.allow, [allowed]));
-      await pumpPage(tester, 'mf-allow-save-ok', view,
-          [uspMacFilterProvider.overrideWith(() => n)]);
+      await pumpPage(
+          tester,
+          'mf-allow-save-ok',
+          view,
+          wifiMacFilterTabOverrides(
+              macFilter: [uspMacFilterProvider.overrideWith(() => n)]));
 
       await tester.tap(find.byWidgetPredicate(
           (w) => w is AppSwitch && w.identifier == toggleId));
@@ -350,8 +369,12 @@ void main() {
 
     testWidgets('Deny: Save of an edit does not ask', (tester) async {
       final n = _RecordingMacFilter(macFilter(MacFilterMode.deny, [blocked]));
-      await pumpPage(tester, 'mf-deny-save', view,
-          [uspMacFilterProvider.overrideWith(() => n)]);
+      await pumpPage(
+          tester,
+          'mf-deny-save',
+          view,
+          wifiMacFilterTabOverrides(
+              macFilter: [uspMacFilterProvider.overrideWith(() => n)]));
 
       await tester.tap(find.byWidgetPredicate((w) =>
           w is AppIconButton && w.identifier == 'mac-filter-remove-$blocked'));
@@ -365,8 +388,12 @@ void main() {
     });
 
     testWidgets('Disabled: turning on does not ask', (tester) async {
-      await pumpPage(tester, 'mf-off', view,
-          macFilterOverrides(macFilter(MacFilterMode.disabled, [])));
+      await pumpPage(
+          tester,
+          'mf-off',
+          view,
+          wifiMacFilterTabOverrides(
+              state: macFilter(MacFilterMode.disabled, [])));
 
       await tester.tap(find.byWidgetPredicate(
           (w) => w is AppSwitch && w.identifier == toggleId));
