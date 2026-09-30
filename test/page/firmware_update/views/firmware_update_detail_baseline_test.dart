@@ -56,8 +56,7 @@ void main() {
     verify(mockFirmwareUpdateNotifier.updateFirmware()).called(1);
   });
 
-  testWidgets('Update All is absent when nothing is available',
-      (tester) async {
+  testWidgets('Update All is absent when nothing is available', (tester) async {
     when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(0);
     await pump(tester);
 

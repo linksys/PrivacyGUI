@@ -156,17 +156,19 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    AppTextButton submitButton(WidgetTester tester) => tester.widget(
-        find.widgetWithText(AppTextButton, 'Submit'));
+    AppTextButton submitButton(WidgetTester tester) =>
+        tester.widget(find.widgetWithText(AppTextButton, 'Submit'));
 
     testWidgets('submit runs the event once and returns its value',
         (tester) async {
       var calls = 0;
       String? result;
-      await open(tester, event: () async {
-        calls++;
-        return 'saved';
-      }, onResult: (value) => result = value);
+      await open(tester,
+          event: () async {
+            calls++;
+            return 'saved';
+          },
+          onResult: (value) => result = value);
 
       await tester.tap(find.text('Submit'));
       await tester.pumpAndSettle();
@@ -267,8 +269,7 @@ void main() {
       expect(taps, 1);
     }, variants: responsiveAllVariants);
 
-    testResponsiveWidgets('the inverse bar keeps the opt-out',
-        (tester) async {
+    testResponsiveWidgets('the inverse bar keeps the opt-out', (tester) async {
       await tester.pumpWidget(page(
           InversePageBottomBar(
             isPositiveEnabled: true,
@@ -283,7 +284,9 @@ void main() {
 
     testWidgets('copyWith keeps the opt-out', (tester) async {
       final bar = PageBottomBar(
-              isPositiveEnabled: true, allowInReadOnly: true, onPositiveTap: () {})
+              isPositiveEnabled: true,
+              allowInReadOnly: true,
+              onPositiveTap: () {})
           .copyWith(isPositiveEnabled: false);
       expect(bar.allowInReadOnly, isTrue);
     });

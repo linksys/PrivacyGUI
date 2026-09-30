@@ -73,10 +73,9 @@ void main() {
   /// Makes the page dirty the way an edit does: the provider's settings move
   /// away from what the page preserved on load.
   Future<void> makeDirty(WidgetTester tester) async {
-    vpn.state = VPNTestState.defaultState
-        .copyWith(
-            settings: VPNTestState.defaultState.settings
-                .copyWith(tunneledUserIP: '10.0.0.99'));
+    vpn.state = VPNTestState.defaultState.copyWith(
+        settings: VPNTestState.defaultState.settings
+            .copyWith(tunneledUserIP: '10.0.0.99'));
     await tester.pumpAndSettle();
   }
 

@@ -36,8 +36,7 @@ void main() {
         .thenReturn(TopologyTestData().testTopology1SlaveState);
     when(mockTopologyNotifier.reboot(any)).thenAnswer((_) async {});
     when(mockTopologyNotifier.factoryReset(any)).thenAnswer((_) async {});
-    when(mockTopologyNotifier.toggleBlinkNode(any))
-        .thenAnswer((_) async {});
+    when(mockTopologyNotifier.toggleBlinkNode(any)).thenAnswer((_) async {});
     when(mockServiceHelper.isSupportAutoOnboarding()).thenReturn(true);
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
     when(mockServiceHelper.isSupportChildReboot()).thenReturn(true);

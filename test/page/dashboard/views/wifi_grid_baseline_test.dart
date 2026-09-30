@@ -68,8 +68,7 @@ void main() {
 
   List<AppSwitch> switches(WidgetTester tester) => tester
       .widgetList<AppSwitch>(find.descendant(
-          of: find.byType(DashboardWiFiGrid),
-          matching: find.byType(AppSwitch)))
+          of: find.byType(DashboardWiFiGrid), matching: find.byType(AppSwitch)))
       .toList();
 
   testResponsiveWidgets('every network switch is live', (tester) async {

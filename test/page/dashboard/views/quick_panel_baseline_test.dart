@@ -47,8 +47,8 @@ void main() {
 
     when(mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
-    when(mockInstantPrivacyNotifier.save()).thenAnswer((_) async =>
-        InstantPrivacyState.fromMap(instantPrivacyTestState));
+    when(mockInstantPrivacyNotifier.save()).thenAnswer(
+        (_) async => InstantPrivacyState.fromMap(instantPrivacyTestState));
     when(mockNodeLightSettingsNotifier.build())
         .thenReturn(NodeLightSettings(isNightModeEnable: false));
     when(mockNodeLightSettingsNotifier.save())
