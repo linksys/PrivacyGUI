@@ -18,6 +18,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/select_network/providers/select_network_provider.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -108,8 +109,16 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');
-      router.goNamed(RouteNamed.cloudLoginAccount,
-          extra: {'error': 'Unexpected'});
+      // A read-only build has no account login to fall back to - it is
+      // redirected away - so it goes back to the session login, which shows
+      // the error instead.
+      if (ref.read(readOnlyModeProvider)) {
+        router.goNamed(RouteNamed.cloudLoginAuth,
+            queryParameters: {'error': 'Unexpected'});
+      } else {
+        router.goNamed(RouteNamed.cloudLoginAccount,
+            extra: {'error': 'Unexpected'});
+      }
     }
   }
 }

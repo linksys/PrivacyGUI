@@ -106,41 +106,27 @@ void main() {
     }
   });
 
-  test('no route builds anything but what its own builder returns', () {
-    // LinksysRoute wraps the builder it is given. Today that wrapper is a plain
-    // pass-through; a read-only build will make it conditional. Pin the
-    // pass-through by checking a route's config carries only the fields that
-    // exist today, and that every LinksysRoute has a builder.
+  test('every route has a builder', () {
     final routes = routesByName().values.whereType<LinksysRoute>().toList();
     expect(routes, isNotEmpty);
     for (final route in routes) {
       expect(route.builder, isNotNull, reason: route.name);
-      final config = route.config;
-      if (config != null) {
-        expect(
-          config.props,
-          [
-            config.column,
-            config.ignoreConnectivityEvent,
-            config.ignoreCloudOfflineEvent,
-            config.noNaviRail,
-          ],
-          reason: route.name,
-        );
-      }
     }
   });
 
+  // A write-only flow marked for read-only builds still renders its own page
+  // here; the marking only takes effect in a read-only build.
   testWidgets('a LinksysRoute renders exactly what its builder returns',
       (tester) async {
     final testRouter = GoRouter(routes: [
       LinksysRoute(
         path: '/',
-        config: const LinksysRouteConfig(noNaviRail: true),
+        config: const LinksysRouteConfig(noNaviRail: true, writeFlow: true),
         builder: (context, state) => const Text('the page'),
       ),
     ]);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: testRouter));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: testRouter)));
     await tester.pumpAndSettle();
 
     expect(find.text('the page'), findsOneWidget);

@@ -2,8 +2,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_blocked_view.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
@@ -26,6 +29,7 @@ class LinksysRouteConfig extends Equatable {
     this.ignoreConnectivityEvent = false,
     this.ignoreCloudOfflineEvent = false,
     this.noNaviRail,
+    this.writeFlow = false,
   });
 
   final ColumnGrid? column;
@@ -33,12 +37,19 @@ class LinksysRouteConfig extends Equatable {
   final bool ignoreCloudOfflineEvent;
   final bool? noNaviRail;
 
+  /// A flow whose only purpose is to write to the router. A read-only build
+  /// renders [ReadOnlyBlockedView] in its place. Used for flows the app pushes
+  /// into and awaits a result from; flows entered by goNamed or URL are
+  /// redirected instead (see readOnlyRedirect).
+  final bool writeFlow;
+
   @override
   List<Object?> get props => [
         column,
         ignoreConnectivityEvent,
         ignoreCloudOfflineEvent,
         noNaviRail,
+        writeFlow,
       ];
 }
 
@@ -55,6 +66,13 @@ class LinksysRoute extends GoRoute {
     this.config,
     super.routes = const <RouteBase>[],
   }) : super(builder: (context, state) {
+          // Swapped rather than redirected: callers of these flows push them
+          // and await a typed result, and the blocked page pops with null,
+          // which every such caller already handles.
+          if (config?.writeFlow == true &&
+              ProviderScope.containerOf(context).read(readOnlyModeProvider)) {
+            return const ReadOnlyBlockedView();
+          }
           return builder(context, state);
         });
 

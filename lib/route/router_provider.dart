@@ -60,6 +60,7 @@ import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
@@ -85,6 +86,22 @@ enum LocalWhereToGo {
   pnp,
   login,
   ;
+}
+
+/// Where a read-only build sends [location] instead, or null to let it through.
+///
+/// Covers the flows that are entered by goNamed or a typed URL and only exist
+/// to write: every PnP route (both trees share the [RoutePath.pnp] prefix), and
+/// cloud account login with its OTP steps, which would swap a remote
+/// assistance session for a full account session. PnP must not be entered at
+/// all - it also flips the login to local and pauses polling, which the
+/// transport guard cannot see.
+String? readOnlyRedirect(String location) {
+  if (location.startsWith(RoutePath.pnp) ||
+      location.startsWith(RoutePath.cloudLoginAccount)) {
+    return RoutePath.dashboardHome;
+  }
+  return null;
 }
 
 final routerKey = GlobalKey<NavigatorState>();
@@ -123,6 +140,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       addNodesRoute,
     ],
     redirect: (context, state) {
+      if (ref.read(readOnlyModeProvider)) {
+        final target = readOnlyRedirect(state.matchedLocation);
+        if (target != null) {
+          logger.i('[Route]: read-only: ${state.matchedLocation} -> $target');
+          return target;
+        }
+      }
       if (state.matchedLocation == '/') {
         return router._autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
