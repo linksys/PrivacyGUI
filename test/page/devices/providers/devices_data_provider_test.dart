@@ -478,7 +478,145 @@ void main() {
           )).called(1);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // linksys/PrivacyGUI#1631 — three publish sites, no ordering guard.
+  //
+  // This provider never used `invalidateSelf()`, so it never had riverpod's coalescing:
+  // two overlapping refreshes have always resolved in COMPLETION order rather than in the
+  // order the device was read. `connectedDevices` is the highest-frequency domain the app
+  // subscribes to, and `_refetchPreservingMesh` awaits WifiData with a 5s timeout before
+  // it even calls `fetch()`, so two events landing inside one window is the ordinary case
+  // on a busy network — not a race that needs contriving.
+  //
+  // Both tests below make the OLDER read finish LAST, which is the case that used to
+  // publish stale data with nothing to correct it.
+  // -------------------------------------------------------------------------
+  group('DevicesDataNotifier — #1631 ordering guard', () {
+    test('an older refresh finishing last does not publish', () async {
+      final sseController = StreamController<InvalidationEvent>.broadcast();
+      addTearDown(sseController.close);
+
+      // Three fetches: build()'s, then one per push. The two pushes are resolved OUT OF
+      // ORDER by hand — the older one completes last, which is the case that used to win.
+      final older = Completer<DevicesDataFetchResult>();
+      final newer = Completer<DevicesDataFetchResult>();
+      var calls = 0;
+      when(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((_) {
+        calls++;
+        if (calls == 1) return Future.value(_tagged('build'));
+        if (calls == 2) return older.future;
+        if (calls == 3) return newer.future;
+        return Future.value(_tagged('unexpected'));
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+          wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+          systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(null),
+          ),
+          sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+
+      // Two pushes, each past the debounce window, so both refreshes really start and
+      // both are in flight together.
+      sseController.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      sseController.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      expect(calls, 3, reason: 'both pushes must have started a fetch');
+
+      // Newer completes first, then the older one — the inversion this pins.
+      newer.complete(_tagged('newer'));
+      await Future.delayed(Duration.zero);
+      older.complete(_tagged('older'));
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(devicesDataProvider).valueOrNull?.hostNameByMac,
+          {'TAG': 'newer'},
+          reason:
+              'the newer read must survive the older one finishing after it');
+    });
+
+    test('a rebuild supersedes a refresh already in flight', () async {
+      final sseController = StreamController<InvalidationEvent>.broadcast();
+      addTearDown(sseController.close);
+
+      final inFlight = Completer<DevicesDataFetchResult>();
+      var call = 0;
+      when(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((_) {
+        call++;
+        // 1: build(). 2: the push refresh, held open. 3: the rebuild.
+        if (call == 2) return inFlight.future;
+        return Future.value(_tagged(call == 1 ? 'build' : 'rebuild'));
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+          wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+          systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(null),
+          ),
+          sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+
+      // A push refresh starts and blocks inside `fetch()`.
+      sseController.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      // THE CASE THIS PINS: a pull-to-refresh or a post-save invalidate while that push
+      // is still awaiting. `build()` bumps the generation, so the push must not publish
+      // when it finally returns — otherwise the user pulls to refresh and gets the value
+      // from before the pull.
+      final rebuilt = await container.refresh(devicesDataProvider.future);
+      expect(rebuilt.hostNameByMac, {'TAG': 'rebuild'});
+
+      inFlight.complete(_tagged('older'));
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(devicesDataProvider).valueOrNull?.hostNameByMac,
+          {'TAG': 'rebuild'},
+          reason: 'the rebuild wins; the superseded push must not republish');
+    });
+  });
 }
+
+/// A fetch result carrying nothing but a label, so a test can say WHICH read a published
+/// value came from. Counting clients would need a whole `MeshNetwork` per variant and
+/// would still only distinguish them by size.
+DevicesDataFetchResult _tagged(String tag) => DevicesDataFetchResult(
+      codegenContext: DevicesCodegenContext.empty,
+      hostNameByMac: {'TAG': tag},
+      meshNetwork: MeshNetwork(
+        master: MasterNode(deviceId: 'GATEWAY', model: 'M60TB'),
+      ),
+    );
 
 /// Test override for WifiDataNotifier.
 class _TestWifiDataNotifier extends WifiDataNotifier {
