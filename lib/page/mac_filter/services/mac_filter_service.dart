@@ -74,9 +74,13 @@ class UspMacFilterService {
   static String normalizeMac(String mac) =>
       mac.trim().toUpperCase().replaceAll('-', ':');
 
-  /// Fetches everything the page needs: the mode + list, and the connected
-  /// devices to populate the picker (mesh nodes excluded by role, as they are
-  /// never user-filterable clients).
+  /// Fetches everything the page needs: the mode + list, and the online
+  /// **wireless** clients — Instant Privacy's pre-fill and both pages' Add picker.
+  ///
+  /// Wireless only because the filter only ever applies to Wi-Fi (fronthaul
+  /// BSSes, linksys/FWDEV#194): a wired client is neither blocked nor admitted by
+  /// it, so pre-filling one would promise protection the list does not give.
+  /// Mesh nodes are excluded by role, as they are never user-filterable clients.
   Future<MacFilterFetchResult> fetchAll() async {
     try {
       final results = await Future.wait([
@@ -92,7 +96,7 @@ class UspMacFilterService {
           .where((d) =>
               !isMeshNodeRole(d.deviceRole) &&
               d.isActive &&
-              d.interface_.isNotEmpty &&
+              _isWireless(d) &&
               d.macAddress.isNotEmpty)
           .map((d) => MacFilterDeviceUIModel(
                 mac: normalizeMac(d.macAddress),
@@ -177,6 +181,17 @@ class UspMacFilterService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// Wi-Fi by where the host is attached: `Device.WiFi.Radio.N` on the bench,
+  /// where every wired client is `Device.Ethernet.Interface.1`. `InterfaceType`
+  /// (`Wi-Fi`) backs it up when the link path is absent. Same reading as
+  /// `mesh_network_builder.dart`'s `isWifi`.
+  static bool _isWireless(ConnectedDevice d) {
+    final type = d.interfaceType?.toLowerCase() ?? '';
+    return d.interface_.toLowerCase().contains('wifi') ||
+        type.contains('wi-fi') ||
+        type.contains('wifi');
   }
 
   /// Normalize every entry and drop duplicates, order-preserving.

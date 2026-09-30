@@ -115,6 +115,65 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // fetchAll — the online devices the pages offer
+  //
+  // The MAC filter applies to Wi-Fi only (fronthaul BSSes, linksys/FWDEV#194): a
+  // wired client is never blocked or admitted by it. So only wireless clients are
+  // offered — Instant Privacy's pre-fill and both pages' Add picker. Host shapes
+  // below are as the bench returns them: Wi-Fi via `Device.WiFi.Radio.N` and
+  // `InterfaceType: Wi-Fi`; every wired client via `Device.Ethernet.Interface.1`.
+  // ---------------------------------------------------------------------------
+
+  group('fetchAll', () {
+    Map<String, dynamic> host(int i, String mac,
+            {required String layer1, String? type, String active = '1'}) =>
+        {
+          'Device.Hosts.Host.$i.PhysAddress': mac,
+          'Device.Hosts.Host.$i.IPAddress': '192.168.1.${100 + i}',
+          'Device.Hosts.Host.$i.HostName': 'host$i',
+          'Device.Hosts.Host.$i.Active': active,
+          'Device.Hosts.Host.$i.Layer1Interface': layer1,
+          if (type != null) 'Device.Hosts.Host.$i.InterfaceType': type,
+        };
+
+    void stubHosts(Map<String, dynamic> hosts) {
+      when(() => usp.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments.first as List<String>;
+        return paths.first.startsWith('Device.Hosts.')
+            ? hosts
+            : {_modePath: 'Disabled', _listPath: ''};
+      });
+    }
+
+    test('offers online wireless clients only, never wired ones', () async {
+      stubHosts({
+        ...host(1, 'ee:52:09:f8:2e:95',
+            layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        ...host(2, 'aa:bb:cc:00:00:02',
+            layer1: 'Device.Ethernet.Interface.1', type: 'Ethernet'),
+        // No InterfaceType at all: Layer1Interface alone decides.
+        ...host(3, 'aa:bb:cc:00:00:03', layer1: 'Device.Ethernet.Interface.1'),
+        ...host(4, 'aa:bb:cc:00:00:04', layer1: 'Device.WiFi.Radio.1'),
+      });
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => d.mac),
+          ['EE:52:09:F8:2E:95', 'AA:BB:CC:00:00:04']);
+    });
+
+    test('an offline Wi-Fi client is not offered', () async {
+      stubHosts({
+        ...host(1, 'ce:dc:79:1d:0c:ab', layer1: '', type: 'Wi-Fi', active: '0'),
+      });
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices, isEmpty);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // setMacFilter — write side (validate, JSON-encode, operate)
   // ---------------------------------------------------------------------------
 
