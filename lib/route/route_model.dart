@@ -61,6 +61,18 @@ class LinksysRouteConfig extends Equatable {
 /// intact, and the guard still runs when that page finally leaves the stack.
 /// Prompting on a push would ask the user to decide something they have not done
 /// yet. Pinned in `test/framework/linksys_route_test.dart`.
+///
+/// ## Passing [preservableProvider] is what turns the guard on
+///
+/// There is no separate switch. Pass the page's notifier provider as
+/// `usp{Domain}Provider.notifier` — the notifier already implements
+/// [PreservableContract] through the preservable mixin, so nothing needs to
+/// re-expose it. Write a provider of your own only when one page's dirty state
+/// spans more than one notifier, as the Wi-Fi page's `_WifiPageDirtyProxy` does.
+///
+/// This used to be two parameters, the provider and a boolean switch, and the
+/// guard ran only when both were set. Setting just one compiled, passed every
+/// test and silently left the page unguarded (#1622).
 class LinksysRoute extends GoRoute {
   final LinksysRouteConfig? config;
   LinksysRoute({
@@ -73,9 +85,7 @@ class LinksysRoute extends GoRoute {
     FutureOr<bool> Function(BuildContext, GoRouterState)? onExit,
     this.config,
     super.routes = const <RouteBase>[],
-    // New parameters for dirty checking
-    ProviderBase<PreservableContract>? preservableProvider,
-    bool enableDirtyCheck = false,
+    ProviderListenable<PreservableContract>? preservableProvider,
     Future<bool?> Function(BuildContext)? showAlertForTest,
   }) : super(
           onExit: (context, state) async {
@@ -87,8 +97,7 @@ class LinksysRoute extends GoRoute {
               if (!context.mounted) return true;
             }
 
-            // If dirty checking is enabled and a provider is given...
-            if (enableDirtyCheck && preservableProvider != null) {
+            if (preservableProvider != null) {
               final container = ProviderScope.containerOf(context);
               final notifier = container.read(preservableProvider);
 

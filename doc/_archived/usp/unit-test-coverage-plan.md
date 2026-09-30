@@ -1,5 +1,10 @@
 # Unit Test Coverage Expansion Plan
 
+> ⚠️ **歷史記錄，不是現行設計。** 本文描述的 `onSseInvalidation()` 與它的 dirty guard
+> **已在 #1587 Phase 1 刪除** —— 那個機制在頁面 idle 時重新取值(本來也沒人會被害),
+> 在頁面 dirty 時刻意不動(而那正是舊值被寫回裝置的那一刻)。本文的程式碼片段**不可當範本複製**。
+> 現行規則見 `constitution.md` Article IV。
+
 ## Context
 
 Issue #704 identifies critical test coverage gaps: **28 test files / ~223 testable source files = ~12% file coverage**. The project has well-structured, testable architecture (thin services over codegen, uniform notifier mixin, Riverpod DI) but most business logic is untested.

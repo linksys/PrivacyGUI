@@ -72,6 +72,20 @@ final wifiDataProvider =
 
 // ---------------------------------------------------------------------------
 // Notifier (NOT autoDispose — persists for dashboard card lifetime)
+//
+// WHO KEEPS THIS WARM, AS OF #1587 PHASE 1 — eight `watch` sites, verified rather than
+// assumed: `usp_stats_panel` (whose `'stats_panel'` id is in all five dashboard layouts
+// in `usp_dashboard_preset.dart`), `system_health_provider`, three Statistics sections,
+// and three Wi-Fi Settings cards.
+//
+// Until Phase 1 there was a holder nobody counted: the `onSseInvalidation()` wiring on
+// the Wi-Fi notifiers held a `ref.listen` here for their whole lifetime. Deleting it
+// broke the one caller depending on that side effect — `usp_wifi_advanced_provider`'s DFS
+// remediation, which read this provider with a bare `ref.read` and silently got nothing.
+//
+// ⚠️ The invariant to keep is NOT "someone watches this". Which of those eight are mounted
+// depends on the route and the dashboard preset, so counting them proves availability in
+// practice, never at a given moment. A caller that NEEDS THE VALUE must await `.future`.
 // ---------------------------------------------------------------------------
 
 class WifiDataNotifier extends AsyncNotifier<WifiData> {

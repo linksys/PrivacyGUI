@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_settings.dart';
@@ -22,13 +21,6 @@ import 'package:privacy_gui/page/internet_settings/services/usp_internet_setting
 final uspInternetSettingsProvider = AutoDisposeNotifierProvider<
     UspInternetSettingsNotifier, InternetSettingsFeatureState>(
   UspInternetSettingsNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspInternetSettingsProvider = AutoDisposeProvider<
-    PreservableContract<InternetSettingsSettings, InternetSettingsStatus>>(
-  (ref) => ref.watch(uspInternetSettingsProvider.notifier),
 );
 
 /// Service provider — stateless, created from the current UspClient.

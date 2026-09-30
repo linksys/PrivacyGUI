@@ -329,60 +329,6 @@ void main() {
     }, tags: 'dirty-guard-framework');
   });
 
-  group('_PreservableDelegate — onSseInvalidation', () {
-    late ProviderContainer container;
-    late TestNotifier notifier;
-
-    setUp(() {
-      container = ProviderContainer();
-      final provider =
-          NotifierProvider<TestNotifier, TestState>(TestNotifier.new);
-      notifier = container.read(provider.notifier);
-    });
-
-    test('onSseInvalidation() skips fetch when dirty', () async {
-      notifier.updateValue('unsaved edit');
-      expect(notifier.isDirty(), isTrue);
-
-      final countBefore = notifier.fetchCallCount;
-      notifier.onSseInvalidation();
-      await Future.delayed(Duration.zero);
-
-      // performFetch should NOT have been called
-      expect(notifier.fetchCallCount, equals(countBefore));
-      // Unsaved edit preserved
-      expect(notifier.state.settings.current.value, 'unsaved edit');
-    }, tags: 'dirty-guard-framework');
-
-    test('onSseInvalidation() triggers fetch when clean', () async {
-      expect(notifier.isDirty(), isFalse);
-
-      final countBefore = notifier.fetchCallCount;
-      notifier.onSseInvalidation();
-      await Future.delayed(Duration.zero);
-
-      // performFetch SHOULD have been called
-      expect(notifier.fetchCallCount, greaterThan(countBefore));
-      expect(notifier.state.settings.current.value, 'fetched');
-    }, tags: 'dirty-guard-framework');
-
-    test('onSseInvalidation() fetch error is caught gracefully', () async {
-      expect(notifier.isDirty(), isFalse);
-
-      notifier.fetchOverride =
-          ({forceRemote = false, updateStatusOnly = false}) async {
-        throw Exception('network error');
-      };
-
-      // Should not throw — error is caught by catchError in delegate
-      notifier.onSseInvalidation();
-      await Future.delayed(Duration.zero);
-
-      // State should remain as initial (error was caught, not propagated)
-      expect(notifier.state.settings.current.value, 'initial');
-    }, tags: 'dirty-guard-framework');
-  });
-
   group('_PreservableDelegate — error display path', () {
     late ProviderContainer container;
     late TestNotifier notifier;
@@ -605,26 +551,6 @@ void main() {
 
       expect(notifier.isDirty(), isFalse);
       expect(notifier.state.settings.original.value, 'new value');
-    }, tags: 'dirty-guard-framework');
-
-    test('onSseInvalidation() skips fetch when dirty', () async {
-      notifier.updateValue('unsaved');
-      final countBefore = notifier.fetchCallCount;
-
-      notifier.onSseInvalidation();
-      await Future.delayed(Duration.zero);
-
-      expect(notifier.fetchCallCount, equals(countBefore));
-    }, tags: 'dirty-guard-framework');
-
-    test('onSseInvalidation() triggers fetch when clean', () async {
-      final countBefore = notifier.fetchCallCount;
-
-      notifier.onSseInvalidation();
-      await Future.delayed(Duration.zero);
-
-      expect(notifier.fetchCallCount, greaterThan(countBefore));
-      expect(notifier.state.settings.current.value, 'fetched');
     }, tags: 'dirty-guard-framework');
   });
 

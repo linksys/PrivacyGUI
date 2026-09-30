@@ -38,8 +38,10 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// `InvalidationDomain.wanStatus` so a push refreshes it.
 ///
 /// The alternative — giving the notifier an `onSseInvalidation()` listener — was
-/// rejected in #1587: the dirty guard skips the refresh exactly when the page is
-/// dirty, which is the one state where stale values get written back on save.
+/// rejected in #1587 and that hook has since been DELETED (Phase 1): its dirty guard
+/// skipped the refresh exactly when the page was dirty, which is the one state where
+/// stale values get written back on save. It protected the harmless case and stepped
+/// aside from the harmful one.
 ///
 /// ⚠️ This banner infers online/offline from the address being non-empty, while
 /// `usp_network_status_card.dart` uses `wan.isUp`. The two disagree while a link is up

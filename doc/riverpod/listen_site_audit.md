@@ -105,6 +105,23 @@ population.
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
 | 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here**, comparing against the input the last `_fetch()` consumed rather than against `prev`; the `state.hasValue` half of this guard was also dropping settles that raced the fetch — see "The one caveat on the zero" above. |
 
+> ⚠️ **SITES 10, 11 AND 12 NO LONGER EXIST.** They were the three `ref.listen` calls that
+> drove `onSseInvalidation()` from an L1 provider — in `usp_wifi_advanced_provider`,
+> `usp_wifi_settings_provider` and `usp_firewall_notifier`. The whole mechanism was **deleted in
+> #1587 Phase 1** (2026-09-29), together with the four SSE-domain wirings in `usp_dmz_notifier`,
+> `usp_dhcp_reservations_notifier`, `usp_port_forwarding_page_notifier` and
+> `usp_static_routing_notifier`.
+>
+> Their rows and the code samples below are kept as the record of what was measured, not as a
+> description of the current tree. The `isLoading` guards discussed here went with them.
+>
+> One thing that outlived the deletion and is worth carrying forward: `performSave` in
+> `usp_wifi_advanced_provider` read `ref.read(wifiDataProvider).valueOrNull` and only worked
+> because site 10's `ref.listen` kept that provider subscribed. With the listener gone the read
+> returned `AsyncLoading`, and the DFS channel remediation silently did nothing. It now awaits
+> `.future`. **A `ref.read` of an L1 provider is only safe while something else holds a
+> subscription** — the same lesson as #1615, from the other direction.
+
 ### `wifiDataProvider` — 3
 
 `wifiDataProvider` **used to** refetch via a 500 ms debounced `ref.invalidateSelf()`, so it emitted a
@@ -406,6 +423,77 @@ prescriptions, and the first shipped version of the site-8 diff (`==` on a `List
 drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
+
+
+## Bare `ref.read` of an L1 provider — the sites this audit did not cover (2026-09-29, #1634)
+
+`ref.read(xDataProvider).valueOrNull` returns null unless something else is holding L1 built
+and settled. Deleting `onSseInvalidation()` (#1587 Phase 1) removed one such holder and broke
+exactly one caller — the Wi-Fi Advanced DFS remediation, where an empty `radioModels` meant no
+radio was recognised as parked on a DFS channel and the remediation silently did nothing. Fixed
+by awaiting `.future` with one `refresh` retry, pinned by two tests that are red against the old
+code.
+
+**Two sibling files have the same shape and were NOT changed:**
+
+```
+lib/page/dashboard/providers/pdf_report_data_provider.dart:29-66   13 reads
+lib/page/admin/providers/system_info_data_provider.dart:62          1 read (firmwareBanksDataProvider)
+```
+
+⚠️ The second path is `page/admin/`, not `page/dashboard/` — the review that raised these
+said `dashboard`, and the file is not there. Counts and the line number check out.
+
+Every provider they read is `watch`ed somewhere in `lib/`, so in practice a subscriber usually
+exists — but whether one exists *at that moment* depends on which dashboard preset is mounted,
+which is the "correct by coincidence" shape #1615 was about, and no test would catch the
+coincidence breaking.
+
+They are left alone deliberately, on severity rather than on principle: the PDF report's fields
+are nullable and a missing one drops a section from a generated document. The DFS case wrote a
+wrong configuration to the radio. Same defect, different blast radius — and rewriting 14 reads
+inside a PR whose subject is a deletion would bury the deletion.
+
+⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
+holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
+
+## #1587 Phase 0 and Phase 2 — the rule, and the audit behind it (2026-09-29)
+
+**Phase 0's remaining item** was a gap in `constitution.md` Article IV's page-type
+classification: it told Type C pages to read L1 directly and said nothing about Type A or
+Type B, leaving the case this defect came from undescribed. Now stated there, scoped to the
+view layer so it cannot be read as bending Rule 2, which governs notifiers.
+
+**Phase 2's remaining items** were the audit below and the instruction to record it either way.
+
+The question: do Local Network, Devices or Wi-Fi show a live value through their L2 working copy,
+the way the Internet Settings banner did before #1613?
+
+**No. All three already read their L1 providers directly.**
+
+```
+local_network   lanDataProvider · ethernetDataProvider · dhcpDataProvider
+devices         devicesDataProvider
+wifi_settings   wifiDataProvider · devicesDataProvider
+```
+
+`readOnlyInfo` — the field that carried the defect — exists only in `internet_settings`, and the
+two `readOnly:` references in `usp_local_network_view.dart` are a text field's input property,
+not a data source.
+
+⚠️ **The `Status` halves are not purely UI state, which is the part worth stating precisely.**
+Local Network and Wi-Fi Advanced hold only loading/saving/error plus derived values
+(`validationErrors`, `lockedOctetCount`), but `wifi_settings_status.dart` also carries
+`quickSetupMainAggregate` / `quickSetupGuestAggregate` — device data, not UI state.
+
+They are not a counterexample, and the reason is what the rule actually turns on: **no view
+reads them.** They hold the SSID and access-point instance paths a fan-out save needs
+(`usp_wifi_settings_service.dart:241`), consumed only by the notifier and the service. Nothing
+about them is displayed, so nothing about them can go stale on screen. Device data living in L2
+is fine when it feeds the save path; it is a defect when it feeds the screen.
+
+Recorded because the answer is "nothing to change": without this the next person re-runs the
+search, and a Phase 2 item stays open forever because its result was never written down.
 
 ## Verification
 
