@@ -153,6 +153,49 @@ void main() {
           reason: 'Save would send Allow with an empty list and fail');
     });
 
+    // Turning on pre-fills every online device, so with more than 64 online the
+    // list starts over the limit. The firmware refuses more than 64, so Save
+    // stays off until rows are removed — and comes back once they are.
+    testWidgets('an over-full allow list cannot be saved until trimmed',
+        (tester) async {
+      final online = [
+        for (var i = 0; i <= UspMacFilterService.maxAddresses; i++)
+          MacFilterDeviceUIModel(
+            mac: 'AA:BB:CC:DD:EE:${i.toRadixString(16).padLeft(2, '0')}'
+                .toUpperCase(),
+            displayName: 'Device $i',
+          ),
+      ];
+      await pumpPage(
+          tester,
+          'ip-over',
+          view,
+          instantPrivacyOverrides(
+              privacy(MacFilterMode.disabled, [], online: online)));
+
+      await tester.tap(find.byWidgetPredicate(
+          (w) => w is AppSwitch && w.identifier == toggleId));
+      await settle(tester);
+
+      expect(tester.widget<AppButton>(saveButton()).onTap, isNull,
+          reason: '${online.length} addresses is over the '
+              '${UspMacFilterService.maxAddresses} the firmware accepts');
+
+      // 65 rows reach past the surface, so scroll the last one in — and pump,
+      // because the scroll only moves the row on the next layout; tapping
+      // straight after taps where the row used to be.
+      final remove = find.byWidgetPredicate((w) =>
+          w is AppIconButton &&
+          w.identifier == 'instant-privacy-remove-${online.last.mac}');
+      await tester.ensureVisible(remove);
+      await settle(tester);
+      await tester.tap(remove);
+      await settle(tester);
+
+      expect(tester.widget<AppButton>(saveButton()).onTap, isNotNull,
+          reason: 'at exactly the limit the list is saveable again');
+    });
+
     testWidgets('a full allow list offers no Add', (tester) async {
       final full = [
         for (var i = 0; i < UspMacFilterService.maxAddresses; i++)
@@ -211,6 +254,12 @@ void main() {
 
       expect(find.byType(AppDialog), findsNothing);
       expect(toggle(tester, toggleId).value, isTrue);
+      // Unlike Instant Privacy, MAC Filter never pre-fills: the online devices
+      // are the Add picker's options, not the starting block list.
+      for (final d in devices) {
+        expect(find.text(d.mac), findsNothing,
+            reason: '${d.mac} is online, and must not start out blocked');
+      }
     });
   });
 }

@@ -57,12 +57,16 @@ class InstantPrivacyView extends ConsumerWidget {
   UiKitBottomBarConfig? _buildBottomBar(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     if (!state.isDirty) return null;
-    // `Allow` with an empty list is refused by the firmware, so an allow list
-    // emptied row by row cannot be saved; turning the switch off is the way out.
-    final emptiedAllowList = state.isEnabled && state.allowedMacs.isEmpty;
+    // The firmware refuses `Allow` with an empty list and any list over the
+    // limit, so neither can be saved. Turning on pre-fills every online device,
+    // so the list can start over the limit: rows are removed until it fits, or
+    // the switch is turned back off.
+    final macs = state.allowedMacs;
+    final unsaveable = state.isEnabled &&
+        (macs.isEmpty || macs.length > UspMacFilterService.maxAddresses);
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled: !state.status.isSaving && !emptiedAllowList,
+      isPositiveEnabled: !state.status.isSaving && !unsaveable,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
           ref.read(uspInstantPrivacyProvider.notifier).revert(),
