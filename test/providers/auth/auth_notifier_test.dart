@@ -606,6 +606,71 @@ void main() {
     });
   });
 
+  group('AuthNotifier - logout re-entered from its own teardown', () {
+    // Measured on QA Guardian, 2026-09-30: after End Session the remote SSE
+    // disconnect cleanup read `/subscriptions` with the token the session had
+    // just deleted, the bridge's 401 handler called `logout()`, and that logout
+    // disconnected SSE again — 770 teardowns in four minutes, each one another
+    // request to Guardian. A logout that is already running is the answer to
+    // every logout asked for while it runs.
+    late _SpySessionStrategy spy;
+
+    setUp(() => spy = _SpySessionStrategy());
+
+    ProviderContainer containerWithSpy() => ProviderContainer(
+          overrides: [
+            authServiceProvider.overrideWithValue(mockAuthService),
+            uspAuthCoordinatorProvider.overrideWithValue(mockUspCoordinator),
+            sseManagerProvider.overrideWithValue(mockSseManager),
+            routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
+            sessionServiceProvider.overrideWithValue(mockSessionService),
+            uspClientProvider.overrideWithValue(mockUspClient),
+            appModeProfileProvider
+                .overrideWithValue(_SpyModeProfile(session: spy)),
+          ],
+        );
+
+    test('a logout asked for mid-teardown joins it rather than restarting it',
+        () async {
+      final container = containerWithSpy();
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(authProvider.notifier);
+
+      // The loop's shape: tearing SSE down is what asks for the next logout.
+      Future<void>? reentered;
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {
+        reentered ??= notifier.logout();
+      });
+
+      await notifier.logout(cause: EndCause.userRequested);
+      await reentered;
+
+      verify(() => mockSseManager.disconnect()).called(1);
+      verify(() => mockAuthService.clearAllCredentials()).called(1);
+      // The first caller's cause stands: the user asked to end it, and that is
+      // what decided whether Guardian was told.
+      expect(spy.calls, [EndCause.userRequested]);
+    });
+
+    test('a later logout, once the first has finished, runs again', () async {
+      // The guard covers one teardown, not the notifier's lifetime: a second
+      // session in the same tab must still be able to end.
+      final container = containerWithSpy();
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(authProvider.notifier);
+
+      await notifier.logout();
+      await notifier.logout();
+
+      expect(spy.calls, hasLength(2));
+      verify(() => mockSseManager.disconnect()).called(2);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // getPasswordHint / getAdminPasswordAuthStatus
   // ---------------------------------------------------------------------------

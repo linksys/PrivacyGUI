@@ -94,11 +94,25 @@ class UspBridgeClient {
   /// Local mode: delegates to [UspClient.reauth] then retries once.
   /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
   /// [onAuthFailed] and throws [SessionExpiredException].
+  ///
+  /// [teardown] marks a request made *while a session is being torn down* — the
+  /// best-effort cleanup after an intentional disconnect. Its 401 is still thrown,
+  /// but neither retried nor reported through [onAuthFailed]: the credential has
+  /// usually just been spent on purpose (the End Session DELETE answers 204 before
+  /// the cleanup reads go out), so the 401 is expected, and reporting it asks for a
+  /// logout from inside the logout that caused it. On QA Guardian that looped 770
+  /// times in four minutes (2026-09-30).
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
-    T Function(http.Response) parser,
-  ) async {
+    T Function(http.Response) parser, {
+    bool teardown = false,
+  }) async {
     var response = await request();
+    if (response.statusCode == 401 && teardown) {
+      debugPrint(
+          '[UspBridgeClient] 401 during teardown — expected, not reported');
+      throw SessionExpiredException('401 during teardown');
+    }
     if (response.statusCode == 401) {
       if (_authBehavior.shouldRetryOnFailure) {
         // Local mode: reauth + retry
@@ -509,10 +523,14 @@ class UspBridgeClient {
   }
 
   /// Unregisters an existing subscription.
+  ///
+  /// [teardown]: see [_withAuthRetry].
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
+    bool teardown = false,
   }) async {
     return _withAuthRetry(
+      teardown: teardown,
       () => http.post(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
@@ -526,8 +544,11 @@ class UspBridgeClient {
   }
 
   /// Lists all active subscriptions (Remote mode only).
-  Future<List<String>> listSubscriptions() async {
+  ///
+  /// [teardown]: see [_withAuthRetry].
+  Future<List<String>> listSubscriptions({bool teardown = false}) async {
     final response = await _withAuthRetry(
+      teardown: teardown,
       () => http.get(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,

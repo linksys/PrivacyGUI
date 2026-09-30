@@ -54,10 +54,11 @@ class UspBridgeClient {
 
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
+    bool teardown = false,
   }) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
-  Future<List<String>> listSubscriptions() =>
+  Future<List<String>> listSubscriptions({bool teardown = false}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> turboStart() =>

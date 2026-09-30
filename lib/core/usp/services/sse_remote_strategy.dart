@@ -182,11 +182,17 @@ class RemoteSseStrategy implements SseOperationStrategy {
   }
 
   void _fireAndForgetCleanup() {
-    // Query existing subscriptions and unregister only remote ones (best-effort)
-    _bridge.listSubscriptions().then((ids) {
+    // Query existing subscriptions and unregister only remote ones (best-effort).
+    //
+    // `teardown: true` on both: an intentional disconnect is almost always a
+    // logout, which has already spent the credential, so a 401 here is the
+    // expected answer. Reported as a session loss, it asked for a logout from
+    // inside the logout that caused it — a loop, measured on QA Guardian at 770
+    // teardowns in four minutes.
+    _bridge.listSubscriptions(teardown: true).then((ids) {
       for (final id in ids) {
         if (_isRemoteId(id)) {
-          _bridge.unsubscribe(subscriptionId: id).ignore();
+          _bridge.unsubscribe(subscriptionId: id, teardown: true).ignore();
         }
       }
     }).ignore();

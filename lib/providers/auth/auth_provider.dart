@@ -28,6 +28,9 @@ final authProvider =
 class AuthNotifier extends AsyncNotifier<AuthState> {
   Completer<AuthState?>? _initInProgress;
 
+  /// The teardown in flight, if any; see [logout].
+  Future<void>? _logoutInProgress;
+
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
@@ -238,7 +241,29 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// timer, whereas an *attempted* one on a rejected token is a guaranteed failure
   /// on the commonest path. The three button handlers pass
   /// [EndCause.userRequested] explicitly.
-  Future logout({EndCause cause = EndCause.sessionLost}) async {
+  ///
+  /// **One teardown at a time.** A logout asked for while one is running joins
+  /// it and returns when it finishes, rather than starting a second. The
+  /// teardown itself makes requests with the credential it is ending, and any
+  /// of them can answer 401 — which the bridge reports by calling this method.
+  /// Unguarded, that closed a loop on QA Guardian (2026-09-30): every teardown
+  /// disconnected SSE, the remote disconnect cleanup read `/subscriptions`, the
+  /// 401 asked for another logout, 770 times in four minutes. The first
+  /// caller's [cause] stands, because it is the one that decided whether
+  /// Guardian was told the session ended.
+  Future logout({EndCause cause = EndCause.sessionLost}) {
+    final running = _logoutInProgress;
+    if (running != null) {
+      logger.d('[Auth]: logout: already in progress (cause: ${cause.name}) '
+          '— joining it');
+      return running;
+    }
+    final teardown = _logout(cause);
+    _logoutInProgress = teardown;
+    return teardown.whenComplete(() => _logoutInProgress = null);
+  }
+
+  Future<void> _logout(EndCause cause) async {
     logger.d('[Auth]: logout: starting (cause: ${cause.name})');
     state = const AsyncValue.loading();
 
