@@ -16,6 +16,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/read_only/read_only_blocked_view.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -60,16 +63,16 @@ void main() {
     }
   });
 
-  group('app router', () {
-    GoRouterState stateFor(GoRouter router, String location) => GoRouterState(
-          router.configuration,
-          uri: Uri.parse(location),
-          matchedLocation: location,
-          fullPath: location,
-          pathParameters: const {},
-          pageKey: ValueKey(location),
-        );
+  GoRouterState stateFor(GoRouter router, String location) => GoRouterState(
+        router.configuration,
+        uri: Uri.parse(location),
+        matchedLocation: location,
+        fullPath: location,
+        pathParameters: const {},
+        pageKey: ValueKey(location),
+      );
 
+  group('app router', () {
     testWidgets('a read-only build redirects PnP before anything else runs',
         (tester) async {
       final container = ProviderContainer(
@@ -92,6 +95,51 @@ void main() {
                 .topRedirect(context, stateFor(router, location)),
             RoutePath.dashboardHome,
             reason: location);
+      }
+    });
+  });
+
+  group('landing on /', () {
+    // An unconfigured router makes '/' elect PnP, and electing it logs the
+    // user out before the redirect could turn PnP away. A read-only build must
+    // not even ask.
+    test('a writable build on the LAN asks whether the router needs setup', () {
+      expect(
+          shouldCheckForPnp(
+              readOnly: false,
+              routerType: RouterType.behindManaged,
+              loginType: LoginType.none),
+          isTrue);
+      expect(
+          shouldCheckForPnp(
+              readOnly: false,
+              routerType: RouterType.others,
+              loginType: LoginType.none,
+              force: ForceCommand.local),
+          isTrue);
+    });
+
+    test('a remote login does not ask', () {
+      expect(
+          shouldCheckForPnp(
+              readOnly: false,
+              routerType: RouterType.behindManaged,
+              loginType: LoginType.remote),
+          isFalse);
+    });
+
+    test('a read-only build never asks', () {
+      for (final routerType in RouterType.values) {
+        for (final force in ForceCommand.values) {
+          expect(
+              shouldCheckForPnp(
+                  readOnly: true,
+                  routerType: routerType,
+                  loginType: LoginType.none,
+                  force: force),
+              isFalse,
+              reason: '$routerType $force');
+        }
       }
     });
   });

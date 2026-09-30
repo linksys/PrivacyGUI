@@ -157,6 +157,9 @@ class _DHCPReservationsEditViewState
   PageBottomBar bottomBar(String viewType) {
     return switch (viewType) {
       'add' => PageBottomBar(
+          // Only hands the value back to the page that opened it; that page's
+          // Save commits it, and is blocked in a read-only build.
+          allowInReadOnly: true,
           isPositiveEnabled: enableSave,
           onPositiveTap: () {
             final result = DHCPReservation(
@@ -168,6 +171,9 @@ class _DHCPReservationsEditViewState
           },
         ),
       _ => PageBottomBar(
+          // Only hands the value back to the page that opened it; that page's
+          // Save commits it, and is blocked in a read-only build.
+          allowInReadOnly: true,
           isPositiveEnabled: enableSave,
           isNegitiveEnabled: true,
           negitiveLable: loc(context).delete,

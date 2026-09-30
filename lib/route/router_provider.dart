@@ -104,6 +104,22 @@ String? readOnlyRedirect(String location) {
   return null;
 }
 
+/// Whether landing on '/' should ask the router if it still needs setup, which
+/// can elect PnP.
+///
+/// Never in a read-only build: electing PnP logs the user out before the
+/// redirect could turn it away, and PnP is a setup flow it cannot run.
+bool shouldCheckForPnp({
+  required bool readOnly,
+  required RouterType routerType,
+  required LoginType loginType,
+  ForceCommand force = ForceCommand.none,
+}) {
+  if (readOnly) return false;
+  return force == ForceCommand.local ||
+      (routerType != RouterType.others && loginType != LoginType.remote);
+}
+
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -204,8 +220,11 @@ class RouterNotifier extends ChangeNotifier {
     LocalWhereToGo whereToGo = LocalWhereToGo.login;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
-    if (BuildConfig.forceCommandType == ForceCommand.local ||
-        (routerType != RouterType.others && loginType != LoginType.remote)) {
+    if (shouldCheckForPnp(
+        readOnly: _ref.read(readOnlyModeProvider),
+        routerType: routerType,
+        loginType: loginType,
+        force: BuildConfig.forceCommandType)) {
       whereToGo = await pnp
           .fetchDeviceInfo(false)
           .then((_) async => await pnp.autoConfigurationCheck())

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -120,7 +121,7 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
-    _refuseInReadOnly(builder.commands);
+    _refuseInReadOnly(builder.commands, builder.overrides);
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
             ? CacheLevel.noCache
@@ -159,21 +160,40 @@ class RouterRepository {
   // send - so no caller needs a check of its own.
   //
   // A batch is refused whole: its results are paired back to actions by index,
-  // so sending the reads and dropping the write would misalign them.
+  // so sending the reads and dropping the write would misalign them. Entries
+  // are judged by the action actually sent, which an override can change.
   //
   // A plain JNAPError, not a subclass: several callers switch on the exact
   // runtime type, and a subclass would fall through to "unknown error".
   void _refuseInReadOnly(
-      Iterable<MapEntry<JNAPAction, Map<String, dynamic>>> commands) {
+      Iterable<MapEntry<JNAPAction, Map<String, dynamic>>> commands,
+      [Map<JNAPAction, String> overrides = const {}]) {
     if (!ref.read(readOnlyModeProvider)) return;
     final refused = commands
-        .where((entry) => !isAllowedInReadOnly(entry.key, entry.value))
-        .map((entry) => entry.key.name)
+        .where((entry) {
+          final sent = overrides[entry.key];
+          final action = sent == null
+              ? entry.key
+              : JNAPAction.values
+                  .firstWhereOrNull((a) => a.actionValue == sent);
+          // An override naming an action the app does not know is refused.
+          return action == null || !isAllowedInReadOnly(action, entry.value);
+        })
+        .map((entry) => overrides[entry.key] ?? entry.key.name)
         .toList();
     if (refused.isEmpty) return;
     logger.w('[ReadOnly]: refused ${refused.join(', ')}');
     throw JNAPError(result: errorReadOnlyMode, error: refused.join(', '));
   }
+
+  /// Refuses [action] now if a read-only build would refuse it when sent.
+  ///
+  /// For the few callers that change app state before sending a write - stop
+  /// polling, mark an update in progress - so they refuse before doing so
+  /// rather than being left half-done by the refusal at send time.
+  void ensureWritable(JNAPAction action,
+          {Map<String, dynamic> data = const {}}) =>
+      _refuseInReadOnly([MapEntry(action, data)]);
 
   Future<TransactionHttpCommand> createTransaction(
     List<Map<String, dynamic>> payload, {

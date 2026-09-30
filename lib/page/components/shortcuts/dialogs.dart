@@ -82,7 +82,7 @@ Future<T?> showAppSpinnerDialog<T>(
         final stream = messages.isEmpty
             ? const Stream<String>.empty()
             : Stream.periodic(period ?? const Duration(seconds: 3))
-            .map((_) => messages[currentIndex++ % messages.length]);
+                .map((_) => messages[currentIndex++ % messages.length]);
 
         return StreamBuilder<String>(
             stream: stream,
@@ -146,6 +146,9 @@ Future<T?> showSubmitAppDialog<T>(
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
         void onSubmit() {
+          // contentBuilder receives this too - fields submit on Enter - so the
+          // read-only check lives here and not only on the button.
+          if (blockedByReadOnly) return;
           setState(() {
             isLoading = true;
           });

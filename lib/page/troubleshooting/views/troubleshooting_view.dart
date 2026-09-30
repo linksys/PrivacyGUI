@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -165,9 +166,10 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                     'Share router info with Linksys',
                     onTap: () => showSendRouterInfoDialog(),
                   ),
-                  if (ref.read(authProvider).value?.loginType ==
-                          LoginType.local ||
-                      BuildConfig.forceCommandType == ForceCommand.local)
+                  if ((ref.read(authProvider).value?.loginType ==
+                              LoginType.local ||
+                          BuildConfig.forceCommandType == ForceCommand.local) &&
+                      !ref.watch(readOnlyModeProvider))
                     AppTextButton(
                       'Factory Reset',
                       onTap: () {

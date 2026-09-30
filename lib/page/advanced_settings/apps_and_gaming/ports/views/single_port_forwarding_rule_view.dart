@@ -106,6 +106,9 @@ class _AddRuleContentViewState
     return StyledAppPageView(
       title: loc(context).singlePortForwarding,
       bottomBar: PageBottomBar(
+        // Only hands the value back to the page that opened it; that page's
+        // Save commits it, and is blocked in a read-only build.
+        allowInReadOnly: true,
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: _isEdit ? loc(context).update : loc(context).add,
         onPositiveTap: () {

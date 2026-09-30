@@ -102,6 +102,9 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).ipv6PortServices,
       bottomBar: PageBottomBar(
+        // Only hands the value back to the page that opened it; that page's
+        // Save commits it, and is blocked in a read-only build.
+        allowInReadOnly: true,
         isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
           final rule = ref.read(ipv6PortServiceRuleProvider).rule;

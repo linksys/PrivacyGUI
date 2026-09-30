@@ -124,6 +124,9 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
       title: loc(context).selectDevices,
       bottomBar: _selectMode == SelectMode.multiple
           ? PageBottomBar(
+              // Only hands the value back to the page that opened it; that page's
+              // Save commits it, and is blocked in a read-only build.
+              allowInReadOnly: true,
               isPositiveEnabled: selected.isNotEmpty,
               positiveLabel: loc(context).nAdd(selected.length - _extraCount),
               onPositiveTap: () {

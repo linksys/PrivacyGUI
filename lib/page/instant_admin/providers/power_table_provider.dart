@@ -127,7 +127,12 @@ class PowerTableNotifier extends Notifier<PowerTableState> {
         country: PowerTableCountries.resolve(powerTable.country ?? ''));
   }
 
-  Future<PowerTableState> save(PowerTableCountries country) {
+  Future<PowerTableState> save(PowerTableCountries country) async {
+    // Before polling is stopped: a read-only build refuses the send below, and
+    // the startPolling after it would never run.
+    ref
+        .read(routerRepositoryProvider)
+        .ensureWritable(JNAPAction.setPowerTableSettings);
     ref.read(pollingProvider.notifier).stopPolling();
     return ref
         .read(routerRepositoryProvider)

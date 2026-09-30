@@ -38,9 +38,12 @@ class LinksysRouteConfig extends Equatable {
   final bool? noNaviRail;
 
   /// A flow whose only purpose is to write to the router. A read-only build
-  /// renders [ReadOnlyBlockedView] in its place. Used for flows the app pushes
-  /// into and awaits a result from; flows entered by goNamed or URL are
-  /// redirected instead (see readOnlyRedirect).
+  /// renders [ReadOnlyBlockedView] in its place.
+  ///
+  /// Use this for a flow that sits under a page the viewer can still reach, or
+  /// whose caller awaits a result: the blocked page keeps the route and pops
+  /// with null. Use readOnlyRedirect only for a whole tree that must not be
+  /// entered at all, because entering it has effects of its own (PnP).
   final bool writeFlow;
 
   @override

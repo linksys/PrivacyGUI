@@ -61,6 +61,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       bottomBar: _isEdit
           ? InversePageBottomBar(
               isPositiveEnabled: true,
+              // Removes from the unsaved list; MAC Filtering's Save commits it.
+              allowInReadOnly: true,
               onPositiveTap: () {
                 ref
                     .read(instantPrivacyProvider.notifier)

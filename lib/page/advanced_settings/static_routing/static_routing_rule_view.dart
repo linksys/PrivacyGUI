@@ -91,6 +91,9 @@ class _StaticRoutingDetailViewState
       scrollable: true,
       title: _isEdit ? loc(context).edit : loc(context).addStaticRoute,
       bottomBar: PageBottomBar(
+        // Only hands the value back to the page that opened it; that page's
+        // Save commits it, and is blocked in a read-only build.
+        allowInReadOnly: true,
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: loc(context).save,
         onPositiveTap: () {

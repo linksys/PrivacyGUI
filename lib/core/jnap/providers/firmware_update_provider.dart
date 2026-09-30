@@ -159,6 +159,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
+        ? JNAPAction.nodesUpdateFirmwareNow
+        : JNAPAction.updateFirmwareNow;
+    // Before isUpdating is set: a read-only build refuses the send below, and
+    // nothing would clear it.
+    ref
+        .read(routerRepositoryProvider)
+        .ensureWritable(action, data: {'onlyCheck': false});
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -168,9 +176,6 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     ref.read(firmwareUpdateCandidateProvider.notifier).state = statusRecords;
     logger.d('[FIRMWARE]: Saved current status records: $statusRecords');
 
-    final action = serviceHelper.isSupportNodeFirmwareUpdate()
-        ? JNAPAction.nodesUpdateFirmwareNow
-        : JNAPAction.updateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
           action,
           data: {'onlyCheck': false},

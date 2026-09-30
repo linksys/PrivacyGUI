@@ -325,6 +325,37 @@ void main() {
       expect(calls, 0);
     });
 
+    testWidgets('submit dialog ignores Enter in its fields', (tester) async {
+      var calls = 0;
+      await tester.pumpWidget(testableSingleRoute(
+        overrides: [readOnlyModeProvider.overrideWithValue(true)],
+        child: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => showSubmitAppDialog<String>(
+                context,
+                positiveLabel: 'Submit',
+                contentBuilder: (context, setState, submit) =>
+                    TextField(onSubmitted: (_) => submit()),
+                event: () async {
+                  calls++;
+                  return 'saved';
+                },
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.showKeyboard(find.byType(TextField));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(calls, 0);
+    });
+
     testWidgets('submit dialog can opt out', (tester) async {
       var calls = 0;
       await tester.pumpWidget(testableSingleRoute(

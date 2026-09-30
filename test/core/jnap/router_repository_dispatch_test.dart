@@ -233,6 +233,10 @@ void main() {
     });
   });
 
+  test('ensureWritable lets anything through in a writable build', () {
+    expect(() => repo.ensureWritable(JNAPAction.factoryReset), returnsNormally);
+  });
+
   group('scheduledCommand', () {
     test('polls through send', () async {
       final results = await repo
@@ -315,6 +319,29 @@ void main() {
               fetchRemote: true),
           throwsA(refusal()));
       expect(recorder.executed, isEmpty);
+    });
+
+    test('judges a batch by the actions it will actually send', () async {
+      // An override replaces the action string sent for an entry, so the
+      // policy must see the override, not the key it was filed under.
+      await expectLater(
+          readOnlyRepo.transaction(
+              JNAPTransactionBuilder(commands: [
+                const MapEntry(JNAPAction.getWANSettings, {})
+              ], overrides: {
+                JNAPAction.getWANSettings:
+                    JNAPAction.setWANSettings.actionValue,
+              }),
+              fetchRemote: true),
+          throwsA(refusal()));
+      expect(recorder.executed, isEmpty);
+    });
+
+    test('ensureWritable refuses a write up front', () {
+      expect(() => readOnlyRepo.ensureWritable(JNAPAction.setWANSettings),
+          throwsA(refusal()));
+      expect(() => readOnlyRepo.ensureWritable(JNAPAction.getWANSettings),
+          returnsNormally);
     });
 
     test('a refusal is not retried', () async {

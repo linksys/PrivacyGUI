@@ -35,6 +35,9 @@ class _EditableCardListEditViewState
   Widget build(BuildContext context) {
     return StyledAppPageView(
         bottomBar: PageBottomBar(
+            // Only hands the value back to the page that opened it; that page's
+            // Save commits it, and is blocked in a read-only build.
+            allowInReadOnly: true,
             isPositiveEnabled: _isDataValid?.call(_data) ?? false,
             onPositiveTap: () {
               context.pop(true);
