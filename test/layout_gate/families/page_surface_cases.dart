@@ -185,6 +185,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppPasswordInput,
         AppPinInput,
         AppRadioList,
+        AppSliverTimeline,
         AppStepper,
         AppSwitch,
         AppTextField,
@@ -2639,15 +2640,16 @@ final kSystemLogPageCase = PageSurfaceCase(
 /// `usp_notification_history_view` — the Remote Assistance notification history
 /// (#1580), and the 47th page view file.
 ///
-/// **The page's whole horizontal risk is field lines whose values are UUIDs.** Every
-/// row renders `Message ID` beside a 36-character id, and an `OperationComplete` row
-/// renders `Command key` beside a second one; the row's header puts the stored type
-/// name and a `YYYY-MM-DD HH:MM:SS` stamp at opposite ends. None of those values
-/// shortens in any locale, and none of the labels is flexible — so this is the same
-/// four-inflexible-children shape that produced an overflow on most of wave 4, with
-/// the difference that here the *values* are the wide part and the labels are what
-/// varies by locale. Every one of them is a `Wrap`, which is the fix wave 4 arrived
-/// at rather than something to rediscover.
+/// **The page's whole horizontal risk is each row's inline summary.** The list is an
+/// [AppSliverTimeline] whose rows show a part of their body — a TR-181 path beside
+/// its value, a command name beside a localised "Success" — and a path is one
+/// unbroken word that does not shorten in any locale and can be longer than a phone
+/// is wide. It is a `Wrap`, which is the fix wave 4 arrived at rather than something
+/// to rediscover; `gateNotificationDetails` carries the longest leaf the app
+/// subscribes to and the longest command it issues, so that a `Row` there would be
+/// measured. The message id and command
+/// key, which were this page's widest lines as a card list, are in the dialog now and
+/// no cell renders them.
 ///
 /// **The premise carries more weight on this page than on any other case**, because
 /// this page has *four* content states and three of them cannot overflow at all:
@@ -2666,7 +2668,13 @@ final kSystemLogPageCase = PageSurfaceCase(
 /// "234 cells green" and "234 cells of a sentence in a `Center`" are the same result.
 /// `notificationHistoryOverrides()` is the other half; see its library doc.
 ///
-/// [AppButton] is required for a third thing the fixture could lose quietly: the Show
+/// [AppSliverTimeline] is required because the filter renders above the list, not in
+/// it: a cell could carry the filter and still not reach the rows. It does not prove
+/// the rows show their bodies rather than a loading or failure line — nothing in
+/// `requires` can, since all three are text. That is asserted beside the sweep, in
+/// `the notification history cells measured every inline summary`.
+///
+/// [AppButton] is required for one more thing the fixture could lose quietly: the Show
 /// more button, which `gateNotificationHistoryState` reaches by pinning `visibleCount`
 /// below its row count rather than by carrying twenty-six rows.
 final kNotificationHistoryPageCase = PageSurfaceCase(
@@ -2677,6 +2685,7 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
     UspTopBar,
     AppCard,
     NotificationHistoryTypeFilter,
+    AppSliverTimeline,
     AppButton,
   ],
   forbids: const [AppLoader, ServiceErrorView],

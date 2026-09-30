@@ -119,6 +119,30 @@ void main() {
       verify(() => service.fetchState()).called(1);
       verify(() => service.fetchHistory()).called(2);
     });
+
+    test('refresh re-reads the bodies of rows on screen', () async {
+      // A row reads its body as it is built and keeps that read while it is on
+      // screen, so without this a body that failed once would stay failed until
+      // the row scrolled away. Pull-to-refresh is the page's one retry gesture.
+      final container = containerWith([notificationEntry('m1', 'ValueChange')]);
+      when(() => service.fetchDetail('m1')).thenAnswer(
+        (_) async => NotificationDetailUIModel(
+          entry: notificationEntry('m1', 'ValueChange'),
+          body: const RawBodyUIModel(''),
+        ),
+      );
+      await container.read(uspNotificationHistoryProvider.future);
+      // Held the way an on-screen row holds it.
+      final row =
+          container.listen(notificationDetailProvider('m1'), (_, __) {});
+      addTearDown(row.close);
+      await container.read(notificationDetailProvider('m1').future);
+
+      await container.read(uspNotificationHistoryProvider.notifier).refresh();
+      await container.read(notificationDetailProvider('m1').future);
+
+      verify(() => service.fetchDetail('m1')).called(2);
+    });
   });
 
   group('UspNotificationHistoryNotifier - filtering and paging', () {
@@ -242,7 +266,7 @@ void main() {
     });
   });
 
-  group('notificationDetailProvider - one row on open', () {
+  group('notificationDetailProvider - one row per read', () {
     test('the detail provider reads exactly the row asked for', () async {
       final container = containerWith([]);
       when(() => service.fetchDetail('m1')).thenAnswer(

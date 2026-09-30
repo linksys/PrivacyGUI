@@ -4,9 +4,9 @@
 /// they are three rather than one is that two of them are *empty screens that must
 /// not read as faults*:
 ///
-/// - **`populated`** — the two session timestamps, the type filter, three rows and the
-///   Show more button. Includes the `Unknown` row, because
-///   `gateNotificationHistoryState` carries one.
+/// - **`populated`** — the two session timestamps, the type filter, the timeline with
+///   its inline summaries and one same-second burst under a single heading, and the
+///   Show more button. The `Unknown` row is the one Show more hides.
 /// - **`empty`** — a fresh session, which is the normal state at session open. Also
 ///   the em-dash rendering of both timestamps, since a device that has produced no
 ///   notification has reported no activity either.

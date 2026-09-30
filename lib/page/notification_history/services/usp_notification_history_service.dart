@@ -63,7 +63,7 @@ class UspNotificationHistoryService {
         .toList(growable: false);
   }
 
-  /// One entry with its body, fetched when a row is opened.
+  /// One entry with its body, fetched as its row scrolls into view or is opened.
   ///
   /// Throws [ResourceNotFoundError] on a `404`, which the spec makes cover both
   /// "does not exist" and "is not yours" without distinguishing them.

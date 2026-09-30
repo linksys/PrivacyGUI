@@ -31,6 +31,8 @@
 // Not tagged `ui`: the two CI jobs exclude `golden||loc||ui`, so a tagged case
 // would never run.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,12 +46,26 @@ import 'package:privacy_gui/page/notification_history/services/usp_notification_
 import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../mocks/test_data/scenes/notification_history_scene_data.dart';
 
 class MockUspNotificationHistoryService extends Mock
     implements UspNotificationHistoryService {}
+
+NotificationDetailUIModel detail(String msgId, NotificationBodyUIModel body) =>
+    NotificationDetailUIModel(
+      entry: notificationEntry(msgId, 'ValueChange'),
+      body: body,
+    );
+
+String stamp(int ms) {
+  final at = DateTime.fromMillisecondsSinceEpoch(ms);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${at.year}-${two(at.month)}-${two(at.day)} '
+      '${two(at.hour)}:${two(at.minute)}:${two(at.second)}';
+}
 
 void main() {
   late AppLocalizations loc;
@@ -88,8 +104,12 @@ void main() {
     );
   }
 
-  Future<void> pump(WidgetTester tester, {bool available = true}) async {
-    tester.view.physicalSize = const Size(1280, 2400);
+  Future<void> pump(
+    WidgetTester tester, {
+    bool available = true,
+    Size size = const Size(1280, 2400),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -105,7 +125,20 @@ void main() {
     when(() => service.fetchState()).thenAnswer((_) async =>
         state ?? const SessionUspStateUIModel(deviceUuid: 'uuid-1'));
     when(() => service.fetchHistory()).thenAnswer((_) async => entries);
+    // Every row fetches its body as it is built, so every test needs an answer
+    // for every row. An empty raw body is the one that renders nothing inline;
+    // a test that cares registers its own afterwards, and mocktail matches the
+    // most recent stub first.
+    when(() => service.fetchDetail(any())).thenAnswer((inv) async => detail(
+        inv.positionalArguments.first as String, const RawBodyUIModel('')));
   }
+
+  void answer(String msgId, NotificationBodyUIModel body) =>
+      when(() => service.fetchDetail(msgId))
+          .thenAnswer((_) async => detail(msgId, body));
+
+  Finder inDialog(Finder dialog, String text) =>
+      find.descendant(of: dialog, matching: find.text(text));
 
   // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 1 — the two timestamps, including their null case
@@ -160,7 +193,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 4 — Unknown is a value, not a placeholder
   // ═════════════════════════════════════════════════════════════════════════
-  group('UspNotificationHistoryView - the list', () {
+  group('UspNotificationHistoryView - the timeline', () {
     testWidgets('renders a row per entry, Unknown included', (tester) async {
       stub(entries: [
         notificationEntry('m1', 'ValueChange'),
@@ -170,50 +203,276 @@ void main() {
 
       await pump(tester);
 
+      expect(find.byType(AppSliverTimeline), findsOneWidget);
       expect(find.text('ValueChange'), findsOneWidget);
       expect(find.text('OperationComplete'), findsOneWidget);
       expect(find.text('Unknown'), findsOneWidget);
-      expect(find.text('m3'), findsOneWidget);
       expect(find.text(loc.notificationHistoryEmpty), findsNothing);
     });
 
-    testWidgets('the command key line appears only on the row that has one',
+    testWidgets(
+        'the message id and command key live in the dialog, not the row',
         (tester) async {
+      // The two UUIDs were half of every row and nobody scans a list by them;
+      // what a support engineer scans by is the path and value. They are still
+      // one tap away, because they are what gets pasted into a ticket.
       stub(entries: [
-        notificationEntry('m1', 'ValueChange'),
         notificationEntry('m2', 'OperationComplete', commandKey: 'key-abc'),
       ]);
-
       await pump(tester);
 
-      expect(find.text(loc.notificationHistoryCommandKey), findsOneWidget);
-      expect(find.text('key-abc'), findsOneWidget);
+      expect(find.text('m2'), findsNothing);
+      expect(find.text('key-abc'), findsNothing);
+      expect(find.text(loc.notificationHistoryMessageId), findsNothing);
+
+      await tester.tap(find.text('OperationComplete'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AppDialog);
+      expect(
+          inDialog(dialog, loc.notificationHistoryMessageId), findsOneWidget);
+      expect(inDialog(dialog, 'm2'), findsOneWidget);
+      expect(
+          inDialog(dialog, loc.notificationHistoryCommandKey), findsOneWidget);
+      expect(inDialog(dialog, 'key-abc'), findsOneWidget);
+    });
+
+    testWidgets('a row without a command key has no command key line',
+        (tester) async {
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      await pump(tester);
+
+      await tester.tap(find.text('ValueChange'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(loc.notificationHistoryMessageId), findsOneWidget);
+      expect(find.text(loc.notificationHistoryCommandKey), findsNothing);
+    });
+
+    testWidgets('the E2E id is still on the row', (tester) async {
+      final handle = tester.ensureSemantics();
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      await pump(tester);
+
+      final row = find.bySemanticsIdentifier('notification-history-row-m1');
+      expect(row, findsOneWidget);
+
+      await tester.tap(row, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsOneWidget);
+      handle.dispose();
     });
   });
 
   // ═════════════════════════════════════════════════════════════════════════
-  // Acceptance 3 — a row opens its body, and a 404 is ordinary
+  // Same-second bursts share one heading
   // ═════════════════════════════════════════════════════════════════════════
-  group('UspNotificationHistoryView - opening a row', () {
-    testWidgets('fetches and renders its body', (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
-      when(() => service.fetchDetail('m1')).thenAnswer(
-        (_) async => NotificationDetailUIModel(
-          entry: notificationEntry('m1', 'ValueChange'),
-          body: const ValueChangeBodyUIModel(
-            paramPath: 'Device.WiFi.SSID.1.SSID',
-            paramValue: 'Linksys-Guest',
-          ),
-        ),
-      );
+  group('UspNotificationHistoryView - grouping', () {
+    testWidgets('entries in the same second sit under one timestamp heading',
+        (tester) async {
+      // A subscription fires ~28 notifies in one second. One heading per burst
+      // is what makes the burst readable as one thing; 28 identical stamps is
+      // what the card list rendered.
+      const t0 = 1757000000000;
+      stub(entries: [
+        notificationEntry('m1', 'ValueChange', ms: t0),
+        notificationEntry('m2', 'ValueChange', ms: t0 + 400),
+        notificationEntry('m3', 'Event', ms: t0 + 5000),
+      ]);
+
       await pump(tester);
 
-      await tester.tap(find.text('m1'));
-      await tester.pumpAndSettle();
+      // Once, not twice: `m1` and `m2` share it.
+      expect(find.text(stamp(t0)), findsOneWidget);
+      expect(find.text(stamp(t0 + 5000)), findsOneWidget);
+    });
 
-      expect(find.text('param_path'), findsOneWidget);
+    testWidgets('a burst that crosses a second boundary gets two headings',
+        (tester) async {
+      // Grouped on the second the heading shows, not on a window: 300ms apart
+      // across `:00` is two different stamps, and one heading over both would
+      // print a time one of them does not have.
+      const t0 = 1757000000900;
+      stub(entries: [
+        notificationEntry('m1', 'ValueChange', ms: t0),
+        notificationEntry('m2', 'ValueChange', ms: t0 + 300),
+      ]);
+
+      await pump(tester);
+
+      expect(stamp(t0), isNot(stamp(t0 + 300)));
+      expect(find.text(stamp(t0)), findsOneWidget);
+      expect(find.text(stamp(t0 + 300)), findsOneWidget);
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // What each type shows inline, fetched as the row is built
+  // ═════════════════════════════════════════════════════════════════════════
+  group('UspNotificationHistoryView - inline summary', () {
+    testWidgets('a ValueChange shows its path and value without a tap',
+        (tester) async {
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      answer(
+          'm1',
+          const ValueChangeBodyUIModel(
+            paramPath: 'Device.WiFi.SSID.1.SSID',
+            paramValue: 'Linksys-Guest',
+          ));
+
+      await pump(tester);
+
       expect(find.text('Device.WiFi.SSID.1.SSID'), findsOneWidget);
       expect(find.text('Linksys-Guest'), findsOneWidget);
+      verify(() => service.fetchDetail('m1')).called(1);
+    });
+
+    testWidgets('an OperationComplete shows its command and its outcome',
+        (tester) async {
+      stub(entries: [
+        notificationEntry('ok', 'OperationComplete', ms: 1757000001000),
+        notificationEntry('no', 'OperationComplete', ms: 1757000000000),
+      ]);
+      answer(
+          'ok',
+          const OperationCompleteBodyUIModel(
+            commandName: 'Device.WiFi.NeighboringWiFiDiagnostic()',
+            commandKey: 'k1',
+          ));
+      answer(
+          'no',
+          const OperationCompleteBodyUIModel(
+            commandName: 'Device.IP.Diagnostics.IPPing()',
+            commandKey: 'k2',
+            refused: true,
+          ));
+
+      await pump(tester);
+
+      expect(
+          find.text('Device.WiFi.NeighboringWiFiDiagnostic()'), findsOneWidget);
+      expect(find.text(loc.success), findsOneWidget);
+      expect(find.text('Device.IP.Diagnostics.IPPing()'), findsOneWidget);
+      // Decided by `refused`, not by the error code: a refusal with no code is
+      // still a refusal.
+      expect(find.text(loc.failed), findsOneWidget);
+    });
+
+    testWidgets('an Event shows its name', (tester) async {
+      stub(entries: [notificationEntry('e1', 'Event')]);
+      answer(
+          'e1',
+          const EventBodyUIModel(
+            eventName: 'Device.LocalAgent.Periodic!',
+            params: {'Hidden': 'param'},
+          ));
+
+      await pump(tester);
+
+      expect(find.text('Device.LocalAgent.Periodic!'), findsOneWidget);
+      expect(find.text('Hidden'), findsNothing);
+    });
+
+    testWidgets(
+        'a type with no summary shows the type alone, and reads nothing',
+        (tester) async {
+      // Only three types have a line worth showing. Every other row would spend a
+      // Guardian read on a body the row then does not draw — and would flash
+      // "Loading…" under a type that is the whole row.
+      final pending = Completer<NotificationDetailUIModel>();
+      stub(entries: [
+        notificationEntry('m8', 'ObjectCreation', ms: 1757000001000),
+        notificationEntry('m9', 'Unknown'),
+      ]);
+      when(() => service.fetchDetail(any())).thenAnswer((_) => pending.future);
+
+      await tester.pumpWidget(const SizedBox());
+      tester.view.physicalSize = const Size(1280, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(available: true));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('ObjectCreation'), findsOneWidget);
+      expect(find.text('Unknown'), findsOneWidget);
+      expect(find.text(loc.loading), findsNothing);
+      verifyNever(() => service.fetchDetail(any()));
+
+      // The dialog still reads it: the whole body is what a tap is for.
+      await tester.tap(find.text('Unknown'));
+      await tester.pump();
+      verify(() => service.fetchDetail('m9')).called(1);
+      pending.complete(detail('m9', const RawBodyUIModel('')));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a row still loading says so, then fills in', (tester) async {
+      final pending = Completer<NotificationDetailUIModel>();
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      when(() => service.fetchDetail('m1')).thenAnswer((_) => pending.future);
+
+      await pump(tester);
+      expect(find.text(loc.loading), findsOneWidget);
+
+      pending.complete(detail(
+          'm1',
+          const ValueChangeBodyUIModel(
+            paramPath: 'Device.X',
+            paramValue: 'v',
+          )));
+      await tester.pumpAndSettle();
+
+      expect(find.text(loc.loading), findsNothing);
+      expect(find.text('Device.X'), findsOneWidget);
+    });
+
+    testWidgets('only rows in or near view are fetched', (tester) async {
+      // The point of the sliver: 25 rows on the first page must not be 25
+      // body reads before the user has scrolled. Each one is a Guardian read.
+      final entries = [
+        for (var i = 0; i < 25; i++)
+          notificationEntry('m$i', 'ValueChange',
+              ms: 1757000000000 - i * 60000),
+      ];
+      stub(entries: entries);
+
+      await pump(tester, size: const Size(1280, 800));
+
+      verify(() => service.fetchDetail('m0')).called(1);
+      verifyNever(() => service.fetchDetail('m24'));
+
+      await tester.drag(
+          find.byType(CustomScrollView).first, const Offset(0, -20000));
+      await tester.pumpAndSettle();
+
+      verify(() => service.fetchDetail('m24')).called(1);
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // Acceptance 3 — the dialog, and a 404 is ordinary
+  // ═════════════════════════════════════════════════════════════════════════
+  group('UspNotificationHistoryView - opening a row', () {
+    testWidgets('renders the full body, from the fetch the row already made',
+        (tester) async {
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      answer(
+          'm1',
+          const ValueChangeBodyUIModel(
+            paramPath: 'Device.WiFi.SSID.1.SSID',
+            paramValue: 'Linksys-Guest',
+          ));
+      await pump(tester);
+
+      await tester.tap(find.text('ValueChange'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AppDialog);
+      expect(inDialog(dialog, 'param_path'), findsOneWidget);
+      expect(inDialog(dialog, 'Device.WiFi.SSID.1.SSID'), findsOneWidget);
+      expect(inDialog(dialog, 'Linksys-Guest'), findsOneWidget);
       verify(() => service.fetchDetail('m1')).called(1);
     });
 
@@ -224,10 +483,14 @@ void main() {
           .thenThrow(const ResourceNotFoundError(code: 404));
       await pump(tester);
 
-      await tester.tap(find.text('m1'));
+      // Inline first: the row is built, so its read has already happened.
+      expect(find.text(loc.notificationHistoryGone), findsOneWidget);
+
+      await tester.tap(find.text('ValueChange'));
       await tester.pumpAndSettle();
 
-      expect(find.text(loc.notificationHistoryGone), findsOneWidget);
+      expect(inDialog(find.byType(AppDialog), loc.notificationHistoryGone),
+          findsOneWidget);
       // The spec makes 404 cover "gone" and "not yours" without distinguishing
       // them, so the generic failure copy would be reporting a fault that is
       // not one.
@@ -235,45 +498,48 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('any other failure reads as one', (tester) async {
+      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      when(() => service.fetchDetail('m1'))
+          .thenThrow(const UnexpectedError(detail: 'boom'));
+      await pump(tester);
+
+      expect(find.text(loc.failedToLoadSettings), findsOneWidget);
+      expect(find.text(loc.notificationHistoryGone), findsNothing);
+    });
+
     testWidgets('a refused OperationComplete shows its error, not its args',
         (tester) async {
       stub(entries: [
         notificationEntry('m2', 'OperationComplete', commandKey: 'k')
       ]);
-      when(() => service.fetchDetail('m2')).thenAnswer(
-        (_) async => NotificationDetailUIModel(
-          entry: notificationEntry('m2', 'OperationComplete', commandKey: 'k'),
-          body: const OperationCompleteBodyUIModel(
+      answer(
+          'm2',
+          const OperationCompleteBodyUIModel(
             commandName: 'Device.IP.Diagnostics.IPPing()',
             commandKey: 'k',
             errorCode: '7004',
             errorMessage: 'refused',
             refused: true,
-          ),
-        ),
-      );
+          ));
       await pump(tester);
 
-      await tester.tap(find.text('m2'));
+      await tester.tap(find.text('OperationComplete'));
       await tester.pumpAndSettle();
 
-      expect(find.text('err_code'), findsOneWidget);
-      expect(find.text('7004'), findsOneWidget);
-      expect(find.text('refused'), findsOneWidget);
+      final dialog = find.byType(AppDialog);
+      expect(inDialog(dialog, 'err_code'), findsOneWidget);
+      expect(inDialog(dialog, '7004'), findsOneWidget);
+      expect(inDialog(dialog, 'refused'), findsOneWidget);
     });
 
     testWidgets('an unrecognised body is shown as JSON rather than dropped',
         (tester) async {
       stub(entries: [notificationEntry('m9', 'Unknown')]);
-      when(() => service.fetchDetail('m9')).thenAnswer(
-        (_) async => NotificationDetailUIModel(
-          entry: notificationEntry('m9', 'Unknown'),
-          body: const RawBodyUIModel('{\n  "obj_creation": {}\n}'),
-        ),
-      );
+      answer('m9', const RawBodyUIModel('{\n  "obj_creation": {}\n}'));
       await pump(tester);
 
-      await tester.tap(find.text('m9'));
+      await tester.tap(find.text('Unknown'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('obj_creation'), findsOneWidget);

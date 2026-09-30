@@ -31,7 +31,8 @@ class SessionUspStateUIModel extends Equatable {
 ///
 /// The list endpoint deliberately omits `body`, because a diagnostic body can be
 /// hundreds of KB and the list would carry every one of them. The body is
-/// fetched per row, on open.
+/// fetched per row: as the row is built for a type that shows a line of it, and
+/// when it is opened for the rest.
 class NotificationHistoryEntryUIModel extends Equatable {
   final String msgId;
 
@@ -151,7 +152,7 @@ final class RawBodyUIModel extends NotificationBodyUIModel {
   List<Object?> get props => [pretty];
 }
 
-/// One history row together with the body fetched when it was opened.
+/// One history row together with its body.
 class NotificationDetailUIModel extends Equatable {
   final NotificationHistoryEntryUIModel entry;
   final NotificationBodyUIModel body;

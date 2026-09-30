@@ -14,9 +14,25 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// the only one of that issue's nine items a user can see.
 ///
 /// Reads Guardian's own store: `usp/state` once for the two timestamps at the top,
-/// `usp/notifications/history` for the list, and one entry's `body` when a row is
-/// opened. All three work with the device offline, because the store is the
-/// cloud's.
+/// `usp/notifications/history` for the list, and one entry's `body` per row as that
+/// row scrolls into view. All three work with the device offline, because the store
+/// is the cloud's.
+///
+/// ## Why a sliver timeline
+///
+/// The list carries no bodies, and a row with no body is a type name and two UUIDs
+/// — nothing a support engineer can scan. So each row reads its own body and shows
+/// the part that matters (a path and its value, a command and whether it worked, an
+/// event's name) inline; the UUIDs move to the dialog, where they are copied into a
+/// ticket. A read per row is only affordable if rows that are never seen are never
+/// built, which is what [AppSliverTimeline.builder] guarantees and a `Column` would
+/// not: a first page of 25 costs the rows that fit on screen plus the sliver's
+/// cache area, not 25. Only the three types that have a line to show read at all —
+/// see [_summarisedTypes].
+///
+/// Rows that share a second share one heading. A subscription commonly lands ~28
+/// notifies in the same second, and one stamp over the burst is what makes it read
+/// as one thing.
 ///
 /// ## Three rules this page is built around
 ///
@@ -60,19 +76,34 @@ class UspNotificationHistoryView extends ConsumerWidget {
       onRefresh: available
           ? () => ref.read(uspNotificationHistoryProvider.notifier).refresh()
           : null,
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: (childContext, constraints) {
-        if (!available) return const _UnavailableState();
-        return ref.watch(uspNotificationHistoryProvider).when(
-              loading: () => const Center(child: AppLoader()),
-              error: (error, stack) => ServiceErrorView(
-                error: error is ServiceError ? error : null,
-                title: loc(context).failedToLoadSettings,
-                onRetry: () => ref.invalidate(uspNotificationHistoryProvider),
-              ),
-              data: (state) => _Content(state: state),
-            );
-      },
+      // Slivers get no structural padding from the page (see
+      // `UiKitPageView.slivers`), so the page margin is applied here.
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            context.layoutMargin,
+            0,
+            context.layoutMargin,
+            AppSpacing.md,
+          ),
+          sliver: !available
+              ? const SliverToBoxAdapter(child: _UnavailableState())
+              : ref.watch(uspNotificationHistoryProvider).when(
+                    loading: () => const SliverToBoxAdapter(
+                      child: Center(child: AppLoader()),
+                    ),
+                    error: (error, stack) => SliverToBoxAdapter(
+                      child: ServiceErrorView(
+                        error: error is ServiceError ? error : null,
+                        title: loc(context).failedToLoadSettings,
+                        onRetry: () =>
+                            ref.invalidate(uspNotificationHistoryProvider),
+                      ),
+                    ),
+                    data: (state) => _Content(state: state),
+                  ),
+        ),
+      ],
     );
   }
 }
@@ -106,6 +137,7 @@ class _UnavailableState extends StatelessWidget {
   }
 }
 
+/// The loaded page, as one sliver: the header block, the timeline, Show more.
 class _Content extends ConsumerWidget {
   final NotificationHistoryState state;
 
@@ -113,36 +145,98 @@ class _Content extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SessionStateCard(sessionState: state.sessionState),
-        AppGap.md(),
-        if (state.entries.isEmpty)
-          const _EmptyState()
-        else ...[
-          NotificationHistoryTypeFilter(state: state),
-          AppGap.md(),
-          for (final entry in state.visibleEntries) ...[
-            _EntryCard(entry: entry),
-            AppGap.sm(),
-          ],
-          if (state.hasMore) ...[
-            AppGap.sm(),
-            Center(
-              child: AppButton.text(
-                label: loc(context).notificationHistoryShowMore,
-                identifier: 'notification-history-show-more',
-                onTap: () => ref
-                    .read(uspNotificationHistoryProvider.notifier)
-                    .showMore(),
+    final items = _timelineItems(context, state.visibleEntries);
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SessionStateCard(sessionState: state.sessionState),
+              AppGap.md(),
+              if (state.entries.isEmpty)
+                const _EmptyState()
+              else ...[
+                NotificationHistoryTypeFilter(state: state),
+                AppGap.md(),
+              ],
+            ],
+          ),
+        ),
+        if (items.isNotEmpty)
+          AppSliverTimeline.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) => items[index],
+            // The stamp is on the group heading above each burst; repeating it
+            // on every entry is the noise the grouping exists to remove.
+            showTimestamps: false,
+          ),
+        if (state.hasMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Center(
+                child: AppButton.text(
+                  label: loc(context).notificationHistoryShowMore,
+                  identifier: 'notification-history-show-more',
+                  onTap: () => ref
+                      .read(uspNotificationHistoryProvider.notifier)
+                      .showMore(),
+                ),
               ),
             ),
-          ],
-        ],
+          ),
       ],
     );
   }
+}
+
+/// The visible entries as timeline rows, a heading opening each distinct second.
+///
+/// Relies on the entries arriving sorted — `visibleEntries` is newest first — so a
+/// burst is contiguous and one pass is enough. Grouped on the rendered stamp rather
+/// than on the `DateTime`, because the stamp is what the heading shows: two entries
+/// 400ms apart are one second on screen, and two headings reading the same would
+/// be a bug a reader could see.
+///
+/// So a burst that straddles a second boundary — `.900` and the next second's `.200`
+/// — is two headings, because it is two different stamps; one heading over both
+/// would print a time one of them does not have.
+///
+/// Built as a list up front, not inside the builder, because a heading depends on
+/// the entry before it. The list holds descriptions only — no widget is built and
+/// nothing is fetched until the sliver asks for that index.
+List<AppTimelineItem> _timelineItems(
+  BuildContext context,
+  List<NotificationHistoryEntryUIModel> entries,
+) {
+  final items = <AppTimelineItem>[];
+  String? heading;
+  for (final entry in entries) {
+    final stamp = _formatTimestamp(entry.originTs);
+    if (stamp != heading) {
+      items.add(AppTimelineGroup(label: stamp));
+      heading = stamp;
+    }
+    items.add(
+      AppTimelineEntry(
+        identifier: 'notification-history-row-${entry.msgId}',
+        // The stored type, verbatim and untranslated. It is a protocol
+        // identifier the spec and #205 both name in these exact words, and the
+        // rest of this row — `msgId`, `commandKey`, the body's `param_path` —
+        // is raw for the same reason. Translating one of them would make the
+        // page inconsistent and the value un-greppable against the contract;
+        // `Unknown` is itself a stored value rather than a UI fallback.
+        title: entry.notificationType,
+        detailWidget: _summarisedTypes.contains(entry.notificationType)
+            ? _InlineSummary(msgId: entry.msgId)
+            : null,
+        onTap: () => _openDetail(context, entry),
+      ),
+    );
+  }
+  return items;
 }
 
 /// `lastBoot` and `lastUspActivity`, both of which are legitimately null.
@@ -243,103 +337,128 @@ class NotificationHistoryTypeFilter extends ConsumerWidget {
   }
 }
 
-/// One history row. Tapping it fetches that entry's body.
-class _EntryCard extends ConsumerWidget {
-  final NotificationHistoryEntryUIModel entry;
+/// The stored types whose body has one line worth showing under the type.
+///
+/// Every other row — `ObjectCreation`, `ObjectDeletion`, `OnBoardRequest`,
+/// `Unknown` — is its type alone, and does not read its body until it is opened:
+/// a read the row would not draw is a Guardian read spent on nothing, and a
+/// "Loading…" under a type that is the whole row is a state with no answer behind
+/// it. Keyed on the stored `notificationType`, spelled as stored, because that is
+/// what the row has before its body arrives.
+const _summarisedTypes = {'ValueChange', 'OperationComplete', 'Event'};
 
-  const _EntryCard({required this.entry});
+/// What a row shows under its type, read from the entry's body.
+///
+/// The read happens when the row is built, which in a sliver means when it comes
+/// into view. The dialog watches the same family member, so opening a row that is
+/// on screen reuses this read rather than making a second one.
+///
+/// One line of the body, not all of it: the whole body is the dialog's job, and an
+/// `OperationComplete` can carry a table of output arguments.
+class _InlineSummary extends ConsumerWidget {
+  final String msgId;
+
+  const _InlineSummary({required this.msgId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return AppCard(
-      identifier: 'notification-history-row-${entry.msgId}',
-      onTap: () => _openDetail(context, ref),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.xs,
-              children: [
-                // The stored type, verbatim and untranslated. It is a protocol
-                // identifier the spec and #205 both name in these exact words,
-                // and the rest of this row — `msgId`, `commandKey`, the body's
-                // `param_path` — is raw for the same reason. Translating one of
-                // them would make the page inconsistent and the value
-                // un-greppable against the contract; `Unknown` is itself a
-                // stored value rather than a UI fallback.
-                AppText.titleSmall(entry.notificationType),
-                AppText.bodySmall(_formatTimestamp(entry.originTs),
-                    color: muted),
-              ],
-            ),
-          ),
-          AppGap.sm(),
-          _LabelledValue(
-            label: loc(context).notificationHistoryMessageId,
-            value: entry.msgId,
-          ),
-          // Null on every row but `OperationComplete`, which is the common case
-          // and not worth an empty line each time.
-          if (entry.commandKey != null) ...[
-            AppGap.xs(),
-            _LabelledValue(
-              label: loc(context).notificationHistoryCommandKey,
-              value: entry.commandKey!,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _openDetail(BuildContext context, WidgetRef ref) {
-    showAppDialog<void>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        title: AppText.titleMedium(entry.notificationType),
-        content: _DetailContent(msgId: entry.msgId),
-        actions: [
-          AppButton.text(
-            label: loc(ctx).close,
-            identifier: 'notification-history-detail-close',
-            onTap: () => Navigator.of(ctx).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The body of one entry, fetched when the dialog opens.
-class _DetailContent extends ConsumerWidget {
-  final String msgId;
-
-  const _DetailContent({required this.msgId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
     return ref.watch(notificationDetailProvider(msgId)).when(
-          loading: () => const Center(child: AppLoader()),
-          // A 404 is the ordinary case of an entry that has aged out or was
-          // never this session's — the spec deliberately does not distinguish
-          // them — so it gets its own sentence rather than the generic failure
-          // view. Anything else is a fault and reads as one.
-          error: (error, stack) => AppText.bodyMedium(
-            error is ResourceNotFoundError
-                ? loc(context).notificationHistoryGone
-                : loc(context).failedToLoadSettings,
+          // Text rather than `AppSkeleton` or `AppLoader`: both animate forever,
+          // and a row that is still loading must not be the one thing keeping
+          // the page from settling.
+          loading: () => AppText.bodySmall(loc(context).loading, color: muted),
+          error: (error, stack) => AppText.bodySmall(
+            _bodyErrorText(context, error),
+            color: muted,
           ),
-          data: (detail) => _Body(body: detail.body),
+          data: (detail) => switch (detail.body) {
+            ValueChangeBodyUIModel(:final paramPath, :final paramValue) =>
+              _LabelledValue(label: paramPath, value: paramValue),
+            // Decided by `refused`, never by `errorCode` — see
+            // `OperationCompleteBodyUIModel.refused`.
+            OperationCompleteBodyUIModel(:final commandName, :final refused) =>
+              _LabelledValue(
+                label: commandName,
+                value: refused ? loc(context).failed : loc(context).success,
+              ),
+            EventBodyUIModel(:final eventName) => AppText.bodySmall(eventName),
+            // A summarised type whose body did not parse as one: nothing a line
+            // can summarise, so the type above is the whole row.
+            RawBodyUIModel() => const SizedBox.shrink(),
+          },
         );
   }
 }
+
+void _openDetail(
+  BuildContext context,
+  NotificationHistoryEntryUIModel entry,
+) {
+  showAppDialog<void>(
+    context: context,
+    builder: (ctx) => AppDialog(
+      title: AppText.titleMedium(entry.notificationType),
+      content: _DetailContent(entry: entry),
+      actions: [
+        AppButton.text(
+          label: loc(ctx).close,
+          identifier: 'notification-history-detail-close',
+          onTap: () => Navigator.of(ctx).pop(),
+        ),
+      ],
+    ),
+  );
+}
+
+/// One entry in full: its two ids, then its body.
+class _DetailContent extends ConsumerWidget {
+  final NotificationHistoryEntryUIModel entry;
+
+  const _DetailContent({required this.entry});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LabelledValue(
+          label: loc(context).notificationHistoryMessageId,
+          value: entry.msgId,
+        ),
+        // Null on every row but `OperationComplete`, which is the common case
+        // and not worth an empty line each time.
+        if (entry.commandKey != null) ...[
+          AppGap.xs(),
+          _LabelledValue(
+            label: loc(context).notificationHistoryCommandKey,
+            value: entry.commandKey!,
+          ),
+        ],
+        AppGap.md(),
+        ref.watch(notificationDetailProvider(entry.msgId)).when(
+              loading: () => const Center(child: AppLoader()),
+              error: (error, stack) =>
+                  AppText.bodyMedium(_bodyErrorText(context, error)),
+              data: (detail) => _Body(body: detail.body),
+            ),
+      ],
+    );
+  }
+}
+
+/// What a failed body read says, in the row and in the dialog alike.
+///
+/// A 404 is the ordinary case of an entry that has aged out or was never this
+/// session's — the spec deliberately does not distinguish them — so it gets its own
+/// sentence rather than the generic failure copy. Anything else is a fault and
+/// reads as one; pull-to-refresh re-reads it.
+String _bodyErrorText(BuildContext context, Object error) =>
+    error is ResourceNotFoundError
+        ? loc(context).notificationHistoryGone
+        : loc(context).failedToLoadSettings;
 
 /// Three shapes plus a fallback, per #1580 — not six widgets.
 class _Body extends StatelessWidget {
@@ -412,16 +531,16 @@ class _Body extends StatelessWidget {
 
 /// A muted label beside its value, which is every row this page draws.
 ///
-/// One widget rather than the three near-copies #1580 first shipped — the
-/// session-state lines, the message-id/command-key lines, and the body's field rows
-/// were the same `SizedBox` + `Wrap` + two `AppText`s three times over, differing only
+/// One widget rather than the near-copies #1580 first shipped — the session-state
+/// lines, the message-id/command-key lines, the body's field rows, and now a row's
+/// inline summary are the same `SizedBox` + `Wrap` + two `AppText`s, differing only
 /// in the value's size and the gap.
 ///
 /// **A `Wrap`, not a `Row`, and that is the load-bearing part.** A label and a value
 /// that both grow with the locale overflow a 320px phone as a `Row` — the same defect
-/// #1380 fixed across most of wave 4 — and reflow onto two runs as a `Wrap`. All 234
-/// cells of `page.notification_history` go through this widget now, so a `Row` here
-/// would be a `Row` everywhere.
+/// #1380 fixed across most of wave 4 — and reflow onto two runs as a `Wrap`. The
+/// inline summary is the hardest case: a `param_path` has no spaces and can be
+/// longer than a phone is wide, and a `Wrap` hands it the full width to break in.
 class _LabelledValue extends StatelessWidget {
   final String label;
   final String value;

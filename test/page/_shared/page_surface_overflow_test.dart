@@ -530,11 +530,63 @@ void main() {
   // `notification_history` — #1580, the 47th page view file and the first page the
   // remote surface *adds* rather than hides. Nine widths x 26 locales like every
   // other single-state page; see `kNotificationHistoryPageCase` for why its premise
-  // names four types instead of the usual two.
+  // names five types instead of the usual two.
   runOverflowSweep(
     family: PageSurfaceFamily(kNotificationHistoryPageCase),
     expectedCellCount: 234,
   );
+
+  // The premise `requires` cannot state. Each row's inline summary is read from a
+  // provider the fixture overrides, and every way that override can go wrong
+  // renders **text**: a read still pending is "Loading…", a failed one is the
+  // failure line, and a `msgId` missing from `gateNotificationDetails` is an empty
+  // raw body — the narrowest row there is. All three are green cells that measured
+  // the wrong thing, so this pumps the case the sweep pumps and checks the widest
+  // summary lines are on screen. Two widths, because the page has two layouts
+  // (the timeline's own narrow/wide split sits at the mobile breakpoint), and every
+  // locale, because the strings beside the summaries are the translated ones.
+  testWidgets('the notification history cells measured every inline summary',
+      (tester) async {
+    final failures = <String>[];
+    for (final width in const [320.0, 1280.0]) {
+      for (final locale in AppLocalizations.supportedLocales) {
+        final tag = localeTag(locale);
+        await setLayoutSurface(tester, Size(width, kPageSweepHeight));
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey('notification-history-summary-$tag-${width.toInt()}'),
+          child: pageSurfaceHost(
+            view: kNotificationHistoryPageCase.view(),
+            locale: locale,
+            overrides: kNotificationHistoryPageCase.overrides(),
+          ),
+        ));
+        await settleIgnoringAnimations(tester);
+
+        final loc = localizationsByTag[tag]!;
+        for (final text in [
+          'Device.IP.Diagnostics.ServerSelectionDiagnostics()',
+          'Device.Ethernet.Interface.1.Stats.UnknownProtoPacketsReceived',
+          'Linksys-Guest-Network-Second-Floor',
+          'Device.LocalAgent.TransferComplete!',
+          loc.success,
+        ]) {
+          if (find.text(text).evaluate().isEmpty) {
+            failures.add('$tag @${width.toInt()}px: "$text" is not on screen');
+          }
+        }
+        for (final text in [
+          loc.loading,
+          loc.failedToLoadSettings,
+          loc.notificationHistoryGone,
+        ]) {
+          if (find.text(text).evaluate().isNotEmpty) {
+            failures.add('$tag @${width.toInt()}px: a row shows "$text"');
+          }
+        }
+      }
+    }
+    expect(failures, isEmpty, reason: failures.join('\n'));
+  });
 
   // The readability assertion rule 4 of the skill requires beside an overflow
   // assertion, aimed at the one site this pilot changed. Neither this group nor

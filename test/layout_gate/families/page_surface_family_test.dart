@@ -213,8 +213,9 @@ void main() {
           // new about it is the fixture's job: the page's default state is
           // "not available in this mode", so `notificationHistoryOverrides()` has
           // to switch availability on before there is anything to measure — and
-          // `requires` names four types instead of the usual two because this page
-          // has four content states, three of which cannot overflow.
+          // `requires` names five types instead of the usual two because this page
+          // has four content states, three of which cannot overflow, and its list
+          // sits below the filter that proves the first premise.
           'notification_history',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of

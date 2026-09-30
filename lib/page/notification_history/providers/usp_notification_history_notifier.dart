@@ -56,12 +56,18 @@ class UspNotificationHistoryNotifier
     }
   }
 
-  /// Re-reads the history list. **User-triggered only.**
+  /// Re-reads the history list, and the bodies of the rows on screen.
+  /// **User-triggered only.**
   ///
   /// History and not state: `lastBoot` / `lastUspActivity` are read once on open
   /// and deliberately freeze — see [NotificationHistoryState.sessionState]. The
   /// filter and the page offset survive a refresh, because the viewer set them
   /// and a refresh is not a reason to undo that.
+  ///
+  /// The bodies because a row holds its [notificationDetailProvider] read for as
+  /// long as it is on screen: without this, a body that failed once would stay
+  /// failed until the row scrolled away, and this gesture is the page's only
+  /// retry.
   Future<void> refresh() async {
     final svc = ref.read(uspNotificationHistoryServiceProvider);
     final current = state.valueOrNull;
@@ -70,6 +76,7 @@ class UspNotificationHistoryNotifier
     try {
       final entries = await svc.fetchHistory();
       state = AsyncData(current.copyWith(entries: entries));
+      ref.invalidate(notificationDetailProvider);
     } on ServiceError catch (e) {
       logger.e('[USP][NotificationHistory]: Refresh failed', error: e);
       state = AsyncError(e, StackTrace.current);
@@ -111,11 +118,19 @@ final notificationHistoryAvailableProvider = Provider<bool>(
   (ref) => ref.watch(bridgeConfigProvider)?.remoteReads != null,
 );
 
-/// One notification's stored body, fetched when its row is opened.
+/// One notification's stored body, fetched when its row is built — which, in the
+/// page's sliver timeline, is when it scrolls into view — or, for a type the row
+/// shows no line of, when it is opened.
 ///
 /// Separate from the list on purpose: the list endpoint carries no bodies because
 /// a diagnostic body can be hundreds of KB, so fetching all of them to render a
-/// table would move megabytes for a column nobody is looking at.
+/// table would move megabytes for rows nobody has scrolled to. The row and its
+/// dialog watch the same member, so opening a row on screen reads nothing new.
+///
+/// `autoDispose` and not kept alive: a row scrolled far enough out of view is
+/// disposed, and scrolling back reads its body again. That is a second read of a
+/// row somebody went back to, which is cheaper than holding every body a long
+/// session has ever shown.
 ///
 /// A `404` arrives as [ResourceNotFoundError] and means "no longer available" —
 /// the spec makes it cover both "gone" and "not yours" without distinguishing
