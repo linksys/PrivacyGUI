@@ -85,14 +85,7 @@ class UspMacFilterService {
       final network = results[0] as MacFilterNetwork;
       final devices = results[1] as ConnectedDevices;
 
-      final list = network.macFilterList.trim();
-      final macs = list.isEmpty
-          ? <String>[]
-          : list
-              .split(',')
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList();
+      final macs = _parseList(network.macFilterList);
 
       final connected = devices.items
           .where((d) =>
@@ -126,21 +119,27 @@ class UspMacFilterService {
   Future<MacFilterData> fetch() async {
     try {
       final raw = await MacFilterNetwork.fetch(_usp);
-      final list = raw.macFilterList.trim();
-      final macs = list.isEmpty
-          ? <String>[]
-          : list
-              .split(',')
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList();
       return MacFilterData(
-          mode: MacFilterMode.fromWire(raw.macFilterMode), macs: macs);
+        mode: MacFilterMode.fromWire(raw.macFilterMode),
+        macs: _parseList(raw.macFilterList),
+      );
     } on ServiceError {
       rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// Splits the comma-joined `X_LINKSYS_MACFilterList` read-back into MACs,
+  /// guarding the empty-string case (which reads as an empty list, not `['']`).
+  static List<String> _parseList(String raw) {
+    final list = raw.trim();
+    if (list.isEmpty) return const [];
+    return list
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 
   /// Sets mode and list atomically. The list is normalized and de-duplicated,

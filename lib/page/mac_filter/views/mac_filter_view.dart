@@ -54,11 +54,38 @@ class MacFilterView extends ConsumerWidget {
         AppText.bodyMedium(loc(context).macFilterPageDesc),
         AppGap.lg(),
         _buildModeCard(context, ref, state),
+        if (state.mode == MacFilterMode.allow && state.macs.isEmpty) ...[
+          AppGap.md(),
+          _buildWarningBanner(context, loc(context).macFilterAllowEmptyWarning),
+        ],
         if (state.isEnabled) ...[
           AppGap.lg(),
           _buildDeviceList(context, ref, state),
         ],
       ],
+    );
+  }
+
+  Widget _buildWarningBanner(BuildContext context, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(Icons.warning_amber_rounded,
+              size: 20, color: colorScheme.onErrorContainer),
+          AppGap.sm(),
+          Expanded(
+            child:
+                AppText.bodySmall(message, color: colorScheme.onErrorContainer),
+          ),
+        ],
+      ),
     );
   }
 
@@ -122,13 +149,22 @@ class MacFilterView extends ConsumerWidget {
               AppButton.text(
                 identifier: 'mac-filter-add-device',
                 label: loc(context).addDevice,
-                onTap: state.isBusy
+                // Disabled at the firmware limit; the message below says why.
+                onTap: (state.isBusy ||
+                        state.macs.length >= UspMacFilterService.maxAddresses)
                     ? null
                     : () => _showAddMacDialog(context, ref, state),
               ),
             ],
           ),
           AppGap.md(),
+          if (state.macs.length >= UspMacFilterService.maxAddresses) ...[
+            AppText.bodySmall(
+              loc(context)
+                  .macFilterMaxReached(UspMacFilterService.maxAddresses),
+            ),
+            AppGap.sm(),
+          ],
           if (state.macs.isEmpty)
             AppText.bodySmall(loc(context).macFilterListEmpty)
           else
@@ -209,20 +245,35 @@ class MacFilterView extends ConsumerWidget {
         .toList();
     showAppDialog<void>(
       context: context,
+      // The field reveals its error on change; the scrim tap must not close the
+      // dialog out from under an in-progress edit (#1059).
       barrierDismissible: false,
       builder: (dialogContext) => _AddMacDialog(
         existingMacs: state.macs,
         deviceOptions: deviceOptions,
         onConfirm: (mac) async {
-          await ref.read(uspMacFilterProvider.notifier).addMac(mac);
+          // Pop first, then write — a failed write surfaces as a SnackBar on the
+          // page rather than leaving the dialog stuck on "Adding…".
+          Navigator.of(dialogContext).pop();
+          try {
+            await ref.read(uspMacFilterProvider.notifier).addMac(mac);
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(localizeServiceError(context, e))),
+              );
+            }
+          }
         },
       ),
     );
   }
 }
 
-/// Add-device dialog. Mirrors instant_privacy's dialog, including the #1059
-/// Web-focus validation-on-unfocus workaround.
+/// Add-device dialog, mirroring instant_privacy's: an `AppSelectAutoComplete`
+/// device picker over a validated MAC field. Validation runs on every change
+/// (and on select), and `barrierDismissible: false` on the host keeps a scrim
+/// tap from closing the dialog mid-edit (#1059).
 class _AddMacDialog extends StatefulWidget {
   const _AddMacDialog({
     required this.existingMacs,
@@ -276,8 +327,16 @@ class _AddMacDialogState extends State<_AddMacDialog> {
 
   Future<void> _confirm() async {
     setState(() => _isConfirming = true);
-    await widget.onConfirm(UspMacFilterService.normalizeMac(_controller.text));
-    if (mounted) Navigator.of(context).pop();
+    try {
+      // onConfirm pops the dialog before it awaits, so the state is usually gone
+      // by the time this returns — the `mounted` guard covers that. The reset is
+      // for any future path that keeps the dialog open on failure: without it the
+      // button would sit on "Adding…" with nothing able to clear it.
+      await widget
+          .onConfirm(UspMacFilterService.normalizeMac(_controller.text));
+    } finally {
+      if (mounted) setState(() => _isConfirming = false);
+    }
   }
 
   @override
@@ -295,6 +354,7 @@ class _AddMacDialogState extends State<_AddMacDialog> {
             controller: _controller,
             onSelected: (value) {
               _controller.text = value;
+              setState(() => _errorKey = _errorFor(_controller.text));
               _revalidate();
             },
             child: AppTextField(

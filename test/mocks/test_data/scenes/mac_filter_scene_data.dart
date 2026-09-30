@@ -52,10 +52,16 @@ const enabledEmptyState = MacFilterState(
   connectedDevices: _devices,
 );
 
-/// The gate scene: the one state rendering every region at once — the mode
-/// card, the list header + Add button, and device rows (one on a private MAC).
-const gateMacFilterState = MacFilterState(
-  mode: MacFilterMode.deny,
-  macs: ['AA:BB:CC:DD:EE:01', '7A:BB:CC:DD:EE:03'],
+/// Allow with an empty list — the state the empty-Allow warning banner renders
+/// for (Allow admits only the listed devices, so an empty list blocks everyone).
+const allowEmptyState = MacFilterState(
+  mode: MacFilterMode.allow,
+  macs: [],
   connectedDevices: _devices,
 );
+
+/// The gate scene: the one state rendering every region at once — the mode
+/// card, the list header + Add button, and device rows (one on a private MAC).
+/// This is the Deny-with-devices scene; kept as a named alias so the layout gate
+/// and the golden suite move together if that scene changes.
+const gateMacFilterState = denyWithDevicesState;

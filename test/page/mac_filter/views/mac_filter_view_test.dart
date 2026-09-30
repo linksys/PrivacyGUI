@@ -64,4 +64,12 @@ void main() {
     // No device-row MAC text present.
     expect(find.text('AA:BB:CC:DD:EE:01'), findsNothing);
   });
+
+  testWidgets('Allow mode with an empty list shows the warning banner',
+      (tester) async {
+    await tester.pumpWidget(host('allow-empty', allowEmptyState));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+  });
 }

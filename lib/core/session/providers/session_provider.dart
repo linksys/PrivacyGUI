@@ -203,11 +203,20 @@ class SessionNotifier extends Notifier<SessionState> {
   Future<void> _resolveCapabilities() async {
     final usp = ref.read(uspClientProvider);
     if (usp == null) return;
-    final source = ref.read(capabilitySourceProvider);
-    final capabilities = await source.resolveAll(usp);
-    state = state.copyWith(capabilities: capabilities);
-    logger.d('[Session]: capabilities resolved: '
-        '${DeviceCapability.values.where(capabilities.has).map((c) => c.name).toList()}');
+    try {
+      final source = ref.read(capabilitySourceProvider);
+      final capabilities = await source.resolveAll(usp);
+      state = state.copyWith(capabilities: capabilities);
+      logger.d('[Session]: capabilities resolved: '
+          '${DeviceCapability.values.where(capabilities.has).map((c) => c.name).toList()}');
+    } catch (e) {
+      // Best-effort by contract: the login has already fetched device info and
+      // must not fail here. The current source is fail-closed and never throws,
+      // but a future source (e.g. GSDM, #69) might — enforce the invariant at
+      // the seam rather than trusting every source to. Capabilities stay empty,
+      // so every gated feature is simply hidden.
+      logger.w('[Session]: capability resolution failed, all hidden: $e');
+    }
   }
 
   /// Clears the session state.
