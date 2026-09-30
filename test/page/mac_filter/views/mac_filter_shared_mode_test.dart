@@ -277,6 +277,52 @@ void main() {
 
   // MAC Filtering is a tab of Wi-Fi Settings: hosted on the real page so Save is
   // the page's own bar, as a user meets it.
+  // A row is a name over its MAC. When there is no name — the device is offline
+  // (the router drops its Hosts name, measured), or online with an empty hostname,
+  // where the display name already *is* the MAC — the MAC is the row's only line,
+  // not the same string twice.
+  group('a row without a name shows its MAC once', () {
+    const nameless = 'AA:BB:CC:DD:EE:07';
+    const online = [
+      MacFilterDeviceUIModel(mac: allowed, displayName: 'Laptop'),
+      MacFilterDeviceUIModel(mac: nameless, displayName: nameless),
+    ];
+
+    testWidgets('Instant Privacy', (tester) async {
+      await pumpPage(
+          tester,
+          'ip-once',
+          const InstantPrivacyView(),
+          instantPrivacyOverrides(privacy(
+              MacFilterMode.allow, [allowed, blocked, nameless],
+              online: online)));
+
+      expect(find.text(blocked), findsOneWidget, reason: 'offline');
+      expect(find.text(nameless), findsOneWidget, reason: 'online, no name');
+      expect(find.text('Laptop'), findsOneWidget);
+      expect(find.text(allowed), findsOneWidget,
+          reason: 'a named row still shows its MAC under the name');
+    });
+
+    testWidgets('MAC Filtering', (tester) async {
+      await pumpPage(
+          tester,
+          'mf-once',
+          const UspWifiSettingsView(
+              initialTab: UspWifiSettingsView.macFilterTab),
+          wifiMacFilterTabOverrides(
+              state: MacFilterState(
+            settings: clean(MacFilterMode.deny, [allowed, blocked, nameless]),
+            status: const MacFilterStatus(connectedDevices: online),
+          )));
+
+      expect(find.text(blocked), findsOneWidget, reason: 'offline');
+      expect(find.text(nameless), findsOneWidget, reason: 'online, no name');
+      expect(find.text('Laptop'), findsOneWidget);
+      expect(find.text(allowed), findsOneWidget);
+    });
+  });
+
   group('MAC Filter', () {
     const view =
         UspWifiSettingsView(initialTab: UspWifiSettingsView.macFilterTab);

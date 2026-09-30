@@ -151,7 +151,14 @@ class MacFilterTab extends ConsumerWidget {
     final device = state.connectedDevices
         .where((d) => d.mac.toUpperCase() == mac.toUpperCase())
         .firstOrNull;
-    final name = device?.displayName ?? mac;
+    // A name over its MAC, or the MAC alone. No name is the usual case for a
+    // listed device that is offline — the router clears its Hosts name then — and
+    // an online one with no hostname carries its MAC as its display name.
+    final displayName = device?.displayName ?? '';
+    final name =
+        displayName.isEmpty || displayName.toUpperCase() == mac.toUpperCase()
+            ? null
+            : displayName;
     return LayoutBlock(
       child: Row(
         children: [
@@ -161,8 +168,11 @@ class MacFilterTab extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.bodyMedium(name),
-                AppText.bodySmall(mac),
+                if (name != null) ...[
+                  AppText.bodyMedium(name),
+                  AppText.bodySmall(mac),
+                ] else
+                  AppText.bodyMedium(mac),
               ],
             ),
           ),
