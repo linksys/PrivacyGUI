@@ -424,7 +424,6 @@ drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
 
-
 ## Bare `ref.read` of an L1 provider — the sites this audit did not cover (2026-09-29, #1634)
 
 `ref.read(xDataProvider).valueOrNull` returns null unless something else is holding L1 built
@@ -494,7 +493,6 @@ is fine when it feeds the save path; it is a defect when it feeds the screen.
 
 Recorded because the answer is "nothing to change": without this the next person re-runs the
 search, and a Phase 2 item stays open forever because its result was never written down.
-
 
 ## The deferred gap: a save does not detect a mid-edit device change (#1587 Phase 3)
 

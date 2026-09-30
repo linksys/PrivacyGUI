@@ -206,6 +206,13 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   }
 
   Future<DevicesData> _fetch() async {
+    // CAPTURED BEFORE THE AWAITS, not read after them. `build()` bumped the counter just
+    // before calling this, and this method then awaits three times — WifiData, system
+    // info, `svc.fetch()` — which is long enough for a push refresh to start and finish.
+    // Reading `_refreshGeneration` at the bottom would hand `_fetchMeshAndUpdate` the
+    // NEWER number, so a mesh update belonging to a superseded `build()` would pass the
+    // guard and publish. First version of this fix did exactly that.
+    final generation = _refreshGeneration;
     final svc = ref.read(uspDevicesDataServiceProvider);
 
     // Read WiFi enrichment data — soft dependency with timeout.
@@ -261,13 +268,10 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final existingMesh =
         state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
 
-    // Fire-and-forget: fetch mesh topology in background, then update state.
-    //
-    // `_refreshGeneration` as it stands: `build()` bumped it before calling this, and a
-    // rebuild or a push starting later bumps it again, which is exactly what should stop
-    // this mesh update from publishing.
+    // Fire-and-forget: fetch mesh topology in background, then update state. Carries the
+    // generation captured at the top of this method — see there for why not the current one.
     _fetchMeshAndUpdate(
-        svc, wifiData, gatewayName, sysData, result, _refreshGeneration);
+        svc, wifiData, gatewayName, sysData, result, generation);
 
     return DevicesData(
       codegenContext: result.codegenContext,

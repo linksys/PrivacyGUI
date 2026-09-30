@@ -552,6 +552,99 @@ void main() {
               'the newer read must survive the older one finishing after it');
     });
 
+    test('a superseded refresh\'s mesh update does not publish either',
+        () async {
+      // WHY THIS IS SEPARATE. The other two tests exercise the guard in
+      // `_refetchPreservingMesh`. `_fetchMeshAndUpdate` has its own, and the shared mock
+      // returns `MeshTopologyInfo.empty` — which that method treats as "nothing to do" and
+      // returns on, before reaching its write. So the mesh guard was uncovered: removing it
+      // left every test green. Measured, not assumed.
+      //
+      // It is the more dangerous of the two, because it is fire-and-forget: nothing awaits
+      // it, so a stale mesh publishing has no caller to notice.
+      final sseController = StreamController<InvalidationEvent>.broadcast();
+      addTearDown(sseController.close);
+
+      final meshHeld = Completer<MeshTopologyInfo>();
+      var meshCalls = 0;
+      when(() => mockDevicesSvc.fetchMeshTopology(
+            bssidToBandMap: any(named: 'bssidToBandMap'),
+          )).thenAnswer((_) {
+        meshCalls++;
+        // The first mesh fetch (build()'s) is held open; later ones resolve empty so they
+        // return early and cannot themselves publish.
+        return meshCalls == 1
+            ? meshHeld.future
+            : Future.value(MeshTopologyInfo.empty);
+      });
+      when(() => mockDevicesSvc.rebuildWithMesh(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((_) => MeshNetwork(
+            master: MasterNode(deviceId: 'GATEWAY', model: 'MESH-REBUILD'),
+          ));
+
+      var fetchCalls = 0;
+      when(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((_) {
+        fetchCalls++;
+        return Future.value(_tagged(fetchCalls == 1 ? 'build' : 'newer'));
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+          wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+          systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(null),
+          ),
+          sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+
+      // A push refresh runs to completion, superseding build()'s generation.
+      sseController.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      expect(container.read(devicesDataProvider).valueOrNull?.hostNameByMac,
+          {'TAG': 'newer'});
+
+      // NOW build()'s mesh fetch finally returns, with a non-empty topology so it reaches
+      // its write. It belongs to a generation that has been superseded.
+      // Non-empty only so `_fetchMeshAndUpdate` gets past its `isEmpty` early return and
+      // reaches the write this test is about.
+      meshHeld.complete(MeshTopologyInfo(
+        nodes: [MasterNode(deviceId: 'GATEWAY', model: 'M60TB')],
+        clientToNodeMap: const {},
+      ));
+      await Future.delayed(Duration.zero);
+
+      // ASSERT ON THE MESH, NOT ON hostNameByMac. The superseded publish would be
+      // `cur.copyWith(meshTopology:, meshNetwork:)` where `cur` is already the newer
+      // value — so `hostNameByMac` reads `newer` either way, and an assertion on it
+      // cannot tell the guard from its absence. Measured: with the guard removed, the tag
+      // assertion still passed while the mesh had been overwritten.
+      final finalData = container.read(devicesDataProvider).valueOrNull!;
+      expect(finalData.meshTopology.isEmpty, isTrue,
+          reason:
+              'the superseded mesh update must not have published its topology');
+      expect(
+          finalData.nodes.map((n) => n.model), isNot(contains('MESH-REBUILD')),
+          reason: 'nor the MeshNetwork it rebuilt from it');
+    });
+
     test('a rebuild supersedes a refresh already in flight', () async {
       final sseController = StreamController<InvalidationEvent>.broadcast();
       addTearDown(sseController.close);
