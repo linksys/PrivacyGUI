@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/config.dart';
@@ -32,7 +33,9 @@ void main() {
   // from get_it.
   mockDependencyRegister();
 
-  Widget page(PageBottomBar bar) => testableSingleRoute(
+  Widget page(PageBottomBar bar, {bool readOnly = false}) =>
+      testableSingleRoute(
+        overrides: [readOnlyModeProvider.overrideWithValue(readOnly)],
         child: StyledAppPageView(
           title: 'Settings',
           bottomBar: bar,
@@ -124,8 +127,11 @@ void main() {
       bool Function()? checkPositiveEnabled,
       void Function(Object?, StackTrace)? onError,
       void Function(String?)? onResult,
+      bool readOnly = false,
+      bool allowInReadOnly = false,
     }) async {
       await tester.pumpWidget(testableSingleRoute(
+        overrides: [readOnlyModeProvider.overrideWithValue(readOnly)],
         child: Builder(
           builder: (context) => Center(
             child: TextButton(
@@ -139,6 +145,7 @@ void main() {
                 checkPositiveEnabled: checkPositiveEnabled,
                 event: event,
                 onError: onError,
+                allowInReadOnly: allowInReadOnly,
               ).then((value) => onResult?.call(value)),
               child: const Text('open'),
             ),
@@ -211,6 +218,138 @@ void main() {
 
       expect(calls, 0);
       expect(find.text('content'), findsNothing);
+    });
+  });
+
+  group('read-only build', () {
+    testResponsiveWidgets('the positive action cannot fire', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(page(
+          PageBottomBar(isPositiveEnabled: true, onPositiveTap: () => taps++),
+          readOnly: true));
+      await tester.pumpAndSettle();
+
+      expect(_positiveButton(tester).onTap, isNull);
+      await tester.tap(_positive, warnIfMissed: false);
+      expect(taps, 0);
+    }, variants: responsiveAllVariants);
+
+    testResponsiveWidgets('the negative action still works', (tester) async {
+      var negativeTaps = 0;
+      await tester.pumpWidget(page(
+          PageBottomBar(
+            isPositiveEnabled: true,
+            isNegitiveEnabled: true,
+            negitiveLable: 'Discard',
+            onPositiveTap: () {},
+            onNegitiveTap: () => negativeTaps++,
+          ),
+          readOnly: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Discard'));
+      expect(negativeTaps, 1);
+    }, variants: responsiveAllVariants);
+
+    testResponsiveWidgets('a bar that writes nothing can opt out',
+        (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(page(
+          PageBottomBar(
+            isPositiveEnabled: true,
+            allowInReadOnly: true,
+            onPositiveTap: () => taps++,
+          ),
+          readOnly: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_positive);
+      expect(taps, 1);
+    }, variants: responsiveAllVariants);
+
+    testResponsiveWidgets('the inverse bar keeps the opt-out',
+        (tester) async {
+      await tester.pumpWidget(page(
+          InversePageBottomBar(
+            isPositiveEnabled: true,
+            allowInReadOnly: true,
+            onPositiveTap: () {},
+          ),
+          readOnly: true));
+      await tester.pumpAndSettle();
+
+      expect(_positiveButton(tester).onTap, isNotNull);
+    }, variants: responsiveAllVariants);
+
+    testWidgets('copyWith keeps the opt-out', (tester) async {
+      final bar = PageBottomBar(
+              isPositiveEnabled: true, allowInReadOnly: true, onPositiveTap: () {})
+          .copyWith(isPositiveEnabled: false);
+      expect(bar.allowInReadOnly, isTrue);
+    });
+
+    testWidgets('submit dialog cannot submit', (tester) async {
+      var calls = 0;
+      await tester.pumpWidget(testableSingleRoute(
+        overrides: [readOnlyModeProvider.overrideWithValue(true)],
+        child: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => showSubmitAppDialog<String>(
+                context,
+                positiveLabel: 'Submit',
+                contentBuilder: (context, setState, submit) =>
+                    const Text('content'),
+                event: () async {
+                  calls++;
+                  return 'saved';
+                },
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+          tester
+              .widget<AppTextButton>(
+                  find.widgetWithText(AppTextButton, 'Submit'))
+              .onTap,
+          isNull);
+      expect(calls, 0);
+    });
+
+    testWidgets('submit dialog can opt out', (tester) async {
+      var calls = 0;
+      await tester.pumpWidget(testableSingleRoute(
+        overrides: [readOnlyModeProvider.overrideWithValue(true)],
+        child: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => showSubmitAppDialog<String>(
+                context,
+                positiveLabel: 'Submit',
+                allowInReadOnly: true,
+                contentBuilder: (context, setState, submit) =>
+                    const Text('content'),
+                event: () async {
+                  calls++;
+                  return 'saved';
+                },
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(calls, 1);
     });
   });
 }

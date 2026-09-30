@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -130,8 +131,14 @@ Future<T?> showSubmitAppDialog<T>(
   bool useRootNavigator = true,
   required Future<T> Function() event,
   void Function(Object? error, StackTrace stackTrace)? onError,
+  // Submit is disabled in a read-only build, since submitting is how these
+  // dialogs write. Set this only when the event writes nothing to the router.
+  bool allowInReadOnly = false,
 }) {
   bool isLoading = false;
+  final blockedByReadOnly = !allowInReadOnly &&
+      ProviderScope.containerOf(context, listen: false)
+          .read(readOnlyModeProvider);
   return showDialog<T?>(
     context: context,
     useRootNavigator: useRootNavigator,
@@ -182,7 +189,8 @@ Future<T?> showSubmitAppDialog<T>(
                   ),
                   AppTextButton(
                     positiveLabel ?? loc(context).save,
-                    onTap: checkPositiveEnabled?.call() ?? true
+                    onTap: !blockedByReadOnly &&
+                            (checkPositiveEnabled?.call() ?? true)
                         ? () {
                             onSubmit();
                           }

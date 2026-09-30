@@ -82,6 +82,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 ? PageBottomBar(
                     positiveLabel: loc(context).testAgain,
                     isPositiveEnabled: true,
+                    // Only resets the page; the test itself is a diagnostic.
+                    allowInReadOnly: true,
                     onPositiveTap: () {
                       ref.read(healthCheckProvider.notifier).resetState();
                     },

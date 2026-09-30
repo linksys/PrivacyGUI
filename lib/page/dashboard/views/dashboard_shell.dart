@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/components/styled/remote_assistance/remote_assi
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 
 import 'package:privacy_gui/page/components/pwa/install_prompt_banner.dart';
+import 'package:privacy_gui/page/components/read_only/read_only_banner.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -85,6 +86,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   Widget _buildLayout() {
     return Column(
       children: [
+        const ReadOnlyBanner(),
         Expanded(child: widget.child),
         const InstallPromptBanner(),
       ],

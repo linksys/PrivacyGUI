@@ -75,6 +75,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             )
           : PageBottomBar(
               isPositiveEnabled: true,
+              // Only closes the page.
+              allowInReadOnly: true,
               onPositiveTap: () {
                 context.pop();
               },

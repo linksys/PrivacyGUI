@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/providers/read_only/read_only_mode_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
@@ -36,6 +37,11 @@ class PageBottomBar extends Equatable {
   final void Function() onPositiveTap;
   final void Function()? onNegitiveTap;
 
+  /// A read-only build disables every positive action, since that is where a
+  /// page commits its changes. Set this only on a bar whose positive action
+  /// writes nothing to the router, such as one that just closes the page.
+  final bool allowInReadOnly;
+
   const PageBottomBar({
     required this.isPositiveEnabled,
     this.isNegitiveEnabled,
@@ -43,6 +49,7 @@ class PageBottomBar extends Equatable {
     this.negitiveLable,
     required this.onPositiveTap,
     this.onNegitiveTap,
+    this.allowInReadOnly = false,
   });
 
   PageBottomBar copyWith({
@@ -52,6 +59,7 @@ class PageBottomBar extends Equatable {
     String? negitiveLable,
     void Function()? onPositiveTap,
     void Function()? onNegitiveTap,
+    bool? allowInReadOnly,
   }) {
     return PageBottomBar(
       isPositiveEnabled: isPositiveEnabled ?? this.isPositiveEnabled,
@@ -60,6 +68,7 @@ class PageBottomBar extends Equatable {
       negitiveLable: negitiveLable ?? this.negitiveLable,
       onPositiveTap: onPositiveTap ?? this.onPositiveTap,
       onNegitiveTap: onNegitiveTap ?? this.onNegitiveTap,
+      allowInReadOnly: allowInReadOnly ?? this.allowInReadOnly,
     );
   }
 
@@ -72,6 +81,7 @@ class PageBottomBar extends Equatable {
       negitiveLable,
       onPositiveTap,
       onNegitiveTap,
+      allowInReadOnly,
     ];
   }
 }
@@ -84,6 +94,7 @@ class InversePageBottomBar extends PageBottomBar {
     super.negitiveLable,
     required super.onPositiveTap,
     super.onNegitiveTap,
+    super.allowInReadOnly,
   });
 }
 
@@ -459,6 +470,13 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
   }
 
   Widget _bottomWidget(BuildContext context) {
+    final bar = widget.bottomBar;
+    final blockedByReadOnly =
+        ref.watch(readOnlyModeProvider) && !(bar?.allowInReadOnly ?? false);
+    final VoidCallback? onPositiveTap =
+        bar?.isPositiveEnabled == true && !blockedByReadOnly
+            ? () => bar!.onPositiveTap.call()
+            : null;
     return widget.bottomBar != null
         ? Align(
             alignment: Alignment.bottomCenter,
@@ -507,13 +525,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 child: AppFilledButton.fillWidth(
                                   widget.bottomBar?.positiveLabel ??
                                       loc(context).save,
-                                  onTap: widget.bottomBar?.isPositiveEnabled ==
-                                          true
-                                      ? () {
-                                          widget.bottomBar?.onPositiveTap
-                                              .call();
-                                        }
-                                      : null,
+                                  onTap: onPositiveTap,
                                   color:
                                       widget.bottomBar is InversePageBottomBar
                                           ? Theme.of(context).colorScheme.error
@@ -544,12 +556,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 widget.bottomBar?.positiveLabel ??
                                     loc(context).save,
                                 identifier: 'now-page-bottom-button-positive',
-                                onTap: widget.bottomBar?.isPositiveEnabled ==
-                                        true
-                                    ? () {
-                                        widget.bottomBar?.onPositiveTap.call();
-                                      }
-                                    : null,
+                                onTap: onPositiveTap,
                                 color: widget.bottomBar is InversePageBottomBar
                                     ? Theme.of(context).colorScheme.error
                                     : null,
