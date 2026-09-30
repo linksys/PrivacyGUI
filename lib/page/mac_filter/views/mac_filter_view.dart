@@ -7,7 +7,6 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
@@ -67,14 +66,13 @@ class MacFilterView extends ConsumerWidget {
 
   Widget _buildContent(
       BuildContext context, WidgetRef ref, MacFilterState state) {
-    final settings = state.settings.current;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(loc(context).macFilterPageDesc),
         AppGap.lg(),
         _buildToggleCard(context, ref, state),
-        if (settings.isEnabled) ...[
+        if (state.isEnabled) ...[
           AppGap.lg(),
           _buildDeviceList(context, ref, state),
         ],
@@ -84,7 +82,7 @@ class MacFilterView extends ConsumerWidget {
 
   Widget _buildToggleCard(
       BuildContext context, WidgetRef ref, MacFilterState state) {
-    final isEnabled = state.settings.current.isEnabled;
+    final isEnabled = state.isEnabled;
     final isSaving = state.status.isSaving;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -120,7 +118,7 @@ class MacFilterView extends ConsumerWidget {
 
   Widget _buildDeviceList(
       BuildContext context, WidgetRef ref, MacFilterState state) {
-    final macs = state.settings.current.macs;
+    final macs = state.blockedMacs;
     final atLimit = macs.length >= UspMacFilterService.maxAddresses;
     return SizedBox(
       width: double.infinity,
@@ -199,32 +197,30 @@ class MacFilterView extends ConsumerWidget {
   Future<void> _onToggle(BuildContext context, WidgetRef ref,
       MacFilterState state, bool enable) async {
     // Turning MAC Filter on while Instant Privacy (Allow) is on is mutually
-    // exclusive — they share one device mode. Confirm before overriding.
-    if (enable) {
-      final ipOn =
-          ref.read(uspInstantPrivacyProvider).settings.current.isEnabled;
-      if (ipOn) {
-        final ok = await showAppDialog<bool>(
-          context: context,
-          builder: (ctx) => AppDialog(
-            titleText: loc(context).macFilter,
-            content: AppText.bodyMedium(
-                loc(context).macFilterEnableTurnsOffInstantPrivacy),
-            actions: [
-              AppButton.text(
-                label: loc(context).cancel,
-                onTap: () => Navigator.of(ctx).pop(false),
-              ),
-              AppButton.primary(
-                identifier: 'mac-filter-override-confirm',
-                label: loc(context).ok,
-                onTap: () => Navigator.of(ctx).pop(true),
-              ),
-            ],
-          ),
-        );
-        if (ok != true) return;
-      }
+    // exclusive — they share one device mode, so this page's own read of it says
+    // whether Instant Privacy is on. Not that page's provider: it is not on
+    // screen, so it is unloaded. Confirm before overriding.
+    if (enable && state.isOtherFilterOn) {
+      final ok = await showAppDialog<bool>(
+        context: context,
+        builder: (ctx) => AppDialog(
+          titleText: loc(context).macFilter,
+          content: AppText.bodyMedium(
+              loc(context).macFilterEnableTurnsOffInstantPrivacy),
+          actions: [
+            AppButton.text(
+              label: loc(context).cancel,
+              onTap: () => Navigator.of(ctx).pop(false),
+            ),
+            AppButton.primary(
+              identifier: 'mac-filter-override-confirm',
+              label: loc(context).ok,
+              onTap: () => Navigator.of(ctx).pop(true),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
     }
     ref.read(uspMacFilterProvider.notifier).setEnabled(enable);
   }
@@ -233,7 +229,7 @@ class MacFilterView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, MacFilterState state) {
     showMacFilterAddDeviceDialog(
       context: context,
-      existingMacs: state.settings.current.macs,
+      existingMacs: state.blockedMacs,
       connectedDevices: state.connectedDevices,
       onAdd: (mac) => ref.read(uspMacFilterProvider.notifier).addMac(mac),
     );

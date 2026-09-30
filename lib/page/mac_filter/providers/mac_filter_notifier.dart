@@ -84,13 +84,25 @@ class UspMacFilterNotifier extends AutoDisposeNotifier<MacFilterState>
   // Local mutations (synchronous — no network)
   // ---------------------------------------------------------------------------
 
-  /// Toggle the filter on (Deny) or off (Disabled). Turning off clears the list
-  /// (a mode switch is a fresh start); turning on leaves it empty — the MAC
-  /// Filter page does not pre-populate.
+  /// Toggle the filter on (Deny) or off.
+  ///
+  /// Turning on starts an empty block list — the MAC Filter page does not
+  /// pre-populate, and when the device is in Instant Privacy's `Allow` its allow
+  /// list must not become this page's block list. Turning back off returns to the
+  /// mode as last read: from `Allow`, on-then-off is no change rather than a Save
+  /// that switches Instant Privacy off. Off from an applied `Deny` is `Disabled`.
   void setEnabled(bool enabled) {
-    final next = enabled
-        ? const MacFilterSettings(mode: MacFilterMode.deny, macs: [])
-        : const MacFilterSettings(mode: MacFilterMode.disabled, macs: []);
+    final original = state.settings.original;
+    final MacFilterSettings next;
+    if (enabled) {
+      next = original.mode == MacFilterMode.deny
+          ? original
+          : const MacFilterSettings(mode: MacFilterMode.deny, macs: []);
+    } else if (original.mode == MacFilterMode.deny) {
+      next = const MacFilterSettings(mode: MacFilterMode.disabled, macs: []);
+    } else {
+      next = original;
+    }
     state = state.copyWith(settings: state.settings.update(next));
   }
 

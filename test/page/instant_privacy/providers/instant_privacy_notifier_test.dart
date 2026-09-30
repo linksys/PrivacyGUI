@@ -31,6 +31,12 @@ void main() {
         macs: [],
         connectedDevices: [dev1, dev2],
       );
+  // The device is in MAC Filter's mode: a block list, not Instant Privacy's.
+  MacFilterFetchResult denyResult() => const MacFilterFetchResult(
+        mode: MacFilterMode.deny,
+        macs: ['AA:BB:CC:DD:EE:99'],
+        connectedDevices: [dev1, dev2],
+      );
 
   setUpAll(() {
     registerFallbackValue(MacFilterMode.disabled);
@@ -64,6 +70,74 @@ void main() {
       expect(s.settings.current.macs, ['AA:BB:CC:DD:EE:01']);
       expect(s.connectedDevices, [dev1, dev2]);
       expect(s.isDirty, isFalse);
+      c.dispose();
+    });
+  });
+
+  // One device mode feeds both pages, and each page owns exactly one non-Disabled
+  // value of it: Allow is Instant Privacy's, Deny is MAC Filter's. So "on" here is
+  // `mode == allow` — never `mode != disabled`, which reads MAC Filter's Deny as
+  // this page being on and its block list as this page's allow list.
+  group('the page reads only its own mode', () {
+    test('Allow: on, and the list is the allow list', () async {
+      final (c, _) = await loaded(allowResult());
+      final s = c.read(uspInstantPrivacyProvider);
+
+      expect(s.isEnabled, isTrue);
+      expect(s.allowedMacs, ['AA:BB:CC:DD:EE:01']);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
+    });
+
+    test('Deny: off, lists nothing, and knows MAC Filter is on', () async {
+      final (c, _) = await loaded(denyResult());
+      final s = c.read(uspInstantPrivacyProvider);
+
+      expect(s.isEnabled, isFalse);
+      expect(s.allowedMacs, isEmpty,
+          reason: 'the Deny list is a block list; showing it here would '
+              'present blocked devices as the allowed ones');
+      expect(s.isOtherFilterOn, isTrue);
+      c.dispose();
+    });
+
+    test('Disabled: off, and neither filter is on', () async {
+      final (c, _) = await loaded(disabledResult());
+      final s = c.read(uspInstantPrivacyProvider);
+
+      expect(s.isEnabled, isFalse);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
+    });
+
+    test('Deny: turning on then off again is no change, and never writes',
+        () async {
+      final (c, n) = await loaded(denyResult());
+
+      n.setEnabled(true);
+      n.setEnabled(false);
+      final s = c.read(uspInstantPrivacyProvider);
+
+      expect(s.isDirty, isFalse,
+          reason: 'a dirty state here offers Save, and Save would write '
+              'Disabled — silently turning MAC Filter off and emptying its '
+              'list, on a page the user only visited');
+      await n.save();
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
+    });
+
+    test('Deny: turning on overrides MAC Filter with the online devices',
+        () async {
+      final (c, n) = await loaded(denyResult());
+
+      n.setEnabled(true);
+      when(() => mockService.fetchAll()).thenAnswer((_) async => allowResult());
+      await n.save();
+
+      verify(() => mockService.setMacFilter(
+              MacFilterMode.allow, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']))
+          .called(1);
       c.dispose();
     });
   });

@@ -135,6 +135,8 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
+    show MacFilterMode;
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
@@ -1153,8 +1155,8 @@ final kMenuPageCase = PageSurfaceCase(
   // exactly one field off it (`dnsServers`), so a second composed `LanInfoUIModel`
   // would be eight lines restating a fixture that already exists to say the same
   // thing. The scene stays where its own page's cases can see it.
-  overrides: () =>
-      menuOverrides(lanInfo: dhcp.testLanInfo, privacyEnabled: true),
+  overrides: () => menuOverrides(
+      lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.allow),
   requires: const [AppMenuCard, AppBadge],
   forbids: const [AppLoader],
 );
@@ -1986,21 +1988,20 @@ final kInstantPrivacyPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `mac_filter_view` — the network-wide MAC filter (#1636): a three-mode
-/// `AppRadioList` selector always on screen, plus a list editor (header + Add
-/// button + device rows) that appears when a mode is active. The gate scene
-/// (`gateMacFilterState`) is Deny with a populated list, so header, Add button
-/// and rows all render at once. Instant Privacy is the same page's Allow mode
-/// under a different route, so it keeps its own case above.
+/// `mac_filter_view` — the network-wide MAC filter in `Deny` (#1636): one
+/// `AppSwitch` (Deny ⟷ Off — `Allow` is Instant Privacy's page), plus a list
+/// editor (header + Add button + device rows) that appears when it is on. The
+/// gate scene (`gateMacFilterState`) is Deny with a populated list, so header,
+/// Add button and rows all render at once. Instant Privacy is the same filter's
+/// Allow mode under a different route, so it keeps its own case above.
 final kMacFilterPageCase = PageSurfaceCase(
   id: 'mac_filter',
   view: () => const MacFilterView(),
   overrides: () => macFilterOverrides(),
-  // AppRadioList is generic (`AppRadioList<MacFilterMode>`), which
-  // `find.byType` cannot match from a raw `Type` literal, so the anti-spinner
-  // sentinel uses the non-generic widgets the gate scene always renders. That
-  // the mode selector itself renders is asserted in mac_filter_view_test.dart.
-  requires: const [UspTopBar, AppButton],
+  // The switch is always on screen and the Add button only when on, so the two
+  // together say the loaded, enabled page rendered — not a loader or the Off
+  // state, which would under-measure the list header.
+  requires: const [UspTopBar, AppSwitch, AppButton],
   forbids: const [AppLoader, ServiceErrorView],
 );
 

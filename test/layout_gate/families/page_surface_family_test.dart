@@ -77,11 +77,11 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-one cases over
-  // forty-four pages, because six of those pages are swept more than once. The two
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-two cases over
+  // forty-five pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -115,13 +115,14 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-one cases over forty-four pages, and which '
-      'sixty-one is a decision', () {
+      'the gate declares sixty-two cases over forty-five pages, and which '
+      'sixty-two is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
-        '#1549\'s split page, #1554\'s two fixture states and #1602\'s two '
-        'completion branches plus eight diagnostics screens', () {
+        '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
+        'completion branches plus eight diagnostics screens, and #1636\'s new '
+        'page', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -194,6 +195,9 @@ void main() {
           'dmz',
           'firewall',
           'instant_privacy',
+          // #1636: a new page view, beside the page it shares one device filter
+          // with — see the note at the bottom of this comment.
+          'mac_filter',
           'instant_safety',
           'internet_settings',
           'ipv6_port_service',
@@ -358,6 +362,17 @@ void main() {
         // A page split is therefore the fourth way this list grows, after a wave, a tab
         // and a falsified limit. It is also the only one of the four where the count of
         // *pages* goes up without any page being newly reachable: 44 pages, 49 cases.
+        //
+        // **#1636's one, which is a new page.** `mac_filter` is the fifth way: a
+        // page view that did not exist, added with its case rather than after it. It
+        // is Instant Privacy's `Deny` sibling over the same device filter, so its
+        // layout is the same toggle card and list editor at a different route — and
+        // being that close is the reason it gets a case of its own rather than
+        // inheriting `instant_privacy`'s: the list header's `Wrap` carries a
+        // different label, and an inherited clean result would be a claim about a
+        // string this page does not render. It arrived at zero, so `known_overflows
+        // .json` is unchanged. Recounted 2026-09-30: 62 cases, 45 swept pages of 47
+        // page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

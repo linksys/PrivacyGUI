@@ -9,7 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_add_device_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -57,9 +57,12 @@ class InstantPrivacyView extends ConsumerWidget {
   UiKitBottomBarConfig? _buildBottomBar(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     if (!state.isDirty) return null;
+    // `Allow` with an empty list is refused by the firmware, so an allow list
+    // emptied row by row cannot be saved; turning the switch off is the way out.
+    final emptiedAllowList = state.isEnabled && state.allowedMacs.isEmpty;
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled: !state.status.isSaving,
+      isPositiveEnabled: !state.status.isSaving && !emptiedAllowList,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
           ref.read(uspInstantPrivacyProvider.notifier).revert(),
@@ -68,7 +71,7 @@ class InstantPrivacyView extends ConsumerWidget {
 
   Widget _buildContent(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
-    final isEnabled = state.settings.current.isEnabled;
+    final isEnabled = state.isEnabled;
     final hasPrivateMac = _listedPrivateMac(state);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,14 +97,17 @@ class InstantPrivacyView extends ConsumerWidget {
         .where((d) => d.isPrivateMac)
         .map((d) => d.mac.toUpperCase())
         .toSet();
-    return state.settings.current.macs
-        .any((m) => privateMacs.contains(m.toUpperCase()));
+    return state.allowedMacs.any((m) => privateMacs.contains(m.toUpperCase()));
   }
 
   Widget _buildToggleCard(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
-    final isEnabled = state.settings.current.isEnabled;
+    final isEnabled = state.isEnabled;
     final isSaving = state.status.isSaving;
+    // Turning on pre-fills the list with the online devices, so with none online
+    // it would be an empty `Allow` list — refused by the firmware. Off stays
+    // reachable: this only blocks the off → on direction.
+    final cannotEnable = !isEnabled && state.connectedDevices.isEmpty;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: LayoutBlock(
@@ -116,7 +122,9 @@ class InstantPrivacyView extends ConsumerWidget {
                   AppGap.xs(),
                   AppText.bodySmall(isEnabled
                       ? loc(context).onlyAllowedDevicesCanConnect
-                      : loc(context).allDevicesCanConnectFreely),
+                      : cannotEnable
+                          ? loc(context).instantPrivacyCannotBeEnabled
+                          : loc(context).allDevicesCanConnectFreely),
                 ],
               ),
             ),
@@ -125,8 +133,9 @@ class InstantPrivacyView extends ConsumerWidget {
               value: isEnabled,
               isLoading: isSaving,
               busySemanticLabel: isSaving ? loc(context).processing : null,
-              onChanged:
-                  isSaving ? null : (v) => _onToggle(context, ref, state, v),
+              onChanged: isSaving || cannotEnable
+                  ? null
+                  : (v) => _onToggle(context, ref, state, v),
             ),
           ],
         ),
@@ -136,7 +145,8 @@ class InstantPrivacyView extends ConsumerWidget {
 
   Widget _buildDeviceList(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
-    final macs = state.settings.current.macs;
+    final macs = state.allowedMacs;
+    final atLimit = macs.length >= UspMacFilterService.maxAddresses;
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -152,11 +162,17 @@ class InstantPrivacyView extends ConsumerWidget {
               AppButton.text(
                 identifier: 'instant-privacy-add-device',
                 label: loc(context).addDevice,
-                onTap: () => _showAddDialog(context, ref, state),
+                onTap:
+                    atLimit ? null : () => _showAddDialog(context, ref, state),
               ),
             ],
           ),
           AppGap.md(),
+          if (atLimit) ...[
+            AppText.bodySmall(loc(context)
+                .macFilterMaxReached(UspMacFilterService.maxAddresses)),
+            AppGap.sm(),
+          ],
           if (macs.isEmpty)
             AppText.bodySmall(loc(context).noDevicesInAllowedList)
           else
@@ -240,32 +256,30 @@ class InstantPrivacyView extends ConsumerWidget {
 
   Future<void> _onToggle(BuildContext context, WidgetRef ref,
       UspInstantPrivacyState state, bool enable) async {
-    if (enable) {
-      // Mutually exclusive with MAC Filter (Deny) — they share one device mode.
-      final macFilterOn =
-          ref.read(uspMacFilterProvider).settings.current.isEnabled;
-      if (macFilterOn) {
-        final ok = await showAppDialog<bool>(
-          context: context,
-          builder: (ctx) => AppDialog(
-            titleText: loc(context).instantPrivacy,
-            content: AppText.bodyMedium(
-                loc(context).instantPrivacyEnableTurnsOffMacFilter),
-            actions: [
-              AppButton.text(
-                label: loc(context).cancel,
-                onTap: () => Navigator.of(ctx).pop(false),
-              ),
-              AppButton.primary(
-                identifier: 'instant-privacy-override-confirm',
-                label: loc(context).ok,
-                onTap: () => Navigator.of(ctx).pop(true),
-              ),
-            ],
-          ),
-        );
-        if (ok != true) return;
-      }
+    // Mutually exclusive with MAC Filter (Deny) — they share one device mode, so
+    // this page's own read of it says whether MAC Filter is on. Not the MAC
+    // Filter page's provider: that page is not on screen, so it is unloaded.
+    if (enable && state.isOtherFilterOn) {
+      final ok = await showAppDialog<bool>(
+        context: context,
+        builder: (ctx) => AppDialog(
+          titleText: loc(context).instantPrivacy,
+          content: AppText.bodyMedium(
+              loc(context).instantPrivacyEnableTurnsOffMacFilter),
+          actions: [
+            AppButton.text(
+              label: loc(context).cancel,
+              onTap: () => Navigator.of(ctx).pop(false),
+            ),
+            AppButton.primary(
+              identifier: 'instant-privacy-override-confirm',
+              label: loc(context).ok,
+              onTap: () => Navigator.of(ctx).pop(true),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
     }
     ref.read(uspInstantPrivacyProvider.notifier).setEnabled(enable);
   }
@@ -274,7 +288,7 @@ class InstantPrivacyView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     showMacFilterAddDeviceDialog(
       context: context,
-      existingMacs: state.settings.current.macs,
+      existingMacs: state.allowedMacs,
       connectedDevices: state.connectedDevices,
       onAdd: (mac) => ref.read(uspInstantPrivacyProvider.notifier).addMac(mac),
     );

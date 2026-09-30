@@ -84,24 +84,31 @@ class UspInstantPrivacyNotifier
   // Local mutations (synchronous — no network)
   // ---------------------------------------------------------------------------
 
-  /// Toggle Instant Privacy on (Allow) or off (Disabled).
+  /// Toggle Instant Privacy on (Allow) or off.
   ///
   /// Enabling pre-populates the list with every currently online device — the
-  /// "lock the network to who's on it now" default. Disabling clears the list
-  /// (a mode switch is a fresh start).
+  /// "lock the network to who's on it now" default — unless the device is
+  /// already in `Allow`, where turning back on after an off is an undo and
+  /// restores the saved list. Turning off returns to the mode as last read
+  /// rather than to `Disabled`: when the device is in MAC Filter's `Deny`,
+  /// on-then-off must be no change, not a Save that turns MAC Filter off and
+  /// empties its list. Off from an applied `Allow` is `Disabled`.
   void setEnabled(bool enabled) {
+    final original = state.settings.original;
+    final MacFilterSettings next;
     if (enabled) {
-      final macs = state.status.connectedDevices.map((d) => d.mac).toList();
-      state = state.copyWith(
-        settings: state.settings
-            .update(MacFilterSettings(mode: MacFilterMode.allow, macs: macs)),
-      );
+      next = original.mode == MacFilterMode.allow
+          ? original
+          : MacFilterSettings(
+              mode: MacFilterMode.allow,
+              macs: state.status.connectedDevices.map((d) => d.mac).toList(),
+            );
+    } else if (original.mode == MacFilterMode.allow) {
+      next = const MacFilterSettings(mode: MacFilterMode.disabled, macs: []);
     } else {
-      state = state.copyWith(
-        settings: state.settings.update(
-            const MacFilterSettings(mode: MacFilterMode.disabled, macs: [])),
-      );
+      next = original;
     }
+    state = state.copyWith(settings: state.settings.update(next));
   }
 
   void addMac(String mac) {

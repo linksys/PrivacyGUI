@@ -16,6 +16,11 @@ void main() {
   late MockUspClient usp;
   late UspMacFilterService service;
 
+  setUpAll(() {
+    registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(<List<Map<String, String>>>[]);
+  });
+
   setUp(() {
     usp = MockUspClient();
     service = UspMacFilterService(usp);
@@ -224,6 +229,38 @@ void main() {
         () => service.setMacFilter(MacFilterMode.deny, ['AA:BB:CC:DD:EE:01']),
         throwsA(isA<ConnectivityError>()),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // #1636: Instant Privacy used to write `Device.WiFi.AccessPoint.*
+  // .MACAddressControlEnabled` / `AllowedMACAddress`, which FLWRT 2.0 refuses on
+  // an EasyMesh node. It now writes through this service, so the claim "it no
+  // longer writes the AccessPoint path" is a claim about every call this service
+  // makes to the client — asserted over a whole read-then-save round trip in the
+  // mode Instant Privacy uses.
+  // ---------------------------------------------------------------------------
+
+  group('the AccessPoint write path is gone', () {
+    test('an Allow round trip reads DataElements and writes only SetMACFilter',
+        () async {
+      final paths = <String>[];
+      when(() => usp.get(any())).thenAnswer((inv) async {
+        paths.addAll(inv.positionalArguments.first as List<String>);
+        return {_modePath: 'Disabled', _listPath: ''};
+      });
+      stubOperateOk();
+
+      await service.fetch();
+      await service.setMacFilter(MacFilterMode.allow, ['AA:BB:CC:DD:EE:01']);
+
+      expect(paths, isNot(contains(contains('AccessPoint'))));
+      verify(() => usp.operate(_cmdPath, args: any(named: 'args'))).called(1);
+      verifyNever(() => usp.set(any(),
+          singleValue: any(named: 'singleValue'),
+          allowPartial: any(named: 'allowPartial')));
+      verifyNever(() =>
+          usp.setOrdered(any(), allowPartial: any(named: 'allowPartial')));
     });
   });
 }

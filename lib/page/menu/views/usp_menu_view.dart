@@ -102,12 +102,10 @@ class UspMenuView extends ConsumerWidget {
         title: loc(context).instantPrivacy,
         description: loc(context).instantPrivacyDesc,
         iconData: Icons.lock_outlined,
+        // The applied mode, not this page's unsaved edit — and on only in
+        // `Allow`, so MAC Filter's `Deny` reads Off here.
         badges: !privacyState.status.isLoading
-            ? [
-                privacyState.settings.current.isEnabled
-                    ? MenuBadge.on
-                    : MenuBadge.off
-              ]
+            ? [privacyState.isAppliedOn ? MenuBadge.on : MenuBadge.off]
             : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),

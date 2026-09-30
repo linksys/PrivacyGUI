@@ -14,7 +14,9 @@ void main() {
   late MockMacFilterService mockService;
 
   const device1 = MacFilterDeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:01', displayName: 'Laptop', ipAddress: '192.168.1.10');
+      mac: 'AA:BB:CC:DD:EE:01',
+      displayName: 'Laptop',
+      ipAddress: '192.168.1.10');
 
   // Device currently Deny with one blocked MAC.
   MacFilterFetchResult denyResult() => const MacFilterFetchResult(
@@ -25,6 +27,12 @@ void main() {
   MacFilterFetchResult disabledResult() => const MacFilterFetchResult(
         mode: MacFilterMode.disabled,
         macs: [],
+        connectedDevices: [device1],
+      );
+  // The device is in Instant Privacy's mode: an allow list, not a block list.
+  MacFilterFetchResult allowResult() => const MacFilterFetchResult(
+        mode: MacFilterMode.allow,
+        macs: ['AA:BB:CC:DD:EE:01'],
         connectedDevices: [device1],
       );
 
@@ -66,8 +74,72 @@ void main() {
     });
   });
 
+  // Mirror of the Instant Privacy group: Deny is this page's, Allow is Instant
+  // Privacy's, and only Disabled is off for both.
+  group('the page reads only its own mode', () {
+    test('Deny: on, and the list is the block list', () async {
+      final (c, _) = await loaded(denyResult());
+      final s = c.read(uspMacFilterProvider);
+
+      expect(s.isEnabled, isTrue);
+      expect(s.blockedMacs, ['AA:BB:CC:DD:EE:99']);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
+    });
+
+    test('Allow: off, lists nothing, and knows Instant Privacy is on',
+        () async {
+      final (c, _) = await loaded(allowResult());
+      final s = c.read(uspMacFilterProvider);
+
+      expect(s.isEnabled, isFalse);
+      expect(s.blockedMacs, isEmpty,
+          reason: 'the Allow list is the devices let in; showing it here '
+              'would present them as the blocked ones');
+      expect(s.isOtherFilterOn, isTrue);
+      c.dispose();
+    });
+
+    test('Disabled: off, and neither filter is on', () async {
+      final (c, _) = await loaded(disabledResult());
+      final s = c.read(uspMacFilterProvider);
+
+      expect(s.isEnabled, isFalse);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
+    });
+
+    test('Allow: turning on then off again is no change, and never writes',
+        () async {
+      final (c, n) = await loaded(allowResult());
+
+      n.setEnabled(true);
+      n.setEnabled(false);
+
+      expect(c.read(uspMacFilterProvider).isDirty, isFalse,
+          reason: 'Save would write Disabled and switch Instant Privacy off');
+      await n.save();
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
+    });
+
+    test('Allow: turning on starts an empty block list', () async {
+      final (c, n) = await loaded(allowResult());
+
+      n.setEnabled(true);
+      final s = c.read(uspMacFilterProvider);
+
+      expect(s.settings.current.mode, MacFilterMode.deny);
+      expect(s.blockedMacs, isEmpty,
+          reason: "Instant Privacy's allow list must not become this page's "
+              'block list');
+      c.dispose();
+    });
+  });
+
   group('toggle (Deny ⟷ Disabled)', () {
-    test('enabling from Disabled sets Deny and stays dirty, no write', () async {
+    test('enabling from Disabled sets Deny and stays dirty, no write',
+        () async {
       final (c, n) = await loaded(disabledResult());
 
       n.setEnabled(true);
@@ -101,8 +173,8 @@ void main() {
       n.addMac('AA:BB:CC:DD:EE:02');
       final s = c.read(uspMacFilterProvider);
 
-      expect(s.settings.current.macs,
-          ['AA:BB:CC:DD:EE:99', 'AA:BB:CC:DD:EE:02']);
+      expect(
+          s.settings.current.macs, ['AA:BB:CC:DD:EE:99', 'AA:BB:CC:DD:EE:02']);
       expect(s.isDirty, isTrue);
       verifyNever(() => mockService.setMacFilter(any(), any()));
       c.dispose();
@@ -157,8 +229,8 @@ void main() {
 
       await n.save();
 
-      verify(() => mockService.setMacFilter(
-          MacFilterMode.deny, ['AA:BB:CC:DD:EE:02'])).called(1);
+      verify(() => mockService
+          .setMacFilter(MacFilterMode.deny, ['AA:BB:CC:DD:EE:02'])).called(1);
       expect(c.read(uspMacFilterProvider).isDirty, isFalse);
       c.dispose();
     });

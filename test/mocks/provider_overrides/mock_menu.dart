@@ -34,8 +34,8 @@ import 'mock_dhcp.dart' show FixedLanDataNotifier;
 
 /// A [UspInstantPrivacyNotifier] pinned to one state.
 ///
-/// `build()` is the only member overridden: the menu reads `isEnabled` and nothing
-/// else, and none of the notifier's mutations are reachable from this page — the
+/// `build()` is the only member overridden: the menu reads `isAppliedOn` and
+/// nothing else, and none of the notifier's mutations are reachable from this page — the
 /// card's `onTap` navigates to the privacy page rather than toggling anything.
 class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
   final UspInstantPrivacyState _fixedState;
@@ -56,7 +56,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
 /// value it is.
 List<Override> menuOverrides({
   required LanInfoUIModel lanInfo,
-  required bool privacyEnabled,
+  required MacFilterMode privacyMode,
 }) =>
     [
       lanDataProvider
@@ -65,18 +65,8 @@ List<Override> menuOverrides({
         () => FixedInstantPrivacyNotifier(
           UspInstantPrivacyState(
             settings: Preservable(
-              original: MacFilterSettings(
-                mode: privacyEnabled
-                    ? MacFilterMode.allow
-                    : MacFilterMode.disabled,
-                macs: const [],
-              ),
-              current: MacFilterSettings(
-                mode: privacyEnabled
-                    ? MacFilterMode.allow
-                    : MacFilterMode.disabled,
-                macs: const [],
-              ),
+              original: MacFilterSettings(mode: privacyMode, macs: const []),
+              current: MacFilterSettings(mode: privacyMode, macs: const []),
             ),
             status: const MacFilterStatus(isLoading: false),
           ),
