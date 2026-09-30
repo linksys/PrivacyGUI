@@ -19,12 +19,8 @@ void main() {
             overrides.addAll(macFilterOverrides(disabledState)),
         'deny_with_devices': (overrides) =>
             overrides.addAll(macFilterOverrides(denyWithDevicesState)),
-        'allow_with_devices': (overrides) =>
-            overrides.addAll(macFilterOverrides(allowWithDevicesState)),
-        'allow_empty': (overrides) =>
-            overrides.addAll(macFilterOverrides(allowEmptyState)),
-        'enabled_empty': (overrides) =>
-            overrides.addAll(macFilterOverrides(enabledEmptyState)),
+        'deny_empty': (overrides) =>
+            overrides.addAll(macFilterOverrides(denyEmptyState)),
       },
       interactions: {
         'dialog_add_device': Interaction(

@@ -1,68 +1,43 @@
-import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 
-/// A device shown in the MAC Filter list editor / device picker.
-class MacFilterDeviceUIModel extends Equatable {
-  final String mac;
-  final String displayName;
-  final bool isPrivateMac;
-  final String ipAddress;
+// Re-export so existing importers of the UI model keep working.
+export 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
 
-  const MacFilterDeviceUIModel({
-    required this.mac,
-    required this.displayName,
-    this.isPrivateMac = false,
-    this.ipAddress = '',
-  });
+/// Composed FeatureState for the MAC Filter page (Deny/Disabled).
+///
+/// Save-based via the Preservable framework: edits mutate `settings.current`
+/// and only [UspMacFilterNotifier.save] writes to the device.
+class MacFilterState extends FeatureState<MacFilterSettings, MacFilterStatus> {
+  const MacFilterState({required super.settings, required super.status});
+
+  factory MacFilterState.initial() {
+    return MacFilterState(
+      settings: Preservable(
+        original: MacFilterSettings.empty(),
+        current: MacFilterSettings.empty(),
+      ),
+      status: const MacFilterStatus(isLoading: true),
+    );
+  }
+
+  /// The connected devices available for the picker (read-only, from status).
+  List<MacFilterDeviceUIModel> get connectedDevices => status.connectedDevices;
 
   @override
-  List<Object?> get props => [mac, displayName, isPrivateMac, ipAddress];
-}
-
-/// What the service hands the notifier at load time.
-class MacFilterFetchResult {
-  final MacFilterMode mode;
-  final List<String> macs;
-  final List<MacFilterDeviceUIModel> connectedDevices;
-
-  const MacFilterFetchResult({
-    required this.mode,
-    required this.macs,
-    required this.connectedDevices,
-  });
-}
-
-/// The MAC Filter page state: the mode, the configured list, the devices
-/// available to pick from, and a busy flag while a write is in flight.
-class MacFilterState extends Equatable {
-  final MacFilterMode mode;
-  final List<String> macs;
-  final List<MacFilterDeviceUIModel> connectedDevices;
-  final bool isBusy;
-
-  const MacFilterState({
-    required this.mode,
-    required this.macs,
-    required this.connectedDevices,
-    this.isBusy = false,
-  });
-
-  bool get isEnabled => mode != MacFilterMode.disabled;
-
   MacFilterState copyWith({
-    MacFilterMode? mode,
-    List<String>? macs,
-    List<MacFilterDeviceUIModel>? connectedDevices,
-    bool? isBusy,
+    Preservable<MacFilterSettings>? settings,
+    MacFilterStatus? status,
   }) {
     return MacFilterState(
-      mode: mode ?? this.mode,
-      macs: macs ?? this.macs,
-      connectedDevices: connectedDevices ?? this.connectedDevices,
-      isBusy: isBusy ?? this.isBusy,
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
   @override
-  List<Object?> get props => [mode, macs, connectedDevices, isBusy];
+  Map<String, dynamic> toMap() => {};
 }

@@ -8,7 +8,8 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network_operations.g.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
-import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 
 /// The network-wide MAC filter mode (`X_LINKSYS_MACFilterMode`).
 ///

@@ -1523,6 +1523,8 @@
     }
   },
   "macFilterRemoveDevice": "Remove device",
+  "macFilterEnableTurnsOffInstantPrivacy": "Turning on MAC Filtering will turn off Instant Privacy — a device can only have one filter mode. Continue?",
+  "instantPrivacyEnableTurnsOffMacFilter": "Turning on Instant Privacy will turn off MAC Filtering — a device can only have one filter mode. Continue?",
   "instantSafetyPageDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Safe browsing applies to all devices on your network.",
   "safeBrowsingOpenDns": "Safe Browsing (OpenDNS)",
   "openDnsServers": "DNS: 208.67.222.222, 208.67.220.220",

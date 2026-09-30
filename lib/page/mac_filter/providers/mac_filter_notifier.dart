@@ -2,74 +2,119 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
 final uspMacFilterProvider =
-    AsyncNotifierProvider<UspMacFilterNotifier, MacFilterState>(
+    AutoDisposeNotifierProvider<UspMacFilterNotifier, MacFilterState>(
   UspMacFilterNotifier.new,
 );
 
-/// Drives the MAC Filter page. Reads through the shared [UspMacFilterService]
-/// and writes every change as a whole-list replacement (the firmware contract),
-/// under the USP mutation lock, then refetches so the state reflects the device.
-class UspMacFilterNotifier extends AsyncNotifier<MacFilterState> {
+/// Save-based notifier for the MAC Filter page (Deny/Disabled).
+///
+/// Edits mutate `settings.current` only; [save] is the sole writer, via
+/// [UspMacFilterService.setMacFilter] (a whole-list replacement). The page is
+/// dirty-guarded through the Preservable mixin, so leaving with unsaved edits
+/// prompts. Instant Privacy is the same backend in Allow mode
+/// ([UspInstantPrivacyNotifier]); the two are mutually exclusive because the
+/// device holds one mode + one list.
+class UspMacFilterNotifier extends AutoDisposeNotifier<MacFilterState>
+    with
+        PreservableAutoDisposeNotifierMixin<MacFilterSettings, MacFilterStatus,
+            MacFilterState> {
   UspMacFilterService get _svc => ref.read(uspMacFilterServiceProvider);
 
   @override
-  Future<MacFilterState> build() async {
+  MacFilterState build() {
+    Future.microtask(() => fetch());
+    return MacFilterState.initial();
+  }
+
+  @override
+  Future<(MacFilterSettings?, MacFilterStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
     try {
       final result = await _svc.fetchAll();
-      return MacFilterState(
-        mode: result.mode,
-        macs: result.macs,
+      final settings = MacFilterSettings(mode: result.mode, macs: result.macs);
+      final status = MacFilterStatus(
+        isLoading: false,
         connectedDevices: result.connectedDevices,
       );
-    } on ServiceError catch (e) {
-      logger.e('[MacFilter]: build failed: $e');
-      rethrow;
+      return (settings, status);
+    } catch (e, st) {
+      final error = e is ServiceError ? e : UnexpectedError(originalError: e);
+      logger.e('[USP][MacFilter]: fetch failed', error: e, stackTrace: st);
+      return (null, MacFilterStatus(isLoading: false, error: error));
     }
   }
 
-  /// Change the mode, keeping the current list. Allow with an empty list is
-  /// rejected by the service, surfaced to the caller.
-  Future<void> setMode(MacFilterMode mode) =>
-      _write(mode, state.value?.macs ?? const []);
+  @override
+  Future<void> performSave() async {
+    final settings = state.settings.current;
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.setMacFilter(settings.mode, settings.macs);
+    });
+    logger.d('[USP][MacFilter]: saved — mode: ${settings.mode}, '
+        'count: ${settings.macs.length}');
+  }
 
-  /// Add a MAC to the list and re-write.
-  Future<void> addMac(String mac) {
-    final current = state.value?.macs ?? const <String>[];
+  @override
+  Future<MacFilterState> save() async {
+    if (!isDirty()) return state;
+    state = state.copyWith(status: state.status.copyWith(isSaving: true));
+    try {
+      final result = await super.save();
+      final refetchError = result.status.error;
+      if (refetchError != null) {
+        state = state.copyWith(status: state.status.copyWith(clearError: true));
+        throw refetchError;
+      }
+      return result;
+    } finally {
+      state = state.copyWith(status: state.status.copyWith(isSaving: false));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Local mutations (synchronous — no network)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle the filter on (Deny) or off (Disabled). Turning off clears the list
+  /// (a mode switch is a fresh start); turning on leaves it empty — the MAC
+  /// Filter page does not pre-populate.
+  void setEnabled(bool enabled) {
+    final next = enabled
+        ? const MacFilterSettings(mode: MacFilterMode.deny, macs: [])
+        : const MacFilterSettings(mode: MacFilterMode.disabled, macs: []);
+    state = state.copyWith(settings: state.settings.update(next));
+  }
+
+  void addMac(String mac) {
     final normalized = UspMacFilterService.normalizeMac(mac);
-    if (current
+    final current = state.settings.current;
+    if (current.macs
         .map((m) => m.toUpperCase())
         .contains(normalized.toUpperCase())) {
-      return Future.value();
+      return;
     }
-    return _write(
-        state.value?.mode ?? MacFilterMode.disabled, [...current, normalized]);
+    state = state.copyWith(
+      settings: state.settings
+          .update(current.copyWith(macs: [...current.macs, normalized])),
+    );
   }
 
-  /// Remove a MAC from the list and re-write.
-  Future<void> removeMac(String mac) {
-    final current = state.value?.macs ?? const <String>[];
+  void removeMac(String mac) {
+    final current = state.settings.current;
     final target = mac.toUpperCase();
-    return _write(state.value?.mode ?? MacFilterMode.disabled,
-        current.where((m) => m.toUpperCase() != target).toList());
-  }
-
-  Future<void> _write(MacFilterMode mode, List<String> macs) async {
-    final busy = state.value;
-    if (busy != null) state = AsyncData(busy.copyWith(isBusy: true));
-    try {
-      await ref
-          .read(uspMutationLockProvider)
-          .withLock(() => _svc.setMacFilter(mode, macs));
-      ref.invalidateSelf();
-    } on ServiceError {
-      // Restore the un-busy state so the page stays interactive, and let the
-      // view surface the error (a SnackBar) — the write did not take.
-      if (busy != null) state = AsyncData(busy.copyWith(isBusy: false));
-      rethrow;
-    }
+    state = state.copyWith(
+      settings: state.settings.update(current.copyWith(
+        macs: current.macs.where((m) => m.toUpperCase() != target).toList(),
+      )),
+    );
   }
 }
