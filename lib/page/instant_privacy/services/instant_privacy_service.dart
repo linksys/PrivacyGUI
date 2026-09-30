@@ -7,10 +7,10 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
-import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
 final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
   (ref) => UspInstantPrivacyService(ref.read(uspClientProvider)!),
@@ -18,29 +18,35 @@ final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
 
 /// Opaque write context for MAC filtering.
 ///
-/// Notifiers and state hold this without knowing the inner codegen type.
-/// Only [UspInstantPrivacyService] can create and consume it.
+/// Notifiers and state hold this without knowing how the write is made. Since
+/// #1636 the backend is the network-wide `X_LINKSYS_SetMACFilter` (Instant
+/// Privacy is that filter in `Allow` mode), so the context carries the current
+/// allow-list plus the always-allowed set rather than the dead per-AP
+/// `MacFilterAccessPoints` it held before. Only [UspInstantPrivacyService]
+/// creates and consumes it.
 class MacFilterContext extends Equatable {
-  final MacFilterAccessPoints _data;
+  /// The customer-facing allow-list as last read (normalized MACs), without the
+  /// always-allowed node MACs — those are unioned in at write time.
+  final List<String> _currentMacs;
 
   /// MACs that every write must keep in the allow-list (REQ-10a) — the mesh's
   /// own nodes, both their host MACs and their backhaul MACs.
   ///
   /// Captured at fetch time and carried here rather than passed by the caller,
   /// because the write methods never see [ConnectedDevices] and because an
-  /// invariant a caller can forget is not an invariant.
+  /// invariant a caller can forget is not an invariant. On FLWRT 2.0 this reads
+  /// empty (`DeviceRole` was removed, linksys/PrivacyGUI#1612); the union is
+  /// kept because it is inert when empty and correct again once node identity
+  /// returns.
   final List<String> _alwaysAllowedMacs;
 
-  const MacFilterContext._(this._data, this._alwaysAllowedMacs);
+  const MacFilterContext._(this._currentMacs, this._alwaysAllowedMacs);
 
   /// Empty context for initial state.
-  static const empty = MacFilterContext._(
-    MacFilterAccessPoints(items: []),
-    [],
-  );
+  static const empty = MacFilterContext._([], []);
 
   @override
-  List<Object?> get props => [_data.items.length, _alwaysAllowedMacs];
+  List<Object?> get props => [_currentMacs, _alwaysAllowedMacs];
 }
 
 /// Fetch result returned by [UspInstantPrivacyService.fetchAll].
@@ -58,14 +64,20 @@ class InstantPrivacyFetchResult {
   });
 }
 
-/// Service layer for Instant Privacy — encapsulates codegen CRUD + transform.
+/// Service layer for Instant Privacy.
+///
+/// Since #1636 this is a thin adapter over the shared [UspMacFilterService]:
+/// Instant Privacy is the network-wide MAC filter in [MacFilterMode.allow]. The
+/// old per-AP `Device.WiFi.AccessPoint.*` write path is gone — it is dead on
+/// FLWRT 2.0 (refused with "not configurable for EasyMesh network node"). The
+/// public API (`fetchAll`/`enable`/`disable`/`addMac`) is unchanged, so the
+/// notifier, state and views are untouched.
 class UspInstantPrivacyService {
   final UspClient _usp;
 
   UspInstantPrivacyService(this._usp);
-  static final _macRegExp = RegExp(
-    r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$',
-  );
+
+  UspMacFilterService get _macFilter => UspMacFilterService(_usp);
 
   // ---------------------------------------------------------------------------
   // Read helpers
@@ -75,17 +87,9 @@ class UspInstantPrivacyService {
   /// maps them to UI models.
   ///
   /// Mesh nodes are excluded explicitly by `DeviceRole` (REQ-10a: a customer
-  /// must not be able to block their own mesh node), so a node never becomes a
-  /// customer-facing row. The exclusion is by role, not a side effect of
-  /// [ConnectedDevice.isActive] or an empty interface, so it keeps working after
-  /// the firmware node-row PhysAddress fix (FWDEV#166) gives node rows a real
-  /// MAC, interface, and truthful Active.
-  ///
-  /// This list is **display only**. Mesh-node MACs are still written to the
-  /// firmware allow-list on every write — see [meshNodeMacs] and
-  /// [meshBackhaulMacs]. On an allow-list-mode MAC filter an absent MAC is a
-  /// denied MAC, so dropping a node here *and* on the wire would lock the
-  /// customer's own node out of its network, which is the other half of REQ-10a.
+  /// must not be able to block their own mesh node). This list is **display
+  /// only** — mesh-node MACs are still written to the firmware allow-list on
+  /// every write via [meshNodeMacs] / [meshBackhaulMacs].
   List<InstantPrivacyDeviceUIModel> activeDevices(ConnectedDevices data) {
     return data.items
         .where((d) =>
@@ -98,73 +102,34 @@ class UspInstantPrivacyService {
         mac: mac,
         displayName: d.hostName.isNotEmpty ? d.hostName : mac,
         isPrivateMac: OuiLookup.isRandomizedMac(mac),
-        // `Device.Hosts.Host.{i}.IPAddress`, already in the paths this fetch
-        // requests — the Add-device search gets the address for free rather than
-        // for a second round trip.
         ipAddress: d.ipAddress,
       );
     }).toList();
   }
 
   /// The nodes' *host* MACs — `Device.Hosts.Host.{i}.PhysAddress` of every row
-  /// whose `DeviceRole` marks it as one of the mesh's own nodes.
+  /// whose `DeviceRole` marks it as one of the mesh's own nodes (REQ-10a).
   ///
-  /// REQ-10a — "Nodes can never be locked out": device-blocking features always
-  /// include the mesh's own nodes. 1.x does the same union at write time
-  /// (`InstantPrivacyNotifier.save()` on `main`); this is the 2.x equivalent.
-  ///
-  /// **This is not sufficient on its own.** A node's host MAC is not the MAC it
-  /// associates with — see [meshBackhaulMacs]. Both sets belong in the
-  /// allow-list.
-  ///
-  /// Unlike [activeDevices] this deliberately does **not** test
-  /// [ConnectedDevice.isActive] or the interface: a node that firmware reports
-  /// as momentarily down must keep its place in the allow-list, or it cannot
-  /// come back.
+  /// Deliberately does not test [ConnectedDevice.isActive] or the interface: a
+  /// node that firmware reports as momentarily down must keep its place in the
+  /// allow-list, or it cannot come back.
   List<String> meshNodeMacs(ConnectedDevices data) {
-    final macs = <String>{};
-    for (final d in data.items) {
-      if (!isMeshNodeRole(d.deviceRole)) continue;
-      if (d.macAddress.trim().isEmpty) continue;
-      macs.add(normalizeMac(d.macAddress));
-    }
-    return macs.toList();
+    final seen = <String>{};
+    return data.items
+        .where((d) => isMeshNodeRole(d.deviceRole))
+        .map((d) => d.macAddress)
+        .where((m) => m.isNotEmpty)
+        .map(normalizeMac)
+        .where(seen.add)
+        .toList();
   }
 
-  /// The nodes' *backhaul* MACs — the station-side address each wirelessly
-  /// backhauled node uses to associate with its parent.
-  ///
-  /// A node owns three distinct MACs, and MAC filtering only ever sees the
-  /// third. Measured on an M60TB gateway with two wireless-backhaul slaves
-  /// (2026-09-03):
-  ///
-  /// | DataElements `ID`   | `Hosts.Host.PhysAddress` | `Backhaul.BackhaulMACAddress` |
-  /// |---------------------|--------------------------|-------------------------------|
-  /// | `80:69:1A:13:16:1A` | `80:69:1A:13:16:1B`      | `86:69:1A:13:16:1C`           |
-  /// | `74:12:13:06:C6:E7` | `74:12:13:06:C6:E8`      | `7A:12:13:06:C6:E9`           |
-  ///
-  /// The right-hand column is what showed up in
-  /// `AccessPoint.2.AssociatedDevice.{i}.MACAddress`, so it is the address the
-  /// AP's allow-list is checked against. [meshNodeMacs] alone would therefore
-  /// let an enable deny both backhauls — the node's own network locking the node
-  /// out, which is exactly what REQ-10a forbids. 1.x avoids this by unioning
-  /// `getSTABSSIDs` into the written list; this is the 2.x equivalent.
-  ///
-  /// **Every field that can carry the address is read, and the redundancy is the
-  /// design.** This is a union: a MAC that turns out not to be a backhaul costs
-  /// nothing on an allow-list, while a missing one locks a node out. So the loop
-  /// takes candidates rather than picking a winner, and no medium check narrows
-  /// it — an Ethernet-backhauled node that later switches to wireless needs its
-  /// station MAC already listed.
-  ///
-  /// Two sources today. `Device.{i}.BackhaulMACAddress` was a third until
-  /// FL-WRT 2.0 dropped it from the schema (#1555); `Radio.{i}.BackhaulSta`
-  /// is the TR-181 2.20 near-end address that replaces it, per-radio and
-  /// all-zero on radios with no station. The gateway reports none of them (it
-  /// has no upstream backhaul), so it drops out here and enters the allow-list
-  /// through [meshNodeMacs] instead.
+  /// The nodes' *backhaul* MACs — the address a node associates with, which is
+  /// not its host MAC. Union of the device backhaul MAC and each radio's
+  /// backhaul STA MAC (REQ-10a).
   List<String> meshBackhaulMacs(DataElementsNetwork data) {
-    final macs = <String>{};
+    final seen = <String>{};
+    final out = <String>[];
     for (final node in data.items) {
       final candidates = <String?>[
         node.backhaulBackhaulMacAddress,
@@ -172,29 +137,22 @@ class UspInstantPrivacyService {
       ];
       for (final mac in candidates) {
         final trimmed = mac?.trim() ?? '';
-        if (trimmed.isEmpty) continue;
-        if (isUnsetMac(trimmed)) continue;
-        macs.add(normalizeMac(trimmed));
+        if (trimmed.isEmpty || isUnsetMac(trimmed)) continue;
+        final normalized = normalizeMac(trimmed);
+        if (seen.add(normalized)) out.add(normalized);
       }
     }
-    return macs.toList();
+    return out;
   }
 
-  /// Returns true if any AP in [data] has MAC filtering enabled.
-  bool isEnabled(MacFilterAccessPoints data) {
-    return data.items.any((ap) => ap.macAddressControlEnabled);
-  }
+  /// Whether the filter is currently on (Allow mode).
+  bool isEnabled(MacFilterData data) => data.mode == MacFilterMode.allow;
 
-  /// Parses the current allowed MAC list from [data] and converts to UI models.
-  ///
-  /// Uses the first AP's [allowedMACAddress] as the source (all APs share the
-  /// same list). Deduplicates by MAC address.
-  List<InstantPrivacyDeviceUIModel> allowedDevices(MacFilterAccessPoints data) {
-    if (data.items.isEmpty) return [];
-    final raw = data.items.first.allowedMACAddress;
+  /// The configured allow-list as UI models (MAC as display name; the fetch
+  /// enriches names from the host table).
+  List<InstantPrivacyDeviceUIModel> allowedDevices(MacFilterData data) {
     final seen = <String>{};
-    return raw
-        .split(',')
+    return data.macs
         .map((m) => m.trim())
         .where((m) => m.isNotEmpty)
         .map(normalizeMac)
@@ -204,141 +162,35 @@ class UspInstantPrivacyService {
   }
 
   // ---------------------------------------------------------------------------
-  // Write helpers — build update descriptors for MacFilterAccessPoints.updateMany()
+  // Fetch
   // ---------------------------------------------------------------------------
 
-  /// Unions [macs] with [alwaysAllowedMacs] — normalized, de-duplicated, and in
-  /// order, with [macs] first so the customer-visible list reads unchanged.
-  static List<String> _withAlwaysAllowed(
-    List<String> macs,
-    List<String> alwaysAllowedMacs,
-  ) {
-    final seen = <String>{};
-    final result = <String>[];
-    for (final mac in [...macs, ...alwaysAllowedMacs]) {
-      final normalized = normalizeMac(mac);
-      if (normalized.isEmpty) continue;
-      if (seen.add(normalized)) result.add(normalized);
-    }
-    return result;
-  }
-
-  /// Builds update descriptors to ENABLE MAC filtering on all APs.
-  ///
-  /// Sets [macAddressControlEnabled] = true and [allowedMACAddress] to the
-  /// comma-joined [macs] list on every AP instance in [data].
-  ///
-  /// [alwaysAllowedMacs] (the mesh's own nodes — see [meshNodeMacs]) is unioned
-  /// in unconditionally. REQ-10a: whatever the customer's snapshot contains, the
-  /// written allow-list always contains the nodes, because a node whose MAC is
-  /// missing from an allow-list-mode filter is a node denied its own network.
-  List<MacFilterAccessPointUpdate> buildEnableUpdates(
-    List<String> macs,
-    MacFilterAccessPoints data, {
-    List<String> alwaysAllowedMacs = const [],
-  }) {
-    final macList = _withAlwaysAllowed(macs, alwaysAllowedMacs).join(',');
-    return data.items
-        .map((ap) => MacFilterAccessPointUpdate(
-              instancePath: ap.instancePath,
-              macAddressControlEnabled: true,
-              allowedMACAddress: macList,
-            ))
-        .toList();
-  }
-
-  /// Builds update descriptors to DISABLE MAC filtering on all APs.
-  ///
-  /// Sets [macAddressControlEnabled] = false and clears [allowedMACAddress]
-  /// on every AP instance in [data].
-  List<MacFilterAccessPointUpdate> buildDisableUpdates(
-      MacFilterAccessPoints data) {
-    return data.items
-        .map((ap) => MacFilterAccessPointUpdate(
-              instancePath: ap.instancePath,
-              macAddressControlEnabled: false,
-              allowedMACAddress: '',
-            ))
-        .toList();
-  }
-
-  /// Builds update descriptors to ADD [newMac] to the existing allowed list.
-  ///
-  /// Reads the current list from the first AP (all APs share the same list),
-  /// appends [newMac] if not already present, and updates every AP.
-  /// Precondition: [newMac] is already validated and normalized.
-  ///
-  /// [alwaysAllowedMacs] is unioned in for the same reason as in
-  /// [buildEnableUpdates] — every write keeps the mesh's nodes allowed, not just
-  /// the enable snapshot. Whether [newMac] was already present is still decided
-  /// by the stored list alone, so the return contract is unchanged.
-  List<MacFilterAccessPointUpdate> buildAddMacUpdates(
-    String newMac,
-    MacFilterAccessPoints data, {
-    List<String> alwaysAllowedMacs = const [],
-  }) {
-    if (data.items.isEmpty) return [];
-
-    final existing = data.items.first.allowedMACAddress
-        .split(',')
-        .map((m) => m.trim())
-        .where((m) => m.isNotEmpty)
-        .map(normalizeMac)
-        .toList();
-
-    if (existing.contains(newMac)) return [];
-
-    final updated =
-        _withAlwaysAllowed([...existing, newMac], alwaysAllowedMacs).join(',');
-    return data.items
-        .map((ap) => MacFilterAccessPointUpdate(
-              instancePath: ap.instancePath,
-              macAddressControlEnabled: true,
-              allowedMACAddress: updated,
-            ))
-        .toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // High-level CRUD (for Notifier consumption)
-  // ---------------------------------------------------------------------------
-
-  /// Fetch all data needed for Instant Privacy and return UI-safe result.
-  ///
-  /// [DataElementsNetwork] is fetched as a **required** third source, not
-  /// best-effort: it is the only place the nodes' backhaul MACs appear (see
-  /// [meshBackhaulMacs]), and silently proceeding without them is what produces
-  /// the REQ-10a lockout. An empty subtree parses to zero nodes, which is the
-  /// right answer for a single router — nothing to protect. Firmware that
-  /// *errors* on the paths instead would take this page down; that trade is
-  /// deliberate, since the alternative is writing an allow-list known to be
-  /// incomplete. Three other 2.x features already read this subtree.
   Future<InstantPrivacyFetchResult> fetchAll() async {
     final List<Object> results;
     try {
       results = await Future.wait([
         ConnectedDevices.fetch(_usp),
-        MacFilterAccessPoints.fetch(_usp),
+        _macFilter.fetch(),
         DataElementsNetwork.fetch(_usp),
       ]);
+    } on ServiceError {
+      // _macFilter.fetch() already maps to ServiceError — preserve its type.
+      rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
 
     final devices = results[0] as ConnectedDevices;
-    final macAps = results[1] as MacFilterAccessPoints;
+    final filter = results[1] as MacFilterData;
     final network = results[2] as DataElementsNetwork;
 
     final active = activeDevices(devices);
-    // Both halves of a node's identity: the host row's MAC and the address it
-    // associates with. Neither implies the other.
     final nodeMacSet = <String>{
       ...meshNodeMacs(devices),
       ...meshBackhaulMacs(network),
     };
     final nodeMacs = nodeMacSet.toList();
 
-    // Build a MAC → hostname lookup from all known hosts (active + inactive)
     final hostnameByMac = {
       for (final d in devices.items)
         if (d.macAddress.isNotEmpty)
@@ -346,147 +198,86 @@ class UspInstantPrivacyService {
               d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
     };
 
-    // Allowed list shows all whitelisted MACs with hostname if known, else MAC.
-    // Mesh nodes are always on the wire (REQ-10a) but stay out of both
-    // customer-facing lists, so they are hidden here too — matching 1.x, which
-    // filters node MACs *and* STA BSSIDs out of the display
-    // (`instantPrivacyDeviceListProvider` on `main`). A backhaul MAC has no
-    // hostname, so leaving it in would render a bare unexplained address.
-    final allowed = allowedDevices(macAps)
-        .where((d) => !nodeMacSet.contains(d.mac))
-        .map((d) {
-      final name = hostnameByMac[d.mac] ?? d.mac;
+    // The allow-list minus the node MACs (which are always on the wire but must
+    // not render as customer rows — a backhaul MAC has no hostname), enriched
+    // with hostnames where known.
+    final visibleMacs =
+        filter.macs.map(normalizeMac).where((m) => !nodeMacSet.contains(m));
+    final allowed = visibleMacs.map((mac) {
       return InstantPrivacyDeviceUIModel(
-        mac: d.mac,
-        displayName: name,
-        isPrivateMac: OuiLookup.isRandomizedMac(d.mac),
+        mac: mac,
+        displayName: hostnameByMac[mac] ?? mac,
+        isPrivateMac: OuiLookup.isRandomizedMac(mac),
       );
     }).toList();
 
     return InstantPrivacyFetchResult(
-      isEnabled: isEnabled(macAps),
+      isEnabled: isEnabled(filter),
       connectedDevices: active,
       allowedDevices: allowed,
-      macFilterContext: MacFilterContext._(macAps, nodeMacs),
+      // The context's "current" list excludes node MACs — they are re-unioned
+      // at write time from _alwaysAllowedMacs.
+      macFilterContext: MacFilterContext._(
+        filter.macs
+            .map(normalizeMac)
+            .where((m) => !nodeMacSet.contains(m))
+            .toList(),
+        nodeMacs,
+      ),
     );
   }
 
-  /// Enable MAC filtering on all APs with the given MAC whitelist.
+  // ---------------------------------------------------------------------------
+  // Writes — delegate to the shared MAC filter service (Allow mode)
+  // ---------------------------------------------------------------------------
+
+  /// Enable Instant Privacy with the given whitelist. Writes Allow mode with the
+  /// customer's MACs plus the always-allowed node MACs (REQ-10a).
   Future<void> enable(List<String> macs, MacFilterContext ctx) async {
-    try {
-      final updates = buildEnableUpdates(
-        macs,
-        ctx._data,
-        alwaysAllowedMacs: ctx._alwaysAllowedMacs,
-      );
-      if (updates.isNotEmpty) {
-        final result = await MacFilterAccessPoints.update(_usp, updates);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(
-              :final errorSummary,
-              :final successes,
-              :final failures
-            ):
-            throw UspPartialFailureError(
-              summary: 'MAC filter enable partial failure: $errorSummary',
-              successPaths: successes.map((s) => s.requestedPath).toList(),
-              failures: failures,
-            );
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'MAC filter enable failed: $errorSummary',
-              failures: errors,
-            );
-        }
-      }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
-    }
+    await _macFilter.setMacFilter(
+      MacFilterMode.allow,
+      _union(macs, ctx._alwaysAllowedMacs),
+    );
   }
 
-  /// Disable MAC filtering on all APs.
+  /// Disable Instant Privacy — turn the whole filter off.
   Future<void> disable(MacFilterContext ctx) async {
-    try {
-      final updates = buildDisableUpdates(ctx._data);
-      if (updates.isNotEmpty) {
-        final result = await MacFilterAccessPoints.update(_usp, updates);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(
-              :final errorSummary,
-              :final successes,
-              :final failures
-            ):
-            throw UspPartialFailureError(
-              summary: 'MAC filter disable partial failure: $errorSummary',
-              successPaths: successes.map((s) => s.requestedPath).toList(),
-              failures: failures,
-            );
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'MAC filter disable failed: $errorSummary',
-              failures: errors,
-            );
-        }
-      }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
-    }
+    await _macFilter.setMacFilter(MacFilterMode.disabled, const []);
   }
 
-  /// Add a MAC address to the allowed list across all APs.
-  /// Returns true if the MAC was added, false if already present.
+  /// Add a MAC to the allow-list. Returns true if added, false if already
+  /// present (no write made).
   Future<bool> addMac(String mac, MacFilterContext ctx) async {
-    try {
-      final updates = buildAddMacUpdates(
-        mac,
-        ctx._data,
-        alwaysAllowedMacs: ctx._alwaysAllowedMacs,
-      );
-      if (updates.isEmpty) return false;
-      final result = await MacFilterAccessPoints.update(_usp, updates);
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          return true;
-        case UspPartialSuccess(
-            :final errorSummary,
-            :final successes,
-            :final failures
-          ):
-          throw UspPartialFailureError(
-            summary: 'MAC filter add partial failure: $errorSummary',
-            successPaths: successes.map((s) => s.requestedPath).toList(),
-            failures: failures,
-          );
-        case UspFailure(:final errorSummary, :final errors):
-          throw UspCompleteFailureError(
-            summary: 'MAC filter add failed: $errorSummary',
-            failures: errors,
-          );
-      }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
+    final normalized = normalizeMac(mac);
+    final present =
+        ctx._currentMacs.map((m) => m.toUpperCase()).contains(normalized.toUpperCase());
+    if (present) return false;
+    await _macFilter.setMacFilter(
+      MacFilterMode.allow,
+      _union([...ctx._currentMacs, normalized], ctx._alwaysAllowedMacs),
+    );
+    return true;
+  }
+
+  /// Union two MAC lists, normalized and de-duplicated, [macs] first so the
+  /// customer-visible order is preserved. Mirrors the old `_withAlwaysAllowed`.
+  static List<String> _union(List<String> macs, List<String> alwaysAllowed) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final mac in [...macs, ...alwaysAllowed]) {
+      final normalized = normalizeMac(mac);
+      if (normalized.isEmpty) continue;
+      if (seen.add(normalized.toUpperCase())) out.add(normalized);
     }
+    return out;
   }
 
   // ---------------------------------------------------------------------------
-  // MAC address utilities
+  // MAC address utilities (delegated so callers keep one import)
   // ---------------------------------------------------------------------------
 
-  /// Returns true if [mac] matches colon-separated or hyphen-separated hex format.
-  static bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
+  static bool validateMac(String mac) => UspMacFilterService.validateMac(mac);
 
-  /// Converts [mac] to uppercase colon-separated canonical form.
-  /// Precondition: [mac] passes [validateMac].
   static String normalizeMac(String mac) =>
-      mac.trim().toUpperCase().replaceAll('-', ':');
+      UspMacFilterService.normalizeMac(mac);
 }
