@@ -81,6 +81,12 @@ class InstantPrivacyView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(loc(context).instantPrivacyPageDesc),
+        // Read off the applied mode, so it stays up while this page's switch is
+        // being turned on — until Save actually turns MAC Filtering off.
+        if (state.isOtherFilterOn) ...[
+          AppGap.md(),
+          _buildOtherFilterOnBanner(context),
+        ],
         if (hasPrivateMac) ...[
           AppGap.md(),
           _buildPrivateMacWarningBanner(context),
@@ -137,9 +143,8 @@ class InstantPrivacyView extends ConsumerWidget {
               value: isEnabled,
               isLoading: isSaving,
               busySemanticLabel: isSaving ? loc(context).processing : null,
-              onChanged: isSaving || cannotEnable
-                  ? null
-                  : (v) => _onToggle(context, ref, state, v),
+              onChanged:
+                  isSaving || cannotEnable ? null : (v) => _onToggle(ref, v),
             ),
           ],
         ),
@@ -254,16 +259,65 @@ class InstantPrivacyView extends ConsumerWidget {
     );
   }
 
+  /// Says the other filter is on. They share one device mode, so saving this page
+  /// on turns the other one off — which the Save confirm asks about, and this
+  /// states up front. Same treatment as the private-MAC banner on Instant Privacy.
+  Widget _buildOtherFilterOnBanner(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(Icons.info_outline,
+              size: 20, color: colorScheme.onErrorContainer),
+          AppGap.sm(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).instantPrivacyMacFilterIsOn,
+                    color: colorScheme.onErrorContainer),
+                AppGap.xs(),
+                AppText.bodySmall(loc(context).instantPrivacyMacFilterIsOnDesc,
+                    color: colorScheme.onErrorContainer),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Actions (local — nothing writes until Save)
   // ---------------------------------------------------------------------------
 
-  Future<void> _onToggle(BuildContext context, WidgetRef ref,
-      UspInstantPrivacyState state, bool enable) async {
-    // Mutually exclusive with MAC Filter (Deny) — they share one device mode, so
-    // this page's own read of it says whether MAC Filter is on. Not the MAC
-    // Filter page's provider: that page is not on screen, so it is unloaded.
-    if (enable && state.isOtherFilterOn) {
+  /// A local edit only — the device changes on Save, which is where overriding
+  /// MAC Filtering is confirmed.
+  void _onToggle(WidgetRef ref, bool enable) {
+    ref.read(uspInstantPrivacyProvider.notifier).setEnabled(enable);
+  }
+
+  void _showAddDialog(
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    showMacFilterAddDeviceDialog(
+      context: context,
+      existingMacs: state.allowedMacs,
+      connectedDevices: state.connectedDevices,
+      onAdd: (mac) => ref.read(uspInstantPrivacyProvider.notifier).addMac(mac),
+    );
+  }
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    // The device only changes here, so this is where overriding the other filter
+    // is confirmed: saving this page on while the other one is on turns it off.
+    final state = ref.read(uspInstantPrivacyProvider);
+    if (state.isEnabled && state.isOtherFilterOn) {
       final ok = await showAppDialog<bool>(
         context: context,
         builder: (ctx) => AppDialog(
@@ -283,22 +337,8 @@ class InstantPrivacyView extends ConsumerWidget {
           ],
         ),
       );
-      if (ok != true) return;
+      if (ok != true || !context.mounted) return;
     }
-    ref.read(uspInstantPrivacyProvider.notifier).setEnabled(enable);
-  }
-
-  void _showAddDialog(
-      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
-    showMacFilterAddDeviceDialog(
-      context: context,
-      existingMacs: state.allowedMacs,
-      connectedDevices: state.connectedDevices,
-      onAdd: (mac) => ref.read(uspInstantPrivacyProvider.notifier).addMac(mac),
-    );
-  }
-
-  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
       await doSomethingWithSpinner(
         context,

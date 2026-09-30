@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_view.dart';
@@ -95,22 +97,83 @@ void main() {
       expect(find.text(blocked), findsNothing);
     });
 
-    testWidgets('Deny: turning on asks first, and Cancel changes nothing',
-        (tester) async {
-      await pumpPage(tester, 'ip-deny-confirm', view,
+    testWidgets('Deny: the page says MAC Filtering is on', (tester) async {
+      await pumpPage(tester, 'ip-deny-notice', view,
           instantPrivacyOverrides(privacy(MacFilterMode.deny, [blocked])));
+
+      expect(find.text('MAC Filtering is currently on.', findRichText: true),
+          findsOneWidget);
+    });
+
+    testWidgets('Allow / Disabled: no such notice', (tester) async {
+      for (final mode in [MacFilterMode.allow, MacFilterMode.disabled]) {
+        await pumpPage(tester, 'ip-no-notice-${mode.name}', view,
+            instantPrivacyOverrides(privacy(mode, [allowed])));
+        expect(find.textContaining('is currently on.'), findsNothing,
+            reason: mode.name);
+      }
+    });
+
+    // The device only changes on Save, so that is where the override is
+    // confirmed — the switch is a local edit and asks nothing.
+    testWidgets(
+        'Deny: the switch does not ask; Save does, and Cancel keeps '
+        'the edit unsaved', (tester) async {
+      final n = _RecordingPrivacy(privacy(MacFilterMode.deny, [blocked]));
+      await pumpPage(tester, 'ip-deny-save-cancel', view,
+          [uspInstantPrivacyProvider.overrideWith(() => n)]);
 
       await tester.tap(find.byWidgetPredicate(
           (w) => w is AppSwitch && w.identifier == toggleId));
       await settle(tester);
+      expect(find.byType(AppDialog), findsNothing,
+          reason: 'turning the switch on writes nothing yet');
+      expect(toggle(tester, toggleId).value, isTrue);
 
+      await tester.tap(saveButton());
+      await settle(tester);
       expect(find.byType(AppDialog), findsOneWidget,
-          reason: 'turning Instant Privacy on turns MAC Filter off');
+          reason: 'saving Allow turns MAC Filtering off');
       await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
       await settle(tester);
 
-      expect(toggle(tester, toggleId).value, isFalse);
-      expect(saveButton(), findsNothing);
+      expect(n.saves, 0);
+      expect(toggle(tester, toggleId).value, isTrue,
+          reason: 'Cancel declines the save, not the edit');
+      expect(saveButton(), findsOneWidget);
+    });
+
+    testWidgets('Deny: confirming on Save writes', (tester) async {
+      final n = _RecordingPrivacy(privacy(MacFilterMode.deny, [blocked]));
+      await pumpPage(tester, 'ip-deny-save-ok', view,
+          [uspInstantPrivacyProvider.overrideWith(() => n)]);
+
+      await tester.tap(find.byWidgetPredicate(
+          (w) => w is AppSwitch && w.identifier == toggleId));
+      await settle(tester);
+      await tester.tap(saveButton());
+      await settle(tester);
+      await tester.tap(find.byWidgetPredicate((w) =>
+          w is AppButton &&
+          w.identifier == 'instant-privacy-override-confirm'));
+      await settle(tester);
+
+      expect(n.saves, 1);
+    });
+
+    testWidgets('Disabled: Save does not ask', (tester) async {
+      final n = _RecordingPrivacy(privacy(MacFilterMode.disabled, []));
+      await pumpPage(tester, 'ip-off-save', view,
+          [uspInstantPrivacyProvider.overrideWith(() => n)]);
+
+      await tester.tap(find.byWidgetPredicate(
+          (w) => w is AppSwitch && w.identifier == toggleId));
+      await settle(tester);
+      await tester.tap(saveButton());
+      await settle(tester);
+
+      expect(find.byType(AppDialog), findsNothing);
+      expect(n.saves, 1);
     });
 
     testWidgets('Disabled: turning on does not ask', (tester) async {
@@ -226,22 +289,79 @@ void main() {
       expect(find.text(allowed), findsNothing);
     });
 
-    testWidgets('Allow: turning on asks first, and Cancel changes nothing',
-        (tester) async {
-      await pumpPage(tester, 'mf-allow-confirm', view,
+    testWidgets('Allow: the page says Instant Privacy is on', (tester) async {
+      await pumpPage(tester, 'mf-allow-notice', view,
           macFilterOverrides(macFilter(MacFilterMode.allow, [allowed])));
+
+      expect(find.text('Instant Privacy is currently on.', findRichText: true),
+          findsOneWidget);
+    });
+
+    testWidgets('Deny / Disabled: no such notice', (tester) async {
+      for (final mode in [MacFilterMode.deny, MacFilterMode.disabled]) {
+        await pumpPage(tester, 'mf-no-notice-${mode.name}', view,
+            macFilterOverrides(macFilter(mode, [blocked])));
+        expect(find.textContaining('is currently on.'), findsNothing,
+            reason: mode.name);
+      }
+    });
+
+    testWidgets(
+        'Allow: the switch does not ask; Save does, and Cancel keeps '
+        'the edit unsaved', (tester) async {
+      final n = _RecordingMacFilter(macFilter(MacFilterMode.allow, [allowed]));
+      await pumpPage(tester, 'mf-allow-save-cancel', view,
+          [uspMacFilterProvider.overrideWith(() => n)]);
 
       await tester.tap(find.byWidgetPredicate(
           (w) => w is AppSwitch && w.identifier == toggleId));
       await settle(tester);
+      expect(find.byType(AppDialog), findsNothing);
+      expect(toggle(tester, toggleId).value, isTrue);
 
+      await tester.tap(saveButton());
+      await settle(tester);
       expect(find.byType(AppDialog), findsOneWidget,
-          reason: 'turning MAC Filter on turns Instant Privacy off');
+          reason: 'saving Deny turns Instant Privacy off');
       await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
       await settle(tester);
 
-      expect(toggle(tester, toggleId).value, isFalse);
-      expect(saveButton(), findsNothing);
+      expect(n.saves, 0);
+      expect(toggle(tester, toggleId).value, isTrue);
+      expect(saveButton(), findsOneWidget);
+    });
+
+    testWidgets('Allow: confirming on Save writes', (tester) async {
+      final n = _RecordingMacFilter(macFilter(MacFilterMode.allow, [allowed]));
+      await pumpPage(tester, 'mf-allow-save-ok', view,
+          [uspMacFilterProvider.overrideWith(() => n)]);
+
+      await tester.tap(find.byWidgetPredicate(
+          (w) => w is AppSwitch && w.identifier == toggleId));
+      await settle(tester);
+      await tester.tap(saveButton());
+      await settle(tester);
+      await tester.tap(find.byWidgetPredicate((w) =>
+          w is AppButton && w.identifier == 'mac-filter-override-confirm'));
+      await settle(tester);
+
+      expect(n.saves, 1);
+    });
+
+    testWidgets('Deny: Save of an edit does not ask', (tester) async {
+      final n = _RecordingMacFilter(macFilter(MacFilterMode.deny, [blocked]));
+      await pumpPage(tester, 'mf-deny-save', view,
+          [uspMacFilterProvider.overrideWith(() => n)]);
+
+      await tester.tap(find.byWidgetPredicate((w) =>
+          w is AppIconButton && w.identifier == 'mac-filter-remove-$blocked'));
+      await settle(tester);
+      await tester.tap(saveButton());
+      await settle(tester);
+
+      expect(find.byType(AppDialog), findsNothing,
+          reason: 'Instant Privacy is not on, so nothing is overridden');
+      expect(n.saves, 1);
     });
 
     testWidgets('Disabled: turning on does not ask', (tester) async {
@@ -269,5 +389,31 @@ void main() {
 Future<void> settle(WidgetTester tester) async {
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Counts `save()` calls without writing: the Save path under test ends at the
+/// notifier, so the dialog's answer is observable as whether it was reached.
+class _RecordingPrivacy extends FixedInstantPrivacyNotifier {
+  _RecordingPrivacy(super.state);
+
+  int saves = 0;
+
+  @override
+  Future<UspInstantPrivacyState> save() async {
+    saves++;
+    return state;
+  }
+}
+
+class _RecordingMacFilter extends FixedMacFilterNotifier {
+  _RecordingMacFilter(super.state);
+
+  int saves = 0;
+
+  @override
+  Future<MacFilterState> save() async {
+    saves++;
+    return state;
   }
 }
