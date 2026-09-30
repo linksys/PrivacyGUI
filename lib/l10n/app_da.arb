@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Denne supportsession har endnu ikke genereret nogen notifikationer",
   "notificationHistoryUnavailable": "Notifikationshistorik er kun tilgængelig under en fjernsupportsession",
   "notificationHistoryGone": "Denne notifikation er ikke længere tilgængelig",
+  "notificationHistoryLoadFailed": "Denne notifikation kunne ikke indlæses",
   "notificationHistoryMessageId": "Besked-id",
   "notificationHistoryCommandKey": "Kommandonøgle",
   "notificationHistoryShowMore": "Vis mere",

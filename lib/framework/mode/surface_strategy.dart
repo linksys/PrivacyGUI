@@ -219,7 +219,13 @@ abstract class SurfaceStrategy {
   ///
   /// Not an `OperationGuard` seam, on purpose (#1626): nothing is refused
   /// underneath. The page simply offers no way in, which is what "view-only"
-  /// means, and the dashboard's network card keeps its own renew action.
+  /// means.
+  ///
+  /// **The page, not the app.** The dashboard's network-status card has a Renew
+  /// Lease button of its own (`UspNetworkStatusCard`), it is in the remote preset,
+  /// and it is live in a Remote Assistance session. #1626 assumed that card was
+  /// display-only; it is not, and leaving it reachable was a decision (Austin,
+  /// 2026-09-30), not an oversight — this member does not govern it.
   VoidCallback? internetSettingsEditor(VoidCallback enterEditMode);
 
   /// This surface's first-run dashboard personalisation, or `null` where the

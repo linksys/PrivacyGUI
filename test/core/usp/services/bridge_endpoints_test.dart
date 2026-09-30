@@ -125,7 +125,7 @@ void main() {
   // `health` (#1576). `BridgeConfig.remoteReads == null` is how a local build
   // says "these do not exist here", and the page reads that to render its
   // not-available state instead of a red developer page.
-  group('the remote read table', () {
+  group('BridgeEndpoints - the remote read table', () {
     test('exact paths', () {
       final reads = RemoteReads.forSession('sess-4711');
       const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';
@@ -161,7 +161,7 @@ void main() {
       }
     });
 
-    group('results — #1578', () {
+    group('BridgeEndpoints - results (#1578)', () {
       test('carries commandKey as a required query parameter', () {
         final reads = RemoteReads.forSession('sess-4711');
         const base = '/v1/guardians/remote-assistances/sessions/sess-4711/usp';

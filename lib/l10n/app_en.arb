@@ -1921,6 +1921,8 @@
   "@notificationHistoryUnavailable": {"description": "Shown when the page is reached in a build that has no Guardian session, which a hand-typed URL can do because the route lives under the shared dashboard. Better than the developer error page a missing route would produce."},
   "notificationHistoryGone": "This notification is no longer available",
   "@notificationHistoryGone": {"description": "A 404 on one stored notification. The spec makes that status cover both \"does not exist\" and \"is not yours\" and deliberately does not distinguish them, so one message answers both."},
+  "notificationHistoryLoadFailed": "This notification could not be loaded",
+  "@notificationHistoryLoadFailed": {"description": "One stored notification whose body could not be read for any reason other than a 404 (which is notificationHistoryGone). Shown in place of the body, on the row and in its dialog; pull-to-refresh retries it."},
   "notificationHistoryMessageId": "Message ID",
   "notificationHistoryCommandKey": "Command key",
   "notificationHistoryShowMore": "Show more",

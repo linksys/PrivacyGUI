@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Bu destek oturumu henüz bildirim üretmedi",
   "notificationHistoryUnavailable": "Bildirim geçmişi yalnızca Uzaktan Yardım oturumu sırasında kullanılabilir",
   "notificationHistoryGone": "Bu bildirim artık kullanılamıyor",
+  "notificationHistoryLoadFailed": "Bu bildirim yüklenemedi",
   "notificationHistoryMessageId": "Mesaj kimliği",
   "notificationHistoryCommandKey": "Komut anahtarı",
   "notificationHistoryShowMore": "Daha fazla göster",

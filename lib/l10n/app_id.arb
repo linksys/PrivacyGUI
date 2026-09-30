@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Sesi dukungan ini belum menghasilkan notifikasi apa pun",
   "notificationHistoryUnavailable": "Riwayat notifikasi hanya tersedia selama sesi Bantuan Jarak Jauh",
   "notificationHistoryGone": "Notifikasi ini sudah tidak tersedia",
+  "notificationHistoryLoadFailed": "Notifikasi ini tidak dapat dimuat",
   "notificationHistoryMessageId": "ID Pesan",
   "notificationHistoryCommandKey": "Kunci perintah",
   "notificationHistoryShowMore": "Tampilkan lebih banyak",

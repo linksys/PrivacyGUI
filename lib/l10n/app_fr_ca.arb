@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Cette session d'assistance n'a encore produit aucune notification",
   "notificationHistoryUnavailable": "L'historique des notifications n'est disponible que pendant une session d'assistance à distance",
   "notificationHistoryGone": "Cette notification n'est plus disponible",
+  "notificationHistoryLoadFailed": "Impossible de charger cette notification",
   "notificationHistoryMessageId": "ID du message",
   "notificationHistoryCommandKey": "Clé de commande",
   "notificationHistoryShowMore": "Afficher plus",

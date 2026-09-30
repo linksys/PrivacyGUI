@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Denne støttesesjonen har ennå ikke produsert noen varsler",
   "notificationHistoryUnavailable": "Varslingshistorikk er bare tilgjengelig under en fjernhjelpsesjon",
   "notificationHistoryGone": "Dette varselet er ikke lenger tilgjengelig",
+  "notificationHistoryLoadFailed": "Dette varselet kunne ikke lastes inn",
   "notificationHistoryMessageId": "Meldings-ID",
   "notificationHistoryCommandKey": "Kommandonøkkel",
   "notificationHistoryShowMore": "Vis mer",

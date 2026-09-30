@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "このサポートセッションではまだ通知が発生していません",
   "notificationHistoryUnavailable": "通知履歴はリモートアシスタンスセッション中のみ利用できます",
   "notificationHistoryGone": "この通知は利用できなくなりました",
+  "notificationHistoryLoadFailed": "この通知を読み込めませんでした",
   "notificationHistoryMessageId": "メッセージ ID",
   "notificationHistoryCommandKey": "コマンドキー",
   "notificationHistoryShowMore": "さらに表示",

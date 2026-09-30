@@ -87,7 +87,9 @@ class UspNotificationHistoryView extends ConsumerWidget {
             AppSpacing.md,
           ),
           sliver: !available
-              ? const SliverToBoxAdapter(child: _UnavailableState())
+              ? SliverToBoxAdapter(
+                  child: Center(child: _Notice.unavailable(context)),
+                )
               : ref.watch(uspNotificationHistoryProvider).when(
                     loading: () => const SliverToBoxAdapter(
                       child: Center(child: AppLoader()),
@@ -108,30 +110,50 @@ class UspNotificationHistoryView extends ConsumerWidget {
   }
 }
 
-/// The local answer: there is no notification store on the router to read.
-class _UnavailableState extends StatelessWidget {
-  const _UnavailableState();
+/// An icon over one centred sentence — the page's two states that are not a list.
+///
+/// One widget for both, because they are the same shape and differ only in what
+/// they say: the **unavailable** state (a local build has no notification store to
+/// read) and the **empty** one (this session has produced nothing yet — the normal
+/// state at session open, not a fault).
+class _Notice extends StatelessWidget {
+  final IconData icon;
+  final String message;
+
+  const _Notice({required this.icon, required this.message});
+
+  /// The local answer: there is no notification store on the router to read.
+  _Notice.unavailable(BuildContext context)
+      : this(
+          icon: Icons.cloud_off_outlined,
+          message: loc(context).notificationHistoryUnavailable,
+        );
+
+  /// A fresh session: nothing produced yet.
+  _Notice.empty(BuildContext context)
+      : this(
+          icon: Icons.notifications_none,
+          message: loc(context).notificationHistoryEmpty,
+        );
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon.font(
-              Icons.cloud_off_outlined,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            AppGap.xl(),
-            AppText.bodyMedium(
-              loc(context).notificationHistoryUnavailable,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xxl,
+        horizontal: AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIcon.font(
+            icon,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          AppGap.xl(),
+          AppText.bodyMedium(message, textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -156,7 +178,7 @@ class _Content extends ConsumerWidget {
               _SessionStateCard(sessionState: state.sessionState),
               AppGap.md(),
               if (state.entries.isEmpty)
-                const _EmptyState()
+                Center(child: _Notice.empty(context))
               else ...[
                 NotificationHistoryTypeFilter(state: state),
                 AppGap.md(),
@@ -214,7 +236,8 @@ List<AppTimelineItem> _timelineItems(
   final items = <AppTimelineItem>[];
   String? heading;
   for (final entry in entries) {
-    final stamp = _formatTimestamp(entry.originTs);
+    final at = entry.originTs;
+    final stamp = at == null ? _absentValue : _formatTimestamp(at);
     if (stamp != heading) {
       items.add(AppTimelineGroup(label: stamp));
       heading = stamp;
@@ -271,32 +294,6 @@ class _SessionStateCard extends StatelessWidget {
       at == null ? _absentValue : _formatTimestamp(at);
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(
-            Icons.notifications_none,
-            size: 48,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          AppGap.xl(),
-          AppText.bodyMedium(
-            loc(context).notificationHistoryEmpty,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Narrows the list by `notificationType`, client-side.
 ///
 /// The options come from the data rather than from a fixed list of USP's six
@@ -328,7 +325,7 @@ class NotificationHistoryTypeFilter extends ConsumerWidget {
       identifier: 'notification-history-type-filter',
       itemIdentifier: (value) => value == _all
           ? 'notification-history-type-all'
-          : 'notification-history-type-$value',
+          : 'notification-history-type-${notificationTypeIdentifierKey(value)}',
       itemAsString: (value) => value == _all ? loc(context).all : value,
       onChanged: (value) => ref
           .read(uspNotificationHistoryProvider.notifier)
@@ -453,12 +450,13 @@ class _DetailContent extends ConsumerWidget {
 ///
 /// A 404 is the ordinary case of an entry that has aged out or was never this
 /// session's — the spec deliberately does not distinguish them — so it gets its own
-/// sentence rather than the generic failure copy. Anything else is a fault and
-/// reads as one; pull-to-refresh re-reads it.
+/// sentence. Anything else is a fault and reads as one, in words about this row:
+/// not the page's "Failed to load settings", because a row is a notification and
+/// this page has no settings. Pull-to-refresh re-reads it.
 String _bodyErrorText(BuildContext context, Object error) =>
     error is ResourceNotFoundError
         ? loc(context).notificationHistoryGone
-        : loc(context).failedToLoadSettings;
+        : loc(context).notificationHistoryLoadFailed;
 
 /// Three shapes plus a fallback, per #1580 — not six widgets.
 class _Body extends StatelessWidget {
@@ -510,10 +508,11 @@ class _Body extends StatelessWidget {
       return isEmpty
           ? AppText.bodyMedium(_absentValue)
           // Selectable because the only useful thing to do with an unrecognised
-          // body is copy it into the ticket. No font override: the app's CJK and
-          // Arabic fallbacks are declared per family, and naming one that is not
-          // among them drops those scripts to tofu.
-          : SelectableText(pretty);
+          // body is copy it into the ticket. `AppText`'s own selectable mode
+          // rather than a bare `SelectableText`, so it takes the theme's text
+          // style (and its declared CJK / Arabic fallbacks) like every other
+          // line on the page.
+          : AppText.bodyMedium(pretty, selectable: true);
     }
 
     return Column(

@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Tämä tukisessio ei ole vielä tuottanut ilmoituksia",
   "notificationHistoryUnavailable": "Ilmoitushistoria on käytettävissä vain etätukisession aikana",
   "notificationHistoryGone": "Tämä ilmoitus ei ole enää saatavilla",
+  "notificationHistoryLoadFailed": "Tätä ilmoitusta ei voitu ladata",
   "notificationHistoryMessageId": "Viestitunnus",
   "notificationHistoryCommandKey": "Komentoavain",
   "notificationHistoryShowMore": "Näytä lisää",

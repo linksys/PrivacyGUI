@@ -94,7 +94,9 @@ class RemoteSurface implements SurfaceStrategy {
   /// This session reaches the router *over its WAN*, so a connection-type change,
   /// a bad static address or a lease release can cut the link the agent would
   /// need to put it back — with no LAN path to recover on. `null` removes the
-  /// edit toggle and Release & Renew together.
+  /// edit toggle and Release & Renew together — on this page. The dashboard's
+  /// network-status card keeps its Renew Lease button in a remote session, by
+  /// decision; see [SurfaceStrategy.internetSettingsEditor].
   @override
   VoidCallback? internetSettingsEditor(VoidCallback enterEditMode) => null;
 

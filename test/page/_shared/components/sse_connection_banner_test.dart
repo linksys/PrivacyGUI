@@ -189,7 +189,7 @@ void main() {
   // HOW IT COULD SILENTLY REVERT. The `when deviceOffline` guards being dropped from
   // the label switch. Nothing throws — the banner falls back to the generic copy,
   // which is what shipped before — and only a test that reads the sentence notices.
-  group('the offline distinction', () {
+  group('SseConnectionBanner - the offline distinction', () {
     testWidgets('a 400 says the router is offline, not "Disconnected"',
         (tester) async {
       setCause(SseDisconnectCause.deviceOffline);

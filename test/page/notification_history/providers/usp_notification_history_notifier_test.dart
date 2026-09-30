@@ -14,10 +14,10 @@
 // every rebuild into two HTTP reads; or a `ref.listen` on the SSE manager added
 // later to "keep the list live", which would poll once per notification.
 //
-// WHY THIS TEST TYPE. Provider-level with a mocked service and `fakeAsync`-free
-// real elapsed time: the claim is about call *counts* after time passes, and
-// `FakeAsync` would only prove that a timer this notifier does not have would
-// have fired.
+// WHY THIS TEST TYPE. Provider-level with a mocked service: the claim is about
+// call *counts* after time passes. The one test that passes time builds the
+// provider inside `fakeAsync`, because a fake clock only fires timers created in
+// its own zone.
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,13 +28,12 @@ import 'package:privacy_gui/page/notification_history/models/notification_histor
 import 'package:privacy_gui/page/notification_history/providers/usp_notification_history_notifier.dart';
 import 'package:privacy_gui/page/notification_history/services/usp_notification_history_service.dart';
 
-import '../../../mocks/test_data/scenes/notification_history_scene_data.dart';
+import '../../../mocks/test_data/notification_history_test_data.dart';
 
 class MockUspNotificationHistoryService extends Mock
     implements UspNotificationHistoryService {}
 
 SessionUspStateUIModel _state({DateTime? boot}) => SessionUspStateUIModel(
-      deviceUuid: 'uuid-1',
       lastBoot: boot,
       lastUspActivity: null,
     );
@@ -56,11 +55,11 @@ void main() {
 
   group('UspNotificationHistoryNotifier - session open', () {
     test('reads state and history exactly once each', () async {
-      final container = containerWith([notificationEntry('m1', 'ValueChange')]);
+      final container = containerWith(
+          [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
 
       final state = await container.read(uspNotificationHistoryProvider.future);
-
-      expect(state.sessionState?.deviceUuid, 'uuid-1');
+      expect(state.sessionState, isNotNull);
       expect(state.entries, hasLength(1));
       verify(() => service.fetchState()).called(1);
       verify(() => service.fetchHistory()).called(1);
@@ -75,22 +74,26 @@ void main() {
       expect(state.sessionState, isNotNull);
     });
 
-    test('nothing further is read as an hour passes', () async {
-      // Acceptance 5. **An hour of fake time**, which is the correction: an earlier
-      // version elapsed 600 ms of real time on the reasoning that "pumping a fake
-      // clock proves only that an absent timer did not fire". That reasoning is
-      // backwards — a fake clock is exactly what fires a timer that *is* there, and
-      // 600 ms is shorter than the ~10 s interval a well-meaning poll would copy from
-      // the server. `fakeAsync` fires a `Timer.periodic(10s)` 360 times in this
-      // window, so the mutant cannot survive.
-      final container = containerWith([notificationEntry('m1', 'ValueChange')]);
-      await container.read(uspNotificationHistoryProvider.future);
+    test('nothing further is read as an hour passes', () {
+      // Acceptance 5. **The provider is built inside `fakeAsync`**, and that is the
+      // whole correction. A fake clock fires only the timers created in its own
+      // zone; the previous version built and read the provider in the real zone
+      // and then elapsed an hour of fake time, which fires nothing — measured: a
+      // `Timer.periodic(10s)` added to `build()` survived it. Built in here, the
+      // same mutant fires 360 times in the hour and fails the count.
+      fakeAsync((async) {
+        final container = containerWith(
+            [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
+        container.listen(uspNotificationHistoryProvider, (_, __) {});
+        async.flushMicrotasks();
+        expect(container.read(uspNotificationHistoryProvider).hasValue, isTrue);
 
-      fakeAsync((async) => async.elapse(const Duration(hours: 1)));
+        async.elapse(const Duration(hours: 1));
 
-      verify(() => service.fetchState()).called(1);
-      verify(() => service.fetchHistory()).called(1);
-      verifyNoMoreInteractions(service);
+        verify(() => service.fetchState()).called(1);
+        verify(() => service.fetchHistory()).called(1);
+        verifyNoMoreInteractions(service);
+      });
     });
 
     test('a failed state read still surfaces as an error', () async {
@@ -111,7 +114,8 @@ void main() {
 
   group('UspNotificationHistoryNotifier - refresh', () {
     test('refresh re-reads both, and only when asked', () async {
-      final container = containerWith([notificationEntry('m1', 'ValueChange')]);
+      final container = containerWith(
+          [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       await container.read(uspNotificationHistoryProvider.future);
 
       await container.read(uspNotificationHistoryProvider.notifier).refresh();
@@ -124,10 +128,11 @@ void main() {
       // A row reads its body as it is built and keeps that read while it is on
       // screen, so without this a body that failed once would stay failed until
       // the row scrolled away. Pull-to-refresh is the page's one retry gesture.
-      final container = containerWith([notificationEntry('m1', 'ValueChange')]);
+      final container = containerWith(
+          [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1')).thenAnswer(
         (_) async => NotificationDetailUIModel(
-          entry: notificationEntry('m1', 'ValueChange'),
+          entry: NotificationHistoryTestData.entry('m1', 'ValueChange'),
           body: const RawBodyUIModel(''),
         ),
       );
@@ -148,9 +153,9 @@ void main() {
   group('UspNotificationHistoryNotifier - filtering and paging', () {
     test('the type filter narrows the visible rows', () async {
       final container = containerWith([
-        notificationEntry('m1', 'ValueChange'),
-        notificationEntry('m2', 'OperationComplete'),
-        notificationEntry('m3', 'Unknown'),
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete'),
+        NotificationHistoryTestData.entry('m3', 'Unknown'),
       ]);
       await container.read(uspNotificationHistoryProvider.future);
       final notifier = container.read(uspNotificationHistoryProvider.notifier);
@@ -165,8 +170,8 @@ void main() {
 
     test('an Unknown row is filterable like any other type', () async {
       final container = containerWith([
-        notificationEntry('m1', 'ValueChange'),
-        notificationEntry('m3', 'Unknown'),
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m3', 'Unknown'),
       ]);
       await container.read(uspNotificationHistoryProvider.future);
       final notifier = container.read(uspNotificationHistoryProvider.notifier);
@@ -185,9 +190,9 @@ void main() {
 
     test('availableTypes lists what the window actually contains', () async {
       final container = containerWith([
-        notificationEntry('m1', 'ValueChange'),
-        notificationEntry('m2', 'OperationComplete'),
-        notificationEntry('m3', 'ValueChange'),
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete'),
+        NotificationHistoryTestData.entry('m3', 'ValueChange'),
       ]);
 
       final state = await container.read(uspNotificationHistoryProvider.future);
@@ -198,7 +203,8 @@ void main() {
     test('the list shows one page and grows on request', () async {
       final rows = [
         for (var i = 0; i < 60; i++)
-          notificationEntry('m$i', 'ValueChange', ms: 1757000000000 + i),
+          NotificationHistoryTestData.entry('m$i', 'ValueChange',
+              ms: 1757000000000 + i),
       ];
       final container = containerWith(rows);
       await container.read(uspNotificationHistoryProvider.future);
@@ -231,7 +237,8 @@ void main() {
     test('changing the filter resets paging to the first page', () async {
       final rows = [
         for (var i = 0; i < 60; i++)
-          notificationEntry('m$i', 'ValueChange', ms: 1757000000000 + i),
+          NotificationHistoryTestData.entry('m$i', 'ValueChange',
+              ms: 1757000000000 + i),
       ];
       final container = containerWith(rows);
       await container.read(uspNotificationHistoryProvider.future);
@@ -256,8 +263,10 @@ void main() {
       // promise is a server behaviour, and the page reads `originTs` for its own
       // ordering rather than trusting a list order it cannot see broken.
       final container = containerWith([
-        notificationEntry('old', 'ValueChange', ms: 1757000000000),
-        notificationEntry('new', 'ValueChange', ms: 1757000060000),
+        NotificationHistoryTestData.entry('old', 'ValueChange',
+            ms: 1757000000000),
+        NotificationHistoryTestData.entry('new', 'ValueChange',
+            ms: 1757000060000),
       ]);
 
       final state = await container.read(uspNotificationHistoryProvider.future);
@@ -271,7 +280,7 @@ void main() {
       final container = containerWith([]);
       when(() => service.fetchDetail('m1')).thenAnswer(
         (_) async => NotificationDetailUIModel(
-          entry: notificationEntry('m1', 'ValueChange'),
+          entry: NotificationHistoryTestData.entry('m1', 'ValueChange'),
           body: const ValueChangeBodyUIModel(
             paramPath: 'Device.WiFi.SSID.1.SSID',
             paramValue: 'x',

@@ -68,7 +68,7 @@ void main() {
     if (!stream.isClosed) stream.close();
   });
 
-  group('the disconnect cause', () {
+  group('SseConnectionManager - the disconnect cause', () {
     test('starts as none', () {
       expect(manager.lastDisconnectCause, SseDisconnectCause.none);
     });
@@ -130,7 +130,7 @@ void main() {
     });
   });
 
-  group('the heartbeat watchdog is written and switched off', () {
+  group('HeartbeatConfig - the watchdog is written and switched off', () {
     test('remote is the off one, and that is what is in force', () {
       // The live value. Flipping it is a one-word change — name
       // `remoteWithHeartbeat` in `HeartbeatConfig.remote`'s place — and this

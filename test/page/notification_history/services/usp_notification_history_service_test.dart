@@ -55,8 +55,6 @@ void main() {
           });
 
       final state = await service.fetchState();
-
-      expect(state.deviceUuid, 'uuid-1');
       expect(state.lastBoot,
           DateTime.fromMillisecondsSinceEpoch(1757000000000).toLocal());
       expect(state.lastUspActivity,
@@ -71,8 +69,6 @@ void main() {
           });
 
       final state = await service.fetchState();
-
-      expect(state.deviceUuid, 'uuid-1');
       expect(state.lastBoot, isNull);
       expect(state.lastUspActivity, isNull);
     });
@@ -172,6 +168,37 @@ void main() {
           });
 
       expect((await service.fetchHistory()).single.notificationType, 'Unknown');
+    });
+
+    test('a row with no msgId is dropped, not given an empty one', () async {
+      // An empty id is not an id: every such row would share one detail read,
+      // and that read is `GET .../usp/notifications/` — the collection, not an
+      // entry. The row cannot be opened or attributed, so there is nothing to
+      // show for it.
+      when(() => bridge.notificationsHistory()).thenAnswer((_) async => {
+            'entries': [
+              {'originTs': 1757000000000, 'notificationType': 'ValueChange'},
+              {'msgId': '', 'originTs': 1757000000000},
+              {'msgId': 'msg-1', 'originTs': 1757000000000},
+            ],
+          });
+
+      final entries = await service.fetchHistory();
+
+      expect(entries.map((e) => e.msgId), ['msg-1']);
+    });
+
+    test('a row with no timestamp keeps a null one, not 1970', () async {
+      // The field's own doc warns that this clock is the broker's and not
+      // comparable with anything local; epoch 0 would be a fabricated value of it,
+      // rendered as a "1970-01-01" group heading.
+      when(() => bridge.notificationsHistory()).thenAnswer((_) async => {
+            'entries': [
+              {'msgId': 'msg-1', 'notificationType': 'ValueChange'},
+            ],
+          });
+
+      expect((await service.fetchHistory()).single.originTs, isNull);
     });
   });
 

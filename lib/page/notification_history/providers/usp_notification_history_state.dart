@@ -52,7 +52,15 @@ class NotificationHistoryState extends Equatable {
     final rows = typeFilter == null
         ? [...entries]
         : entries.where((e) => e.notificationType == typeFilter).toList();
-    rows.sort((a, b) => b.originTs.compareTo(a.originTs));
+    // A row with no timestamp sorts last: it cannot be placed, and putting it
+    // first would read as the newest thing that happened.
+    rows.sort((a, b) {
+      final at = a.originTs, bt = b.originTs;
+      if (at == null || bt == null) {
+        return at == bt ? 0 : (at == null ? 1 : -1);
+      }
+      return bt.compareTo(at);
+    });
     return rows;
   }
 

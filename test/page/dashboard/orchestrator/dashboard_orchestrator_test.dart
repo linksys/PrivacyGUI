@@ -58,7 +58,7 @@ void main() {
     await pumpEventQueue();
   }
 
-  group('after a recovery wait', () {
+  group('DashboardOrchestrator - after a recovery wait', () {
     // The router rebooting (or the link dropping) puts the app in
     // `waitingForRecovery`; the probe brings it back to `authenticated`. Nothing
     // re-read the dashboard's data on that edge, so every card kept showing what

@@ -24,25 +24,6 @@ import 'package:privacy_gui/page/notification_history/providers/usp_notification
 /// output moves cannot be diffed. Local time, because that is what the page shows.
 final _at = DateTime.fromMillisecondsSinceEpoch(1757000000000);
 
-/// One history row, for a test that cares about a property rather than a scene.
-///
-/// Here rather than copied into each suite: it was defined identically in the notifier
-/// test and the view test, which is the shape that lets a later widening of one drift
-/// from the other. Distinct from the composed scenes below — those are whole states
-/// ready for a provider override, this is an arrange-helper.
-NotificationHistoryEntryUIModel notificationEntry(
-  String msgId,
-  String notificationType, {
-  int ms = 1757000000000,
-  String? commandKey,
-}) =>
-    NotificationHistoryEntryUIModel(
-      msgId: msgId,
-      originTs: DateTime.fromMillisecondsSinceEpoch(ms),
-      notificationType: notificationType,
-      commandKey: commandKey,
-    );
-
 /// Five rows, chosen so that between them every widget on the page renders.
 ///
 /// - **`OperationComplete`** is the longest of USP's seven stored type names and the
@@ -150,7 +131,6 @@ final gateNotificationDetails = <String, NotificationBodyUIModel>{
 /// `empty` scene below covers, so neither is unmeasured.
 final gateNotificationHistoryState = NotificationHistoryState(
   sessionState: SessionUspStateUIModel(
-    deviceUuid: 'b3d81f27-5a4e-40c9-8f16-7e2b9d0a4c58',
     lastBoot: _at.subtract(const Duration(days: 3, hours: 7)),
     lastUspActivity: _at,
   ),
@@ -165,7 +145,5 @@ final gateNotificationHistoryState = NotificationHistoryState(
 /// produced no notification is also a device that has reported no activity, so this
 /// scene is the em-dash rendering as well.
 const emptyNotificationHistoryState = NotificationHistoryState(
-  sessionState: SessionUspStateUIModel(
-    deviceUuid: 'b3d81f27-5a4e-40c9-8f16-7e2b9d0a4c58',
-  ),
+  sessionState: SessionUspStateUIModel(),
 );

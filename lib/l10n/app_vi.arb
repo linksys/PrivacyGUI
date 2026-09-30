@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Phiên hỗ trợ này chưa tạo ra thông báo nào",
   "notificationHistoryUnavailable": "Lịch sử thông báo chỉ có sẵn trong phiên Hỗ trợ Từ xa",
   "notificationHistoryGone": "Thông báo này không còn khả dụng",
+  "notificationHistoryLoadFailed": "Không thể tải thông báo này",
   "notificationHistoryMessageId": "ID tin nhắn",
   "notificationHistoryCommandKey": "Khóa lệnh",
   "notificationHistoryShowMore": "Xem thêm",

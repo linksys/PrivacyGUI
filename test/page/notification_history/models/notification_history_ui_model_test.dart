@@ -28,35 +28,17 @@ void main() {
 
   group('SessionUspStateUIModel - props', () {
     test('every field participates in equality', () {
-      final base = SessionUspStateUIModel(
-        deviceUuid: 'uuid-1',
-        lastBoot: at,
-        lastUspActivity: at,
-      );
+      final base = SessionUspStateUIModel(lastBoot: at, lastUspActivity: at);
 
-      expect(
-          base,
-          SessionUspStateUIModel(
-            deviceUuid: 'uuid-1',
-            lastBoot: at,
-            lastUspActivity: at,
-          ));
-      expect(
-          base,
-          isNot(SessionUspStateUIModel(
-              deviceUuid: 'other', lastBoot: at, lastUspActivity: at)));
-      expect(
-          base,
-          isNot(SessionUspStateUIModel(
-              deviceUuid: 'uuid-1', lastUspActivity: at)));
-      expect(base,
-          isNot(SessionUspStateUIModel(deviceUuid: 'uuid-1', lastBoot: at)));
+      expect(base, SessionUspStateUIModel(lastBoot: at, lastUspActivity: at));
+      expect(base, isNot(SessionUspStateUIModel(lastUspActivity: at)));
+      expect(base, isNot(SessionUspStateUIModel(lastBoot: at)));
     });
 
     test('both timestamps default to null, which is a normal state', () {
       // A device that has produced no notification. The page renders an em dash for
       // it, not an error, so "absent" has to be constructible without ceremony.
-      const state = SessionUspStateUIModel(deviceUuid: 'uuid-1');
+      const state = SessionUspStateUIModel();
 
       expect(state.lastBoot, isNull);
       expect(state.lastUspActivity, isNull);
@@ -198,6 +180,30 @@ void main() {
           OperationCompleteBodyUIModel(commandName: 'c', commandKey: 'k');
 
       expect(body.outputArgs, isEmpty);
+    });
+  });
+
+  group('notificationTypeIdentifierKey - E2E slug', () {
+    // Article XVI §16.3: an identifier is kebab-case, and a per-instance key is a
+    // pure function of the data. The stored types are CamelCase with no separator,
+    // so a plain lowercase would be `valuechange` — kebab-case only by accident,
+    // and unreadable against the contract's spelling.
+    test('splits the stored CamelCase at each word', () {
+      expect(notificationTypeIdentifierKey('ValueChange'), 'value-change');
+      expect(notificationTypeIdentifierKey('OperationComplete'),
+          'operation-complete');
+      expect(
+          notificationTypeIdentifierKey('OnBoardRequest'), 'on-board-request');
+      expect(notificationTypeIdentifierKey('Unknown'), 'unknown');
+    });
+
+    test('a type the cloud starts storing later still slugs', () {
+      expect(notificationTypeIdentifierKey('Some New_Type!'), 'some-new-type');
+    });
+
+    test('an empty or symbol-only type has a stable fallback', () {
+      expect(notificationTypeIdentifierKey(''), 'unnamed');
+      expect(notificationTypeIdentifierKey('***'), 'unnamed');
     });
   });
 

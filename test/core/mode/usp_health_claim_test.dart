@@ -39,10 +39,17 @@ const _denials = <String>[
   'guardian has no health',
   'guardian has no such endpoint',
   'guardian does not serve',
+  'guardian serves no such endpoint',
   'health` path is a fabrication',
   'health path is a fabrication',
+  'a fabrication guardian does not serve',
+  'compensating for a fabricated endpoint',
   'no health or turbo',
 ];
+
+/// Markdown outside `lib/` that carried the claim: the mode-strategy guide
+/// repeated it three times, one of them in a list #1576 itself edited.
+const _correctedDocs = <String>['doc/mode_strategy/mode_strategy_guide.md'];
 
 /// Files outside `lib/` that carried the claim and had to be corrected.
 ///
@@ -68,14 +75,31 @@ void main() {
     for (final file in [
       ..._dartFilesUnder('lib'),
       ..._correctedTestFiles.map(File.new),
+      ..._correctedDocs.map(File.new),
     ]) {
+      // Matched over the whole file with comment markers and line breaks folded
+      // to single spaces, not line by line. A doc comment wraps wherever the
+      // formatter puts it, and a per-line scan passed a copy of this claim in
+      // `transport_strategy.dart` whose "is a / fabrication" fell across two
+      // lines. Each folded line keeps the number it started on, for the message.
+      final marker = RegExp(r'^\s*(///|//|\*|#+|-|>)?\s*');
+      final buffer = StringBuffer();
+      final starts = <(int, int)>[];
       final lines = file.readAsLinesSync();
       for (var i = 0; i < lines.length; i++) {
-        final line = lines[i].toLowerCase();
-        for (final denial in _denials) {
-          if (line.contains(denial)) {
-            offenders.add('${file.path}:${i + 1}  ${lines[i].trim()}');
-          }
+        starts.add((buffer.length, i + 1));
+        buffer
+          ..write(lines[i].replaceFirst(marker, '').toLowerCase())
+          ..write(' ');
+      }
+      final text = buffer.toString().replaceAll(RegExp(r' {2,}'), ' ');
+      int lineAt(int offset) =>
+          starts.lastWhere((s) => s.$1 <= offset, orElse: () => (0, 1)).$2;
+      for (final denial in _denials) {
+        for (var at = text.indexOf(denial);
+            at >= 0;
+            at = text.indexOf(denial, at + 1)) {
+          offenders.add('${file.path}:~${lineAt(at)}  "$denial"');
         }
       }
     }

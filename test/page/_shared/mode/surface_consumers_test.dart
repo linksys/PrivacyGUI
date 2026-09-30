@@ -603,7 +603,7 @@ void main() {
   // Both widths, because the page builds the banner and the renew section in two
   // different methods (`_buildMobileLayout`, `_buildDesktopLayout`) and a call
   // site fixed in one is exactly the defect a single-width test cannot see.
-  group('internet settings page', () {
+  group('SurfaceStrategy consumers - internet settings page', () {
     const widths = <String, Size>{
       'desktop': Size(1280, 2400),
       'mobile': Size(400, 2400),

@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Deze ondersteuningssessie heeft nog geen meldingen opgeleverd",
   "notificationHistoryUnavailable": "Meldingsgeschiedenis is alleen beschikbaar tijdens een sessie voor hulp op afstand",
   "notificationHistoryGone": "Deze melding is niet langer beschikbaar",
+  "notificationHistoryLoadFailed": "Deze melding kan niet worden geladen",
   "notificationHistoryMessageId": "Bericht-ID",
   "notificationHistoryCommandKey": "Opdrachtsleutel",
   "notificationHistoryShowMore": "Meer weergeven",

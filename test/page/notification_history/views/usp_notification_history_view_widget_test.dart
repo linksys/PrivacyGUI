@@ -48,15 +48,15 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../../mocks/test_data/notification_history_test_data.dart';
 import '../../../mocks/provider_overrides/mock_common.dart';
-import '../../../mocks/test_data/scenes/notification_history_scene_data.dart';
 
 class MockUspNotificationHistoryService extends Mock
     implements UspNotificationHistoryService {}
 
 NotificationDetailUIModel detail(String msgId, NotificationBodyUIModel body) =>
     NotificationDetailUIModel(
-      entry: notificationEntry(msgId, 'ValueChange'),
+      entry: NotificationHistoryTestData.entry(msgId, 'ValueChange'),
       body: body,
     );
 
@@ -122,8 +122,8 @@ void main() {
     SessionUspStateUIModel? state,
     List<NotificationHistoryEntryUIModel> entries = const [],
   }) {
-    when(() => service.fetchState()).thenAnswer((_) async =>
-        state ?? const SessionUspStateUIModel(deviceUuid: 'uuid-1'));
+    when(() => service.fetchState())
+        .thenAnswer((_) async => state ?? const SessionUspStateUIModel());
     when(() => service.fetchHistory()).thenAnswer((_) async => entries);
     // Every row fetches its body as it is built, so every test needs an answer
     // for every row. An empty raw body is the one that renders nothing inline;
@@ -164,7 +164,7 @@ void main() {
       // rendered DateTime so the assertion does not depend on the test machine's
       // zone.
       final boot = DateTime.fromMillisecondsSinceEpoch(1757000000000);
-      stub(state: SessionUspStateUIModel(deviceUuid: 'u', lastBoot: boot));
+      stub(state: SessionUspStateUIModel(lastBoot: boot));
 
       await pump(tester);
 
@@ -196,9 +196,10 @@ void main() {
   group('UspNotificationHistoryView - the timeline', () {
     testWidgets('renders a row per entry, Unknown included', (tester) async {
       stub(entries: [
-        notificationEntry('m1', 'ValueChange'),
-        notificationEntry('m2', 'OperationComplete', commandKey: 'key-abc'),
-        notificationEntry('m3', 'Unknown'),
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete',
+            commandKey: 'key-abc'),
+        NotificationHistoryTestData.entry('m3', 'Unknown'),
       ]);
 
       await pump(tester);
@@ -217,7 +218,8 @@ void main() {
       // what a support engineer scans by is the path and value. They are still
       // one tap away, because they are what gets pasted into a ticket.
       stub(entries: [
-        notificationEntry('m2', 'OperationComplete', commandKey: 'key-abc'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete',
+            commandKey: 'key-abc'),
       ]);
       await pump(tester);
 
@@ -239,7 +241,7 @@ void main() {
 
     testWidgets('a row without a command key has no command key line',
         (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       await pump(tester);
 
       await tester.tap(find.text('ValueChange'));
@@ -251,7 +253,7 @@ void main() {
 
     testWidgets('the E2E id is still on the row', (tester) async {
       final handle = tester.ensureSemantics();
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       await pump(tester);
 
       final row = find.bySemanticsIdentifier('notification-history-row-m1');
@@ -275,9 +277,9 @@ void main() {
       // what the card list rendered.
       const t0 = 1757000000000;
       stub(entries: [
-        notificationEntry('m1', 'ValueChange', ms: t0),
-        notificationEntry('m2', 'ValueChange', ms: t0 + 400),
-        notificationEntry('m3', 'Event', ms: t0 + 5000),
+        NotificationHistoryTestData.entry('m1', 'ValueChange', ms: t0),
+        NotificationHistoryTestData.entry('m2', 'ValueChange', ms: t0 + 400),
+        NotificationHistoryTestData.entry('m3', 'Event', ms: t0 + 5000),
       ]);
 
       await pump(tester);
@@ -287,6 +289,25 @@ void main() {
       expect(find.text(stamp(t0 + 5000)), findsOneWidget);
     });
 
+    testWidgets('a row with no timestamp sits last, under an em dash',
+        (tester) async {
+      // Not a "1970-01-01" heading: that would be a fabricated reading of a clock
+      // the row never reported.
+      stub(entries: [
+        const NotificationHistoryEntryUIModel(
+          msgId: 'undated',
+          notificationType: 'Event',
+        ),
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+      ]);
+
+      await pump(tester);
+
+      expect(find.textContaining('1970'), findsNothing);
+      // The em dash heading, beside the two em-dash session timestamps.
+      expect(find.text('—'), findsNWidgets(3));
+    });
+
     testWidgets('a burst that crosses a second boundary gets two headings',
         (tester) async {
       // Grouped on the second the heading shows, not on a window: 300ms apart
@@ -294,8 +315,8 @@ void main() {
       // print a time one of them does not have.
       const t0 = 1757000000900;
       stub(entries: [
-        notificationEntry('m1', 'ValueChange', ms: t0),
-        notificationEntry('m2', 'ValueChange', ms: t0 + 300),
+        NotificationHistoryTestData.entry('m1', 'ValueChange', ms: t0),
+        NotificationHistoryTestData.entry('m2', 'ValueChange', ms: t0 + 300),
       ]);
 
       await pump(tester);
@@ -312,7 +333,7 @@ void main() {
   group('UspNotificationHistoryView - inline summary', () {
     testWidgets('a ValueChange shows its path and value without a tap',
         (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       answer(
           'm1',
           const ValueChangeBodyUIModel(
@@ -330,8 +351,10 @@ void main() {
     testWidgets('an OperationComplete shows its command and its outcome',
         (tester) async {
       stub(entries: [
-        notificationEntry('ok', 'OperationComplete', ms: 1757000001000),
-        notificationEntry('no', 'OperationComplete', ms: 1757000000000),
+        NotificationHistoryTestData.entry('ok', 'OperationComplete',
+            ms: 1757000001000),
+        NotificationHistoryTestData.entry('no', 'OperationComplete',
+            ms: 1757000000000),
       ]);
       answer(
           'ok',
@@ -359,7 +382,7 @@ void main() {
     });
 
     testWidgets('an Event shows its name', (tester) async {
-      stub(entries: [notificationEntry('e1', 'Event')]);
+      stub(entries: [NotificationHistoryTestData.entry('e1', 'Event')]);
       answer(
           'e1',
           const EventBodyUIModel(
@@ -381,8 +404,9 @@ void main() {
       // "Loading…" under a type that is the whole row.
       final pending = Completer<NotificationDetailUIModel>();
       stub(entries: [
-        notificationEntry('m8', 'ObjectCreation', ms: 1757000001000),
-        notificationEntry('m9', 'Unknown'),
+        NotificationHistoryTestData.entry('m8', 'ObjectCreation',
+            ms: 1757000001000),
+        NotificationHistoryTestData.entry('m9', 'Unknown'),
       ]);
       when(() => service.fetchDetail(any())).thenAnswer((_) => pending.future);
 
@@ -410,7 +434,7 @@ void main() {
 
     testWidgets('a row still loading says so, then fills in', (tester) async {
       final pending = Completer<NotificationDetailUIModel>();
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1')).thenAnswer((_) => pending.future);
 
       await pump(tester);
@@ -433,7 +457,7 @@ void main() {
       // body reads before the user has scrolled. Each one is a Guardian read.
       final entries = [
         for (var i = 0; i < 25; i++)
-          notificationEntry('m$i', 'ValueChange',
+          NotificationHistoryTestData.entry('m$i', 'ValueChange',
               ms: 1757000000000 - i * 60000),
       ];
       stub(entries: entries);
@@ -457,7 +481,7 @@ void main() {
   group('UspNotificationHistoryView - opening a row', () {
     testWidgets('renders the full body, from the fetch the row already made',
         (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       answer(
           'm1',
           const ValueChangeBodyUIModel(
@@ -478,7 +502,7 @@ void main() {
 
     testWidgets('a 404 says "no longer available", not a crash',
         (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1'))
           .thenThrow(const ResourceNotFoundError(code: 404));
       await pump(tester);
@@ -494,24 +518,34 @@ void main() {
       // The spec makes 404 cover "gone" and "not yours" without distinguishing
       // them, so the generic failure copy would be reporting a fault that is
       // not one.
-      expect(find.text(loc.failedToLoadSettings), findsNothing);
+      expect(find.text(loc.notificationHistoryLoadFailed), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('any other failure reads as one', (tester) async {
-      stub(entries: [notificationEntry('m1', 'ValueChange')]);
+      stub(entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
       when(() => service.fetchDetail('m1'))
           .thenThrow(const UnexpectedError(detail: 'boom'));
       await pump(tester);
 
-      expect(find.text(loc.failedToLoadSettings), findsOneWidget);
+      // Its own sentence, not the page's "Failed to load settings": a row is a
+      // notification, and there are no settings on this page.
+      expect(find.text(loc.notificationHistoryLoadFailed), findsOneWidget);
+      expect(find.text(loc.failedToLoadSettings), findsNothing);
       expect(find.text(loc.notificationHistoryGone), findsNothing);
+
+      await tester.tap(find.text('ValueChange'));
+      await tester.pumpAndSettle();
+      expect(
+          inDialog(find.byType(AppDialog), loc.notificationHistoryLoadFailed),
+          findsOneWidget);
     });
 
     testWidgets('a refused OperationComplete shows its error, not its args',
         (tester) async {
       stub(entries: [
-        notificationEntry('m2', 'OperationComplete', commandKey: 'k')
+        NotificationHistoryTestData.entry('m2', 'OperationComplete',
+            commandKey: 'k')
       ]);
       answer(
           'm2',
@@ -535,7 +569,7 @@ void main() {
 
     testWidgets('an unrecognised body is shown as JSON rather than dropped',
         (tester) async {
-      stub(entries: [notificationEntry('m9', 'Unknown')]);
+      stub(entries: [NotificationHistoryTestData.entry('m9', 'Unknown')]);
       answer('m9', const RawBodyUIModel('{\n  "obj_creation": {}\n}'));
       await pump(tester);
 

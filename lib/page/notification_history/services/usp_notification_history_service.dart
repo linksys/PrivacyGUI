@@ -25,8 +25,8 @@ final uspNotificationHistoryServiceProvider =
 /// ## Two parse rules that fail silently if broken
 ///
 /// **The envelope is camelCase, `body` is snake_case.** `msgId` / `originTs` /
-/// `notificationType` / `commandKey` and `deviceUuid` / `lastBoot` /
-/// `lastUspActivity` on one side; `value_change.param_path` on the other.
+/// `notificationType` / `commandKey` and `lastBoot` / `lastUspActivity` on one
+/// side; `value_change.param_path` on the other.
 /// `CLOUD_GUARDIANS#205`'s body spells the envelope snake_case and the OpenAPI
 /// spec spells it camelCase; the spec is the accurate one, and a parser written
 /// from the issue returns nulls without raising.
@@ -42,7 +42,6 @@ class UspNotificationHistoryService {
   Future<SessionUspStateUIModel> fetchState() async {
     final json = await _read(_bridge.uspState);
     return SessionUspStateUIModel(
-      deviceUuid: json['deviceUuid']?.toString() ?? '',
       lastBoot: _epochMillis(json['lastBoot']),
       lastUspActivity: _epochMillis(json['lastUspActivity']),
     );
@@ -57,9 +56,12 @@ class UspNotificationHistoryService {
     final json = await _read(_bridge.notificationsHistory);
     final entries = json['entries'];
     if (entries is! List) return const [];
+    // A row with no `msgId` is dropped: it cannot be opened, and an empty id
+    // would send its detail read to `.../usp/notifications/` — the collection.
     return entries
         .whereType<Map<String, dynamic>>()
         .map(_toEntry)
+        .where((e) => e.msgId.isNotEmpty)
         .toList(growable: false);
   }
 
@@ -81,12 +83,10 @@ class UspNotificationHistoryService {
 
   NotificationHistoryEntryUIModel _toEntry(Map<String, dynamic> json) =>
       NotificationHistoryEntryUIModel(
+        // Empty rather than null only so the caller can drop the row; see
+        // `fetchHistory`. Never rendered and never read with.
         msgId: json['msgId']?.toString() ?? '',
-        // Epoch 0 rather than null for a row that somehow carries no timestamp:
-        // the field is non-nullable because every stored notify has one, and a
-        // row is still worth showing without it.
-        originTs: _epochMillis(json['originTs']) ??
-            DateTime.fromMillisecondsSinceEpoch(0),
+        originTs: _epochMillis(json['originTs']),
         // `Unknown` is a real stored value the cloud writes for an unrecognised
         // variant, so a missing type reads as the same thing rather than as an
         // empty string the UI would have to special-case.

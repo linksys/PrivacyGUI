@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "В этом сеансе поддержки пока не было уведомлений",
   "notificationHistoryUnavailable": "История уведомлений доступна только во время сеанса удалённой помощи",
   "notificationHistoryGone": "Это уведомление больше недоступно",
+  "notificationHistoryLoadFailed": "Не удалось загрузить это уведомление",
   "notificationHistoryMessageId": "Идентификатор сообщения",
   "notificationHistoryCommandKey": "Ключ команды",
   "notificationHistoryShowMore": "Показать больше",

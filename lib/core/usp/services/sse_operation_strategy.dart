@@ -41,8 +41,9 @@ class HeartbeatConfig {
   /// and pushes the app into recovery — strictly worse than having no watchdog at all.
   ///
   /// Flipping this is a one-word change once #1575's verification item 1 is answered:
-  /// name [remoteWithHeartbeat] here. `sse_operation_strategy_test.dart` pins both
-  /// values and which one is live, so the flip cannot happen by accident either.
+  /// name [remoteWithHeartbeat] here.
+  /// `sse_connection_manager_disconnect_cause_test.dart` pins both values and which
+  /// one is live, so the flip cannot happen by accident either.
   ///
   /// `authCheckEnabled` stays false in both: the heartbeat auth check refreshes a WASM
   /// session token, and a Guardian `temporaryAccessToken` cannot be refreshed.

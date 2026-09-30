@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "本次支持会话尚未产生任何通知",
   "notificationHistoryUnavailable": "通知历史仅在远程协助会话期间可用",
   "notificationHistoryGone": "此通知已不再可用",
+  "notificationHistoryLoadFailed": "无法加载此通知",
   "notificationHistoryMessageId": "消息 ID",
   "notificationHistoryCommandKey": "命令键",
   "notificationHistoryShowMore": "显示更多",

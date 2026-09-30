@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/notification_history/models/notification_history_ui_model.dart';
 import 'package:privacy_gui/page/notification_history/providers/usp_notification_history_notifier.dart';
 
+import '../test_data/notification_history_test_data.dart';
 import '../test_data/scenes/notification_history_scene_data.dart';
 
 /// A `uspNotificationHistoryProvider` pinned to one composed state.
@@ -54,7 +55,8 @@ List<Override> notificationHistoryOverrides([
           // a lookup that threw would render every row's failure line instead.
           entry: (state ?? gateNotificationHistoryState).entries.firstWhere(
                 (e) => e.msgId == msgId,
-                orElse: () => notificationEntry(msgId, 'Unknown'),
+                orElse: () =>
+                    NotificationHistoryTestData.entry(msgId, 'Unknown'),
               ),
           body: gateNotificationDetails[msgId] ?? const RawBodyUIModel(''),
         ),

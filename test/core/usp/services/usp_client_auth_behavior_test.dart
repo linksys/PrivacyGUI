@@ -49,7 +49,8 @@ final _commands = <String, Future<Object?> Function(UspClient)>{
 };
 
 void main() {
-  group('remote: a 401 ends the session without a reauth (#1627)', () {
+  group('UspClient - remote: a 401 ends the session without a reauth (#1627)',
+      () {
     for (final MapEntry(key: verb, value: send) in _commands.entries) {
       test(verb, () async {
         final transport = UnauthenticatedTransport();
@@ -128,7 +129,7 @@ void main() {
     });
   });
 
-  group('local: a 401 still refreshes and retries', () {
+  group('UspClient - local: a 401 still refreshes and retries', () {
     test('the default is local', () {
       expect(UspClient.withTransport(UnauthenticatedTransport()).authBehavior,
           same(AuthBehavior.local));

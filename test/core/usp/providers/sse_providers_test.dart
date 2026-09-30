@@ -318,7 +318,7 @@ void main() {
   // gate's `onForceLogout` reaching `authProvider`. The client's own suite pins
   // the gate with the behaviour assigned by hand, so it stays green if nothing
   // in the app ever assigns it.
-  group('sseManagerProvider: a 401 under each profile (#1627)', () {
+  group('sseManagerProvider - a 401 under each profile (#1627)', () {
     const path = 'Device.DeviceInfo.SerialNumber';
     late UnauthenticatedTransport transport;
     late UspClient client;

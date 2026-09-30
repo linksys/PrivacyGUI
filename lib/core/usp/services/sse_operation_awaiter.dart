@@ -170,6 +170,22 @@ class SseOperationAwaiter {
     return result.commandKey == commandKey ? result : null;
   }
 
+  /// Marks an operation outstanding from here, so a stream reopen can reconcile
+  /// it (#1578). A null or empty key is an operate that returned none, which has
+  /// nothing to reconcile by.
+  void _track(String? commandKey, Completer<OperateResult> completer) {
+    if (commandKey != null && commandKey.isNotEmpty) {
+      _pending[commandKey] = completer;
+    }
+  }
+
+  /// The other half of [_track], from both execute paths' `finally`: once the
+  /// caller has its answer — a result, a timeout or an error — nothing awaits
+  /// the operation, and a reconcile on the next reopen would be a read for no one.
+  void _untrack(String? commandKey) {
+    if (commandKey != null) _pending.remove(commandKey);
+  }
+
   /// Last chance before a timeout is reported: read the stored result.
   ///
   /// The other half of #1578, and the cheaper half to get wrong — a timeout is what a
@@ -182,11 +198,14 @@ class SseOperationAwaiter {
     Duration timeout,
   ) async {
     if (commandKey != null && commandKey.isNotEmpty) {
-      if (await _reconcile(commandKey)) {
-        final completer = _pending[commandKey];
-        if (completer != null && completer.isCompleted) {
-          return completer.future;
-        }
+      await _reconcile(commandKey);
+      // Checked whatever the read returned: a push can land while the read is in
+      // flight, and then `_reconcile` finds the completer already done and says
+      // false. The completer holding a result is the answer either way — a
+      // timeout here would throw away a result already in hand.
+      final completer = _pending[commandKey];
+      if (completer != null && completer.isCompleted) {
+        return completer.future;
       }
     }
     throw TimeoutException(
@@ -505,11 +524,7 @@ class SseOperationAwaiter {
       logger.d('[USP][SSE][Operate]: Executing $operateCommand in session '
           '(commandKey=$expectedKey)');
 
-      // Outstanding from here, so a stream reopen can reconcile it (#1578).
-      final trackedKey = expectedKey;
-      if (trackedKey != null && trackedKey.isNotEmpty) {
-        _pending[trackedKey] = completer;
-      }
+      _track(expectedKey, completer);
 
       final result = await completer.future.timeout(
         timeout,
@@ -519,8 +534,7 @@ class SseOperationAwaiter {
       return result;
     } finally {
       removeHandler();
-      final trackedKey = expectedKey;
-      if (trackedKey != null) _pending.remove(trackedKey);
+      _untrack(expectedKey);
     }
   }
 
@@ -567,7 +581,11 @@ class SseOperationAwaiter {
       // race window where SSE OperationComplete arrives before the HTTP
       // operate response. Match by commandName first; tighten to commandKey
       // once the HTTP response gives us one.
-      String? expectedKey;
+      //
+      // No `String? expectedKey` here: this is the hoisted one above. A second
+      // declaration shadowed it, so the `finally` untracked nothing and every
+      // timed-out diagnostic stayed in `_pending` — read again on every stream
+      // reopen, for as long as the awaiter lived.
       removeHandler = _manager.addWildcardHandler((notification) {
         if (notification.type != 'OperationComplete' || completer.isCompleted) {
           return;
@@ -595,11 +613,7 @@ class SseOperationAwaiter {
       logger.d('[USP][SSE][Operate]: Starting $operateCommand '
           '(commandKey=$expectedKey)');
 
-      // Outstanding from here, so a stream reopen can reconcile it (#1578).
-      final trackedKey = expectedKey;
-      if (trackedKey != null && trackedKey.isNotEmpty) {
-        _pending[trackedKey] = completer;
-      }
+      _track(expectedKey, completer);
 
       // Await SSE OperationComplete, or read the stored result before reporting a
       // timeout — Guardian never re-publishes a push it has already sent once.
@@ -615,8 +629,7 @@ class SseOperationAwaiter {
     } finally {
       // Always cleanup: wildcard handler + subscription
       removeHandler?.call();
-      final trackedKey = expectedKey;
-      if (trackedKey != null) _pending.remove(trackedKey);
+      _untrack(expectedKey);
       if (cleanupSubscription != null) {
         try {
           await cleanupSubscription();

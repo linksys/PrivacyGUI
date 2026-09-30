@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Αυτή η συνεδρία υποστήριξης δεν έχει παράγει ακόμη ειδοποιήσεις",
   "notificationHistoryUnavailable": "Το ιστορικό ειδοποιήσεων είναι διαθέσιμο μόνο κατά τη διάρκεια συνεδρίας απομακρυσμένης βοήθειας",
   "notificationHistoryGone": "Αυτή η ειδοποίηση δεν είναι πλέον διαθέσιμη",
+  "notificationHistoryLoadFailed": "Δεν ήταν δυνατή η φόρτωση αυτής της ειδοποίησης",
   "notificationHistoryMessageId": "Αναγνωριστικό μηνύματος",
   "notificationHistoryCommandKey": "Κλειδί εντολής",
   "notificationHistoryShowMore": "Εμφάνιση περισσότερων",

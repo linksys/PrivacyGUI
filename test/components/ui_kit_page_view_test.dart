@@ -216,7 +216,7 @@ void main() {
   // What is worth pinning is that the slivers land *inside the page's scroll
   // view* (and so under its app bar and pull-to-refresh), and that the pages
   // which do not pass any are untouched.
-  group('UiKitPageView.slivers', () {
+  group('UiKitPageView - slivers', () {
     Widget buildSliverHost({List<Widget>? slivers}) => ProviderScope(
           child: MaterialApp(
             theme: lightTheme,

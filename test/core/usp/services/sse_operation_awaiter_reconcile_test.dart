@@ -130,6 +130,34 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 50));
   }
 
+  /// Closes the stream and brings it back, the way production reopens it.
+  Future<void> reopenStream() async {
+    await streamController.close();
+    streamController = StreamController<SseEvent>.broadcast();
+    when(() => mockBridge.notifications())
+        .thenAnswer((_) => streamController.stream);
+    await manager.connect();
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
+  /// The same diagnostic through a shared session, which is the path the
+  /// diagnostics pages take — `execute` routes into it whenever one is open.
+  Future<OperateResult> runDiagnosticInSession({
+    Duration timeout = const Duration(milliseconds: 150),
+  }) async {
+    await awaiter.startSharedSession(
+        referencePath: 'Device.IP.Diagnostics.IPPing()');
+    try {
+      return await awaiter.executeInSession(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        args: const {'Host': '8.8.8.8'},
+        timeout: timeout,
+      );
+    } finally {
+      await awaiter.endSharedSession();
+    }
+  }
+
   /// Fires a diagnostic with a short timeout and nothing on the stream to answer it.
   Future<OperateResult> runDiagnostic({
     Duration timeout = const Duration(milliseconds: 150),
@@ -144,7 +172,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Edge 1 — before reporting a timeout
   // ═════════════════════════════════════════════════════════════════════════
-  group('before reporting a timeout', () {
+  group('SseOperationAwaiter - before reporting a timeout', () {
     test('a stored result is returned instead of the timeout', () async {
       await connectManager();
       when(() => mockBridge.results('key-abc'))
@@ -248,7 +276,7 @@ void main() {
   // ═════════════════════════════════════════════════════════════════════════
   // Edge 2 — the stream reopened
   // ═════════════════════════════════════════════════════════════════════════
-  group('when the stream reopens', () {
+  group('SseOperationAwaiter - when the stream reopens', () {
     test('an outstanding diagnostic is recovered from the store', () async {
       await connectManager();
       when(() => mockBridge.results('key-abc'))
@@ -271,6 +299,21 @@ void main() {
       expect(result.status, 'Complete');
     });
 
+    test('a diagnostic that already timed out is not read again', () async {
+      // Once the caller has its `TimeoutException`, the operation is over: nobody
+      // is awaiting it, so a later reopen that reads it anyway is a Guardian read
+      // per reopen, for ever — Guardian closes every stream at ~10 minutes, so that
+      // is an interval read in all but name.
+      await connectManager();
+      await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
+      verify(() => mockBridge.results('key-abc')).called(1);
+
+      await reopenStream();
+      await reopenStream();
+
+      verifyNever(() => mockBridge.results(any()));
+    });
+
     test('nothing is read when nothing is outstanding', () async {
       await connectManager();
 
@@ -286,28 +329,114 @@ void main() {
   });
 
   // ═════════════════════════════════════════════════════════════════════════
+  // The shared session — the path the diagnostics pages take
+  // ═════════════════════════════════════════════════════════════════════════
+  group('SseOperationAwaiter - in a shared session', () {
+    test('a stored result is returned instead of the timeout', () async {
+      await connectManager();
+      when(() => mockBridge.results('key-abc'))
+          .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
+
+      final result = await runDiagnosticInSession();
+
+      expect(result.commandKey, 'key-abc');
+      expect(result.status, 'Complete');
+      verify(() => mockBridge.results('key-abc')).called(1);
+    });
+
+    test('an outstanding diagnostic is recovered when the stream reopens',
+        () async {
+      await connectManager();
+      when(() => mockBridge.results('key-abc'))
+          .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
+
+      final pending =
+          runDiagnosticInSession(timeout: const Duration(seconds: 30));
+      await Future.delayed(const Duration(milliseconds: 50));
+      await reopenStream();
+
+      final result = await pending;
+      expect(result.commandKey, 'key-abc');
+    });
+
+    test('a diagnostic that already timed out is not read again', () async {
+      await connectManager();
+      await expectLater(
+          runDiagnosticInSession(), throwsA(isA<TimeoutException>()));
+      verify(() => mockBridge.results('key-abc')).called(1);
+
+      await reopenStream();
+
+      verifyNever(() => mockBridge.results(any()));
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // The last-chance read racing the push
+  // ═════════════════════════════════════════════════════════════════════════
+  test(
+      'a push that lands during the last-chance read is the answer, not a '
+      'timeout', () async {
+    // The timeout fires, the stored-result read goes out, and the push arrives
+    // while it is in flight. The push completes the operation first, so the read
+    // finds nothing left to resolve — and reporting a timeout then would throw
+    // away a result that is already in hand.
+    await connectManager();
+    final read = Completer<List<Object?>>();
+    when(() => mockBridge.results('key-abc')).thenAnswer((_) => read.future);
+
+    final pending = runDiagnostic();
+    await Future.delayed(const Duration(milliseconds: 250));
+    verify(() => mockBridge.results('key-abc')).called(1);
+
+    streamController.add(notificationEvent(
+      subscriptionId: 'cpe-1',
+      type: 'OperationComplete',
+      operComplete: {
+        'command_name': 'IPPing()',
+        'command_key': 'key-abc',
+        'output_args': {'Status': 'Complete'},
+      },
+    ));
+    await Future.delayed(const Duration(milliseconds: 20));
+    read.complete(const []);
+
+    final result = await pending;
+    expect(result.status, 'Complete');
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
   // The negative claim: no interval
   // ═════════════════════════════════════════════════════════════════════════
-  test('the read is never on a timer', () async {
+  test('the read is never on a timer', () {
     // Acceptance 3 of #1578, and the reason it is a count rather than a code review:
     // a `Timer.periodic` added to this class looks like working code and every other
     // test in this file would stay green.
     //
-    // **An hour of fake time, not 700 ms of real time.** The first version elapsed
-    // 700 ms and its own comment claimed that was "well past any plausible poll
-    // interval" — which was wrong twice over. The interval a well-meaning change
-    // would copy is the server's own ~10 s, and no amount of *real* waiting is a
-    // reasonable price for the assertion anyway. `fakeAsync` fires a real periodic
-    // timer 360 times inside an hour, so the mutant this test is written against
-    // cannot survive it.
-    await connectManager();
-    when(() => mockBridge.results('key-abc'))
-        .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
-    await runDiagnostic();
+    // **The whole test runs inside `fakeAsync`, and that is the load-bearing part.**
+    // A fake clock only advances timers created in its own zone. The first two
+    // versions of this test connected and ran the diagnostic in the real zone and
+    // then elapsed an hour of fake time — which fires nothing, because the timer a
+    // poll would add had been created outside it. Measured: a `Timer.periodic(10s)`
+    // added to `_timeoutOrStoredResult` survived that version and fails this one.
+    fakeAsync((async) {
+      when(() => mockBridge.results('key-abc'))
+          .thenAnswer((_) async => [_storedEnvelope('key-abc')]);
+      manager.connect();
+      async.elapse(const Duration(milliseconds: 10));
+      streamController.add(heartbeatEvent());
+      async.elapse(const Duration(milliseconds: 50));
+      expect(manager.isConnected, isTrue,
+          reason: 'not connected, so the diagnostic would take the polling '
+              'fallback and this test would measure the wrong path');
 
-    fakeAsync((async) => async.elapse(const Duration(hours: 1)));
+      runDiagnostic();
+      async.elapse(const Duration(seconds: 1));
+      verify(() => mockBridge.results('key-abc')).called(1);
 
-    verify(() => mockBridge.results('key-abc')).called(1);
+      async.elapse(const Duration(hours: 1));
+      verifyNever(() => mockBridge.results(any()));
+    });
   });
 
   test('an operate the agent REFUSED engages nothing', () async {

@@ -138,7 +138,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('notification history entry in the session popup', () {
+  group('RemoteSessionChip - notification history entry in the session popup',
+      () {
     testWidgets('the popup offers it, beside End Session', (tester) async {
       await pump(tester);
       await openPopup(tester);

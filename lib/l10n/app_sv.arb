@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Den här supportsessionen har ännu inte gett några aviseringar",
   "notificationHistoryUnavailable": "Aviseringshistorik är endast tillgänglig under en fjärrhjälpssession",
   "notificationHistoryGone": "Den här aviseringen är inte längre tillgänglig",
+  "notificationHistoryLoadFailed": "Det gick inte att läsa in den här aviseringen",
   "notificationHistoryMessageId": "Meddelande-ID",
   "notificationHistoryCommandKey": "Kommandonyckel",
   "notificationHistoryShowMore": "Visa mer",

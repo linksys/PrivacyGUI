@@ -576,7 +576,7 @@ void main() {
         }
         for (final text in [
           loc.loading,
-          loc.failedToLoadSettings,
+          loc.notificationHistoryLoadFailed,
           loc.notificationHistoryGone,
         ]) {
           if (find.text(text).evaluate().isNotEmpty) {

@@ -2,15 +2,15 @@ import 'package:equatable/equatable.dart';
 
 /// Guardian's per-device USP state, read once when the history page opens.
 ///
-/// Two of the three fields are nullable and **both being null is a normal
-/// answer** — it means the device has produced no notification yet, which is
-/// exactly what a fresh session looks like. The page renders those as an em dash,
-/// never as an error.
+/// Both fields are nullable and **both being null is a normal answer** — it means
+/// the device has produced no notification yet, which is exactly what a fresh
+/// session looks like. The page renders those as an em dash, never as an error.
+///
+/// The endpoint also serves `deviceUuid`. It is not parsed: nothing on the page
+/// shows it, and the session already knows which device it is talking to.
 ///
 /// Naming follows constitution Section 3.3.4.
 class SessionUspStateUIModel extends Equatable {
-  final String deviceUuid;
-
   /// When the device last booted, or `null` if it has never said.
   final DateTime? lastBoot;
 
@@ -18,13 +18,12 @@ class SessionUspStateUIModel extends Equatable {
   final DateTime? lastUspActivity;
 
   const SessionUspStateUIModel({
-    required this.deviceUuid,
     this.lastBoot,
     this.lastUspActivity,
   });
 
   @override
-  List<Object?> get props => [deviceUuid, lastBoot, lastUspActivity];
+  List<Object?> get props => [lastBoot, lastUspActivity];
 }
 
 /// One row of the notification history list — metadata only, no body.
@@ -39,7 +38,12 @@ class NotificationHistoryEntryUIModel extends Equatable {
   /// The cloud broker's receive time. **Not comparable with a local clock** —
   /// it is the broker's, so anything that subtracts `DateTime.now()` from it is
   /// wrong in both directions.
-  final DateTime originTs;
+  ///
+  /// Null for a row served without one. Every stored notify should carry it, but
+  /// a stand-in value would be a fabricated reading of this clock — epoch 0
+  /// renders as a "1970-01-01" heading — so the absence is kept and rendered as
+  /// absent.
+  final DateTime? originTs;
 
   /// The stored notify variant. `Unknown` is a **real stored value**, not a
   /// placeholder: it is what the cloud records for a notify with no recognisable
@@ -52,13 +56,33 @@ class NotificationHistoryEntryUIModel extends Equatable {
 
   const NotificationHistoryEntryUIModel({
     required this.msgId,
-    required this.originTs,
+    this.originTs,
     required this.notificationType,
     this.commandKey,
   });
 
   @override
   List<Object?> get props => [msgId, originTs, notificationType, commandKey];
+}
+
+/// A stored `notificationType` as the kebab-case key of an E2E identifier.
+///
+/// Article XVI §16.3 wants identifier values kebab-case and a per-instance key to
+/// be a pure function of the data. The stored types are CamelCase with no
+/// separator (`ValueChange`, `OnBoardRequest`), so the split is at each lowercase-
+/// to-uppercase boundary — `value-change` — rather than a plain lowercase, which
+/// would give `valuechange`. Anything else that is not a letter or digit becomes a
+/// hyphen, so a type the cloud starts storing later still yields a key, and one
+/// with nothing usable in it falls back to `unnamed`, the same sentinel
+/// `ruleIdentifierKey` uses.
+String notificationTypeIdentifierKey(String notificationType) {
+  final slug = notificationType
+      .trim()
+      .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]}-${m[2]}')
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  return slug.isEmpty ? 'unnamed' : slug;
 }
 
 /// The parsed `body` of one notification.

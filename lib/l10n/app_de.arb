@@ -1183,6 +1183,7 @@
   "notificationHistoryEmpty": "Diese Support-Sitzung hat noch keine Benachrichtigungen erzeugt",
   "notificationHistoryUnavailable": "Der Benachrichtigungsverlauf ist nur während einer Fernwartungssitzung verfügbar",
   "notificationHistoryGone": "Diese Benachrichtigung ist nicht mehr verfügbar",
+  "notificationHistoryLoadFailed": "Diese Benachrichtigung konnte nicht geladen werden",
   "notificationHistoryMessageId": "Nachrichten-ID",
   "notificationHistoryCommandKey": "Befehlsschlüssel",
   "notificationHistoryShowMore": "Mehr anzeigen",

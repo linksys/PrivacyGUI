@@ -22,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/notification_history/models/notification_history_ui_model.dart';
 import 'package:privacy_gui/page/notification_history/providers/usp_notification_history_state.dart';
 
+import '../../../mocks/test_data/notification_history_test_data.dart';
 import '../../../mocks/test_data/scenes/notification_history_scene_data.dart';
 
 void main() {
@@ -50,20 +51,35 @@ void main() {
       // The endpoint promises newest-first and the client sorts anyway: the promise
       // is a server behaviour this page cannot see broken.
       final state = NotificationHistoryState(entries: [
-        notificationEntry('old', 'ValueChange', ms: 1000),
-        notificationEntry('new', 'ValueChange', ms: 3000),
-        notificationEntry('mid', 'ValueChange', ms: 2000),
+        NotificationHistoryTestData.entry('old', 'ValueChange', ms: 1000),
+        NotificationHistoryTestData.entry('new', 'ValueChange', ms: 3000),
+        NotificationHistoryTestData.entry('mid', 'ValueChange', ms: 2000),
       ]);
 
       expect(state.filteredEntries.map((e) => e.msgId), ['new', 'mid', 'old']);
+    });
+
+    test('a row with no timestamp sorts last, not first', () {
+      // It cannot be placed; first would read as the newest thing that happened.
+      final state = NotificationHistoryState(entries: [
+        NotificationHistoryEntryUIModel(
+          msgId: 'undated',
+          notificationType: 'ValueChange',
+        ),
+        NotificationHistoryTestData.entry('old', 'ValueChange', ms: 1000),
+        NotificationHistoryTestData.entry('new', 'ValueChange', ms: 3000),
+      ]);
+
+      expect(
+          state.filteredEntries.map((e) => e.msgId), ['new', 'old', 'undated']);
     });
   });
 
   group('NotificationHistoryState - filtering', () {
     final entries = [
-      notificationEntry('m1', 'ValueChange', ms: 3000),
-      notificationEntry('m2', 'OperationComplete', ms: 2000),
-      notificationEntry('m3', 'Unknown', ms: 1000),
+      NotificationHistoryTestData.entry('m1', 'ValueChange', ms: 3000),
+      NotificationHistoryTestData.entry('m2', 'OperationComplete', ms: 2000),
+      NotificationHistoryTestData.entry('m3', 'Unknown', ms: 1000),
     ];
 
     test('a null filter shows every row', () {
@@ -96,8 +112,8 @@ void main() {
 
     test('availableTypes de-duplicates', () {
       final state = NotificationHistoryState(entries: [
-        notificationEntry('a', 'ValueChange'),
-        notificationEntry('b', 'ValueChange'),
+        NotificationHistoryTestData.entry('a', 'ValueChange'),
+        NotificationHistoryTestData.entry('b', 'ValueChange'),
       ]);
 
       expect(state.availableTypes, ['ValueChange']);
@@ -107,7 +123,8 @@ void main() {
   group('NotificationHistoryState - paging', () {
     List<NotificationHistoryEntryUIModel> rows(int n) => [
           for (var i = 0; i < n; i++)
-            notificationEntry('m$i', 'ValueChange', ms: 1000 + i),
+            NotificationHistoryTestData.entry('m$i', 'ValueChange',
+                ms: 1000 + i),
         ];
 
     test('a window inside one page shows all of it and offers no more', () {
@@ -141,7 +158,7 @@ void main() {
       final state = NotificationHistoryState(
         entries: [
           ...rows(30),
-          notificationEntry('target', 'Unknown', ms: 1),
+          NotificationHistoryTestData.entry('target', 'Unknown', ms: 1),
         ],
         typeFilter: 'Unknown',
         visibleCount: 2,
@@ -155,7 +172,7 @@ void main() {
   group('NotificationHistoryState - copyWith', () {
     test('an omitted field is kept', () {
       final state = NotificationHistoryState(
-        entries: [notificationEntry('m1', 'ValueChange')],
+        entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')],
         typeFilter: 'ValueChange',
         visibleCount: 50,
       );
@@ -197,7 +214,7 @@ void main() {
     test('equal states are equal, and every field is in props', () {
       final a = NotificationHistoryState(
         sessionState: emptyNotificationHistoryState.sessionState,
-        entries: [notificationEntry('m1', 'ValueChange')],
+        entries: [NotificationHistoryTestData.entry('m1', 'ValueChange')],
         typeFilter: 'ValueChange',
         visibleCount: 30,
       );
