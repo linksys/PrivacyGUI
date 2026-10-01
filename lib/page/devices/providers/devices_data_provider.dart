@@ -139,7 +139,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     //
     // Cancelling the debounce here too: a timer armed before the rebuild would otherwise
     // fire afterwards and re-fetch data the rebuild just read.
-    _refreshGeneration++;
+    final generation = ++_refreshGeneration;
     _debounce?.cancel();
 
     // SSE: listen for device domain changes → debounce → re-fetch
@@ -202,20 +202,28 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     ref.onDispose(() => _debounce?.cancel());
 
-    return _fetch();
+    return _fetch(generation);
   }
 
-  Future<DevicesData> _fetch() async {
-    // CAPTURED BEFORE THE AWAITS, not read after them. `build()` bumped the counter just
-    // before calling this, and this method then awaits three times — WifiData, system
-    // info, `svc.fetch()` — which is long enough for a push refresh to start and finish.
-    // Reading `_refreshGeneration` at the bottom would hand `_fetchMeshAndUpdate` the
-    // NEWER number, so a mesh update belonging to a superseded `build()` would pass the
-    // guard and publish. First version of this fix did exactly that.
-    final generation = _refreshGeneration;
-    final svc = ref.read(uspDevicesDataServiceProvider);
-
-    // Read WiFi enrichment data — soft dependency with timeout.
+  /// The two soft dependencies both refresh paths need, read once in one place.
+  ///
+  /// EXTRACTED BECAUSE IT WAS DUPLICATED VERBATIM. `_fetch()` and
+  /// `_refetchPreservingMeshInner()` carried the same twelve lines, so adding the system
+  /// info read meant writing it twice and any future change would too.
+  ///
+  /// SOFT in both cases: a failure degrades the page rather than failing it. Missing
+  /// WifiData costs the per-client band and signal enrichment; missing system info costs
+  /// node identity, which then falls back to the DataElements controller row — and that
+  /// row describes prplMesh rather than the product (`Manufacturer=qcom`,
+  /// `SerialNumber=prplmesh12345`, the prplMesh version as the firmware version), all four
+  /// of which are shown in node detail. The device list itself is the useful half of this
+  /// page and must still render.
+  ///
+  /// AWAITED, not `ref.read(...).valueOrNull`. A bare read returns null unless something
+  /// else happens to hold L1 built and settled, and every `watch` of both providers is on
+  /// another page — Statistics, Topology, Firmware Update, Admin, the dashboard cards. On
+  /// the Devices page a bare read was therefore as likely to be null as not.
+  Future<(WifiData, SystemInfoData?, String)> _readEnrichment() async {
     WifiData wifiData;
     try {
       wifiData = await ref
@@ -227,19 +235,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       wifiData = const WifiData.empty();
     }
 
-    // Read system info for gateway name + node model building.
-    //
-    // `await …future`, not `ref.read(...).valueOrNull`. A bare read returns null unless
-    // something else happens to hold L1 built and settled, and every `watch` of
-    // `systemInfoDataProvider` is on another page — Statistics, Topology, Firmware Update,
-    // Admin, the dashboard cards. So on the Devices page this was as likely to be null as
-    // not, and null is not benign here: `mesh_network_builder` falls back to the
-    // DataElements controller row, which describes prplMesh rather than the product
-    // (`Manufacturer=qcom`, `SerialNumber=prplmesh12345`, the prplMesh version as the
-    // firmware version) and shows all four to the user in node detail.
-    //
-    // Soft dependency like the WifiData read above: if it cannot be had, proceed without
-    // it rather than failing the device list, which is the more useful half of this page.
     SystemInfoData? sysData;
     try {
       sysData = await ref
@@ -250,7 +245,20 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
           '[USP][DevicesData]: system info unavailable, node identity will fall '
           'back to DataElements: $e');
     }
-    final gatewayName = sysData?.model.gatewayName ?? 'Router';
+
+    return (wifiData, sysData, sysData?.model.gatewayName ?? 'Router');
+  }
+
+  /// [generation] is passed in rather than read here, and that is the point: this method
+  /// awaits three times — WifiData, system info, `svc.fetch()` — which is long enough for
+  /// a push refresh to start and finish. A version of this read `_refreshGeneration` at
+  /// the bottom and handed `_fetchMeshAndUpdate` the NEWER number, so a mesh update
+  /// belonging to a superseded `build()` passed the guard and published. Taking it as a
+  /// parameter makes that mistake impossible rather than merely documented.
+  Future<DevicesData> _fetch(int generation) async {
+    final svc = ref.read(uspDevicesDataServiceProvider);
+
+    final (wifiData, sysData, gatewayName) = await _readEnrichment();
 
     final result = await svc.fetch(
       wifiClientMap: wifiData.wifiClientMap,
@@ -289,6 +297,35 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// again when it finishes — two overlapping refreshes therefore produce four writes, and
   /// the generation is what orders them (#1631).
   void _fetchMeshAndUpdate(
+    UspDevicesDataService svc,
+    WifiData wifiData,
+    String gatewayName,
+    SystemInfoData? sysData,
+    DevicesDataFetchResult fetchResult,
+    int generation,
+  ) {
+    // `void`, so nothing can await this and nothing can catch what it throws — an error
+    // from `fetchMeshTopology` or `rebuildWithMesh` would reach the zone's uncaught
+    // handler. The mesh is the optional half of this page: the device list is already
+    // published by the caller, and failing to decorate it with topology should cost the
+    // decoration, not raise an error nobody asked for.
+    unawaited(_fetchMeshAndUpdateInner(
+      svc,
+      wifiData,
+      gatewayName,
+      sysData,
+      fetchResult,
+      generation,
+    ).catchError((Object e, StackTrace st) {
+      logger.w(
+          '[USP][DevicesData]: mesh topology update failed, keeping the '
+          'device list as published',
+          error: e,
+          stackTrace: st);
+    }));
+  }
+
+  Future<void> _fetchMeshAndUpdateInner(
     UspDevicesDataService svc,
     WifiData wifiData,
     String gatewayName,
@@ -364,32 +401,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     final svc = ref.read(uspDevicesDataServiceProvider);
 
-    // Read WiFi enrichment data — soft dependency with timeout.
-    WifiData wifiData;
-    try {
-      wifiData = await ref
-          .read(wifiDataProvider.future)
-          .timeout(const Duration(seconds: 5));
-    } catch (e) {
-      logger.w(
-          '[USP][DevicesData]: WiFi data unavailable, proceeding without: $e');
-      wifiData = const WifiData.empty();
-    }
-
-    // Read system info — same reasoning as in `_fetch()`: awaited because a bare read is
-    // null unless another page is holding L1, and null silently degrades node identity to
-    // the DataElements values.
-    SystemInfoData? sysData;
-    try {
-      sysData = await ref
-          .read(systemInfoDataProvider.future)
-          .timeout(const Duration(seconds: 5));
-    } catch (e) {
-      logger.w(
-          '[USP][DevicesData]: system info unavailable, node identity will fall '
-          'back to DataElements: $e');
-    }
-    final gatewayName = sysData?.model.gatewayName ?? 'Router';
+    final (wifiData, sysData, gatewayName) = await _readEnrichment();
 
     final result = await svc.fetch(
       wifiClientMap: wifiData.wifiClientMap,
