@@ -1495,6 +1495,35 @@
   "enterMacAddressToAllow": "Enter the MAC address of the device to allow.",
   "deviceAlreadyInAllowedList": "This device is already in the allowed list",
   "adding": "Adding…",
+  "macFilter": "MAC Filtering",
+  "macFilterPageDesc": "Block the listed devices from joining your Wi-Fi by their MAC address. To let only chosen devices join instead, use Instant Privacy.",
+  "macFilterModeDisabledDesc": "All devices can connect freely.",
+  "macFilterModeDenyDesc": "Devices on the list are blocked; everyone else can connect.",
+  "macFilterListTitle": "Filtered devices ({count})",
+  "@macFilterListTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "macFilterListEmpty": "No devices in the list.",
+  "macFilterAllowEmptyWarning": "Add at least one device — Allow mode with an empty list blocks every device.",
+  "macFilterMaxReached": "You can filter at most {count} devices.",
+  "@macFilterMaxReached": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "macFilterRemoveDevice": "Remove device",
+  "macFilterEnableTurnsOffInstantPrivacy": "Saving will turn on MAC Filtering and turn off Instant Privacy — your router can use only one of them at a time. Continue?",
+  "instantPrivacyEnableTurnsOffMacFilter": "Saving will turn on Instant Privacy and turn off MAC Filtering — your router can use only one of them at a time. Continue?",
+  "macFilterInstantPrivacyIsOn": "Instant Privacy is currently on.",
+  "macFilterInstantPrivacyIsOnDesc": "Your router can use only one of Instant Privacy and MAC Filtering at a time. Turning MAC Filtering on and saving will turn Instant Privacy off.",
+  "instantPrivacyMacFilterIsOn": "MAC Filtering is currently on.",
+  "instantPrivacyMacFilterIsOnDesc": "Your router can use only one of Instant Privacy and MAC Filtering at a time. Turning Instant Privacy on and saving will turn MAC Filtering off.",
   "instantSafetyPageDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Safe browsing applies to all devices on your network.",
   "safeBrowsingOpenDns": "Safe Browsing (OpenDNS)",
   "openDnsServers": "DNS: 208.67.222.222, 208.67.220.220",

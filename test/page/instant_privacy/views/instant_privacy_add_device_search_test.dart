@@ -35,7 +35,7 @@ void main() {
   Widget host() => pageSurfaceHost(
         view: const InstantPrivacyView(),
         locale: const Locale('en'),
-        overrides: instantPrivacyOverrides(enabledWithConnectedDevicesState),
+        overrides: instantPrivacyOverrides(enabledWithDevicesState),
       );
 
   Future<void> settle(WidgetTester tester) async {
@@ -68,15 +68,17 @@ void main() {
     expect(find.byType(AppTextField), findsOneWidget,
         reason: 'the add-device dialog is open');
 
-    // MacBook Pro's address, and only its second half — a `contains` match, so
-    // this also pins that the filter is not an equality test on the whole field.
-    await tester.enterText(find.byType(AppTextField), '168.1.102');
+    // Phone's address, and only its last octet — a `contains` match, so this
+    // also pins that the filter is not an equality test on the whole field.
+    // Phone is connected but not in the allow-list, so its name appears only in
+    // the suggestion overlay, not in a list row.
+    await tester.enterText(find.byType(AppTextField), '1.11');
     await settle(tester);
 
-    expect(find.text('MacBook Pro'), findsOneWidget,
-        reason: 'the device holding 192.168.1.102 is suggested');
-    // The other two devices differ only in the last octet, so their absence is
-    // what shows the query reached the address rather than matching everything.
+    expect(find.text('Phone'), findsOneWidget,
+        reason: 'the device holding 192.168.1.11 is suggested');
+    // The other two devices differ only in the last octet, so their absence
+    // from the suggestion overlay shows the query reached the address.
     expect(find.text('iPhone'), findsNothing);
     expect(find.text('iPad'), findsNothing);
   });

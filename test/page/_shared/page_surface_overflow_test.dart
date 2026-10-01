@@ -45,13 +45,14 @@ import '../../util/settle.dart';
 /// page), #1549's `firmware_ota` (a page *split* off one already swept), and #1554's
 /// `pnp_setup_firmware` (a second fixture state of a page already swept).
 ///
-/// **Forty-four whole pages, declared as sixty-one cases** — six pages are swept more
+/// **Forty-four whole pages, declared as sixty-two cases** — six pages are swept more
 /// than once, by two different mechanisms. Three are tabs: `statistics` as three cases,
-/// `port_forwarding` as three, `wifi_settings` as two (all #1489). Two are *fixture
+/// `port_forwarding` as three, `wifi_settings` as three (#1489, and #1636's MAC
+/// Filtering tab). Two are *fixture
 /// states* of one page: `pnp_setup`/`pnp_setup_firmware` and
 /// `firmware_update`/`firmware_failed` (both #1554). So the two counts are different
 /// quantities rather than one of them being stale — × 9 screen widths × 26 locales =
-/// **14,274 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
+/// **14,508 cells**, declared through the shared runner. Everything about *which* cells exist and *how*
 /// one is hosted lives in `test/layout_gate/families/page_surface_family.dart`; which
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
 /// the declaration, the fifty-one pins, and the readability guards that sit beside
@@ -161,6 +162,11 @@ void main() {
   // the gate could not reach them.
   runOverflowSweep(
     family: PageSurfaceFamily(kWifiSettingsAdvancedPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kWifiSettingsMacFilterPageCase),
     expectedCellCount: 234,
   );
 
@@ -2863,13 +2869,13 @@ void main() {
           await settleIgnoringAnimations(tester);
 
           final loc = localizationsByTag[tag]!;
-          // Read off the ARB with the fixture's own count, so a fixture that stops
-          // rendering three devices fails here rather than measuring a different
+          // Read off the ARB with the fixture's own count, so a fixture whose
+          // allow-list changes size fails here rather than measuring a different
           // string. `allowedDevicesCount` appears once on the page — the toggle
           // card's label is `instantPrivacy` — so the finder is unscoped and the
           // count asserted.
           final countText = loc.allowedDevicesCount(
-              gateInstantPrivacyState.allowedDevices.length);
+              gateInstantPrivacyState.settings.current.macs.length);
           final label = find.text(countText);
           final button = find.widgetWithText(AppButton, loc.addDevice);
           if (label.evaluate().length != 1 || button.evaluate().length != 1) {
