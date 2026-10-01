@@ -29,16 +29,43 @@ class WanData extends Equatable with DiagnosticLoggable {
 final wanDataProvider =
     AsyncNotifierProvider<WanDataNotifier, WanData>(WanDataNotifier.new);
 
-/// Physical WAN link state as a plain `bool`, the single source of truth for
-/// "is the WAN up?" across the dashboard, Statistics, and health scoring.
+/// Whether the WAN is online — **the one definition for the whole app** (#1620).
 ///
-/// Defaults to `true` while [wanDataProvider] has never produced a value
-/// (first load), so a momentarily-unavailable link state does not read as a
-/// false disconnect. An SSE-triggered refresh never passes through loading at
-/// all — it assigns the new value directly (see `_refreshFromPush`) — so this
-/// keeps reporting the last known state throughout. See #1143 and #1615.
-final wanIsUpProvider = Provider<bool>(
-  (ref) => ref.watch(wanDataProvider).valueOrNull?.model.isUp ?? true,
+/// `null` means "not read yet", and it is a third answer rather than a default.
+/// Two places used to answer this question differently: this provider defaulted
+/// an unread L1 to `true` so the dashboard would not flash an offline banner on
+/// launch, while `wanIpReadingProvider` answered `unknown` so the Internet
+/// Settings banner would not claim "offline" about a device it had failed to
+/// read. Both choices were right for their own screen and neither was wrong —
+/// but they were two definitions, so the dashboard and Internet Settings could
+/// disagree about the same router at the same moment.
+///
+/// Returning `null` keeps both behaviours and moves the choice to the caller:
+/// a screen that prefers optimism writes `?? true`, one that must not claim
+/// anything handles `null` explicitly. What callers no longer get to choose is
+/// **what online means**.
+///
+/// ## Online is `Status == 'Up'`, not "has an address"
+///
+/// Measured on real hardware (M60-US, FW 2.0.2.26091803, 2026-10-01): after
+/// `ifup`, `Status` reads `Up` for about **5 seconds before an address
+/// arrives**. Reading "online" from the address would therefore report offline
+/// through every link recovery — a replugged cable, a modem reboot — and a red
+/// banner during normal recovery is worse than being five seconds early.
+///
+/// Going down there is no disagreement to settle: `Status` and
+/// `IPv4Address.1.*` change together, and the address leaf disappears rather
+/// than emptying.
+///
+/// The address itself is a separate question with its own three states, and
+/// stays in `WanIpReading` — that type still answers "what address do we show",
+/// it just no longer answers "are we online".
+///
+/// An SSE-triggered refresh never passes through loading (`_refreshFromPush`
+/// assigns directly), so this stays non-null once the first read lands. See
+/// #1143, #1615, #1620.
+final wanIsUpProvider = Provider<bool?>(
+  (ref) => ref.watch(wanDataProvider).valueOrNull?.model.isUp,
 );
 
 // ── Notifier (NOT autoDispose) ──

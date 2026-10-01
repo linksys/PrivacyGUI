@@ -38,7 +38,7 @@ ProviderContainer _container(Override wanOverride) =>
 
 void main() {
   group('wanIpReadingProvider', () {
-    test('an address the device reported is online', () async {
+    test('an address the device reported comes back as an address', () async {
       final c = _container(wanDataOverride());
       addTearDown(c.dispose);
       await c.read(wanDataProvider.future);
@@ -46,8 +46,6 @@ void main() {
       final r = c.read(wanIpReadingProvider);
       expect(r, isA<WanIpAddress>());
       expect(r.addressOrNull, wanUpModel.ipAddress);
-      expect(r.isOnline, isTrue);
-      expect(r.isOffline, isFalse);
     });
 
     test('an empty address the device reported is offline, not unknown',
@@ -59,9 +57,10 @@ void main() {
       final r = c.read(wanIpReadingProvider);
       expect(r, isA<WanIpNone>());
       expect(r.addressOrNull, isNull);
-      expect(r.isOffline, isTrue,
-          reason: 'the device answered; "no address" is a real reading');
-      expect(r.isOnline, isFalse);
+      expect(r, isNot(isA<WanIpUnknown>()),
+          reason:
+              'the device answered; "no address" is a real reading, not an absence '
+              'of one');
     });
 
     test('a fetch error is unknown, and is NOT offline', () async {
@@ -75,13 +74,16 @@ void main() {
 
       final r = c.read(wanIpReadingProvider);
       expect(r, isA<WanIpUnknown>());
-      // Both halves matter. `isOnline` false alone was the old behaviour; what was wrong
-      // was that the same state also read as offline, so a caller inverting one flag
-      // produced a false claim either way.
-      expect(r.isOnline, isFalse);
-      expect(r.isOffline, isFalse,
+      // THE DISTINCTION IS THE WHOLE POINT, and it now rests on the type rather than on
+      // a pair of booleans. `isOnline`/`isOffline` were deleted in #1620 because "has an
+      // address" had become a second definition of online; what they were guarding —
+      // that an unreadable L1 is not the same state as "the device said no address" — is
+      // guarded here by the variants being distinct.
+      expect(r, isNot(isA<WanIpNone>()),
           reason:
-              'we could not read the device — claiming it is disconnected invents a fact');
+              'we could not read the device — reporting that as "no address" invents a '
+              'fact');
+      expect(r.addressOrNull, isNull);
     });
 
     test('the first load, before any value, is unknown', () {

@@ -4,6 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/models/wan_ip_reading.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -38,10 +39,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// stale values get written back on save. It protected the harmless case and stepped
 /// aside from the harmful one.
 ///
-/// ⚠️ This banner infers online/offline from the address being non-empty, while
-/// `usp_network_status_card.dart` uses `wan.isUp`. The two disagree while a link is up
-/// with no address yet. Predates this change, tracked in #1620 — it needs one definition
-/// for the app, which is a product decision rather than a read-source change.
+/// THE DOT AND THE ADDRESS ARE TWO QUESTIONS (#1620). The dot reads `wanIsUpProvider`
+/// — `Status == 'Up'`, the app's one definition of online — and the address line reads
+/// `wanIpReadingProvider`. This banner used to infer online from the address being
+/// non-empty, which made it disagree with the dashboard for about 5 seconds after every
+/// link recovery (measured: `Status` reads `Up` while the address is still arriving).
 class UspConnectionStatusBanner extends ConsumerWidget {
   final InternetSettingsFeatureState state;
   final bool isEditing;
@@ -74,12 +76,33 @@ class UspConnectionStatusBanner extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // `isOnline`, not `!isOffline`, so `unknown` claims neither. Offline and
-            // unknown deliberately share the dim dot (decided 2026-09-24): a third dot
-            // state needs a colour and a meaning the design system does not have, and the
-            // address line below already separates the two. The dot reads "not confirmed
-            // online", true of both.
-            UspStatusDot(isActive: reading.isOnline, size: 12),
+            // THE DOT READS THE LINK, THE LINE BELOW READS THE ADDRESS, and they are
+            // deliberately different questions (#1620).
+            //
+            // The dot used to come from `reading.isOnline` — address non-empty — which
+            // made this banner disagree with the dashboard for about 5 seconds after
+            // every link recovery, measured on real hardware: `Status` reads `Up` while
+            // the address is still arriving. Same router, same moment, two answers one
+            // click apart. The dot now reads `wanIsUpProvider`, the app's one definition.
+            //
+            // `?? true`, the same as the dashboard — and the same for the same reason
+            // (#1143): an unread L1 is not a disconnection, and rendering one as a dim
+            // dot states a fact about the router that nobody has checked.
+            //
+            // An earlier version of this change wrote `?? false` here, reasoning that a
+            // dim dot matches the "unknown" the address line shows one row below. That
+            // reads well and is still wrong: it makes this screen pessimistic while the
+            // dashboard is optimistic, which is a second axis of disagreement to
+            // replace the one #1620 removed. The line below already says "unknown" in
+            // words; the dot does not need to contradict the dashboard to say it twice.
+            //
+            // Offline and unknown therefore no longer share the dim dot — unknown
+            // shares the ON dot with online, and the words carry the distinction. That
+            // supersedes the 2026-09-24 note about a third dot state: the question was
+            // never "which of three colours", it was "who decides when we do not know",
+            // and the answer is the whole app, consistently.
+            UspStatusDot(
+                isActive: ref.watch(wanIsUpProvider) ?? true, size: 12),
             AppGap.md(),
             // Connection info
             Expanded(

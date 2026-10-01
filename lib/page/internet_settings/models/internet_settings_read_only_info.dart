@@ -6,9 +6,10 @@ import 'package:equatable/equatable.dart';
 /// Decouples the model layer from codegen types (`WanSettings`, `Ipv6Settings`).
 ///
 /// AUDIT — which of these still belong here. Opened as #1587 Phase 2, now closed; the rows
-/// below carry their own status. Only `pppConnectionStatus` has a ticket (#1620, which needs
-/// the same `WanStatusUIModel` change); the other two stale rows are judged low value here and
-/// deliberately have none.
+/// below carry their own status. ⚠️ None of the three stale rows has an owner: two are judged
+/// low value here, and `pppConnectionStatus` lost the ticket it was expected to ride along
+/// with — #1620 unified the definition of "online" without extending `WanStatusUIModel`,
+/// which is what PPP would need.
 ///
 /// This whole object is populated by the same `service.fetch()` that fills the L2 form,
 /// so every field in it is a PAGE-ENTRY SNAPSHOT. That is wrong for a value the user
@@ -18,7 +19,7 @@ import 'package:equatable/equatable.dart';
 /// | field                 | rendered by                          | status |
 /// |-----------------------|--------------------------------------|--------|
 /// | ~~`staticIpAddress`~~ | was: status banner, Release & Renew   | **DELETED here.** Both views now read `wanDataProvider` — same TR-181 parameter, but the copy a `wanStatus` push refreshes. The field was kept for one review round with a paragraph explaining why; deleting it is the smaller diff and, more to the point, the only version the analyzer enforces. It also removed a genuine hazard: `UspInternetSettingsForm.staticIpAddress` is LIVE (the editable input at `usp_ipv4_section.dart`), so two identically-named fields coexisted with only a doc comment separating them |
-/// | `pppConnectionStatus` | IPv4 section, PPPoE/PPTP/L2TP rows   | **still stale, deliberately not fixed here.** It comes from `Device.PPP.Interface.{i}.ConnectionStatus`, and L1 has no PPP data at all — `WanStatusUIModel` carries only status/ip/mask/addressingType. Fixing it means extending that model, which dashboard, Statistics and health scoring also consume, so it is a decision of its own. **A connection STATUS that does not update is the most surprising of these**, so it is worth doing — and it shares the model change with #1620, which is the natural place to do both |
+/// | `pppConnectionStatus` | IPv4 section, PPPoE/PPTP/L2TP rows   | **still stale, deliberately not fixed here.** It comes from `Device.PPP.Interface.{i}.ConnectionStatus`, and L1 has no PPP data at all — `WanStatusUIModel` carries only status/ip/mask/addressingType. Fixing it means extending that model, which dashboard, Statistics and health scoring also consume, so it is a decision of its own. **A connection STATUS that does not update is the most surprising of these**, so it is worth doing. ⚠️ It was expected to ride along with #1620, but #1620 unified the *definition* of online without touching `WanStatusUIModel` — so extending that model for PPP is still unclaimed work rather than something already scheduled |
 /// | `dhcpv6Duid`          | IPv6 section                         | stale, low value. A DUID is stable for the life of the device |
 /// | `hostName`            | bridge-mode redirect hint and dialog | stale, low value. Changes only when the user renames the router, which is not this page |
 /// | ~~`currentMacAddress`~~ | nothing                             | **DELETED here**, together with `InternetSettingsFeatureState.currentMacAddress`. The MAC Clone row that read it was commented out on 2026-03-20 because *the USP data model does not support the write* — a protocol limit, not a pause — and `_buildReadOnlyInfo` hardcoded `''`, so the getter could only ever return an empty string. Checked before deleting: no production reader in this repo, nothing in the real-router E2E repo |
