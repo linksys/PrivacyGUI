@@ -1,17 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/capability_source.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/session/services/session_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockSessionService extends Mock implements SessionService {}
 
 class MockRouterFingerprintService extends Mock
     implements RouterFingerprintService {}
+
+class MockUspClient extends Mock implements UspClient {}
+
+/// A [CapabilitySource] that returns a fixed set — lets the lifecycle tests
+/// assert login-populates / logout-clears without a live router or a real probe.
+class StubCapabilitySource implements CapabilitySource {
+  const StubCapabilitySource(this._result);
+  final DeviceCapabilities _result;
+
+  @override
+  Future<DeviceCapabilities> resolveAll(UspClient usp) async => _result;
+}
 
 const _testDeviceInfo = NodeDeviceInfo(
   modelNumber: 'M60TB',
@@ -302,6 +319,103 @@ void main() {
 
       expect(container.read(sessionProvider).deviceInfo, isNull);
       expect(container.read(sessionProvider).modelNumber, '');
+      container.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // capabilities lifecycle (#1635)
+  // ---------------------------------------------------------------------------
+
+  group('SessionNotifier — capabilities', () {
+    /// Container whose USP client is non-null and whose capability source is a
+    /// stub — so `_resolveCapabilities` runs (it early-returns on a null client)
+    /// and returns a known set.
+    ProviderContainer createContainerWithCapabilities(
+        DeviceCapabilities resolved) {
+      return ProviderContainer(
+        overrides: [
+          sessionServiceProvider.overrideWithValue(mockService),
+          routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
+          uspClientProvider.overrideWithValue(MockUspClient()),
+          capabilitySourceProvider
+              .overrideWithValue(StubCapabilitySource(resolved)),
+        ],
+      );
+    }
+
+    test('initial state is empty (fail-closed before login)', () {
+      final container = createContainer();
+
+      expect(container.read(sessionProvider).capabilities,
+          DeviceCapabilities.empty);
+      container.dispose();
+    });
+
+    test('login resolves capabilities into session state', () async {
+      when(() => mockService.fetchDeviceInfoAndInitializeServices())
+          .thenAnswer((_) async => _testDeviceInfo);
+      final resolved =
+          DeviceCapabilities(const {DeviceCapability.wifiMacFilter});
+
+      final container = createContainerWithCapabilities(resolved);
+      final notifier = container.read(sessionProvider.notifier);
+
+      await notifier.fetchDeviceInfoAndInitializeServices();
+
+      expect(
+          container
+              .read(sessionProvider)
+              .capabilities
+              .has(DeviceCapability.wifiMacFilter),
+          isTrue);
+      expect(
+          container
+              .read(deviceCapabilitiesProvider)
+              .has(DeviceCapability.wifiMacFilter),
+          isTrue);
+      container.dispose();
+    });
+
+    test('logout (clear) empties resolved capabilities', () async {
+      when(() => mockService.fetchDeviceInfoAndInitializeServices())
+          .thenAnswer((_) async => _testDeviceInfo);
+      final resolved =
+          DeviceCapabilities(const {DeviceCapability.wifiMacFilter});
+
+      final container = createContainerWithCapabilities(resolved);
+      final notifier = container.read(sessionProvider.notifier);
+
+      await notifier.fetchDeviceInfoAndInitializeServices();
+      expect(
+          container
+              .read(sessionProvider)
+              .capabilities
+              .has(DeviceCapability.wifiMacFilter),
+          isTrue);
+
+      notifier.clear();
+
+      expect(container.read(sessionProvider).capabilities,
+          DeviceCapabilities.empty);
+      container.dispose();
+    });
+
+    test('login does not resolve when USP client is null (stays empty)',
+        () async {
+      when(() => mockService.fetchDeviceInfoAndInitializeServices())
+          .thenAnswer((_) async => _testDeviceInfo);
+
+      // Default container: uspClientProvider is null → _resolveCapabilities
+      // early-returns, capabilities stay empty, login still succeeds.
+      final container = createContainer();
+      final notifier = container.read(sessionProvider.notifier);
+
+      await notifier.fetchDeviceInfoAndInitializeServices();
+
+      expect(container.read(sessionProvider).deviceInfo, isNotNull);
+      expect(container.read(sessionProvider).capabilities,
+          DeviceCapabilities.empty);
       container.dispose();
     });
   });

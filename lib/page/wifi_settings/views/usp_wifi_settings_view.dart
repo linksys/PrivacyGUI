@@ -7,7 +7,11 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
@@ -20,9 +24,18 @@ class UspWifiSettingsView extends ConsumerStatefulWidget {
   /// cannot drift: adding a tab without widening the clamp would pin `?tab=3`
   /// to tab 2 silently, and `initialTab` is an `int` behind that clamp, so
   /// every wrong value is a legal one.
-  static const tabCount = 2;
+  ///
+  /// The most this page can have. MAC Filtering (#1636) is shown only on firmware
+  /// that serves the filter (#1635), so the tabs actually built are
+  /// [tabCount] or one fewer; `?tab=2` on a device without it clamps to the last
+  /// tab it does have.
+  static const tabCount = 3;
 
-  /// Which tab this page opens on: 0 = WiFi list, 1 = Advanced.
+  /// The MAC Filtering tab's index, for `?tab=` deep links.
+  static const macFilterTab = 2;
+
+  /// Which tab this page opens on: 0 = WiFi list, 1 = Advanced,
+  /// 2 = MAC Filtering.
   ///
   /// Supplied by the route from `?tab=N` and clamped in [initState], so an
   /// out-of-range deep link opens the WiFi tab rather than throwing.
@@ -47,16 +60,27 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   late TabController _tabController;
   late int _previousTabIndex;
 
+  /// Whether the MAC Filtering tab is built. Read once at mount: capabilities are
+  /// resolved at login and fixed for the session, so the tab set cannot change
+  /// under a mounted page.
+  late final bool _hasMacFilter;
+
+  int get _tabs => _hasMacFilter
+      ? UspWifiSettingsView.tabCount
+      : UspWifiSettingsView.tabCount - 1;
+
   // Tab labels are now localized in the build method
 
   @override
   void initState() {
     super.initState();
+    _hasMacFilter = ref
+        .read(deviceCapabilitiesProvider)
+        .has(DeviceCapability.wifiMacFilter);
     _tabController = TabController(
-      length: UspWifiSettingsView.tabCount,
+      length: _tabs,
       vsync: this,
-      initialIndex:
-          widget.initialTab.clamp(0, UspWifiSettingsView.tabCount - 1),
+      initialIndex: widget.initialTab.clamp(0, _tabs - 1),
     );
     // Read the index back off the controller rather than from `initialTab`:
     // the dirty guard below compares against the tab being *left*, so seeding
@@ -82,6 +106,8 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     final isDirty = switch (leavingTab) {
       0 => ref.read(uspWifiSettingsProvider.notifier).isDirty(),
       1 => ref.read(uspWifiAdvancedProvider.notifier).isDirty(),
+      UspWifiSettingsView.macFilterTab =>
+        ref.read(uspMacFilterProvider.notifier).isDirty(),
       _ => false,
     };
 
@@ -100,6 +126,8 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           ref.read(uspWifiSettingsProvider.notifier).revert();
         case 1:
           ref.read(uspWifiAdvancedProvider.notifier).revert();
+        case UspWifiSettingsView.macFilterTab:
+          ref.read(uspMacFilterProvider.notifier).revert();
       }
     } else {
       // Cancel — snap back to previous tab.
@@ -114,6 +142,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     // Watch both providers so bottom bar rebuilds on dirty state changes.
     ref.watch(uspWifiSettingsProvider);
     ref.watch(uspWifiAdvancedProvider);
+    if (_hasMacFilter) ref.watch(uspMacFilterProvider);
 
     return UiKitPageView.withSliver(
       title: loc(context).menuWifiSettings,
@@ -130,10 +159,12 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       tabs: [
         Tab(text: loc(context).wifi),
         Tab(text: loc(context).advanced),
+        if (_hasMacFilter) Tab(text: loc(context).macFilter),
       ],
-      tabContentViews: const [
-        UspWifiListTab(),
-        UspWifiAdvancedTab(),
+      tabContentViews: [
+        const UspWifiListTab(),
+        const UspWifiAdvancedTab(),
+        if (_hasMacFilter) const MacFilterTab(),
       ],
     );
   }
@@ -166,6 +197,8 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           onNegativeTap: () =>
               ref.read(uspWifiAdvancedProvider.notifier).revert(),
         );
+      case UspWifiSettingsView.macFilterTab:
+        return macFilterBottomBar(context, ref);
       default:
         return null;
     }
@@ -186,6 +219,10 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           .read(uspWifiAdvancedProvider.notifier)
           .fetch(forceRemote: true)
           .then((_) {}),
+      UspWifiSettingsView.macFilterTab => ref
+          .read(uspMacFilterProvider.notifier)
+          .fetch(forceRemote: true)
+          .then((_) {}),
       _ => Future.value(),
     };
   }
@@ -196,6 +233,8 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     final activeTab = _tabController.index;
+    // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
+    // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
 
     try {
       final Future<void> task = switch (activeTab) {
