@@ -119,6 +119,16 @@ abstract class SurfaceStrategy {
   /// both, and no single surface covers them.
   Widget? sessionIndicator();
 
+  /// What holds the dashboard until this surface's session keeps it current by
+  /// itself, or `null` where there is nothing to wait for.
+  ///
+  /// Remote only, and a cause rather than a flag: under Remote Assistance the
+  /// core subscriptions go through Guardian after the first reads, one every few
+  /// seconds, so the page is up about a minute before it updates itself. Local
+  /// subscribes to the router on the LAN, where that window does not exist. The
+  /// shell mounts whatever this returns over the page and holds no condition.
+  Widget? sessionReadinessGate();
+
   /// How this surface classifies an SSE connection state.
   ///
   /// The only member whose two implementations differ in *degree* rather than in

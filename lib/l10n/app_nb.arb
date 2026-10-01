@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Meldings-ID",
   "notificationHistoryCommandKey": "Kommandonøkkel",
   "notificationHistoryShowMore": "Vis mer",
-  "sseRouterOffline": "Ruteren er frakoblet — venter på at den kommer tilbake"
+  "sseRouterOffline": "Ruteren er frakoblet — venter på at den kommer tilbake",
+  "raPreparingTitle": "Konfigurerer direkteoppdateringer",
+  "raPreparingBody": "Laster inn ruterens data og abonnerer på endringene via skyen. Dashbordet fylles ut bak dette; du kan bruke det når dette lukkes.",
+  "raPreparingPartial": "Noen direkteoppdateringer kunne ikke konfigureres. Dashbordet oppdaterer seg kanskje ikke selv; dra for å oppdatere.",
+  "raLiveUpdates": "Direkteoppdateringer",
+  "raLiveUpdatesConnecting": "Kobler til via skyen",
+  "raLiveUpdatesDropped": "Skytilkoblingen ble brutt — kobler til på nytt"
 }

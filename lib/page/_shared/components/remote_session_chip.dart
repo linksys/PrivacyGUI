@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -275,6 +277,66 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
   }
 }
 
+/// The state of this session's event stream, in words about the cloud.
+///
+/// Here rather than in the shell's banner because under Remote Assistance the
+/// stream runs to Guardian, not to the router: the banner's "Connecting to
+/// router" named the wrong thing, and it sat over every login because the
+/// stream opens after the first reads (Austin, 2026-10-01). The session's other
+/// facts already live in this popup.
+///
+/// A label over a value, stacked rather than side by side like the rows above
+/// it: the value can be a whole sentence ("Router is offline — waiting for it to
+/// come back"), and the popup is a fixed 280 px.
+class _LiveUpdatesRow extends ConsumerWidget {
+  const _LiveUpdatesRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final state = ref.watch(sseConnectionStateProvider).valueOrNull ??
+        SseConnectionState.connecting;
+    // Read, not watched: it changes only when the stream state does, and that
+    // is watched above. The same reading the banner uses (#1577).
+    final deviceOffline =
+        ref.read(sseManagerProvider)?.connection.lastDisconnectCause ==
+            SseDisconnectCause.deviceOffline;
+
+    final (text, color) = switch (state) {
+      SseConnectionState.connected => (
+          loc(context).connected,
+          colorScheme.primary,
+        ),
+      SseConnectionState.connecting => (
+          loc(context).raLiveUpdatesConnecting,
+          colorScheme.onSurface,
+        ),
+      // #1577: the offline copy only for the settled states. While the manager
+      // is still retrying, the honest thing to say is that it is retrying.
+      SseConnectionState.disconnected ||
+      SseConnectionState.suspended when deviceOffline =>
+        (loc(context).sseRouterOffline, colorScheme.error),
+      SseConnectionState.reconnecting ||
+      SseConnectionState.disconnected ||
+      SseConnectionState.suspended =>
+        (loc(context).raLiveUpdatesDropped, colorScheme.error),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.bodySmall(
+          loc(context).raLiveUpdates,
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        AppGap.xs(),
+        AppText.labelMedium(text, color: color),
+      ],
+    );
+  }
+}
+
 /// Popup overlay showing session details
 class _SessionPopup extends StatelessWidget {
   final double left;
@@ -400,6 +462,11 @@ class _SessionPopup extends StatelessWidget {
                     ),
                     colorScheme,
                   ),
+                  AppGap.sm(),
+
+                  // The cloud stream, which the shell banner does not report in
+                  // this mode — see `RemoteSurface.connectionBannerLevel`.
+                  const _LiveUpdatesRow(),
                   AppGap.lg(),
 
                   // Notification history. Neutral rather than danger styling, so

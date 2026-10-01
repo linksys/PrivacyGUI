@@ -29,10 +29,15 @@
 // Not tagged `ui`: the two CI jobs exclude `golden||loc||ui`, so a tagged case
 // would never run.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
@@ -40,6 +45,7 @@ import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
+import '../../../core/usp/mocks.dart';
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../mocks/test_data/remote_assistance_test_data.dart';
 import '../../../util/app_test_fonts.dart';
@@ -60,14 +66,38 @@ class _FixedRemoteAccessNotifier extends RemoteAccessNotifier {
       );
 }
 
+class _MockConnection extends Mock implements SseConnectionManager {}
+
 const _originPage = Key('origin-page');
 const _historyPage = Key('history-page');
 
 void main() {
   late AppLocalizations loc;
+  late StreamController<SseConnectionState> sse;
+  late MockSseManager manager;
+  late _MockConnection connection;
 
   setUpAll(() async {
     loc = await AppLocalizations.delegate.load(const Locale('en'));
+  });
+
+  setUp(() {
+    sse = StreamController<SseConnectionState>.broadcast();
+    manager = MockSseManager();
+    connection = _MockConnection();
+    when(() => manager.connection).thenReturn(connection);
+    when(() => connection.lastDisconnectCause)
+        .thenReturn(SseDisconnectCause.none);
+  });
+
+  tearDown(() => sse.close());
+
+  final localizations = <String, AppLocalizations>{};
+  AppLocalizations localizationsFor(String code) => localizations[code]!;
+  setUpAll(() async {
+    for (final code in ['de', 'fr', 'ru', 'el']) {
+      localizations[code] = await AppLocalizations.delegate.load(Locale(code));
+    }
   });
 
   Future<GoRouter> pump(WidgetTester tester,
@@ -115,6 +145,8 @@ void main() {
       overrides: [
         ...commonOverrides(),
         remoteAccessProvider.overrideWith(_FixedRemoteAccessNotifier.new),
+        sseManagerProvider.overrideWithValue(manager),
+        sseConnectionStateProvider.overrideWith((ref) => sse.stream),
       ],
       child: MaterialApp.router(
         locale: locale,
@@ -243,6 +275,92 @@ void main() {
         findsOneWidget,
       );
       semantics.dispose();
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // The cloud stream's state, which the banner no longer shows in RA
+  // ═════════════════════════════════════════════════════════════════════════
+  //
+  // THE DECISION GUARDED (Austin, 2026-10-01). Under Remote Assistance the
+  // stream runs to Guardian, not the router, so the full-width banner's
+  // "Connecting to router" named the wrong thing and sat over every login. The
+  // state moved here, beside the session's other facts, worded for the cloud —
+  // and #1577's "the device is offline" distinction moved with it.
+  group('RemoteSessionChip - live updates row', () {
+    Future<void> popupWith(WidgetTester tester, SseConnectionState state,
+        {SseDisconnectCause cause = SseDisconnectCause.none}) async {
+      when(() => connection.lastDisconnectCause).thenReturn(cause);
+      await pump(tester);
+      // After opening: the row is what subscribes to the (broadcast) stream,
+      // so a state emitted before it existed would be one it never saw.
+      await openPopup(tester);
+      sse.add(state);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('connected says so', (tester) async {
+      await popupWith(tester, SseConnectionState.connected);
+
+      expect(find.text(loc.raLiveUpdates), findsOneWidget);
+      expect(find.text(loc.connected), findsOneWidget);
+    });
+
+    testWidgets('opening says it is connecting via the cloud, not the router',
+        (tester) async {
+      await popupWith(tester, SseConnectionState.connecting);
+
+      expect(find.text(loc.raLiveUpdatesConnecting), findsOneWidget);
+      expect(find.text(loc.connectingToRouter), findsNothing);
+    });
+
+    testWidgets('a dropped stream says the cloud connection dropped',
+        (tester) async {
+      for (final state in [
+        SseConnectionState.reconnecting,
+        SseConnectionState.disconnected,
+        SseConnectionState.suspended,
+      ]) {
+        await popupWith(tester, state);
+        expect(find.text(loc.raLiveUpdatesDropped), findsOneWidget,
+            reason: state.name);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets('a 400 says the router is offline instead (#1577)',
+        (tester) async {
+      await popupWith(tester, SseConnectionState.disconnected,
+          cause: SseDisconnectCause.deviceOffline);
+
+      expect(find.text(loc.sseRouterOffline), findsOneWidget);
+      expect(find.text(loc.raLiveUpdatesDropped), findsNothing);
+    });
+
+    testWidgets('the longest row fits the popup without overflowing',
+        (tester) async {
+      // Same 280 px popup and the same reason as the history entry above: no
+      // sweep renders it. The offline sentence is the longest value the row can
+      // hold, in the longest locale for it.
+      await loadAppFonts();
+      when(() => connection.lastDisconnectCause)
+          .thenReturn(SseDisconnectCause.deviceOffline);
+      for (final code in ['de', 'fr', 'ru', 'el']) {
+        await pump(tester, locale: Locale(code));
+        await openPopup(tester);
+        sse.add(SseConnectionState.disconnected);
+        await tester.pump();
+        await tester.pump();
+        expect(
+            find.text(localizationsFor(code).sseRouterOffline), findsOneWidget,
+            reason: '$code: the row must actually hold the sentence, or the '
+                'overflow check below measured an empty row');
+        expect(tester.takeException(), isNull, reason: code);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+      }
     });
   });
 }

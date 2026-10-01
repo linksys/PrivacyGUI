@@ -1927,5 +1927,17 @@
   "notificationHistoryCommandKey": "Command key",
   "notificationHistoryShowMore": "Show more",
   "sseRouterOffline": "Router is offline — waiting for it to come back",
-  "@sseRouterOffline": {"description": "Shown when the SSE stream was refused with a 400, which is how the proxy reports a device it cannot reach. Distinct from \"Disconnected\", which is the path between this browser and the proxy: the two need opposite responses (wait vs retry) and arrived as one failed connect before #1577."}
+  "@sseRouterOffline": {"description": "Shown when the SSE stream was refused with a 400, which is how the proxy reports a device it cannot reach. Distinct from \"Disconnected\", which is the path between this browser and the proxy: the two need opposite responses (wait vs retry) and arrived as one failed connect before #1577."},
+  "raPreparingTitle": "Setting up live updates",
+  "@raPreparingTitle": {"description": "Remote Assistance only. Title of the dialog shown over the dashboard while the session subscribes to the router through the cloud."},
+  "raPreparingBody": "Loading the router's data and subscribing to its changes through the cloud. The dashboard fills in behind this; you can use it once this closes.",
+  "@raPreparingBody": {"description": "Remote Assistance only. Body of that dialog. It says the dashboard is visible and filling in behind it, and that it becomes usable when the dialog closes."},
+  "raPreparingPartial": "Some live updates could not be set up. The dashboard may not refresh itself; pull to refresh.",
+  "@raPreparingPartial": {"description": "Remote Assistance only. Shown when the dialog closes but some subscriptions failed: the page still works, it just may not update itself."},
+  "raLiveUpdates": "Live updates",
+  "@raLiveUpdates": {"description": "Remote Assistance only. Row label in the session chip's popup for the cloud event stream that keeps the dashboard current."},
+  "raLiveUpdatesConnecting": "Connecting via cloud",
+  "@raLiveUpdatesConnecting": {"description": "Remote Assistance only. That row while the cloud stream is opening. \"Cloud\" because in RA the app talks to Guardian, not to the router."},
+  "raLiveUpdatesDropped": "Cloud connection dropped — reconnecting",
+  "@raLiveUpdatesDropped": {"description": "Remote Assistance only. That row when the cloud stream dropped and the app is retrying on its own."}
 }

@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Viestitunnus",
   "notificationHistoryCommandKey": "Komentoavain",
   "notificationHistoryShowMore": "Näytä lisää",
-  "sseRouterOffline": "Reititin on offline-tilassa — odotetaan sen palaamista"
+  "sseRouterOffline": "Reititin on offline-tilassa — odotetaan sen palaamista",
+  "raPreparingTitle": "Määritetään reaaliaikaisia päivityksiä",
+  "raPreparingBody": "Ladataan reitittimen tietoja ja tilataan sen muutokset pilven kautta. Koontinäyttö täyttyy taustalla; voit käyttää sitä, kun tämä sulkeutuu.",
+  "raPreparingPartial": "Joitakin reaaliaikaisia päivityksiä ei voitu määrittää. Koontinäyttö ei ehkä päivity itsestään; päivitä vetämällä.",
+  "raLiveUpdates": "Reaaliaikaiset päivitykset",
+  "raLiveUpdatesConnecting": "Yhdistetään pilven kautta",
+  "raLiveUpdatesDropped": "Pilviyhteys katkesi — yhdistetään uudelleen"
 }

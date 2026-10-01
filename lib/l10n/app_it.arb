@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID messaggio",
   "notificationHistoryCommandKey": "Chiave comando",
   "notificationHistoryShowMore": "Mostra altro",
-  "sseRouterOffline": "Il router è offline: in attesa che torni disponibile"
+  "sseRouterOffline": "Il router è offline: in attesa che torni disponibile",
+  "raPreparingTitle": "Configurazione degli aggiornamenti in tempo reale",
+  "raPreparingBody": "Caricamento dei dati del router e iscrizione alle sue modifiche tramite il cloud. La dashboard si completa in background; potrai usarla quando questa finestra si chiude.",
+  "raPreparingPartial": "Non è stato possibile configurare alcuni aggiornamenti in tempo reale. La dashboard potrebbe non aggiornarsi da sola; trascina per aggiornare.",
+  "raLiveUpdates": "Aggiornamenti in tempo reale",
+  "raLiveUpdatesConnecting": "Connessione tramite cloud",
+  "raLiveUpdatesDropped": "Connessione al cloud interrotta — riconnessione"
 }

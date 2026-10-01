@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID da mensagem",
   "notificationHistoryCommandKey": "Chave do comando",
   "notificationHistoryShowMore": "Mostrar mais",
-  "sseRouterOffline": "O roteador está offline — aguardando seu retorno"
+  "sseRouterOffline": "O roteador está offline — aguardando seu retorno",
+  "raPreparingTitle": "Configurando atualizações em tempo real",
+  "raPreparingBody": "Carregando os dados do roteador e assinando suas alterações pela nuvem. O painel é preenchido ao fundo; você poderá usá-lo quando isto fechar.",
+  "raPreparingPartial": "Não foi possível configurar algumas atualizações em tempo real. O painel pode não se atualizar sozinho; arraste para atualizar.",
+  "raLiveUpdates": "Atualizações em tempo real",
+  "raLiveUpdatesConnecting": "Conectando pela nuvem",
+  "raLiveUpdatesDropped": "Conexão com a nuvem perdida — reconectando"
 }

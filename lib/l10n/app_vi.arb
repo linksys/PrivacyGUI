@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID tin nhắn",
   "notificationHistoryCommandKey": "Khóa lệnh",
   "notificationHistoryShowMore": "Xem thêm",
-  "sseRouterOffline": "Bộ định tuyến đang ngoại tuyến — đang chờ kết nối lại"
+  "sseRouterOffline": "Bộ định tuyến đang ngoại tuyến — đang chờ kết nối lại",
+  "raPreparingTitle": "Đang thiết lập cập nhật trực tiếp",
+  "raPreparingBody": "Đang tải dữ liệu của bộ định tuyến và đăng ký theo dõi các thay đổi qua đám mây. Bảng điều khiển được điền dần phía sau; bạn có thể sử dụng khi cửa sổ này đóng.",
+  "raPreparingPartial": "Không thể thiết lập một số cập nhật trực tiếp. Bảng điều khiển có thể không tự làm mới; kéo để làm mới.",
+  "raLiveUpdates": "Cập nhật trực tiếp",
+  "raLiveUpdatesConnecting": "Đang kết nối qua đám mây",
+  "raLiveUpdatesDropped": "Mất kết nối đám mây — đang kết nối lại"
 }

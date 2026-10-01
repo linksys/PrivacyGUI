@@ -828,6 +828,65 @@ void main() {
   // ---------------------------------------------------------------------------
   // registerCoreSubscriptions error handling
   // ---------------------------------------------------------------------------
+  group('SseManager - core subscription readiness', () {
+    // What the Remote Assistance "preparing" dialog waits on. The dashboard
+    // renders and fetches before the core subscriptions are registered — on
+    // purpose, so subscription POSTs do not compete with the first reads — so
+    // "the page is up" and "the page will update itself" are different moments,
+    // ~60 s apart on the QA router. This is the second one, made observable.
+    test('starts pending, and is ready once every core subscription is in',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      manager.setCoreSubscriptions([
+        ('sub-1', 'ValueChange', 'Device.WiFi.SSID.'),
+        ('sub-2', 'ObjectCreation', 'Device.Hosts.Host.'),
+      ]);
+
+      expect(manager.coreSubscriptions.value, const CoreSubscriptionsPending());
+
+      await manager.registerCoreSubscriptions();
+
+      expect(manager.coreSubscriptions.value,
+          const CoreSubscriptionsReady(registered: 2, failed: 0));
+    });
+
+    test('a subscription that failed still ends the wait, and is counted',
+        () async {
+      // Ending the wait is the point: an agent must never be left behind a
+      // dialog that cannot close. The count is what lets the dialog say the
+      // live updates may be incomplete.
+      when(() => mockBridge.subscribe(
+            subscriptionId: 'fail-sub',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenThrow(Exception('bridge error'));
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      manager.setCoreSubscriptions([
+        ('fail-sub', 'ValueChange', 'Device.Fail.'),
+        ('ok-sub', 'ValueChange', 'Device.OK.'),
+      ]);
+
+      await manager.registerCoreSubscriptions();
+
+      expect(manager.coreSubscriptions.value,
+          const CoreSubscriptionsReady(registered: 1, failed: 1));
+    });
+
+    test('an intentional disconnect puts it back to pending', () async {
+      // The next session registers again, and must not inherit "ready".
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      manager.setCoreSubscriptions([('sub-1', 'ValueChange', 'Device.X.')]);
+      await manager.registerCoreSubscriptions();
+
+      await manager.disconnect();
+
+      expect(manager.coreSubscriptions.value, const CoreSubscriptionsPending());
+    });
+  });
+
   group('registerCoreSubscriptions error handling', () {
     test('logs and continues when registration fails', () async {
       // Make bridge.subscribe throw for specific subscription

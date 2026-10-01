@@ -17,13 +17,21 @@
 // another: local classifies `disconnected` as a fault, and in a support session
 // the most routine event in the session would then be permanently red. Hence
 // `SurfaceStrategy.connectionBannerLevel` — the same states, reported at a
-// different volume — and hence the three claims this file makes:
+// different volume.
 //
-//   1. Remote sees the banner at all (the deleted early return).
-//   2. A routine ~10-minute close is a WARNING, after the grace period, not
-//      danger. Local's same state is danger, immediately.
-//   3. "Reconnect" is offered in both, and re-registers subscriptions rather than
-//      just reopening a socket.
+// **Superseded for remote on 2026-10-01 (Austin).** Under Remote Assistance the
+// stream runs to Guardian, not to the router, so this banner's "Connecting to
+// router" / "Disconnected" names the wrong thing, and it sat over every RA login
+// because the stream opens after the first reads. The remote surface now answers
+// `hidden` for every state and the state is shown on the session chip instead
+// (`remote_session_chip_widget_test.dart`). What this file still claims:
+//
+//   1. Remote never raises the banner, in any state.
+//   2. Local's closed stream is danger, immediately; its reconnecting states are
+//      a warning after the grace period.
+//   3. "Reconnect" is offered when the manager has stopped trying, and asks the
+//      manager — the banner's own behaviour, now exercised under local.
+//   4. #1577's offline copy, which the banner renders whenever it is shown.
 //
 // Claim 3's second half lives at the other end of the wire, in
 // `test/core/usp/services/sse_remote_strategy_test.dart`: this file verifies the
@@ -193,7 +201,7 @@ void main() {
     testWidgets('a 400 says the router is offline, not "Disconnected"',
         (tester) async {
       setCause(SseDisconnectCause.deviceOffline);
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.disconnected);
       await waitOutGrace(tester);
@@ -210,7 +218,7 @@ void main() {
       // if the reason it gave up is an absent device the agent needs that sentence
       // more here than anywhere.
       setCause(SseDisconnectCause.deviceOffline);
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.suspended);
       await tester.pump(const Duration(milliseconds: 400));
@@ -222,7 +230,7 @@ void main() {
 
     testWidgets('a transport failure keeps the generic copy', (tester) async {
       setCause(SseDisconnectCause.transportFailure);
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.disconnected);
       await waitOutGrace(tester);
@@ -238,7 +246,7 @@ void main() {
       // attempt's status was, the honest thing to say while the manager is mid-
       // attempt is that it is trying.
       setCause(SseDisconnectCause.deviceOffline);
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.reconnecting);
       await waitOutGrace(tester);
@@ -253,74 +261,34 @@ void main() {
       // button is not *useful* — but removing it would leave an agent who can see the
       // router come back with nothing to press until the next scheduled attempt.
       setCause(SseDisconnectCause.deviceOffline);
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.disconnected);
       await waitOutGrace(tester);
 
       expect(find.text('Reconnect'), findsOneWidget);
     });
-
-    testWidgets('local says it too, when local ever sees a 400',
-        (tester) async {
-      // Not a remote-only distinction, and not a claim that the on-router bridge
-      // answers 400: the cause is whatever the transport recorded, and the banner
-      // renders what it is handed. If the local bridge ever grows that answer, the
-      // copy is already right.
-      setCause(SseDisconnectCause.deviceOffline);
-      await pumpBanner(tester, profile: const LocalModeProfile());
-
-      await emit(tester, SseConnectionState.disconnected);
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(find.text('Router is offline — waiting for it to come back'),
-          findsOneWidget);
-    });
   });
 
-  group('the banner exists under the remote profile at all', () {
-    testWidgets('a Guardian stream close is reported, not swallowed',
-        (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+  group('SseConnectionBanner - remote never raises it', () {
+    for (final state in SseConnectionState.values) {
+      testWidgets('remote, ${state.name}: no banner', (tester) async {
+        // Every state, including the two that used to be danger. The stream is
+        // to Guardian, not the router, and the chip reports it.
+        setCause(SseDisconnectCause.deviceOffline);
+        await pumpBanner(tester, profile: const RemoteModeProfile());
 
-      await emit(tester, SseConnectionState.disconnected);
-      await waitOutGrace(tester);
+        await emit(tester, state);
+        await waitOutGrace(tester);
 
-      expect(find.text('Disconnected'), findsOneWidget,
-          reason: 'this is the deleted early return. Before #1497 the whole '
-              'widget was SizedBox.shrink() in RA, so an agent whose stream had '
-              'closed saw a dashboard that had silently stopped updating.');
-    });
-
-    testWidgets('a healthy stream renders nothing, same as local',
-        (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
-
-      await emit(tester, SseConnectionState.connected);
-      await waitOutGrace(tester);
-
-      expect(bannerColor(tester), isNull);
-      expect(find.text('Disconnected'), findsNothing);
-    });
+        expect(bannerColor(tester), isNull);
+        expect(find.text('Reconnect'), findsNothing);
+      });
+    }
   });
 
-  group('severity is the surface\'s call, not the state\'s', () {
-    testWidgets('remote: a closed stream is a warning, after the grace period',
-        (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
-
-      await emit(tester, SseConnectionState.disconnected);
-      expect(bannerColor(tester), isNull,
-          reason:
-              'a routine ten-minute close that comes straight back must not '
-              'flash anything — the grace period is the whole reason the remote '
-              'profile can afford to report this state at all');
-
-      await waitOutGrace(tester);
-      expect(bannerColor(tester), colors(tester).semanticWarning);
-    });
-
-    testWidgets('local: the same state is danger, immediately', (tester) async {
+  group('SseConnectionBanner - local severity', () {
+    testWidgets('a closed stream is danger, immediately', (tester) async {
       await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.disconnected);
@@ -333,24 +301,23 @@ void main() {
               'without waiting');
     });
 
-    testWidgets('remote: suspended is still danger', (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+    testWidgets('reconnecting is a warning, after the grace period',
+        (tester) async {
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
-      await emit(tester, SseConnectionState.suspended);
-      await tester.pump(const Duration(milliseconds: 400));
+      await emit(tester, SseConnectionState.reconnecting);
+      expect(bannerColor(tester), isNull,
+          reason: 'a retry that succeeds at once must not flash anything');
 
-      expect(bannerColor(tester), colors(tester).semanticDanger,
-          reason: 'suspended is the manager having given up after its retries, '
-              'which no amount of waiting fixes. If this went warning with '
-              'everything else, the enum would be a per-mode bool again.');
+      await waitOutGrace(tester);
+      expect(bannerColor(tester), colors(tester).semanticWarning);
     });
 
-    testWidgets(
-        'remote: a stream that comes back inside the grace period never '
-        'shows', (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+    testWidgets('a stream that comes back inside the grace period never shows',
+        (tester) async {
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
-      await emit(tester, SseConnectionState.disconnected);
+      await emit(tester, SseConnectionState.reconnecting);
       await tester.pump(const Duration(seconds: 1));
       await emit(tester, SseConnectionState.connected);
       await waitOutGrace(tester);
@@ -359,21 +326,7 @@ void main() {
     });
   });
 
-  group('Reconnect is a property of the connection, not of the mode', () {
-    testWidgets('offered in remote, where the state is only a warning',
-        (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
-
-      await emit(tester, SseConnectionState.disconnected);
-      await waitOutGrace(tester);
-
-      expect(find.text('Reconnect'), findsOneWidget,
-          reason: 'until #1497 one `isSevere` expression decided both the '
-              'colours and this button. Under the remote profile disconnected is '
-              'no longer severe — and it is exactly when the agent needs the '
-              'button — so the two questions had to come apart.');
-    });
-
+  group('SseConnectionBanner - Reconnect', () {
     testWidgets('offered in local too', (tester) async {
       await pumpBanner(tester, profile: const LocalModeProfile());
 
@@ -385,7 +338,7 @@ void main() {
 
     testWidgets('withheld while the manager is already retrying',
         (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.reconnecting);
       await waitOutGrace(tester);
@@ -399,10 +352,10 @@ void main() {
     });
 
     testWidgets('tapping it asks the manager to reconnect', (tester) async {
-      await pumpBanner(tester, profile: const RemoteModeProfile());
+      await pumpBanner(tester, profile: const LocalModeProfile());
 
       await emit(tester, SseConnectionState.disconnected);
-      await waitOutGrace(tester);
+      await tester.pump(const Duration(milliseconds: 400));
 
       await tester.tap(find.text('Reconnect'));
       await tester.pump();
@@ -420,7 +373,7 @@ void main() {
     // same disconnection, the banner stays out of the way in both modes.
     await pumpBanner(
       tester,
-      profile: const RemoteModeProfile(),
+      profile: const LocalModeProfile(),
       connection: AppConnectionState.waitingForRecovery,
     );
 

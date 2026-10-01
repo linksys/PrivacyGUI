@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Besked-id",
   "notificationHistoryCommandKey": "Kommandonøgle",
   "notificationHistoryShowMore": "Vis mere",
-  "sseRouterOffline": "Routeren er offline — venter på, at den kommer tilbage"
+  "sseRouterOffline": "Routeren er offline — venter på, at den kommer tilbage",
+  "raPreparingTitle": "Konfigurerer liveopdateringer",
+  "raPreparingBody": "Indlæser routerens data og abonnerer på dens ændringer via skyen. Dashboardet udfyldes bagved; du kan bruge det, når dette lukkes.",
+  "raPreparingPartial": "Nogle liveopdateringer kunne ikke konfigureres. Dashboardet opdaterer måske ikke sig selv; træk for at opdatere.",
+  "raLiveUpdates": "Liveopdateringer",
+  "raLiveUpdatesConnecting": "Opretter forbindelse via skyen",
+  "raLiveUpdatesDropped": "Forbindelsen til skyen blev afbrudt — opretter forbindelse igen"
 }

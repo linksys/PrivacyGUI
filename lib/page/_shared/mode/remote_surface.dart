@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
+import 'package:privacy_gui/page/_shared/components/remote_session_readiness_gate.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
@@ -47,19 +48,29 @@ class RemoteSurface implements SurfaceStrategy {
   @override
   Widget? sessionIndicator() => const RemoteSessionChip();
 
-  /// Guardian force-closes every proxied stream at roughly ten minutes, so
-  /// `disconnected` is the most routine event in a support session: reported as a
-  /// warning, after the banner's grace period, with Reconnect still offered.
-  /// [SseConnectionState.suspended] stays danger — that is the manager having
-  /// given up after its retries, which no amount of waiting fixes.
+  /// A dialog over the dashboard until the core subscriptions are in, or 90 s —
+  /// see [RemoteSessionReadinessGate].
+  @override
+  Widget? sessionReadinessGate() => const RemoteSessionReadinessGate();
+
+  /// Never raised (Austin, 2026-10-01). Under Remote Assistance the stream runs to
+  /// Guardian, not to the router, so the banner's "Connecting to router" /
+  /// "Disconnected" names the wrong thing — and it sat over every login, because
+  /// the stream opens after the first reads, and over every routine ~10-minute
+  /// Guardian close. The state still matters to an agent, so it is reported where
+  /// the session's other facts are: the [RemoteSessionChip]'s popup, which reads
+  /// the same [SseConnectionState] and keeps #1577's "device offline" distinction.
+  ///
+  /// Written out per state rather than as one `_ => hidden`, so a new connection
+  /// state is still a decision here and not a silent default.
   @override
   SseBannerLevel connectionBannerLevel(SseConnectionState state) =>
       switch (state) {
         SseConnectionState.connected => SseBannerLevel.hidden,
-        SseConnectionState.connecting => SseBannerLevel.warning,
-        SseConnectionState.reconnecting => SseBannerLevel.warning,
-        SseConnectionState.disconnected => SseBannerLevel.warning,
-        SseConnectionState.suspended => SseBannerLevel.danger,
+        SseConnectionState.connecting => SseBannerLevel.hidden,
+        SseConnectionState.reconnecting => SseBannerLevel.hidden,
+        SseConnectionState.disconnected => SseBannerLevel.hidden,
+        SseConnectionState.suspended => SseBannerLevel.hidden,
       };
 
   /// A support session does not offer to start another one.

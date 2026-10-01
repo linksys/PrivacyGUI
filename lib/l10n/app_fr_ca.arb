@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID du message",
   "notificationHistoryCommandKey": "Clé de commande",
   "notificationHistoryShowMore": "Afficher plus",
-  "sseRouterOffline": "Le routeur est hors ligne — en attente de son retour"
+  "sseRouterOffline": "Le routeur est hors ligne — en attente de son retour",
+  "raPreparingTitle": "Configuration des mises à jour en direct",
+  "raPreparingBody": "Chargement des données du routeur et abonnement à ses modifications par le nuage. Le tableau de bord se remplit en arrière-plan; vous pourrez l'utiliser dès que cette fenêtre se fermera.",
+  "raPreparingPartial": "Certaines mises à jour en direct n'ont pas pu être configurées. Le tableau de bord risque de ne pas s'actualiser seul; tirez pour actualiser.",
+  "raLiveUpdates": "Mises à jour en direct",
+  "raLiveUpdatesConnecting": "Connexion par le nuage",
+  "raLiveUpdatesDropped": "Connexion au nuage interrompue — reconnexion"
 }

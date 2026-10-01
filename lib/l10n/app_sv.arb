@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Meddelande-ID",
   "notificationHistoryCommandKey": "Kommandonyckel",
   "notificationHistoryShowMore": "Visa mer",
-  "sseRouterOffline": "Routern är offline — väntar på att den kommer tillbaka"
+  "sseRouterOffline": "Routern är offline — väntar på att den kommer tillbaka",
+  "raPreparingTitle": "Konfigurerar liveuppdateringar",
+  "raPreparingBody": "Läser in routerns data och prenumererar på dess ändringar via molnet. Instrumentpanelen fylls i bakom detta; du kan använda den när detta stängs.",
+  "raPreparingPartial": "Vissa liveuppdateringar kunde inte konfigureras. Instrumentpanelen kanske inte uppdateras av sig själv; dra för att uppdatera.",
+  "raLiveUpdates": "Liveuppdateringar",
+  "raLiveUpdatesConnecting": "Ansluter via molnet",
+  "raLiveUpdatesDropped": "Molnanslutningen bröts — ansluter igen"
 }

@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Mesaj kimliği",
   "notificationHistoryCommandKey": "Komut anahtarı",
   "notificationHistoryShowMore": "Daha fazla göster",
-  "sseRouterOffline": "Yönlendirici çevrimdışı — geri gelmesi bekleniyor"
+  "sseRouterOffline": "Yönlendirici çevrimdışı — geri gelmesi bekleniyor",
+  "raPreparingTitle": "Canlı güncellemeler ayarlanıyor",
+  "raPreparingBody": "Yönlendiricinin verileri yükleniyor ve değişikliklerine bulut üzerinden abone olunuyor. Pano arka planda doluyor; bu pencere kapandığında kullanabilirsiniz.",
+  "raPreparingPartial": "Bazı canlı güncellemeler ayarlanamadı. Pano kendini yenilemeyebilir; yenilemek için çekin.",
+  "raLiveUpdates": "Canlı güncellemeler",
+  "raLiveUpdatesConnecting": "Bulut üzerinden bağlanılıyor",
+  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor"
 }

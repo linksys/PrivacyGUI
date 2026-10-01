@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "メッセージ ID",
   "notificationHistoryCommandKey": "コマンドキー",
   "notificationHistoryShowMore": "さらに表示",
-  "sseRouterOffline": "ルーターがオフラインです — 復帰を待っています"
+  "sseRouterOffline": "ルーターがオフラインです — 復帰を待っています",
+  "raPreparingTitle": "リアルタイム更新を設定しています",
+  "raPreparingBody": "ルーターのデータを読み込み、クラウド経由で変更を購読しています。ダッシュボードは背後で表示が進みます。このウィンドウが閉じたら使用できます。",
+  "raPreparingPartial": "一部のリアルタイム更新を設定できませんでした。ダッシュボードが自動で更新されない場合があります。引っ張って更新してください。",
+  "raLiveUpdates": "リアルタイム更新",
+  "raLiveUpdatesConnecting": "クラウド経由で接続中",
+  "raLiveUpdatesDropped": "クラウド接続が切断されました — 再接続中"
 }

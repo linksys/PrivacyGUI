@@ -1,4 +1,4 @@
-// #1497 (phase 7 of epic #1474): cause 5's fifteen members, both modes side by
+// #1497 (phase 7 of epic #1474): cause 5's sixteen members, both modes side by
 // side.
 //
 // One file for both, same reason as `test/core/mode/impl/session_strategies_test
@@ -18,7 +18,7 @@
 //
 // WHY NOT `expect(local.assistanceBanner(), isNotNull)` AND STOP. Because "hidden
 // in RA" is the wrong summary of this contract and a nullability-only assertion
-// would encode it. Three of the fifteen return a widget in *both* modes with
+// would encode it. Three of the sixteen return a widget in *both* modes with
 // different content (`sessionGuard`, `sessionExitAction`,
 // `connectionBannerLevel`), and those are the members that make the contract a
 // composition and not a capability table. They get the most detailed assertions
@@ -34,6 +34,7 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
+import 'package:privacy_gui/page/_shared/components/remote_session_readiness_gate.dart';
 import 'package:privacy_gui/page/_shared/mode/local_surface.dart';
 import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart';
@@ -43,7 +44,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 
-/// The fifteen members, spelled as they appear in a call site.
+/// The sixteen members, spelled as they appear in a call site.
 ///
 /// A roster rather than a count: the count is in the guide doc and drifts, while
 /// this list is what the "every member has a caller" group iterates. Adding a
@@ -54,6 +55,7 @@ const _members = <String>[
   'sessionGuard',
   'assistanceBanner',
   'sessionIndicator',
+  'sessionReadinessGate',
   'connectionBannerLevel',
   'assistanceEntryCard',
   'accountActions',
@@ -124,6 +126,17 @@ void main() {
               'pending session for it to announce');
     });
 
+    test('readiness gate: only the mode whose live updates take a minute', () {
+      // Under Remote Assistance the dashboard renders, fetches, and only then
+      // subscribes — through Guardian, one subscription every few seconds,
+      // about a minute in all on the QA router. Austin's call (2026-10-01): hold
+      // the agent behind a dialog until the page keeps itself current, with the
+      // dashboard visibly filling in behind it. Local subscribes to the router
+      // on the LAN, where none of that is slow, and gets nothing.
+      expect(local.sessionReadinessGate(), isNull);
+      expect(remote.sessionReadinessGate(), isA<RemoteSessionReadinessGate>());
+    });
+
     test('session indicator: about the session being run', () {
       expect(local.sessionIndicator(), isNull);
       expect(remote.sessionIndicator(), isA<RemoteSessionChip>(),
@@ -137,6 +150,13 @@ void main() {
   // rather than a representative row. `SseConnectionState` is exhaustive in both
   // implementations, so a new state is a compile error — but a new state's
   // *classification* is a decision, and this is where the two get compared.
+  //
+  // Remote is `hidden` on every row since 2026-10-01 (Austin): under Remote
+  // Assistance the stream runs to Guardian, not to the router, so a full-width
+  // "Connecting to router" / "Disconnected" banner names the wrong thing — and it
+  // sat over every login, because the stream opens after the first reads. The
+  // remote stream state is reported on the session chip instead, which is where
+  // the session's other facts already live.
   group('connection banner level', () {
     const expected = <SseConnectionState, (SseBannerLevel, SseBannerLevel)>{
       // state: (local, remote)
@@ -146,22 +166,19 @@ void main() {
       ),
       SseConnectionState.connecting: (
         SseBannerLevel.warning,
-        SseBannerLevel.warning
+        SseBannerLevel.hidden
       ),
       SseConnectionState.reconnecting: (
         SseBannerLevel.warning,
-        SseBannerLevel.warning
+        SseBannerLevel.hidden
       ),
-      // The one row that differs, and the reason this member is an enum: Guardian
-      // force-closes the proxied stream at roughly ten minutes, so a closed stream
-      // is the most routine event in a support session and a fault on a LAN.
       SseConnectionState.disconnected: (
         SseBannerLevel.danger,
-        SseBannerLevel.warning
+        SseBannerLevel.hidden
       ),
       SseConnectionState.suspended: (
         SseBannerLevel.danger,
-        SseBannerLevel.danger
+        SseBannerLevel.hidden
       ),
     };
 
@@ -182,18 +199,16 @@ void main() {
       });
     }
 
-    test('exactly one state is classified differently', () {
-      final differing = SseConnectionState.values
-          .where((s) =>
-              local.connectionBannerLevel(s) != remote.connectionBannerLevel(s))
-          .toList();
-
-      expect(differing, [SseConnectionState.disconnected],
-          reason: 'this member earns its place in the contract by exactly one '
-              'measured difference (Article XVII). If the two implementations '
-              'agree on everything, the member should be a plain function; if '
-              'they disagree on more, say which new fact about Guardian made '
-              'that true.');
+    test('remote never raises the banner; local still does', () {
+      // The two halves of the 2026-10-01 decision, each a one-line regression:
+      // a remote state mapped back to `warning` puts the banner over every RA
+      // login again, and a local one mapped to `hidden` loses the only signal a
+      // LAN user has that the router stopped pushing.
+      expect(
+          SseConnectionState.values.map(remote.connectionBannerLevel).toSet(),
+          {SseBannerLevel.hidden});
+      expect(local.connectionBannerLevel(SseConnectionState.disconnected),
+          SseBannerLevel.danger);
     });
   });
 

@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
+
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 
@@ -35,6 +37,39 @@ import 'usp_client.dart';
 /// // Shutdown
 /// await manager.dispose();
 /// ```
+/// Whether the session's core subscriptions are in place.
+///
+/// The dashboard renders and fetches **before** these are registered, on purpose
+/// (subscription POSTs would compete with the first reads), so "the page is up"
+/// and "the page keeps itself current" are two moments — about a minute apart on
+/// the QA Guardian router. This is the second one.
+sealed class CoreSubscriptionState extends Equatable {
+  const CoreSubscriptionState();
+}
+
+/// Not registered yet, or the session that registered them has ended.
+final class CoreSubscriptionsPending extends CoreSubscriptionState {
+  const CoreSubscriptionsPending();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// The registration has run. [failed] counts the ones that did not take, which
+/// is what lets the UI say live updates may be incomplete rather than claim they
+/// are not — a failed subscription ends the wait like a successful one, because
+/// nothing would ever end it otherwise.
+final class CoreSubscriptionsReady extends CoreSubscriptionState {
+  final int registered;
+  final int failed;
+
+  const CoreSubscriptionsReady(
+      {required this.registered, required this.failed});
+
+  @override
+  List<Object?> get props => [registered, failed];
+}
+
 class SseManager {
   final UspClient _usp;
   final UspBridgeClient _bridge;
@@ -46,6 +81,11 @@ class SseManager {
 
   List<SubscriptionDef> _coreSubscriptions = [];
   bool _registrationInProgress = false;
+
+  /// See [CoreSubscriptionState]. Set by [registerCoreSubscriptions] and put
+  /// back to pending by [disconnect], so a later session cannot inherit it.
+  final ValueNotifier<CoreSubscriptionState> coreSubscriptions =
+      ValueNotifier(const CoreSubscriptionsPending());
 
   /// Delegate for proactive auth check on heartbeat. Set by provider layer
   /// to wire [UspAuthCoordinator.ensureAuth].
@@ -319,6 +359,14 @@ class SseManager {
           'core subscriptions');
     } finally {
       _registrationInProgress = false;
+      final active = registry.activeIds;
+      final registered = _coreSubscriptions
+          .where((s) => active.contains(s.subscriptionId))
+          .length;
+      coreSubscriptions.value = CoreSubscriptionsReady(
+        registered: registered,
+        failed: _coreSubscriptions.length - registered,
+      );
     }
   }
 
@@ -332,6 +380,7 @@ class SseManager {
   Future<void> disconnect() async {
     await connection.disconnect();
     await registry.onSseDisconnected(intentional: true);
+    coreSubscriptions.value = const CoreSubscriptionsPending();
   }
 
   /// Closes the stream and blocks auto-reconnect like [disconnect], but keeps
@@ -370,5 +419,6 @@ class SseManager {
     _strategy.dispose();
     router.dispose();
     connection.dispose();
+    coreSubscriptions.dispose();
   }
 }

@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "معرّف الرسالة",
   "notificationHistoryCommandKey": "مفتاح الأمر",
   "notificationHistoryShowMore": "عرض المزيد",
-  "sseRouterOffline": "جهاز التوجيه غير متصل — في انتظار عودته"
+  "sseRouterOffline": "جهاز التوجيه غير متصل — في انتظار عودته",
+  "raPreparingTitle": "جارٍ إعداد التحديثات المباشرة",
+  "raPreparingBody": "يتم تحميل بيانات جهاز التوجيه والاشتراك في تغييراته عبر السحابة. تكتمل لوحة المعلومات خلف هذه النافذة، ويمكنك استخدامها بعد إغلاقها.",
+  "raPreparingPartial": "تعذّر إعداد بعض التحديثات المباشرة. قد لا تتحدّث لوحة المعلومات تلقائيًا؛ اسحب للتحديث.",
+  "raLiveUpdates": "التحديثات المباشرة",
+  "raLiveUpdatesConnecting": "جارٍ الاتصال عبر السحابة",
+  "raLiveUpdatesDropped": "انقطع الاتصال بالسحابة — جارٍ إعادة الاتصال"
 }

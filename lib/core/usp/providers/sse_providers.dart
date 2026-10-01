@@ -168,6 +168,33 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   return manager;
 });
 
+/// Whether the session's core subscriptions are registered, as a [Stream].
+///
+/// The same bridge as [sseConnectionStateProvider], for the same reason: the
+/// manager holds a [ValueNotifier] and the UI wants a provider. With no manager
+/// there is nothing to wait for, so it answers ready rather than pending — a
+/// dialog waiting on a demo build would never close.
+final sseCoreSubscriptionsProvider =
+    StreamProvider<CoreSubscriptionState>((ref) {
+  final manager = ref.watch(sseManagerProvider);
+  if (manager == null) {
+    return Stream.value(const CoreSubscriptionsReady(registered: 0, failed: 0));
+  }
+
+  final controller = StreamController<CoreSubscriptionState>();
+  void listener() => controller.add(manager.coreSubscriptions.value);
+
+  manager.coreSubscriptions.addListener(listener);
+  controller.add(manager.coreSubscriptions.value);
+
+  ref.onDispose(() {
+    manager.coreSubscriptions.removeListener(listener);
+    controller.close();
+  });
+
+  return controller.stream;
+});
+
 /// Reactive SSE connection state as a [Stream].
 ///
 /// Converts the [ValueNotifier] in [SseConnectionManager] to a Riverpod
@@ -230,7 +257,20 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   if (manager == null) return;
 
   final usp = ref.watch(uspClientProvider);
-  if (usp == null || !usp.isAuthenticated) return;
+  if (usp == null) return;
+
+  // Signed in, by login intent rather than by the wasm client's flag. That flag
+  // tracks a password login, and a Remote Assistance client is built with
+  // `UspClientBuilder.authToken(...)` instead, so it reads `false` for the whole
+  // session — measured on the real client, and documented on
+  // [AuthState.isRemoteAssistance]. Gated on the flag alone, this returned
+  // without connecting in every RA session, and the stream waited for the
+  // orchestrator's fallback `connect()` after domain ready and the throttler
+  // draining: 26 s on the QA router under a "Disconnected" banner, for a stream
+  // that had never been asked to open.
+  final isRemoteAssistance =
+      ref.watch(authProvider).valueOrNull?.isRemoteAssistance ?? false;
+  if (!isRemoteAssistance && !usp.isAuthenticated) return;
 
   final bridge = ref.watch(uspBridgeClientProvider);
   if (bridge == null) return;

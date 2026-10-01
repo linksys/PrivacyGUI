@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID da mensagem",
   "notificationHistoryCommandKey": "Chave do comando",
   "notificationHistoryShowMore": "Mostrar mais",
-  "sseRouterOffline": "O router está offline — a aguardar que volte"
+  "sseRouterOffline": "O router está offline — a aguardar que volte",
+  "raPreparingTitle": "A configurar atualizações em tempo real",
+  "raPreparingBody": "A carregar os dados do router e a subscrever as suas alterações através da nuvem. O painel é preenchido em segundo plano; poderá utilizá-lo quando isto fechar.",
+  "raPreparingPartial": "Não foi possível configurar algumas atualizações em tempo real. O painel pode não se atualizar sozinho; arraste para atualizar.",
+  "raLiveUpdates": "Atualizações em tempo real",
+  "raLiveUpdatesConnecting": "A ligar através da nuvem",
+  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar"
 }

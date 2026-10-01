@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "ID de mensaje",
   "notificationHistoryCommandKey": "Clave de comando",
   "notificationHistoryShowMore": "Mostrar más",
-  "sseRouterOffline": "El router está desconectado: esperando a que vuelva"
+  "sseRouterOffline": "El router está desconectado: esperando a que vuelva",
+  "raPreparingTitle": "Configurando actualizaciones en vivo",
+  "raPreparingBody": "Cargando los datos del router y suscribiéndose a sus cambios a través de la nube. El panel se completa detrás; podrá usarlo cuando esto se cierre.",
+  "raPreparingPartial": "No se pudieron configurar algunas actualizaciones en vivo. Es posible que el panel no se actualice solo; deslice para actualizar.",
+  "raLiveUpdates": "Actualizaciones en vivo",
+  "raLiveUpdatesConnecting": "Conectando a través de la nube",
+  "raLiveUpdatesDropped": "Se perdió la conexión con la nube — reconectando"
 }

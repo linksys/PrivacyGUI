@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Identyfikator wiadomości",
   "notificationHistoryCommandKey": "Klucz polecenia",
   "notificationHistoryShowMore": "Pokaż więcej",
-  "sseRouterOffline": "Router jest offline — oczekiwanie na jego powrót"
+  "sseRouterOffline": "Router jest offline — oczekiwanie na jego powrót",
+  "raPreparingTitle": "Konfigurowanie aktualizacji na żywo",
+  "raPreparingBody": "Wczytywanie danych routera i subskrybowanie jego zmian przez chmurę. Pulpit uzupełnia się w tle; będzie można go używać po zamknięciu tego okna.",
+  "raPreparingPartial": "Nie udało się skonfigurować niektórych aktualizacji na żywo. Pulpit może nie odświeżać się sam; przeciągnij, aby odświeżyć.",
+  "raLiveUpdates": "Aktualizacje na żywo",
+  "raLiveUpdatesConnecting": "Łączenie przez chmurę",
+  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie"
 }

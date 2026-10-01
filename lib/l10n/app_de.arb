@@ -1187,5 +1187,11 @@
   "notificationHistoryMessageId": "Nachrichten-ID",
   "notificationHistoryCommandKey": "Befehlsschlüssel",
   "notificationHistoryShowMore": "Mehr anzeigen",
-  "sseRouterOffline": "Router ist offline — es wird auf seine Rückkehr gewartet"
+  "sseRouterOffline": "Router ist offline — es wird auf seine Rückkehr gewartet",
+  "raPreparingTitle": "Live-Aktualisierungen werden eingerichtet",
+  "raPreparingBody": "Die Daten des Routers werden geladen und seine Änderungen über die Cloud abonniert. Das Dashboard füllt sich im Hintergrund; Sie können es verwenden, sobald dieses Fenster geschlossen wird.",
+  "raPreparingPartial": "Einige Live-Aktualisierungen konnten nicht eingerichtet werden. Das Dashboard aktualisiert sich möglicherweise nicht selbst; zum Aktualisieren nach unten ziehen.",
+  "raLiveUpdates": "Live-Aktualisierungen",
+  "raLiveUpdatesConnecting": "Verbindung über die Cloud",
+  "raLiveUpdatesDropped": "Cloud-Verbindung unterbrochen – Verbindung wird wiederhergestellt"
 }

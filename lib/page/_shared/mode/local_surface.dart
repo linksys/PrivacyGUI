@@ -43,6 +43,11 @@ class LocalSurface implements SurfaceStrategy {
   @override
   Widget? sessionIndicator() => null;
 
+  /// Nothing to wait for: the router is on the LAN, so subscribing is quick
+  /// and the page is current as soon as it is up.
+  @override
+  Widget? sessionReadinessGate() => null;
+
   /// The router is on the other end of a LAN. Nothing on that path should be
   /// closing a stream, so a closed one is a fault and says so immediately.
   @override
