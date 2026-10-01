@@ -424,7 +424,6 @@ drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
 
-
 ## Bare `ref.read` of an L1 provider — the sites this audit did not cover (2026-09-29, #1634)
 
 `ref.read(xDataProvider).valueOrNull` returns null unless something else is holding L1 built
@@ -494,6 +493,56 @@ is fine when it feeds the save path; it is a defect when it feeds the screen.
 
 Recorded because the answer is "nothing to change": without this the next person re-runs the
 search, and a Phase 2 item stays open forever because its result was never written down.
+
+## The deferred gap: a save does not detect a mid-edit device change (#1587 Phase 3)
+
+Recorded here because **#1587 was closed on 2026-09-30 with this deferred**, and the condition
+that reopens it needs somewhere durable to live.
+
+`constitution.md` states the gap and forbids working around it per-page, and deliberately stops
+there: a rule that cannot be followed without opening an issue or another file is not a rule.
+The measurements, the traps and the open decisions are this document's job.
+
+**The gap.** Every save compares the draft against the page-entry snapshot, never against the
+device's current value. A value the device altered while the user was editing is overwritten
+silently. Every form built on `Preservable` shares it — a count is deliberately not given here,
+because it was 11 when #1587 was written and 12 by the time it closed.
+
+**Why it was deferred.** The editable fields on these pages are values a user sets, so the
+ordinary way to reach a conflict is a second editor — and a home router rarely has two people
+editing at once. Detection belongs in `Preservable`, so it would change the save behaviour of
+every form that uses it, and it needs a product decision about what to show (block, offer
+reload, or offer overwrite). The decision to defer was explicit, not an oversight.
+
+⚠️ **What reopens it, and why the deferral is weaker than it sounds.** Measured on the test
+router:
+
+```
+Device.Routing.Router.1.IPv4Forwarding   3 entries, all Origin=DHCPv4 — created by the device
+Static Routing shows none of them        only because usp_static_routing_service filters
+                                         origin == 'Static'
+```
+
+So "the device does not change these values" holds because somebody wrote a filter, not because
+the data model guarantees it. **The first observed single-user conflict reopens this** — that is
+the trigger, rather than another round of arguing about likelihood.
+
+**Three implementation traps, for whoever picks it up:**
+
+1. **Saves have three shapes, not one.** `usp_internet_settings_service` writes a per-field
+   diff, `usp_dmz_service` writes the whole object, `usp_static_routing_service` writes an
+   add/update/delete batch. What they share is comparing against the page-entry snapshot and
+   never against the device.
+2. **A pre-save re-read can hit a transient.** `performFetch` carries a one-shot correction for
+   `_preservedConnectionType`, which exists because the device briefly reports the wrong
+   connection type after a save. A re-read could hit that same window and report a false
+   conflict.
+3. **It cannot be done "just for one page."** The framework is where it belongs; putting it in a
+   single page means the framework does not own a rule that is its own.
+
+Granularity, when it is built: compare only the fields the save would actually write. Writing an
+unchanged field is not a conflict. And decide what a failed re-read does — proceed, or refuse to
+write — rather than leaving it to fall out of the implementation.
 
 ## Verification
 
