@@ -25,6 +25,8 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 
 // `FixedLanDataNotifier` is imported rather than restated. It is the same one-method
 // subclass either way, and two of them would be two places to fix when
@@ -72,4 +74,9 @@ List<Override> menuOverrides({
           ),
         ),
       ),
+      // The Instant Privacy card exists only on firmware that serves the MAC
+      // filter (#1635); without this the card, and the badge row this fixture pins
+      // a state for, would not render at all.
+      deviceCapabilitiesProvider.overrideWithValue(
+          DeviceCapabilities(const {DeviceCapability.wifiMacFilter})),
     ];

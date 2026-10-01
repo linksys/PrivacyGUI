@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
@@ -52,7 +54,16 @@ class UspMenuView extends ConsumerWidget {
       BuildContext context, WidgetRef ref) {
     // Read from L1 providers for applied state (not page-level pending state)
     final lanData = ref.watch(lanDataProvider).valueOrNull;
-    final privacyState = ref.watch(uspInstantPrivacyProvider);
+
+    // Instant Privacy is the shared MAC filter in Allow mode, so it exists only on
+    // firmware that serves the filter (#1635). Gate the watch as well as the card:
+    // the provider fetches on build, and on firmware without the filter that
+    // fetch fails and the badge would read Off for a feature that is not there.
+    final hasInstantPrivacy = ref
+        .watch(deviceCapabilitiesProvider)
+        .has(DeviceCapability.wifiMacFilter);
+    final privacyState =
+        hasInstantPrivacy ? ref.watch(uspInstantPrivacyProvider) : null;
 
     // Instant Safety is enabled when DNS is set to OpenDNS
     final isSafetyEnabled = lanData != null &&
@@ -90,18 +101,19 @@ class UspMenuView extends ConsumerWidget {
             : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
-      AppSectionItemData(
-        identifier: 'menu-instant-privacy',
-        title: loc(context).instantPrivacy,
-        description: loc(context).instantPrivacyDesc,
-        iconData: Icons.lock_outlined,
-        // The applied mode, not this page's unsaved edit — and on only in
-        // `Allow`, so MAC Filter's `Deny` reads Off here.
-        badges: !privacyState.status.isLoading
-            ? [privacyState.isAppliedOn ? MenuBadge.on : MenuBadge.off]
-            : [],
-        onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
-      ),
+      if (privacyState != null)
+        AppSectionItemData(
+          identifier: 'menu-instant-privacy',
+          title: loc(context).instantPrivacy,
+          description: loc(context).instantPrivacyDesc,
+          iconData: Icons.lock_outlined,
+          // The applied mode, not this page's unsaved edit — and on only in
+          // `Allow`, so MAC Filter's `Deny` reads Off here.
+          badges: !privacyState.status.isLoading
+              ? [privacyState.isAppliedOn ? MenuBadge.on : MenuBadge.off]
+              : [],
+          onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
+        ),
       AppSectionItemData(
         identifier: 'menu-administration',
         title: loc(context).administration,
