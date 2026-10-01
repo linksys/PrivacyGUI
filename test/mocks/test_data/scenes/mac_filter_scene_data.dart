@@ -16,7 +16,9 @@ const _devices = [
       displayName: 'Laptop',
       ipAddress: '192.168.1.10'),
   MacFilterDeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:02', displayName: 'Phone', ipAddress: '192.168.1.11'),
+      mac: 'AA:BB:CC:DD:EE:02',
+      displayName: 'Phone',
+      ipAddress: '192.168.1.11'),
   MacFilterDeviceUIModel(
       mac: '7A:BB:CC:DD:EE:03',
       displayName: 'Tablet',
@@ -26,7 +28,8 @@ const _devices = [
 
 MacFilterState _scene(MacFilterSettings settings) => MacFilterState(
       settings: Preservable(original: settings, current: settings),
-      status: const MacFilterStatus(isLoading: false, connectedDevices: _devices),
+      status:
+          const MacFilterStatus(isLoading: false, connectedDevices: _devices),
     );
 
 /// Off — only the toggle card shows, no list.
