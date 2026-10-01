@@ -5,7 +5,10 @@ import 'package:equatable/equatable.dart';
 ///
 /// Decouples the model layer from codegen types (`WanSettings`, `Ipv6Settings`).
 ///
-/// AUDIT, #1587 Phase 2 — which of these still belong here.
+/// AUDIT — which of these still belong here. Opened as #1587 Phase 2, now closed; the rows
+/// below carry their own status. Only `pppConnectionStatus` has a ticket (#1620, which needs
+/// the same `WanStatusUIModel` change); the other two stale rows are judged low value here and
+/// deliberately have none.
 ///
 /// This whole object is populated by the same `service.fetch()` that fills the L2 form,
 /// so every field in it is a PAGE-ENTRY SNAPSHOT. That is wrong for a value the user
