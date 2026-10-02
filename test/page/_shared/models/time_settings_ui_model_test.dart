@@ -5,6 +5,8 @@ TimeSettingsUIModel _model({
   String currentLocalTime = '',
   String localTimeZone = '',
   String localTimeZoneName = '',
+  String? timeZoneId,
+  bool? autoAdjustForDst,
 }) {
   return TimeSettingsUIModel(
     enable: true,
@@ -12,6 +14,8 @@ TimeSettingsUIModel _model({
     currentLocalTime: currentLocalTime,
     localTimeZone: localTimeZone,
     localTimeZoneName: localTimeZoneName,
+    timeZoneId: timeZoneId,
+    autoAdjustForDst: autoAdjustForDst,
     ntpServer1: 'pool.ntp.org',
     ntpServer2: '',
   );
@@ -19,6 +23,25 @@ TimeSettingsUIModel _model({
 
 void main() {
   group('TimeSettingsUIModel', () {
+    // linksys/FWDEV#198. A refetch that only changes the device's zone reading
+    // must still notify, or the card keeps showing the zone it was on.
+    group('equality', () {
+      test('a different device zone ID is a different model', () {
+        expect(_model(timeZoneId: 'PST8'),
+            isNot(equals(_model(timeZoneId: 'MST7-NO-DST'))));
+      });
+
+      test('a different device DST state is a different model', () {
+        expect(_model(timeZoneId: 'PST8', autoAdjustForDst: true),
+            isNot(equals(_model(timeZoneId: 'PST8', autoAdjustForDst: false))));
+      });
+
+      test('the same readings are equal', () {
+        expect(_model(timeZoneId: 'PST8', autoAdjustForDst: true),
+            equals(_model(timeZoneId: 'PST8', autoAdjustForDst: true)));
+      });
+    });
+
     group('parsedLocalTime', () {
       test('returns null for empty currentLocalTime', () {
         final m = _model(currentLocalTime: '');

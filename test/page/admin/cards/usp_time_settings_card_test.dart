@@ -1,10 +1,14 @@
 @Tags(['layout-gate'])
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/cards/usp_time_settings_card.dart';
 
@@ -52,11 +56,15 @@ class _FakeTimeDataNotifier extends TimeDataNotifier {
   Future<TimeData> build() async => _data;
 }
 
-Widget _buildTestWidget(TimeSettingsUIModel time) {
+Widget _buildTestWidget(
+  TimeSettingsUIModel time, {
+  Future<List<TimeZoneInfo>>? zones,
+}) {
   final notifier = _FakeTimeDataNotifier(TimeData(model: time));
   return ProviderScope(
     overrides: [
       timeDataProvider.overrideWith(() => notifier),
+      if (zones != null) timeZoneCatalogueProvider.overrideWith((_) => zones),
     ],
     child: MaterialApp(
       theme: _testTheme,
@@ -216,6 +224,27 @@ void main() {
           reason: 'the node carrying the name cannot be activated, so the name '
               'belongs to nothing.');
 
+      handle.dispose();
+    });
+
+    // linksys/FWDEV#198. The dialog offers the device catalogue, so the edit
+    // button waits for it rather than letting a tap wait unseen — and a second
+    // tap open a second dialog.
+    testWidgets('the edit button is disabled until the zone list has loaded',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final zones = Completer<List<TimeZoneInfo>>();
+      await tester.pumpWidget(_buildTestWidget(_gmt8Time, zones: zones.future));
+      await tester.pump();
+
+      expect(tester.getSemantics(find.byType(AppIconButton)),
+          isSemantics(isEnabled: false));
+
+      zones.complete(kTimeZoneDefinitions);
+      await tester.pumpAndSettle();
+
+      expect(tester.getSemantics(find.byType(AppIconButton)),
+          isSemantics(isEnabled: true));
       handle.dispose();
     });
   });

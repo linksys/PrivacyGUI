@@ -34,6 +34,26 @@ UspAdminState get testAdminState => UspAdminState(
       timeFetchedAt: DateTime(2026, 5, 22, 10, 30),
     );
 
+/// A zone saved through `SetTimeSettings` (linksys/FWDEV#198): the device names
+/// it, so the card shows the catalogue row's own label — Mountain Time with DST
+/// off, which no POSIX string alone tells apart from Arizona.
+const testTimeSettingsWithDeviceZone = TimeSettingsUIModel(
+  enable: true,
+  status: 'Synchronized',
+  currentLocalTime: '2026-05-22T03:30:00-07:00',
+  localTimeZone: 'MST7',
+  timeZoneId: 'MST7',
+  autoAdjustForDst: false,
+  ntpServer1: 'pool.ntp.org',
+  ntpServer2: '',
+);
+
+UspAdminState get testAdminStateWithDeviceZone => UspAdminState(
+      adminUser: testAdminUser,
+      timeSettings: testTimeSettingsWithDeviceZone,
+      timeFetchedAt: DateTime(2026, 5, 22, 3, 30),
+    );
+
 /// What `FirmwareUpdateCard` needs to render its version row rather than `N/A`.
 ///
 /// One image, `Active`, with a four-part version — the longest string this row can

@@ -3,10 +3,11 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/admin/services/usp_time_data_service.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/generated/time_settings_operations.g.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
@@ -18,6 +19,10 @@ class UspAdminService {
   final UspClient _usp;
 
   UspAdminService(this._usp);
+
+  /// The `Result` output of `SetTimeSettings` that means the zone was saved.
+  /// Every other value is a rejection (linksys/FWDEV#198).
+  static const _setTimeSettingsOk = 'OK';
 
   // ---------------------------------------------------------------------------
   // CRUD
@@ -112,59 +117,51 @@ class UspAdminService {
     }
   }
 
-  /// Update timezone and optionally NTP servers / enable.
+  /// Update the timezone and its daylight-savings setting, and optionally the
+  /// NTP server (the timezone edit dialog).
   ///
-  /// Pass **either** [zoneName] or [localTimeZone], never both (#1609). The two
-  /// leaves are wired together in the firmware and they clobber each other:
-  /// writing the name derives the POSIX string (`Asia/Taipei` → `CST-8`, DST
-  /// rule included), and writing the POSIX string clears the name. Putting both
-  /// in one `Set` would make the outcome depend on the order the firmware
-  /// happens to apply them. [zoneName] is the one to prefer — it is an identity,
-  /// so the zone that was chosen is the zone that reads back — and
-  /// [localTimeZone] remains for the three table entries that have no faithful
-  /// IANA name.
+  /// The zone is saved through `Device.Time.X_LINKSYS_SetTimeSettings()`
+  /// (linksys/FWDEV#198), which sets the zone and DST together — hence one
+  /// [zone] value. Leave it null when only the NTP server changed: re-sending the
+  /// resolved zone would commit a guess for a zone the device could not name.
+  ///
+  /// The operate always succeeds; the firmware reports a rejection only in the
+  /// output argument `Result` (`ErrorUnknownTimeZone`,
+  /// `ErrorTimeZoneDoesNotObserveDST`, `ErrorInvalidInput`), and on a rejection
+  /// nothing changes. So anything but `OK` is thrown here — checking the call
+  /// alone would record a rejected zone as saved. The zone goes first so that a
+  /// rejection stops the NTP write too, and the dialog's edit fails as one.
   Future<void> updateTimezone({
-    String? zoneName,
-    String? localTimeZone,
+    TimeZoneSelection? zone,
     String? ntpServer1,
-    String? ntpServer2,
-    bool? enable,
   }) async {
-    // Thrown, not asserted: asserts are stripped from the release web build, and
-    // this is the one guard standing between a future caller and a write whose
-    // result depends on the order the firmware applies two leaves in.
-    if (zoneName != null && localTimeZone != null) {
-      throw ArgumentError(
-          'pass either zoneName or localTimeZone, never both — the firmware '
-          'derives one from the other and clears it on the reverse write, so a '
-          'combined Set is order-dependent');
+    // Thrown, not asserted: asserts are stripped from the release web build.
+    // The notifier checks this too, but this service is the layer that writes.
+    if (zone == null && ntpServer1 == null) {
+      throw ArgumentError('updateTimezone was given nothing to write');
     }
     try {
-      // The name goes in its own `Set` because it is not on the codegen model:
-      // `time_settings.yaml` does not declare the leaf, and widening the
-      // generated `_paths` by hand would be undone by the next codegen run.
-      // Folding it upstream is the follow-up. In the ordinary case — a zone
-      // change with the Advanced section untouched — the call below short-
-      // circuits on an empty param map, so this is still one request; only
-      // changing the zone and an NTP server together costs the atomicity #814
-      // introduced.
-      if (zoneName != null) {
-        _check(await _usp.set({UspTimeDataService.zoneNamePath: zoneName}));
-      }
-      _check(
-        await TimeSettings.update(
+      if (zone != null) {
+        final output = await TimeSettingsOperations.setTimeSettings(
           _usp,
-          localTimeZone: localTimeZone,
-          ntpServer1: ntpServer1,
-          ntpServer2: ntpServer2,
-          enable: enable,
-        ),
-        // Naming what already landed, because this is where #814's atomicity is
-        // spent: if the name went in and this call fails, the zone really did
-        // change while the user is told the edit failed. Nothing rolls it back,
-        // so the least we owe them is a message that says so.
-        alreadyApplied: zoneName != null ? 'timezone' : null,
-      );
+          timeZoneId: zone.id,
+          autoAdjustForDst: zone.autoAdjustForDst,
+        );
+        final result = output['Result'];
+        if (result != _setTimeSettingsOk) {
+          throw InvalidInputError(
+            field: 'timezone',
+            detail: 'SetTimeSettings rejected ${zone.id}: $result',
+          );
+        }
+      }
+      if (ntpServer1 != null) {
+        _check(
+          await TimeSettings.update(_usp, ntpServer1: ntpServer1),
+          // The zone is already saved by this point, and nothing rolls it back.
+          alreadyApplied: zone != null ? 'timezone' : null,
+        );
+      }
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -173,7 +170,7 @@ class UspAdminService {
 
   /// Turns a raw Set result into a throw, or nothing.
   ///
-  /// [alreadyApplied] names what an earlier `Set` in the same edit committed, so
+  /// [alreadyApplied] names what an earlier write in the same edit committed, so
   /// a failure here does not read as "nothing happened".
   void _check(Map<String, dynamic> result, {String? alreadyApplied}) {
     final landed =

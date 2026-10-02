@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 
+import '../../../mocks/test_data/time_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -73,5 +75,43 @@ void main() {
 
     // Mutation tests moved to usp_admin_notifier_test.dart —
     // mutations now live in UspAdminService / UspAdminNotifier.
+  });
+
+  // linksys/FWDEV#198. The list the edit dialog offers.
+  group('timeZoneCatalogueProvider', () {
+    test('serves the device catalogue', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => TimeSettingsTestData.catalogueResponse());
+
+      final container = createContainer();
+      final zones = await container.read(timeZoneCatalogueProvider.future);
+
+      expect(zones.map((z) => z.timeZoneID), ['PST8', 'JST-9-NO-DST']);
+      container.dispose();
+    });
+
+    test('falls back to the built-in list when the service cannot be built',
+        () async {
+      // No USP client: `uspTimeDataServiceProvider` throws
+      // ServiceNotInitializedError. The cards and the dialog read this list, so it
+      // must still resolve rather than surface an error.
+      final container = ProviderContainer(
+        overrides: [uspClientProvider.overrideWithValue(null)],
+      );
+      final zones = await container.read(timeZoneCatalogueProvider.future);
+
+      expect(zones, hasLength(39));
+      container.dispose();
+    });
+
+    test('is read once and reused by every later edit', () async {
+      final container = createContainer();
+      await container.read(timeZoneCatalogueProvider.future);
+      await container.read(timeZoneCatalogueProvider.future);
+
+      verify(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .called(1);
+      container.dispose();
+    });
   });
 }

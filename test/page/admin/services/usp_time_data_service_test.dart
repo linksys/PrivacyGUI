@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/services/usp_time_data_service.dart';
 
+import '../../../mocks/test_data/time_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -64,6 +66,72 @@ void main() {
           .thenThrow('Get failed: Authentication error: Permission denied');
 
       expect(() => svc.fetch(), throwsA(isA<UnauthorizedError>()));
+    });
+  });
+
+  // linksys/FWDEV#198. The device's own reading of the current zone.
+  group('UspTimeDataService — the device zone ID', () {
+    test('carries the zone ID and DST state onto the model', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                ...timeResponse,
+                'Device.Time.X_LINKSYS_TimeZoneID': 'PST8',
+                'Device.Time.X_LINKSYS_AutoAdjustForDST': '1',
+              });
+
+      final model = await svc.fetch();
+
+      expect(model.timeZoneId, 'PST8');
+      expect(model.autoAdjustForDst, isTrue);
+    });
+
+    test('a firmware without the leaves still loads, with neither set',
+        () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => timeResponse);
+
+      final model = await svc.fetch();
+
+      expect(model.timeZoneId, isNull);
+      expect(model.autoAdjustForDst, isNull);
+      expect(model.status, 'Synchronized');
+    });
+  });
+
+  // linksys/FWDEV#198. The zone list the dialog offers comes from the device.
+  group('UspTimeDataService — fetchZones', () {
+    test('returns the device catalogue, in device order', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => TimeSettingsTestData.catalogueResponse());
+
+      final zones = await svc.fetchZones();
+
+      expect(zones.map((z) => z.timeZoneID), ['PST8', 'JST-9-NO-DST']);
+      expect(zones.first.utcOffsetMinutes, -480);
+      expect(zones.first.observesDST, isTrue);
+      expect(zones.last.observesDST, isFalse);
+      expect(zones.last.description, '(GMT+09:00) Japan, Korea');
+    });
+
+    test('a firmware without the catalogue falls back to the built-in list',
+        () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => <String, dynamic>{});
+
+      final zones = await svc.fetchZones();
+
+      expect(zones, hasLength(39));
+      expect(zones.first.timeZoneID, 'MHT12-NO-DST');
+    });
+
+    test('a fault reading the catalogue falls back, it does not throw',
+        () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      final zones = await svc.fetchZones();
+
+      expect(zones, hasLength(39));
     });
   });
 

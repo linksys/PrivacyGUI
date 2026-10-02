@@ -10,12 +10,19 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspTimezoneCard extends StatefulWidget {
   final TimeSettingsUIModel timeSettings;
   final DateTime? fetchedAt;
-  final VoidCallback onEdit;
+
+  /// The device's zone catalogue (`timeZoneCatalogueProvider`), which the
+  /// current zone is resolved against — the same list the edit dialog offers.
+  final List<TimeZoneInfo> zones;
+
+  /// Null while the catalogue is still loading, which disables the edit button.
+  final VoidCallback? onEdit;
 
   const UspTimezoneCard({
     super.key,
     required this.timeSettings,
     this.fetchedAt,
+    required this.zones,
     required this.onEdit,
   });
 
@@ -51,13 +58,13 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
 
   @override
   Widget build(BuildContext context) {
-    // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    // The device's own zone ID first, our resolution as the fallback — see
+    // `resolveCurrentTimezone`. Resolved against [UspTimezoneCard.zones], the
+    // list the edit dialog offers, so the card and its preselection agree.
     final reportedOffset = widget.timeSettings.reportedOffsetMinutes;
-    final tzInfo = resolveTimezone(
-      zoneName: widget.timeSettings.localTimeZoneName,
-      localTimeZone: widget.timeSettings.localTimeZone,
-      reportedOffsetMinutes: reportedOffset,
-    );
+    final current =
+        resolveCurrentTimezone(widget.timeSettings, zones: widget.zones);
+    final tzInfo = current.zone;
     // Three tiers, because an unmatched zone is ordinary on FLWRT 2.0 rather
     // than exotic — the factory value is a bare `UTC` and 81 of the 89 zones the
     // device publishes have no entry of ours (#1609). When we cannot name the
@@ -152,16 +159,11 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                   DetailInfoTile(
                     icon: Icons.wb_sunny,
                     label: loc(context).daylightSavingsTimeLabel,
-                    // `dstInEffect`, not `tzInfo.observesDST` — a legacy `UTC8`
-                    // resolves to `PST8`, which observes DST, while the string
-                    // itself has no transitions. See `dstInEffect`.
-                    value: dstInEffect(
-                      zoneName: widget.timeSettings.localTimeZoneName,
-                      localTimeZone: widget.timeSettings.localTimeZone,
-                      reportedOffsetMinutes: reportedOffset,
-                    )
-                        ? loc(context).on
-                        : loc(context).off,
+                    // Whether DST is in effect, not `tzInfo.observesDST` — a
+                    // legacy `UTC8` resolves to `PST8`, which observes DST,
+                    // while the string itself has no transitions. See
+                    // `resolveCurrentTimezone`.
+                    value: current.dstOn ? loc(context).on : loc(context).off,
                   ),
                 DetailInfoTile(
                   icon: Icons.dns,

@@ -8,14 +8,29 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
   final String currentLocalTime;
   final String localTimeZone;
 
-  /// `Device.Time.X_LINKSYS_LocalTimeZoneName` — the IANA zone name, and the
-  /// only unambiguous identity the device offers (#1609).
+  /// `Device.Time.X_LINKSYS_LocalTimeZoneName` — the IANA zone name 2.7.2 saved
+  /// (#1609), read for the fallback resolution only.
   ///
-  /// Empty on a factory-fresh box and on any router last written by 2.7.1 or
-  /// earlier, because writing `LocalTimeZone` clears it. So it is additional
-  /// information, never a replacement for [localTimeZone]; see
-  /// `resolveTimezone`.
+  /// [timeZoneId] is the device's identity for the zone now; this is what the
+  /// zone falls back to when the device cannot name it, as it usually cannot for
+  /// a zone 2.7.2 saved by name. Empty on a factory-fresh box, on any router
+  /// last written by 2.7.1 or earlier, and after a `SetTimeSettings`, all of
+  /// which clear it. See `resolveCurrentTimezone`.
   final String localTimeZoneName;
+
+  /// `Device.Time.X_LINKSYS_TimeZoneID` — the device's own reading of the
+  /// current zone as a catalogue row's `TimeZoneID` (linksys/FWDEV#198).
+  ///
+  /// Null when the firmware does not carry the leaf, and `''` when the current
+  /// POSIX string matches no catalogue row — which is what a zone written by
+  /// IANA name (2.7.2's #1609 save path) usually reads. Both mean "fall back to
+  /// our own resolution", not "nothing selected"; see `resolveCurrentTimezone`.
+  final String? timeZoneId;
+
+  /// `Device.Time.X_LINKSYS_AutoAdjustForDST`. Only meaningful alongside a
+  /// non-empty [timeZoneId]: when no catalogue row matched, the firmware reads
+  /// `false` even while DST is in effect.
+  final bool? autoAdjustForDst;
 
   final String ntpServer1;
   final String ntpServer2;
@@ -26,6 +41,8 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
     required this.currentLocalTime,
     required this.localTimeZone,
     this.localTimeZoneName = '',
+    this.timeZoneId,
+    this.autoAdjustForDst,
     required this.ntpServer1,
     required this.ntpServer2,
   });
@@ -132,6 +149,8 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
         'currentLocalTime': currentLocalTime,
         'localTimeZone': localTimeZone,
         'localTimeZoneName': localTimeZoneName,
+        'timeZoneId': timeZoneId,
+        'autoAdjustForDst': autoAdjustForDst,
         'ntpServer1': ntpServer1,
         'ntpServer2': ntpServer2,
       };

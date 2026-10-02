@@ -14,6 +14,14 @@ String formatGmtOffset(int minutes) {
   return 'GMT$sign$hh:$mm';
 }
 
+/// A zone choice as `SetTimeSettings` saves it (linksys/FWDEV#198): a catalogue
+/// row's `TimeZoneID`, sent verbatim, and the daylight-savings setting that goes
+/// with it.
+///
+/// One value rather than two parameters because the firmware saves them
+/// together — neither is ever sent without the other.
+typedef TimeZoneSelection = ({String id, bool autoAdjustForDst});
+
 /// Time zone information model for timezone selection.
 class TimeZoneInfo {
   final String timeZoneID;
@@ -21,64 +29,43 @@ class TimeZoneInfo {
   final bool observesDST;
   final String description;
 
-  /// Legacy POSIX forms, kept for *reading* only (#1609).
+  /// Legacy POSIX forms, kept for *reading* only (#1609), and set only on the
+  /// built-in [kTimeZoneDefinitions] entries.
   ///
   /// These are what releases up to 2.7.1 wrote, so routers in the field still
-  /// hold them and [matchTimezone] must go on recognising them. They are no
-  /// longer what we write, because `UTC±N` carries an offset but no identity:
-  /// eleven of these strings are each shared by two or three zones, so a saved
-  /// zone came back wearing another zone's name.
-  final String posixNoDST;
-  final String posixWithDST;
+  /// hold them and [matchTimezone] must go on recognising them. Nothing writes a
+  /// POSIX string any more: a zone is saved by [timeZoneID] through
+  /// `SetTimeSettings` (linksys/FWDEV#198). A device catalogue row has none —
+  /// the fallback resolution matches against the built-in table, and
+  /// `resolveCurrentTimezone` then hands back the catalogue row with the same
+  /// [timeZoneID].
+  final String? posixNoDST;
+  final String? posixWithDST;
 
-  /// The IANA zone we write to `Device.Time.X_LINKSYS_LocalTimeZoneName`, or
-  /// null when this entry has no faithful one.
+  /// The IANA zone 2.7.2 wrote to `Device.Time.X_LINKSYS_LocalTimeZoneName`,
+  /// kept for *reading* only (#1609), and set only on the built-in entries — or
+  /// null on the three of those with no faithful one.
   ///
-  /// This is the identity that fixes the relabelling: the firmware derives the
-  /// POSIX string from it (`Asia/Taipei` → `CST-8`, `America/New_York` →
-  /// `EST5EDT,M3.2.0,M11.1.0`, DST rule included) and hands the name straight
-  /// back on a read, so what was chosen is what returns. A POSIX string cannot
-  /// do that — `EST5` *is* Panama as far as the device is concerned.
+  /// A router last saved by 2.7.2 holds the name, and the device usually cannot
+  /// resolve the POSIX string it derived from it to a catalogue row — 26 of the
+  /// 36 names read back an empty `X_LINKSYS_TimeZoneID` (linksys/usp_framework#72).
+  /// So the fallback resolution (`resolveTimezone`) still reads a zone back by
+  /// this name.
   ///
-  /// Null on the three entries whose own offset or DST flag disagrees with the
-  /// tz database, where no IANA name would mean what the label says; those keep
-  /// writing [posixNoDST]/[posixWithDST] until the data is settled. See
-  /// `kTimeZoneDefinitions` for which and why.
+  /// The three without one are the entries whose own offset or DST flag
+  /// disagrees with the tz database. See `kTimeZoneDefinitions` for which and
+  /// why.
   final String? ianaName;
-
-  /// What to write when the user switches daylight savings **off** on a zone
-  /// that observes it — this zone's own standard-time POSIX string.
-  ///
-  /// Null on a zone whose daylight savings cannot be switched off, which is a
-  /// firmware limit and not a choice: the validator accepts a string only if it
-  /// is in `X_LINKSYS_SupportedZones` or parses as POSIX, and it rejects `CLT4`,
-  /// `NST3:30`, `BRT3` and `AZOT1` on both counts — those abbreviations are
-  /// obsolete in modern tzdata, which now spells those zones `-04`, `-03` and
-  /// `-01`. The switch is disabled for them. Measured on the bench, 2026-09-22.
-  ///
-  /// This is what makes the switch safe to keep at all (#1609). Switching off
-  /// used to write [posixNoDST], a bare `UTC±N` that carries an offset and no
-  /// identity, so the zone came back as whichever of the two or three zones
-  /// sharing that string `matchTimezone` reached first. A zone's own
-  /// abbreviation is unambiguous, because [matchTimezone] tries `timeZoneID`
-  /// before anything else and these strings *are* the ids. The sibling non-DST
-  /// zone at the same offset is not in the way either: it writes its
-  /// [ianaName], on the other leaf entirely.
-  final String? standardTimePosix;
 
   const TimeZoneInfo({
     required this.timeZoneID,
     required this.utcOffsetMinutes,
     required this.observesDST,
     required this.description,
-    required this.posixNoDST,
-    required this.posixWithDST,
+    this.posixNoDST,
+    this.posixWithDST,
     this.ianaName,
-    this.standardTimePosix,
   });
-
-  /// Whether the daylight-savings switch can be operated for this zone.
-  bool get canSwitchDstOff => observesDST && standardTimePosix != null;
 
   /// Human-readable name without the leading "(GMT±HH:MM) " prefix.
   /// e.g. "(GMT+08:00) Singapore, Taiwan, Russia" → "Singapore, Taiwan, Russia"
@@ -92,12 +79,6 @@ class TimeZoneInfo {
 
   /// Display format: "GMT±HH:MM"
   String get offsetDisplayText => formatGmtOffset(utcOffsetMinutes);
-
-  /// Returns the POSIX string based on whether DST is enabled.
-  String posixFor({required bool dstEnabled}) {
-    if (!observesDST) return posixNoDST;
-    return dstEnabled ? posixWithDST : posixNoDST;
-  }
 
   @override
   String toString() => '$friendlyName ($offsetDisplayText)';

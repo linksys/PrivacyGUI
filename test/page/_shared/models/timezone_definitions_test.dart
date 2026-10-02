@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 
 void main() {
   group('kTimeZoneDefinitions', () {
@@ -272,65 +274,6 @@ void main() {
     // disagree: the label comes from the POSIX string because the clock
     // contradicts the name, while the DST state still comes off the name. The
     // card would then show Hong Kong with daylight savings on.
-    // Switching daylight savings off is what used to relabel the zone, and it is
-    // safe again because of *what* it writes. `standardTimePosix` is the zone's
-    // own abbreviation, which is also its `timeZoneID`, and `matchTimezone` tries
-    // ids before anything else — so it comes back as itself rather than as
-    // whichever zone happened to share the old `UTC±N`.
-    test('every switchable zone round-trips with daylight savings off', () {
-      final switchable =
-          kTimeZoneDefinitions.where((tz) => tz.canSwitchDstOff).toList();
-      expect(switchable, hasLength(11));
-      for (final tz in switchable) {
-        final written = tz.standardTimePosix!;
-        expect(matchTimezone(written)?.timeZoneID, tz.timeZoneID,
-            reason: '${tz.timeZoneID} does not read back as itself');
-        expect(dstInEffect(zoneName: '', localTimeZone: written), isFalse,
-            reason: '$written must not read as daylight savings on');
-      }
-    });
-
-    test('it stays distinguishable from the sibling non-DST zone', () {
-      // The pairs that shared a `UTC±N` and so swapped labels. One goes out as a
-      // POSIX abbreviation, the other as an IANA name, on different leaves.
-      const pairs = {
-        'EST5': 'America/Panama',
-        'MST7': 'America/Phoenix',
-        'CST6': 'America/Mexico_City',
-        'AST4': 'America/Caracas',
-        'GMT0': 'Africa/Monrovia',
-        'CET-1': 'Africa/Tunis',
-      };
-      pairs.forEach((posix, name) {
-        final dstOff = resolveTimezone(zoneName: '', localTimeZone: posix);
-        final sibling = resolveTimezone(zoneName: name, localTimeZone: posix);
-        expect(dstOff?.timeZoneID, posix);
-        expect(sibling?.ianaName, name);
-        expect(dstOff!.timeZoneID, isNot(sibling!.timeZoneID),
-            reason:
-                '$posix and $name must not resolve to the same entry — that '
-                'was the defect');
-      });
-    });
-
-    test('the four zones the firmware refuses cannot be switched', () {
-      // `CLT4`, `NST3:30`, `BRT3` and `AZOT1` are rejected by the validator:
-      // obsolete abbreviations that modern tzdata spells `-04`, `-03`, `-01`,
-      // and no supported-zone row to fall back on. Bench-measured.
-      final unswitchable = kTimeZoneDefinitions
-          .where((tz) => tz.observesDST && !tz.canSwitchDstOff)
-          .map((tz) => tz.timeZoneID)
-          .toSet();
-      expect(unswitchable, {'CLT4', 'NST03:30', 'BRT3', 'AZOT1'});
-    });
-
-    test('no non-DST zone carries a standardTimePosix', () {
-      for (final tz in kTimeZoneDefinitions.where((t) => !t.observesDST)) {
-        expect(tz.standardTimePosix, isNull,
-            reason: '${tz.timeZoneID} has no daylight savings to switch off');
-      }
-    });
-
     test('a vetoed name does not get to decide the DST state', () {
       const args = (
         zoneName: 'America/New_York', // observes DST, standard -300
@@ -353,6 +296,138 @@ void main() {
           isFalse,
           reason: 'the label resolved to Hong Kong, so the DST row must not be '
               'answering for New York');
+    });
+  });
+
+  // linksys/FWDEV#198. The device names its own current zone; our resolution is
+  // the fallback for when it cannot.
+  group('resolveCurrentTimezone', () {
+    const zones = kTimeZoneDefinitions;
+
+    TimeSettingsUIModel settings({
+      String? timeZoneId,
+      bool? autoAdjustForDst,
+      String zoneName = '',
+      required String localTimeZone,
+    }) =>
+        TimeSettingsUIModel(
+          enable: true,
+          status: 'Synchronized',
+          currentLocalTime: '',
+          localTimeZone: localTimeZone,
+          localTimeZoneName: zoneName,
+          timeZoneId: timeZoneId,
+          autoAdjustForDst: autoAdjustForDst,
+          ntpServer1: '',
+          ntpServer2: '',
+        );
+
+    test('the device zone ID wins, and so does its DST state', () {
+      // The zone name points elsewhere, as one left behind by #1609 would.
+      final current = resolveCurrentTimezone(
+        settings(
+          timeZoneId: 'MST7-NO-DST',
+          autoAdjustForDst: false,
+          zoneName: 'America/Denver',
+          localTimeZone: 'MST7',
+        ),
+        zones: zones,
+      );
+
+      expect(current.zone?.timeZoneID, 'MST7-NO-DST');
+      expect(current.dstOn, isFalse);
+    });
+
+    test('a DST zone ID reports the device DST state', () {
+      final current = resolveCurrentTimezone(
+        settings(
+          timeZoneId: 'CET-1',
+          autoAdjustForDst: true,
+          localTimeZone: 'CET-1CEST,M3.5.0/02:00,M10.5.0/03:00',
+        ),
+        zones: zones,
+      );
+
+      expect(current.zone?.timeZoneID, 'CET-1');
+      expect(current.dstOn, isTrue);
+    });
+
+    test('an empty zone ID falls back, DST state included', () {
+      // What a zone #1609 saved by IANA name reads back: the device cannot match
+      // its POSIX string, so the ID is '' and DST reads false even under DST.
+      final current = resolveCurrentTimezone(
+        settings(
+          timeZoneId: '',
+          autoAdjustForDst: false,
+          zoneName: 'Pacific/Auckland',
+          localTimeZone: 'NZST-12NZDT,M9.5.0,M4.1.0/3',
+        ),
+        zones: zones,
+      );
+
+      expect(current.zone?.timeZoneID, 'NZST-12');
+      expect(current.dstOn, isTrue,
+          reason:
+              'the device reads false for an unmatched zone even under DST');
+    });
+
+    test('a firmware without the leaves falls back', () {
+      final current = resolveCurrentTimezone(
+        settings(localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00'),
+        zones: zones,
+      );
+
+      expect(current.zone?.timeZoneID, 'PST8');
+      expect(current.dstOn, isTrue);
+    });
+
+    test('a zone ID not in the list falls back rather than going blank', () {
+      final current = resolveCurrentTimezone(
+        settings(
+          timeZoneId: 'NOT-A-ZONE',
+          autoAdjustForDst: true,
+          zoneName: 'Asia/Tokyo',
+          localTimeZone: 'JST-9',
+        ),
+        zones: zones,
+      );
+
+      expect(current.zone?.timeZoneID, 'JST-9-NO-DST');
+      expect(current.dstOn, isFalse);
+    });
+
+    test('a fallback zone is returned as the row from the list given', () {
+      // The cards and the dialog resolve against the device catalogue, so a
+      // fallback must hand back *that* row — with the device's own label — not
+      // the built-in entry it was matched through.
+      const deviceRow = TimeZoneInfo(
+        timeZoneID: 'JST-9-NO-DST',
+        utcOffsetMinutes: 540,
+        observesDST: false,
+        description: '(GMT+09:00) Japan, Korea (device label)',
+      );
+
+      final current = resolveCurrentTimezone(
+        settings(
+          timeZoneId: '',
+          zoneName: 'Asia/Tokyo',
+          localTimeZone: 'JST-9',
+        ),
+        zones: const [deviceRow],
+      );
+
+      expect(
+          current.zone?.description, '(GMT+09:00) Japan, Korea (device label)');
+    });
+
+    test('nothing resolvable is null with DST off', () {
+      final current = resolveCurrentTimezone(
+        settings(timeZoneId: '', autoAdjustForDst: false, localTimeZone: 'UTC'),
+        zones: zones,
+      );
+
+      expect(current.zone, isNull);
+      expect(current.dstOn, isFalse);
     });
   });
 }
