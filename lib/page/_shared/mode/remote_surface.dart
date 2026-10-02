@@ -22,9 +22,10 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///
 /// **The `null`s here are not "hidden in RA".** Each one is a surface this mode
 /// has no concept of, and the two members that are *not* `null` are the point:
-/// [sessionIndicator] and [sessionExitAction] exist only because remote is the
-/// mode that is inside a session, and [connectionBannerLevel] reports the same
-/// SSE states as local does — just not in the same colours.
+/// [sessionIndicator], [sessionReadinessGate] and [sessionExitAction] exist only
+/// because remote is the mode that is inside a session. [connectionBannerLevel]
+/// answers `hidden` throughout: this mode's stream is to the cloud, and the chip
+/// reports it.
 class RemoteSurface implements SurfaceStrategy {
   const RemoteSurface();
 

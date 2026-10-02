@@ -19,16 +19,6 @@ class _MockAuthNotifier extends AsyncNotifier<AuthState>
   Future<AuthState> build() async => AuthState(loginType: LoginType.remote);
 }
 
-/// A signed-in local session, for the bootstrap tests that are about the wasm
-/// client's flag. The bootstrap reads login intent, and the real `AuthNotifier`
-/// would pull the whole auth stack into a provider test.
-class _LocalAuthNotifier extends AsyncNotifier<AuthState>
-    with Mock
-    implements AuthNotifier {
-  @override
-  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
-}
-
 void main() {
   late MockUspClient mockUsp;
   late MockUspBridgeClient mockBridge;
@@ -55,7 +45,6 @@ void main() {
         uspClientProvider.overrideWithValue(usp),
         uspBridgeClientProvider.overrideWithValue(bridge),
         sseManagerProvider.overrideWithValue(manager),
-        authProvider.overrideWith(_LocalAuthNotifier.new),
       ],
     );
   }
@@ -158,7 +147,6 @@ void main() {
   group('sseBootstrapProvider', () {
     test('does nothing when manager is null', () async {
       final container = createContainer(usp: mockUsp, bridge: mockBridge);
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -171,7 +159,6 @@ void main() {
         manager: mockManager,
         bridge: mockBridge,
       );
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -188,8 +175,6 @@ void main() {
         bridge: mockBridge,
       );
 
-      await container.read(authProvider.future);
-
       await container.read(sseBootstrapProvider.future);
 
       verifyNever(() => mockBridge.health());
@@ -203,8 +188,6 @@ void main() {
         usp: mockUsp,
         manager: mockManager,
       );
-
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -224,8 +207,6 @@ void main() {
         manager: mockManager,
         bridge: mockBridge,
       );
-
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -254,12 +235,10 @@ void main() {
 
       final container = ProviderContainer(overrides: [
         appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
-        authProvider.overrideWith(_MockAuthNotifier.new),
         uspClientProvider.overrideWithValue(mockUsp),
         uspBridgeClientProvider.overrideWithValue(mockBridge),
         sseManagerProvider.overrideWithValue(mockManager),
       ]);
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -275,25 +254,25 @@ void main() {
         () async {
       // Measured on the real wasm client (2026-10-01): a `UspClient` built with
       // `UspClientBuilder.authToken(...)` answers `isAuthenticated() == false`,
-      // because that flag tracks a password login and RA never performs one
-      // (`AuthState.isRemoteAssistance` documents the same). Gated on it, the
-      // shell's bootstrap returned without connecting in every RA session, and
-      // SSE waited for the orchestrator's fallback `connect()` after domain
-      // ready and the throttler draining — 26 s on the QA router, all of it with
-      // a "Disconnected" banner over a stream that had never been asked to open.
+      // because that flag tracks a password login and RA never performs one.
+      // Gated on it, the shell's bootstrap returned without connecting in every
+      // RA session, and SSE waited for the orchestrator's fallback `connect()`
+      // after domain ready and the throttler draining — 26 s on the QA router,
+      // all of it with a "Disconnected" banner over a stream that had never been
+      // asked to open. Selected through `appModeProfileProvider` alone, because
+      // the answer is now `CredentialStrategy.holdsCredential`'s: no login state
+      // is involved, and none is overridden.
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = ProviderContainer(overrides: [
         appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
-        authProvider.overrideWith(_MockAuthNotifier.new),
         uspClientProvider.overrideWithValue(mockUsp),
         uspBridgeClientProvider.overrideWithValue(mockBridge),
         sseManagerProvider.overrideWithValue(mockManager),
       ]);
       addTearDown(container.dispose);
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -310,8 +289,6 @@ void main() {
         manager: mockManager,
         bridge: mockBridge,
       );
-
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 
@@ -336,8 +313,6 @@ void main() {
         bridge: mockBridge,
       );
 
-      await container.read(authProvider.future);
-
       await container.read(sseBootstrapProvider.future);
 
       verifyNever(() => mockManager.setCoreSubscriptions(any()));
@@ -355,8 +330,6 @@ void main() {
         manager: mockManager,
         bridge: mockBridge,
       );
-
-      await container.read(authProvider.future);
 
       await container.read(sseBootstrapProvider.future);
 

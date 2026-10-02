@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 
 /// Local / cloud credential handling: the browser holds the router's own
@@ -11,6 +12,11 @@ class LocalCredentialStrategy implements CredentialStrategy {
 
   @override
   AuthBehavior get authBehavior => AuthBehavior.local;
+
+  /// The router session a password login opened. Before one has happened there
+  /// is nothing to stream with, and the bootstrap waits.
+  @override
+  bool holdsCredential(UspClient usp) => usp.isAuthenticated;
 
   /// Steps 2 and 3 of the pre-#1323 `RecoveryProbeService.probe()`, verbatim and
   /// in the same order.

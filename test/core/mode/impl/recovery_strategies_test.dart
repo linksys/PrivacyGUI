@@ -237,6 +237,18 @@ void main() {
       );
     });
 
+    test('holdsCredential is the router session the password login opened', () {
+      // The wasm client's own flag, which is the honest answer locally: a
+      // password login is what sets it, and the bootstrap must not open a
+      // stream before one has happened.
+      final usp = MockUspClient();
+      when(() => usp.isAuthenticated).thenReturn(true);
+      expect(const LocalCredentialStrategy().holdsCredential(usp), isTrue);
+
+      when(() => usp.isAuthenticated).thenReturn(false);
+      expect(const LocalCredentialStrategy().holdsCredential(usp), isFalse);
+    });
+
     test('onCredentialRebound leaves the coordinator alone', () {
       // Locally a re-login is a *new* login through the same door: the refresh
       // window it computed still describes the credential in use. Dropping it
@@ -279,6 +291,23 @@ void main() {
       // state this code can be in.
       verifyZeroInteractions(mockAuth);
       verifyZeroInteractions(mockFingerprint);
+    });
+
+    test(
+        'holdsCredential is yes once the token client exists, whatever its flag',
+        () {
+      // Measured on the real wasm client (2026-10-01): a client built with
+      // `UspClientBuilder.authToken(...)` answers `isAuthenticated() == false`
+      // for the whole session, because that flag tracks a password login and a
+      // support session never performs one. Read here, it kept the SSE
+      // bootstrap from connecting in every RA session — 26 s of "Disconnected"
+      // on the QA router until a fallback connect fired. The token *is* the
+      // credential, and the client only exists once it has been handed one.
+      final usp = MockUspClient();
+      when(() => usp.isAuthenticated).thenReturn(false);
+
+      expect(const RemoteCredentialStrategy().holdsCredential(usp), isTrue);
+      verifyNever(() => usp.isAuthenticated);
     });
 
     test('onCredentialRebound clears the coordinator per-session state', () {

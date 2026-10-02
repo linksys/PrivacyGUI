@@ -129,11 +129,14 @@ abstract class SurfaceStrategy {
   /// shell mounts whatever this returns over the page and holds no condition.
   Widget? sessionReadinessGate();
 
-  /// How this surface classifies an SSE connection state.
+  /// How this surface classifies an SSE connection state for the shell's
+  /// full-width banner.
   ///
-  /// The only member whose two implementations differ in *degree* rather than in
-  /// presence — see [SseBannerLevel] for the ten-minute Guardian stream close
-  /// that makes `disconnected` routine in one mode and a fault in the other.
+  /// Local grades it — a closed stream is a fault, a retry is a warning. Remote
+  /// answers `hidden` for every state (2026-10-01): the stream runs to
+  /// Guardian, not the router, so the banner's router wording names the wrong
+  /// thing, and the session chip reports the stream instead. See
+  /// [SseBannerLevel] for both.
   SseBannerLevel connectionBannerLevel(SseConnectionState state);
 
   // ══════════════════════════════════════════════════════════════════════════

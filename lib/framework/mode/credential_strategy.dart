@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// **Cause 2 — who holds the credential, and what expiry means.**
 ///
@@ -28,6 +29,18 @@ abstract class CredentialStrategy {
   /// answer for both paths is the point — before #1627 the second path ran the
   /// local reauth in every mode.
   AuthBehavior get authBehavior;
+
+  /// Whether [usp] holds this mode's credential yet — the question the SSE
+  /// bootstrap asks before opening a stream.
+  ///
+  /// A mode cause, measured: [UspClient.isAuthenticated] tracks a **password
+  /// login**, which is the credential locally and never happens remotely. A
+  /// Remote Assistance client is built with `UspClientBuilder.authToken(...)`
+  /// and answers `false` for the whole session (measured on the real wasm
+  /// client, 2026-10-01). Asked directly, that flag kept the bootstrap from
+  /// connecting in every RA session — 26 s of "Disconnected" on the QA router
+  /// until the orchestrator's fallback connect fired.
+  bool holdsCredential(UspClient usp);
 
   /// Put the credential back to work after the router was unreachable, and say
   /// whether the app may keep the session it had.

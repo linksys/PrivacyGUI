@@ -259,18 +259,14 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return;
 
-  // Signed in, by login intent rather than by the wasm client's flag. That flag
-  // tracks a password login, and a Remote Assistance client is built with
-  // `UspClientBuilder.authToken(...)` instead, so it reads `false` for the whole
-  // session — measured on the real client, and documented on
-  // [AuthState.isRemoteAssistance]. Gated on the flag alone, this returned
-  // without connecting in every RA session, and the stream waited for the
-  // orchestrator's fallback `connect()` after domain ready and the throttler
-  // draining: 26 s on the QA router under a "Disconnected" banner, for a stream
-  // that had never been asked to open.
-  final isRemoteAssistance =
-      ref.watch(authProvider).valueOrNull?.isRemoteAssistance ?? false;
-  if (!isRemoteAssistance && !usp.isAuthenticated) return;
+  // Whether the client holds this mode's credential is the mode's question —
+  // see [CredentialStrategy.holdsCredential] for why the wasm client's own
+  // `isAuthenticated` is the wrong one to ask under Remote Assistance. Read,
+  // not watched: the profile is fixed for the build, and the client is already
+  // watched above.
+  if (!ref.read(appModeProfileProvider).credential.holdsCredential(usp)) {
+    return;
+  }
 
   final bridge = ref.watch(uspBridgeClientProvider);
   if (bridge == null) return;
