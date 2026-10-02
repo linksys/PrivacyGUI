@@ -97,16 +97,37 @@ void main() {
           reason: 'no address that is not in a provider may appear on screen');
     });
 
-    testWidgets('an L1 value of "no address" reads as offline, showing --',
-        (t) async {
+    testWidgets('a link that is down shows -- and a dim dot', (t) async {
       await t.pumpWidget(_host(wanDataOverride(wanNoAddressModel)));
       await t.pumpAndSettle();
 
       expect(find.text('--'), findsOneWidget);
       final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
-      expect(dot.isActive, isFalse,
+      // `wanNoAddressModel` is `isUp: false` AND has no address, so both the old
+      // address-based reading and the current `isUp` one give a dim dot. The test below
+      // is the one that can tell them apart.
+      expect(dot.isActive, isFalse);
+    });
+
+    testWidgets('link up with no address yet: dot ON, address --', (t) async {
+      // THE 5-SECOND WINDOW (#1620). Measured on real hardware: after `ifup`, `Status`
+      // reads `Up` for about 5 seconds before an address arrives. This banner used to
+      // infer online from the address, so it showed a dim dot here while the dashboard
+      // showed Online — the same router, one click apart.
+      //
+      // The dot and the address line now answer different questions, and this is the only
+      // state where that difference is visible.
+      await t.pumpWidget(_host(wanDataOverride(wanUpNoAddressModel)));
+      await t.pump();
+      await t.pump();
+
+      final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
+      expect(dot.isActive, isTrue,
           reason:
-              'L1 said there is no address — offline is the correct reading here');
+              'the link is up; an address still arriving is not a disconnection');
+      expect(find.text('--'), findsOneWidget,
+          reason:
+              'and the address line still says honestly that there is none yet');
     });
   });
 
@@ -116,7 +137,11 @@ void main() {
         'an L1 fetch ERROR is not rendered as a valid "no address" reading',
         (t) async {
       await t.pumpWidget(_host(wanDataErrorOverride()));
-      await t.pumpAndSettle();
+      // NOT pumpAndSettle: since #1620 the dot defaults to ON for an unread L1, and an
+      // active dot pulses forever — pumpAndSettle times out on it. Same reason as the
+      // first test in this file.
+      await t.pump();
+      await t.pump();
 
       // The defect this pins: '--' is exactly what a real empty address looks like, so
       // showing it for a failed read made the two indistinguishable — and because this
@@ -127,6 +152,15 @@ void main() {
               'a failed read must not be displayed as a successful read of ""');
       expect(find.text('100.64.0.10'), findsNothing);
       expect(find.text(_absentAddress), findsNothing);
+
+      // AND THE DOT IS ON, which is #1620's choice and not an oversight. An unread L1 is
+      // not a disconnection, so the dashboard and this screen both stay optimistic; the
+      // address line is what says "unknown", in words. Asserting it here means a future
+      // change back to a dim dot has to come past this test.
+      final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
+      expect(dot.isActive, isTrue,
+          reason:
+              'unread is not offline — the same default the dashboard uses (#1143)');
     });
 
     testWidgets('the first load, before any value, is also not offline',
@@ -137,6 +171,10 @@ void main() {
       expect(find.text('--'), findsNothing,
           reason:
               'nothing has been read yet; claiming "no address" would invent a reading');
+      final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
+      expect(dot.isActive, isTrue,
+          reason:
+              'and the dot stays on — launching is not disconnecting (#1143/#1620)');
     });
 
     testWidgets('the edit toggle survives both unknown states', (t) async {

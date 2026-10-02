@@ -24,7 +24,9 @@ class StatsHealthScoreSection extends ConsumerWidget {
     // Physical WAN link state — the same signal the dashboard's Network Health
     // card and connection banner use. A disconnected WAN must not be scored
     // "Excellent" just because a down link carries no traffic. See #1143.
-    final wanIsUp = ref.watch(wanIsUpProvider);
+    // `?? true` is this section's choice, not the provider's (#1620) — same reason as the
+    // dashboard's Network Health card: an unread link state is not a disconnection.
+    final wanIsUp = ref.watch(wanIsUpProvider) ?? true;
 
     return StatsSectionCard(
       title: loc(context).networkHealthScore,

@@ -165,18 +165,20 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
     state = state.copyWith(privateMac: value);
   }
 
-  void clearAll() {
-    state = state.copyWith(
-      searchQuery: '',
-      status: DeviceStatusFilter.all,
-      connections: const {},
-      deviceCategories: const {},
-      privateMac: PrivateMacFilter.all,
-      signals: const {},
-      includeUnknownSignal: false,
-      nodeIds: () => const {},
-      ssidNames: () => const {},
-      bands: () => const {},
+  /// Resets the filter panel: everything the panel's Clear button counts
+  /// ([DeviceFilterConfig.activeCountExcludingStatus]).
+  ///
+  /// Status and search are kept. They sit above the list, not in the panel,
+  /// and the controls that show them do not follow outside changes: resetting
+  /// status left Online highlighted over offline devices (#1159), and resetting
+  /// search left the old text in the box over an unfiltered list.
+  ///
+  /// Built from the defaults rather than by naming each panel field, so a filter
+  /// added to the panel later is cleared here without anyone remembering to.
+  void clearPanelFilters() {
+    state = DeviceFilterConfig(
+      status: state.status,
+      searchQuery: state.searchQuery,
     );
   }
 

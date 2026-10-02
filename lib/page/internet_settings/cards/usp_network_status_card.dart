@@ -21,6 +21,23 @@ class UspNetworkStatusCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wan = this.wan ?? ref.watch(wanDataProvider).valueOrNull?.model;
     if (wan == null) return const CardSkeleton.info(rows: 4);
+
+    // ONLINE COMES FROM `wanIsUpProvider`, not from `wan.isUp` (#1620). This card already
+    // read the same field, so nothing it shows changes — what changes is that it no longer
+    // re-derives the answer. Three places deriving "online" from the model independently
+    // is how two of them came to disagree in the first place.
+    //
+    // `?? true` matches every other consumer, and on this card it is unreachable: the
+    // line above returns a skeleton when `wan` is null, and a non-null `wan` means the
+    // provider has a value. It is written as `true` rather than `wan.isUp` so that no
+    // second is-up source survives in the one file this change exists to remove one from
+    // — a `wan.isUp` fallback would read as careful while quietly re-opening the
+    // divergence, and no caller passes `this.wan` anyway (both construct
+    // `UspNetworkStatusCard()`; the goldens override `wanDataProvider`).
+    //
+    // No test covers the `??` here, and that is correct rather than a gap: mutating it to
+    // `false` fails nothing, because the branch cannot be entered.
+    final isOnline = ref.watch(wanIsUpProvider) ?? true;
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -47,7 +64,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
       // the state when there is no address to show, because an IP on a link
       // that is down reads as working. `offline` is the same string the hero's
       // subtitle uses one screen up.
-      popupValue: wan.isUp ? wan.ipAddress : loc(context).offline,
+      popupValue: isOnline ? wan.ipAddress : loc(context).offline,
       detailRoute: RouteNamed.uspInternetSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +74,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                _StatusIndicator(isOnline: wan.isUp),
+                _StatusIndicator(isOnline: isOnline),
                 AppGap.lg(),
                 Expanded(
                   child: Column(
@@ -66,7 +83,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
                       AppText.titleLarge(wan.ipAddress),
                       AppGap.xxs(),
                       AppText.bodyMedium(
-                        '${wan.isUp ? loc(context).online : loc(context).offline} - ${wan.addressingType}',
+                        '${isOnline ? loc(context).online : loc(context).offline} - ${wan.addressingType}',
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
