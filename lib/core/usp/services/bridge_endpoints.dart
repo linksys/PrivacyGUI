@@ -24,16 +24,22 @@ class BridgeEndpoints {
   );
 
   /// Remote Guardian proxy endpoints.
-  static BridgeEndpoints remote(String sessionId) => BridgeEndpoints(
-        notifications:
-            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/notifications',
-        subscription:
-            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/subscriptions',
-        health:
-            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/health',
-        turboPrefix:
-            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/turbo',
-      );
+  ///
+  /// The session id is encoded as one path segment: it reaches us from the
+  /// supporter link and from Guardian, and an unencoded `/` or `?` in it would
+  /// address a different resource under the operator's bearer token.
+  static BridgeEndpoints remote(String sessionId) {
+    final session = Uri.encodeComponent(sessionId);
+    return BridgeEndpoints(
+      notifications:
+          '/v1/guardians/remote-assistances/sessions/$session/usp/notifications',
+      subscription:
+          '/v1/guardians/remote-assistances/sessions/$session/usp/subscriptions',
+      health: '/v1/guardians/remote-assistances/sessions/$session/usp/health',
+      turboPrefix:
+          '/v1/guardians/remote-assistances/sessions/$session/usp/turbo',
+    );
+  }
 }
 
 /// The read-only endpoints that exist on the Guardian proxy and **nowhere else**.
@@ -95,7 +101,12 @@ class RemoteReads {
   /// `msgId` can never usefully be the literal `history`: that route wins on the
   /// server, so such a request answers with the list. Nothing needs to guard it;
   /// no id the client holds came from anywhere but [notificationsHistory].
-  String notification(String msgId) => '$_notificationsBase/$msgId';
+  ///
+  /// Encoded as one path segment, for the same reason [results] encodes its
+  /// key: the value is Guardian's, and a `/`, `?` or `#` in it would otherwise
+  /// turn "read this entry" into a request for another path.
+  String notification(String msgId) =>
+      '$_notificationsBase/${Uri.encodeComponent(msgId)}';
 
   /// Every stored result for one `commandKey` — a **bare array**, newest first, one
   /// row per execution (#1578).
@@ -126,11 +137,13 @@ class RemoteReads {
   /// dropping the interpolation.
   static RemoteReads forSession(String sessionId) {
     const prefix = '/v1/guardians/remote-assistances/sessions';
+    // One path segment, as in [BridgeEndpoints.remote].
+    final session = Uri.encodeComponent(sessionId);
     return RemoteReads(
-      state: '$prefix/$sessionId/usp/state',
-      notificationsHistory: '$prefix/$sessionId/usp/notifications/history',
-      notificationsBase: '$prefix/$sessionId/usp/notifications',
-      resultsBase: '$prefix/$sessionId/usp/results',
+      state: '$prefix/$session/usp/state',
+      notificationsHistory: '$prefix/$session/usp/notifications/history',
+      notificationsBase: '$prefix/$session/usp/notifications',
+      resultsBase: '$prefix/$session/usp/results',
     );
   }
 }

@@ -56,6 +56,19 @@ void main() {
   });
 
   group('the remote table addresses the Guardian proxy', () {
+    test('the session id is one path segment, whatever it contains', () {
+      final remote = BridgeEndpoints.remote('sess/4711?x');
+
+      for (final path in [
+        remote.notifications,
+        remote.subscription,
+        remote.health,
+        remote.turboPrefix,
+      ]) {
+        expect(path, contains('/sessions/sess%2F4711%3Fx/'));
+      }
+    });
+
     test('every path is scoped to the session', () {
       final remote = BridgeEndpoints.remote('sess-4711');
 
@@ -146,6 +159,22 @@ void main() {
             'entry. The equality is here so that a reader who wonders reaches '
             'this note rather than filing it.',
       );
+    });
+
+    test('an id that is not a path segment cannot address another resource',
+        () {
+      // Both values are Guardian's, which is why this is defence in depth: a
+      // `msgId` carrying `/`, `?` or `#` would otherwise turn "read entry X" into a
+      // request for a different path, under the operator's bearer token. Encoded
+      // as one segment, it can only ever name one entry — or 404.
+      final reads = RemoteReads.forSession('sess/4711?x');
+      const base =
+          '/v1/guardians/remote-assistances/sessions/sess%2F4711%3Fx/usp';
+
+      expect(reads.notification('a/../b?c#d'),
+          '$base/notifications/a%2F..%2Fb%3Fc%23d');
+      expect(reads.state, '$base/state');
+      expect(reads.results('k'), '$base/results?commandKey=k');
     });
 
     test('every path is scoped to the session', () {
