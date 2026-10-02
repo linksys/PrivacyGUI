@@ -83,8 +83,10 @@ void main() {
       'both decisions on /localLoginPassword survive a login, and each checks '
       'PnP once', () async {
     // The login route's redirect runs autoConfigurationLogic (result discarded)
-    // and redirectLogic for one navigation; both reach `_prepare`, which is why
-    // the assertion was logged twice per login.
+    // and redirectLogic for one navigation, and both reach `_prepare`, so both
+    // must survive a login. (On the bench this fix took the assertion from two
+    // per password login to one; the rest come from routerProvider being rebuilt
+    // on every login change, tracked separately.)
     await container.read(authProvider.future);
     auth().signedIn();
     final state = _state(RoutePath.localLoginPassword);
