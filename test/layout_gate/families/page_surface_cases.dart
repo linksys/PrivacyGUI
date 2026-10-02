@@ -110,6 +110,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_available
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
@@ -134,6 +135,8 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
+    show MacFilterMode;
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
@@ -201,6 +204,7 @@ import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../mocks/provider_overrides/mock_instant_privacy.dart';
+import '../../mocks/provider_overrides/mock_mac_filter.dart';
 import '../../mocks/provider_overrides/mock_instant_safety.dart';
 import '../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../mocks/provider_overrides/mock_ipv6_port_service.dart';
@@ -1154,8 +1158,8 @@ final kMenuPageCase = PageSurfaceCase(
   // exactly one field off it (`dnsServers`), so a second composed `LanInfoUIModel`
   // would be eight lines restating a fixture that already exists to say the same
   // thing. The scene stays where its own page's cases can see it.
-  overrides: () =>
-      menuOverrides(lanInfo: dhcp.testLanInfo, privacyEnabled: true),
+  overrides: () => menuOverrides(
+      lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.allow),
   requires: const [AppMenuCard, AppBadge],
   forbids: const [AppLoader],
 );
@@ -1987,6 +1991,28 @@ final kInstantPrivacyPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_wifi_settings_view` on its third tab — MAC Filtering (#1636), the
+/// network-wide MAC filter in `Deny`: one `AppSwitch` (Deny ⟷ Off — `Allow` is
+/// Instant Privacy's page), plus a list editor (header + Add button + device
+/// rows) that appears when it is on. The gate scene (`gateMacFilterState`) is Deny
+/// with a populated list, so header, Add button and rows all render at once.
+///
+/// A tab case like [kWifiSettingsAdvancedPageCase], so it opens the page on
+/// `initialTab: 2` and requires [MacFilterTab] — the one type no sibling case
+/// requires, which is how a cell knows it measured this tab. The tab exists only
+/// on firmware that serves the filter (#1635), so the case must also grant the
+/// capability: without it the page builds two tabs and `initialTab: 2` clamps
+/// onto Advanced, which [MacFilterTab] in `requires` turns into a red rather than
+/// 234 cells of the wrong tab.
+final kWifiSettingsMacFilterPageCase = PageSurfaceCase(
+  id: 'wifi_settings_mac_filter',
+  view: () =>
+      const UspWifiSettingsView(initialTab: UspWifiSettingsView.macFilterTab),
+  overrides: () => wifiMacFilterTabOverrides(),
+  requires: const [MacFilterTab, AppSwitch, AppButton],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `instant_safety_view` — one switch for OpenDNS safe browsing, and two lines of
 /// server prose that appear only while it is on.
 ///
@@ -2695,6 +2721,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
   kWifiSettingsAdvancedPageCase,
+  kWifiSettingsMacFilterPageCase,
   kDeviceListPageCase,
   kDeviceDetailPageCase,
   kTopologyPageCase,

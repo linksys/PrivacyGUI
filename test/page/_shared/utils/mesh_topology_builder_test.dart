@@ -50,14 +50,14 @@ MeshBss _bss(
 ///
 /// **File-local on purpose, for now.** Constitution Article I §1.6.2 wants
 /// codegen fixtures centralised in `test/mocks/test_data/`, and there has never
-/// been a DataElements builder there to import. Two other files carry their own
-/// copy of this helper — `usp_instant_privacy_service_test.dart` (`_meshNode`)
-/// and `mesh_backhaul_link_test.dart` (`_node`) — each trimmed to the fields its
-/// own subject reads. Promote the three into one
-/// `test/mocks/test_data/data_elements_test_data.dart` when a **fourth** file
-/// needs a `MeshNode`, not before: a shared builder written for three known
-/// callers is guesswork about the fourth, and the version that survives is the
-/// one an actual fourth caller shapes.
+/// been a DataElements builder there to import. One other file carries its own
+/// copy of this helper — `mesh_backhaul_link_test.dart` (`_node`) — trimmed to
+/// the fields its own subject reads. (A third, in the Instant Privacy service
+/// test, left with that service in #1636.) Promote the two into one
+/// `test/mocks/test_data/data_elements_test_data.dart` when a **third** file
+/// needs a `MeshNode`, not before: a shared builder written for two known
+/// callers is guesswork about the third, and the version that survives is the
+/// one an actual third caller shapes.
 MeshNode _node({
   required String instance,
   required String id,

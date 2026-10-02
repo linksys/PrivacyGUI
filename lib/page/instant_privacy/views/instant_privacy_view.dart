@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_add_device_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Instant Privacy page — one-tap MAC whitelist to lock the network to
-/// currently connected devices only.
+/// Instant Privacy page — a single Allow/Off toggle that locks the network to a
+/// whitelist. Save-based: enabling pre-populates the list with every online
+/// device, edits stay local until the bottom Save bar is used. Shares the
+/// `X_LINKSYS_SetMACFilter` backend with the MAC Filter page (Deny); the two are
+/// mutually exclusive.
 class InstantPrivacyView extends ConsumerWidget {
   const InstantPrivacyView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspInstantPrivacyProvider);
-
+    final state = ref.watch(uspInstantPrivacyProvider);
     return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).instantPrivacy,
@@ -32,61 +34,93 @@ class InstantPrivacyView extends ConsumerWidget {
         child: UspTopBar(),
       ),
       backFallback: RouteNamed.uspMenu,
-      onRefresh: () => ref.refresh(uspInstantPrivacyProvider.future),
+      onRefresh: () =>
+          ref.read(uspInstantPrivacyProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => ServiceErrorView(
-            error: error is ServiceError ? error : null,
+        if (state.status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (state.status.error != null) {
+          return ServiceErrorView(
+            error: state.status.error,
             title: loc(context).failedToLoadSettings,
             onRetry: () => ref.invalidate(uspInstantPrivacyProvider),
-          ),
-          data: (state) => _buildContent(context, ref, state),
-        );
+          );
+        }
+        return _buildContent(context, ref, state);
       },
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    UspInstantPrivacyState state,
-  ) {
-    final hasPrivateMacInList = state.isEnabled
-        ? state.allowedDevices.any((d) => d.isPrivateMac)
-        : state.connectedDevices.any((d) => d.isPrivateMac);
+  UiKitBottomBarConfig? _buildBottomBar(
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    if (!state.isDirty) return null;
+    // The firmware refuses `Allow` with an empty list and any list over the
+    // limit, so neither can be saved. Turning on pre-fills every online device,
+    // so the list can start over the limit: rows are removed until it fits, or
+    // the switch is turned back off.
+    final macs = state.allowedMacs;
+    final unsaveable = state.isEnabled &&
+        (macs.isEmpty || macs.length > UspMacFilterService.maxAddresses);
+    return UiKitBottomBarConfig(
+      positiveLabel: loc(context).save,
+      isPositiveEnabled: !state.status.isSaving && !unsaveable,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () =>
+          ref.read(uspInstantPrivacyProvider.notifier).revert(),
+    );
+  }
 
+  Widget _buildContent(
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    final isEnabled = state.isEnabled;
+    final hasPrivateMac = _listedPrivateMac(state);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.bodyMedium(
-          loc(context).instantPrivacyPageDesc,
-        ),
-        if (hasPrivateMacInList) ...[
+        AppText.bodyMedium(loc(context).instantPrivacyPageDesc),
+        // Read off the applied mode, so it stays up while this page's switch is
+        // being turned on — until Save actually turns MAC Filtering off.
+        if (state.isOtherFilterOn) ...[
+          AppGap.md(),
+          _buildOtherFilterOnBanner(context),
+        ],
+        if (hasPrivateMac) ...[
           AppGap.md(),
           _buildPrivateMacWarningBanner(context),
         ],
         AppGap.lg(),
         _buildToggleCard(context, ref, state),
-        AppGap.md(),
-        if (state.isEnabled)
-          _buildAllowedDevicesList(context, ref, state)
-        else
-          _buildConnectedDevicesList(context, state),
+        if (isEnabled) ...[
+          AppGap.lg(),
+          _buildDeviceList(context, ref, state),
+        ],
       ],
     );
   }
 
+  /// Whether any MAC in the current allow-list belongs to a private-MAC device.
+  bool _listedPrivateMac(UspInstantPrivacyState state) {
+    final privateMacs = state.connectedDevices
+        .where((d) => d.isPrivateMac)
+        .map((d) => d.mac.toUpperCase())
+        .toSet();
+    return state.allowedMacs.any((m) => privateMacs.contains(m.toUpperCase()));
+  }
+
   Widget _buildToggleCard(
-    BuildContext context,
-    WidgetRef ref,
-    UspInstantPrivacyState state,
-  ) {
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    final isEnabled = state.isEnabled;
+    final isSaving = state.status.isSaving;
+    // Turning on pre-fills the list with the online devices, so with none online
+    // it would be an empty `Allow` list — refused by the firmware. Off stays
+    // reachable: this only blocks the off → on direction.
+    final cannotEnable = !isEnabled && state.connectedDevices.isEmpty;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: LayoutBlock(
-        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -96,41 +130,21 @@ class InstantPrivacyView extends ConsumerWidget {
                 children: [
                   AppText.labelLarge(loc(context).instantPrivacy),
                   AppGap.xs(),
-                  AppText.bodySmall(
-                    state.isEnabled
-                        ? loc(context).onlyAllowedDevicesCanConnect
-                        : loc(context).allDevicesCanConnectFreely,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  AppText.bodySmall(isEnabled
+                      ? loc(context).onlyAllowedDevicesCanConnect
+                      : cannotEnable
+                          ? loc(context).instantPrivacyCannotBeEnabled
+                          : loc(context).allDevicesCanConnectFreely),
                 ],
               ),
             ),
-            // While a write is in flight the switch says so itself. Its only
-            // busy signal used to be the dimmed track `AppSwitch` renders for a
-            // null `onChanged`, which reads as "unavailable", not "saving" — and
-            // the enable/disable path holds that state for as long as a USP
-            // mutation takes.
-            //
-            // `isLoading` rather than the `Stack` over a size-maintaining switch
-            // this used to be (#1542): the kit draws its busy figure over the
-            // track the switch already occupies, so there is no second footprint
-            // to hold open against the theme's `spacingFactor`.
-            //
-            // `isToggleLocked`, not `isToggleDisabled` — the latter also covers
-            // "no connected devices, so it cannot be enabled", which is a
-            // permanently unavailable switch rather than work in progress. Both
-            // recede the same way; what tells them apart is the busy figure.
             AppSwitch(
               identifier: 'instant-privacy-enable',
-              value: state.isEnabled,
-              isLoading: state.isToggleLocked,
-              // The kit's own fallback is the untranslated `Busy`.
-              busySemanticLabel: loc(context).processing,
-              onChanged: state.isToggleDisabled
-                  ? null
-                  : (value) => value
-                      ? _onEnable(context, ref)
-                      : _onDisable(context, ref),
+              value: isEnabled,
+              isLoading: isSaving,
+              busySemanticLabel: isSaving ? loc(context).processing : null,
+              onChanged:
+                  isSaving || cannotEnable ? null : (v) => _onToggle(ref, v),
             ),
           ],
         ),
@@ -138,108 +152,67 @@ class InstantPrivacyView extends ConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // OFF state — show connected devices (snapshot preview)
-  // ---------------------------------------------------------------------------
-
-  Widget _buildConnectedDevicesList(
-    BuildContext context,
-    UspInstantPrivacyState state,
-  ) {
-    if (state.connectedDevices.isEmpty) {
-      return _buildEmptyDevicesMessage(context);
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.labelLarge(
-            loc(context).devicesWillBeAllowed(state.connectedDevices.length)),
-        AppGap.sm(),
-        AppText.bodySmall(
-          loc(context).devicesWillBeAllowedDesc,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        AppGap.md(),
-        for (final device in state.connectedDevices) ...[
-          _buildDeviceLayoutBlock(context, device),
-          AppGap.sm(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildEmptyDevicesMessage(BuildContext context) {
-    return DetailEmptyBlock(
-      message: loc(context).noDevicesCurrentlyConnected,
-      subtitle: loc(context).instantPrivacyCannotBeEnabled,
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // ON state — show allowed devices + add MAC button
-  // ---------------------------------------------------------------------------
-
-  Widget _buildAllowedDevicesList(
-    BuildContext context,
-    WidgetRef ref,
-    UspInstantPrivacyState state,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // A `Wrap`, not a `Row`, and for the reason `usp_apps_view.dart:90`
-        // records at the same shape: `spaceBetween` with two inflexible children
-        // let the `addDevice` button take the width it asked for and left the
-        // count label the remainder — over by up to +110px at 320px in 14 of the
-        // 26 locales (#1380). Expanding the label only moves the damage: the
-        // button is ~194px of a 288px content row, so `fr` then took 4 lines in
-        // 76.7px and `ru` broke a 95.8px word inside 94.1px. The button drops
-        // below the count when the two do not fit and nothing shrinks.
-        // `WrapAlignment.spaceBetween` plus the tight `SizedBox` keep the wide
-        // widths pixel-identical to what the `Row` gave them — a `Wrap` sizes to
-        // its widest run, not to its constraint. Both directions are guarded in
-        // test/page/_shared/page_surface_overflow_test.dart.
-        SizedBox(
-          width: double.infinity,
-          child: Wrap(
+  Widget _buildDeviceList(
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    final macs = state.allowedMacs;
+    final atLimit = macs.length >= UspMacFilterService.maxAddresses;
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Wrap, not Row: header + Add reflow rather than overflow (#1380).
+          Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
             children: [
-              AppText.labelLarge(loc(context)
-                  .allowedDevicesCount(state.allowedDevices.length)),
+              AppText.labelLarge(loc(context).allowedDevicesCount(macs.length)),
               AppButton.text(
+                identifier: 'instant-privacy-add-device',
                 label: loc(context).addDevice,
-                onTap: state.isToggleLocked
-                    ? null
-                    : () => _showAddMacDialog(context, ref, state),
+                onTap:
+                    atLimit ? null : () => _showAddDialog(context, ref, state),
               ),
             ],
           ),
-        ),
-        AppGap.sm(),
-        if (state.allowedDevices.isEmpty)
-          AppText.bodySmall(
-            loc(context).noDevicesInAllowedList,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          )
-        else
-          for (final device in state.allowedDevices) ...[
-            _buildDeviceLayoutBlock(context, device),
+          AppGap.md(),
+          if (atLimit) ...[
+            AppText.bodySmall(loc(context)
+                .macFilterMaxReached(UspMacFilterService.maxAddresses)),
             AppGap.sm(),
           ],
-      ],
+          if (macs.isEmpty)
+            AppText.bodySmall(loc(context).noDevicesInAllowedList)
+          else
+            ...macs.map((mac) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: _buildDeviceRow(context, ref, state, mac),
+                )),
+        ],
+      ),
     );
   }
 
-  Widget _buildDeviceLayoutBlock(
-      BuildContext context, InstantPrivacyDeviceUIModel device) {
+  Widget _buildDeviceRow(BuildContext context, WidgetRef ref,
+      UspInstantPrivacyState state, String mac) {
     final colorScheme = Theme.of(context).colorScheme;
+    final device = state.connectedDevices
+        .where((d) => d.mac.toUpperCase() == mac.toUpperCase())
+        .firstOrNull;
+    // A name over its MAC, or the MAC alone. No name is the usual case for a
+    // listed device that is offline — the router clears its Hosts name then — and
+    // an online one with no hostname carries its MAC as its display name.
+    final displayName = device?.displayName ?? '';
+    final name =
+        displayName.isEmpty || displayName.toUpperCase() == mac.toUpperCase()
+            ? null
+            : displayName;
+    final isPrivate = device?.isPrivateMac ?? false;
     return LayoutBlock(
-      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          if (device.isPrivateMac) ...[
+          if (isPrivate) ...[
             AppBadge(
               label: loc(context).privateMacLabel,
               color: colorScheme.error,
@@ -247,34 +220,32 @@ class InstantPrivacyView extends ConsumerWidget {
             ),
             AppGap.sm(),
           ],
-          AppIcon.font(
-            Icons.devices,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          AppIcon.font(Icons.devices, size: 20),
           AppGap.sm(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.bodyMedium(device.displayName),
-                AppText.bodySmall(
-                  device.mac,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                if (name != null) ...[
+                  AppText.bodyMedium(name),
+                  AppText.bodySmall(mac),
+                ] else
+                  AppText.bodyMedium(mac),
               ],
             ),
+          ),
+          AppIconButton(
+            identifier: 'instant-privacy-remove-$mac',
+            icon: AppIcon.font(Icons.close, size: 20),
+            semanticLabel: loc(context).macFilterRemoveDevice,
+            onTap: () =>
+                ref.read(uspInstantPrivacyProvider.notifier).removeMac(mac),
           ),
         ],
       ),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Private (randomized) MAC warning
-  // ---------------------------------------------------------------------------
-
-  /// Banner shown on page when any device uses a private MAC.
   Widget _buildPrivateMacWarningBanner(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -286,334 +257,110 @@ class InstantPrivacyView extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppIcon.font(
-            Icons.warning_amber_rounded,
-            size: 20,
-            color: colorScheme.onErrorContainer,
-          ),
+          AppIcon.font(Icons.warning_amber_rounded,
+              size: 20, color: colorScheme.onErrorContainer),
           AppGap.sm(),
           Expanded(
-            child: AppText.bodySmall(
-              loc(context).privateMacWarningDesc,
-              color: colorScheme.onErrorContainer,
-            ),
+            child: AppText.bodySmall(loc(context).privateMacWarningDesc,
+                color: colorScheme.onErrorContainer),
           ),
         ],
       ),
     );
   }
 
-  /// Inline warning shown in enable dialog (title only).
-  Widget _buildPrivateMacDialogWarning(BuildContext context) {
+  /// Says the other filter is on. They share one device mode, so saving this page
+  /// on turns the other one off — which the Save confirm asks about, and this
+  /// states up front. Same treatment as the private-MAC banner on Instant Privacy.
+  Widget _buildOtherFilterOnBanner(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
       child: Row(
-        children: [
-          AppIcon.font(
-            Icons.warning_amber_rounded,
-            size: 20,
-            color: colorScheme.error,
-          ),
-          AppGap.sm(),
-          Expanded(
-            child: AppText.labelMedium(
-              loc(context).privateMacWarningTitle,
-              color: colorScheme.error,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Confirmation dialogs
-  // ---------------------------------------------------------------------------
-
-  Future<void> _onEnable(BuildContext context, WidgetRef ref) async {
-    final connected =
-        ref.read(uspInstantPrivacyProvider).valueOrNull?.connectedDevices ??
-            const [];
-    final privateMacDevices = connected.where((d) => d.isPrivateMac).toList();
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        titleText: loc(context).enableInstantPrivacyTitle,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyMedium(
-              loc(context).enableInstantPrivacyDesc(connected.length),
-            ),
-            if (privateMacDevices.isNotEmpty)
-              _buildPrivateMacDialogWarning(context),
-          ],
-        ),
-        actions: [
-          AppButton.text(
-            label: loc(context).cancel,
-            onTap: () => Navigator.of(ctx).pop(false),
-          ),
-          AppButton.primary(
-            identifier: 'instant-privacy-enable-confirm',
-            label: loc(context).enable,
-            onTap: () => Navigator.of(ctx).pop(true),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(uspInstantPrivacyProvider.notifier).enable();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizeServiceError(context, e))),
-        );
-      }
-    }
-  }
-
-  Future<void> _onDisable(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        titleText: loc(context).disableInstantPrivacyTitle,
-        content: AppText.bodyMedium(
-          loc(context).disableInstantPrivacyDesc,
-        ),
-        actions: [
-          AppButton.text(
-            label: loc(context).cancel,
-            onTap: () => Navigator.of(ctx).pop(false),
-          ),
-          AppButton.primary(
-            label: loc(context).disable,
-            onTap: () => Navigator.of(ctx).pop(true),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(uspInstantPrivacyProvider.notifier).disable();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizeServiceError(context, e))),
-        );
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Add MAC dialog
-  // ---------------------------------------------------------------------------
-
-  Future<void> _showAddMacDialog(
-    BuildContext context,
-    WidgetRef ref,
-    UspInstantPrivacyState state,
-  ) async {
-    // Build autocomplete options from connected devices.
-    //
-    // `AppSelectAutoComplete` matches a query against label, value and subtitle
-    // alike, so what goes in these three fields is exactly what the field's
-    // "search by name, MAC, or IP" hint promises. `null` rather than an empty
-    // subtitle when firmware reports no address — the option tile renders the
-    // trailing slot whenever the subtitle is non-null.
-    final deviceOptions = state.connectedDevices
-        .map((d) => AppAutoCompleteOption(
-              label: d.displayName,
-              value: d.mac,
-              subtitle: d.ipAddress.isNotEmpty ? d.ipAddress : null,
-            ))
-        .toList();
-
-    await showAppDialog<void>(
-      context: context,
-      // Tapping the scrim used to discard whatever had been typed. The field
-      // only reveals its validation error on unfocus, so the tap that was
-      // meant to trigger validation was closing the dialog instead (#1059).
-      barrierDismissible: false,
-      builder: (ctx) => _AddMacDialog(
-        existingDevices: state.allowedDevices,
-        deviceOptions: deviceOptions,
-        onConfirm: (mac) async {
-          Navigator.of(ctx).pop();
-          try {
-            await ref.read(uspInstantPrivacyProvider.notifier).addMac(mac);
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(localizeServiceError(context, e))),
-              );
-            }
-          }
-        },
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _AddMacDialog — stateful dialog for MAC address input with validation
-// ---------------------------------------------------------------------------
-
-class _AddMacDialog extends StatefulWidget {
-  final List<InstantPrivacyDeviceUIModel> existingDevices;
-  final List<AppAutoCompleteOption> deviceOptions;
-  final Future<void> Function(String mac) onConfirm;
-
-  const _AddMacDialog({
-    required this.existingDevices,
-    required this.onConfirm,
-    this.deviceOptions = const [],
-  });
-
-  @override
-  State<_AddMacDialog> createState() => _AddMacDialogState();
-}
-
-class _AddMacDialogState extends State<_AddMacDialog> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
-  String? _errorText;
-  bool _isConfirming = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onFocusChange);
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onFocusChange() {
-    if (!_focusNode.hasFocus) {
-      _validate();
-    }
-  }
-
-  void _validate() {
-    setState(() {
-      _errorText = _errorFor(_controller.text);
-    });
-  }
-
-  /// The error key for [value], or null when there is nothing to complain about.
-  ///
-  /// The single definition of "acceptable", shared by the message and the Add
-  /// button. They used to run this check separately, which let the two disagree
-  /// — and made "the button is enabled exactly when no error is shown" a
-  /// property maintained by hand in two places.
-  ///
-  /// Empty text yields null: nothing typed yet is not an error to display. The
-  /// button's own precondition is in [_canConfirm].
-  String? _errorFor(String value) {
-    if (value.isEmpty) return null;
-    if (!UspInstantPrivacyService.validateMac(value)) return 'invalidMacFormat';
-    final normalized = UspInstantPrivacyService.normalizeMac(value);
-    return widget.existingDevices.any((d) => d.mac == normalized)
-        ? 'deviceAlreadyInAllowedList'
-        : null;
-  }
-
-  /// Whether the current text is a MAC that is not already on the list.
-  ///
-  /// Deliberately independent of [_errorText]: that field only exists to render
-  /// the message, and it is populated on unfocus. Gating the button on it as
-  /// well left a valid MAC un-submittable until the user tabbed away.
-  bool get _canConfirm {
-    final value = _controller.text;
-    return value.isNotEmpty && _errorFor(value) == null;
-  }
-
-  Future<void> _confirm() async {
-    if (!_canConfirm) return;
-    setState(() => _isConfirming = true);
-    try {
-      await widget
-          .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
-    } finally {
-      // [_AddMacDialog.onConfirm] pops this dialog before it awaits, so today
-      // the state is already gone when the future completes — hence the
-      // `mounted` guard rather than a bare `setState`. The reset itself is for
-      // the next change that keeps the dialog open on failure: without it the
-      // button would sit on "Adding..." with nothing able to clear it.
-      if (mounted) {
-        setState(() => _isConfirming = false);
-      }
-    }
-  }
-
-  String? _localizeError(String? key) {
-    if (key == null) return null;
-    return switch (key) {
-      'invalidMacFormat' => loc(context).invalidMacAddressFormat,
-      'deviceAlreadyInAllowedList' => loc(context).deviceAlreadyInAllowedList,
-      _ => key,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      titleText: loc(context).addDeviceManually,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.bodyMedium(loc(context).enterMacAddressToAllow),
-          AppGap.md(),
-          AppSelectAutoComplete(
-            options: widget.deviceOptions,
-            controller: _controller,
-            onSelected: (_) => _validate(),
-            child: AppTextField(
-              identifier: 'instant-privacy-add-mac-input',
-              controller: _controller,
-              focusNode: _focusNode,
-              // Deliberately unrestricted. This field is also the query box of
-              // the [AppSelectAutoComplete] above it, which matches a connected
-              // device on its name as well as its MAC — so a hex-only input
-              // formatter would make the search half of the field unusable.
-              // Free text is validated on unfocus instead, and selecting a
-              // suggestion writes the MAC into the controller.
-              hintText: loc(context).searchByNameMacIp,
-              errorText: _localizeError(_errorText),
+          AppIcon.font(Icons.info_outline,
+              size: 20, color: colorScheme.onErrorContainer),
+          AppGap.sm(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).instantPrivacyMacFilterIsOn,
+                    color: colorScheme.onErrorContainer),
+                AppGap.xs(),
+                AppText.bodySmall(loc(context).instantPrivacyMacFilterIsOnDesc,
+                    color: colorScheme.onErrorContainer),
+              ],
             ),
           ),
         ],
       ),
-      actions: [
-        AppButton.text(
-          identifier: 'instant-privacy-add-mac-cancel',
-          label: loc(context).cancel,
-          onTap: () => Navigator.of(context).pop(),
-        ),
-        // Rebuilt from the controller rather than from setState. The whole
-        // reason validation was moved to unfocus is that a setState mid-typing
-        // rebuilds the tree and severs the TextField's TextInputConnection on
-        // Web (#1059). The field is not inside this builder, so enabling the
-        // button as the user types cannot reach it.
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _controller,
-          builder: (context, _, __) => AppButton.primary(
-            identifier: 'instant-privacy-add-mac-confirm',
-            label: _isConfirming ? loc(context).adding : loc(context).add,
-            onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
-          ),
-        ),
-      ],
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Actions (local — nothing writes until Save)
+  // ---------------------------------------------------------------------------
+
+  /// A local edit only — the device changes on Save, which is where overriding
+  /// MAC Filtering is confirmed.
+  void _onToggle(WidgetRef ref, bool enable) {
+    ref.read(uspInstantPrivacyProvider.notifier).setEnabled(enable);
+  }
+
+  void _showAddDialog(
+      BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
+    showMacFilterAddDeviceDialog(
+      context: context,
+      existingMacs: state.allowedMacs,
+      connectedDevices: state.connectedDevices,
+      onAdd: (mac) => ref.read(uspInstantPrivacyProvider.notifier).addMac(mac),
+    );
+  }
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    // The device only changes here, so this is where overriding the other filter
+    // is confirmed: saving this page on while the other one is on turns it off.
+    final state = ref.read(uspInstantPrivacyProvider);
+    if (state.isEnabled && state.isOtherFilterOn) {
+      final ok = await showAppDialog<bool>(
+        context: context,
+        builder: (ctx) => AppDialog(
+          titleText: loc(context).instantPrivacy,
+          content: AppText.bodyMedium(
+              loc(context).instantPrivacyEnableTurnsOffMacFilter),
+          actions: [
+            AppButton.text(
+              label: loc(context).cancel,
+              onTap: () => Navigator.of(ctx).pop(false),
+            ),
+            AppButton.primary(
+              identifier: 'instant-privacy-override-confirm',
+              label: loc(context).ok,
+              onTap: () => Navigator.of(ctx).pop(true),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !context.mounted) return;
+    }
+    try {
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspInstantPrivacyProvider.notifier).save(),
+      );
+      if (context.mounted) {
+        showSuccessSnackBar(context, loc(context).changesSaved);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+    }
   }
 }

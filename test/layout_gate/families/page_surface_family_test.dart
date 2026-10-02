@@ -77,7 +77,7 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-two cases over
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-three cases over
   // forty-five pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
@@ -109,6 +109,10 @@ void main() {
   // **#1580 makes it 62** the other way — a new page rather than a new state of an old
   // one: `notification_history`, the forty-fifth swept page and the first the remote
   // surface adds. The two landed on separate branches, each counting from 51.
+  // **And #1636 makes it 63** — `wifi_settings_mac_filter`, a third Wi-Fi tab and so a
+  // case with no new page. It too counted from 61 on its own branch and wrote "62",
+  // which is the same collision a third time: two branches each adding one case
+  // each write the count they would have alone. Recounted at the merge, 2026-10-02.
   //
   // These counts are written out in **five** places — this group, the page sweep file's
   // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
@@ -118,20 +122,23 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-two cases over forty-five pages, and which '
-      'sixty-two is a decision', () {
+      'the gate declares sixty-three cases over forty-five pages, and which '
+      'sixty-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
-        'completion branches plus eight diagnostics screens, and #1580\'s '
-        'remote-only page', () {
+        'completion branches plus eight diagnostics screens, #1580\'s '
+        'remote-only page, and #1636\'s third Wi-Fi tab', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
           'dhcp',
           'wifi_settings',
           'wifi_settings_advanced',
+          // #1636: MAC Filtering, the Wi-Fi page's third tab — beside its sibling
+          // tab, the placement #1489 set for tab cases.
+          'wifi_settings_mac_filter',
           'device_list',
           'device_detail',
           'topology',
@@ -372,6 +379,18 @@ void main() {
         // A page split is therefore the fourth way this list grows, after a wave, a tab
         // and a falsified limit. It is also the only one of the four where the count of
         // *pages* goes up without any page being newly reachable: 44 pages, 49 cases.
+        //
+        // **#1636's one, which is a tab and not a page.** `wifi_settings_mac_filter`
+        // is MAC Filtering, the Wi-Fi page's third tab — it shipped briefly as a page
+        // of its own (`mac_filter`) and moved under Wi-Fi Settings, so it adds a case
+        // and no page, the way #1489's tabs did. It is Instant Privacy's `Deny` sibling
+        // over the same device filter, and gets a case of its own rather than
+        // inheriting `instant_privacy`'s because the list header's `Wrap` carries a
+        // different label. The tab exists only when the device serves the filter
+        // (#1635), so the case grants that capability. Recounted 2026-09-30 on its
+        // own branch: 62 cases, 44 swept pages of 46 page-view files. With #1580's
+        // `notification_history` merged in (2026-10-02): 63 cases, 45 swept pages
+        // of 47 page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

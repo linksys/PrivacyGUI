@@ -20,8 +20,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 
 // `FixedLanDataNotifier` is imported rather than restated. It is the same one-method
 // subclass either way, and two of them would be two places to fix when
@@ -31,8 +36,8 @@ import 'mock_dhcp.dart' show FixedLanDataNotifier;
 
 /// A [UspInstantPrivacyNotifier] pinned to one state.
 ///
-/// `build()` is the only member overridden: the menu reads `isEnabled` and nothing
-/// else, and none of the notifier's mutations are reachable from this page — the
+/// `build()` is the only member overridden: the menu reads `isAppliedOn` and
+/// nothing else, and none of the notifier's mutations are reachable from this page — the
 /// card's `onTap` navigates to the privacy page rather than toggling anything.
 class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
   final UspInstantPrivacyState _fixedState;
@@ -40,7 +45,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
   FixedInstantPrivacyNotifier(this._fixedState);
 
   @override
-  Future<UspInstantPrivacyState> build() async => _fixedState;
+  UspInstantPrivacyState build() => _fixedState;
 }
 
 /// Overrides for `usp_menu_view`.
@@ -53,7 +58,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
 /// value it is.
 List<Override> menuOverrides({
   required LanInfoUIModel lanInfo,
-  required bool privacyEnabled,
+  required MacFilterMode privacyMode,
 }) =>
     [
       lanDataProvider
@@ -61,11 +66,17 @@ List<Override> menuOverrides({
       uspInstantPrivacyProvider.overrideWith(
         () => FixedInstantPrivacyNotifier(
           UspInstantPrivacyState(
-            isEnabled: privacyEnabled,
-            connectedDevices: const [],
-            allowedDevices: const [],
-            macFilterContext: MacFilterContext.empty,
+            settings: Preservable(
+              original: MacFilterSettings(mode: privacyMode, macs: const []),
+              current: MacFilterSettings(mode: privacyMode, macs: const []),
+            ),
+            status: const MacFilterStatus(isLoading: false),
           ),
         ),
       ),
+      // The Instant Privacy card exists only on firmware that serves the MAC
+      // filter (#1635); without this the card, and the badge row this fixture pins
+      // a state for, would not render at all.
+      deviceCapabilitiesProvider.overrideWithValue(
+          DeviceCapabilities(const {DeviceCapability.wifiMacFilter})),
     ];
