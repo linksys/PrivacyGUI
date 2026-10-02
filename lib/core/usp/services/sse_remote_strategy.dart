@@ -124,12 +124,19 @@ class RemoteSseStrategy implements SseOperationStrategy {
     }
   }
 
+  /// `teardown: true`, so a 401 is thrown and swallowed below but never reported.
+  /// Logout reaches this through `unregisterAll()` after `session.end()` has spent
+  /// the credential, where a reported 401 asks for a logout from inside the
+  /// logout — the loop [onSseDisconnected]'s cleanup closed. `disconnect()`
+  /// empties the registry first, so today that list is empty; this keeps the loop
+  /// closed if the two steps are ever reordered. The other caller, a single
+  /// handler's cleanup, ignores the failure as well.
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {
       final remoteId = _toRemoteId(id);
       try {
-        await _bridge.unsubscribe(subscriptionId: remoteId);
+        await _bridge.unsubscribe(subscriptionId: remoteId, teardown: true);
         logger.d('[SSE]: Unregistered $id (as $remoteId)');
       } catch (e) {
         logger.w('[SSE]: Failed to unregister $id: $e');

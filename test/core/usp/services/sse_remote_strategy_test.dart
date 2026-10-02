@@ -237,20 +237,35 @@ void main() {
       await strategy.unregisterSubscriptions(['sub-1', 'sub-2']);
 
       // Bridge receives prefixed IDs
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
-          .called(1);
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-2'))
-          .called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-2', teardown: true)).called(1);
     });
 
     test('continues on failure', () async {
-      when(() => mockBridge.unsubscribe(subscriptionId: 'remote-fail'))
-          .thenThrow(Exception('error'));
+      when(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-fail',
+          teardown: true)).thenThrow(Exception('error'));
 
       await strategy.unregisterSubscriptions(['fail', 'ok']);
 
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-ok'))
-          .called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-ok', teardown: true)).called(1);
+    });
+
+    test('a 401 here cannot end the session', () async {
+      // Logout reaches this through `unregisterAll()` after `session.end()` has
+      // spent the credential, so a 401 is the expected answer — the same one that
+      // looped 770 times on QA when the disconnect cleanup reported it. Today
+      // `disconnect()` empties the registry first and the list is empty by the
+      // time it gets here; this is what keeps the loop closed if those two steps
+      // are ever reordered (review of #1600). A live single unregister is
+      // cleanup whose failure is ignored too, and the reads that depend on the
+      // token still report it.
+      await strategy.unregisterSubscriptions(['sub-1']);
+
+      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'));
     });
   });
 
