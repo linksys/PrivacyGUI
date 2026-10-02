@@ -1,9 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/services/session_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,18 +18,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SessionState extends Equatable {
   final NodeDeviceInfo? deviceInfo;
 
-  const SessionState({this.deviceInfo});
+  /// Firmware-dependent feature availability, resolved once at login and cleared
+  /// on logout with the rest of this state. [DeviceCapabilities.empty] until
+  /// resolved, so any gated feature is hidden before login — fail-closed.
+  final DeviceCapabilities capabilities;
+
+  const SessionState({
+    this.deviceInfo,
+    this.capabilities = DeviceCapabilities.empty,
+  });
 
   /// Returns the model number with suffix (e.g., 'M60DU-EU').
   /// Format: {Model}{SP suffix}-{Region suffix}
   String get modelNumber => deviceInfo?.modelNumber ?? '';
 
-  SessionState copyWith({NodeDeviceInfo? deviceInfo}) {
-    return SessionState(deviceInfo: deviceInfo ?? this.deviceInfo);
+  SessionState copyWith({
+    NodeDeviceInfo? deviceInfo,
+    DeviceCapabilities? capabilities,
+  }) {
+    return SessionState(
+      deviceInfo: deviceInfo ?? this.deviceInfo,
+      capabilities: capabilities ?? this.capabilities,
+    );
   }
 
   @override
-  List<Object?> get props => [deviceInfo];
+  List<Object?> get props => [deviceInfo, capabilities];
 }
 
 /// Session Provider
@@ -169,8 +186,37 @@ class SessionNotifier extends Notifier<SessionState> {
     logger.d(
         '[Session]: fetchDeviceInfoAndInitializeServices - modelNumber: ${nodeDeviceInfo.modelNumber}');
     await _storeRouterFingerprint(nodeDeviceInfo.serialNumber);
+    await _resolveCapabilities();
     benchMark.end();
     return nodeDeviceInfo;
+  }
+
+  /// Resolves firmware-dependent capabilities once, at login, into session state.
+  ///
+  /// A one-time side-effect keyed off the just-established session, sitting at the
+  /// same seam as [_storeRouterFingerprint]. Best-effort by contract: the source
+  /// itself never throws (fail-closed), and this must not fail a login that has
+  /// already fetched device info — a router whose capabilities cannot be resolved
+  /// still logs in, with every gated feature hidden. Cleared with the rest of the
+  /// state by [clear] on logout, so a re-login against a different router
+  /// re-resolves.
+  Future<void> _resolveCapabilities() async {
+    final usp = ref.read(uspClientProvider);
+    if (usp == null) return;
+    try {
+      final source = ref.read(capabilitySourceProvider);
+      final capabilities = await source.resolveAll(usp);
+      state = state.copyWith(capabilities: capabilities);
+      logger.d('[Session]: capabilities resolved: '
+          '${DeviceCapability.values.where(capabilities.has).map((c) => c.name).toList()}');
+    } catch (e) {
+      // Best-effort by contract: the login has already fetched device info and
+      // must not fail here. The current source is fail-closed and never throws,
+      // but a future source (e.g. GSDM, #69) might — enforce the invariant at
+      // the seam rather than trusting every source to. Capabilities stay empty,
+      // so every gated feature is simply hidden.
+      logger.w('[Session]: capability resolution failed, all hidden: $e');
+    }
   }
 
   /// Clears the session state.

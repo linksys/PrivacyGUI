@@ -2,206 +2,237 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
-class MockUspInstantPrivacyService extends Mock
-    implements UspInstantPrivacyService {}
+class MockMacFilterService extends Mock implements UspMacFilterService {}
 
 void main() {
-  late MockUspInstantPrivacyService mockService;
+  late MockMacFilterService mockService;
 
-  const device1 = InstantPrivacyDeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:01', displayName: 'Laptop');
-  const device2 = InstantPrivacyDeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:02', displayName: 'Phone');
+  const dev1 = MacFilterDeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:01',
+      displayName: 'Laptop',
+      ipAddress: '192.168.1.10');
+  const dev2 = MacFilterDeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:02',
+      displayName: 'Phone',
+      ipAddress: '192.168.1.11');
 
-  final disabledResult = InstantPrivacyFetchResult(
-    isEnabled: false,
-    connectedDevices: [device1, device2],
-    allowedDevices: [],
-    macFilterContext: MacFilterContext.empty,
-  );
-
-  final enabledResult = InstantPrivacyFetchResult(
-    isEnabled: true,
-    connectedDevices: [device1, device2],
-    allowedDevices: [device1],
-    macFilterContext: MacFilterContext.empty,
-  );
+  MacFilterFetchResult allowResult() => const MacFilterFetchResult(
+        mode: MacFilterMode.allow,
+        macs: ['AA:BB:CC:DD:EE:01'],
+        connectedDevices: [dev1, dev2],
+      );
+  MacFilterFetchResult disabledResult() => const MacFilterFetchResult(
+        mode: MacFilterMode.disabled,
+        macs: [],
+        connectedDevices: [dev1, dev2],
+      );
+  // The device is in MAC Filter's mode: a block list, not Instant Privacy's.
+  MacFilterFetchResult denyResult() => const MacFilterFetchResult(
+        mode: MacFilterMode.deny,
+        macs: ['AA:BB:CC:DD:EE:99'],
+        connectedDevices: [dev1, dev2],
+      );
 
   setUpAll(() {
-    registerFallbackValue(MacFilterContext.empty);
+    registerFallbackValue(MacFilterMode.disabled);
     registerFallbackValue(<String>[]);
   });
 
   setUp(() {
-    mockService = MockUspInstantPrivacyService();
+    mockService = MockMacFilterService();
+    when(() => mockService.setMacFilter(any(), any())).thenAnswer((_) async {});
   });
 
-  ProviderContainer createContainer() {
-    final container = ProviderContainer(
-      overrides: [
-        uspInstantPrivacyServiceProvider.overrideWithValue(mockService),
-      ],
-    );
-    return container;
+  ProviderContainer makeContainer() => ProviderContainer(overrides: [
+        uspMacFilterServiceProvider.overrideWithValue(mockService),
+      ]);
+
+  Future<(ProviderContainer, UspInstantPrivacyNotifier)> loaded(
+      MacFilterFetchResult result) async {
+    when(() => mockService.fetchAll()).thenAnswer((_) async => result);
+    final c = makeContainer();
+    c.listen(uspInstantPrivacyProvider, (_, __) {});
+    await Future.delayed(Duration.zero);
+    return (c, c.read(uspInstantPrivacyProvider.notifier));
   }
 
-  group('UspInstantPrivacyNotifier', () {
-    test('build fetches all data and populates state', () async {
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-      final container = createContainer();
+  group('fetch', () {
+    test('loads Allow mode + list, clean', () async {
+      final (c, _) = await loaded(allowResult());
+      final s = c.read(uspInstantPrivacyProvider);
 
-      final state = await container.read(uspInstantPrivacyProvider.future);
-      expect(state.isEnabled, isFalse);
-      expect(state.connectedDevices, hasLength(2));
-      expect(state.allowedDevices, isEmpty);
-      container.dispose();
+      expect(s.settings.current.mode, MacFilterMode.allow);
+      expect(s.settings.current.macs, ['AA:BB:CC:DD:EE:01']);
+      expect(s.connectedDevices, [dev1, dev2]);
+      expect(s.isDirty, isFalse);
+      c.dispose();
+    });
+  });
+
+  // One device mode feeds both pages, and each page owns exactly one non-Disabled
+  // value of it: Allow is Instant Privacy's, Deny is MAC Filter's. So "on" here is
+  // `mode == allow` — never `mode != disabled`, which reads MAC Filter's Deny as
+  // this page being on and its block list as this page's allow list.
+  group('the page reads only its own mode', () {
+    test('Allow: on, and the list is the allow list', () async {
+      final (c, _) = await loaded(allowResult());
+      final s = c.read(uspInstantPrivacyProvider);
+
+      expect(s.isEnabled, isTrue);
+      expect(s.allowedMacs, ['AA:BB:CC:DD:EE:01']);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
     });
 
-    test('build error sets AsyncError', () async {
-      when(() => mockService.fetchAll())
-          .thenThrow(const NetworkError(detail: 'fetch failed'));
-      final container = createContainer();
+    test('Deny: off, lists nothing, and knows MAC Filter is on', () async {
+      final (c, _) = await loaded(denyResult());
+      final s = c.read(uspInstantPrivacyProvider);
 
-      try {
-        await container.read(uspInstantPrivacyProvider.future);
-      } catch (_) {}
-
-      expect(container.read(uspInstantPrivacyProvider).hasError, isTrue);
-      container.dispose();
+      expect(s.isEnabled, isFalse);
+      expect(s.allowedMacs, isEmpty,
+          reason: 'the Deny list is a block list; showing it here would '
+              'present blocked devices as the allowed ones');
+      expect(s.isOtherFilterOn, isTrue);
+      c.dispose();
     });
 
-    test('enable calls service.enable with connected device MACs', () async {
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-      when(() => mockService.enable(any(), any())).thenAnswer((_) async {});
+    test('Disabled: off, and neither filter is on', () async {
+      final (c, _) = await loaded(disabledResult());
+      final s = c.read(uspInstantPrivacyProvider);
 
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
-
-      // After enable, the notifier calls invalidateSelf which triggers re-fetch.
-      // Set up the re-fetch to return enabled.
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
-
-      await container.read(uspInstantPrivacyProvider.notifier).enable();
-
-      verify(() => mockService.enable(
-            ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02'],
-            any(),
-          )).called(1);
-      container.dispose();
+      expect(s.isEnabled, isFalse);
+      expect(s.isOtherFilterOn, isFalse);
+      c.dispose();
     });
 
-    test('enable skips if already enabled', () async {
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
+    test('Deny: turning on then off again is no change, and never writes',
+        () async {
+      final (c, n) = await loaded(denyResult());
 
-      await container.read(uspInstantPrivacyProvider.notifier).enable();
+      n.setEnabled(true);
+      n.setEnabled(false);
+      final s = c.read(uspInstantPrivacyProvider);
 
-      verifyNever(() => mockService.enable(any(), any()));
-      container.dispose();
+      expect(s.isDirty, isFalse,
+          reason: 'a dirty state here offers Save, and Save would write '
+              'Disabled — silently turning MAC Filter off and emptying its '
+              'list, on a page the user only visited');
+      await n.save();
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
     });
 
-    test('disable calls service.disable', () async {
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
-      when(() => mockService.disable(any())).thenAnswer((_) async {});
+    test('Deny: turning on overrides MAC Filter with the online devices',
+        () async {
+      final (c, n) = await loaded(denyResult());
 
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
+      n.setEnabled(true);
+      when(() => mockService.fetchAll()).thenAnswer((_) async => allowResult());
+      await n.save();
 
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-
-      await container.read(uspInstantPrivacyProvider.notifier).disable();
-
-      verify(() => mockService.disable(any())).called(1);
-      container.dispose();
+      verify(() => mockService.setMacFilter(
+              MacFilterMode.allow, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']))
+          .called(1);
+      c.dispose();
     });
+  });
 
-    test('disable skips if already disabled', () async {
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
+  group('toggle (Allow ⟷ Disabled)', () {
+    test('enabling from Disabled pre-populates ALL online devices', () async {
+      final (c, n) = await loaded(disabledResult());
 
-      await container.read(uspInstantPrivacyProvider.notifier).disable();
+      n.setEnabled(true);
+      final s = c.read(uspInstantPrivacyProvider);
 
-      verifyNever(() => mockService.disable(any()));
-      container.dispose();
-    });
-
-    test('enable error restores isToggleLocked to false', () async {
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-      when(() => mockService.enable(any(), any()))
-          .thenThrow(const NetworkError(detail: 'enable failed'));
-
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
-
+      expect(s.settings.current.mode, MacFilterMode.allow);
+      // Instant Privacy pre-populates the whole connected-device list.
       expect(
-        () => container.read(uspInstantPrivacyProvider.notifier).enable(),
-        throwsA(isA<ServiceError>()),
-      );
-      await Future.delayed(Duration.zero);
-
-      final state = container.read(uspInstantPrivacyProvider).valueOrNull;
-      expect(state?.isToggleLocked, isFalse);
-      container.dispose();
+          s.settings.current.macs, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
+      expect(s.isDirty, isTrue);
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
     });
 
-    test('addMac calls service.addMac when enabled', () async {
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
-      when(() => mockService.addMac(any(), any()))
-          .thenAnswer((_) async => true);
+    test('disabling clears the list locally', () async {
+      final (c, n) = await loaded(allowResult());
 
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
+      n.setEnabled(false);
+      final s = c.read(uspInstantPrivacyProvider);
 
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
+      expect(s.settings.current.mode, MacFilterMode.disabled);
+      expect(s.settings.current.macs, isEmpty);
+      expect(s.isDirty, isTrue);
+      c.dispose();
+    });
+  });
 
-      await container
-          .read(uspInstantPrivacyProvider.notifier)
-          .addMac('FF:EE:DD:CC:BB:AA');
+  group('add / remove (local)', () {
+    test('addMac appends, removeMac drops — no write', () async {
+      final (c, n) = await loaded(allowResult());
 
-      verify(() => mockService.addMac('FF:EE:DD:CC:BB:AA', any())).called(1);
-      container.dispose();
+      n.addMac('AA:BB:CC:DD:EE:02');
+      expect(c.read(uspInstantPrivacyProvider).settings.current.macs,
+          ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
+
+      n.removeMac('AA:BB:CC:DD:EE:01');
+      expect(c.read(uspInstantPrivacyProvider).settings.current.macs,
+          ['AA:BB:CC:DD:EE:02']);
+
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
+    });
+  });
+
+  group('revert', () {
+    test('restores original', () async {
+      final (c, n) = await loaded(allowResult());
+      n.setEnabled(false);
+      expect(c.read(uspInstantPrivacyProvider).isDirty, isTrue);
+
+      n.revert();
+      final s = c.read(uspInstantPrivacyProvider);
+      expect(s.settings.current.mode, MacFilterMode.allow);
+      expect(s.settings.current.macs, ['AA:BB:CC:DD:EE:01']);
+      expect(s.isDirty, isFalse);
+      c.dispose();
+    });
+  });
+
+  group('save', () {
+    test('writes Allow + current macs once', () async {
+      final (c, n) = await loaded(disabledResult());
+      n.setEnabled(true); // populates dev1, dev2
+      when(() => mockService.fetchAll()).thenAnswer((_) async => allowResult());
+
+      await n.save();
+
+      verify(() => mockService.setMacFilter(
+              MacFilterMode.allow, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']))
+          .called(1);
+      expect(c.read(uspInstantPrivacyProvider).isDirty, isFalse);
+      c.dispose();
     });
 
-    test('addMac skips if not enabled', () async {
-      when(() => mockService.fetchAll())
-          .thenAnswer((_) async => disabledResult);
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
-
-      await container
-          .read(uspInstantPrivacyProvider.notifier)
-          .addMac('FF:EE:DD:CC:BB:AA');
-
-      verifyNever(() => mockService.addMac(any(), any()));
-      container.dispose();
+    test('clean state does not write', () async {
+      final (c, n) = await loaded(allowResult());
+      await n.save();
+      verifyNever(() => mockService.setMacFilter(any(), any()));
+      c.dispose();
     });
 
-    test('addMac restores isToggleLocked on already-present MAC', () async {
-      when(() => mockService.fetchAll()).thenAnswer((_) async => enabledResult);
-      when(() => mockService.addMac(any(), any()))
-          .thenAnswer((_) async => false);
+    test('surfaces a save failure', () async {
+      final (c, n) = await loaded(disabledResult());
+      n.setEnabled(true);
+      when(() => mockService.setMacFilter(any(), any()))
+          .thenThrow(const ConnectivityError(detail: 'down'));
 
-      final container = createContainer();
-      await container.read(uspInstantPrivacyProvider.future);
-
-      await container
-          .read(uspInstantPrivacyProvider.notifier)
-          .addMac('AA:BB:CC:DD:EE:01');
-
-      final state = container.read(uspInstantPrivacyProvider).valueOrNull;
-      expect(state?.isToggleLocked, isFalse);
-      container.dispose();
+      expect(() => n.save(), throwsA(isA<ConnectivityError>()));
+      c.dispose();
     });
   });
 }

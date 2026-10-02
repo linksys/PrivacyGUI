@@ -27,7 +27,7 @@ import '../../../util/app_test_fonts.dart';
 /// golden and no layout-gate cell types into this field.
 void main() {
   const typedMac = 'aa:bb:cc:dd:ee:ff';
-  const confirmId = 'instant-privacy-add-mac-confirm';
+  const confirmId = 'mac-filter-add-mac-confirm';
 
   late _RecordingInstantPrivacyNotifier notifier;
 
@@ -41,8 +41,7 @@ void main() {
   // Fresh per test: the recorded list is an assertion target, so it must not
   // carry what an earlier test submitted.
   setUp(() {
-    notifier =
-        _RecordingInstantPrivacyNotifier(enabledWithConnectedDevicesState);
+    notifier = _RecordingInstantPrivacyNotifier(enabledWithDevicesState);
   });
 
   /// Hosted through the layout gate's [pageSurfaceHost] because `UspTopBar`
@@ -162,7 +161,7 @@ class _RecordingInstantPrivacyNotifier extends FixedInstantPrivacyNotifier {
   final List<String> addedMacs = [];
 
   @override
-  Future<void> addMac(String mac) async {
+  void addMac(String mac) {
     addedMacs.add(mac);
   }
 }
