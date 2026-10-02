@@ -60,7 +60,11 @@ const wanUpModel = WanStatusUIModel(
   mtu: 1500,
 );
 
-/// A WAN the device reports as having NO address — link down, or up without a lease yet.
+/// A WAN the device reports as DOWN and without an address — `isUp: false`.
+///
+/// ⚠️ Not the "up without a lease yet" case; that is [wanUpNoAddressModel]. Both have an
+/// empty address, so picking this one for a test about a connecting link would pass under
+/// either definition of online and prove nothing.
 ///
 /// Distinct from [ErrorWan] on purpose: here the device answered, so "offline" is a true
 /// reading. Conflating the two is the defect these fakes exist to keep testable.
@@ -69,6 +73,24 @@ const wanNoAddressModel = WanStatusUIModel(
   ipAddress: '',
   subnetMask: '',
   addressingType: '',
+  mtu: 1500,
+);
+
+/// The link is UP but no address has arrived yet — **the state #1620 is about**.
+///
+/// Measured on real hardware (M60-US, FW 2.0.2.26091803, 2026-10-01): after `ifup`,
+/// `Status` reads `Up` for about **5 seconds** before `IPv4Address.1.IPAddress` appears.
+/// Reproduced twice. It is what a user sees after replugging a cable or a modem reboot,
+/// so it is an ordinary state rather than a race.
+///
+/// Neither [wanUpModel] nor [wanNoAddressModel] can express it: the first has an address,
+/// the second is `isUp: false`. Every screen must agree about this one, which is what
+/// `wan_online_alignment_test.dart` checks.
+const wanUpNoAddressModel = WanStatusUIModel(
+  isUp: true,
+  ipAddress: '',
+  subnetMask: '',
+  addressingType: 'DHCP',
   mtu: 1500,
 );
 
