@@ -344,7 +344,7 @@ void main() {
     test('the measured sentinel is unset in every spelling', () {
       for (final spelling in [
         '00:00:00:00:00:00', // as firmware writes it, and as `normalizeMac`
-        // (instant_privacy_service) renders it
+        // (`UspMacFilterService`) renders it
         '00-00-00-00-00-00', // the dash spelling that helper folds away
         '000000000000', // as `node_identifier.normalizeMac` renders it
         ' 00:00:00:00:00:00 ',
