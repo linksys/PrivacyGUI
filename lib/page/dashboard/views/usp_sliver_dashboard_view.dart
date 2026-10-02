@@ -225,7 +225,11 @@ class _UspSliverDashboardViewState
     // resolves its own template inside [PackageWidgetTile] (#1395).
     ref.watch(packageWidgetLoaderProvider);
 
-    final isOnline = ref.watch(wanIsUpProvider);
+    // `?? true` — THE OPTIMISM IS THIS SCREEN'S CHOICE, not the provider's (#1620).
+    // `wanIsUpProvider` returns null while L1 has not been read, and here that must not
+    // show the offline banner: a red banner flashing on launch, before anything has been
+    // asked of the router, is a false alarm the user cannot act on (#1143).
+    final isOnline = ref.watch(wanIsUpProvider) ?? true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
