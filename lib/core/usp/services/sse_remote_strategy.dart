@@ -8,10 +8,13 @@ import 'usp_bridge_client.dart';
 ///
 /// Characteristics:
 /// - Guardian does NOT allow duplicate subscription IDs (causes conflict)
-/// - Must unregister → delay → register
+/// - Must unregister every id before registering any (all at once, then all at
+///   once — see [registerSubscriptions])
 /// - Re-registers existing subscriptions on *re*connect; the first connect is
 ///   the orchestrator's (see [onSseConnected])
-/// - Heartbeat watchdog disabled (Guardian doesn't send heartbeats)
+/// - Heartbeat watchdog written and switched off (#1577): QA Guardian was seen
+///   sending a ~20 s `heartbeat` on 2026-10-02, once and for 40 s, which is not
+///   yet the hour-long verification the switch waits on
 /// - No auth check (temporaryAccessToken cannot refresh)
 /// - Uses 'remote-' prefix for subscription IDs to avoid collision with Local
 class RemoteSseStrategy implements SseOperationStrategy {
@@ -20,7 +23,8 @@ class RemoteSseStrategy implements SseOperationStrategy {
   /// Prefix for remote subscription IDs to avoid collision with Local mode.
   static const _idPrefix = 'remote-';
 
-  /// Delay between unregister and register to allow Guardian to process.
+  /// Delay between the unregister batch and the register batch, to let
+  /// Guardian settle the removals before the same ids are added back.
   static const _unregisterDelay = Duration(milliseconds: 100);
 
   /// Whether a reconnect re-registration walk is currently running.
@@ -40,57 +44,99 @@ class RemoteSseStrategy implements SseOperationStrategy {
   @override
   AuthBehavior get authBehavior => AuthBehavior.remote;
 
+  /// Registers [subscriptions] in two batches: every unregister at once, then
+  /// every register at once.
+  ///
+  /// Batched because Guardian answers each of these in 1–5 s. Measured on QA,
+  /// 2026-10-02, with the seven core subscriptions: one after another
+  /// (unregister, 100 ms, register, 50 ms) took **32.1 s**; seven unregisters in
+  /// parallel 3.1–5.7 s and seven registers in parallel **2.9 s**, every request
+  /// 200, no 503, and the parallel-registered subscriptions delivered notifies
+  /// at the same rate as the serial ones. The serial walk was the larger half of
+  /// the minute an RA agent waited behind the "setting up live updates" dialog.
+  ///
+  /// The 503 the first-connect ordering guards against belongs to the on-router
+  /// bridge's single-threaded backend, which [LocalSseStrategy] still talks to
+  /// one request at a time. Guardian is not that backend.
+  ///
+  /// The unregister batch is still mandatory, and still comes **first and
+  /// whole**: Guardian rejects a duplicate id, so no register may go out while
+  /// its own id's unregister is still in flight. An unregister that fails is
+  /// ignored — the id is usually simply absent — and a register that fails costs
+  /// only its own subscription. Records come back in the order asked for, so
+  /// the registry reads the same whichever answer arrived first.
   @override
   Future<List<SseSubscriptionRecord>> registerSubscriptions(
     List<SubscriptionDef> subscriptions,
   ) async {
-    final records = <SseSubscriptionRecord>[];
+    logger.d('[SSE]: Registering ${subscriptions.length} subscriptions '
+        '(${subscriptions.map((s) => s.subscriptionId).join(', ')})');
 
-    for (final sub in subscriptions) {
-      final remoteId = _toRemoteId(sub.subscriptionId);
-      try {
-        logger.d('[SSE]: Registering ${sub.subscriptionId} as $remoteId');
+    await Future.wait([
+      for (final sub in subscriptions) _unregisterIgnoringAbsence(sub),
+    ]);
+    await Future.delayed(_unregisterDelay);
 
-        // Unregister first to avoid ID conflict
-        try {
-          await _bridge.unsubscribe(subscriptionId: remoteId);
-          await Future.delayed(_unregisterDelay);
-        } catch (_) {
-          // Ignore — subscription may not exist
-        }
-
-        await _bridge.subscribe(
-          subscriptionId: remoteId,
-          path: sub.referenceList,
-          notifType: _notifTypeToInt(sub.notifType),
-        );
-
-        // Record uses original ID (transparent to Registry/Manager)
-        records.add(SseSubscriptionRecord(
-          subscriptionId: sub.subscriptionId,
-          notifType: sub.notifType,
-          referenceList: sub.referenceList,
-          createdAt: DateTime.now(),
-        ));
-
-        // Breathing room for Guardian between requests
-        await Future.delayed(const Duration(milliseconds: 50));
-      } catch (e) {
-        logger.w('[SSE]: Failed to register ${sub.subscriptionId}: $e');
-      }
-    }
+    final registered = await Future.wait([
+      for (final sub in subscriptions) _register(sub),
+    ]);
+    final records = registered.whereType<SseSubscriptionRecord>().toList();
 
     logger.d(
         '[SSE]: Registered ${records.length}/${subscriptions.length} subscriptions');
     return records;
   }
 
+  /// One unregister, ignoring any failure: the id is usually just absent.
+  ///
+  /// An `async` body with a `try`, not a `.then(onError:)` on the call, so a
+  /// synchronous throw from the bridge is caught too — the batch must not fail
+  /// on one id's absence.
+  Future<void> _unregisterIgnoringAbsence(SubscriptionDef sub) async {
+    try {
+      await _bridge.unsubscribe(
+          subscriptionId: _toRemoteId(sub.subscriptionId));
+    } catch (_) {
+      // Ignore — subscription may not exist
+    }
+  }
+
+  /// One register, or null if Guardian refused it.
+  Future<SseSubscriptionRecord?> _register(SubscriptionDef sub) async {
+    final remoteId = _toRemoteId(sub.subscriptionId);
+    try {
+      await _bridge.subscribe(
+        subscriptionId: remoteId,
+        path: sub.referenceList,
+        notifType: _notifTypeToInt(sub.notifType),
+      );
+      // Record uses original ID (transparent to Registry/Manager)
+      return SseSubscriptionRecord(
+        subscriptionId: sub.subscriptionId,
+        notifType: sub.notifType,
+        referenceList: sub.referenceList,
+        createdAt: DateTime.now(),
+      );
+    } catch (e) {
+      logger.w('[SSE]: Failed to register ${sub.subscriptionId} '
+          '(as $remoteId): $e');
+      return null;
+    }
+  }
+
+  /// `teardown: true`, so a 401 is thrown and swallowed below but never reported.
+  /// Logout reaches this through `unregisterAll()` after `session.end()` has spent
+  /// the credential, where a reported 401 asks for a logout from inside the
+  /// logout — the loop [onSseDisconnected]'s cleanup closed. `disconnect()`
+  /// empties the registry first, so today that list is empty; this keeps the loop
+  /// closed if the two steps are ever reordered. The other caller, a single
+  /// handler's cleanup, ignores the failure as well.
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {
       final remoteId = _toRemoteId(id);
       try {
-        await _bridge.unsubscribe(subscriptionId: remoteId);
+        await _bridge.unsubscribe(subscriptionId: remoteId, teardown: true);
         logger.d('[SSE]: Unregistered $id (as $remoteId)');
       } catch (e) {
         logger.w('[SSE]: Failed to unregister $id: $e');
@@ -108,10 +154,12 @@ class RemoteSseStrategy implements SseOperationStrategy {
     // stops updating for the rest of the session (#1497 acceptance 7b).
     //
     // Stream-open rather than the `connected` edge, which is where #1497 first
-    // put it. `connected` is inferred from traffic and Guardian sends no
-    // heartbeats, so a stream with no subscriptions produces no events and the
-    // edge never arrives — the hook would have been unreachable in exactly the
-    // mode it was written for. The contract's doc comment has the full chain.
+    // put it. `connected` is inferred from traffic, and when this was written
+    // Guardian was measured sending no heartbeats, so a stream with no
+    // subscriptions produced no events and the edge never arrived. QA was seen
+    // heartbeating on 2026-10-02; stream-open stays the edge anyway, because it
+    // is the earlier one and does not depend on a guarantee nobody has made.
+    // The contract's doc comment has the full chain.
     if (existingRecords.isEmpty) {
       logger
           .d('[SSE]: stream opened — no existing subscriptions to re-register');
@@ -177,16 +225,22 @@ class RemoteSseStrategy implements SseOperationStrategy {
       _fireAndForgetCleanup();
     } else {
       logger.d('[SSE]: onDisconnected (unintentional) — '
-          'will resubscribe on reconnect via orchestrator');
+          'records kept, re-registered when the stream reopens');
     }
   }
 
   void _fireAndForgetCleanup() {
-    // Query existing subscriptions and unregister only remote ones (best-effort)
-    _bridge.listSubscriptions().then((ids) {
+    // Query existing subscriptions and unregister only remote ones (best-effort).
+    //
+    // `teardown: true` on both: an intentional disconnect is almost always a
+    // logout, which has already spent the credential, so a 401 here is the
+    // expected answer. Reported as a session loss, it asked for a logout from
+    // inside the logout that caused it — a loop, measured on QA Guardian at 770
+    // teardowns in four minutes.
+    _bridge.listSubscriptions(teardown: true).then((ids) {
       for (final id in ids) {
         if (_isRemoteId(id)) {
-          _bridge.unsubscribe(subscriptionId: id).ignore();
+          _bridge.unsubscribe(subscriptionId: id, teardown: true).ignore();
         }
       }
     }).ignore();

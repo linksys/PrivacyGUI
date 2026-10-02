@@ -3,15 +3,7 @@ import 'sse_operation_strategy.dart';
 import 'usp_client.dart';
 
 export 'sse_operation_strategy.dart' show AuthBehavior;
-
-/// Exception thrown when session expires and cannot be recovered.
-class SessionExpiredException implements Exception {
-  final String message;
-  SessionExpiredException(this.message);
-
-  @override
-  String toString() => 'SessionExpiredException: $message';
-}
+export 'usp_bridge_client_errors.dart';
 
 /// Stub implementation of [UspBridgeClient] for non-Web platforms (Dart VM / tests).
 ///
@@ -29,15 +21,28 @@ class UspBridgeClient {
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,
+    RemoteReads? remoteReads,
   });
 
-  Future<Map<String, dynamic>> health() =>
+  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Stream<SseEvent> notifications() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, String>> notificationsProbe() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> uspState() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> notificationsHistory() =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<Map<String, dynamic>> notification(String msgId) =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<List<Object?>> results(String commandKey) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> subscribe({
@@ -49,10 +54,11 @@ class UspBridgeClient {
 
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
+    bool teardown = false,
   }) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
-  Future<List<String>> listSubscriptions() =>
+  Future<List<String>> listSubscriptions({bool teardown = false}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> turboStart() =>

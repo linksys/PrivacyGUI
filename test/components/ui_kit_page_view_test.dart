@@ -208,4 +208,65 @@ void main() {
       });
     });
   }
+
+  // [UiKitPageView.slivers] — a page that lays its content out as slivers of
+  // its own, so a long list inside it is built lazily rather than as one box.
+  //
+  // `AppPageView` already takes custom slivers; this is only the passthrough.
+  // What is worth pinning is that the slivers land *inside the page's scroll
+  // view* (and so under its app bar and pull-to-refresh), and that the pages
+  // which do not pass any are untouched.
+  group('UiKitPageView - slivers', () {
+    Widget buildSliverHost({List<Widget>? slivers}) => ProviderScope(
+          child: MaterialApp(
+            theme: lightTheme,
+            home: UiKitPageView.withSliver(
+              title: 'Sliver Probe',
+              appBarStyle: UiKitAppBarStyle.none,
+              backState: UiKitBackState.none,
+              hideTopbar: true,
+              slivers: slivers,
+              child: slivers == null
+                  ? (context, constraints) => const Text('page body')
+                  : null,
+            ),
+          ),
+        );
+
+    testWidgets('are laid out inside the page scroll view', (tester) async {
+      await tester.pumpWidget(buildSliverHost(slivers: const [
+        SliverToBoxAdapter(child: Text('sliver body')),
+      ]));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.text('sliver body'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('leave a page that passes none on its child builder',
+        (tester) async {
+      await tester.pumpWidget(buildSliverHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('page body'), findsOneWidget);
+    });
+
+    test('are refused outside sliver mode, where nothing would lay them out',
+        () {
+      // `AppPageView`'s box layout never reads its slivers and renders its
+      // child as `SizedBox.shrink()` once any are given — a blank page, not an
+      // error. The assert turns that into one.
+      expect(
+        () => UiKitPageView(
+          slivers: const [SliverToBoxAdapter(child: SizedBox())],
+        ),
+        throwsAssertionError,
+      );
+    });
+  });
 }

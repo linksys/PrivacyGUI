@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normaali",
   "cardFormCompact": "Tiivis",
   "cardFormPopup": "Ponnahdus",
-  "cardFormForNamed": "Kortin muoto: {name}"
+  "cardFormForNamed": "Kortin muoto: {name}",
+  "notificationHistory": "Ilmoitushistoria",
+  "notificationHistoryLastBoot": "Viimeinen käynnistys",
+  "notificationHistoryLastActivity": "Viimeisin USP-toiminta",
+  "notificationHistoryEmpty": "Tämä tukisessio ei ole vielä tuottanut ilmoituksia",
+  "notificationHistoryUnavailable": "Ilmoitushistoria on käytettävissä vain etätukisession aikana",
+  "notificationHistoryGone": "Tämä ilmoitus ei ole enää saatavilla",
+  "notificationHistoryLoadFailed": "Tätä ilmoitusta ei voitu ladata",
+  "notificationHistoryMessageId": "Viestitunnus",
+  "notificationHistoryCommandKey": "Komentoavain",
+  "notificationHistoryShowMore": "Näytä lisää",
+  "sseRouterOffline": "Reititin on offline-tilassa — odotetaan sen palaamista",
+  "raPreparingTitle": "Määritetään reaaliaikaisia päivityksiä",
+  "raPreparingBody": "Ladataan reitittimen tietoja ja tilataan sen muutokset pilven kautta. Koontinäyttö täyttyy taustalla; voit käyttää sitä, kun tämä sulkeutuu.",
+  "raPreparingPartial": "Joitakin reaaliaikaisia päivityksiä ei voitu määrittää. Koontinäyttö ei ehkä päivity itsestään; päivitä vetämällä.",
+  "raLiveUpdates": "Reaaliaikaiset päivitykset",
+  "raLiveUpdatesConnecting": "Yhdistetään pilven kautta",
+  "raLiveUpdatesDropped": "Pilviyhteys katkesi — yhdistetään uudelleen"
 }

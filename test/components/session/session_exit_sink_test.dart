@@ -152,6 +152,8 @@ void main() {
     when(() => auth.logout(cause: any(named: 'cause')))
         .thenAnswer((_) async {});
     when(() => sse.disconnect()).thenAnswer((_) async {});
+    // What a recovery wait calls — see `AppConnectionStateNotifier.enterWaiting`.
+    when(() => sse.disconnectKeepingSubscriptions()).thenAnswer((_) async {});
     // Built once per test and reused by every `pumpScope` call in it. Identity
     // matters: the catch-up test pumps twice and needs the second pump to keep the
     // first pump's container, so that the cause decided between them is the same

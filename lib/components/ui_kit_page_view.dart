@@ -164,6 +164,23 @@ class UiKitPageView extends ConsumerStatefulWidget {
   /// pages start opting in one by one.
   final String? identifier;
 
+  /// Slivers laid out in the page's own scroll view, in place of [child].
+  ///
+  /// For a page whose content is a long list: as slivers, the rows are built as
+  /// they scroll into view, where a [child] is laid out as one box however long
+  /// it grows. The slivers sit under the page's app bar and inside its
+  /// pull-to-refresh, like a [child] does.
+  ///
+  /// Sliver mode only — [UiKitPageView.withSliver], or [enableSliverAppBar] —
+  /// because the box layout never reads them and would render an empty page.
+  ///
+  /// **Handed through untouched.** `AppPageView` pads a [child] with the page
+  /// margin and [padding], and on desktop lays it out beside the [menu] /
+  /// [menuView] sidebar; custom slivers get none of that. So the caller wraps them
+  /// in a `SliverPadding` of `context.pageMargin` itself, and a page that needs a
+  /// sidebar cannot use this. [child] is ignored when these are set.
+  final List<Widget>? slivers;
+
   const UiKitPageView({
     super.key,
     this.title,
@@ -203,7 +220,11 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.showAppBarBorder = false,
     this.showTabBorder = true,
     this.identifier,
-  });
+    this.slivers,
+  }) : assert(
+          slivers == null || enableSliverAppBar,
+          'slivers are laid out in sliver mode only',
+        );
 
   /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
   factory UiKitPageView.innerPage({
@@ -287,6 +308,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     bool showAppBarBorder = false,
     bool showTabBorder = true,
     String? identifier,
+    List<Widget>? slivers,
   }) {
     return UiKitPageView(
       key: key,
@@ -326,6 +348,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       showAppBarBorder: showAppBarBorder,
       showTabBorder: showTabBorder,
       identifier: identifier,
+      slivers: slivers,
     );
   }
 
@@ -484,6 +507,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
 
       // Content - use childBuilder for function type
       childBuilder: widget.child,
+      slivers: widget.slivers,
     );
 
     // Page-level test hook (PrivacyGUI#1391).

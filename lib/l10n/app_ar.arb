@@ -1176,5 +1176,22 @@
   "cardFormNormal": "عادي",
   "cardFormCompact": "مضغوط",
   "cardFormPopup": "منبثق",
-  "cardFormForNamed": "تنسيق البطاقة لـ {name}"
+  "cardFormForNamed": "تنسيق البطاقة لـ {name}",
+  "notificationHistory": "سجل الإشعارات",
+  "notificationHistoryLastBoot": "آخر تشغيل",
+  "notificationHistoryLastActivity": "آخر نشاط USP",
+  "notificationHistoryEmpty": "لم تُنتج جلسة الدعم هذه أي إشعارات بعد",
+  "notificationHistoryUnavailable": "سجل الإشعارات متاح فقط خلال جلسة المساعدة عن بُعد",
+  "notificationHistoryGone": "هذا الإشعار غير متاح بعد الآن",
+  "notificationHistoryLoadFailed": "تعذّر تحميل هذا الإشعار",
+  "notificationHistoryMessageId": "معرّف الرسالة",
+  "notificationHistoryCommandKey": "مفتاح الأمر",
+  "notificationHistoryShowMore": "عرض المزيد",
+  "sseRouterOffline": "جهاز التوجيه غير متصل — في انتظار عودته",
+  "raPreparingTitle": "جارٍ إعداد التحديثات المباشرة",
+  "raPreparingBody": "يتم تحميل بيانات جهاز التوجيه والاشتراك في تغييراته عبر السحابة. تكتمل لوحة المعلومات خلف هذه النافذة، ويمكنك استخدامها بعد إغلاقها.",
+  "raPreparingPartial": "تعذّر إعداد بعض التحديثات المباشرة. قد لا تتحدّث لوحة المعلومات تلقائيًا؛ اسحب للتحديث.",
+  "raLiveUpdates": "التحديثات المباشرة",
+  "raLiveUpdatesConnecting": "جارٍ الاتصال عبر السحابة",
+  "raLiveUpdatesDropped": "انقطع الاتصال بالسحابة — جارٍ إعادة الاتصال"
 }

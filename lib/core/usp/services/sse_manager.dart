@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
+
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 
@@ -35,6 +37,39 @@ import 'usp_client.dart';
 /// // Shutdown
 /// await manager.dispose();
 /// ```
+/// Whether the session's core subscriptions are in place.
+///
+/// The dashboard renders and fetches **before** these are registered, on purpose
+/// (subscription POSTs would compete with the first reads), so "the page is up"
+/// and "the page keeps itself current" are two moments — about a minute apart on
+/// the QA Guardian router. This is the second one.
+sealed class CoreSubscriptionState extends Equatable {
+  const CoreSubscriptionState();
+}
+
+/// Not registered yet, or the session that registered them has ended.
+final class CoreSubscriptionsPending extends CoreSubscriptionState {
+  const CoreSubscriptionsPending();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// The registration has run. [failed] counts the ones that did not take, which
+/// is what lets the UI say live updates may be incomplete rather than claim they
+/// are not — a failed subscription ends the wait like a successful one, because
+/// nothing would ever end it otherwise.
+final class CoreSubscriptionsReady extends CoreSubscriptionState {
+  final int registered;
+  final int failed;
+
+  const CoreSubscriptionsReady(
+      {required this.registered, required this.failed});
+
+  @override
+  List<Object?> get props => [registered, failed];
+}
+
 class SseManager {
   final UspClient _usp;
   final UspBridgeClient _bridge;
@@ -47,9 +82,44 @@ class SseManager {
   List<SubscriptionDef> _coreSubscriptions = [];
   bool _registrationInProgress = false;
 
+  /// See [CoreSubscriptionState]. Set by [registerCoreSubscriptions] and put
+  /// back to pending by [disconnect], so a later session cannot inherit it.
+  final ValueNotifier<CoreSubscriptionState> coreSubscriptions =
+      ValueNotifier(const CoreSubscriptionsPending());
+
   /// Delegate for proactive auth check on heartbeat. Set by provider layer
   /// to wire [UspAuthCoordinator.ensureAuth].
   Future<void> Function()? onHeartbeatAuth;
+
+  /// The transport this manager talks over.
+  ///
+  /// Exposed for [SseOperationAwaiter]'s reconcile read (#1578), and exposed rather
+  /// than passed to the awaiter separately on purpose: the awaiter already takes this
+  /// manager, so a second constructor argument would be a second source for the same
+  /// object and two sources can disagree. Nothing else should reach through here —
+  /// the manager owns the stream, the registry and the router precisely so callers do
+  /// not hand-roll their own.
+  UspBridgeClient get bridge => _bridge;
+
+  /// Extra listeners for the stream-opened edge (#1578).
+  ///
+  /// The edge itself is already claimed by [_onSseStreamOpened], which is where the
+  /// remote strategy puts its subscriptions back, and that ordering matters — see
+  /// [_onSseStreamOpened]. So this is a *list* rather than a settable callback: two
+  /// consumers must both get the edge, and a `set onStreamOpened` would let the second
+  /// silently replace the first's re-registration.
+  final List<void Function()> _streamOpenedListeners = [];
+
+  /// Registers [listener] for every subsequent stream open. Returns its remover.
+  ///
+  /// Fires **after** subscriptions are put back, because a reconcile that ran first
+  /// would read Guardian before the stream it is compensating for is able to deliver
+  /// anything — which is not wrong, just wasted, and the ordering is cheaper to state
+  /// than to rediscover.
+  VoidCallback addStreamOpenedListener(void Function() listener) {
+    _streamOpenedListeners.add(listener);
+    return () => _streamOpenedListeners.remove(listener);
+  }
 
   /// Delegate called on each reconnect failure with the attempt number.
   /// Set by provider layer to enable early recovery detection.
@@ -246,6 +316,12 @@ class SseManager {
   ///   arrive until something is subscribed
   Future<void> _onSseStreamOpened() async {
     await registry.onSseStreamOpened();
+    // After the registry, per `addStreamOpenedListener`'s contract. A copy of the
+    // list, because a listener that removes itself while being notified would
+    // otherwise mutate the list being iterated.
+    for (final listener in [..._streamOpenedListeners]) {
+      listener();
+    }
   }
 
   /// Called when SSE connects — first real event received. Strategy decides
@@ -283,16 +359,42 @@ class SseManager {
           'core subscriptions');
     } finally {
       _registrationInProgress = false;
+      final active = registry.activeIds;
+      final registered = _coreSubscriptions
+          .where((s) => active.contains(s.subscriptionId))
+          .length;
+      coreSubscriptions.value = CoreSubscriptionsReady(
+        registered: registered,
+        failed: _coreSubscriptions.length - registered,
+      );
     }
   }
 
   /// Starts the SSE connection.
   Future<void> connect() => connection.connect();
 
-  /// Disconnects SSE (intentional, stops reconnection).
+  /// Disconnects SSE (intentional, stops reconnection) and forgets every
+  /// subscription. For paths that end the session's subscriptions: logout,
+  /// bridge mode, a LAN IP change. A wait that expects the same session back
+  /// uses [disconnectKeepingSubscriptions] instead.
   Future<void> disconnect() async {
     await connection.disconnect();
     await registry.onSseDisconnected(intentional: true);
+    coreSubscriptions.value = const CoreSubscriptionsPending();
+  }
+
+  /// Closes the stream and blocks auto-reconnect like [disconnect], but keeps
+  /// the subscription records, so the next [connect] puts back everything that
+  /// was live — the core set, and what package widgets, the codegen delegate
+  /// and the operation awaiter registered on their own, which only this
+  /// registry knows about. The restore is the strategy's normal reconnect edge
+  /// (remote on stream-open, local on the first heartbeat).
+  ///
+  /// For the recovery wait (a reboot, a dropped link): calling [disconnect]
+  /// there is what left the dashboard frozen after the router came back.
+  Future<void> disconnectKeepingSubscriptions() async {
+    await connection.disconnect();
+    await registry.onSseDisconnected(intentional: false);
   }
 
   /// Attempts to reconnect from suspended/disconnected state.
@@ -317,5 +419,6 @@ class SseManager {
     _strategy.dispose();
     router.dispose();
     connection.dispose();
+    coreSubscriptions.dispose();
   }
 }

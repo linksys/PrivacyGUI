@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normalny",
   "cardFormCompact": "Kompaktowy",
   "cardFormPopup": "Wyskakujące okno",
-  "cardFormForNamed": "Format karty dla {name}"
+  "cardFormForNamed": "Format karty dla {name}",
+  "notificationHistory": "Historia powiadomień",
+  "notificationHistoryLastBoot": "Ostatni rozruch",
+  "notificationHistoryLastActivity": "Ostatnia aktywność USP",
+  "notificationHistoryEmpty": "Ta sesja pomocy nie wygenerowała jeszcze żadnych powiadomień",
+  "notificationHistoryUnavailable": "Historia powiadomień jest dostępna tylko podczas sesji pomocy zdalnej",
+  "notificationHistoryGone": "To powiadomienie nie jest już dostępne",
+  "notificationHistoryLoadFailed": "Nie można wczytać tego powiadomienia",
+  "notificationHistoryMessageId": "Identyfikator wiadomości",
+  "notificationHistoryCommandKey": "Klucz polecenia",
+  "notificationHistoryShowMore": "Pokaż więcej",
+  "sseRouterOffline": "Router jest offline — oczekiwanie na jego powrót",
+  "raPreparingTitle": "Konfigurowanie aktualizacji na żywo",
+  "raPreparingBody": "Wczytywanie danych routera i subskrybowanie jego zmian przez chmurę. Pulpit uzupełnia się w tle; będzie można go używać po zamknięciu tego okna.",
+  "raPreparingPartial": "Nie udało się skonfigurować niektórych aktualizacji na żywo. Pulpit może nie odświeżać się sam; przeciągnij, aby odświeżyć.",
+  "raLiveUpdates": "Aktualizacje na żywo",
+  "raLiveUpdatesConnecting": "Łączenie przez chmurę",
+  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie"
 }

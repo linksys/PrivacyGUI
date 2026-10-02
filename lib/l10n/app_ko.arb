@@ -1176,5 +1176,22 @@
   "cardFormNormal": "표준",
   "cardFormCompact": "간략",
   "cardFormPopup": "팝업",
-  "cardFormForNamed": "{name}의 카드 형식"
+  "cardFormForNamed": "{name}의 카드 형식",
+  "notificationHistory": "알림 기록",
+  "notificationHistoryLastBoot": "마지막 부팅",
+  "notificationHistoryLastActivity": "마지막 USP 활동",
+  "notificationHistoryEmpty": "이 지원 세션에서는 아직 알림이 발생하지 않았습니다",
+  "notificationHistoryUnavailable": "알림 기록은 원격 지원 세션 중에만 사용할 수 있습니다",
+  "notificationHistoryGone": "이 알림은 더 이상 사용할 수 없습니다",
+  "notificationHistoryLoadFailed": "이 알림을 불러올 수 없습니다",
+  "notificationHistoryMessageId": "메시지 ID",
+  "notificationHistoryCommandKey": "명령 키",
+  "notificationHistoryShowMore": "더 보기",
+  "sseRouterOffline": "라우터가 오프라인입니다 — 다시 연결될 때까지 기다리는 중",
+  "raPreparingTitle": "실시간 업데이트를 설정하는 중",
+  "raPreparingBody": "라우터 데이터를 불러오고 클라우드를 통해 변경 사항을 구독하는 중입니다. 대시보드는 뒤에서 채워지며, 이 창이 닫히면 사용할 수 있습니다.",
+  "raPreparingPartial": "일부 실시간 업데이트를 설정할 수 없습니다. 대시보드가 자동으로 새로 고쳐지지 않을 수 있으니 당겨서 새로 고치세요.",
+  "raLiveUpdates": "실시간 업데이트",
+  "raLiveUpdatesConnecting": "클라우드를 통해 연결 중",
+  "raLiveUpdatesDropped": "클라우드 연결이 끊겼습니다 — 다시 연결 중"
 }

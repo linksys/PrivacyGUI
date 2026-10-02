@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Pop op",
-  "cardFormForNamed": "Kortformat for {name}"
+  "cardFormForNamed": "Kortformat for {name}",
+  "notificationHistory": "Notifikationshistorik",
+  "notificationHistoryLastBoot": "Sidste opstart",
+  "notificationHistoryLastActivity": "Seneste USP-aktivitet",
+  "notificationHistoryEmpty": "Denne supportsession har endnu ikke genereret nogen notifikationer",
+  "notificationHistoryUnavailable": "Notifikationshistorik er kun tilgængelig under en fjernsupportsession",
+  "notificationHistoryGone": "Denne notifikation er ikke længere tilgængelig",
+  "notificationHistoryLoadFailed": "Denne notifikation kunne ikke indlæses",
+  "notificationHistoryMessageId": "Besked-id",
+  "notificationHistoryCommandKey": "Kommandonøgle",
+  "notificationHistoryShowMore": "Vis mere",
+  "sseRouterOffline": "Routeren er offline — venter på, at den kommer tilbage",
+  "raPreparingTitle": "Konfigurerer liveopdateringer",
+  "raPreparingBody": "Indlæser routerens data og abonnerer på dens ændringer via skyen. Dashboardet udfyldes bagved; du kan bruge det, når dette lukkes.",
+  "raPreparingPartial": "Nogle liveopdateringer kunne ikke konfigureres. Dashboardet opdaterer måske ikke sig selv; træk for at opdatere.",
+  "raLiveUpdates": "Liveopdateringer",
+  "raLiveUpdatesConnecting": "Opretter forbindelse via skyen",
+  "raLiveUpdatesDropped": "Forbindelsen til skyen blev afbrudt — opretter forbindelse igen"
 }

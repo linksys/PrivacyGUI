@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normaal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Pop-up",
-  "cardFormForNamed": "Kaartindeling voor {name}"
+  "cardFormForNamed": "Kaartindeling voor {name}",
+  "notificationHistory": "Meldingsgeschiedenis",
+  "notificationHistoryLastBoot": "Laatste keer opgestart",
+  "notificationHistoryLastActivity": "Laatste USP-activiteit",
+  "notificationHistoryEmpty": "Deze ondersteuningssessie heeft nog geen meldingen opgeleverd",
+  "notificationHistoryUnavailable": "Meldingsgeschiedenis is alleen beschikbaar tijdens een sessie voor hulp op afstand",
+  "notificationHistoryGone": "Deze melding is niet langer beschikbaar",
+  "notificationHistoryLoadFailed": "Deze melding kan niet worden geladen",
+  "notificationHistoryMessageId": "Bericht-ID",
+  "notificationHistoryCommandKey": "Opdrachtsleutel",
+  "notificationHistoryShowMore": "Meer weergeven",
+  "sseRouterOffline": "Router is offline — er wordt gewacht tot deze terugkomt",
+  "raPreparingTitle": "Live-updates instellen",
+  "raPreparingBody": "De gegevens van de router worden geladen en wijzigingen worden via de cloud gevolgd. Het dashboard vult zich op de achtergrond; u kunt het gebruiken zodra dit venster sluit.",
+  "raPreparingPartial": "Sommige live-updates konden niet worden ingesteld. Het dashboard ververst zichzelf mogelijk niet; trek omlaag om te vernieuwen.",
+  "raLiveUpdates": "Live-updates",
+  "raLiveUpdatesConnecting": "Verbinden via de cloud",
+  "raLiveUpdatesDropped": "Cloudverbinding verbroken — opnieuw verbinden"
 }

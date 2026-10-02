@@ -217,6 +217,9 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         // `build`, so the shell said "always" and the widget said "only in
         // remote"; now one of them decides.
         surface.sessionIndicator() ?? const SizedBox.shrink(),
+        // Over the page and the chip, so the agent cannot act until the session
+        // keeps the page current (remote only; local answers null).
+        surface.sessionReadinessGate() ?? const SizedBox.shrink(),
         // Theme Studio Panel (shell-level so it works on all pages)
         if (GlobalConfig.feature.enableThemeStudio)
           AnimatedPositioned(

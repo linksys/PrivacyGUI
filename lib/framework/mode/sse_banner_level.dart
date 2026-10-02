@@ -4,11 +4,15 @@
 /// Cause 5's one non-`Widget` vocabulary, and it exists because the *same*
 /// [SseConnectionState] means two different things to the two modes. Locally a
 /// dropped stream is a fault: the router is on the other end of a LAN and should
-/// not be closing anything. Under Remote Assistance, Guardian force-closes every
-/// proxied stream at roughly ten minutes, so the identical `disconnected` is the
-/// most routine event in a support session — reporting it in danger colours
-/// trains the agent to ignore the banner, which is the one outcome worse than
-/// hiding it.
+/// not be closing anything.
+///
+/// **Under Remote Assistance the banner says nothing at all** (2026-10-01). The
+/// stream runs to Guardian, which force-closes it at roughly ten minutes, so a
+/// closed stream is routine there; the banner's copy is about the router, which
+/// the stream does not reach; and it sat over every login, because the stream
+/// opens after the first reads. An earlier version graded these as warnings
+/// instead, and that was still a banner naming the wrong thing. The remote
+/// stream is reported on the session chip, in words about the cloud.
 ///
 /// An enum rather than a `bool isSevere`, per Article XVII Rule 4: the banner
 /// switches on it in two places (the grace period and the colour pair), and a

@@ -1399,7 +1399,8 @@ void main() {
       final mockProbe = MockRecoveryProbeService();
       final mockSseManager = MockSseManager();
       final mockAuth = MockAuthNotifier();
-      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
       when(() => mockProbe.probe(healthOnly: any(named: 'healthOnly')))
           .thenAnswer((_) async => ProbeResult.unreachable);
 
@@ -1430,7 +1431,7 @@ void main() {
         container.read(appConnectionStateProvider),
         AppConnectionState.waitingForRecovery,
       );
-      verify(() => mockSseManager.disconnect()).called(1);
+      verify(() => mockSseManager.disconnectKeepingSubscriptions()).called(1);
     });
 
     // ════════════════════════════════════════════════════════════════════════

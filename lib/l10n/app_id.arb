@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Ringkas",
   "cardFormPopup": "Popup",
-  "cardFormForNamed": "Format kartu untuk {name}"
+  "cardFormForNamed": "Format kartu untuk {name}",
+  "notificationHistory": "Riwayat Notifikasi",
+  "notificationHistoryLastBoot": "Boot terakhir",
+  "notificationHistoryLastActivity": "Aktivitas USP terakhir",
+  "notificationHistoryEmpty": "Sesi dukungan ini belum menghasilkan notifikasi apa pun",
+  "notificationHistoryUnavailable": "Riwayat notifikasi hanya tersedia selama sesi Bantuan Jarak Jauh",
+  "notificationHistoryGone": "Notifikasi ini sudah tidak tersedia",
+  "notificationHistoryLoadFailed": "Notifikasi ini tidak dapat dimuat",
+  "notificationHistoryMessageId": "ID Pesan",
+  "notificationHistoryCommandKey": "Kunci perintah",
+  "notificationHistoryShowMore": "Tampilkan lebih banyak",
+  "sseRouterOffline": "Router offline — menunggu router kembali",
+  "raPreparingTitle": "Menyiapkan pembaruan langsung",
+  "raPreparingBody": "Memuat data router dan berlangganan perubahannya melalui cloud. Dasbor terisi di belakang ini; Anda dapat menggunakannya setelah ini tertutup.",
+  "raPreparingPartial": "Beberapa pembaruan langsung tidak dapat disiapkan. Dasbor mungkin tidak memperbarui sendiri; tarik untuk menyegarkan.",
+  "raLiveUpdates": "Pembaruan langsung",
+  "raLiveUpdatesConnecting": "Menghubungkan melalui cloud",
+  "raLiveUpdatesDropped": "Koneksi cloud terputus — menghubungkan ulang"
 }

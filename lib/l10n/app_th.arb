@@ -1176,5 +1176,22 @@
   "cardFormNormal": "ปกติ",
   "cardFormCompact": "กระชับ",
   "cardFormPopup": "ป๊อปอัป",
-  "cardFormForNamed": "รูปแบบการ์ดของ {name}"
+  "cardFormForNamed": "รูปแบบการ์ดของ {name}",
+  "notificationHistory": "ประวัติการแจ้งเตือน",
+  "notificationHistoryLastBoot": "การบูตครั้งล่าสุด",
+  "notificationHistoryLastActivity": "กิจกรรม USP ครั้งล่าสุด",
+  "notificationHistoryEmpty": "เซสชันการสนับสนุนนี้ยังไม่มีการแจ้งเตือน",
+  "notificationHistoryUnavailable": "ประวัติการแจ้งเตือนใช้ได้เฉพาะระหว่างเซสชันการช่วยเหลือระยะไกล",
+  "notificationHistoryGone": "การแจ้งเตือนนี้ไม่พร้อมใช้งานอีกต่อไป",
+  "notificationHistoryLoadFailed": "ไม่สามารถโหลดการแจ้งเตือนนี้ได้",
+  "notificationHistoryMessageId": "รหัสข้อความ",
+  "notificationHistoryCommandKey": "คีย์คำสั่ง",
+  "notificationHistoryShowMore": "แสดงเพิ่มเติม",
+  "sseRouterOffline": "เราเตอร์ออฟไลน์ — กำลังรอให้กลับมา",
+  "raPreparingTitle": "กำลังตั้งค่าการอัปเดตแบบเรียลไทม์",
+  "raPreparingBody": "กำลังโหลดข้อมูลของเราเตอร์และสมัครรับการเปลี่ยนแปลงผ่านคลาวด์ แดชบอร์ดจะแสดงข้อมูลอยู่ด้านหลัง และใช้งานได้เมื่อหน้าต่างนี้ปิด",
+  "raPreparingPartial": "ไม่สามารถตั้งค่าการอัปเดตแบบเรียลไทม์บางรายการได้ แดชบอร์ดอาจไม่รีเฟรชเอง ดึงเพื่อรีเฟรช",
+  "raLiveUpdates": "การอัปเดตแบบเรียลไทม์",
+  "raLiveUpdatesConnecting": "กำลังเชื่อมต่อผ่านคลาวด์",
+  "raLiveUpdatesDropped": "การเชื่อมต่อคลาวด์ขาดหาย — กำลังเชื่อมต่อใหม่"
 }

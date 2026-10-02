@@ -57,8 +57,8 @@ double _contentWidth(double screen) =>
 ///
 /// ## What this file is for, and why the sweep cannot do its job
 ///
-/// `page_surface_overflow_test.dart` is green when fifty-one cases fit. It is *also*
-/// green when fifty-one cases never render: `PageSurfaceCase.requires` is what stands
+/// `page_surface_overflow_test.dart` is green when sixty-two cases fit. It is *also*
+/// green when sixty-two cases never render: `PageSurfaceCase.requires` is what stands
 /// between those, and a list is deletable in silence. That is #1364/#1366 stated
 /// once more — three separate premises were emptied and 102, 1,368 and 80 tests
 /// respectively stayed green — with the difference that this family was written
@@ -77,11 +77,11 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-two cases over
-  // forty-four pages, because six of those pages are swept more than once. The two
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-three cases over
+  // forty-five pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 46, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -106,6 +106,13 @@ void main() {
   // took the count to **61**, nine cases on that one view file. The join is the cheap
   // instrument for this whole axis; what it cannot see is the 18 swept views with no
   // golden suite at all, where there is no second enumeration to compare against.
+  // **#1580 makes it 62** the other way — a new page rather than a new state of an old
+  // one: `notification_history`, the forty-fifth swept page and the first the remote
+  // surface adds. The two landed on separate branches, each counting from 51.
+  // **And #1636 makes it 63** — `wifi_settings_mac_filter`, a third Wi-Fi tab and so a
+  // case with no new page. It too counted from 61 on its own branch and wrote "62",
+  // which is the same collision a third time: two branches each adding one case
+  // each write the count they would have alone. Recounted at the merge, 2026-10-02.
   //
   // These counts are written out in **five** places — this group, the page sweep file's
   // header, `dart_test.yaml`'s `overflow:` block, the skill doc and the architecture
@@ -115,14 +122,14 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-two cases over forty-four pages, and which '
-      'sixty-two is a decision', () {
+      'the gate declares sixty-three cases over forty-five pages, and which '
+      'sixty-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
-        'completion branches plus eight diagnostics screens, and #1636\'s third '
-        'Wi-Fi tab', () {
+        'completion branches plus eight diagnostics screens, #1580\'s '
+        'remote-only page, and #1636\'s third Wi-Fi tab', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -207,6 +214,16 @@ void main() {
           'statistics_devices',
           'statistics_system',
           'system_log',
+          // #1580: the first case in this family whose page the *remote* surface
+          // adds. Appended rather than slotted, because its page has one case and
+          // the declaration-locality rule above only applies to siblings. What is
+          // new about it is the fixture's job: the page's default state is
+          // "not available in this mode", so `notificationHistoryOverrides()` has
+          // to switch availability on before there is anything to measure — and
+          // `requires` names five types instead of the usual two because this page
+          // has four content states, three of which cannot overflow, and its list
+          // sits below the filter that proves the first premise.
+          'notification_history',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -370,8 +387,10 @@ void main() {
         // over the same device filter, and gets a case of its own rather than
         // inheriting `instant_privacy`'s because the list header's `Wrap` carries a
         // different label. The tab exists only when the device serves the filter
-        // (#1635), so the case grants that capability. Recounted 2026-09-30: 62
-        // cases, 44 swept pages of 46 page-view files.
+        // (#1635), so the case grants that capability. Recounted 2026-09-30 on its
+        // own branch: 62 cases, 44 swept pages of 46 page-view files. With #1580's
+        // `notification_history` merged in (2026-10-02): 63 cases, 45 swept pages
+        // of 47 page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

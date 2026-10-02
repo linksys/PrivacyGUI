@@ -72,8 +72,9 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             children: [
               _FilterHeader(
                 activeCount: filter.activeCountExcludingStatus,
-                onClear: () =>
-                    ref.read(deviceFilterConfigProvider.notifier).clearAll(),
+                onClear: () => ref
+                    .read(deviceFilterConfigProvider.notifier)
+                    .clearPanelFilters(),
               ),
               AppGap.md(),
               LayoutBlock(
@@ -98,8 +99,9 @@ class UspDeviceFilterPanel extends ConsumerWidget {
           children: [
             _FilterHeader(
               activeCount: filter.activeCountExcludingStatus,
-              onClear: () =>
-                  ref.read(deviceFilterConfigProvider.notifier).clearAll(),
+              onClear: () => ref
+                  .read(deviceFilterConfigProvider.notifier)
+                  .clearPanelFilters(),
             ),
             AppGap.md(),
 
@@ -645,7 +647,7 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
       chips.add(_FilterChip(
         label: loc(context).clear,
         isActive: false,
-        onTap: notifier.clearAll,
+        onTap: notifier.clearPanelFilters,
       ));
     }
 
