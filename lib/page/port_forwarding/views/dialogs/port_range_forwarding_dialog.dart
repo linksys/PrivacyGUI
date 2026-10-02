@@ -70,7 +70,16 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   Map<String, String> _errors = {};
 
   bool get _isEdit => widget.rule != null;
-  bool get _isFormValid => _errors.isEmpty && _hasRequiredInput;
+  // Computed from the fields on every build, not read from `_errors`: that map
+  // is only refreshed on focus-loss, so between typing a bad value and leaving
+  // the box it still held the last good verdict. Pressing Add in that window
+  // either submitted the bad value or, on a desktop browser, disabled the
+  // button mid-press so the release fell through to the barrier and dismissed
+  // the dialog with everything typed (#1543). `_errors` still decides only
+  // what error text is shown. The live gate is port_forwarding_dialog.dart's;
+  // unlike that one, `_validateFields` here returns l10n keys rather than
+  // localized strings, so it needs no `BuildContext` and initState can call it.
+  bool get _isFormValid => _hasRequiredInput && _validateFields().isEmpty;
   bool get _hasRequiredInput =>
       _extPortStartController.text.trim().isNotEmpty &&
       _extPortEndController.text.trim().isNotEmpty &&
@@ -91,6 +100,11 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     _intClientController = TextEditingController(text: r?.internalClient ?? '');
     _protocol = r?.protocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
+    // A stored rule can already fail validation (the router accepts more than
+    // this dialog does), and the live gate then disables Save from the first
+    // frame. Show the reason from the first frame too. Empty fields never
+    // produce an error, so this is a no-op when adding.
+    _errors = _validateFields();
     for (final f in [
       _descFocus,
       _extPortStartFocus,
@@ -104,9 +118,9 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     }
   }
 
-  /// Rebuild to re-evaluate the Add-button enable state (_hasRequiredInput)
-  /// WITHOUT running validation — so no error text appears mid-edit and focus
-  /// is preserved. Full validation happens on focus-loss.
+  /// Rebuild so the Add-button gate (_isFormValid) is re-evaluated against
+  /// what is in the fields now, WITHOUT touching `_errors` — so no error text
+  /// appears mid-edit and focus is preserved. Error text updates on focus-loss.
   void _onInputChanged() {
     setState(() {});
   }
@@ -127,6 +141,10 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   }
 
   void _validate() {
+    setState(() => _errors = _validateFields());
+  }
+
+  Map<String, String> _validateFields() {
     final errors = <String, String>{};
     final desc = _descController.text.trim();
     final extStartText = _extPortStartController.text.trim();
@@ -168,7 +186,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       errors['client'] = 'invalidIpv4Format';
     }
 
-    setState(() => _errors = errors);
+    return errors;
   }
 
   String? _localizeError(String? key) {
@@ -319,11 +337,15 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   }
 
   void _submit() {
+    final extStart = int.tryParse(_extPortStartController.text.trim());
+    final extEnd = int.tryParse(_extPortEndController.text.trim());
+    final intPort = int.tryParse(_intPortController.text.trim());
+    if (extStart == null || extEnd == null || intPort == null) return;
     context.pop(PortRangeForwardingDialogResult(
       description: _descController.text.trim(),
-      externalPortStart: int.parse(_extPortStartController.text.trim()),
-      externalPortEnd: int.parse(_extPortEndController.text.trim()),
-      internalPort: int.parse(_intPortController.text.trim()),
+      externalPortStart: extStart,
+      externalPortEnd: extEnd,
+      internalPort: intPort,
       internalClient: _intClientController.text.trim(),
       protocol: _protocol,
       enabled: _enabled,

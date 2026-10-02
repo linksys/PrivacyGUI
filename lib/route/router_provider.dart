@@ -419,6 +419,12 @@ class RouterNotifier extends ChangeNotifier {
     NodeDeviceInfo? cachedDeviceInfo,
   }) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
+    // Read before the first await, for the reason `authCheck` caches its reads:
+    // logging in changes `authProvider` while the awaits below are pending, and a
+    // `_ref.read` after that throws "Cannot use ref functions after the
+    // dependency of a provider changed" — the decision that threw never checked
+    // PnP (#1641).
+    final pnpStatusService = _ref.read(pnpStatusServiceProvider);
 
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
@@ -452,9 +458,8 @@ class RouterNotifier extends ChangeNotifier {
 
       // Post-login PnP check — only for local login
       if (loginType == LoginType.local && !BuildConfig.skipPnp) {
-        final pnpResult = await _ref
-            .read(pnpStatusServiceProvider)
-            .check(nodeDeviceInfo.serialNumber);
+        final pnpResult =
+            await pnpStatusService.check(nodeDeviceInfo.serialNumber);
         if (pnpResult.needsPnp) {
           logger.i('[Prepare]: PnP needed, routing to /pnp');
           return RoutePath.pnp;
