@@ -27,13 +27,17 @@ class UspNetworkStatusCard extends ConsumerWidget {
     // re-derives the answer. Three places deriving "online" from the model independently
     // is how two of them came to disagree in the first place.
     //
-    // `?? wan.isUp` covers the `this.wan` constructor parameter: a caller that passes a
-    // model directly has not necessarily overridden the provider, and for such a caller
-    // the model it passed is the more truthful source. No production or test caller does
-    // this today — both construct `UspNetworkStatusCard()` and the goldens override
-    // `wanDataProvider` — so the fallback is for the parameter's contract rather than for
-    // a path in use.
-    final isOnline = ref.watch(wanIsUpProvider) ?? wan.isUp;
+    // `?? true` matches every other consumer, and on this card it is unreachable: the
+    // line above returns a skeleton when `wan` is null, and a non-null `wan` means the
+    // provider has a value. It is written as `true` rather than `wan.isUp` so that no
+    // second is-up source survives in the one file this change exists to remove one from
+    // — a `wan.isUp` fallback would read as careful while quietly re-opening the
+    // divergence, and no caller passes `this.wan` anyway (both construct
+    // `UspNetworkStatusCard()`; the goldens override `wanDataProvider`).
+    //
+    // No test covers the `??` here, and that is correct rather than a gap: mutating it to
+    // `false` fails nothing, because the branch cannot be entered.
+    final isOnline = ref.watch(wanIsUpProvider) ?? true;
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
     final colorScheme = Theme.of(context).colorScheme;
 

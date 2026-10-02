@@ -60,7 +60,11 @@ const wanUpModel = WanStatusUIModel(
   mtu: 1500,
 );
 
-/// A WAN the device reports as having NO address — link down, or up without a lease yet.
+/// A WAN the device reports as DOWN and without an address — `isUp: false`.
+///
+/// ⚠️ Not the "up without a lease yet" case; that is [wanUpNoAddressModel]. Both have an
+/// empty address, so picking this one for a test about a connecting link would pass under
+/// either definition of online and prove nothing.
 ///
 /// Distinct from [ErrorWan] on purpose: here the device answered, so "offline" is a true
 /// reading. Conflating the two is the defect these fakes exist to keep testable.

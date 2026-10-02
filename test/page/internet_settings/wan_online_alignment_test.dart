@@ -88,12 +88,11 @@ void main() {
         // Expected; the question is what the providers say afterwards.
       }
 
-      // NOT `false`. This provider used to return `true` here via `?? true`, which is a
-      // guess in the other direction — and #1613 had already established for the address
-      // that an unreadable L1 must not be rendered as a confident verdict. The screens
-      // now make that choice themselves: the dashboard writes `?? true` so it does not
-      // raise a false alarm, the Internet Settings dot writes `?? false` so it does not
-      // claim a connection.
+      // NOT `false`, and not `true` either. The provider used to answer `true` here via
+      // `?? true`, which is a guess — and #1613 had already established for the address
+      // that an unreadable L1 must not be rendered as a confident verdict. Stating `null`
+      // is what lets every screen apply the same default (`?? true`, "unread is not
+      // disconnected") while the provider itself claims nothing it has not read.
       expect(c.read(wanIsUpProvider), isNull);
       expect(c.read(wanIpReadingProvider), isA<WanIpUnknown>());
     });
