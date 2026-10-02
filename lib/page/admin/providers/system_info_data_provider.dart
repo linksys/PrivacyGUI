@@ -36,17 +36,24 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   Future<SystemInfoData> build() async {
     // Listen to firmwareBanks changes → auto invalidate (pattern: EthernetDataProvider)
     //
-    // Deliberately NOT guarded by a `banks` diff, even though `banks` is the
-    // only thing _fetch() passes on: this listener is the ONLY refresh trigger
-    // systemInfoDataProvider has in the whole app, and _fetch() reads SystemInfo
-    // live from USP. A `banks` diff would therefore suppress the app's only
-    // systemInfo refresh on a same-version reflash (banks identical,
-    // softwareVersion/uptime changed) for the rest of the session. Decoupling
-    // the two is a design change, not a guard — see #1505 and
-    // doc/riverpod/listen_site_audit.md.
+    // NOT THE ONLY WAY THIS PROVIDER REFRESHES. The dashboard orchestrator lists
+    // it in `_allDomainProviders`, so login, pull-to-refresh and the startup
+    // retry all invalidate it — through a loop over that list, which is why a
+    // search for this provider's name finds no `invalidate` call. This listener
+    // adds one thing on top: the banks are re-read after a firmware check, an
+    // install or a read-failure retry, and the copy embedded in
+    // SystemInfoUIModel.firmwareImages has to follow them.
     //
-    // No `isLoading` guard either: the double firing on an upstream refetch is
-    // absorbed by invalidateSelf(), which coalesces, unlike a direct fetch().
+    // UNGUARDED ON PURPOSE, and it costs one extra fetch per banks refresh.
+    // `FirmwareBanksDataNotifier.refresh()` publishes a loading frame that keeps
+    // the previous banks before it publishes the new ones, so both pass the
+    // `hasValue` check below. The two invalidations coalesce only when the
+    // second arrives before the rebuild the first one scheduled, which a banks
+    // read with real latency does not. Measured with 80 ms of fetch latency: 2
+    // fetches per refresh, the first one handed the previous banks, and the
+    // value the second publishes is the correct one. Left alone because the
+    // second read asks USP for the same paths within the throttler's 5 s cache
+    // window, so it is expected to be served without a router round-trip.
     ref.listen(firmwareBanksDataProvider, (_, next) {
       if (next.hasValue && state.hasValue) {
         ref.invalidateSelf();
