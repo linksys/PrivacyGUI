@@ -96,7 +96,9 @@ void main() {
 
       await tester.pumpWidget(host(
         'locked',
-        enabledWithDevicesState.copyWith(isToggleLocked: true),
+        enabledWithDevicesState.copyWith(
+          status: enabledWithDevicesState.status.copyWith(isSaving: true),
+        ),
       ));
       await settle(tester);
 
