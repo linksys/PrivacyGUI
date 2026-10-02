@@ -581,6 +581,41 @@ void main() {
   });
 
   // ═════════════════════════════════════════════════════════════════════════
+  // A failed pull keeps the list
+  // ═════════════════════════════════════════════════════════════════════════
+  testWidgets('a failed pull keeps the rows and the filter, and says it failed',
+      (tester) async {
+    // The rows are an older answer, not a wrong one. Before, a failed pull put
+    // the page in its full-page error, and that error's retry reloads the page,
+    // dropping the filter the viewer had set.
+    stub(entries: [
+      NotificationHistoryTestData.entry('m1', 'ValueChange'),
+      NotificationHistoryTestData.entry('m2', 'OperationComplete'),
+    ]);
+    await pump(tester);
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(UspNotificationHistoryView)));
+    container
+        .read(uspNotificationHistoryProvider.notifier)
+        .setTypeFilter('ValueChange');
+    await tester.pumpAndSettle();
+    when(() => service.fetchHistory())
+        .thenThrow(const UnexpectedError(detail: 'the pull failed'));
+
+    await tester.fling(
+        find.byType(CustomScrollView).first, const Offset(0, 600), 1000);
+    await tester.pumpAndSettle();
+
+    verify(() => service.fetchHistory()).called(2);
+    expect(find.text('the pull failed'), findsOneWidget);
+    expect(find.text(loc.failedToLoadSettings), findsNothing);
+    expect(find.text('ValueChange'), findsWidgets);
+    expect(
+        container.read(uspNotificationHistoryProvider).requireValue.typeFilter,
+        'ValueChange');
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
   // Acceptance 6 — the local build
   // ═════════════════════════════════════════════════════════════════════════
   testWidgets('a build with no notification store says so explicitly',

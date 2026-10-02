@@ -19,6 +19,8 @@
 // provider inside `fakeAsync`, because a fake clock only fires timers created in
 // its own zone.
 
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,6 +149,72 @@ void main() {
       await container.read(notificationDetailProvider('m1').future);
 
       verify(() => service.fetchDetail('m1')).called(2);
+    });
+
+    test('a filter chosen while the refresh is in flight survives it',
+        () async {
+      // `refresh()` used to take the state before its `await` and write it back
+      // after, so a filter or a "Show more" the viewer applied during the fetch
+      // was silently undone when the fetch returned.
+      final container = containerWith([
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete'),
+      ]);
+      await container.read(uspNotificationHistoryProvider.future);
+      final notifier = container.read(uspNotificationHistoryProvider.notifier);
+      final fetch = Completer<List<NotificationHistoryEntryUIModel>>();
+      when(() => service.fetchHistory()).thenAnswer((_) => fetch.future);
+
+      final refreshing = notifier.refresh();
+      notifier.setTypeFilter('OperationComplete');
+      fetch.complete([
+        NotificationHistoryTestData.entry('m1', 'ValueChange'),
+        NotificationHistoryTestData.entry('m2', 'OperationComplete'),
+        NotificationHistoryTestData.entry('m3', 'OperationComplete'),
+      ]);
+      await refreshing;
+
+      final state = container.read(uspNotificationHistoryProvider).requireValue;
+      expect(state.typeFilter, 'OperationComplete');
+      expect(state.entries.map((e) => e.msgId), ['m1', 'm2', 'm3'],
+          reason: 'the new rows land too — only the viewer\'s choice is kept');
+    });
+
+    test('a failed refresh keeps the loaded list, and says so to its caller',
+        () async {
+      // A pull that fails is not a reason to lose what the viewer was reading.
+      // The failure goes to the caller, which reports it on the transient
+      // channel; the state stays the list, so the page never swaps it for its
+      // full-page error, whose retry is a reload that drops the filter.
+      final container = containerWith(
+          [NotificationHistoryTestData.entry('m1', 'ValueChange')]);
+      await container.read(uspNotificationHistoryProvider.future);
+      final notifier = container.read(uspNotificationHistoryProvider.notifier);
+      notifier.setTypeFilter('ValueChange');
+      when(() => service.fetchHistory())
+          .thenThrow(const UnexpectedError(detail: 'boom'));
+
+      await expectLater(notifier.refresh(), throwsA(isA<UnexpectedError>()));
+
+      final after = container.read(uspNotificationHistoryProvider);
+      expect(after.hasError, isFalse);
+      expect(after.requireValue.entries.map((e) => e.msgId), ['m1']);
+      expect(after.requireValue.typeFilter, 'ValueChange');
+
+      when(() => service.fetchHistory()).thenAnswer((_) async => [
+            NotificationHistoryTestData.entry('m1', 'ValueChange'),
+            NotificationHistoryTestData.entry('m2', 'ValueChange'),
+          ]);
+      await notifier.refresh();
+
+      expect(
+          container
+              .read(uspNotificationHistoryProvider)
+              .requireValue
+              .entries
+              .map((e) => e.msgId),
+          ['m1', 'm2'],
+          reason: 'the retry ran: it is the page\'s one recovery gesture');
     });
   });
 

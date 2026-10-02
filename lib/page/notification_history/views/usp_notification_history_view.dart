@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -73,9 +75,7 @@ class UspNotificationHistoryView extends ConsumerWidget {
       // came from — so the hub, which is what the navigation invariants require
       // of every page (#1434: none may name the Dashboard).
       backFallback: RouteNamed.uspMenu,
-      onRefresh: available
-          ? () => ref.read(uspNotificationHistoryProvider.notifier).refresh()
-          : null,
+      onRefresh: available ? () => _refresh(context, ref) : null,
       // Slivers get no structural padding from the page (see
       // `UiKitPageView.slivers`), so the page margin is applied here.
       slivers: [
@@ -107,6 +107,20 @@ class UspNotificationHistoryView extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// The pull gesture. A failed pull keeps the list on screen and says so here,
+  /// on the transient channel: the rows are an older answer, not a wrong one,
+  /// and the full-page error would replace them with a retry that drops the
+  /// filter.
+  Future<void> _refresh(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(uspNotificationHistoryProvider.notifier).refresh();
+    } on ServiceError catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+    }
   }
 }
 

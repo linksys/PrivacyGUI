@@ -68,19 +68,32 @@ class UspNotificationHistoryNotifier
   /// long as it is on screen: without this, a body that failed once would stay
   /// failed until the row scrolled away, and this gesture is the page's only
   /// retry.
+  ///
+  /// The new list lands on the state as it is **when the read returns**, not as
+  /// it was when the pull began: a filter or a Show more chosen while the read is
+  /// in flight is the viewer's latest word, and writing the earlier snapshot back
+  /// would undo it.
+  ///
+  /// A failure **throws** the [ServiceError] and leaves the state alone. The list
+  /// on screen is still a correct answer, only an older one, so it stays; the
+  /// caller says the pull failed on a transient channel. Writing an
+  /// [AsyncError] instead would put the page in its full-page error, whose retry
+  /// is a reload that drops the filter the viewer set.
   Future<void> refresh() async {
     final svc = ref.read(uspNotificationHistoryServiceProvider);
-    final current = state.valueOrNull;
-    if (svc == null || current == null) return;
+    if (svc == null || state.valueOrNull == null) return;
 
+    final List<NotificationHistoryEntryUIModel> entries;
     try {
-      final entries = await svc.fetchHistory();
-      state = AsyncData(current.copyWith(entries: entries));
-      ref.invalidate(notificationDetailProvider);
+      entries = await svc.fetchHistory();
     } on ServiceError catch (e) {
       logger.e('[USP][NotificationHistory]: Refresh failed', error: e);
-      state = AsyncError(e, StackTrace.current);
+      rethrow;
     }
+    final latest = state.valueOrNull;
+    if (latest == null) return;
+    state = AsyncData(latest.copyWith(entries: entries));
+    ref.invalidate(notificationDetailProvider);
   }
 
   /// Narrows the list to one `notificationType`, or to all when null.
