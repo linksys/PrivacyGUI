@@ -61,9 +61,11 @@ final wanDataProvider =
 /// stays in `WanIpReading` — that type still answers "what address do we show",
 /// it just no longer answers "are we online".
 ///
-/// An SSE-triggered refresh never passes through loading (`_refreshFromPush`
-/// assigns directly), so this stays non-null once the first read lands. See
-/// #1143, #1615, #1620.
+/// `null` after the first successful read is rarer than it looks, but it is reachable: an
+/// SSE-triggered refresh assigns `state` directly (`_refreshFromPush`) and never passes
+/// through loading, while `ref.invalidate(wanDataProvider)` — which the save and DHCP-renew
+/// paths both call — does. So a caller's `??` is exercised on launch and again briefly
+/// after a save. See #1143, #1615, #1620.
 final wanIsUpProvider = Provider<bool?>(
   (ref) => ref.watch(wanDataProvider).valueOrNull?.model.isUp,
 );
