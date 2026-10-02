@@ -105,6 +105,23 @@ population.
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
 | 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here**, comparing against the input the last `_fetch()` consumed rather than against `prev`; the `state.hasValue` half of this guard was also dropping settles that raced the fetch — see "The one caveat on the zero" above. |
 
+> ⚠️ **SITE 6 RE-MEASURED 2026-10-01 at `96ddebf5`.** The listener is unchanged and still unguarded; two
+> parts of its row and of the "Cause B" note no longer describe the cost:
+>
+> - **Frequency.** "Only two identical emissions inside the same hour" undersells it. When mesh topology data
+>   is present, every SSE `connectedDevices` refresh publishes twice, from `_refetchPreservingMeshInner` and
+>   then `_fetchMeshAndUpdateInner`, and on an unchanged device list the two `DevicesData` are `==`. Measured:
+>   **2 analytics recomputes and 2 SharedPreferences writes per SSE refresh** with mesh data, 1 without.
+>   Still no USP request.
+> - **The gap argument is weaker than stated.** The notifier has no timer; a bucket is written once at
+>   `build()` and otherwise only when `devicesDataProvider` emits. An hour with no device-list change
+>   therefore has no bucket *today*, and `stats_connection_trends_section.dart` draws it as 0. A
+>   `clientDevices`-only diff would add more such hours rather than introduce the first one. The guard that
+>   compares the hour bucket as well as the list remains the lossless one.
+>
+> Not fixed, by decision: the cost is local (one recompute and one preference write per repeat) and
+> nothing is wrong on screen.
+
 > ⚠️ **SITES 10, 11 AND 12 NO LONGER EXIST.** They were the three `ref.listen` calls that
 > drove `onSseInvalidation()` from an L1 provider — in `usp_wifi_advanced_provider`,
 > `usp_wifi_settings_provider` and `usp_firewall_notifier`. The whole mechanism was **deleted in
@@ -166,6 +183,34 @@ Two things follow, and they point in opposite directions:
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
 | 13 | `page/admin/providers/system_info_data_provider.dart:38` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `:40 ref.invalidateSelf()`. No doubling here: `firmware_update/providers/firmware_banks_data_provider.dart:51` sets a **bare** `const AsyncLoading()` (`hasValue` false), which the guard filters ⇒ one delivery per refresh. The redundancy is reachability-driven: `firmware_update/providers/firmware_update_notifier.dart:332-356` calls `banks.refresh()` up to 3× (3 s apart), breaking only at `:341 if (banksData.banks.isNotEmpty)`, so a still-empty result triggers **up to 3 systemInfo USP fetches, 2 of them on unchanged banks**. **Not fixable by a payload diff** — see the note below. |
+
+> ⚠️ **SITE 13'S EVIDENCE IS WRONG, AND WAS WRONG WHEN IT WAS WRITTEN** (re-measured 2026-10-01 at
+> `96ddebf5`). The row and the note under "Cause B" are kept as the record; this is the current reading.
+>
+> - **This listener is not the provider's only refresh trigger.** `systemInfoDataProvider` has been in
+>   `DashboardOrchestrator._allDomainProviders` since 2026-03-20, so login (`_buildImpl`), pull-to-refresh
+>   (`refreshAll`) and the startup retry (`_scheduleProviderRetry`) all invalidate it. They do it through
+>   `for (final (_, provider) in _allDomainProviders) ref.invalidate(provider)`, which is why
+>   `rg 'systemInfoDataProvider'` found no `invalidate` call: the name is in the list, not at the call.
+>   `usp_topology_view.dart`'s retry button invalidates it by name as well.
+> - **There is doubling.** `FirmwareBanksDataNotifier.refresh()` now publishes
+>   `const AsyncLoading().copyWithPrevious(state)`, a loading frame that *keeps* the previous banks
+>   (`hasValue` true), so both frames pass `next.hasValue && state.hasValue`. With zero-latency mocks the
+>   two `invalidateSelf()` calls still coalesce (1 fetch); with 80 ms of latency on both fetches they do not:
+>   **2 systemInfo fetches per banks refresh**, the first one handed the previous banks. The published value
+>   is the second, and it is correct.
+> - **More refreshers.** `banks.refresh()` has three callers in `firmware_update_notifier.dart`: `loadBanks`
+>   with `refresh: true` (both firmware pages' read-failure retry), the end of a router-side update check,
+>   and `verify()`'s 3-attempt loop. Measured: one failed refresh still costs 2 fetches (the `AsyncError`
+>   keeps the previous value too), so `verify()`'s worst case is **6**, not 3. Invalidating both providers
+>   together, which is what `refreshAll` starts with, costs 2; boot costs 1.
+> - **The same-version-reflash scenario does not occur on success.** `verify()` only reports success when the
+>   expected *other* bank is now Active, so the banks always differ after a successful flash.
+>
+> **Consequence for the verdict:** still `redundant-today`, still `==`-safe. The cost is the extra
+> `SystemInfoData` publish and its consumers' rebuilds; the second USP read is for the same paths inside
+> the throttler's 5 s cache window, so it is expected not to reach the router (read from the throttler, not
+> measured). Not fixed, by decision: the waste is small and nothing is wrong on screen.
 
 ### `dashboardDomainReadyProvider` — 3
 
@@ -296,10 +341,10 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
   time therefore produces a *different* result, and a `clientDevices` diff would leave gaps in the 24 h
   history — the provider is not autoDispose, so the gap persists for the session. The genuine waste is
   narrower than first measured: only two identical emissions **inside the same hour**, costing one
-  storage write. **Filed as #1504, not fixed** — a sound guard has to compare the hour bucket as well as the
+  storage write *(frequency corrected under site 6's table)*. **Filed as #1504, not fixed** — a sound guard has to compare the hour bucket as well as the
   list, which is a behaviour decision about the analytics history rather than a guard.
 - **Site 13 — `systemInfoDataProvider` has exactly one refresh trigger in the entire app, and it is this
-  listener.** Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
+  listener.** *(Wrong — see the correction under site 13's table.)* Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
   `invalidate`/`refresh`/`.notifier` call), and `firmwareBanksDataProvider` in turn has exactly one
   refresher (`firmware_update_notifier.dart:338`). Meanwhile `_fetch()` gets SystemInfo **live from USP**
   and merely passes `banks` through. So on a same-version reflash — banks identical, `softwareVersion`
@@ -313,7 +358,7 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
 | --- | --- | --- |
 | Cause A, `isLoading` guard | 9, 10, 11, 12, 14, 15 | **Fixed in this PR** — provably lossless: the dropped frame carries the *previous* value, so the body was acting on stale data. |
 | Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. The diff is against the *consumed* input, not `prev`, which also closes the dropped-settle half of the old guard. |
-| Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. |
+| Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. Both closed unfixed on 2026-10-01 after re-measurement; see the corrections under each site's table. |
 
 7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
 undocumented.

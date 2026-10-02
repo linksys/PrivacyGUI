@@ -17,11 +17,21 @@ import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.d
 /// Flattening early is what made that possible. Three device states collapsed into two
 /// UI states one line after the read, and after that no consumer could tell them apart.
 ///
+/// (That banner's indicator no longer reads the address at all — see the note below — but
+/// the collapse it suffered from is why this type is shaped the way it is.)
+///
 /// The three cases, and what each means to a user:
 ///
-///   [WanIpReading.address]  the device reported an address     -> online, show it
-///   [WanIpReading.none]     the device reported no address     -> offline
+///   [WanIpReading.address]  the device reported an address     -> show it
+///   [WanIpReading.none]     the device reported no address     -> show '--'
 ///   [WanIpReading.unknown]  we could not read the device       -> say so; claim nothing
+///
+/// ⚠️ THIS TYPE NO LONGER ANSWERS "ARE WE ONLINE" (#1620). It used to carry `isOnline`
+/// and `isOffline`, which made "has an address" a second definition of online competing
+/// with `wanIsUpProvider`'s `Status == 'Up'` — and measured on real hardware the two
+/// disagree for about 5 seconds after every link recovery. Those getters are gone; the
+/// app's one definition is [wanIsUpProvider]. What stays here is the address, which
+/// genuinely does have three states worth keeping apart.
 sealed class WanIpReading {
   const WanIpReading();
 
@@ -45,16 +55,6 @@ sealed class WanIpReading {
         WanIpNone() => null,
         WanIpUnknown() => null,
       };
-
-  /// True only when the device actually reported an address.
-  ///
-  /// Deliberately NOT true for `unknown`: not knowing is not being online. And
-  /// deliberately not the inverse of "offline" either — a caller that wants to render
-  /// offline must check [isOffline], so that `unknown` falls through to neither.
-  bool get isOnline => this is WanIpAddress;
-
-  /// True only when the device reported that there is no address.
-  bool get isOffline => this is WanIpNone;
 }
 
 final class WanIpAddress extends WanIpReading {
