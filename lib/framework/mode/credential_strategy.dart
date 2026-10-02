@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// **Cause 2 — who holds the credential, and what expiry means.**
 ///
@@ -19,10 +20,27 @@ abstract class CredentialStrategy {
   ///
   /// [AuthBehavior] predates #1474 and already carries exactly this
   /// distinction — `AuthBehavior.local` retries, `AuthBehavior.remote` does
-  /// not — so the strategy *returns* it rather than restating it. That keeps
-  /// `UspBridgeClient`'s existing parameter and its 1 read site untouched: this
-  /// phase moves the `if` that chose the value, not the value.
+  /// not — so the strategy *returns* it rather than restating it. #1474 phase 4
+  /// moved the `if` that chose the value, not the value.
+  ///
+  /// Two consumers since #1627, both reading the one flag: `UspBridgeClient`
+  /// for its REST 401s (constructor, via `BridgeConfig`) and `UspClient` for a
+  /// USP command's 401 (`sseManagerProvider` assigns it). Ending up with one
+  /// answer for both paths is the point — before #1627 the second path ran the
+  /// local reauth in every mode.
   AuthBehavior get authBehavior;
+
+  /// Whether [usp] holds this mode's credential yet — the question the SSE
+  /// bootstrap asks before opening a stream.
+  ///
+  /// A mode cause, measured: [UspClient.isAuthenticated] tracks a **password
+  /// login**, which is the credential locally and never happens remotely. A
+  /// Remote Assistance client is built with `UspClientBuilder.authToken(...)`
+  /// and answers `false` for the whole session (measured on the real wasm
+  /// client, 2026-10-01). Asked directly, that flag kept the bootstrap from
+  /// connecting in every RA session — 26 s of "Disconnected" on the QA router
+  /// until the orchestrator's fallback connect fired.
+  bool holdsCredential(UspClient usp);
 
   /// Put the credential back to work after the router was unreachable, and say
   /// whether the app may keep the session it had.

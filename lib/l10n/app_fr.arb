@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Fenêtre contextuelle",
-  "cardFormForNamed": "Format de carte pour {name}"
+  "cardFormForNamed": "Format de carte pour {name}",
+  "notificationHistory": "Historique des notifications",
+  "notificationHistoryLastBoot": "Dernier démarrage",
+  "notificationHistoryLastActivity": "Dernière activité USP",
+  "notificationHistoryEmpty": "Cette session d'assistance n'a encore produit aucune notification",
+  "notificationHistoryUnavailable": "L'historique des notifications n'est disponible que pendant une session d'assistance à distance",
+  "notificationHistoryGone": "Cette notification n'est plus disponible",
+  "notificationHistoryLoadFailed": "Impossible de charger cette notification",
+  "notificationHistoryMessageId": "ID du message",
+  "notificationHistoryCommandKey": "Clé de commande",
+  "notificationHistoryShowMore": "Afficher plus",
+  "sseRouterOffline": "Le routeur est hors ligne — en attente de son retour",
+  "raPreparingTitle": "Configuration des mises à jour en direct",
+  "raPreparingBody": "Chargement des données du routeur et abonnement à ses modifications via le cloud. Le tableau de bord se remplit en arrière-plan ; vous pourrez l'utiliser dès que cette fenêtre se fermera.",
+  "raPreparingPartial": "Certaines mises à jour en direct n'ont pas pu être configurées. Le tableau de bord risque de ne pas s'actualiser seul ; tirez pour actualiser.",
+  "raLiveUpdates": "Mises à jour en direct",
+  "raLiveUpdatesConnecting": "Connexion via le cloud",
+  "raLiveUpdatesDropped": "Connexion au cloud interrompue — reconnexion"
 }

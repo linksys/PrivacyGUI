@@ -88,6 +88,10 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
       context,
       state,
       ref.watch(surfaceStrategyProvider).connectionBannerLevel(state),
+      // Read, not watched: the cause changes only at the moment
+      // `sseConnectionStateProvider` emits, and that is watched above — so by the
+      // time this line runs the rebuild it needs has already happened (#1577).
+      sseManager.connection.lastDisconnectCause,
     );
   }
 
@@ -154,12 +158,22 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
   /// [SseConnectionState.disconnected] and [SseConnectionState.suspended] — and
   /// false while it is mid-attempt, where the button would race its own retry.
   /// A property of the connection, not of the mode.
+  ///
+  /// **Unchanged by #1577's offline distinction, deliberately.** A reconnect against
+  /// a device that is still away will fail the same way, so the button is not *useful*
+  /// there — but removing it would leave an agent who can see the router come back
+  /// with nothing to press until the next scheduled attempt. The copy says to wait;
+  /// the button stays available to anyone who knows better.
   static bool _canReconnect(SseConnectionState state) =>
       state == SseConnectionState.disconnected ||
       state == SseConnectionState.suspended;
 
   Widget _buildBanner(
-      BuildContext context, SseConnectionState state, SseBannerLevel level) {
+    BuildContext context,
+    SseConnectionState state,
+    SseBannerLevel level,
+    SseDisconnectCause cause,
+  ) {
     final appColors = Theme.of(context).extension<AppColorScheme>();
     final isSevere = level == SseBannerLevel.danger;
 
@@ -170,6 +184,16 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
         ? (appColors?.onSemanticDanger ?? Colors.white)
         : (appColors?.onSemanticWarning ?? Colors.black);
 
+    // #205 Item 8 / #1577: "the device is offline" and "the connection dropped"
+    // arrive through the same failed connect, and they need opposite responses —
+    // wait, or try again. Guardian answers a stream against an offline device with a
+    // 400 before publishing anything, and `SseConnectionManager` records that as
+    // [SseDisconnectCause.deviceOffline].
+    //
+    // It overrides the copy for the two settled states only. While the manager is
+    // still `connecting` or `reconnecting` the honest thing to say is that it is
+    // trying, whatever the last attempt's status was.
+    final deviceOffline = cause == SseDisconnectCause.deviceOffline;
     final (icon, label) = switch (state) {
       SseConnectionState.connecting => (
           Icons.sync,
@@ -179,9 +203,17 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
           Icons.sync,
           loc(context).reconnecting,
         ),
+      SseConnectionState.suspended when deviceOffline => (
+          Icons.router_outlined,
+          loc(context).sseRouterOffline,
+        ),
       SseConnectionState.suspended => (
           Icons.cloud_off,
           loc(context).realTimeConnectionLost,
+        ),
+      SseConnectionState.disconnected when deviceOffline => (
+          Icons.router_outlined,
+          loc(context).sseRouterOffline,
         ),
       SseConnectionState.disconnected => (
           Icons.cloud_off,

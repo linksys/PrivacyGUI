@@ -43,6 +43,11 @@ class LocalSurface implements SurfaceStrategy {
   @override
   Widget? sessionIndicator() => null;
 
+  /// Nothing to wait for: the router is on the LAN, so subscribing is quick
+  /// and the page is current as soon as it is up.
+  @override
+  Widget? sessionReadinessGate() => null;
+
   /// The router is on the other end of a LAN. Nothing on that path should be
   /// closing a stream, so a closed one is a fault and says so immediately.
   @override
@@ -71,6 +76,12 @@ class LocalSurface implements SurfaceStrategy {
   /// dashboard handed over.
   @override
   VoidCallback? layoutEditor(VoidCallback enterEditMode) => enterEditMode;
+
+  /// The router is on this viewer's LAN, so a WAN change that drops the uplink
+  /// leaves the page reachable: editing runs the callback the page handed over.
+  @override
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode) =>
+      enterEditMode;
 
   @override
   Future<void> Function(BuildContext context, WidgetRef ref)?

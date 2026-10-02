@@ -9,17 +9,10 @@ import 'package:web/web.dart' as web;
 import 'bridge_endpoints.dart';
 import 'sse_operation_strategy.dart';
 import 'usp_client.dart';
+import 'usp_bridge_client_errors.dart';
 
 export 'sse_operation_strategy.dart' show AuthBehavior;
-
-/// Exception thrown when session expires and cannot be recovered.
-class SessionExpiredException implements Exception {
-  final String message;
-  SessionExpiredException(this.message);
-
-  @override
-  String toString() => 'SessionExpiredException: $message';
-}
+export 'usp_bridge_client_errors.dart';
 
 /// Global JS property to persist SSE AbortController across hot restarts.
 @JS('_sseAbort')
@@ -42,6 +35,7 @@ class UspBridgeClient {
   final String? _overrideToken;
   final String? _clientTypeId;
   final AuthBehavior _authBehavior;
+  final RemoteReads? _remoteReads;
 
   /// Called when auth fails and cannot be recovered (session expired).
   void Function()? onAuthFailed;
@@ -53,11 +47,13 @@ class UspBridgeClient {
     String? authToken,
     String? clientTypeId,
     AuthBehavior authBehavior = AuthBehavior.local,
+    RemoteReads? remoteReads,
   })  : _endpoints = endpoints ?? BridgeEndpoints.local,
         _overrideBaseUrl = baseUrl,
         _overrideToken = authToken,
         _clientTypeId = clientTypeId,
-        _authBehavior = authBehavior;
+        _authBehavior = authBehavior,
+        _remoteReads = remoteReads;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -98,11 +94,31 @@ class UspBridgeClient {
   /// Local mode: delegates to [UspClient.reauth] then retries once.
   /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
   /// [onAuthFailed] and throws [SessionExpiredException].
+  ///
+  /// [reportAuthFailure] false marks a request whose 401 must not end the
+  /// session. The 401 is still thrown, but neither retried nor reported through
+  /// [onAuthFailed]. Two kinds of request ask for that:
+  ///
+  /// - **Teardown** — the best-effort cleanup after an intentional disconnect.
+  ///   The credential has usually just been spent on purpose (the End Session
+  ///   DELETE answers 204 before the cleanup reads go out), so the 401 is
+  ///   expected, and reporting it asks for a logout from inside the logout that
+  ///   caused it. On QA Guardian that looped 770 times in four minutes
+  ///   (2026-09-30).
+  /// - **A best-effort probe** whose failure the caller already ignores — the
+  ///   SSE bootstrap's [health]. Nothing depends on its answer, so it is the wrong
+  ///   request to end a session from; the reads that do depend on the token
+  ///   report its 401 as they always have.
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
-    T Function(http.Response) parser,
-  ) async {
+    T Function(http.Response) parser, {
+    bool reportAuthFailure = true,
+  }) async {
     var response = await request();
+    if (response.statusCode == 401 && !reportAuthFailure) {
+      debugPrint('[UspBridgeClient] 401 on a request that does not report it');
+      throw SessionExpiredException('401, not reported');
+    }
     if (response.statusCode == 401) {
       if (_authBehavior.shouldRetryOnFailure) {
         // Local mode: reauth + retry
@@ -129,11 +145,105 @@ class UspBridgeClient {
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Calls GET health endpoint.
-  Future<Map<String, dynamic>> health() async {
+  ///
+  /// Throws [BridgeReadException] on any non-2xx, and the status matters to one
+  /// caller: `RemoteTransportStrategy.isRouterReachable` reads a **404** as "this
+  /// deployment does not serve the endpoint" and falls back, while every other
+  /// code means the router is away (#1576).
+  ///
+  /// Checking the status here rather than letting the decode decide is what makes
+  /// that possible at all. [_withAuthRetry] hands its parser every non-401
+  /// response, and Guardian answers an error with a JSON body — so `jsonDecode`
+  /// **succeeds** on a 404 and the probe would have read "unreachable endpoint" as
+  /// "reachable router".
+  ///
+  /// [reportAuthFailure]: see [_withAuthRetry]. The default reports, because the
+  /// recovery probe wants exactly that: a rejected token is not an outage to wait
+  /// out. Only the SSE bootstrap's best-effort check passes false.
+  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) async {
     return _withAuthRetry(
+      reportAuthFailure: reportAuthFailure,
       () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
           headers: _authHeaders),
-      (r) => jsonDecode(r.body) as Map<String, dynamic>,
+      (r) {
+        if (r.statusCode < 200 || r.statusCode >= 300) {
+          throw BridgeReadException(r.statusCode, 'health');
+        }
+        return jsonDecode(r.body) as Map<String, dynamic>;
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Remote-only reads (#1580)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Guardian's per-device USP state — `deviceUuid`, `lastBoot`,
+  /// `lastUspActivity`.
+  ///
+  /// Both timestamps `null` is a normal answer, not an error. The device need
+  /// not be online.
+  Future<Map<String, dynamic>> uspState() =>
+      _getRemoteRead((r) => r.state, 'uspState');
+
+  /// This session's notification metadata, newest first, unpaged, no bodies.
+  ///
+  /// An empty list is the normal state at session start.
+  Future<Map<String, dynamic>> notificationsHistory() =>
+      _getRemoteRead((r) => r.notificationsHistory, 'notificationsHistory');
+
+  /// One notification including its `body`.
+  ///
+  /// Throws [BridgeReadException] with `statusCode == 404` when the entry is
+  /// gone or was never this session's — the spec makes those deliberately
+  /// indistinguishable, so the caller must report one thing for both.
+  Future<Map<String, dynamic>> notification(String msgId) =>
+      _getRemoteRead((r) => r.notification(msgId), 'notification');
+
+  /// Every stored result for one `commandKey`, newest first (#1578).
+  ///
+  /// Answers with a **bare array**, which `_getRemoteRead` hands back under `items`.
+  /// An empty list is a normal answer and not worth retrying.
+  Future<List<Object?>> results(String commandKey) async {
+    final json = await _getRemoteRead((r) => r.results(commandKey), 'results');
+    final items = json['items'];
+    return items is List ? items : const [];
+  }
+
+  /// The one request shape all three reads share.
+  ///
+  /// Status codes are checked here rather than left to the JSON decode, and that
+  /// is a departure from the rest of this client on purpose: [_withAuthRetry]
+  /// hands its parser every non-401 response, so a `404` body would surface as a
+  /// `FormatException` naming a column number instead of the thing that
+  /// happened. These reads are consumed by a page that has to tell a missing
+  /// entry from a broken one, so the distinction has to survive the trip.
+  Future<Map<String, dynamic>> _getRemoteRead(
+    String Function(RemoteReads) path,
+    String label,
+  ) {
+    final reads = _remoteReads;
+    if (reads == null) {
+      throw StateError(
+        'UspBridgeClient.$label needs RemoteReads, and this transport has none. '
+        'Only the Guardian proxy serves these; see BridgeConfig.remoteReads.',
+      );
+    }
+    return _withAuthRetry(
+      () =>
+          http.get(Uri.parse('$_baseUrl${path(reads)}'), headers: _authHeaders),
+      (r) {
+        if (r.statusCode < 200 || r.statusCode >= 300) {
+          throw BridgeReadException(r.statusCode, label);
+        }
+        final decoded = jsonDecode(r.body);
+        // Guardian answers these three with an object. A bare array is what
+        // `/usp/results` answers with (#1578), and wrapping it rather than
+        // widening this return type keeps one shape for every caller.
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{'items': decoded};
+      },
     );
   }
 
@@ -284,8 +394,12 @@ class UspBridgeClient {
         // SseConnectionManager._onError will handle cleanup and reconnect.
         // Calling both addError + close fires both _onError and _onDone,
         // which causes double _handleStreamEnd and timer multiplication.
-        controller.addError(
-            'SSE connection failed: ${response.status} ${response.statusText}');
+        // Typed rather than a string (#1577): `SseConnectionManager` reads the
+        // status to tell "the device is offline" — Guardian's 400, returned before
+        // it publishes anything — from "the path between this browser and the proxy
+        // broke". A string carries the same number and no way to ask.
+        controller
+            .addError(SseStreamException(response.status, response.statusText));
         if (!controller.isClosed) {
           await controller.close();
         }
@@ -420,10 +534,14 @@ class UspBridgeClient {
   }
 
   /// Unregisters an existing subscription.
+  ///
+  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
+    bool teardown = false,
   }) async {
     return _withAuthRetry(
+      reportAuthFailure: !teardown,
       () => http.post(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
@@ -437,8 +555,11 @@ class UspBridgeClient {
   }
 
   /// Lists all active subscriptions (Remote mode only).
-  Future<List<String>> listSubscriptions() async {
+  ///
+  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
+  Future<List<String>> listSubscriptions({bool teardown = false}) async {
     final response = await _withAuthRetry(
+      reportAuthFailure: !teardown,
       () => http.get(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,

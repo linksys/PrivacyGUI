@@ -42,12 +42,11 @@ abstract class TransportStrategy {
   ///
   /// The reachability half of the recovery probe, and a mode cause because the
   /// question is not the same question in both modes. Locally it is "is the
-  /// on-router bridge up and is its agent ready" — `GET /health`, an endpoint
-  /// that exists. Remotely `BridgeEndpoints.remote()`'s `health` path is a
-  /// fabrication (Guardian serves no such endpoint, which is what the
-  /// `if (!GlobalConfig.remote.isActive)` in `sseBootstrapProvider` has been
-  /// compensating for), so the remote answer is a cheap USP read over the same
-  /// `POST /actions/usp` every other call uses.
+  /// on-router bridge up and is its agent ready" — `GET /health` and two fields
+  /// of its body. Remotely it is Guardian's own `/usp/health` for the session,
+  /// which answers for the device on the far side of the proxy rather than for a
+  /// local agent, so success means something different (#1576). The two share a
+  /// path shape and nothing else, which is why this is a question and not a URL.
   ///
   /// **Never throws.** A probe that threw would have to be wrapped by every
   /// caller, and the two implementations disagree about what a throw even means

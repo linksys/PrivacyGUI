@@ -184,6 +184,20 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspSystemLog,
       builder: (context, state) => const UspSystemLogView(),
     ),
+    // Registered in every mode, deliberately. The child routes of the shared
+    // dashboard are one table, so a hand-typed `/uspNotificationHistory` resolves
+    // locally too — #1474 phase 9 hit the mirror of this with `localLoginRoute`
+    // in a remote build. The page reads `BridgeConfig.remoteReads` and renders an
+    // explicit "not available in this mode" state, which beats the developer
+    // error page a route that declined the location would produce. The *entry
+    // point* is the Remote Assistance chip's popup (`RemoteSessionChip`), which
+    // only the remote surface mounts — so the mode decides it without a member
+    // of its own.
+    LinksysRoute(
+      name: RouteNamed.uspNotificationHistory,
+      path: RoutePath.uspNotificationHistory,
+      builder: (context, state) => const UspNotificationHistoryView(),
+    ),
     LinksysRoute(
       name: RouteNamed.uspStatistics,
       path: RoutePath.uspStatistics,

@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Pop-up",
-  "cardFormForNamed": "Formato do cartão para {name}"
+  "cardFormForNamed": "Formato do cartão para {name}",
+  "notificationHistory": "Histórico de notificações",
+  "notificationHistoryLastBoot": "Último arranque",
+  "notificationHistoryLastActivity": "Última atividade USP",
+  "notificationHistoryEmpty": "Esta sessão de suporte ainda não gerou qualquer notificação",
+  "notificationHistoryUnavailable": "O histórico de notificações está disponível apenas durante uma sessão de assistência remota",
+  "notificationHistoryGone": "Esta notificação já não está disponível",
+  "notificationHistoryLoadFailed": "Não foi possível carregar esta notificação",
+  "notificationHistoryMessageId": "ID da mensagem",
+  "notificationHistoryCommandKey": "Chave do comando",
+  "notificationHistoryShowMore": "Mostrar mais",
+  "sseRouterOffline": "O router está offline — a aguardar que volte",
+  "raPreparingTitle": "A configurar atualizações em tempo real",
+  "raPreparingBody": "A carregar os dados do router e a subscrever as suas alterações através da nuvem. O painel é preenchido em segundo plano; poderá utilizá-lo quando isto fechar.",
+  "raPreparingPartial": "Não foi possível configurar algumas atualizações em tempo real. O painel pode não se atualizar sozinho; arraste para atualizar.",
+  "raLiveUpdates": "Atualizações em tempo real",
+  "raLiveUpdatesConnecting": "A ligar através da nuvem",
+  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar"
 }

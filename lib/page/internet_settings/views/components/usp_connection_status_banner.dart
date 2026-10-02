@@ -13,6 +13,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Displays current connection type, WAN IP address, status indicator,
 /// and an edit icon button for entering/exiting edit mode.
 ///
+/// The toggle is rendered only when [onEditToggle] is non-null. A `null` is how a
+/// read-only surface (Remote Assistance, #1626) says there is no edit mode to
+/// enter — an [AppIconButton] with a `null` `onTap` would still be drawn, as a
+/// disabled pencil that invites a tap and explains nothing.
+///
 /// WHY THE ADDRESS COMES FROM L1 AND THE TYPE DOES NOT (#1587 Phase 2).
 ///
 /// The test is "can the user edit this value?" — if not, it does not belong to the
@@ -123,13 +128,19 @@ class UspConnectionStatusBanner extends ConsumerWidget {
                 ],
               ),
             ),
-            // Edit / Close toggle
-            AppIconButton(
-              icon: Icon(isEditing ? AppFontIcons.close : AppFontIcons.edit),
-              semanticLabel: isEditing ? loc(context).close : loc(context).edit,
-              identifier: 'internet-settings-edit-toggle',
-              onTap: onEditToggle,
-            ),
+            // Edit / Close toggle. `internet-settings-edit-toggle` doubles as the
+            // E2E hook for this page in two repos — PrivacyGUI-USP-E2E (P07, F04,
+            // and F07 via the card-nav fixture) and PrivacyGUI-RealRouter-E2E (R01,
+            // R20), all built with `force=local`; a Remote Assistance spec needs a
+            // different one, since it is absent there by design.
+            if (onEditToggle case final onTap?)
+              AppIconButton(
+                icon: Icon(isEditing ? AppFontIcons.close : AppFontIcons.edit),
+                semanticLabel:
+                    isEditing ? loc(context).close : loc(context).edit,
+                identifier: 'internet-settings-edit-toggle',
+                onTap: onTap,
+              ),
           ],
         ),
       ),

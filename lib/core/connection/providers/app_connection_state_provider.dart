@@ -188,7 +188,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     return AppConnectionState.authenticated;
   }
 
-  /// Stop, disconnect SSE and start probing — unless this mode has nothing to
+  /// Stop, close SSE (keeping its subscriptions) and start probing — unless this mode has nothing to
   /// recover from.
   ///
   /// Returns whether the app is now (or already was) waiting. `false` means the
@@ -227,8 +227,11 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _pendingSessionExit = null;
     state = AppConnectionState.waitingForRecovery;
 
-    // Disconnect SSE immediately
-    ref.read(sseManagerProvider)?.disconnect();
+    // Close SSE immediately, but keep the subscription records: this wait
+    // expects the same session back, and the `connect()` on recovery restores
+    // only what the registry still holds. `disconnect()` forgets them, which
+    // after a reboot left the dashboard subscribed to nothing.
+    ref.read(sseManagerProvider)?.disconnectKeepingSubscriptions();
 
     // Start probe loop after cooldown
     if (context.cooldown == Duration.zero) {

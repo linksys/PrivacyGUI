@@ -69,6 +69,12 @@ Widget _host(Override wanOverride) {
         body: UspConnectionStatusBanner(
           state: _state(),
           isEditing: false,
+          // The local page's shape: `LocalSurface.internetSettingsEditor` always
+          // hands the banner a callback. Since #1626 a `null` here is the remote
+          // surface's "read only", which draws no toggle at all — so omitting it
+          // would make 'the edit toggle survives both unknown states' fail for a
+          // reason that has nothing to do with the reading it is about.
+          onEditToggle: () {},
         ),
       ),
     ),

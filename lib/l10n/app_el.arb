@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Κανονική",
   "cardFormCompact": "Συμπαγής",
   "cardFormPopup": "Αναδυόμενο",
-  "cardFormForNamed": "Μορφή κάρτας για {name}"
+  "cardFormForNamed": "Μορφή κάρτας για {name}",
+  "notificationHistory": "Ιστορικό ειδοποιήσεων",
+  "notificationHistoryLastBoot": "Τελευταία εκκίνηση",
+  "notificationHistoryLastActivity": "Τελευταία δραστηριότητα USP",
+  "notificationHistoryEmpty": "Αυτή η συνεδρία υποστήριξης δεν έχει παράγει ακόμη ειδοποιήσεις",
+  "notificationHistoryUnavailable": "Το ιστορικό ειδοποιήσεων είναι διαθέσιμο μόνο κατά τη διάρκεια συνεδρίας απομακρυσμένης βοήθειας",
+  "notificationHistoryGone": "Αυτή η ειδοποίηση δεν είναι πλέον διαθέσιμη",
+  "notificationHistoryLoadFailed": "Δεν ήταν δυνατή η φόρτωση αυτής της ειδοποίησης",
+  "notificationHistoryMessageId": "Αναγνωριστικό μηνύματος",
+  "notificationHistoryCommandKey": "Κλειδί εντολής",
+  "notificationHistoryShowMore": "Εμφάνιση περισσότερων",
+  "sseRouterOffline": "Ο δρομολογητής είναι εκτός σύνδεσης — αναμονή για την επιστροφή του",
+  "raPreparingTitle": "Ρύθμιση ζωντανών ενημερώσεων",
+  "raPreparingBody": "Φόρτωση των δεδομένων του δρομολογητή και εγγραφή στις αλλαγές του μέσω του cloud. Ο πίνακας ελέγχου συμπληρώνεται από πίσω· μπορείτε να τον χρησιμοποιήσετε όταν κλείσει αυτό.",
+  "raPreparingPartial": "Δεν ήταν δυνατή η ρύθμιση ορισμένων ζωντανών ενημερώσεων. Ο πίνακας ελέγχου ίσως δεν ανανεώνεται μόνος του· σύρετε για ανανέωση.",
+  "raLiveUpdates": "Ζωντανές ενημερώσεις",
+  "raLiveUpdatesConnecting": "Σύνδεση μέσω cloud",
+  "raLiveUpdatesDropped": "Η σύνδεση με το cloud διακόπηκε — επανασύνδεση"
 }

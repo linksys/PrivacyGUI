@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
+import 'package:privacy_gui/page/_shared/components/remote_session_readiness_gate.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
@@ -21,9 +22,10 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///
 /// **The `null`s here are not "hidden in RA".** Each one is a surface this mode
 /// has no concept of, and the two members that are *not* `null` are the point:
-/// [sessionIndicator] and [sessionExitAction] exist only because remote is the
-/// mode that is inside a session, and [connectionBannerLevel] reports the same
-/// SSE states as local does — just not in the same colours.
+/// [sessionIndicator], [sessionReadinessGate] and [sessionExitAction] exist only
+/// because remote is the mode that is inside a session. [connectionBannerLevel]
+/// answers `hidden` throughout: this mode's stream is to the cloud, and the chip
+/// reports it.
 class RemoteSurface implements SurfaceStrategy {
   const RemoteSurface();
 
@@ -47,19 +49,29 @@ class RemoteSurface implements SurfaceStrategy {
   @override
   Widget? sessionIndicator() => const RemoteSessionChip();
 
-  /// Guardian force-closes every proxied stream at roughly ten minutes, so
-  /// `disconnected` is the most routine event in a support session: reported as a
-  /// warning, after the banner's grace period, with Reconnect still offered.
-  /// [SseConnectionState.suspended] stays danger — that is the manager having
-  /// given up after its retries, which no amount of waiting fixes.
+  /// A dialog over the dashboard until the core subscriptions are in, or 90 s —
+  /// see [RemoteSessionReadinessGate].
+  @override
+  Widget? sessionReadinessGate() => const RemoteSessionReadinessGate();
+
+  /// Never raised (Austin, 2026-10-01). Under Remote Assistance the stream runs to
+  /// Guardian, not to the router, so the banner's "Connecting to router" /
+  /// "Disconnected" names the wrong thing — and it sat over every login, because
+  /// the stream opens after the first reads, and over every routine ~10-minute
+  /// Guardian close. The state still matters to an agent, so it is reported where
+  /// the session's other facts are: the [RemoteSessionChip]'s popup, which reads
+  /// the same [SseConnectionState] and keeps #1577's "device offline" distinction.
+  ///
+  /// Written out per state rather than as one `_ => hidden`, so a new connection
+  /// state is still a decision here and not a silent default.
   @override
   SseBannerLevel connectionBannerLevel(SseConnectionState state) =>
       switch (state) {
         SseConnectionState.connected => SseBannerLevel.hidden,
-        SseConnectionState.connecting => SseBannerLevel.warning,
-        SseConnectionState.reconnecting => SseBannerLevel.warning,
-        SseConnectionState.disconnected => SseBannerLevel.warning,
-        SseConnectionState.suspended => SseBannerLevel.danger,
+        SseConnectionState.connecting => SseBannerLevel.hidden,
+        SseConnectionState.reconnecting => SseBannerLevel.hidden,
+        SseConnectionState.disconnected => SseBannerLevel.hidden,
+        SseConnectionState.suspended => SseBannerLevel.hidden,
       };
 
   /// A support session does not offer to start another one.
@@ -89,6 +101,16 @@ class RemoteSurface implements SurfaceStrategy {
   /// `dashboard-edit` action at all.
   @override
   VoidCallback? layoutEditor(VoidCallback enterEditMode) => null;
+
+  /// Read-only (Austin, 2026-09-24): the agent sees every value and changes none.
+  /// This session reaches the router *over its WAN*, so a connection-type change,
+  /// a bad static address or a lease release can cut the link the agent would
+  /// need to put it back — with no LAN path to recover on. `null` removes the
+  /// edit toggle and Release & Renew together — on this page. The dashboard's
+  /// network-status card keeps its Renew Lease button in a remote session, by
+  /// decision; see [SurfaceStrategy.internetSettingsEditor].
+  @override
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode) => null;
 
   /// The preset is fixed (`UspDashboardPreset.remote`), so there is nothing to
   /// ask a first-time user — and the agent is not the user whose preference a

@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Popup",
-  "cardFormForNamed": "Kortformat för {name}"
+  "cardFormForNamed": "Kortformat för {name}",
+  "notificationHistory": "Aviseringshistorik",
+  "notificationHistoryLastBoot": "Senaste start",
+  "notificationHistoryLastActivity": "Senaste USP-aktivitet",
+  "notificationHistoryEmpty": "Den här supportsessionen har ännu inte gett några aviseringar",
+  "notificationHistoryUnavailable": "Aviseringshistorik är endast tillgänglig under en fjärrhjälpssession",
+  "notificationHistoryGone": "Den här aviseringen är inte längre tillgänglig",
+  "notificationHistoryLoadFailed": "Det gick inte att läsa in den här aviseringen",
+  "notificationHistoryMessageId": "Meddelande-ID",
+  "notificationHistoryCommandKey": "Kommandonyckel",
+  "notificationHistoryShowMore": "Visa mer",
+  "sseRouterOffline": "Routern är offline — väntar på att den kommer tillbaka",
+  "raPreparingTitle": "Konfigurerar liveuppdateringar",
+  "raPreparingBody": "Läser in routerns data och prenumererar på dess ändringar via molnet. Instrumentpanelen fylls i bakom detta; du kan använda den när detta stängs.",
+  "raPreparingPartial": "Vissa liveuppdateringar kunde inte konfigureras. Instrumentpanelen kanske inte uppdateras av sig själv; dra för att uppdatera.",
+  "raLiveUpdates": "Liveuppdateringar",
+  "raLiveUpdatesConnecting": "Ansluter via molnet",
+  "raLiveUpdatesDropped": "Molnanslutningen bröts — ansluter igen"
 }

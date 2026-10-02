@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Açılır pencere",
-  "cardFormForNamed": "{name} için kart biçimi"
+  "cardFormForNamed": "{name} için kart biçimi",
+  "notificationHistory": "Bildirim Geçmişi",
+  "notificationHistoryLastBoot": "Son açılış",
+  "notificationHistoryLastActivity": "Son USP etkinliği",
+  "notificationHistoryEmpty": "Bu destek oturumu henüz bildirim üretmedi",
+  "notificationHistoryUnavailable": "Bildirim geçmişi yalnızca Uzaktan Yardım oturumu sırasında kullanılabilir",
+  "notificationHistoryGone": "Bu bildirim artık kullanılamıyor",
+  "notificationHistoryLoadFailed": "Bu bildirim yüklenemedi",
+  "notificationHistoryMessageId": "Mesaj kimliği",
+  "notificationHistoryCommandKey": "Komut anahtarı",
+  "notificationHistoryShowMore": "Daha fazla göster",
+  "sseRouterOffline": "Yönlendirici çevrimdışı — geri gelmesi bekleniyor",
+  "raPreparingTitle": "Canlı güncellemeler ayarlanıyor",
+  "raPreparingBody": "Yönlendiricinin verileri yükleniyor ve değişikliklerine bulut üzerinden abone olunuyor. Pano arka planda doluyor; bu pencere kapandığında kullanabilirsiniz.",
+  "raPreparingPartial": "Bazı canlı güncellemeler ayarlanamadı. Pano kendini yenilemeyebilir; yenilemek için çekin.",
+  "raLiveUpdates": "Canlı güncellemeler",
+  "raLiveUpdatesConnecting": "Bulut üzerinden bağlanılıyor",
+  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor"
 }

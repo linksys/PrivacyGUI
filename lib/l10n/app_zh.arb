@@ -1176,5 +1176,22 @@
   "cardFormNormal": "标准",
   "cardFormCompact": "精简",
   "cardFormPopup": "弹出式",
-  "cardFormForNamed": "{name} 的卡片样式"
+  "cardFormForNamed": "{name} 的卡片样式",
+  "notificationHistory": "通知历史",
+  "notificationHistoryLastBoot": "上次启动",
+  "notificationHistoryLastActivity": "上次 USP 活动",
+  "notificationHistoryEmpty": "本次支持会话尚未产生任何通知",
+  "notificationHistoryUnavailable": "通知历史仅在远程协助会话期间可用",
+  "notificationHistoryGone": "此通知已不再可用",
+  "notificationHistoryLoadFailed": "无法加载此通知",
+  "notificationHistoryMessageId": "消息 ID",
+  "notificationHistoryCommandKey": "命令键",
+  "notificationHistoryShowMore": "显示更多",
+  "sseRouterOffline": "路由器已离线 — 正在等待其恢复",
+  "raPreparingTitle": "正在设置实时更新",
+  "raPreparingBody": "正在通过云端加载路由器数据并订阅其变更。仪表板会在后方逐步显示，此窗口关闭后即可使用。",
+  "raPreparingPartial": "部分实时更新无法设置。仪表板可能不会自动刷新，请下拉刷新。",
+  "raLiveUpdates": "实时更新",
+  "raLiveUpdatesConnecting": "正在通过云端连接",
+  "raLiveUpdatesDropped": "云端连接中断 — 正在重新连接"
 }

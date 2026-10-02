@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
@@ -24,6 +26,12 @@ void main() {
         )).thenAnswer((_) async => {});
     when(() => mockBridge.listSubscriptions())
         .thenAnswer((_) async => <String>[]);
+    when(() => mockBridge.listSubscriptions(teardown: any(named: 'teardown')))
+        .thenAnswer((_) async => <String>[]);
+    when(() => mockBridge.unsubscribe(
+          subscriptionId: any(named: 'subscriptionId'),
+          teardown: any(named: 'teardown'),
+        )).thenAnswer((_) async => {});
   });
 
   group('heartbeatConfig', () {
@@ -122,25 +130,142 @@ void main() {
     });
   });
 
+  group('RemoteSseStrategy - all at once', () {
+    // Measured on QA Guardian, 2026-10-02, with the same seven core
+    // subscriptions: one after another (unregister, 100 ms, register, 50 ms)
+    // took 32.1 s; seven unregisters in parallel 3.1-5.7 s and seven registers
+    // in parallel 2.9 s, every one 200, no 503 — and the parallel-registered
+    // subscriptions delivered notifies at the same rate as serial ones. The
+    // serial walk was the larger half of the minute an RA agent waited behind
+    // the "setting up live updates" dialog.
+    //
+    // What must still hold, because Guardian rejects a duplicate id: every id
+    // is unregistered before *any* register goes out, so a register never
+    // races its own id's unregister.
+    List<SubscriptionDef> seven() => [
+          for (var i = 1; i <= 7; i++)
+            SubscriptionDef(
+              subscriptionId: 'sub-$i',
+              notifType: 'ValueChange',
+              referenceList: 'Device.X$i.',
+            ),
+        ];
+
+    test('all unregisters are in flight together, then all registers',
+        () async {
+      final unregs = <String, Completer<Map<String, dynamic>>>{};
+      final events = <String>[];
+      when(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).thenAnswer((inv) {
+        final id = inv.namedArguments[#subscriptionId] as String;
+        events.add('unreg $id');
+        return (unregs[id] = Completer()).future;
+      });
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((inv) async {
+        events.add('reg ${inv.namedArguments[#subscriptionId]}');
+        return {};
+      });
+
+      final done = strategy.registerSubscriptions(seven());
+      await pumpEventQueue();
+
+      // Seven unregisters outstanding at once, and no register yet: the serial
+      // walk would have one in flight here.
+      expect(unregs, hasLength(7));
+      expect(events.where((e) => e.startsWith('reg')), isEmpty);
+
+      for (final c in unregs.values) {
+        c.complete({});
+      }
+      final records = await done;
+
+      expect(records, hasLength(7));
+      final firstReg = events.indexWhere((e) => e.startsWith('reg'));
+      final lastUnreg = events.lastIndexWhere((e) => e.startsWith('unreg'));
+      expect(firstReg, greaterThan(lastUnreg),
+          reason: 'a register sent before every unregister has answered can '
+              'race its own id, which Guardian rejects as a duplicate');
+    });
+
+    test('all registers are in flight together', () async {
+      final regs = <Completer<Map<String, dynamic>>>[];
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) {
+        final c = Completer<Map<String, dynamic>>();
+        regs.add(c);
+        return c.future;
+      });
+
+      final done = strategy.registerSubscriptions(seven());
+      // Past the unregister batch and its 100 ms settle, so the registers are
+      // the requests outstanding.
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      expect(regs, hasLength(7));
+      for (final c in regs) {
+        c.complete({});
+      }
+      expect(await done, hasLength(7));
+    });
+
+    test('one register failing costs only that subscription', () async {
+      when(() => mockBridge.subscribe(
+            subscriptionId: 'remote-sub-3',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenThrow(Exception('guardian error'));
+
+      final records = await strategy.registerSubscriptions(seven());
+
+      expect(records.map((r) => r.subscriptionId),
+          ['sub-1', 'sub-2', 'sub-4', 'sub-5', 'sub-6', 'sub-7'],
+          reason: 'in the order asked for, so the registry reads the same '
+              'whichever answer came back first');
+    });
+  });
+
   group('unregisterSubscriptions', () {
     test('calls bridge.unsubscribe for each id with prefix', () async {
       await strategy.unregisterSubscriptions(['sub-1', 'sub-2']);
 
       // Bridge receives prefixed IDs
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
-          .called(1);
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-2'))
-          .called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-2', teardown: true)).called(1);
     });
 
     test('continues on failure', () async {
-      when(() => mockBridge.unsubscribe(subscriptionId: 'remote-fail'))
-          .thenThrow(Exception('error'));
+      when(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-fail',
+          teardown: true)).thenThrow(Exception('error'));
 
       await strategy.unregisterSubscriptions(['fail', 'ok']);
 
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-ok'))
-          .called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-ok', teardown: true)).called(1);
+    });
+
+    test('a 401 here cannot end the session', () async {
+      // Logout reaches this through `unregisterAll()` after `session.end()` has
+      // spent the credential, so a 401 is the expected answer — the same one that
+      // looped 770 times on QA when the disconnect cleanup reported it. Today
+      // `disconnect()` empties the registry first and the list is empty by the
+      // time it gets here; this is what keeps the loop closed if those two steps
+      // are ever reordered (review of #1600). A live single unregister is
+      // cleanup whose failure is ignored too, and the reads that depend on the
+      // token still report it.
+      await strategy.unregisterSubscriptions(['sub-1']);
+
+      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'));
     });
   });
 
@@ -276,7 +401,7 @@ void main() {
 
   group('onSseDisconnected', () {
     test('intentional disconnect triggers fire-and-forget cleanup', () async {
-      when(() => mockBridge.listSubscriptions())
+      when(() => mockBridge.listSubscriptions(teardown: true))
           .thenAnswer((_) async => ['remote-sub-1', 'remote-sub-2']);
 
       await strategy.onSseDisconnected(intentional: true);
@@ -284,23 +409,46 @@ void main() {
       // Fire-and-forget, so we just verify it was called
       // The actual cleanup happens asynchronously
       await Future.delayed(const Duration(milliseconds: 50));
-      verify(() => mockBridge.listSubscriptions()).called(1);
+      verify(() => mockBridge.listSubscriptions(teardown: true)).called(1);
     });
 
     test('cleanup only removes remote-prefixed subscriptions', () async {
-      when(() => mockBridge.listSubscriptions()).thenAnswer(
+      when(() => mockBridge.listSubscriptions(teardown: true)).thenAnswer(
           (_) async => ['remote-sub-1', 'local-sub', 'ethernet-valuechange']);
 
       await strategy.onSseDisconnected(intentional: true);
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Only remote-prefixed subscription should be unsubscribed
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
-          .called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
       // Local subscriptions should NOT be touched
-      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'local-sub'));
-      verifyNever(
-          () => mockBridge.unsubscribe(subscriptionId: 'ethernet-valuechange'));
+      verifyNever(() => mockBridge.unsubscribe(
+          subscriptionId: 'local-sub', teardown: any(named: 'teardown')));
+      verifyNever(() => mockBridge.unsubscribe(
+          subscriptionId: 'ethernet-valuechange',
+          teardown: any(named: 'teardown')));
+    });
+
+    test('the cleanup cannot end the session it is cleaning up after',
+        () async {
+      // An intentional disconnect is almost always a logout, which has already
+      // spent the credential — on QA Guardian the End Session DELETE had
+      // returned 204 before this read went out. A 401 here is the expected
+      // answer, not news, so the reads go out with `teardown: true` and the
+      // bridge reports that 401 as an error only. Measured without it: the 401
+      // asked for a logout, that logout disconnected SSE again, and the loop ran
+      // 770 times in four minutes.
+      when(() => mockBridge.listSubscriptions(teardown: true))
+          .thenAnswer((_) async => ['remote-sub-1']);
+
+      await strategy.onSseDisconnected(intentional: true);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(() => mockBridge.listSubscriptions(teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(
+          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
+      verifyNever(() => mockBridge.listSubscriptions());
     });
 
     test('unintentional disconnect does not trigger cleanup', () async {

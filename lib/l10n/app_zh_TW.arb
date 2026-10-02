@@ -1176,5 +1176,22 @@
   "cardFormNormal": "標準",
   "cardFormCompact": "精簡",
   "cardFormPopup": "彈出式",
-  "cardFormForNamed": "{name} 的卡片樣式"
+  "cardFormForNamed": "{name} 的卡片樣式",
+  "notificationHistory": "通知記錄",
+  "notificationHistoryLastBoot": "上次開機",
+  "notificationHistoryLastActivity": "上次 USP 活動",
+  "notificationHistoryEmpty": "本次支援工作階段尚未產生任何通知",
+  "notificationHistoryUnavailable": "通知記錄僅在遠端協助工作階段期間可用",
+  "notificationHistoryGone": "此通知已不再可用",
+  "notificationHistoryLoadFailed": "無法載入此通知",
+  "notificationHistoryMessageId": "訊息 ID",
+  "notificationHistoryCommandKey": "命令金鑰",
+  "notificationHistoryShowMore": "顯示更多",
+  "sseRouterOffline": "路由器已離線 — 正在等待其恢復",
+  "raPreparingTitle": "正在設定即時更新",
+  "raPreparingBody": "正在透過雲端載入路由器資料並訂閱其變更。儀表板會在後方逐步顯示，此視窗關閉後即可使用。",
+  "raPreparingPartial": "部分即時更新無法設定。儀表板可能不會自動更新，請下拉重新整理。",
+  "raLiveUpdates": "即時更新",
+  "raLiveUpdatesConnecting": "正在透過雲端連線",
+  "raLiveUpdatesDropped": "雲端連線中斷 — 正在重新連線"
 }

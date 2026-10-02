@@ -289,19 +289,25 @@ void main() {
           // declaration and every unrelated method of that name, and the thing
           // being counted is *call sites*, not definitions.
           'lib/config/global_config.dart',
-          // The two #1498 deliberately left, documented in place at each site —
-          // and for two *different* reasons, which is worth stating because an
-          // earlier revision of this comment (and of the guide) claimed one reason
-          // for both. `sse_providers.dart` is compensating for a fabricated
-          // endpoint: `BridgeEndpoints.remote()`'s `health` path is not served by
-          // Guardian, so the `if` is skipping a call that cannot work, and wrapping
-          // it in a strategy member would freeze the fabrication into a contract —
-          // the fix is to delete the path, which is transport cleanup outside this
-          // epic. `di.dart` is the boot-order one: it decides whether the
+          // **`sse_providers.dart` was here and is not any more (#1576).** #1498 left
+          // its `if (!GlobalConfig.remote.isActive)` in place on the grounds that
+          // `BridgeEndpoints.remote()`'s `health` path was a fabrication Guardian did
+          // not serve, so the `if` was skipping a call that could not work and
+          // wrapping it in a strategy member would have frozen the fabrication into a
+          // contract. **The premise was false**: Guardian's own OpenAPI spec serves
+          // that path, byte for byte as we declare it. So the read was not a mode
+          // *cause* in either direction — both transports have a health endpoint —
+          // and deleting the `if` was the whole fix. Nothing moved onto a strategy.
+          //
+          // The lesson for the next entry on this list: a waiver argued from a claim
+          // about someone else's deployment needs that claim re-checked before it is
+          // inherited. This one was quoted into three docstrings and a test comment
+          // and outlived the epic that wrote it.
+          //
+          // `di.dart` is the boot-order one, and it remains: it decides whether the
           // app-origin USP client slot may be filled at all, and it runs during
           // GetIt registration, before any `ProviderContainer` exists, so there is
           // no profile to read.
-          'lib/core/usp/providers/sse_providers.dart',
           'lib/di.dart',
         ],
         reason:

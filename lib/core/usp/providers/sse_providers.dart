@@ -14,7 +14,6 @@ import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/framework/mode/bridge_config.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// How this build's transport is described — the mode-dependent half of
@@ -63,6 +62,10 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
     authToken: config.authToken,
     clientTypeId: config.clientTypeId,
     authBehavior: config.authBehavior,
+    // Null locally, and the client throws on any read that needs it. Nothing
+    // local calls one: the only caller is #1580's page, whose entry point the
+    // local surface does not offer.
+    remoteReads: config.remoteReads,
   );
 
   // W-1 fix: wire auth failure to logout (both modes)
@@ -114,8 +117,8 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
-  final SseOperationStrategy strategy =
-      ref.watch(appModeProfileProvider).transport.sseStrategy(bridge);
+  final profile = ref.watch(appModeProfileProvider);
+  final SseOperationStrategy strategy = profile.transport.sseStrategy(bridge);
 
   final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 
@@ -143,6 +146,19 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   authCoordinator.onForceLogout = forceLogout;
   usp.onForceLogout = forceLogout;
 
+  // #1627: what a 401 on a USP command means, and so whether the client may try
+  // to recover it — the same answer the bridge was built with for its own REST
+  // 401s. Set beside `onForceLogout` because under Remote Assistance that callback
+  // *is* the answer: the Guardian token cannot be refreshed, so the client ends
+  // the session instead of running the local reauth, whose `restoreSession()`
+  // step would return without logging out.
+  //
+  // Not reset on dispose, unlike the callback above: the mode is fixed for the
+  // build, so between a dispose and the rebuild after a Remote Assistance
+  // re-activation the value is still `AuthBehavior.remote`, and resetting it
+  // would reopen the local reauth for exactly that window.
+  usp.authBehavior = profile.credential.authBehavior;
+
   ref.onDispose(() {
     authCoordinator.onForceLogout = null;
     usp.onForceLogout = null;
@@ -150,6 +166,33 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   });
 
   return manager;
+});
+
+/// Whether the session's core subscriptions are registered, as a [Stream].
+///
+/// The same bridge as [sseConnectionStateProvider], for the same reason: the
+/// manager holds a [ValueNotifier] and the UI wants a provider. With no manager
+/// there is nothing to wait for, so it answers ready rather than pending — a
+/// dialog waiting on a demo build would never close.
+final sseCoreSubscriptionsProvider =
+    StreamProvider<CoreSubscriptionState>((ref) {
+  final manager = ref.watch(sseManagerProvider);
+  if (manager == null) {
+    return Stream.value(const CoreSubscriptionsReady(registered: 0, failed: 0));
+  }
+
+  final controller = StreamController<CoreSubscriptionState>();
+  void listener() => controller.add(manager.coreSubscriptions.value);
+
+  manager.coreSubscriptions.addListener(listener);
+  controller.add(manager.coreSubscriptions.value);
+
+  ref.onDispose(() {
+    manager.coreSubscriptions.removeListener(listener);
+    controller.close();
+  });
+
+  return controller.stream;
 });
 
 /// Reactive SSE connection state as a [Stream].
@@ -186,7 +229,11 @@ final sseOperationAwaiterProvider = Provider<SseOperationAwaiter?>((ref) {
   final manager = ref.watch(sseManagerProvider);
   final usp = ref.watch(uspClientProvider);
   if (manager == null || usp == null) return null;
-  return SseOperationAwaiter(manager, usp);
+  final awaiter = SseOperationAwaiter(manager, usp);
+  // #1578: the awaiter registers a stream-opened listener on the manager, so it has
+  // something to give back.
+  ref.onDispose(awaiter.dispose);
+  return awaiter;
 });
 
 /// Provides [NetworkDiagnosticsExecutor] — typed wrapper for TR-181 network
@@ -210,31 +257,48 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   if (manager == null) return;
 
   final usp = ref.watch(uspClientProvider);
-  if (usp == null || !usp.isAuthenticated) return;
+  if (usp == null) return;
+
+  // Whether the client holds this mode's credential is the mode's question —
+  // see [CredentialStrategy.holdsCredential] for why the wasm client's own
+  // `isAuthenticated` is the wrong one to ask under Remote Assistance. Read,
+  // not watched: the profile is fixed for the build, and the client is already
+  // watched above.
+  if (!ref.read(appModeProfileProvider).credential.holdsCredential(usp)) {
+    return;
+  }
 
   final bridge = ref.watch(uspBridgeClientProvider);
   if (bridge == null) return;
 
-  // Step 0: Health check — best-effort, non-fatal (local mode only).
+  // Step 0: Health check — best-effort and non-fatal, in **both** modes.
   // If the bridge is busy (504) or slow, we still attempt SSE connection
   // because SseConnectionManager has its own retry/backoff logic.
-  // Skip in Remote mode — Guardian proxy has no health endpoint.
   //
-  // #1474 phase 3 deliberately left this read alone, taking the file from 3 mode
-  // reads to 1. It is not a mode *cause*: it exists because
-  // `BridgeEndpoints.remote()`'s `health` path is a fabrication — Guardian has no
-  // such endpoint — so this `if` is compensating for a wrong endpoint table, and
-  // the fix is to delete that path, not to give the mode a strategy member for
-  // "does my transport have a health check". That is transport-layer cleanup
-  // outside this epic; wrapping it in a strategy first would freeze the
-  // fabrication into a contract.
-  if (!GlobalConfig.remote.isActive) {
-    try {
-      await bridge.health().timeout(const Duration(seconds: 5));
-      logger.d('[SSE]: Bridge health check passed');
-    } catch (e) {
-      logger.w('[SSE]: Bridge health check failed: $e — continuing');
-    }
+  // **This used to be skipped remotely, on a premise that was false.** #1474 phase 3
+  // left the read alone and recorded the reason as the remote table's `health` entry
+  // being invented. Guardian's own OpenAPI spec (received 2026-09-17) serves that
+  // path, byte for byte as we declare it, so the `if` was compensating for nothing
+  // and the endpoint table was right all along. #1576 deleted the gate; the same
+  // premise is gone from `remote_transport_strategy.dart` and from
+  // `bridge_endpoints_test.dart`, and `usp_health_claim_test.dart` scans for its
+  // *absence* rather than for the new call — a scan for the call passes green with
+  // the wrong comment beside it, which is how one docstring became four.
+  //
+  // It is still not a mode *cause*: both transports have a health endpoint, so
+  // there is nothing here for a strategy member to answer.
+  //
+  // `reportAuthFailure: false` because nothing depends on the answer: a 401 here
+  // is caught below like any other failure, and reported it would have ended the
+  // session from a call whose result is ignored. Whether the token is really dead
+  // is for the connect and the first read, which report it as they always have.
+  try {
+    await bridge
+        .health(reportAuthFailure: false)
+        .timeout(const Duration(seconds: 5));
+    logger.d('[SSE]: Bridge health check passed');
+  } catch (e) {
+    logger.w('[SSE]: Bridge health check failed: $e — continuing');
   }
 
   // Connect SSE only — core subscriptions are registered by the dashboard

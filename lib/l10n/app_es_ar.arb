@@ -1176,5 +1176,22 @@
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Ventana emergente",
-  "cardFormForNamed": "Formato de tarjeta para {name}"
+  "cardFormForNamed": "Formato de tarjeta para {name}",
+  "notificationHistory": "Historial de notificaciones",
+  "notificationHistoryLastBoot": "Último arranque",
+  "notificationHistoryLastActivity": "Última actividad USP",
+  "notificationHistoryEmpty": "Esta sesión de asistencia aún no ha generado notificaciones",
+  "notificationHistoryUnavailable": "El historial de notificaciones solo está disponible durante una sesión de asistencia remota",
+  "notificationHistoryGone": "Esta notificación ya no está disponible",
+  "notificationHistoryLoadFailed": "No se pudo cargar esta notificación",
+  "notificationHistoryMessageId": "ID de mensaje",
+  "notificationHistoryCommandKey": "Clave de comando",
+  "notificationHistoryShowMore": "Mostrar más",
+  "sseRouterOffline": "El router está desconectado: esperando a que vuelva",
+  "raPreparingTitle": "Configurando actualizaciones en vivo",
+  "raPreparingBody": "Cargando los datos del router y suscribiéndose a sus cambios a través de la nube. El panel se completa detrás; vas a poder usarlo cuando esto se cierre.",
+  "raPreparingPartial": "No se pudieron configurar algunas actualizaciones en vivo. Es posible que el panel no se actualice solo; deslizá para actualizar.",
+  "raLiveUpdates": "Actualizaciones en vivo",
+  "raLiveUpdatesConnecting": "Conectando a través de la nube",
+  "raLiveUpdatesDropped": "Se perdió la conexión con la nube — reconectando"
 }
