@@ -32,12 +32,17 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     // Listen to device data changes for future updates.
     //
     // Deliberately NOT guarded by a `clientDevices` diff: _onDashboardUpdated
-    // is not a pure function of its argument — it reads DateTime.now() at :138
-    // and appends a new hourly bucket when the hour has rolled over, so an
-    // identical device list at a later time produces a different result. A diff
-    // here would leave gaps in the hourly history, and this notifier is not
-    // autoDispose, so the gap persists for the session. Filed as #1504; see
-    // also #1502 / AC-4 and doc/riverpod/listen_site_audit.md.
+    // is not a pure function of its argument — it reads DateTime.now() and
+    // appends a new hourly bucket when the hour has rolled over, so an
+    // identical device list at a later time produces a different result. A
+    // list-only diff would drop the call that opens the new hour's bucket.
+    //
+    // The price is a repeat on an unchanged list: with mesh topology present,
+    // devicesDataProvider publishes twice per push refresh, so this recomputes
+    // and persists twice. Local work only, no USP request, and left alone on
+    // purpose. If it is ever guarded, skip only when the list is deep-equal AND
+    // the last bucket is the current hour; `==` on `clientDevices` is
+    // reference equality, because MeshNetwork.allClients builds a new list.
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
