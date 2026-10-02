@@ -9,21 +9,21 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Shows a dialog to select a timezone from a searchable list with DST toggle
 /// and an optional Advanced section for NTP server configuration.
 ///
+/// [zones] is the list to offer — the device's own catalogue
+/// (`timeZoneCatalogueProvider`, linksys/FWDEV#198) — and the caller resolves
+/// its card against the same list, so the preselection matches what the card
+/// shows. Required, with no default: a default would let a caller skip the
+/// device catalogue without noticing.
+///
 /// Returns a [TimezoneEditResult] if saved, or null if cancelled.
 Future<TimezoneEditResult?> showTimezoneEditDialog(
   BuildContext context, {
   required TimeSettingsUIModel current,
+  required List<TimeZoneInfo> zones,
 }) {
-  final currentTz = resolveTimezone(
-    zoneName: current.localTimeZoneName,
-    localTimeZone: current.localTimeZone,
-    reportedOffsetMinutes: current.reportedOffsetMinutes,
-  );
-  final currentDst = dstInEffect(
-    zoneName: current.localTimeZoneName,
-    localTimeZone: current.localTimeZone,
-    reportedOffsetMinutes: current.reportedOffsetMinutes,
-  );
+  final resolved = resolveCurrentTimezone(current, zones: zones);
+  final currentTz = resolved.zone;
+  final currentDst = resolved.dstOn;
   TimeZoneInfo? selected = currentTz;
   bool dstEnabled = currentDst;
   String searchQuery = '';
@@ -38,8 +38,8 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     checkPositiveEnabled: () => selected != null,
     contentBuilder: (context, setState, onSubmit) {
       final filtered = searchQuery.isEmpty
-          ? kTimeZoneDefinitions
-          : kTimeZoneDefinitions.where((tz) {
+          ? zones
+          : zones.where((tz) {
               final query = searchQuery.toLowerCase();
               final desc = tz.description.toLowerCase();
               final offset = tz.offsetDisplayText.toLowerCase();
@@ -53,9 +53,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               return false;
             }).toList();
 
-      // Operable only where the firmware will take the string we would write —
-      // see `TimeZoneInfo.standardTimePosix` for the four zones it will not.
-      final canSwitch = selected?.canSwitchDstOff ?? false;
+      // Operable only on a zone that observes DST: the firmware refuses DST on
+      // for one that does not (ErrorTimeZoneDoesNotObserveDST).
+      final canSwitch = selected?.observesDST ?? false;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -72,21 +72,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             },
           ),
           AppGap.md(),
-          // Daylight savings stays a switch (#1609), but what switching it off
-          // *writes* has changed, and that is what makes it safe.
-          //
-          // It used to write `posixNoDST` — a bare `UTC±N`, an offset with no
-          // identity. Eleven of those strings are each shared by two or three
-          // zones, so the saved zone came back as whichever one `matchTimezone`
-          // reached first: pick Eastern Time, switch daylight savings off, and
-          // the card said "Indiana East, Colombia, Panama". It now writes
-          // `standardTimePosix`, the zone's own abbreviation, which is
-          // unambiguous because `matchTimezone` tries `timeZoneID` first and
-          // these strings are the ids. The sibling non-DST zone is not in
-          // competition either: it writes its IANA name, on the other leaf.
-          //
-          // Disabled on four zones the firmware will not take a standard-time
-          // string for — see `TimeZoneInfo.standardTimePosix`.
+          // Saved with the zone in one `SetTimeSettings` call, so switching it
+          // off keeps the zone's own ID and only sends DST false — Eastern Time
+          // with DST off stays Eastern Time (linksys/FWDEV#198).
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -127,12 +115,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                         onTap: () {
                           setState(() {
                             selected = tz;
-                            // A zone that cannot report daylight savings, or
-                            // cannot be switched out of it, must not carry a
+                            // A zone without daylight savings must not carry a
                             // stale `true` into the save.
-                            if (!tz.canSwitchDstOff) {
-                              dstEnabled = tz.observesDST;
-                            }
+                            if (!tz.observesDST) dstEnabled = false;
                           });
                         },
                       );
@@ -280,11 +265,7 @@ class _AdvancedSection extends StatelessWidget {
 
 /// Decides what a Save should write, or that it should write nothing.
 ///
-/// Top-level and pure so the dialog and its tests run the *same* code. It used to
-/// live inline in the `event` callback with a copy of it in the test file, and the
-/// copy was already an incomplete mirror — it omitted the legacy-POSIX fallback,
-/// so a test for one of the three unnamed entries would have passed against
-/// behaviour the dialog does not have.
+/// Top-level and pure so the dialog and its tests run the *same* code.
 ///
 /// Returns null when nothing changed at all. That is not a shortcut: both call
 /// sites already guard `result == null` for a cancelled dialog, and "you pressed
@@ -301,68 +282,43 @@ TimezoneEditResult? buildTimezoneEditResult({
   required String currentNtp,
 }) {
   final ntpServer1 = ntpValue != currentNtp ? ntpValue : null;
-  final zoneUnchanged = selected == currentTz && dstEnabled == currentDst;
+  // A zone without DST is saved with DST false whatever the switch last held:
+  // the firmware refuses `true` for it (ErrorTimeZoneDoesNotObserveDST).
+  final dstToSave = selected.observesDST && dstEnabled;
+  final zoneUnchanged = selected == currentTz && dstToSave == currentDst;
 
   if (zoneUnchanged) {
     // Writing the resolved zone back when it was not chosen would commit a
-    // guess: a legacy `UTC±N` is ambiguous — `UTC-8` resolves to Hong Kong
-    // although it may have been saved as Singapore, and `UTC8` resolves to
-    // Pacific although the string has no DST transitions in it. So an edit that
-    // only touched the NTP server must leave the timezone leaves alone, and an
-    // edit that touched nothing must write nothing at all.
+    // guess: when the device cannot name its zone, the one shown is our own
+    // resolution of it. So an edit that only touched the NTP server must leave
+    // the zone alone, and an edit that touched nothing must write nothing at all.
     return ntpServer1 == null
         ? null
         : TimezoneEditResult.ntpOnly(ntpServer1: ntpServer1);
   }
 
-  // Daylight savings off on a zone that observes it is the one case that goes out
-  // as a POSIX string: there is no IANA zone meaning "Eastern Time but ignore the
-  // DST rule", so the identity channel cannot express it. `standardTimePosix`
-  // can, and unambiguously — `matchTimezone` tries `timeZoneID` first and these
-  // strings are the ids.
-  final offOnADstZone = selected.observesDST && !dstEnabled;
-  final posix = offOnADstZone ? selected.standardTimePosix : null;
-
   return TimezoneEditResult(
-    // The name otherwise, so the choice reads back as itself. Falls through to
-    // the legacy POSIX form for the three entries whose own offset or DST flag
-    // disagrees with the tz database and so have no faithful name. Never both —
-    // the two leaves clobber each other in the firmware.
-    zoneName: posix == null ? selected.ianaName : null,
-    localTimeZone: posix ??
-        (selected.ianaName == null
-            ? selected.posixFor(dstEnabled: dstEnabled)
-            : null),
+    // Sent verbatim — a zone without DST keeps its -NO-DST suffix, and the bare
+    // standard string is ErrorUnknownTimeZone on the device.
+    zone: (id: selected.timeZoneID, autoAdjustForDst: dstToSave),
     ntpServer1: ntpServer1,
   );
 }
 
 class TimezoneEditResult {
-  /// The IANA zone name to write, when the chosen entry has one.
-  final String? zoneName;
-
-  /// The POSIX string to write instead, for an entry with no IANA name.
-  final String? localTimeZone;
+  /// The zone and DST setting to save through `SetTimeSettings`, or null when
+  /// the zone was not changed.
+  final TimeZoneSelection? zone;
 
   final String? ntpServer1;
 
-  /// Exactly one timezone leaf, because the firmware wires them to clobber each
-  /// other — see `UspAdminService.updateTimezone`.
-  const TimezoneEditResult({
-    this.zoneName,
-    this.localTimeZone,
-    this.ntpServer1,
-  }) : assert(
-          (zoneName == null) != (localTimeZone == null),
-          'exactly one timezone leaf is written — see UspAdminService',
-        );
+  /// A zone change, saved through `SetTimeSettings` with its DST setting.
+  const TimezoneEditResult(
+      {required TimeZoneSelection this.zone, this.ntpServer1});
 
-  /// The zone was not changed, so neither leaf is written.
+  /// The zone was not changed, so it is not written.
   ///
-  /// A separate constructor rather than a third null: the invariant above is
-  /// what stops an ambiguous legacy value being committed as a guess, and
-  /// relaxing it would let that back in silently.
-  const TimezoneEditResult.ntpOnly({this.ntpServer1})
-      : zoneName = null,
-        localTimeZone = null;
+  /// A separate constructor rather than a nullable [zone] parameter: it is what
+  /// stops a zone the device could not name being committed as a guess.
+  const TimezoneEditResult.ntpOnly({this.ntpServer1}) : zone = null;
 }

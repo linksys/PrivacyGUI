@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 
 final _testTheme = AppTheme.create(
@@ -17,6 +19,7 @@ final _testTheme = AppTheme.create(
 Widget _buildTestWidget({
   required TimeSettingsUIModel timeSettings,
   VoidCallback? onEdit,
+  List<TimeZoneInfo> zones = kTimeZoneDefinitions,
 }) {
   return MaterialApp(
     theme: _testTheme,
@@ -27,6 +30,7 @@ Widget _buildTestWidget({
         width: 800,
         child: UspTimezoneCard(
           timeSettings: timeSettings,
+          zones: zones,
           onEdit: onEdit ?? () {},
         ),
       ),
@@ -179,6 +183,57 @@ void main() {
 
       expect(find.textContaining('Singapore'), findsOneWidget);
       expect(find.textContaining('Hong Kong'), findsNothing);
+    });
+
+    // linksys/FWDEV#198: the device names its own zone, and that wins.
+    testWidgets('the device zone ID wins over the zone name', (tester) async {
+      const arizona = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-09-22T03:30:00-07:00',
+        // MST7 is both Mountain Time with DST off and Arizona; the device
+        // breaks that tie with its own ID, and the leftover name would not.
+        localTimeZone: 'MST7',
+        localTimeZoneName: 'America/Denver',
+        timeZoneId: 'MST7-NO-DST',
+        autoAdjustForDst: false,
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: arizona));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Arizona'), findsOneWidget);
+      expect(find.textContaining('Mountain Time'), findsNothing);
+    });
+
+    testWidgets('the label comes from the zone list it is given',
+        (tester) async {
+      // The card resolves against the device catalogue — the list the edit
+      // dialog offers — so a device label wins over the built-in one.
+      const deviceRow = TimeZoneInfo(
+        timeZoneID: 'MST7-NO-DST',
+        utcOffsetMinutes: -420,
+        observesDST: false,
+        description: '(GMT-07:00) Arizona (device label)',
+      );
+      const arizona = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-09-22T03:30:00-07:00',
+        localTimeZone: 'MST7',
+        timeZoneId: 'MST7-NO-DST',
+        autoAdjustForDst: false,
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(
+        timeSettings: arizona,
+        zones: const [deviceRow],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Arizona (device label)'), findsOneWidget);
     });
 
     testWidgets('displays NTP server', (tester) async {

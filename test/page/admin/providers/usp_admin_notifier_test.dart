@@ -163,36 +163,30 @@ void main() {
       container.dispose();
     });
 
-    test('updateTimezone passes the zone name through', () async {
+    test('updateTimezone passes the zone ID and DST through', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
       when(() => mockAdminService.updateTimezone(
-            zoneName: any(named: 'zoneName'),
-            localTimeZone: any(named: 'localTimeZone'),
+            zone: any(named: 'zone'),
             ntpServer1: any(named: 'ntpServer1'),
-            ntpServer2: any(named: 'ntpServer2'),
-            enable: any(named: 'enable'),
           )).thenAnswer((_) async {});
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
       await container.read(uspAdminProvider.notifier).updateTimezone(
-            zoneName: 'Asia/Tokyo',
-          );
+        zone: (id: 'JST-9-NO-DST', autoAdjustForDst: false),
+      );
 
       verify(() => mockAdminService.updateTimezone(
-            zoneName: 'Asia/Tokyo',
-            localTimeZone: null,
+            zone: (id: 'JST-9-NO-DST', autoAdjustForDst: false),
             ntpServer1: null,
           )).called(1);
       container.dispose();
     });
 
-    // Both leaves became optional with #1609, which opened a hole: a call with
-    // neither and no NTP server writes nothing, because the service skips the
-    // name and `TimeSettings.update` short-circuits an empty param map into a
-    // synthetic success. The caller would then report "saved".
+    // A call with no zone and no NTP server writes nothing. The caller would
+    // then report "saved".
     test('updateTimezone refuses a call with nothing to write', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
@@ -205,15 +199,14 @@ void main() {
         throwsA(isA<ArgumentError>()),
       );
       verifyNever(() => mockAdminService.updateTimezone(
-            zoneName: any(named: 'zoneName'),
-            localTimeZone: any(named: 'localTimeZone'),
+            zone: any(named: 'zone'),
             ntpServer1: any(named: 'ntpServer1'),
           ));
       container.dispose();
     });
 
-    // #1609 review round 1. The zone name and the NTP server go out as two
-    // `Set`s, so the first can land and the second fail — the zone really changed
+    // #1609 review round 1. The zone and the NTP server go out as two
+    // requests, so the first can land and the second fail — the zone really changed
     // while the user is told the edit failed. Re-reading is the only thing that
     // stops the card showing a zone that is no longer set, and it used to be
     // skipped because `ref.invalidate` sat after the `try` and the catch
@@ -222,11 +215,8 @@ void main() {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
       when(() => mockAdminService.updateTimezone(
-            zoneName: any(named: 'zoneName'),
-            localTimeZone: any(named: 'localTimeZone'),
+            zone: any(named: 'zone'),
             ntpServer1: any(named: 'ntpServer1'),
-            ntpServer2: any(named: 'ntpServer2'),
-            enable: any(named: 'enable'),
           )).thenThrow(const NetworkError(detail: 'NTP write failed'));
 
       final container = createContainer();
@@ -236,9 +226,9 @@ void main() {
 
       await expectLater(
         container.read(uspAdminProvider.notifier).updateTimezone(
-              zoneName: 'America/New_York',
-              ntpServer1: 'time.cloudflare.com',
-            ),
+          zone: (id: 'EST5', autoAdjustForDst: true),
+          ntpServer1: 'time.cloudflare.com',
+        ),
         throwsA(isA<ServiceError>()),
       );
       await container.read(timeDataProvider.future);

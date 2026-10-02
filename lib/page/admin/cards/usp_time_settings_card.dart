@@ -58,13 +58,17 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     _syncIfChanged(timeData);
 
-    // Zone name first, POSIX string as the fallback — see `resolveTimezone`.
+    // The device's own zone ID first, our resolution as the fallback — see
+    // `resolveCurrentTimezone`. Resolved against the device catalogue, the list
+    // the edit dialog offers, so the card and its preselection agree. Until the
+    // catalogue has loaded the card resolves against the built-in table and the
+    // edit button stays disabled, so a tap never waits on it unseen or opens the
+    // dialog twice.
+    final zones = ref.watch(timeZoneCatalogueProvider).valueOrNull;
     final reportedOffset = time.reportedOffsetMinutes;
-    final tzInfo = resolveTimezone(
-      zoneName: time.localTimeZoneName,
-      localTimeZone: time.localTimeZone,
-      reportedOffsetMinutes: reportedOffset,
-    );
+    final current =
+        resolveCurrentTimezone(time, zones: zones ?? kTimeZoneDefinitions);
+    final tzInfo = current.zone;
     // Three tiers, matching `usp_timezone_card.dart` (#1609). An unmatched zone
     // is ordinary on FLWRT 2.0, not exotic — the factory value is a bare `UTC`
     // and 81 of the 89 zones the device publishes have no entry of ours — so
@@ -113,7 +117,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
         icon: AppIcon.font(Icons.edit, size: 18),
         semanticLabel: loc(context).editTimeSettings,
         identifier: 'admin-time-settings-edit',
-        onTap: isLoading ? null : () => _editTimezone(context, ref, time),
+        onTap: isLoading || zones == null
+            ? null
+            : () => _editTimezone(context, ref, time, zones),
       ),
       detailRoute: RouteNamed.uspAdmin,
       content: Column(
@@ -171,15 +177,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                   // (`Sommerzeit`), which is a width change in a cell this
                   // branch has not measured. The value beside it is localized.
                   label: 'DST',
-                  // `dstInEffect`, not `observesDST` — see the note at the same
-                  // row in `usp_timezone_card.dart`.
-                  value: dstInEffect(
-                    zoneName: time.localTimeZoneName,
-                    localTimeZone: time.localTimeZone,
-                    reportedOffsetMinutes: reportedOffset,
-                  )
-                      ? loc(context).on
-                      : loc(context).off,
+                  // Whether DST is in effect, not whether the zone observes it —
+                  // see the note at the same row in `usp_timezone_card.dart`.
+                  value: current.dstOn ? loc(context).on : loc(context).off,
                 ),
             ],
           ),
@@ -188,11 +188,12 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
     );
   }
 
-  Future<void> _editTimezone(
-      BuildContext context, WidgetRef ref, TimeSettingsUIModel settings) async {
+  Future<void> _editTimezone(BuildContext context, WidgetRef ref,
+      TimeSettingsUIModel settings, List<TimeZoneInfo> zones) async {
     final result = await showTimezoneEditDialog(
       context,
       current: settings,
+      zones: zones,
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
@@ -200,8 +201,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       ref,
       loadingKey: 'time',
       mutation: () => ref.read(uspAdminProvider.notifier).updateTimezone(
-            zoneName: result.zoneName,
-            localTimeZone: result.localTimeZone,
+            zone: result.zone,
             ntpServer1: result.ntpServer1,
           ),
       successMessage: loc(context).timeSettingsSaved,

@@ -1,3 +1,4 @@
+import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 
 /// All 39 supported timezones, sorted by UTC offset (GMT-12:00 → GMT+12:00).
@@ -16,7 +17,7 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixWithDST: 'UTC12',
     // No `ianaName`: Kwajalein has been UTC+12 since 1993, so nothing in
     // the tz database sits at GMT-12:00 and no IANA name would mean what
-    // this label says. Keeps writing POSIX until the data is settled (#1609).
+    // this label says (#1609). The device catalogue carries the same stale row.
   ),
   // GMT-11:00
   TimeZoneInfo(
@@ -47,7 +48,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC9',
     posixWithDST: 'AKST9AKDT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/Anchorage',
-    standardTimePosix: 'AKST9',
   ),
   // GMT-08:00
   TimeZoneInfo(
@@ -58,7 +58,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC8',
     posixWithDST: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/Los_Angeles',
-    standardTimePosix: 'PST8',
   ),
   // GMT-07:00 (DST)
   TimeZoneInfo(
@@ -69,7 +68,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC7',
     posixWithDST: 'MST7MDT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/Denver',
-    standardTimePosix: 'MST7',
   ),
   // GMT-07:00 (no DST)
   TimeZoneInfo(
@@ -90,7 +88,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC6',
     posixWithDST: 'CST6CDT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/Chicago',
-    standardTimePosix: 'CST6',
   ),
   // GMT-06:00 (no DST)
   TimeZoneInfo(
@@ -111,7 +108,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC5',
     posixWithDST: 'EST5EDT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/New_York',
-    standardTimePosix: 'EST5',
   ),
   // GMT-05:00 (no DST)
   TimeZoneInfo(
@@ -133,7 +129,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC4',
     posixWithDST: 'AST4ADT,M3.2.0/02:00,M11.1.0/02:00',
     ianaName: 'America/Halifax',
-    standardTimePosix: 'AST4',
   ),
   // GMT-04:00 (DST — Chile)
   TimeZoneInfo(
@@ -144,10 +139,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC4',
     posixWithDST: 'CLT4CLST,M10.2.6/00:00,M3.2.6/00:00',
     ianaName: 'America/Santiago',
-    // No `standardTimePosix`: the firmware rejects `CLT4` — Chile is
-    // `-04` in modern tzdata and the old abbreviation parses as neither
-    // a supported zone nor POSIX, so daylight savings cannot be
-    // switched off here (#1609).
   ),
   // GMT-04:00 (no DST)
   TimeZoneInfo(
@@ -168,9 +159,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC3:30',
     posixWithDST: 'NST3:30NDT,M3.2.0/00:01,M11.1.0/00:01',
     ianaName: 'America/St_Johns',
-    // No `standardTimePosix`: the firmware rejects both `NST03:30` and
-    // `NST3:30`, and its zone list has no UTC-03:30 row without a DST
-    // rule, so there is nothing to write (#1609).
   ),
   // GMT-03:00 (DST)
   TimeZoneInfo(
@@ -181,11 +169,8 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC3',
     posixWithDST: 'BRT3BRST,M10.3.0/00:00,M2.3.0/00:00',
     // No `ianaName`: Brazil abolished DST in 2019, so `America/Sao_Paulo`
-    // reports no DST rule and would contradict `observesDST: true` here.
-    // Keeps writing POSIX until the data is settled (#1609).
-    // No `standardTimePosix`: the firmware rejects `BRT3` — Brazil is
-    // `-03` in modern tzdata. Note this entry also claims DST that
-    // Brazil abolished in 2019, which is the data question above (#1609).
+    // reports no DST rule and would contradict `observesDST: true` here
+    // (#1609). The device catalogue carries the same stale row.
   ),
   // GMT-03:00 (no DST)
   TimeZoneInfo(
@@ -197,7 +182,7 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixWithDST: 'UTC3',
     // No `ianaName`: Guyana is UTC-4, not the GMT-03:00 this entry claims,
     // so `America/Guyana` would move the clock an hour from what the label
-    // promises. Keeps writing POSIX until the data is settled (#1609).
+    // promises (#1609). The device catalogue carries the same stale row.
   ),
   // GMT-02:00
   TimeZoneInfo(
@@ -218,8 +203,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC1',
     posixWithDST: 'AZOT1AZOST,M3.5.0/00:00,M10.5.0/01:00',
     ianaName: 'Atlantic/Azores',
-    // No `standardTimePosix`: the firmware rejects `AZOT1` — the Azores
-    // are `-01` in modern tzdata (#1609).
   ),
   // GMT+00:00 (DST — England)
   TimeZoneInfo(
@@ -230,7 +213,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC0',
     posixWithDST: 'GMT0BST,M3.5.0/01:00,M10.5.0/02:00',
     ianaName: 'Europe/London',
-    standardTimePosix: 'GMT0',
   ),
   // GMT+00:00 (no DST)
   TimeZoneInfo(
@@ -251,7 +233,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC-1',
     posixWithDST: 'CET-1CEST,M3.5.0/02:00,M10.5.0/03:00',
     ianaName: 'Europe/Paris',
-    standardTimePosix: 'CET-1',
   ),
   // GMT+01:00 (no DST)
   TimeZoneInfo(
@@ -272,7 +253,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC-2',
     posixWithDST: 'EET-2EEST,M3.5.0/03:00,M10.5.0/04:00',
     ianaName: 'Europe/Athens',
-    standardTimePosix: 'EET-2',
   ),
   // GMT+02:00 (no DST)
   TimeZoneInfo(
@@ -383,7 +363,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC-10',
     posixWithDST: 'AEST-10AEDT,M10.1.0/02:00,M4.1.0/03:00',
     ianaName: 'Australia/Sydney',
-    standardTimePosix: 'AEST-10',
   ),
   // GMT+10:00 (no DST)
   TimeZoneInfo(
@@ -424,7 +403,6 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     posixNoDST: 'UTC-12',
     posixWithDST: 'NZST-12NZDT,M9.5.0/02:00,M4.1.0/03:00',
     ianaName: 'Pacific/Auckland',
-    standardTimePosix: 'NZST-12',
   ),
 ];
 
@@ -503,7 +481,9 @@ TimeZoneInfo? matchByZoneName(String zoneName) {
   return null;
 }
 
-/// The zone to display, given the device's answers.
+/// Our own resolution of the zone from the name and POSIX string — the fallback
+/// [resolveCurrentTimezone] uses when the device cannot name its zone. Consumers
+/// call that, not this.
 ///
 /// Prefers [zoneName], falling back to the POSIX string. The fallback is not
 /// belt-and-braces, it is the only thing that works on three real inputs:
@@ -546,4 +526,63 @@ bool _offsetIsPlausible(TimeZoneInfo tz, int? reported) {
   if (reported == null) return true;
   if (reported == tz.utcOffsetMinutes) return true;
   return tz.observesDST && reported == tz.utcOffsetMinutes + 60;
+}
+
+/// The current zone and whether daylight savings is in effect on it.
+typedef CurrentTimezone = ({TimeZoneInfo? zone, bool dstOn});
+
+/// The zone the device is on, as one decision for every consumer — the cards'
+/// label and DST row and the edit dialog's preselection must never disagree, so
+/// all three pass the same [zones]: the device catalogue
+/// (`timeZoneCatalogueProvider`).
+///
+/// The device's own reading wins (`X_LINKSYS_TimeZoneID` and
+/// `X_LINKSYS_AutoAdjustForDST`, linksys/FWDEV#198): a zone saved through
+/// `SetTimeSettings` always reads back as itself. The ID is looked up in
+/// [zones].
+///
+/// It falls back to our own resolution ([resolveTimezone] / [dstInEffect]) when
+/// the device cannot name the zone, and the DST state falls back *with* it. The
+/// device reads `''` for any POSIX string that matches no catalogue row — 26 of
+/// the 36 zones 2.7.2 saved by IANA name, measured on 2.0.2.26100116
+/// (linksys/usp_framework#72) — and for those it also reads DST `false` even
+/// while DST is in effect, so its DST flag is only believed alongside an ID.
+/// The same fallback covers a firmware without the leaves (null) and an ID that
+/// is not in [zones]. That resolution reads the built-in table, so its answer
+/// is swapped for the [zones] row with the same `timeZoneID` when there is one,
+/// keeping the label the device's own.
+CurrentTimezone resolveCurrentTimezone(
+  TimeSettingsUIModel settings, {
+  required List<TimeZoneInfo> zones,
+}) {
+  final timeZoneId = settings.timeZoneId;
+  if (timeZoneId != null && timeZoneId.isNotEmpty) {
+    final reported = zones.where((tz) => tz.timeZoneID == timeZoneId);
+    if (reported.isNotEmpty) {
+      final zone = reported.first;
+      return (
+        zone: zone,
+        dstOn: zone.observesDST && settings.autoAdjustForDst == true,
+      );
+    }
+  }
+  final reportedOffset = settings.reportedOffsetMinutes;
+  final fallback = resolveTimezone(
+    zoneName: settings.localTimeZoneName,
+    localTimeZone: settings.localTimeZone,
+    reportedOffsetMinutes: reportedOffset,
+  );
+  return (
+    zone: fallback == null
+        ? null
+        : zones
+                .where((tz) => tz.timeZoneID == fallback.timeZoneID)
+                .firstOrNull ??
+            fallback,
+    dstOn: dstInEffect(
+      zoneName: settings.localTimeZoneName,
+      localTimeZone: settings.localTimeZone,
+      reportedOffsetMinutes: reportedOffset,
+    ),
+  );
 }

@@ -50,6 +50,13 @@ void main() {
               appModeProfileProvider
                   .overrideWithValue(const RemoteModeProfile()),
             ]),
+        // linksys/FWDEV#198. The zone the device names itself — Mountain Time
+        // with daylight savings off, which the POSIX string `MST7` alone would
+        // read as Arizona. A reviewer comparing this with `data` sees the card
+        // take the device's label and DST state.
+        'data_device_zone': (overrides) => overrides.addAll(
+              adminPageOverrides(state: testAdminStateWithDeviceZone),
+            ),
       },
       interactions: {
         'dialog_timezone': Interaction(
@@ -68,6 +75,29 @@ void main() {
             await tester.tap(find.byIcon(Icons.expand_more));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 100));
+          },
+        ),
+        // linksys/FWDEV#198. The dialog preselects the zone the device names and
+        // carries its DST state, here Mountain Time with the switch off — the
+        // existing `dialog_timezone` opens on a zone nothing in the list matches.
+        'dialog_timezone_device_zone': Interaction(
+          setup: (overrides) => overrides.addAll(
+            adminOverrides(testAdminStateWithDeviceZone),
+          ),
+          steps: (tester) async {
+            final editBtn = find.descendant(
+              of: find.byType(UspTimezoneCard),
+              matching: find.byType(AppIconButton),
+            );
+            await tester.tap(editBtn.first);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+            await tester.scrollUntilVisible(
+              find.text('Mountain Time (USA & Canada)'),
+              60,
+              scrollable: find.byType(Scrollable).last,
+            );
+            await tester.pump();
           },
         ),
         'dialog_password': Interaction(

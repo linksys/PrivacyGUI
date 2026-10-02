@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
@@ -11,30 +10,6 @@ import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
 /// These tests verify the result model, search logic, and integration behavior
 /// that the dialog relies on.
 void main() {
-  group('TimezoneEditResult', () {
-    test('stores localTimeZone', () {
-      const result = TimezoneEditResult(
-        localTimeZone: 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00',
-      );
-      expect(result.localTimeZone, 'PST8PDT,M3.2.0/02:00,M11.1.0/02:00');
-      expect(result.ntpServer1, isNull);
-    });
-
-    test('stores ntpServer1 when provided', () {
-      const result = TimezoneEditResult(
-        localTimeZone: 'UTC-8',
-        ntpServer1: 'time.cloudflare.com',
-      );
-      expect(result.localTimeZone, 'UTC-8');
-      expect(result.ntpServer1, 'time.cloudflare.com');
-    });
-
-    test('ntpServer1 is null when unchanged', () {
-      const result = TimezoneEditResult(localTimeZone: 'UTC-8');
-      expect(result.ntpServer1, isNull);
-    });
-  });
-
   group('Dialog search logic', () {
     // Replicate the search filter logic used inside the dialog
     List<String> filterTimezones(String query) {
@@ -103,138 +78,10 @@ void main() {
     });
   });
 
-  // #1609. Daylight savings is still an input. What changed is what switching it
-  // off *writes*: `standardTimePosix`, the zone's own abbreviation, instead of
-  // the ambiguous `UTC±N` that made the zone come back relabelled. The switch is
-  // disabled on the four zones the firmware refuses a standard-time string for.
-  group('Dialog daylight-savings display', () {
-    test('a DST zone read from the device reports DST on', () {
-      const settings = TimeSettingsUIModel(
-        enable: true,
-        status: 'Synchronized',
-        currentLocalTime: '',
-        localTimeZone: 'EST5EDT,M3.2.0/02:00,M11.1.0/02:00',
-        ntpServer1: '',
-        ntpServer2: '',
-      );
-      final tz = resolveTimezone(
-        zoneName: settings.localTimeZoneName,
-        localTimeZone: settings.localTimeZone,
-      );
-      expect(tz?.observesDST, isTrue);
-    });
-
-    test('a non-DST zone reports DST off', () {
-      const settings = TimeSettingsUIModel(
-        enable: true,
-        status: 'Synchronized',
-        currentLocalTime: '',
-        localTimeZone: 'CST-8',
-        localTimeZoneName: 'Asia/Singapore',
-        ntpServer1: '',
-        ntpServer2: '',
-      );
-      final tz = resolveTimezone(
-        zoneName: settings.localTimeZoneName,
-        localTimeZone: settings.localTimeZone,
-      );
-      expect(tz?.observesDST, isFalse);
-    });
-
-    test('a legacy UTC±N string still resolves, to its non-DST sibling', () {
-      // AC8: what releases up to 2.7.1 wrote is still readable.
-      const settings = TimeSettingsUIModel(
-        enable: true,
-        status: 'Synchronized',
-        currentLocalTime: '',
-        localTimeZone: 'UTC5',
-        ntpServer1: '',
-        ntpServer2: '',
-      );
-      final tz = resolveTimezone(
-        zoneName: settings.localTimeZoneName,
-        localTimeZone: settings.localTimeZone,
-      );
-      expect(tz?.timeZoneID, 'EST5-NO-DST');
-      expect(tz?.observesDST, isFalse);
-    });
-  });
-
-  // #1609 AC5. The dialog's own contract: what it hands back for a chosen zone.
-  group('Dialog result carries an identity', () {
-    test('a named zone is written by name, never by POSIX string', () {
-      final sg = kTimeZoneDefinitions
-          .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
-      final result = TimezoneEditResult(
-        zoneName: sg.ianaName,
-        localTimeZone: sg.ianaName == null
-            ? sg.posixFor(dstEnabled: sg.observesDST)
-            : null,
-      );
-      expect(result.zoneName, 'Asia/Singapore');
-      expect(result.localTimeZone, isNull,
-          reason: 'the two leaves clobber each other in the firmware, so only '
-              'one may be sent');
-    });
-
-    test('an unnamed zone falls back to its POSIX string', () {
-      // Brazil East has no `ianaName`: Brazil abolished DST in 2019, so no IANA
-      // zone matches this entry's `observesDST: true`.
-      final br =
-          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'BRT3');
-      final result = TimezoneEditResult(
-        zoneName: br.ianaName,
-        localTimeZone: br.ianaName == null
-            ? br.posixFor(dstEnabled: br.observesDST)
-            : null,
-      );
-      expect(result.zoneName, isNull);
-      expect(result.localTimeZone, br.posixWithDST);
-    });
-
-    test('every named zone round-trips to the entry it came from', () {
-      for (final tz in kTimeZoneDefinitions.where((t) => t.ianaName != null)) {
-        expect(matchByZoneName(tz.ianaName!)?.timeZoneID, tz.timeZoneID,
-            reason: '${tz.timeZoneID} does not read back as itself');
-      }
-    });
-
-    // The dialog writes no timezone leaf when the zone was not changed, and that
-    // is load-bearing rather than an optimisation: a legacy `UTC±N` is ambiguous,
-    // so writing the resolved zone back would commit a guess the user never made.
-    test('the NTP-only result writes neither leaf', () {
-      const result =
-          TimezoneEditResult.ntpOnly(ntpServer1: 'time.cloudflare.com');
-      expect(result.zoneName, isNull);
-      expect(result.localTimeZone, isNull);
-      expect(result.ntpServer1, 'time.cloudflare.com');
-    });
-
-    test('the NTP-only result may also carry nothing at all', () {
-      const result = TimezoneEditResult.ntpOnly();
-      expect(result.zoneName, isNull);
-      expect(result.localTimeZone, isNull);
-      expect(result.ntpServer1, isNull);
-    });
-
-    test('an ambiguous legacy value resolves to the zone that would be written',
-        () {
-      // `UTC-8` was saved as Singapore but resolves to Hong Kong. If the dialog
-      // wrote the resolved zone on an NTP-only edit, that is the relabelling it
-      // would commit — which is why it writes nothing when neither the zone nor
-      // the daylight-savings state changed.
-      final resolved = resolveTimezone(zoneName: '', localTimeZone: 'UTC-8');
-      expect(resolved?.ianaName, 'Asia/Hong_Kong');
-    });
-
-    // The whole point of keeping the switch: turning it off must produce a
-    // result that reads back as the zone the user was looking at, not as the
-    // sibling non-DST zone at the same offset. These mirror what the dialog's
-    // `event` callback builds.
-    // `buildTimezoneEditResult` is the real thing the dialog calls, not a copy of
-    // it. The copy this replaces was already an incomplete mirror — it omitted
-    // the legacy-POSIX fallback — so a test for one of the three unnamed entries
-    // would have passed against behaviour the dialog does not have.
+  // linksys/FWDEV#198. What a Save hands back: a catalogue row's ID and the DST
+  // setting, which `SetTimeSettings` saves together.
+  group('buildTimezoneEditResult', () {
+    // `buildTimezoneEditResult` is the real thing the dialog calls, not a copy.
     TimezoneEditResult? save(
       TimeZoneInfo selected, {
       required bool dstEnabled,
@@ -252,58 +99,42 @@ void main() {
           currentNtp: currentNtp,
         );
 
-    final eastern =
-        kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'EST5');
-    final singapore = kTimeZoneDefinitions
-        .firstWhere((tz) => tz.timeZoneID == 'SGT-8-NO-DST');
-    final brazil =
-        kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'BRT3');
+    TimeZoneInfo zone(String id) =>
+        kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == id);
 
-    test('daylight savings off sends the POSIX abbreviation, not the name', () {
-      final result = save(eastern, dstEnabled: false)!;
+    test('a chosen zone is sent as its ID, with its DST setting', () {
+      final result = save(zone('EST5'), dstEnabled: true)!;
 
-      expect(result.localTimeZone, 'EST5');
-      expect(result.zoneName, isNull,
-          reason: 'the name would carry the DST rule back in');
-      expect(matchTimezone(result.localTimeZone!)?.timeZoneID, 'EST5');
-      expect(dstInEffect(zoneName: '', localTimeZone: result.localTimeZone!),
-          isFalse);
+      expect(result.zone?.id, 'EST5');
+      expect(result.zone?.autoAdjustForDst, isTrue);
+      expect(result.ntpServer1, isNull);
     });
 
-    test('daylight savings on sends the name', () {
-      final result = save(eastern, dstEnabled: true)!;
+    test('daylight savings off is the same ID with DST false', () {
+      final result = save(zone('EST5'), dstEnabled: false)!;
 
-      expect(result.zoneName, 'America/New_York');
-      expect(result.localTimeZone, isNull);
+      expect(result.zone?.id, 'EST5',
+          reason: 'not the non-DST sibling EST5-NO-DST — that is Panama');
+      expect(result.zone?.autoAdjustForDst, isFalse);
     });
 
-    for (final flag in [false, true]) {
-      test('a non-DST zone sends its name with dstEnabled=$flag', () {
-        // The switch is disabled for these, so the flag cannot be true in
-        // practice; pinned both ways because nothing in the types says so, and
-        // named per value so a failure says which one broke.
-        final result = save(singapore, dstEnabled: flag)!;
-        expect(result.zoneName, 'Asia/Singapore');
-        expect(result.localTimeZone, isNull);
-      });
-    }
+    test('a zone without DST keeps its -NO-DST ID', () {
+      final result = save(zone('JST-9-NO-DST'), dstEnabled: false)!;
 
-    // The branch the old hand-written mirror omitted entirely.
-    test('an entry with no IANA name sends its legacy POSIX string', () {
-      expect(brazil.ianaName, isNull);
-      final result = save(brazil, dstEnabled: true)!;
-
-      expect(result.zoneName, isNull);
-      expect(result.localTimeZone, brazil.posixWithDST,
-          reason: 'the mirror this replaces returned null here');
+      expect(result.zone?.id, 'JST-9-NO-DST',
+          reason: 'the bare JST-9 is ErrorUnknownTimeZone on the device');
     });
 
-    // #1609 review round 1, Critical. Save with nothing changed used to return an
-    // all-null result, which passed both call sites' `result == null` guard,
-    // reached `updateTimezone`, tripped its nothing-to-write guard and showed the
-    // user a failure snackbar for a completely normal interaction.
+    test('a zone without DST never sends DST true', () {
+      // The firmware answers ErrorTimeZoneDoesNotObserveDST, so a stale switch
+      // value must not reach it.
+      final result = save(zone('JST-9-NO-DST'), dstEnabled: true)!;
+
+      expect(result.zone?.autoAdjustForDst, isFalse);
+    });
+
     test('changing nothing writes nothing at all', () {
-      final result = save(eastern, dstEnabled: true, from: eastern);
+      final result = save(zone('EST5'), dstEnabled: true, from: zone('EST5'));
 
       expect(result, isNull,
           reason:
@@ -311,66 +142,49 @@ void main() {
               'is exactly the handling a no-change Save needs');
     });
 
-    test('changing only the NTP server leaves the timezone leaves alone', () {
+    test('changing only the NTP server leaves the zone alone', () {
       final result = save(
-        eastern,
+        zone('EST5'),
         dstEnabled: true,
-        from: eastern,
+        from: zone('EST5'),
         ntp: 'time.cloudflare.com',
       )!;
 
       expect(result.ntpServer1, 'time.cloudflare.com');
-      expect(result.zoneName, isNull,
-          reason:
-              'writing the resolved zone back would commit a guess about an '
-              'ambiguous legacy value the user never touched');
-      expect(result.localTimeZone, isNull);
+      expect(result.zone?.id, isNull,
+          reason: 'writing the resolved zone back would commit a guess for a '
+              'zone the device could not name');
+      expect(result.zone?.autoAdjustForDst, isNull);
     });
 
     test('flipping only the switch still writes the zone', () {
-      final result = save(eastern, dstEnabled: false, from: eastern)!;
+      final result = save(zone('EST5'), dstEnabled: false, from: zone('EST5'))!;
 
-      expect(result.localTimeZone, 'EST5');
+      expect(result.zone?.id, 'EST5');
+      expect(result.zone?.autoAdjustForDst, isFalse);
     });
 
-    test('a zone whose switch is disabled always sends the name', () {
-      // Chile: the firmware refuses `CLT4`, so there is no off state to send.
-      final chile =
-          kTimeZoneDefinitions.firstWhere((tz) => tz.timeZoneID == 'CLT4');
-      expect(chile.canSwitchDstOff, isFalse);
-      expect(chile.standardTimePosix, isNull);
-      expect(chile.ianaName, 'America/Santiago');
-    });
-  });
+    test('a zone change and an NTP change travel together', () {
+      final result = save(
+        zone('SGT-8-NO-DST'),
+        dstEnabled: false,
+        from: zone('HKT-8-NO-DST'),
+        fromDst: false,
+        ntp: 'time.cloudflare.com',
+      )!;
 
-  group('Dialog NTP result logic', () {
-    test('NTP unchanged → ntpServer1 should be null', () {
-      const current = 'pool.ntp.org';
-      const ntpValue = 'pool.ntp.org';
-      final result = TimezoneEditResult(
-        localTimeZone: 'UTC-8',
-        ntpServer1: ntpValue != current ? ntpValue : null,
-      );
-      expect(result.ntpServer1, isNull);
-    });
-
-    test('NTP changed → ntpServer1 should have new value', () {
-      const current = 'pool.ntp.org';
-      const ntpValue = 'time.cloudflare.com';
-      final result = TimezoneEditResult(
-        localTimeZone: 'UTC-8',
-        ntpServer1: ntpValue != current ? ntpValue : null,
-      );
+      expect(result.zone?.id, 'SGT-8-NO-DST');
       expect(result.ntpServer1, 'time.cloudflare.com');
     });
 
-    test('NTP cleared → ntpServer1 should be empty string', () {
-      const current = 'pool.ntp.org';
-      const ntpValue = '';
-      final result = TimezoneEditResult(
-        localTimeZone: 'UTC-8',
-        ntpServer1: ntpValue != current ? ntpValue : null,
-      );
+    test('NTP cleared is sent as an empty string', () {
+      final result = save(
+        zone('EST5'),
+        dstEnabled: true,
+        from: zone('EST5'),
+        ntp: '',
+      )!;
+
       expect(result.ntpServer1, '');
     });
   });
