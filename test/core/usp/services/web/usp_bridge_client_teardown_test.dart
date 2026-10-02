@@ -1,4 +1,5 @@
-// The loop measured on QA Guardian, 2026-09-30, closed at the bridge.
+// The loop measured on QA Guardian, 2026-09-30, closed at the bridge — and the
+// SSE bootstrap's best-effort health check, which reuses the same switch.
 //
 // THE DECISION GUARDED. A 401 means "the session is gone" everywhere except
 // during teardown, where the credential has usually just been spent on purpose:
@@ -79,6 +80,29 @@ void main() {
       // gone (#1627).
       await expectLater(
         with401(() => bridge.listSubscriptions()),
+        throwsA(isA<SessionExpiredException>()),
+      );
+      expect(authFailures, 1);
+    });
+  });
+
+  group('UspBridgeClient - a 401 on the best-effort health check', () {
+    test('health(reportAuthFailure: false) throws and reports nothing',
+        () async {
+      // The SSE bootstrap's check: its failure is ignored, so its 401 must not
+      // end the session either (review of #1600).
+      await expectLater(
+        with401(() => bridge.health(reportAuthFailure: false)),
+        throwsA(isA<SessionExpiredException>()),
+      );
+      expect(authFailures, 0);
+    });
+
+    test('health() still ends the session by default', () async {
+      // The recovery probe's call. A rejected token is not an outage to wait
+      // out, so this one must keep reporting.
+      await expectLater(
+        with401(() => bridge.health()),
         throwsA(isA<SessionExpiredException>()),
       );
       expect(authFailures, 1);

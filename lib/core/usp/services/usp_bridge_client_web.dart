@@ -95,23 +95,29 @@ class UspBridgeClient {
   /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
   /// [onAuthFailed] and throws [SessionExpiredException].
   ///
-  /// [teardown] marks a request made *while a session is being torn down* — the
-  /// best-effort cleanup after an intentional disconnect. Its 401 is still thrown,
-  /// but neither retried nor reported through [onAuthFailed]: the credential has
-  /// usually just been spent on purpose (the End Session DELETE answers 204 before
-  /// the cleanup reads go out), so the 401 is expected, and reporting it asks for a
-  /// logout from inside the logout that caused it. On QA Guardian that looped 770
-  /// times in four minutes (2026-09-30).
+  /// [reportAuthFailure] false marks a request whose 401 must not end the
+  /// session. The 401 is still thrown, but neither retried nor reported through
+  /// [onAuthFailed]. Two kinds of request ask for that:
+  ///
+  /// - **Teardown** — the best-effort cleanup after an intentional disconnect.
+  ///   The credential has usually just been spent on purpose (the End Session
+  ///   DELETE answers 204 before the cleanup reads go out), so the 401 is
+  ///   expected, and reporting it asks for a logout from inside the logout that
+  ///   caused it. On QA Guardian that looped 770 times in four minutes
+  ///   (2026-09-30).
+  /// - **A best-effort probe** whose failure the caller already ignores — the
+  ///   SSE bootstrap's [health]. Nothing depends on its answer, so it is the wrong
+  ///   request to end a session from; the reads that do depend on the token
+  ///   report its 401 as they always have.
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
     T Function(http.Response) parser, {
-    bool teardown = false,
+    bool reportAuthFailure = true,
   }) async {
     var response = await request();
-    if (response.statusCode == 401 && teardown) {
-      debugPrint(
-          '[UspBridgeClient] 401 during teardown — expected, not reported');
-      throw SessionExpiredException('401 during teardown');
+    if (response.statusCode == 401 && !reportAuthFailure) {
+      debugPrint('[UspBridgeClient] 401 on a request that does not report it');
+      throw SessionExpiredException('401, not reported');
     }
     if (response.statusCode == 401) {
       if (_authBehavior.shouldRetryOnFailure) {
@@ -150,8 +156,13 @@ class UspBridgeClient {
   /// response, and Guardian answers an error with a JSON body — so `jsonDecode`
   /// **succeeds** on a 404 and the probe would have read "unreachable endpoint" as
   /// "reachable router".
-  Future<Map<String, dynamic>> health() async {
+  ///
+  /// [reportAuthFailure]: see [_withAuthRetry]. The default reports, because the
+  /// recovery probe wants exactly that: a rejected token is not an outage to wait
+  /// out. Only the SSE bootstrap's best-effort check passes false.
+  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) async {
     return _withAuthRetry(
+      reportAuthFailure: reportAuthFailure,
       () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
           headers: _authHeaders),
       (r) {
@@ -524,13 +535,13 @@ class UspBridgeClient {
 
   /// Unregisters an existing subscription.
   ///
-  /// [teardown]: see [_withAuthRetry].
+  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
     bool teardown = false,
   }) async {
     return _withAuthRetry(
-      teardown: teardown,
+      reportAuthFailure: !teardown,
       () => http.post(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
@@ -545,10 +556,10 @@ class UspBridgeClient {
 
   /// Lists all active subscriptions (Remote mode only).
   ///
-  /// [teardown]: see [_withAuthRetry].
+  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
   Future<List<String>> listSubscriptions({bool teardown = false}) async {
     final response = await _withAuthRetry(
-      teardown: teardown,
+      reportAuthFailure: !teardown,
       () => http.get(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,

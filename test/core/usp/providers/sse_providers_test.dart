@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/services/usp_bridge_client_errors.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -150,7 +151,8 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      verifyNever(() => mockBridge.health());
+      verifyNever(() => mockBridge.health(
+          reportAuthFailure: any(named: 'reportAuthFailure')));
       container.dispose();
     });
 
@@ -162,7 +164,8 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      verifyNever(() => mockBridge.health());
+      verifyNever(() => mockBridge.health(
+          reportAuthFailure: any(named: 'reportAuthFailure')));
       container.dispose();
     });
 
@@ -177,7 +180,8 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      verifyNever(() => mockBridge.health());
+      verifyNever(() => mockBridge.health(
+          reportAuthFailure: any(named: 'reportAuthFailure')));
       container.dispose();
     });
 
@@ -199,7 +203,8 @@ void main() {
         'happy path: health → connect (subscriptions deferred to orchestrator)',
         () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenAnswer((_) async => {'status': 'ok'});
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -211,7 +216,7 @@ void main() {
       await container.read(sseBootstrapProvider.future);
 
       verifyInOrder([
-        () => mockBridge.health(),
+        () => mockBridge.health(reportAuthFailure: false),
         () => mockManager.connect(),
       ]);
       // setCoreSubscriptions is deferred to dashboard orchestrator
@@ -230,7 +235,8 @@ void main() {
       // source, and this is a claim about behaviour. It fails if the gate comes back
       // in any spelling.
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenAnswer((_) async => {'status': 'ok'});
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = ProviderContainer(overrides: [
@@ -243,7 +249,7 @@ void main() {
       await container.read(sseBootstrapProvider.future);
 
       verifyInOrder([
-        () => mockBridge.health(),
+        () => mockBridge.health(reportAuthFailure: false),
         () => mockManager.connect(),
       ]);
       container.dispose();
@@ -263,7 +269,8 @@ void main() {
       // the answer is now `CredentialStrategy.holdsCredential`'s: no login state
       // is involved, and none is overridden.
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenAnswer((_) async => {'status': 'ok'});
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = ProviderContainer(overrides: [
@@ -279,9 +286,36 @@ void main() {
       verify(() => mockManager.connect()).called(1);
     });
 
+    test('a 401 on the health check does not end the session', () async {
+      // The check is best-effort: a failure of any kind is logged and the
+      // bootstrap connects anyway. Reported, its 401 would end a session from a
+      // call whose answer nothing depends on (review of #1600). Whether the token
+      // is really dead is for the connect and the first read to find out, and
+      // they report a 401 as they always have. The bridge's half, that the flag
+      // is honoured, is in `web/usp_bridge_client_teardown_test.dart`.
+      when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenThrow(SessionExpiredException('401'));
+      when(() => mockManager.connect()).thenAnswer((_) async {});
+
+      final container = ProviderContainer(overrides: [
+        appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
+        uspClientProvider.overrideWithValue(mockUsp),
+        uspBridgeClientProvider.overrideWithValue(mockBridge),
+        sseManagerProvider.overrideWithValue(mockManager),
+      ]);
+      addTearDown(container.dispose);
+
+      await container.read(sseBootstrapProvider.future);
+
+      verifyNever(() => mockBridge.health(reportAuthFailure: true));
+      verify(() => mockManager.connect()).called(1);
+    });
+
     test('health check fails → still calls connect', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockBridge.health()).thenThrow(Exception('503'));
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenThrow(Exception('503'));
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -299,7 +333,7 @@ void main() {
 
     test('health check timeout → still calls connect', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockBridge.health()).thenAnswer(
+      when(() => mockBridge.health(reportAuthFailure: false)).thenAnswer(
         (_) => Future.delayed(
           const Duration(seconds: 10),
           () => {'status': 'ok'},
@@ -322,7 +356,8 @@ void main() {
 
     test('setCoreSubscriptions not called in bootstrap (deferred)', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
+      when(() => mockBridge.health(reportAuthFailure: false))
+          .thenAnswer((_) async => {'status': 'ok'});
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(

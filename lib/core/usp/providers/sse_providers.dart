@@ -287,8 +287,15 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   //
   // It is still not a mode *cause*: both transports have a health endpoint, so
   // there is nothing here for a strategy member to answer.
+  //
+  // `reportAuthFailure: false` because nothing depends on the answer: a 401 here
+  // is caught below like any other failure, and reported it would have ended the
+  // session from a call whose result is ignored. Whether the token is really dead
+  // is for the connect and the first read, which report it as they always have.
   try {
-    await bridge.health().timeout(const Duration(seconds: 5));
+    await bridge
+        .health(reportAuthFailure: false)
+        .timeout(const Duration(seconds: 5));
     logger.d('[SSE]: Bridge health check passed');
   } catch (e) {
     logger.w('[SSE]: Bridge health check failed: $e — continuing');

@@ -24,7 +24,7 @@ class UspBridgeClient {
     RemoteReads? remoteReads,
   });
 
-  Future<Map<String, dynamic>> health() =>
+  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Stream<SseEvent> notifications() =>
