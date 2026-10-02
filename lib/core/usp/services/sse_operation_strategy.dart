@@ -122,9 +122,11 @@ abstract class SseOperationStrategy {
   /// Remote: re-register the existing subscriptions. This exists **because that
   /// last sentence is false for Guardian**, and the difference is not cosmetic:
   /// `connected` is inferred from traffic — `SseConnectionManager._onEvent`
-  /// promotes the state on the first non-`_debug` event — and Guardian sends no
-  /// heartbeats, so the only traffic on a remote stream is a subscription
-  /// notification. A reopened stream carries no subscriptions, therefore no
+  /// promotes the state on the first non-`_debug` event — and Guardian was
+  /// measured sending no heartbeats when this was written, so the only traffic
+  /// on a remote stream was a subscription notification. (QA was seen sending a
+  /// ~20 s `heartbeat` on 2026-10-02; one 40 s sample, so the reasoning below
+  /// still holds for any deployment that does not.) A reopened stream carries no subscriptions, therefore no
   /// notifications, therefore never reaches `connected`, therefore never fires
   /// [onSseConnected]. Hanging the remote re-registration off that edge (which
   /// #1497 did at first) produces a hook that cannot run in the one mode it was

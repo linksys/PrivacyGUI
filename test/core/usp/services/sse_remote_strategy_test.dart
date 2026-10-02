@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
@@ -125,6 +127,108 @@ void main() {
       expect(records.length, 1);
       // Record stores original ID (transparent to Registry/Manager)
       expect(records.first.subscriptionId, 'ok-sub');
+    });
+  });
+
+  group('RemoteSseStrategy - all at once', () {
+    // Measured on QA Guardian, 2026-10-02, with the same seven core
+    // subscriptions: one after another (unregister, 100 ms, register, 50 ms)
+    // took 32.1 s; seven unregisters in parallel 3.1-5.7 s and seven registers
+    // in parallel 2.9 s, every one 200, no 503 — and the parallel-registered
+    // subscriptions delivered notifies at the same rate as serial ones. The
+    // serial walk was the larger half of the minute an RA agent waited behind
+    // the "setting up live updates" dialog.
+    //
+    // What must still hold, because Guardian rejects a duplicate id: every id
+    // is unregistered before *any* register goes out, so a register never
+    // races its own id's unregister.
+    List<SubscriptionDef> seven() => [
+          for (var i = 1; i <= 7; i++)
+            SubscriptionDef(
+              subscriptionId: 'sub-$i',
+              notifType: 'ValueChange',
+              referenceList: 'Device.X$i.',
+            ),
+        ];
+
+    test('all unregisters are in flight together, then all registers',
+        () async {
+      final unregs = <String, Completer<Map<String, dynamic>>>{};
+      final events = <String>[];
+      when(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).thenAnswer((inv) {
+        final id = inv.namedArguments[#subscriptionId] as String;
+        events.add('unreg $id');
+        return (unregs[id] = Completer()).future;
+      });
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((inv) async {
+        events.add('reg ${inv.namedArguments[#subscriptionId]}');
+        return {};
+      });
+
+      final done = strategy.registerSubscriptions(seven());
+      await pumpEventQueue();
+
+      // Seven unregisters outstanding at once, and no register yet: the serial
+      // walk would have one in flight here.
+      expect(unregs, hasLength(7));
+      expect(events.where((e) => e.startsWith('reg')), isEmpty);
+
+      for (final c in unregs.values) {
+        c.complete({});
+      }
+      final records = await done;
+
+      expect(records, hasLength(7));
+      final firstReg = events.indexWhere((e) => e.startsWith('reg'));
+      final lastUnreg = events.lastIndexWhere((e) => e.startsWith('unreg'));
+      expect(firstReg, greaterThan(lastUnreg),
+          reason: 'a register sent before every unregister has answered can '
+              'race its own id, which Guardian rejects as a duplicate');
+    });
+
+    test('all registers are in flight together', () async {
+      final regs = <Completer<Map<String, dynamic>>>[];
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) {
+        final c = Completer<Map<String, dynamic>>();
+        regs.add(c);
+        return c.future;
+      });
+
+      final done = strategy.registerSubscriptions(seven());
+      // Past the unregister batch and its 100 ms settle, so the registers are
+      // the requests outstanding.
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      expect(regs, hasLength(7));
+      for (final c in regs) {
+        c.complete({});
+      }
+      expect(await done, hasLength(7));
+    });
+
+    test('one register failing costs only that subscription', () async {
+      when(() => mockBridge.subscribe(
+            subscriptionId: 'remote-sub-3',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenThrow(Exception('guardian error'));
+
+      final records = await strategy.registerSubscriptions(seven());
+
+      expect(records.map((r) => r.subscriptionId),
+          ['sub-1', 'sub-2', 'sub-4', 'sub-5', 'sub-6', 'sub-7'],
+          reason: 'in the order asked for, so the registry reads the same '
+              'whichever answer came back first');
     });
   });
 
