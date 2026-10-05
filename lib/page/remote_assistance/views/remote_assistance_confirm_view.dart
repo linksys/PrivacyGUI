@@ -386,7 +386,17 @@ class _RemoteAssistanceConfirmViewState
       child: (context, constraints) => Center(
         child: SizedBox(
           width: context.colWidth(4),
+          // Keyed by the view state, so the real-router RA spec waits for
+          // `validated` (or sees `error`) structurally rather than by matching
+          // "Session validated. Ready to connect.", which is unlocalized copy and
+          // will not stay that way.
+          //
+          // `validated` is not only "before Connect": a Connect that fails comes
+          // back to it, with the error box shown (see `_connect`). After tapping
+          // Connect, a spec must wait for the dashboard — not for this hook to
+          // leave `validated`, which a failure never does.
           child: AppCard(
+            identifier: 'ra-confirm-state-${_viewState.name}',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,6 +466,7 @@ class _RemoteAssistanceConfirmViewState
                       label: _viewState == _ViewState.connecting
                           ? 'Connecting...'
                           : 'Connect',
+                      identifier: 'ra-confirm-connect',
                       variant: SurfaceVariant.highlight,
                       size: AppButtonSize.small,
                       onTap:
@@ -544,6 +555,10 @@ class _RemoteAssistanceConfirmViewState
         child: SizedBox(
           width: context.colWidth(4),
           child: AppCard(
+            // The terminal surface an agent lands on after End Session — or after
+            // any automatic ending (#1323). A separate view, not a `_viewState`,
+            // so it has its own hook rather than a fifth `ra-confirm-state-*`.
+            identifier: 'ra-confirm-ended',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,

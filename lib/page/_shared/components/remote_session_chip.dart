@@ -97,55 +97,65 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
           screenSize.height - _chipHeight - safeArea.bottom - _edgePadding),
       left: actualLeft.clamp(
           _edgePadding, screenSize.width - _chipWidth - _edgePadding),
-      child: GestureDetector(
-        onPanStart: (details) {
-          _removePopup();
-          _dragOffset = details.localPosition;
-        },
-        onPanUpdate: (details) {
-          setState(() {
-            _top = details.globalPosition.dy - (_dragOffset?.dy ?? 0);
-            _left = details.globalPosition.dx - (_dragOffset?.dx ?? 0);
-            _isOnRightEdge = false;
-          });
-        },
-        onPanEnd: (details) {
-          // Snap to nearest edge
-          final centerX = _left + _chipWidth / 2;
-          final screenCenter = screenSize.width / 2;
-
-          setState(() {
-            if (centerX > screenCenter) {
-              // Snap to right
-              _isOnRightEdge = true;
-              _left = screenSize.width - _chipWidth - _edgePadding;
-            } else {
-              // Snap to left
+      // The way into the session popup, and so into End Session, as a hook the
+      // real-router RA spec can tap. On the GestureDetector rather than the
+      // AppSurface inside it because AppSurface forwards no identifier, and here
+      // the hook and the tap cover the same box. `button` because a bare
+      // GestureDetector projects no role: a screen reader heard only the
+      // countdown, with nothing to say it opens anything.
+      child: Semantics(
+        identifier: 'ra-session-chip',
+        button: true,
+        child: GestureDetector(
+          onPanStart: (details) {
+            _removePopup();
+            _dragOffset = details.localPosition;
+          },
+          onPanUpdate: (details) {
+            setState(() {
+              _top = details.globalPosition.dy - (_dragOffset?.dy ?? 0);
+              _left = details.globalPosition.dx - (_dragOffset?.dx ?? 0);
               _isOnRightEdge = false;
-              _left = _edgePadding;
-            }
-          });
-        },
-        onTap: () => _showPopup(context, ref, state),
-        child: AppSurface(
-          key: _popupKey,
-          variant: SurfaceVariant.elevated,
-          borderRadius: 20,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.support_agent,
-                size: 18,
-                color: urgencyColor,
-              ),
-              const SizedBox(width: 6),
-              AppText.labelMedium(
-                _formatTime(remainingSeconds),
-                color: urgencyColor,
-              ),
-            ],
+            });
+          },
+          onPanEnd: (details) {
+            // Snap to nearest edge
+            final centerX = _left + _chipWidth / 2;
+            final screenCenter = screenSize.width / 2;
+
+            setState(() {
+              if (centerX > screenCenter) {
+                // Snap to right
+                _isOnRightEdge = true;
+                _left = screenSize.width - _chipWidth - _edgePadding;
+              } else {
+                // Snap to left
+                _isOnRightEdge = false;
+                _left = _edgePadding;
+              }
+            });
+          },
+          onTap: () => _showPopup(context, ref, state),
+          child: AppSurface(
+            key: _popupKey,
+            variant: SurfaceVariant.elevated,
+            borderRadius: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.support_agent,
+                  size: 18,
+                  color: urgencyColor,
+                ),
+                const SizedBox(width: 6),
+                AppText.labelMedium(
+                  _formatTime(remainingSeconds),
+                  color: urgencyColor,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -490,6 +500,7 @@ class _SessionPopup extends StatelessWidget {
                     child: AppButton.dangerOutline(
                       label: loc(context).endSession,
                       size: AppButtonSize.small,
+                      identifier: 'ra-session-end',
                       onTap: onDisconnect,
                     ),
                   ),

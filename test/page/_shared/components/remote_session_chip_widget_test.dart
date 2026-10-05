@@ -287,6 +287,59 @@ void main() {
   // "Connecting to router" named the wrong thing and sat over every login. The
   // state moved here, beside the session's other facts, worded for the cloud —
   // and #1577's "the device is offline" distinction moved with it.
+  // ═════════════════════════════════════════════════════════════════════════
+  // The real-router RA spec's way to End Session from the agent side
+  // ═════════════════════════════════════════════════════════════════════════
+  //
+  // `ra-session-chip` opens the popup and `ra-session-end` ends the session —
+  // the two taps `R30-remote-assistance` makes to finish its run from this end.
+  // Both are asserted as literals for the reason the history entry's is: the E2E
+  // repo harvests them from this source text, so a rename here is a silent
+  // count-0 there.
+  group('RemoteSessionChip - E2E hooks for ending the session', () {
+    testWidgets('the chip is a tappable hook that opens the popup',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+
+      final chip = find.bySemanticsIdentifier('ra-session-chip');
+      expect(chip, findsOneWidget);
+      // Tapped BY THE HOOK, which is what the spec does: an identifier that sits
+      // beside the tap target rather than on it would pass a presence check and
+      // fail the real run.
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.endSession), findsOneWidget,
+          reason: 'tapping the hook must open the session popup');
+      semantics.dispose();
+    });
+
+    testWidgets('the chip is one button node: countdown, role and tap',
+        (tester) async {
+      // A bare GestureDetector projects no role, so a screen reader heard only
+      // the countdown. The hook's Semantics adds the role; the tap action has to
+      // be on the SAME node, because that node is the DOM element a Playwright
+      // click lands on, and the countdown stays its label.
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+
+      expect(
+        tester.getSemantics(find.bySemanticsIdentifier('ra-session-chip')),
+        isSemantics(isButton: true, hasTapAction: true, label: '20:00'),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('End Session in the popup carries its hook', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+      await openPopup(tester);
+
+      expect(find.bySemanticsIdentifier('ra-session-end'), findsOneWidget);
+      semantics.dispose();
+    });
+  });
+
   group('RemoteSessionChip - live updates row', () {
     Future<void> popupWith(WidgetTester tester, SseConnectionState state,
         {SseDisconnectCause cause = SseDisconnectCause.none}) async {
