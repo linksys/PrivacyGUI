@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -46,7 +47,8 @@ class DeviceDetailView extends ArgumentsConsumerStatefulView {
   ConsumerState<DeviceDetailView> createState() => _DeviceDetailViewState();
 }
 
-class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
+class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
+    with ClientSignalWatcherMixin {
   final TextEditingController _deviceNameController = TextEditingController();
   late int _iconIndex;
   String? _errorMessage;
@@ -67,8 +69,18 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     ref.read(localNetworkSettingProvider.notifier).fetch();
   }
 
+  /// Only a client on Wi-Fi has a signal for the nodes to re-read.
+  @override
+  bool get watchesClientSignals =>
+      ref.read(externalDeviceDetailProvider).item.isOnlineWireless;
+
   @override
   Widget build(BuildContext context) {
+    // The device can join Wi-Fi, drop off or move to a cable while this page is
+    // open, and the watch follows it.
+    ref.listen(
+        externalDeviceDetailProvider.select((s) => s.item.isOnlineWireless),
+        (_, __) => updateClientSignalWatch());
     final state = ref.watch(externalDeviceDetailProvider);
     final dhcpReservationList = ref.watch(localNetworkSettingProvider
         .select((value) => value.dhcpReservationList));
@@ -191,7 +203,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 : state.item.upstreamDevice,
             selectableDescription: true,
           ),
-          if (state.item.isOnline && !state.item.isWired) ...[
+          if (state.item.isOnlineWireless) ...[
             const AppGap.small2(),
             AppListCard(
               padding: const EdgeInsets.symmetric(

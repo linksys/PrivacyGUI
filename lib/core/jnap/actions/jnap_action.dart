@@ -117,6 +117,7 @@ enum JNAPAction {
   refreshSlaveBackhaulData,
   // nodes networkConnections
   getNodesWirelessNetworkConnections,
+  refreshNodesWirelessNetworkConnections,
   // nodes optimization
   setTopologyOptimizationSettings,
   getTopologyOptimizationSettings,

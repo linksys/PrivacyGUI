@@ -560,6 +560,8 @@ void initBetterActions() {
       _JNAPActionValue.refreshSlaveBackhaulData.value;
   _betterActionMap[JNAPAction.getNodesWirelessNetworkConnections] =
       _JNAPActionValue.getNodesWirelessNetworkConnections.value;
+  _betterActionMap[JNAPAction.refreshNodesWirelessNetworkConnections] =
+      _JNAPActionValue.refreshNodesWirelessNetworkConnections.value;
   _betterActionMap[JNAPAction.getOwnedNetworkID] =
       _JNAPActionValue.getOwnedNetworkID.value;
   _betterActionMap[JNAPAction.isOwnedNetwork] =
