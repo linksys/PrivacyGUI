@@ -19,6 +19,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   Timer? _activePollTimer;
   bool _activePolling = false;
   bool _initiatingCA = false;
+  // The session the cloud last refused a request for. The cloud's session
+  // record can still read ACTIVE for a moment after it starts refusing calls,
+  // so without this [initiateRemoteAssistanceCA] - which the top bar calls on
+  // every rebuild - would bring that session back to life.
+  String? _expiredSessionId;
 
   static const int kActivePollIntervalSec = 5;
   static const int kActiveSessionPollIntervalSec = 30;
@@ -176,6 +181,9 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         return;
       }
       logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
+      if (sessions.first.id == _expiredSessionId) {
+        return;
+      }
       final sessionInfo =
           await fetchSessionInfo(sessions.first.id, startCountdown: true);
       if (sessionInfo == null) {
@@ -188,6 +196,32 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     } finally {
       _initiatingCA = false;
     }
+  }
+
+  /// Records that the cloud has refused a request because the session is over.
+  ///
+  /// The cloud answers every JNAP call made through an ended session with
+  /// `SESSION_EXPIRED`, so this is usually the first sign the session has ended -
+  /// ahead of the next session poll. It only moves the session to INVALID; what
+  /// happens next is left to the listeners that already react to a session
+  /// leaving ACTIVE, so there is one session-ended flow, not two.
+  ///
+  /// Called once per refused request, so in bursts: every call after the first
+  /// finds the session already off ACTIVE and does nothing.
+  void markSessionExpired() {
+    final sessionInfo = state.sessionInfo;
+    if (sessionInfo == null || sessionInfo.status != GRASessionStatus.active) {
+      return;
+    }
+    logger.i('[RemoteAssistance]: cloud reports the session expired');
+    _expiredSessionId = sessionInfo.id;
+    _sessionInfoStreamSubscription?.cancel();
+    _sessionInfoStreamSubscription = null;
+    _stopExpiredCountdownTimer();
+    state = state.copyWith(
+      sessionInfo: () =>
+          sessionInfo.copyWith(status: GRASessionStatus.invalid, expiredIn: 0),
+    );
   }
 
   /// Marks whether a remote assistance dialog is currently shown so the

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -506,50 +506,48 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     InternetSettingsState state,
     AutoIPoEState autoIPoEState,
   ) {
-    final isRemote = BuildConfig.isRemote();
     final isIpv6Locked = _isIPv6LockedByAutoIPoE(state, autoIPoEState);
-    return Tooltip(
-      message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
+    // Local-only on top of read-only: changing the WAN over a remote session can
+    // cut off the very connection the change is being made through.
+    return WriteGuard(
+      localOnly: true,
       child: switch (viewType) {
         InternetSettingsViewType.ipv4 => AppIconButton.noPadding(
             icon: isIpv4Editing ? LinksysIcons.close : LinksysIcons.edit,
             color: isIpv4Editing ? null : Theme.of(context).colorScheme.primary,
-            onTap: isRemote
-                ? null
-                : isIpv4Editing
-                    ? () {
-                        setState(() {
-                          isIpv4Editing = false;
-                        });
-                        if (!isEditing) {
-                          _notifier
-                              .updateIpv4Settings(originalState.ipv4Setting);
-                          _autoIPoENotifier
-                              .updateSettings(originalAutoIPoEState.settings);
-                          _notifier.updateMacAddressCloneEnable(
-                            originalState.macClone,
-                          );
-                          _notifier.updateMacAddressClone(
-                            originalState.macCloneAddress,
-                          );
-                        } else {
-                          _notifier.updateIpv4Settings(
-                            originalState.ipv4Setting.copyWith(
-                              mtu: state.ipv4Setting.mtu,
-                            ),
-                          );
-                          _autoIPoENotifier
-                              .updateSettings(originalAutoIPoEState.settings);
-                        }
-                        setState(() {
-                          initUI(ref.read(internetSettingsProvider));
-                        });
-                      }
-                    : () {
-                        setState(() {
-                          isIpv4Editing = true;
-                        });
-                      },
+            onTap: isIpv4Editing
+                ? () {
+                    setState(() {
+                      isIpv4Editing = false;
+                    });
+                    if (!isEditing) {
+                      _notifier.updateIpv4Settings(originalState.ipv4Setting);
+                      _autoIPoENotifier
+                          .updateSettings(originalAutoIPoEState.settings);
+                      _notifier.updateMacAddressCloneEnable(
+                        originalState.macClone,
+                      );
+                      _notifier.updateMacAddressClone(
+                        originalState.macCloneAddress,
+                      );
+                    } else {
+                      _notifier.updateIpv4Settings(
+                        originalState.ipv4Setting.copyWith(
+                          mtu: state.ipv4Setting.mtu,
+                        ),
+                      );
+                      _autoIPoENotifier
+                          .updateSettings(originalAutoIPoEState.settings);
+                    }
+                    setState(() {
+                      initUI(ref.read(internetSettingsProvider));
+                    });
+                  }
+                : () {
+                    setState(() {
+                      isIpv4Editing = true;
+                    });
+                  },
           ),
         InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
             icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
@@ -558,7 +556,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 : isIpv6Editing
                     ? null
                     : Theme.of(context).colorScheme.primary,
-            onTap: isBridgeMode || isRemote || isIpv6Locked
+            onTap: isBridgeMode || isIpv6Locked
                 ? null
                 : isIpv6Editing
                     ? () {

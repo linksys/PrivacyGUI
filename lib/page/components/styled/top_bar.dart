@@ -51,10 +51,16 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     if (isRemote && isPollingDone) {
       _startRemoteAssistance(context);
     }
-    final sessionInfo =
-        isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
-    final expiredCountdown =
-        isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
+    // Only the one value the session line draws, not the whole provider. This
+    // build() calls initiateRemoteAssistanceCA, and that call writes state even
+    // when it finds nothing to track. Watching the whole provider turned every
+    // such write into a rebuild straight back into the call: one sessions read
+    // per cloud round trip once a session had ended (#1637). With nothing being
+    // tracked, this value sits at null or 0, so those writes change nothing here.
+    final secondsLeft = isRemote
+        ? ref.watch(
+            remoteClientProvider.select((state) => state.sessionSecondsLeft))
+        : null;
 
     // Get model number from global state
     final modelNumber = ref.watch(globalModelNumberProvider);
@@ -144,8 +150,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                     Column(
                       children: [
                         _networkSelect(),
-                        if (sessionInfo != null)
-                          _sessionExpireCounter(sessionInfo, expiredCountdown),
+                        if (secondsLeft != null)
+                          _sessionExpireCounter(secondsLeft),
                       ],
                     ),
                   if (BuildConfig.enableRemoteAssistance &&
@@ -204,24 +210,15 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _sessionExpireCounter(
-      GRASessionInfo sessionInfo, int? expiredCountdown) {
-    // The short form: this sits in the top bar, which gives the text no width
-    // to wrap into, and the full explanation is in the dialog shown alongside.
-    var display = loc(context).remoteAssistanceSessionEnded;
-    if (sessionInfo.status != GRASessionStatus.active) {
-      return AppText.bodyMedium(
-        display,
-        color: Color(neutralTonal.get(100)),
-      );
-    }
-    final count = expiredCountdown ?? sessionInfo.expiredIn;
-    if (count > 0) {
-      display = loc(context).remoteAssistanceSessionExpiresIn(
-          DateFormatUtils.formatTimeMSS(count));
-    }
+  Widget _sessionExpireCounter(int secondsLeft) {
     return AppText.bodyMedium(
-      display,
+      secondsLeft > 0
+          ? loc(context).remoteAssistanceSessionExpiresIn(
+              DateFormatUtils.formatTimeMSS(secondsLeft))
+          // The short form: this sits in the top bar, which gives the text no
+          // width to wrap into, and the full explanation is in the dialog
+          // shown alongside.
+          : loc(context).remoteAssistanceSessionEnded,
       color: Color(neutralTonal.get(100)),
     );
   }

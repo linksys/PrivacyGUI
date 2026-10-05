@@ -80,6 +80,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             title: loc(context).speedTest,
             bottomBar: state.status == 'COMPLETE'
                 ? PageBottomBar(
+                    isWrite: false,
                     positiveLabel: loc(context).testAgain,
                     isPositiveEnabled: true,
                     onPositiveTap: () {

@@ -31,6 +31,7 @@ import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 
 final firmwareUpdateProvider =
     NotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(
@@ -158,6 +159,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
+    // Checked before `isUpdating` is set: nothing below clears it if the send is
+    // refused, which would leave the page on its updating spinner for good.
+    enforceAccess(
+        ref,
+        (policy) => policy.checkWrite(
+            serviceHelper.isSupportNodeFirmwareUpdate()
+                ? JNAPAction.nodesUpdateFirmwareNow
+                : JNAPAction.updateFirmwareNow));
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -369,6 +378,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
+    // The upload goes to the router's local address, not through
+    // RouterRepository, so its gate never sees this write.
+    enforceAccess(
+        ref, (policy) => policy.checkWrite(JNAPAction.updateFirmwareNow));
     final client = LinksysHttpClient()
       ..timeoutMs = 300000
       ..retries = 0;

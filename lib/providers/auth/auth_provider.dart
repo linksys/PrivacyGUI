@@ -5,6 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/cloud/remote_session_expiry.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
@@ -108,7 +110,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.e('Http Response Error: $error');
-      if (error is ErrorResponse) {
+      if (isRemoteSessionExpired(error)) {
+        // #1637: the cloud refuses every call made through an ended remote
+        // assistance session. Handing it to the session state, not logging out
+        // here, keeps the one session-ended flow the top bar already runs.
+        if (state.value?.loginType == LoginType.remote) {
+          ref.read(remoteClientProvider.notifier).markSessionExpired();
+        }
+      } else if (error is ErrorResponse) {
         // Remote login
         if (error.code == 'INVALID_SESSION_TOKEN') {
           final sessionToken =

@@ -21,6 +21,16 @@
             "program": "lib/main.dart"
         },
         {
+            // A remote (Guardian) login held to read-only: every JNAP write is
+            // refused before it is sent.
+            "name": "linksys - Web (Remote, Read-only)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--web-browser-flag", "--disable-web-security"],
+            "toolArgs": ["--dart-define","force=remote","--dart-define","remote_read_only=true"],
+            "program": "lib/main.dart"
+        },
+        {
             // Same as "linksys - Web (Local)" plus the client-side remote
             // assistance entry points, which are off by default.
             "name": "linksys - Web (Local, Remote Assistance)",

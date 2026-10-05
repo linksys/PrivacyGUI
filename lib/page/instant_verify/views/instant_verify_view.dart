@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -804,9 +804,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   child: Tooltip(
                     message: loc(context).featureUnavailableInRemoteMode,
                     child: Opacity(
-                      opacity: BuildConfig.isRemote() ? 0.5 : 1,
+                      opacity: ref.watch(isRemoteLoginProvider) ? 0.5 : 1,
                       child: AbsorbPointer(
-                        absorbing: BuildConfig.isRemote(),
+                        absorbing: ref.watch(isRemoteLoginProvider),
                         child: const SpeedTestExternalWidget(),
                       ),
                     ),

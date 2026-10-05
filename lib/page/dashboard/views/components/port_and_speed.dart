@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -276,7 +276,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _createSpeedTestTile(BuildContext context, WidgetRef ref,
       DashboardHomeState state, bool hasLanPort,
       [bool mobile = false]) {
-    final isRemote = BuildConfig.isRemote();
+    final isRemote = ref.watch(isRemoteLoginProvider);
     final showSpeedTest = isDisplaySpeedTest(ref);
     if (!showSpeedTest) {
       return const SizedBox.shrink();

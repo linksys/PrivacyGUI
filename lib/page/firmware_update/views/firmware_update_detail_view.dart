@@ -17,6 +17,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -117,13 +118,15 @@ class _FirmwareUpdateDetailViewState
               footer: isUpdateAvailable && !isWaitingChildren
                   ? Padding(
                       padding: const EdgeInsets.only(top: Spacing.large5),
-                      child: AppFilledButton(
-                        loc(context).updateAll,
-                        onTap: () {
-                          ref
-                              .read(firmwareUpdateProvider.notifier)
-                              .updateFirmware();
-                        },
+                      child: WriteGuard(
+                        child: AppFilledButton(
+                          loc(context).updateAll,
+                          onTap: () {
+                            ref
+                                .read(firmwareUpdateProvider.notifier)
+                                .updateFirmware();
+                          },
+                        ),
                       ),
                     )
                   : null,

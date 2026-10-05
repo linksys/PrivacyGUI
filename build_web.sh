@@ -1,11 +1,11 @@
 function buildWebApp() {
   echo "start building web app #${buildNumber}-${force}-${cloud}"
   echo "base href is ${href}"
-  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}"
+  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}, remote read-only is ${REMOTE_READ_ONLY}"
 
   # The qa and non-qa branches this replaces were byte-identical, which is how
   # both of the flags below came to be appended twice.
-  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}"
+  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}" --dart-define=remote_read_only="${REMOTE_READ_ONLY}"
   # rm -rf ./build/web/canvasKit
 }
 
@@ -35,6 +35,13 @@ SOURCE_REVISION="${SOURCE_REVISION:-$(git -C "$(CDPATH= cd -- "$(dirname -- "$0"
 ENABLE_REMOTE_ASSISTANCE="${ENABLE_REMOTE_ASSISTANCE:-false}"
 if [ "$ENABLE_REMOTE_ASSISTANCE" != "true" ] && [ "$ENABLE_REMOTE_ASSISTANCE" != "false" ]; then
     echo "ENABLE_REMOTE_ASSISTANCE must be exactly 'true' or 'false', got '${ENABLE_REMOTE_ASSISTANCE}'" >&2
+    exit 1
+fi
+
+# Holds a remote login to read-only. Same contract as above, for the same reason.
+REMOTE_READ_ONLY="${REMOTE_READ_ONLY:-false}"
+if [ "$REMOTE_READ_ONLY" != "true" ] && [ "$REMOTE_READ_ONLY" != "false" ]; then
+    echo "REMOTE_READ_ONLY must be exactly 'true' or 'false', got '${REMOTE_READ_ONLY}'" >&2
     exit 1
 fi
 

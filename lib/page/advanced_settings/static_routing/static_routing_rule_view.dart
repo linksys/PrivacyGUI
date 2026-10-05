@@ -91,6 +91,7 @@ class _StaticRoutingDetailViewState
       scrollable: true,
       title: _isEdit ? loc(context).edit : loc(context).addStaticRoute,
       bottomBar: PageBottomBar(
+        isWrite: false,
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: loc(context).save,
         onPositiveTap: () {

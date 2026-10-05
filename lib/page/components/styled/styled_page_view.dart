@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
@@ -36,6 +37,14 @@ class PageBottomBar extends Equatable {
   final void Function() onPositiveTap;
   final void Function()? onNegitiveTap;
 
+  /// Whether the positive action changes the router. When it does, the button
+  /// is disabled for a login that may not write (see [AccessPolicy]).
+  ///
+  /// Defaults to true so a new page is held to read-only unless it says
+  /// otherwise. Set it false only where the action hands a value back to the
+  /// page that opened it - a rule editor, a picker - and nothing is sent.
+  final bool isWrite;
+
   const PageBottomBar({
     required this.isPositiveEnabled,
     this.isNegitiveEnabled,
@@ -43,6 +52,7 @@ class PageBottomBar extends Equatable {
     this.negitiveLable,
     required this.onPositiveTap,
     this.onNegitiveTap,
+    this.isWrite = true,
   });
 
   PageBottomBar copyWith({
@@ -52,6 +62,7 @@ class PageBottomBar extends Equatable {
     String? negitiveLable,
     void Function()? onPositiveTap,
     void Function()? onNegitiveTap,
+    bool? isWrite,
   }) {
     return PageBottomBar(
       isPositiveEnabled: isPositiveEnabled ?? this.isPositiveEnabled,
@@ -60,6 +71,7 @@ class PageBottomBar extends Equatable {
       negitiveLable: negitiveLable ?? this.negitiveLable,
       onPositiveTap: onPositiveTap ?? this.onPositiveTap,
       onNegitiveTap: onNegitiveTap ?? this.onNegitiveTap,
+      isWrite: isWrite ?? this.isWrite,
     );
   }
 
@@ -72,6 +84,7 @@ class PageBottomBar extends Equatable {
       negitiveLable,
       onPositiveTap,
       onNegitiveTap,
+      isWrite,
     ];
   }
 }
@@ -84,6 +97,7 @@ class InversePageBottomBar extends PageBottomBar {
     super.negitiveLable,
     required super.onPositiveTap,
     super.onNegitiveTap,
+    super.isWrite,
   });
 }
 
@@ -459,6 +473,19 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
   }
 
   Widget _bottomWidget(BuildContext context) {
+    final bottomBar = widget.bottomBar;
+    final writeBlocked = bottomBar != null &&
+        bottomBar.isWrite &&
+        !ref.watch(accessPolicyProvider).canWrite;
+    final onPositiveTap = bottomBar?.isPositiveEnabled == true && !writeBlocked
+        ? () => bottomBar?.onPositiveTap.call()
+        : null;
+    Widget guardPositive(Widget button) => writeBlocked
+        ? Tooltip(
+            message: loc(context).featureUnavailableInRemoteMode,
+            child: button,
+          )
+        : button;
     return widget.bottomBar != null
         ? Align(
             alignment: Alignment.bottomCenter,
@@ -504,22 +531,16 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 const AppGap.medium(),
                               ],
                               Expanded(
-                                child: AppFilledButton.fillWidth(
+                                child: guardPositive(AppFilledButton.fillWidth(
                                   widget.bottomBar?.positiveLabel ??
                                       loc(context).save,
-                                  onTap: widget.bottomBar?.isPositiveEnabled ==
-                                          true
-                                      ? () {
-                                          widget.bottomBar?.onPositiveTap
-                                              .call();
-                                        }
-                                      : null,
+                                  onTap: onPositiveTap,
                                   color:
                                       widget.bottomBar is InversePageBottomBar
                                           ? Theme.of(context).colorScheme.error
                                           : null,
                                   identifier: 'now-page-bottom-button-positive',
-                                ),
+                                )),
                               ),
                             ],
                             if (!ResponsiveLayout.isMobileLayout(context)) ...[
@@ -540,20 +561,15 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 ),
                                 const AppGap.medium(),
                               ],
-                              AppFilledButton(
+                              guardPositive(AppFilledButton(
                                 widget.bottomBar?.positiveLabel ??
                                     loc(context).save,
                                 identifier: 'now-page-bottom-button-positive',
-                                onTap: widget.bottomBar?.isPositiveEnabled ==
-                                        true
-                                    ? () {
-                                        widget.bottomBar?.onPositiveTap.call();
-                                      }
-                                    : null,
+                                onTap: onPositiveTap,
                                 color: widget.bottomBar is InversePageBottomBar
                                     ? Theme.of(context).colorScheme.error
                                     : null,
-                              ),
+                              )),
                             ],
                           ],
                         ),

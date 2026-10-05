@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
@@ -90,7 +90,7 @@ class _LocalNetworkSettingsViewState
 
   @override
   Widget build(BuildContext context) {
-    if (!BuildConfig.isRemote()) {
+    if (!ref.watch(isRemoteLoginProvider)) {
       ref.listen(redirectionProvider, (previous, next) {
         if (kIsWeb &&
             next != null &&
@@ -344,7 +344,7 @@ class _LocalNetworkSettingsViewState
       return;
     }
     // ip case
-    if (state.ipAddress != currentUrl && !BuildConfig.isRemote()) {
+    if (state.ipAddress != currentUrl && !ref.read(isRemoteLoginProvider)) {
       _doRedirect(state.ipAddress);
     }
   }

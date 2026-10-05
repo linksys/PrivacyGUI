@@ -10,6 +10,10 @@ void main() {
       expect(BuildConfig.enableRemoteAssistance, isFalse);
     });
 
+    test('remote logins can write unless the build asks for read-only', () {
+      expect(BuildConfig.remoteReadOnly, isFalse);
+    });
+
     test('source revision is unknown when the build supplies none', () {
       expect(BuildConfig.sourceRevision, BuildConfig.unknownSourceRevision);
     });

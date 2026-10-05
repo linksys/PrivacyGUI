@@ -40,6 +40,17 @@ class RemoteClientState extends Equatable {
   String? get pinForCurrentSession =>
       pinSessionId != null && pinSessionId == sessionInfo?.id ? pin : null;
 
+  /// Seconds left in the session: null with no session, 0 once it is no longer
+  /// ACTIVE or has run out, otherwise the running countdown, falling back to
+  /// the session's own figure before the countdown has started.
+  int? get sessionSecondsLeft {
+    final info = sessionInfo;
+    if (info == null) return null;
+    if (info.status != GRASessionStatus.active) return 0;
+    final count = expiredCountdown ?? info.expiredIn;
+    return count > 0 ? count : 0;
+  }
+
   RemoteClientState copyWith({
     ValueGetter<GRASessionInfo?>? sessionInfo,
     ValueGetter<String?>? pin,

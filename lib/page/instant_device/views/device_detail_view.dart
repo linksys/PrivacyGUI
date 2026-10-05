@@ -35,6 +35,7 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -257,7 +258,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                     state.item.ipv4Address.isNotEmpty &&
                     state.item.type != WifiConnectionType.guest &&
                     isReservedIp != null
-                ? AppLoadableWidget.textButton(
+                ? WriteGuard(
+                    child: AppLoadableWidget.textButton(
                     spinnerSize: Size(36, 36),
                     title: isReservedIp == true
                         ? loc(context).releaseReservedIp
@@ -271,7 +273,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                       await handleReserveDhcp(
                           state.item, isReservedIp!, controller);
                     },
-                  )
+                  ))
                 : null,
             selectableDescription: true,
           ),
