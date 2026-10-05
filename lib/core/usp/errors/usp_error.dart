@@ -259,6 +259,25 @@ ServiceError _mapAuthError(UspError e) {
   return UnexpectedError(originalError: e.rawError, detail: msg);
 }
 
+/// Whether a per-path SET error means the request **never got an answer** —
+/// the browser's `fetch` itself failed — as opposed to the router answering
+/// with a refusal.
+///
+/// The per-path `errorCode` cannot say which: the WASM client reports both as
+/// `9999`. A refusal still carries the router's own fault inside the message
+/// (`… Received error response: … (code: 7005)`), and a lost answer carries
+/// `Failed to fetch`. Both measured on FLWRT 2.0.2, 2026-10-05 — mistaking the
+/// first for the second is how a refused PnP WiFi save once reported itself as
+/// applied.
+///
+/// Fails closed: a message matching neither shape is not treated as unanswered,
+/// so an unrecognized error is reported rather than assumed to have landed.
+bool isUnansweredTransportFailure(String errorMessage) {
+  if (_faultCode.hasMatch(errorMessage)) return false;
+  if (errorMessage.contains('Received error response')) return false;
+  return errorMessage.contains('Failed to fetch');
+}
+
 ServiceError _mapTransportError(UspError e) {
   final status = e.httpStatus;
   if (status != null) {

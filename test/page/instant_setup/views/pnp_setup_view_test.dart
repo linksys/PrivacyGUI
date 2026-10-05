@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -186,6 +188,92 @@ void main() {
     expect(find.text(pnpUnifiedWifiConfig.ssid), findsOneWidget);
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
   });
+  group('a save that returns to the form says why (#1000)', () {
+    // The defect: `saveChanges()` put its error in a state field no view read,
+    // so a failed save looked like the guest page "being shown twice".
+    //
+    // Driven through `setDemoPhase` on the pinned notifier, because what is under
+    // test is the view's reaction to a *transition* into the form — the save
+    // logic itself is the notifier test's.
+    Future<FixedPnpNotifier> pumpSaving(WidgetTester tester) async {
+      enlargeSurface(tester);
+      final notifier = FixedPnpNotifier(
+        const PnpState(phase: WizardSaving(), serialNumber: 'SN-TEST'),
+      );
+      await runWithOverflowCollection((_) async {
+        await tester.pumpWidget(pageSurfaceHost(
+          view: const PnpSetupView(),
+          locale: const Locale('en'),
+          overrides: [pnpProvider.overrideWith(() => notifier)],
+        ));
+        await settle(tester);
+      });
+      return notifier;
+    }
+
+    testWidgets('shows the localized error when the save fails',
+        (tester) async {
+      final notifier = await pumpSaving(tester);
+
+      await runWithOverflowCollection((_) async {
+        notifier.setDemoPhase(const WizardConfiguring(
+          wifiConfig: pnpUnifiedWifiConfig,
+          saveError: TimeoutError(detail: 'diagnostic only'),
+        ));
+        await settle(tester);
+      });
+
+      expect(find.text('The operation timed out. Please try again.'),
+          findsOneWidget);
+      expect(find.textContaining('diagnostic only'), findsNothing,
+          reason: 'detail is diagnostic, never shown (constitution §13.6)');
+    });
+
+    testWidgets('says nothing when the form is reached without an error',
+        (tester) async {
+      final notifier = await pumpSaving(tester);
+
+      await runWithOverflowCollection((_) async {
+        notifier.setDemoPhase(
+            const WizardConfiguring(wifiConfig: pnpUnifiedWifiConfig));
+        await settle(tester);
+      });
+
+      expect(find.byType(SnackBar), findsNothing);
+    });
+  });
+
+  testWidgets(
+      'the reconnect screen says the router is restarting, and lays out at '
+      '320px in every locale', (tester) async {
+    // The copy is new (the old line said "connect your devices to your new WiFi"
+    // while that network was not on the air yet), and the reconnect screen is in
+    // no layout-gate case — so this is the only thing that renders it per locale.
+    // 320px is the product floor and overflow is monotonic in width.
+    final overflows = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      final errors = await runWithOverflowCollection((sink) async {
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey(locale.toString()),
+          child: pageSurfaceHost(
+            view: const PnpSetupView(),
+            locale: locale,
+            overrides: pnpOverrides(pnpWizardNeedsReconnectState),
+          ),
+        ));
+        await settle(tester);
+        return sink;
+      });
+      if (errors.isNotEmpty) overflows.add('$locale: $errors');
+
+      final copy = lookupAppLocalizations(locale).pnpReconnectWiFiRestarting;
+      expect(find.text(copy), findsOneWidget, reason: '$locale');
+    }
+
+    expect(overflows, isEmpty, reason: overflows.join('\n'));
+  });
+
   testWidgets(
       'neither completion-screen action button clips its label at 320px, in any '
       'locale', (tester) async {

@@ -377,6 +377,8 @@
   "pnpPppoeAddVlan": "Add VLAN ID",
   "pnpPppoeRemoveVlan": "Remove VLAN ID",
   "pnpReconnectWiFi": "Reconnect to your router's WiFi to continue setup",
+  "pnpReconnectWiFiRestarting": "Your router is restarting its WiFi. This takes about a minute. When you see the new network below, connect to it, then tap Next.",
+  "@pnpReconnectWiFiRestarting": {"description": "PnP wizard, the reconnect step after the main WiFi name or password changed. The router restarts WiFi to apply it, and the new network can take about a minute to appear, so this tells the user to wait for it before connecting. Shown above the new network name."},
   "pnpSavingChangesDesc": "Your router's WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router's WiFi to finish setup.",
   "pnpStaticIpDesc": "These settings are for users with a manually-assigned static IP address.",
   "pnpUnplugModemTip": "Not sure which device is the modem?",
@@ -398,7 +400,6 @@
       }
     }
   },
-  "pnpWiFiReadyConnectToNewWiFi": "Connect your devices to your new WiFi",
   "pnpYourNetworkDesc": "Confirm all Nodes are here",
   "pnpYourNetworkTitle": "Your network",
   "poor": "Poor",

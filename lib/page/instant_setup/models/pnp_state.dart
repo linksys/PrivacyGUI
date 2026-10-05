@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'pnp_wifi_config.dart';
@@ -151,13 +152,22 @@ class WizardConfiguring extends PnpPhase {
   final PnpWifiConfig wifiConfig;
   final List<NodeEntity> meshNodes;
 
+  /// Why the last save sent the user back here, for the view to show once.
+  ///
+  /// On the phase rather than on [PnpState] so that it cannot outlive the form:
+  /// every edit builds a new [WizardConfiguring] without it. A failed save used
+  /// to put its error in a state field no view read, which is the "guest page
+  /// shown twice" of #1000 — the user was sent back with nothing said.
+  final ServiceError? saveError;
+
   const WizardConfiguring({
     required this.wifiConfig,
     this.meshNodes = const [],
+    this.saveError,
   });
 
   @override
-  List<Object?> get props => [wifiConfig, meshNodes];
+  List<Object?> get props => [wifiConfig, meshNodes, saveError];
 }
 
 /// Writing changes to router.
@@ -180,13 +190,25 @@ class WizardNeedsReconnect extends PnpPhase {
   final String newPassword;
   final PnpWifiConfig? wifiConfig;
 
+  /// Carried through the reconnect so that a write found not to have landed can
+  /// return to the same form it left.
+  final List<NodeEntity> meshNodes;
+
+  /// The WiFi write was sent but its answer never came, so whether the router
+  /// applied it is asked after the reconnect. On FLWRT 2.0 this is the usual
+  /// case, not a fault — see [PnpWifiWriteOutcome].
+  final bool writeUnanswered;
+
   const WizardNeedsReconnect({
     required this.newSsid,
     required this.newPassword,
     this.wifiConfig,
+    this.meshNodes = const [],
+    this.writeUnanswered = false,
   });
   @override
-  List<Object?> get props => [newSsid, newPassword, wifiConfig];
+  List<Object?> get props =>
+      [newSsid, newPassword, wifiConfig, meshNodes, writeUnanswered];
 }
 
 /// Polling for router after reconnect.

@@ -47,6 +47,15 @@ class PnpWizardFetchResult {
   const PnpWizardFetchResult({required this.wifiConfig});
 }
 
+/// What the router said about the WiFi write.
+///
+/// [unanswered] is the ordinary outcome on FLWRT 2.0, not a fault: a WiFi write
+/// restarts the network the browser is connected through, so its response has
+/// nowhere to arrive. Measured on 2.0.1 RC3 (#1490): the SET came back 161–288 s
+/// later as a `9999` transport failure, while the new SSID was already
+/// broadcasting.
+enum PnpWifiWriteOutcome { confirmed, unanswered }
+
 /// Stateless service encapsulating ALL USP operations for PnP.
 ///
 /// This is the only class that imports codegen generated files.
@@ -271,189 +280,212 @@ class PnpService {
 
   // ─── Wizard Save ─────────────────────────────────────────
 
-  /// Save WiFi SSID + password changes.
+  /// Save the whole WiFi form — guest and main — **in one SET**.
   ///
-  /// Handles both unified mode (all bands share SSID) and split mode
-  /// (each band has different SSID).
-  Future<void> saveWifi(PnpWifiConfig config) async {
-    try {
-      // ── Main WiFi ──
-      if (config.isSplitMode) {
-        // Split mode: save per-band changes
-        await _saveMainWifiSplitMode(config);
-      } else {
-        // Unified mode: apply same SSID/password to all bands
-        await _saveMainWifiUnifiedMode(config);
-      }
+  /// One, because any WiFi write restarts every radio, main network included.
+  /// Measured on FLWRT 2.0.2 (bench, 2026-10-05): a guest-only SET (turning guest
+  /// off, or on) set off `bbf.config.wifi.reload`, the main 2.4/5 GHz VAPs were
+  /// reconfigured ~14 s later, and the browser on the main network was dropped.
+  /// So a save split into several SETs only ever has its first one on a live
+  /// connection: the rest go out over a network that is restarting, and stall
+  /// until the browser gives up — which is #1000, #1490 and #1491 alike. Sent
+  /// together, the router applies everything and restarts once.
+  ///
+  /// **`allowPartial: true`, and it has to be.** The OBUSPA broker refuses an
+  /// atomic SET that spans more than one USP Service with 7005, and this one
+  /// does — bench-measured, the first try of this fix was refused that way and
+  /// nothing was written. `wifidmd` registers both tables, so the second service
+  /// is not visible from its registration; `_saveIpv6Settings` in
+  /// `usp_internet_settings_service.dart` hit the same wall. A per-leaf failure
+  /// the router does report still throws.
+  ///
+  /// **No ordering inside it.** The former split mode wrote `AccessPoint.Enable`
+  /// before the passphrase ("enable first, then configure"), a rule that arrived
+  /// without a reason in the 2.6.0 squash. One SET gives the router all of it at
+  /// once; whether the guest passphrase takes is what the bench run of this
+  /// change checks.
+  ///
+  /// `Enable` is written on both the SSID and the AccessPoint rows because
+  /// `SSID.Enable` alone does not stop the AP broadcasting (#972).
+  ///
+  /// The params are built by hand because `WiFiSsids.update` and
+  /// `WiFiAccessPoints.update` each send their own SET.
+  ///
+  /// Returns [PnpWifiWriteOutcome.unanswered] when the response was lost to the
+  /// restart — the ordinary outcome when the browser is on the WiFi it changed.
+  /// A refusal from the router throws, because a router that answered applied
+  /// nothing — and the two cannot be told apart by `errorCode`: the WASM client
+  /// stamps `9999` on both, and only the message says whether the router
+  /// answered (see [isUnansweredTransportFailure]).
+  Future<PnpWifiWriteOutcome> saveWifi(PnpWifiConfig config) async {
+    final params = {..._guestParams(config), ..._mainParams(config)};
+    if (params.isEmpty) return PnpWifiWriteOutcome.confirmed;
 
-      // ── Guest WiFi ──
-      if (config.isGuestDirty) {
-        if (config.isGuestSplitMode) {
-          // Split mode: save per-band changes
-          await _saveGuestWifiSplitMode(config);
-        } else if (config.guestSsidInstancePaths.isNotEmpty) {
-          // Unified mode: apply same SSID/password to all bands
-          await _saveGuestWifiUnifiedMode(config);
-        }
+    try {
+      final result = await _usp.set(params, allowPartial: true);
+      final parsed = UspResultParser.parseSetResult(result);
+      if (parsed is UspFailure &&
+          parsed.errors
+              .every((e) => isUnansweredTransportFailure(e.errorMessage))) {
+        logger.i('[PnP] WiFi write unanswered — the network restarted under '
+            'the request');
+        return PnpWifiWriteOutcome.unanswered;
       }
+      _throwIfParsedNotSuccess(parsed, 'WiFi update');
+      return PnpWifiWriteOutcome.confirmed;
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  Future<void> _saveMainWifiUnifiedMode(PnpWifiConfig config) async {
-    if (config.isSsidChanged) {
-      final ssidUpdates = config.ssidInstancePaths
-          .map((path) => WiFiSsidUpdate(instancePath: path, ssid: config.ssid))
-          .toList();
-      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
-      _throwIfNotSuccess(ssidResult, 'Main WiFi SSID update');
-    }
+  /// Whether the router now carries what [config] asked for.
+  ///
+  /// Read once the router answers again, for a write whose own answer never
+  /// arrived. It compares what the router reads back: main and guest SSID names,
+  /// and the guest `Enable` on both the SSID and the AccessPoint row. The
+  /// passphrases are not compared — they went out in the same SET as the rest,
+  /// so the rest landing means they did. A save with nothing readable to compare
+  /// reads as applied.
+  Future<bool> isWifiApplied(PnpWifiConfig config) async {
+    final expectedSsid = <String, String>{};
+    final expectedSsidEnable = <String, bool>{};
+    final expectedApEnable = <String, bool>{};
 
-    if (config.isPasswordChanged) {
-      final apUpdates = config.accessPointInstancePaths
-          .map((path) => WiFiAccessPointUpdate(
-                instancePath: path,
-                keyPassphrase: config.password,
-              ))
-          .toList();
-      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
-      _throwIfNotSuccess(apResult, 'Main WiFi password update');
-    }
-  }
-
-  Future<void> _saveMainWifiSplitMode(PnpWifiConfig config) async {
-    // Collect all bands that have changes
-    final ssidUpdates = <WiFiSsidUpdate>[];
-    final apUpdates = <WiFiAccessPointUpdate>[];
-
-    for (final band in config.mainBands) {
-      if (band.isSsidChanged) {
-        ssidUpdates.add(WiFiSsidUpdate(
-          instancePath: band.ssidInstancePath,
-          ssid: band.ssid,
-        ));
+    if (config.isSplitMode) {
+      for (final band in config.mainBands) {
+        if (band.isSsidChanged) expectedSsid[band.ssidInstancePath] = band.ssid;
       }
-      if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
-        apUpdates.add(WiFiAccessPointUpdate(
-          instancePath: band.accessPointInstancePath,
-          keyPassphrase: band.password,
-        ));
+    } else if (config.isSsidChanged) {
+      for (final path in config.ssidInstancePaths) {
+        expectedSsid[path] = config.ssid;
       }
     }
-
-    if (ssidUpdates.isNotEmpty) {
-      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
-      _throwIfNotSuccess(ssidResult, 'Main WiFi SSID update');
-    }
-    if (apUpdates.isNotEmpty) {
-      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
-      _throwIfNotSuccess(apResult, 'Main WiFi password update');
-    }
-  }
-
-  Future<void> _saveGuestWifiUnifiedMode(PnpWifiConfig config) async {
-    // Enable/disable + SSID
-    if (config.isGuestEnabledChanged || config.isGuestSsidChanged) {
-      final guestSsidUpdates = config.guestSsidInstancePaths
-          .map((path) => WiFiSsidUpdate(
-                instancePath: path,
-                ssid: config.guestSsid,
-                enable: config.guestEnabled,
-              ))
-          .toList();
-      final ssidResult = await WiFiSsids.update(_usp, guestSsidUpdates);
-      _throwIfNotSuccess(ssidResult, 'Guest WiFi SSID update');
-
-      // Mirror enable state to AccessPoint layer (#972: SSID.Enable alone
-      // does not stop the AP broadcasting on this firmware).
-      if (config.isGuestEnabledChanged) {
-        final apEnableUpdates = config.guestAccessPointInstancePaths
-            .map((path) => WiFiAccessPointUpdate(
-                  instancePath: path,
-                  enable: config.guestEnabled,
-                ))
-            .toList();
-        final apResult = await WiFiAccessPoints.update(_usp, apEnableUpdates);
-        _throwIfNotSuccess(apResult, 'Guest WiFi AP enable update');
-      }
-    }
-
-    // Password
-    if (config.isGuestPasswordChanged) {
-      final guestApUpdates = config.guestAccessPointInstancePaths
-          .map((path) => WiFiAccessPointUpdate(
-                instancePath: path,
-                keyPassphrase: config.guestPassword,
-              ))
-          .toList();
-      final apResult = await WiFiAccessPoints.update(_usp, guestApUpdates);
-      _throwIfNotSuccess(apResult, 'Guest WiFi password update');
-    }
-  }
-
-  Future<void> _saveGuestWifiSplitMode(PnpWifiConfig config) async {
-    // Collect all bands that have changes
-    final ssidUpdates = <WiFiSsidUpdate>[];
-    final apUpdates = <WiFiAccessPointUpdate>[];
-    final apEnableUpdates = <WiFiAccessPointUpdate>[];
-
-    for (final band in config.guestBands) {
-      // Always include enable state for guest bands
-      if (band.isSsidChanged || config.isGuestEnabledChanged) {
-        ssidUpdates.add(WiFiSsidUpdate(
-          instancePath: band.ssidInstancePath,
-          ssid: band.ssid,
-          enable: config.guestEnabled,
-        ));
-        // Mirror enable state to AccessPoint layer (#972)
-        if (config.isGuestEnabledChanged &&
-            band.accessPointInstancePath.isNotEmpty) {
-          apEnableUpdates.add(WiFiAccessPointUpdate(
-            instancePath: band.accessPointInstancePath,
-            enable: config.guestEnabled,
-          ));
-        }
-      }
-      if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
-        apUpdates.add(WiFiAccessPointUpdate(
-          instancePath: band.accessPointInstancePath,
-          keyPassphrase: band.password,
-        ));
-      }
-    }
-
-    // If only enabling/disabling without SSID changes, still need to update enable state
-    if (ssidUpdates.isEmpty && config.isGuestEnabledChanged) {
+    if (config.isGuestSplitMode) {
       for (final band in config.guestBands) {
-        ssidUpdates.add(WiFiSsidUpdate(
-          instancePath: band.ssidInstancePath,
-          enable: config.guestEnabled,
-        ));
-        // Mirror enable state to AccessPoint layer (#972)
-        if (band.accessPointInstancePath.isNotEmpty) {
-          apEnableUpdates.add(WiFiAccessPointUpdate(
-            instancePath: band.accessPointInstancePath,
-            enable: config.guestEnabled,
-          ));
+        if (band.isSsidChanged) expectedSsid[band.ssidInstancePath] = band.ssid;
+      }
+    } else if (config.isGuestSsidChanged) {
+      for (final path in config.guestSsidInstancePaths) {
+        expectedSsid[path] = config.guestSsid;
+      }
+    }
+    if (config.isGuestEnabledChanged) {
+      final ssidPaths = config.isGuestSplitMode
+          ? config.guestBands.map((b) => b.ssidInstancePath)
+          : config.guestSsidInstancePaths;
+      final apPaths = config.isGuestSplitMode
+          ? config.guestBands
+              .map((b) => b.accessPointInstancePath)
+              .where((p) => p.isNotEmpty)
+          : config.guestAccessPointInstancePaths;
+      for (final path in ssidPaths) {
+        expectedSsidEnable[path] = config.guestEnabled;
+      }
+      for (final path in apPaths) {
+        expectedApEnable[path] = config.guestEnabled;
+      }
+    }
+    if (expectedSsid.isEmpty &&
+        expectedSsidEnable.isEmpty &&
+        expectedApEnable.isEmpty) {
+      return true;
+    }
+
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        WiFiSsids.fetch(_usp),
+        if (expectedApEnable.isNotEmpty) WiFiAccessPoints.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+    final ssids = {
+      for (final s in (results[0] as WiFiSsids).items) s.instancePath: s,
+    };
+    final aps = expectedApEnable.isEmpty
+        ? const <String, WiFiAccessPoint>{}
+        : {
+            for (final a in (results[1] as WiFiAccessPoints).items)
+              a.instancePath: a,
+          };
+
+    return expectedSsid.entries.every((e) => ssids[e.key]?.ssid == e.value) &&
+        expectedSsidEnable.entries
+            .every((e) => ssids[e.key]?.enable == e.value) &&
+        expectedApEnable.entries.every((e) => aps[e.key]?.enable == e.value);
+  }
+
+  Map<String, dynamic> _mainParams(PnpWifiConfig config) {
+    final params = <String, dynamic>{};
+    if (config.isSplitMode) {
+      for (final band in config.mainBands) {
+        if (band.isSsidChanged) {
+          params['${band.ssidInstancePath}SSID'] = band.ssid;
+        }
+        if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
+          params['${band.accessPointInstancePath}Security.KeyPassphrase'] =
+              band.password;
+        }
+      }
+    } else {
+      if (config.isSsidChanged) {
+        for (final path in config.ssidInstancePaths) {
+          params['${path}SSID'] = config.ssid;
+        }
+      }
+      if (config.isPasswordChanged) {
+        for (final path in config.accessPointInstancePaths) {
+          params['${path}Security.KeyPassphrase'] = config.password;
         }
       }
     }
+    return params;
+  }
 
-    if (ssidUpdates.isNotEmpty) {
-      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
-      _throwIfNotSuccess(ssidResult, 'Guest WiFi SSID update');
+  Map<String, dynamic> _guestParams(PnpWifiConfig config) {
+    final params = <String, dynamic>{};
+    if (!config.isGuestDirty) return params;
+
+    if (config.isGuestSplitMode) {
+      for (final band in config.guestBands) {
+        if (band.isSsidChanged) {
+          params['${band.ssidInstancePath}SSID'] = band.ssid;
+        }
+        if (config.isGuestEnabledChanged) {
+          params['${band.ssidInstancePath}Enable'] = config.guestEnabled;
+          if (band.accessPointInstancePath.isNotEmpty) {
+            params['${band.accessPointInstancePath}Enable'] =
+                config.guestEnabled;
+          }
+        }
+        if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
+          params['${band.accessPointInstancePath}Security.KeyPassphrase'] =
+              band.password;
+        }
+      }
+      return params;
     }
-    // Write AP enable state before password updates (enable first, then configure)
-    if (apEnableUpdates.isNotEmpty) {
-      final apEnableResult =
-          await WiFiAccessPoints.update(_usp, apEnableUpdates);
-      _throwIfNotSuccess(apEnableResult, 'Guest WiFi AP enable update');
+
+    if (config.guestSsidInstancePaths.isEmpty) return params;
+    if (config.isGuestSsidChanged || config.isGuestEnabledChanged) {
+      for (final path in config.guestSsidInstancePaths) {
+        params['${path}SSID'] = config.guestSsid;
+        params['${path}Enable'] = config.guestEnabled;
+      }
     }
-    if (apUpdates.isNotEmpty) {
-      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
-      _throwIfNotSuccess(apResult, 'Guest WiFi password update');
+    if (config.isGuestEnabledChanged) {
+      for (final path in config.guestAccessPointInstancePaths) {
+        params['${path}Enable'] = config.guestEnabled;
+      }
     }
+    if (config.isGuestPasswordChanged) {
+      for (final path in config.guestAccessPointInstancePaths) {
+        params['${path}Security.KeyPassphrase'] = config.guestPassword;
+      }
+    }
+    return params;
   }
 
   // ─── ISP/WAN Save ───────────────────────────────────────
@@ -581,10 +613,9 @@ class PnpService {
     }
   }
 
-  /// Throws [UspPartialFailureError] or [UspCompleteFailureError] if [result]
+  /// Throws [UspPartialFailureError] or [UspCompleteFailureError] if [parsed]
   /// is not a complete success. [label] prefixes the error summary.
-  void _throwIfNotSuccess(Map<String, dynamic> result, String label) {
-    final parsed = UspResultParser.parseSetResult(result);
+  void _throwIfParsedNotSuccess(UspSetResult parsed, String label) {
     switch (parsed) {
       case UspSuccess():
         return;
