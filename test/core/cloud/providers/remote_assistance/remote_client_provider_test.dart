@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -862,6 +864,33 @@ void main() {
       await notifier.initiateRemoteAssistanceCA();
 
       expect(container.read(remoteClientProvider).sessionInfo, nextSession);
+    });
+
+    // The cloud's record can still read ACTIVE for a moment after it has
+    // started refusing calls. If SESSION_EXPIRED lands while a pass is waiting
+    // on that read, the stale ACTIVE must not overwrite the ended session.
+    test('an expiry during the session read is not undone by its answer',
+        () async {
+      final read = Completer<GRASessionInfo>();
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [testSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) => read.future);
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+
+      final pass = notifier.initiateRemoteAssistanceCA();
+      await pumpEventQueue();
+      notifier.markSessionExpired();
+      read.complete(testSessionInfo);
+      await pass;
+
+      expect(container.read(remoteClientProvider).sessionInfo?.status,
+          GRASessionStatus.invalid);
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull,
+          reason: 'no countdown started for a session that has ended');
     });
 
     test('stops the countdown, which has nothing left to count', () {

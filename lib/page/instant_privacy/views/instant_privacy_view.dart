@@ -366,6 +366,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
       if (value != true) {
         return;
       }
+      // What the router has, to put back if the save fails: the switch sets
+      // both on state before saving, and polling refreshes only the status.
+      final before = ref.read(instantPrivacyProvider).settings;
       if (enable) {
         final macAddressList = ref
             .read(instantPrivacyDeviceListProvider)
@@ -381,6 +384,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         preservedState = state;
         showChangesSavedSnackBar();
       }).onError((error, stackTrace) {
+        _notifier
+          ..setMacAddressList(before.macAddresses)
+          ..setAccess(before.mode);
         showErrorMessageSnackBar(error);
       });
     });

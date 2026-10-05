@@ -65,4 +65,51 @@ void main() {
   testWidgets('a save that writes works with full access', (tester) async {
     expect(await tapSave(tester, policy: AccessPolicy.full, isWrite: true), 1);
   });
+
+  // #1637: a menu row that changes the router (Restart network) is blocked the
+  // same way; one that only navigates is not.
+  group('page menu', () {
+    Future<(int, int)> tapMenu(WidgetTester tester, AccessPolicy policy) async {
+      var writes = 0, navigations = 0;
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [accessPolicyProvider.overrideWithValue(policy)],
+        child: MaterialApp(
+          theme: mockLightThemeData,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) =>
+              CustomResponsive(child: child ?? const SizedBox.shrink()),
+          home: StyledAppPageView(
+            hideTopbar: true,
+            menu: PageMenu(items: [
+              PageMenuItem(
+                  label: 'Restart',
+                  icon: null,
+                  isWrite: true,
+                  onTap: () => writes++),
+              PageMenuItem(
+                  label: 'Open page', icon: null, onTap: () => navigations++),
+            ]),
+            child: (context, constraints) => const SizedBox.shrink(),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.tap(find.text('Restart'), warnIfMissed: false);
+      await tester.tap(find.text('Open page'));
+      await tester.pump();
+      return (writes, navigations);
+    }
+
+    testWidgets('a writing row is blocked in read-only mode', (tester) async {
+      expect(await tapMenu(tester, readOnly), (0, 1));
+    });
+
+    testWidgets('both rows work with full access', (tester) async {
+      expect(await tapMenu(tester, AccessPolicy.full), (1, 1));
+    });
+  });
 }

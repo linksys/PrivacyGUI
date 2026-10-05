@@ -111,8 +111,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                         value.settings.destinationMACAddress ?? '';
                     showSuccessSnackBar(context, loc(context).saved);
                   }).onError((error, stackTrace) {
-                    final errorMsg = errorCodeHelper(
-                        context, (error as JNAPError?)?.result ?? '');
+                    final errorMsg = errorCodeHelper(context,
+                        error is JNAPError ? error.result : '');
                     if (errorMsg != null) {
                       showFailedSnackBar(context, errorMsg);
                     } else {

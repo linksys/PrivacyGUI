@@ -59,6 +59,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         PageMenuItem(
             label: loc(context).restartNetwork,
             icon: LinksysIcons.restartAlt,
+            isWrite: true,
             onTap: () {
               _restartNetwork();
             }),

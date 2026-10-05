@@ -179,11 +179,21 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             semanticLabel: 'auto firmware update',
             onChanged: (value) {},
             event: (value) async {
-              await ref
-                  .read(firmwareUpdateProvider.notifier)
-                  .setFirmwareUpdatePolicy(value
-                      ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                      : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+              // Caught here because the tile shows a spinner while this runs
+              // and only clears it when this returns: an error thrown out of
+              // here leaves it spinning. A refused write is already explained
+              // at the app root, and the policy is only stored on success, so
+              // the switch stays where the router has it.
+              try {
+                await ref
+                    .read(firmwareUpdateProvider.notifier)
+                    .setFirmwareUpdatePolicy(value
+                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+              } catch (e) {
+                logger.e('[FIRMWARE]: Failed to change the update policy',
+                    error: e);
+              }
             },
           ),
         ],

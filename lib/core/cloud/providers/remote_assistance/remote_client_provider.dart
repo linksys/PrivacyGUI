@@ -184,12 +184,18 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       if (sessions.first.id == _expiredSessionId) {
         return;
       }
-      final sessionInfo =
-          await fetchSessionInfo(sessions.first.id, startCountdown: true);
-      if (sessionInfo == null) {
-        state = RemoteClientState();
+      final master = ref.read(deviceManagerProvider).masterDevice;
+      final sessionInfo = await ref
+          .read(deviceCloudServiceProvider)
+          .getSessionInfo(master: master, sessionId: sessions.first.id);
+      // Checked again after the read: the cloud may have refused a call and
+      // ended this session while the read was in flight, and the record it
+      // returns can still say ACTIVE.
+      if (sessionInfo.id == _expiredSessionId) {
         return;
       }
+      state = state.copyWith(sessionInfo: () => sessionInfo);
+      _startExpiredCountdownTimer(sessionInfo);
       // start a stream to fetch session info
       _startSessionInfoStream(sessionInfo.id,
           interval: kActiveSessionPollIntervalSec);

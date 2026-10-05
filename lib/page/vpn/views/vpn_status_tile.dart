@@ -71,7 +71,14 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                           notifier
                               .setVPNService(settings.copyWith(enabled: value));
 
-                          doSomethingWithSpinner(context, notifier.save());
+                          doSomethingWithSpinner(context, notifier.save())
+                              .onError((error, stackTrace) {
+                            // A toggle has no form to keep: put it back where
+                            // the router has it. Polling refreshes only the
+                            // tunnel status, so nothing else would.
+                            notifier.setVPNService(settings);
+                            return null;
+                          });
                         })
                   ],
                 ),

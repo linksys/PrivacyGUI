@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 import '../model/node_instant_actions.dart';
 
@@ -40,28 +41,31 @@ class NodeActionMenu extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          PopupMenuButton<NodeInstantActions>(
-            color: Theme.of(context).colorScheme.surface,
-            iconSize: 20,
-            elevation: 10,
-            surfaceTintColor: Theme.of(context).colorScheme.surface,
-            itemBuilder: (context) {
-              return actions
-                  .mapIndexed((index, e) => PopupMenuItem<NodeInstantActions>(
-                        padding: EdgeInsets.zero,
-                        value: e.isSub ? null : e,
-                        enabled: !e.isSub,
-                        child: PopupMenuItemView(
-                          action: e,
-                          onActionTap: onActionTap,
-                          itemBuilder: itemBuilder,
-                          subMenuBuilder: subMenuBuilder,
-                        ),
-                      ))
-                  .toList();
-            },
-            onSelected: onActionTap,
-          )
+          // Every node action changes the router.
+          WriteGuard(
+            child: PopupMenuButton<NodeInstantActions>(
+              color: Theme.of(context).colorScheme.surface,
+              iconSize: 20,
+              elevation: 10,
+              surfaceTintColor: Theme.of(context).colorScheme.surface,
+              itemBuilder: (context) {
+                return actions
+                    .mapIndexed((index, e) => PopupMenuItem<NodeInstantActions>(
+                          padding: EdgeInsets.zero,
+                          value: e.isSub ? null : e,
+                          enabled: !e.isSub,
+                          child: PopupMenuItemView(
+                            action: e,
+                            onActionTap: onActionTap,
+                            itemBuilder: itemBuilder,
+                            subMenuBuilder: subMenuBuilder,
+                          ),
+                        ))
+                    .toList();
+              },
+              onSelected: onActionTap,
+            ),
+          ),
         ],
       ),
     );

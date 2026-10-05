@@ -17,6 +17,7 @@ import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 import 'consts.dart';
 
@@ -114,10 +115,16 @@ class PageMenuItem {
   final String label;
   final IconData? icon;
   final void Function()? onTap;
+
+  /// Whether tapping this changes the router, so it is blocked for a login
+  /// that may not write. Unlike [PageBottomBar.isWrite] this defaults to false:
+  /// most menu items only navigate.
+  final bool isWrite;
   PageMenuItem({
     required this.label,
     required this.icon,
     this.onTap,
+    this.isWrite = false,
   });
 }
 
@@ -621,20 +628,27 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                       child: AppText.titleSmall(widget.menu?.title ?? '')),
                 ),
                 const AppGap.medium(),
-                ...(widget.menu?.items ?? []).map((e) => ListTile(
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(100))),
-                      leading: e.icon != null ? Icon(e.icon) : null,
-                      title: Semantics(
-                        // excludeSemantics: true,
-                        identifier: 'now-page-menu-${e.label.kebab()}',
-                        child: AppText.bodySmall(e.label),
-                      ),
-                      onTap: e.onTap,
-                    ))
+                ...(widget.menu?.items ?? []).map(pageMenuItemTile)
               ],
             ),
       ),
     );
   }
+}
+
+/// One row of a page menu; a row that writes is blocked when writing is not
+/// allowed. Shared by [StyledAppPageView] and StyledAppTabPageView.
+Widget pageMenuItemTile(PageMenuItem e) {
+  final tile = ListTile(
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(100))),
+    leading: e.icon != null ? Icon(e.icon) : null,
+    title: Semantics(
+      // excludeSemantics: true,
+      identifier: 'now-page-menu-${e.label.kebab()}',
+      child: AppText.bodySmall(e.label),
+    ),
+    onTap: e.onTap,
+  );
+  return e.isWrite ? WriteGuard(child: tile) : tile;
 }
