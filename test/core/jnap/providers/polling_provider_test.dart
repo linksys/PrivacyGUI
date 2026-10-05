@@ -33,7 +33,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -43,6 +45,7 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 
 import '../../../common/di.dart';
 import '../../../mocks/instant_privacy_provider_mocks.dart';
+import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/router_repository_mocks.dart';
 
 /// An [AuthNotifier] that reports a local login and records logouts instead of
@@ -94,8 +97,8 @@ void main() {
   /// are the observable stand-in for the private `_coreTransactions`.
   late List<JNAPTransactionBuilder> transactions;
 
-  /// Every single-action request the loop sent, in order - in practice
-  /// getDeviceMode, since that is the only `send` PollingNotifier makes.
+  /// Every single-action request the loop sent, in order: getDeviceMode, and
+  /// the client signal refresh and its re-reads.
   late List<JNAPAction> sends;
 
   setUp(() {
@@ -124,6 +127,9 @@ void main() {
     // body (see [stopAndSettle]) to satisfy the fake clock's pending-timer
     // check; this is the backstop for a test that threw before getting there.
     notifier.stopPolling();
+    // Clears the client signal cooldown, which a stop deliberately leaves.
+    notifier.init();
+    PollingNotifier.resetClientSignalWatchForTesting();
     container.dispose();
   });
 
@@ -1020,6 +1026,550 @@ void main() {
       notifier.init();
 
       expect(container.read(routerUnreachableProvider), 0);
+    });
+  });
+
+  group('refreshClientSignals', () {
+    // LinksysWRT#574. The master caches what each node publishes about its
+    // clients, a node publishes only when a client connects or disconnects, and
+    // the poll's getNodesWirelessNetworkConnections reads that cache - so a client
+    // that stays put shows the signal it had when it associated, hours stale, and
+    // Refresh changed nothing. RefreshNodesWirelessNetworkConnections makes every
+    // node read its driver and publish again; it is not cheap, so how often it
+    // goes out is the other half of what these tests hold.
+
+    late MockServiceHelper serviceHelperMock;
+
+    /// The client signal value the next getNodesWirelessNetworkConnections
+    /// answers with, so a test can tell a re-read from the poll's own copy.
+    late int signal;
+
+    setUp(() {
+      serviceHelperMock = serviceHelper as MockServiceHelper;
+      when(serviceHelperMock.isSupportNodesNetworkConnections())
+          .thenReturn(true);
+      signal = -60;
+    });
+
+    tearDown(() => reset(serviceHelperMock));
+
+    /// [stopAndSettle], plus the client signal cooldown, which outlives a stop
+    /// on purpose: its timer would fail the fake clock's pending-timer check the
+    /// same way. A logout is what clears it.
+    Future<void> stopAndClearCooldown(WidgetTester tester) async {
+      notifier.stopPolling();
+      notifier.init();
+      await tester.pump();
+    }
+
+    /// Which router the client signal cooldown is keyed on: the device the
+    /// in-memory cache belongs to.
+    void onRouter(String serialNumber) =>
+        container.read(linksysCacheManagerProvider).loadedSerialNumber =
+            serialNumber;
+
+    JNAPSuccess wirelessConnections(int signalDecibels) =>
+        JNAPSuccess(result: 'OK', output: {
+          'nodeWirelessConnections': [
+            {
+              'deviceID': 'node',
+              'connections': [
+                {'macAddress': 'AA:BB:CC:DD:EE:FF', 'signal': signalDecibels}
+              ],
+            }
+          ],
+        });
+
+    /// Answers the refresh with OK, and every read with [signal].
+    void whenClientSignals({Future<JNAPSuccess> Function()? refresh}) =>
+        whenSend((action) async {
+          switch (action) {
+            case JNAPAction.refreshNodesWirelessNetworkConnections:
+              if (refresh != null) return refresh();
+              return JNAPSuccess(result: 'OK', output: const {});
+            case JNAPAction.getNodesWirelessNetworkConnections:
+              return wirelessConnections(signal);
+            default:
+              return deviceMode('Master');
+          }
+        });
+
+    int refreshesSent() => sends
+        .where((a) => a == JNAPAction.refreshNodesWirelessNetworkConnections)
+        .length;
+
+    int rereadsSent() => sends
+        .where((a) => a == JNAPAction.getNodesWirelessNetworkConnections)
+        .length;
+
+    Object? shownSignal() {
+      final result = container
+          .read(pollingProvider)
+          .value
+          ?.data[JNAPAction.getNodesWirelessNetworkConnections];
+      return (result as JNAPSuccess?)?.output['nodeWirelessConnections'][0]
+          ['connections'][0]['signal'];
+    }
+
+    /// Polls once, so there is a standing snapshot for a re-read to land in.
+    Future<void> pollOnce(WidgetTester tester) async {
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+    }
+
+    /// Long enough for every re-read of one refresh to have gone out.
+    Future<void> advanceThroughRereads(WidgetTester tester) => advance(
+        tester,
+        const Duration(
+            seconds:
+                clientSignalRereadDelayInSec * clientSignalRereadCount + 1));
+
+    testWidgets(
+        'sends the refresh, then re-reads the result into the poll data',
+        (tester) async {
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final done = notifier.refreshClientSignals();
+      await tester.pump();
+      expect(refreshesSent(), 1);
+      expect(rereadsSent(), 0,
+          reason: 'the nodes have not answered the moment it goes out');
+
+      signal = -42;
+      await advanceThroughRereads(tester);
+      await done;
+
+      expect(rereadsSent(), clientSignalRereadCount);
+      expect(shownSignal(), -42,
+          reason: 'what the nodes sent back must reach the poll data');
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a second refresh inside the cooldown sends nothing',
+        (tester) async {
+      // Every Refresh button and every page that asks on entry comes through
+      // here, so this is the only thing standing between a user tapping Refresh
+      // over and over and the whole mesh re-reading its driver each time.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await first;
+
+      final second = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await second;
+
+      expect(refreshesSent(), 1);
+      expect(rereadsSent(), clientSignalRereadCount,
+          reason: 'nor any re-read: nothing was asked of the nodes');
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a refresh after the cooldown goes out again', (tester) async {
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await first;
+      await advance(
+          tester, const Duration(seconds: clientSignalRefreshCooldownInSec));
+
+      final second = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await second;
+
+      expect(refreshesSent(), 2);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a refresh asked for while one is running joins it',
+        (tester) async {
+      // The Refresh button and a page's own entry refresh can land together.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await tester.pump();
+      final second = notifier.refreshClientSignals();
+      await tester.pump();
+
+      expect(refreshesSent(), 1);
+      var secondDone = false;
+      second.then((_) => secondDone = true);
+      await tester.pump();
+      expect(secondDone, isFalse,
+          reason:
+              'the caller is still owed the re-reads, so the spinner stays');
+
+      await advanceThroughRereads(tester);
+      await first;
+      expect(secondDone, isTrue);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets(
+        'a refused refresh is not re-read and still starts the cooldown',
+        (tester) async {
+      // Only the master relays it (ErrorDeviceNotInMasterMode elsewhere). A
+      // refusal is still a request the router had to handle, so it counts.
+      whenClientSignals(
+          refresh: () async =>
+              throw const JNAPError(result: 'ErrorDeviceNotInMasterMode'));
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      await notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      expect(rereadsSent(), 0);
+
+      await notifier.refreshClientSignals();
+      expect(refreshesSent(), 1);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a router without the nodes service is never asked',
+        (tester) async {
+      when(serviceHelperMock.isSupportNodesNetworkConnections())
+          .thenReturn(false);
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      await notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+
+      expect(sends, isEmpty);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('stopping polling ends the re-reads but keeps the cooldown',
+        (tester) async {
+      // Navigation alone stops and restarts polling whenever the poll timer is
+      // not running (RouterNotifier._prepare, through checkAndStartPolling). A
+      // cooldown that went with the stop would let every page change in that
+      // window send another refresh.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await tester.pump();
+      notifier.stopPolling();
+      await advanceThroughRereads(tester);
+      await first;
+      expect(rereadsSent(), 0, reason: 'nobody is waiting on that router');
+
+      notifier.checkAndStartPolling();
+      await advanceToFirstPoll(tester);
+      await notifier.refreshClientSignals();
+      expect(refreshesSent(), 1);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a cooldown from another router does not hold this one back',
+        (tester) async {
+      // Switching networks from the network list stops and starts polling
+      // without a logout. The new router's clients have not been refreshed by
+      // anybody.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      onRouter('ROUTER-A');
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await first;
+
+      onRouter('ROUTER-B');
+      final second = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await second;
+
+      expect(refreshesSent(), 2);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a logout lifts the cooldown', (tester) async {
+      // The next login may be to the same router, and nothing since has asked
+      // its nodes for anything.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      final first = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await first;
+      await stopAndClearCooldown(tester);
+      notifier.init();
+
+      await pollOnce(tester);
+      final second = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await second;
+
+      expect(refreshesSent(), 2);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a re-read that lands mid-poll waits for the poll, not drops',
+        (tester) async {
+      // Every tick starts a poll and a refresh together, and a poll's fan-out
+      // can outlast both re-reads. Dropping a read that found the provider
+      // loading would leave the refresh with nothing to show until the next tick,
+      // and the poll's own copy - taken before the nodes answered - in its place.
+      whenClientSignals();
+      final slowPoll = Completer<void>();
+      whenTransaction((n) async {
+        if (n == 2) await slowPoll.future;
+        return transactionSuccess();
+      });
+      await pollOnce(tester);
+      sends.clear();
+
+      signal = -42;
+      final forced = notifier.forcePollingWithClientSignals();
+      await advanceThroughRereads(tester);
+      expect(rereadsSent(), 1, reason: 'the first read is waiting on the poll');
+      expect(container.read(pollingProvider).isLoading, isTrue,
+          reason: 'the poll is still on the wire');
+
+      slowPoll.complete();
+      await advanceThroughRereads(tester);
+      await forced;
+      expect(rereadsSent(), clientSignalRereadCount);
+
+      expect(shownSignal(), -42,
+          reason: "the re-read lands over the poll's copy once it settles");
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a poll that outlasts both re-reads keeps what they read',
+        (tester) async {
+      // The Refresh button starts a forced poll and the refresh together. A
+      // forced poll slow enough to settle after the second re-read - a remote
+      // login's fan-out can be - lands with the cache as it was before the nodes
+      // answered, and a plain write would put that back over what the re-reads
+      // brought.
+      whenClientSignals();
+      final slowPoll = Completer<void>();
+      var pollSignal = -60;
+      whenTransaction((n) async {
+        if (n == 2) await slowPoll.future;
+        return JNAPTransactionSuccessWrap(
+          result: 'OK',
+          data: transactions.last.commands
+              .map((command) => MapEntry(
+                  command.key,
+                  command.key == JNAPAction.getNodesWirelessNetworkConnections
+                      ? wirelessConnections(pollSignal)
+                      : JNAPSuccess(result: 'OK', output: const {})))
+              .toList(),
+        );
+      });
+      await pollOnce(tester);
+      sends.clear();
+
+      signal = -42;
+      final forced = notifier.forcePollingWithClientSignals();
+      await advanceThroughRereads(tester);
+      slowPoll.complete();
+      await advanceThroughRereads(tester);
+      await forced;
+
+      expect(rereadsSent(), clientSignalRereadCount);
+      expect(shownSignal(), -42,
+          reason: "the poll's pre-refresh copy must not win");
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('a re-read does not paper over a failed poll', (tester) async {
+      // A failed poll leaves the provider in AsyncError, which consumers read as
+      // the router having gone. One fresh action is not the router coming back.
+      whenClientSignals();
+      whenTransaction((_) async => throw TimeoutException('no answer'));
+      await pollOnce(tester);
+      expect(container.read(pollingProvider).hasError, isTrue);
+
+      final done = notifier.refreshClientSignals();
+      await advanceThroughRereads(tester);
+      await done;
+
+      expect(container.read(pollingProvider).hasError, isTrue);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('forcePolling alone never sends the refresh', (tester) async {
+      // forcePolling also runs after every save, which is no reason to make the
+      // mesh re-read its driver.
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+
+      await notifier.forcePolling();
+      await tester.pump();
+
+      expect(refreshesSent(), 0);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    testWidgets('the Refresh button path polls and refreshes', (tester) async {
+      whenClientSignals();
+      whenTransaction((_) => transactionSuccess());
+      await pollOnce(tester);
+      sends.clear();
+      transactions.clear();
+
+      final done = notifier.forcePollingWithClientSignals();
+      await advanceThroughRereads(tester);
+      await done;
+
+      expect(transactions, hasLength(1));
+      expect(refreshesSent(), 1);
+
+      await stopAndClearCooldown(tester);
+    });
+
+    group('every poll tick', () {
+      // A refresh only happens when someone asks, and the firmware has no
+      // refresh of its own: a client that stays associated keeps the signal it
+      // had when it joined. So a page that shows client signals keeps them live
+      // by having every tick ask, for as long as it is open.
+
+      testWidgets('refreshes while a page watches client signals',
+          (tester) async {
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        await pollOnce(tester);
+        notifier.watchClientSignals();
+        sends.clear();
+
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1);
+
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 2,
+            reason: 'the cooldown sits under the tick, so no tick is skipped');
+
+        await stopAndClearCooldown(tester);
+        await advanceThroughRereads(tester);
+      });
+
+      testWidgets('does not refresh with no page watching', (tester) async {
+        // Nothing pauses polling when the app is backgrounded, so a refresh on
+        // every tick would run all night in a forgotten tab.
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        await pollOnce(tester);
+        sends.clear();
+
+        await advanceOneTick(tester);
+        await advanceOneTick(tester);
+        expect(refreshesSent(), 0);
+
+        await stopAndClearCooldown(tester);
+      });
+
+      testWidgets('stops refreshing once the last page leaves', (tester) async {
+        // Two pages stacked - the device list, then a device under it - and the
+        // count, not a flag, is what keeps the first one live after the second
+        // goes.
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        await pollOnce(tester);
+        notifier.watchClientSignals();
+        notifier.watchClientSignals();
+        notifier.unwatchClientSignals();
+        sends.clear();
+
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1, reason: 'one page is still watching');
+
+        notifier.unwatchClientSignals();
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1);
+
+        await stopAndClearCooldown(tester);
+      });
+
+      testWidgets('a logout starts the next session visible', (tester) async {
+        // The lifecycle observer normally reports the app visible again before
+        // anyone can log back in. If that report went missing, the new session
+        // would never refresh on a tick.
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        notifier.appVisible = false;
+        notifier.init();
+
+        await pollOnce(tester);
+        notifier.watchClientSignals();
+        sends.clear();
+
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1);
+
+        await stopAndClearCooldown(tester);
+        await advanceThroughRereads(tester);
+      });
+
+      testWidgets('does not refresh while the app is out of sight',
+          (tester) async {
+        // A page left open in a hidden tab still counts as watching. The app's
+        // lifecycle observer is what says nobody is looking at it.
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        await pollOnce(tester);
+        notifier.watchClientSignals();
+        sends.clear();
+
+        notifier.appVisible = false;
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 0);
+
+        notifier.appVisible = true;
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1);
+
+        await stopAndClearCooldown(tester);
+        await advanceThroughRereads(tester);
+      });
     });
   });
 }

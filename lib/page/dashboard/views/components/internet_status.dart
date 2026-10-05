@@ -110,7 +110,7 @@ class _InternetConnectionWidgetState
                                   controller.repeat();
                                   ref
                                       .read(pollingProvider.notifier)
-                                      .forcePolling()
+                                      .forcePollingWithClientSignals()
                                       .then((value) {
                                     controller.stop();
                                   });

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' show AppLifecycleState;
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/error_code.dart';
@@ -7,6 +9,7 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -37,6 +40,53 @@ const int pollRetryDelayInSec = 5;
 /// put the alert 4s into a router restarting its HTTP service - the very blip it
 /// must not fire on - and 46s into an unplugged one.
 const int pollUnreachableAfterInSec = 20;
+
+/// How long after a RefreshNodesWirelessNetworkConnections the next one may go
+/// out, however many pages or taps ask for one.
+///
+/// The refresh is not a read. The master relays it to every node, each node runs
+/// `wlanconfig list sta` on every interface and publishes one MQTT message per
+/// client, and the master handles each of those - as does the steering engine,
+/// which subscribes to the same event. Every Refresh button and every page that
+/// asks on entry goes through [PollingNotifier.refreshClientSignals], so this is
+/// the one bound on how often a client can make the mesh do that. Counted from
+/// when the refresh goes out, so one the router refused counts too.
+///
+/// Kept a few seconds under [BuildConfig.refreshTimeInterval] so that a page
+/// watching client signals gets a refresh on every poll tick: equal to it, a tick
+/// that fires a moment early would land inside the last refresh's cooldown and
+/// skip, halving the rate at random.
+const int clientSignalRefreshCooldownInSec =
+    BuildConfig.refreshTimeInterval - 5;
+
+/// How long after a client signal refresh to re-read the master's copy of what
+/// the nodes sent back.
+///
+/// The refresh only starts the round trip, and nothing in the master's answer
+/// says when it is over. The per-client timestamps cannot: a node re-sends only
+/// the clients it has now, so the record a roamed-away client left behind
+/// (LinksysWRT#571), or one on a node that is offline, never moves. A fixed
+/// schedule of re-reads is the alternative that does not wait on them. On an
+/// LN16 with three nodes and fifteen clients, the records had landed within
+/// three seconds.
+const int clientSignalRereadDelayInSec = 3;
+
+/// How many re-reads follow a client signal refresh, [clientSignalRereadDelayInSec]
+/// apart. The second catches a node that answered late.
+const int clientSignalRereadCount = 2;
+
+/// Whether a lifecycle state leaves the app where someone can see it.
+///
+/// [AppLifecycleState.inactive] does: on the web it is what a tab that lost
+/// focus reports - to the address bar, to devtools, to another window on a
+/// second screen - while it is still in plain view.
+bool isAppVisible(AppLifecycleState state) => switch (state) {
+      AppLifecycleState.resumed || AppLifecycleState.inactive => true,
+      AppLifecycleState.hidden ||
+      AppLifecycleState.paused ||
+      AppLifecycleState.detached =>
+        false,
+    };
 
 final pollingProvider =
     AsyncNotifierProvider<PollingNotifier, CoreTransactionData>(
@@ -120,6 +170,34 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// Whether the last poll to come back did so empty-handed.
   static bool _pollFailing = false;
 
+  /// Runs out [clientSignalRefreshCooldownInSec] after a client signal refresh
+  /// went out. Static for the same reason as [_timer].
+  ///
+  /// Not cleared by [stopPolling], unlike the timers around it: navigation alone
+  /// stops and restarts polling whenever the poll timer is not running
+  /// (RouterNotifier._prepare, through [checkAndStartPolling]), and a cooldown
+  /// that went with it would let every page change in that window send another
+  /// refresh. It belongs to a router instead - see
+  /// [_clientSignalCooldownRouter].
+  static Timer? _clientSignalCooldown;
+
+  /// The serial number of the router [_clientSignalCooldown] was started for. A
+  /// cooldown left over from another router does not hold back this one, whose
+  /// clients nobody has refreshed.
+  static String? _clientSignalCooldownRouter;
+
+  /// The client signal refresh in flight, or null when there is none. Static for
+  /// the same reason as [_timer].
+  static Future<void>? _clientSignalRefresh;
+
+  /// How many mounted pages show client signal strength. While above zero, every
+  /// poll tick also asks for a client signal refresh. Static for the same reason
+  /// as [_timer]. See [ClientSignalWatcherMixin].
+  ///
+  /// Owned by the pages, not by the poll loop, so nothing here resets it: a page
+  /// still mounted across a logout and a fresh login still shows client signals.
+  static int _clientSignalWatchers = 0;
+
   bool _paused = false;
   set paused(bool value) {
     _paused = value;
@@ -167,6 +245,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     _lastKnownMode = null;
     _modeRetriesLeft = _maxModeRetries;
     _clearRouterSilence();
+    _clientSignalCooldown?.cancel();
+    _clientSignalCooldown = null;
+    _clientSignalCooldownRouter = null;
+    // Normally put back by the lifecycle observer before anyone can log in
+    // again, but a session should not start on a report that went missing.
+    _appVisible = true;
     state = AsyncValue.data(
         const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
   }
@@ -472,6 +556,176 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     _setTimePeriod(routerRepository);
   }
 
+  /// What a Refresh button does on a page that shows client signal strength: the
+  /// forced poll every Refresh button does, plus [refreshClientSignals].
+  ///
+  /// Kept apart from [forcePolling] on purpose. That one also runs after every
+  /// save, and a save is no reason to make every node in the mesh re-read its
+  /// driver.
+  Future<void> forcePollingWithClientSignals() =>
+      Future.wait([forcePolling(), refreshClientSignals()]);
+
+  /// Asks every node for a live read of its wireless clients, then re-reads the
+  /// master's copy of them into the poll data.
+  ///
+  /// Without this, the signal strength shown for a client is whatever it was
+  /// when the client last associated. The master caches what the nodes publish,
+  /// the nodes publish only on connect and disconnect, and the poll's
+  /// getNodesWirelessNetworkConnections reads that cache; LinksysWRT#574 found a
+  /// client that stayed put six hours stale. RefreshNodesWirelessNetworkConnections
+  /// is what makes the nodes publish again from the driver.
+  ///
+  /// Bounded by [clientSignalRefreshCooldownInSec]: a call inside it, or on a
+  /// router without the nodes service, returns at once having sent nothing. A
+  /// call while a refresh is in flight waits for that one rather than starting
+  /// another. Never rejects.
+  Future<void> refreshClientSignals() {
+    final inFlight = _clientSignalRefresh;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    late final Future<void> run;
+    run = _refreshClientSignals().whenComplete(() {
+      // stopPolling() may already have dropped this run for a newer one.
+      if (identical(_clientSignalRefresh, run)) {
+        _clientSignalRefresh = null;
+      }
+    });
+    return _clientSignalRefresh = run;
+  }
+
+  Future<void> _refreshClientSignals() async {
+    if (!serviceHelper.isSupportNodesNetworkConnections()) {
+      return;
+    }
+    final router = ref.read(linksysCacheManagerProvider).loadedSerialNumber;
+    if ((_clientSignalCooldown?.isActive ?? false) &&
+        _clientSignalCooldownRouter == router) {
+      logger.d('[Polling]: client signal refresh skipped, cooling down');
+      return;
+    }
+    _clientSignalCooldown?.cancel();
+    _clientSignalCooldown =
+        Timer(const Duration(seconds: clientSignalRefreshCooldownInSec), () {});
+    _clientSignalCooldownRouter = router;
+
+    final generation = _generation;
+    final repository = ref.read(routerRepositoryProvider);
+    try {
+      // fetchRemote, or a second refresh inside the cache's lifetime would be
+      // answered locally and never reach the router.
+      await repository.send(
+        JNAPAction.refreshNodesWirelessNetworkConnections,
+        auth: true,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+    } catch (e) {
+      // ErrorDeviceNotInMasterMode, for one: only the master can relay it. There
+      // is nothing coming back to re-read.
+      logger.e('[Polling]: client signal refresh failed: $e');
+      return;
+    }
+    for (var i = 0; i < clientSignalRereadCount; i++) {
+      await Future.delayed(
+          const Duration(seconds: clientSignalRereadDelayInSec));
+      if (_isCancelled(generation)) {
+        return;
+      }
+      await _rereadClientSignals(repository, generation);
+    }
+  }
+
+  Future<void> _rereadClientSignals(
+      RouterRepository repository, int generation) async {
+    final JNAPSuccess result;
+    try {
+      result = await repository.send(
+        JNAPAction.getNodesWirelessNetworkConnections,
+        auth: true,
+        fetchRemote: true,
+      );
+    } catch (e) {
+      logger.e('[Polling]: client signal re-read failed: $e');
+      return;
+    }
+    // A poll on the wire would have the provider in AsyncLoading here, and it
+    // carries its own copy of this action - taken before the nodes answered, so
+    // it would put the stale signals back. Every tick starts a poll and a refresh
+    // together, and a poll's fan-out (the VPN, LED and RA checks behind it) can
+    // outlast both re-reads, so dropping this read would leave the refresh with
+    // nothing to show until the next tick. Wait for the poll instead, then lay
+    // this over what it brought.
+    await _settledPoll();
+    if (_isCancelled(generation)) {
+      return;
+    }
+    // Only over a snapshot that stands. A failed poll's snapshot sits behind an
+    // AsyncError that consumers read as the router having gone - one fresh
+    // action is not the router coming back.
+    final current = state;
+    if (current is! AsyncData<CoreTransactionData>) {
+      return;
+    }
+    state = AsyncValue.data(current.value.copyWith(data: {
+      ...current.value.data,
+      JNAPAction.getNodesWirelessNetworkConnections: result,
+    }));
+  }
+
+  /// Completes once no poll is on the wire, whichever way the one that was ends.
+  Future<void> _settledPoll() async {
+    if (!state.isLoading) {
+      return;
+    }
+    try {
+      await future;
+    } catch (_) {
+      // A failed poll still settles it, and the caller reads the state for itself.
+    }
+  }
+
+  /// Registers a page that shows client signal strength, so that every poll tick
+  /// keeps it live. Pair with [unwatchClientSignals]; [ClientSignalWatcherMixin]
+  /// does both.
+  ///
+  /// Only while a page asks, and not on every tick regardless: nothing else in
+  /// the app pauses polling when it is backgrounded, and a refresh on every tick
+  /// of a tab left open overnight would have every node in the mesh re-reading
+  /// its driver once a minute with nobody looking.
+  void watchClientSignals() {
+    _clientSignalWatchers++;
+  }
+
+  void unwatchClientSignals() {
+    if (_clientSignalWatchers > 0) {
+      _clientSignalWatchers--;
+    }
+  }
+
+  /// Whether anyone can see the app, as the app's lifecycle observer last
+  /// reported it. A page left mounted in a hidden tab still counts as watching
+  /// client signals; this is what says nobody is looking at it.
+  static bool _appVisible = true;
+
+  /// Reported by the app's lifecycle observer. Not the same as being focused:
+  /// on the web a tab loses focus to the address bar, to devtools, or to another
+  /// window on a second screen while it is still in plain view, and the signals
+  /// it shows should go on moving.
+  set appVisible(bool visible) => _appVisible = visible;
+
+  /// Whether a poll tick should also refresh client signals: a page is showing
+  /// them, and the app is where someone can see it.
+  bool get _isClientSignalWatched => _clientSignalWatchers > 0 && _appVisible;
+
+  /// Puts the static state that pages own back to how it starts, for a test that
+  /// ends with a page still registered or the app reported hidden.
+  @visibleForTesting
+  static void resetClientSignalWatchForTesting() {
+    _clientSignalWatchers = 0;
+    _appVisible = true;
+  }
+
   void checkAndStartPolling([bool force = false]) {
     final loginType = ref.read(authProvider).value?.loginType;
     if (loginType == LoginType.none) {
@@ -570,6 +824,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // is left alone: a stop is not the router coming back.
     _silenceDeadlinePassed = false;
     _pollFailing = false;
+    // A refresh still in flight sees the generation move and stops re-reading on
+    // its own; dropping it here lets the next one start rather than join a run
+    // that is going nowhere. Its cooldown stays: see [_clientSignalCooldown].
+    _clientSignalRefresh = null;
   }
 
   _setTimePeriod(RouterRepository routerRepository) {
@@ -577,6 +835,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     _timer = Timer.periodic(
         const Duration(seconds: BuildConfig.refreshTimeInterval), (timer) {
       _polling(routerRepository);
+      if (_isClientSignalWatched) {
+        refreshClientSignals();
+      }
     });
   }
 

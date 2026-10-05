@@ -92,6 +92,10 @@ class DeviceListItem extends Equatable {
     this.isMLO = false,
   });
 
+  /// Connected over Wi-Fi right now - the only kind of device with a signal
+  /// strength to show.
+  bool get isOnlineWireless => isOnline && !isWired;
+
   DeviceListItem copyWith({
     String? deviceId,
     String? name,
