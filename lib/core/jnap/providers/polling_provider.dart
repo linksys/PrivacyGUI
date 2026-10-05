@@ -248,6 +248,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     _clientSignalCooldown?.cancel();
     _clientSignalCooldown = null;
     _clientSignalCooldownRouter = null;
+    // Normally put back by the lifecycle observer before anyone can log in
+    // again, but a session should not start on a report that went missing.
+    _appVisible = true;
     state = AsyncValue.data(
         const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
   }

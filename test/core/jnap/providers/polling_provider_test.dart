@@ -1370,6 +1370,46 @@ void main() {
       await stopAndClearCooldown(tester);
     });
 
+    testWidgets('a poll that outlasts both re-reads keeps what they read',
+        (tester) async {
+      // The Refresh button starts a forced poll and the refresh together. A
+      // forced poll slow enough to settle after the second re-read - a remote
+      // login's fan-out can be - lands with the cache as it was before the nodes
+      // answered, and a plain write would put that back over what the re-reads
+      // brought.
+      whenClientSignals();
+      final slowPoll = Completer<void>();
+      var pollSignal = -60;
+      whenTransaction((n) async {
+        if (n == 2) await slowPoll.future;
+        return JNAPTransactionSuccessWrap(
+          result: 'OK',
+          data: transactions.last.commands
+              .map((command) => MapEntry(
+                  command.key,
+                  command.key == JNAPAction.getNodesWirelessNetworkConnections
+                      ? wirelessConnections(pollSignal)
+                      : JNAPSuccess(result: 'OK', output: const {})))
+              .toList(),
+        );
+      });
+      await pollOnce(tester);
+      sends.clear();
+
+      signal = -42;
+      final forced = notifier.forcePollingWithClientSignals();
+      await advanceThroughRereads(tester);
+      slowPoll.complete();
+      await advanceThroughRereads(tester);
+      await forced;
+
+      expect(rereadsSent(), clientSignalRereadCount);
+      expect(shownSignal(), -42,
+          reason: "the poll's pre-refresh copy must not win");
+
+      await stopAndClearCooldown(tester);
+    });
+
     testWidgets('a re-read does not paper over a failed poll', (tester) async {
       // A failed poll leaves the provider in AsyncError, which consumers read as
       // the router having gone. One fresh action is not the router coming back.
@@ -1484,6 +1524,27 @@ void main() {
         expect(refreshesSent(), 1);
 
         await stopAndClearCooldown(tester);
+      });
+
+      testWidgets('a logout starts the next session visible', (tester) async {
+        // The lifecycle observer normally reports the app visible again before
+        // anyone can log back in. If that report went missing, the new session
+        // would never refresh on a tick.
+        whenClientSignals();
+        whenTransaction((_) => transactionSuccess());
+        notifier.appVisible = false;
+        notifier.init();
+
+        await pollOnce(tester);
+        notifier.watchClientSignals();
+        sends.clear();
+
+        await advanceOneTick(tester);
+        await advanceThroughRereads(tester);
+        expect(refreshesSent(), 1);
+
+        await stopAndClearCooldown(tester);
+        await advanceThroughRereads(tester);
       });
 
       testWidgets('does not refresh while the app is out of sight',
