@@ -302,4 +302,35 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
     });
   });
+
+  group('isUnansweredTransportFailure', () {
+    // Both messages are the per-path `errorMessage` the WASM client returned on
+    // FLWRT 2.0.2 (2026-10-05). Both carry `errorCode: 9999`, which is why the
+    // message has to decide.
+    test('is true when the browser never got an answer', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: Transport error: HTTP error: error sending request: '
+          'JsValue(TypeError: Failed to fetch\nTypeError: Failed to fetch)',
+        ),
+        isTrue,
+      );
+    });
+
+    test('is false when the router answered with a refusal', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: Protocol error: Decoding error: Received error '
+          'response: ProcessSet_AllowPartialFalse: Allow partial=false not '
+          'supported across more than one USP Service (code: 7005)',
+        ),
+        isFalse,
+      );
+    });
+
+    test('is false for a message it does not recognise', () {
+      // Fails closed: an unknown error is reported, not assumed to have landed.
+      expect(isUnansweredTransportFailure('Something else entirely'), isFalse);
+    });
+  });
 }

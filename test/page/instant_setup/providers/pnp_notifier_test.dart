@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -18,6 +21,7 @@ import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notif
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
@@ -55,6 +59,20 @@ class SpySessionNotifier extends Notifier<SessionState>
 }
 
 class FakePnpWifiConfig extends Fake implements PnpWifiConfig {}
+
+/// Stands in for the re-login [PnpNotifier.testReconnect] does before asking the
+/// router anything. The real one needs a WASM session and token storage.
+class _CountingAuthCoordinator implements UspAuthCoordinator {
+  int restoreCalls = 0;
+
+  @override
+  Future<void> restoreSession({bool isRecovering = false}) async {
+    restoreCalls++;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class FakePnpIspConfig extends Fake implements PnpIspConfig {}
 
@@ -374,6 +392,319 @@ void main() {
   // The core logic is tested via integration tests.
   // Here we test the acknowledge call is made correctly via PnpStatusService unit tests.;
 
+  group('PnpNotifier — WiFi save (#1000 / #1490 / #1491)', () {
+    /// The PnP form as #1000's reporter fills it: main renamed and re-passworded,
+    /// guest turned on, renamed and passworded.
+    const editedConfig = PnpWifiConfig(
+      ssid: 'NewHome',
+      password: 'NewPass123',
+      originalSsid: 'OldHome',
+      originalPassword: 'OldPass123',
+      ssidInstancePaths: ['Device.WiFi.SSID.1.', 'Device.WiFi.SSID.2.'],
+      accessPointInstancePaths: [
+        'Device.WiFi.AccessPoint.1.',
+        'Device.WiFi.AccessPoint.2.',
+      ],
+      guestEnabled: true,
+      guestSsid: 'NewHome-guest',
+      guestPassword: 'GuestPass123',
+      originalGuestSsid: 'OldHome-guest',
+      originalGuestPassword: 'OldGuest123',
+      guestSsidInstancePaths: ['Device.WiFi.SSID.3.', 'Device.WiFi.SSID.4.'],
+      guestAccessPointInstancePaths: [
+        'Device.WiFi.AccessPoint.3.',
+        'Device.WiFi.AccessPoint.4.',
+      ],
+    );
+
+    late _CountingAuthCoordinator auth;
+
+    setUp(() {
+      auth = _CountingAuthCoordinator();
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.confirmed);
+      when(() => mockPnpService.checkRouterIsBack())
+          .thenAnswer((_) async => 'SN123');
+      when(() => mockPnpService.isWifiApplied(any()))
+          .thenAnswer((_) async => true);
+    });
+
+    /// [createContainer] plus the save's three waits, shortened only where a case
+    /// is about them, and a firmware stage that finishes at once.
+    ProviderContainer createSaveContainer({
+      Duration answerWindow = const Duration(seconds: 30),
+      Duration pollInterval = Duration.zero,
+      Duration saveDeadline = const Duration(milliseconds: 200),
+    }) {
+      when(() => mockPnpStatusService.acknowledge(any()))
+          .thenAnswer((_) async {});
+      return ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          pnpServiceProvider.overrideWithValue(mockPnpService),
+          pnpStatusServiceProvider.overrideWithValue(mockPnpStatusService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sessionProvider.overrideWith(() => SpySessionNotifier()),
+          uspAuthCoordinatorProvider.overrideWithValue(auth),
+          pnpWifiAnswerWindowProvider.overrideWithValue(answerWindow),
+          pnpReconnectPollIntervalProvider.overrideWithValue(pollInterval),
+          pnpSaveDeadlineProvider.overrideWithValue(saveDeadline),
+          pnpReconnectBackoffProvider.overrideWithValue((_) => Duration.zero),
+          // Every path that finishes runs into the firmware stage; this keeps it
+          // to "no ota row" so it ends at once instead of asking a router.
+          firmwareUpdateNotifierProvider
+              .overrideWith(() => SpyFirmwareUpdateNotifier(
+                    checkResult: const FirmwareOtaCheckResult.notChecked(),
+                    readsBanksOnCheck: false,
+                  )),
+        ],
+      );
+    }
+
+    /// Logs in the way the app does, so the state carries the serial number
+    /// that the reconnect compares and the acknowledge is keyed on — then pins
+    /// the phase under test.
+    Future<PnpNotifier> loggedIn(
+      ProviderContainer container,
+      PnpPhase phase,
+    ) async {
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenAnswer((_) async => testFactoryResult);
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      when(() => mockPnpService.fetchCurrentSsid())
+          .thenAnswer((_) async => 'OldHome');
+      final notifier = container.read(pnpProvider.notifier);
+      await notifier.startPostLoginFlow();
+      notifier.setDemoPhase(phase);
+      return notifier;
+    }
+
+    Future<PnpNotifier> saveFrom(
+      ProviderContainer container, {
+      PnpWifiConfig config = editedConfig,
+    }) async {
+      final notifier =
+          await loggedIn(container, WizardConfiguring(wifiConfig: config));
+      await notifier.saveChanges();
+      return notifier;
+    }
+
+    test('writes the whole form once', () async {
+      // Any WiFi write restarts every radio, so a second write would go out over
+      // a network that is restarting — which is #1000, #1490 and #1491.
+      final container = createSaveContainer();
+
+      await saveFrom(container);
+
+      verify(() => mockPnpService.saveWifi(editedConfig)).called(1);
+      expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
+      container.dispose();
+    });
+
+    test('an answered write finishes setup without polling or reading back',
+        () async {
+      final container = createSaveContainer();
+
+      await saveFrom(container);
+
+      expect(auth.restoreCalls, 0);
+      verifyNever(() => mockPnpService.isWifiApplied(any()));
+      verify(() => mockPnpStatusService.acknowledge('SN123')).called(1);
+      container.dispose();
+    });
+
+    test(
+        'an unanswered write polls until the router is back and has applied '
+        'it, then finishes — no reconnect step', () async {
+      // The guest-only case (bench 2.0.2): the browser drops when the radios
+      // restart and rejoins the unchanged name by itself. Asking the user to
+      // reconnect here would send them to do something that already happened.
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.unanswered);
+      var polls = 0;
+      when(() => mockPnpService.checkRouterIsBack()).thenAnswer((_) async {
+        if (++polls < 3) throw const NetworkError(detail: 'restarting');
+        return 'SN123';
+      });
+      final container = createSaveContainer();
+      final phases = <PnpPhase>[];
+      container.listen(pnpProvider, (_, next) => phases.add(next.phase));
+
+      await saveFrom(container);
+
+      expect(polls, 3);
+      expect(phases.whereType<WizardNeedsReconnect>(), isEmpty);
+      expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
+      verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+      container.dispose();
+    });
+
+    test(
+        'a write still pending at the end of its window is treated as '
+        'unanswered, and frees the lock', () async {
+      final pending = Completer<PnpWifiWriteOutcome>();
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) => pending.future);
+      final container = createSaveContainer(
+        answerWindow: const Duration(milliseconds: 30),
+      );
+
+      await saveFrom(container);
+
+      expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
+      verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+      expect(container.read(uspMutationLockProvider).isLocked, isFalse,
+          reason: 'the firmware stage takes this lock and gives up after 15 s; '
+              'a write that may never answer must not keep holding it');
+      pending.complete(PnpWifiWriteOutcome.unanswered);
+      container.dispose();
+    });
+
+    test(
+        'a router still unreachable at the deadline sends the user to '
+        'reconnect', () async {
+      // The rename case: the browser cannot rejoin a network it does not know.
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.unanswered);
+      when(() => mockPnpService.checkRouterIsBack())
+          .thenThrow(const NetworkError(detail: 'gone'));
+      final container = createSaveContainer(
+        pollInterval: const Duration(milliseconds: 10),
+        saveDeadline: const Duration(milliseconds: 60),
+      );
+
+      await saveFrom(container);
+
+      final phase = container.read(pnpProvider).phase;
+      expect(phase, isA<WizardNeedsReconnect>());
+      expect((phase as WizardNeedsReconnect).writeUnanswered, isTrue);
+      expect(phase.newSsid, 'NewHome');
+      expect(auth.restoreCalls, greaterThan(1),
+          reason: 'the router is polled, not asked once');
+      // The router is out of reach; the acknowledge is an OPERATE and would
+      // hang in the same restart.
+      verifyNever(() => mockPnpStatusService.acknowledge(any()));
+      container.dispose();
+    });
+
+    test(
+        'a router that answers but never takes the change returns to the '
+        'form with an error', () async {
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.unanswered);
+      when(() => mockPnpService.isWifiApplied(any()))
+          .thenAnswer((_) async => false);
+      final container = createSaveContainer(
+        pollInterval: const Duration(milliseconds: 10),
+        saveDeadline: const Duration(milliseconds: 60),
+      );
+
+      await saveFrom(container);
+
+      final phase = container.read(pnpProvider).phase;
+      expect(phase, isA<WizardConfiguring>(),
+          reason: 'finishing here shows a network the router is not on');
+      expect((phase as WizardConfiguring).saveError, isNotNull);
+      verifyNever(() => mockPnpStatusService.acknowledge(any()));
+      container.dispose();
+    });
+
+    test('a refused write returns to the form and says so (#1000)', () async {
+      when(() => mockPnpService.saveWifi(any())).thenThrow(
+          const UspCompleteFailureError(summary: 'refused', failures: []));
+      final container = createSaveContainer();
+
+      await saveFrom(container);
+
+      final phase = container.read(pnpProvider).phase;
+      expect(phase, isA<WizardConfiguring>());
+      expect((phase as WizardConfiguring).saveError,
+          isA<UspCompleteFailureError>(),
+          reason: 'returning to the form with nothing said is the defect: the '
+              'reporter saw the guest page "shown twice"');
+      expect(phase.wifiConfig, editedConfig);
+      container.dispose();
+    });
+
+    test('an edit after a failed save clears the error', () async {
+      when(() => mockPnpService.saveWifi(any())).thenThrow(
+          const UspCompleteFailureError(summary: 'refused', failures: []));
+      final container = createSaveContainer();
+
+      final notifier = await saveFrom(container);
+      notifier.updateWifiSsid('Edited');
+
+      final phase = container.read(pnpProvider).phase as WizardConfiguring;
+      expect(phase.saveError, isNull);
+      container.dispose();
+    });
+
+    group('the reconnect step', () {
+      const unanswered = WizardNeedsReconnect(
+        newSsid: 'NewHome',
+        newPassword: 'NewPass123',
+        wifiConfig: editedConfig,
+        writeUnanswered: true,
+      );
+
+      Future<ProviderContainer> nextFrom(WizardNeedsReconnect phase) async {
+        final container = createSaveContainer();
+        final notifier = await loggedIn(container, phase);
+        await notifier.testReconnect();
+        return container;
+      }
+
+      test('a write that did not land goes back to the form, with an error',
+          () async {
+        when(() => mockPnpService.isWifiApplied(any()))
+            .thenAnswer((_) async => false);
+
+        final container = await nextFrom(unanswered);
+
+        final phase = container.read(pnpProvider).phase;
+        expect(phase, isA<WizardConfiguring>());
+        expect((phase as WizardConfiguring).saveError, isNotNull);
+        // Setup is not finished: the router never took the change.
+        verifyNever(() => mockPnpStatusService.acknowledge(any()));
+        container.dispose();
+      });
+
+      test('a write that landed is acknowledged, then finishes setup',
+          () async {
+        final container = await nextFrom(unanswered);
+
+        expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
+        verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+        verify(() => mockPnpStatusService.acknowledge('SN123')).called(1);
+        container.dispose();
+      });
+
+      test('a confirmed write is not asked about again', () async {
+        final container = await nextFrom(const WizardNeedsReconnect(
+          newSsid: 'NewHome',
+          newPassword: 'NewPass123',
+          wifiConfig: editedConfig,
+        ));
+
+        verifyNever(() => mockPnpService.isWifiApplied(any()));
+        expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
+        container.dispose();
+      });
+
+      test('a router still away after every attempt keeps the step', () async {
+        when(() => mockPnpService.checkRouterIsBack())
+            .thenThrow(const NetworkError(detail: 'gone'));
+
+        final container = await nextFrom(unanswered);
+
+        expect(container.read(pnpProvider).phase, unanswered,
+            reason: 'the next Next must still verify the write');
+        container.dispose();
+      });
+    });
+  });
+
   group('PnpNotifier — retryInternetCheck', () {
     test('retryInternetCheck re-checks internet and transitions accordingly',
         () async {
@@ -657,7 +988,8 @@ void main() {
     setUp(() {
       connection = SpyAppConnectionStateNotifier();
 
-      when(() => mockPnpService.saveWifi(any())).thenAnswer((_) async {});
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.confirmed);
     });
 
     /// The reboot deadline defaults to 200 ms rather than the production six
@@ -684,6 +1016,14 @@ void main() {
                   FixedFirmwareBanksDataNotifier(gateFirmwareBanksWithOta)),
           pnpFirmwareCheckDeadlineProvider.overrideWithValue(checkDeadline),
           pnpFirmwareRebootDeadlineProvider.overrideWithValue(rebootDeadline),
+          // A save whose write goes unanswered polls the router before this
+          // stage; kept short and off the real re-login so a case that reaches it
+          // fails fast instead of waiting out the production minute.
+          uspAuthCoordinatorProvider
+              .overrideWithValue(_CountingAuthCoordinator()),
+          pnpReconnectPollIntervalProvider.overrideWithValue(Duration.zero),
+          pnpSaveDeadlineProvider
+              .overrideWithValue(const Duration(milliseconds: 50)),
         ],
       );
       // Mounts the connection notifier. [SpyAppConnectionStateNotifier.publish] is
@@ -1018,11 +1358,16 @@ void main() {
     });
 
     test(
-        'a main-WiFi change reconnects first and does not start the firmware '
+        'a router not back from the WiFi write does not start the firmware '
         'stage (REQ-B5)', () async {
-      // The other half of "one reconnect path": when the SSID changed, the save
-      // hands off to `WizardNeedsReconnect` and the firmware stage does not begin
-      // until `testReconnect()` has returned. Sequential by construction.
+      // The other half of "one reconnect path": while the router is unreachable
+      // after the WiFi write, the save hands off to `WizardNeedsReconnect` and the
+      // firmware stage does not begin until `testReconnect()` has brought it
+      // back. Sequential by construction.
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) async => PnpWifiWriteOutcome.unanswered);
+      when(() => mockPnpService.checkRouterIsBack())
+          .thenThrow(const NetworkError(detail: 'restarting'));
       final firmware = SpyFirmwareUpdateNotifier(
         checkResult: const FirmwareOtaCheckResult.updateAvailable(),
       );
