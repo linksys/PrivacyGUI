@@ -32,8 +32,12 @@ on:
   # here plus `dart-wasm-boundary` ran advisory and a red PR could merge. Ruleset
   # `22061561` ("required checks (dev-2.7.0)") now requires all five.
   #
-  # Its ref condition is ONE branch, and the trigger list above is why it cannot
-  # be `dev-*` or `main`: measured the same day, `main` and `dev-1.3.0` have no
+  # (Its ref condition has since widened to `usp` + `dev-2.*`, minus the nine
+  # pre-2.7 dev branches; checked 2026-10-06. What follows is why it was one
+  # branch then, and why it still cannot be `dev-*` or `main`.)
+  #
+  # Its ref condition was ONE branch, and the trigger list above is why it could
+  # not be `dev-*` or `main`: measured the same day, `main` and `dev-1.3.0` have no
   # `.github/workflows` directory at all, and `usp` and `dev-2.6.1` carry a
   # different, older ci.yml whose jobs are `pr_quality_check` and
   # `main_snapshot_baseline`. Requiring these five contexts on `~DEFAULT_BRANCH`
@@ -54,15 +58,27 @@ on:
   # And on a push to `usp`, which is how a promotion merge lands. Ruleset
   # `22061561` checks the five contexts on any commit pushed to a branch it
   # covers, creating that branch included, so cutting `dev-2.X.Y` from `usp`
-  # needs those checks on `usp`'s tip. A PR run attaches them to the PR's head and its test-merge ref,
-  # never to the commit the merge creates, so before this the tip carried only
-  # `dart-wasm-boundary` (usp-boundary.yml already had `push`). Measured
-  # 2026-10-06: `dev-2.7.3` from `usp` was refused with "4 of 5 required status
-  # checks are expected". `dev-2.7.2` was cut on 2026-09-18 before the ruleset
-  # went strict that day, which is why nobody hit it then.
+  # needs those checks on `usp`'s tip. A PR run attaches them to the PR's head
+  # and its test-merge ref, never to the commit the merge creates, so before
+  # this the tip carried only `dart-wasm-boundary` (usp-boundary.yml already
+  # had `push`). Measured 2026-10-06: `dev-2.7.3` from `usp` was refused with
+  # "4 of 5 required status checks are expected".
   #
-  # `usp` only, not `dev-*`: every commit on a dev branch arrives by a PR that
-  # already ran these jobs, and a second ~20 min run per merge would buy nothing.
+  # Unexplained, and worth knowing: `dev-2.7.2` WAS created, on 2026-09-18 at
+  # 03:07Z, from a `usp` tip (`39363c98`) that also carried only
+  # `dart-wasm-boundary`, and after this ruleset's last change (01:30Z, `strict`
+  # false -> true; `do_not_enforce_on_create` unset in both versions). The
+  # ruleset history keeps only settings and timestamps, so why that push was
+  # accepted is not known. Do not rely on it recurring.
+  #
+  # The push run takes ~20 min. Cut a branch from `usp` only once all five
+  # checks on the tip are green, or the push is refused again. Two merges in
+  # quick succession cancel the first one's run (`concurrency` below); only the
+  # tip's checks matter, so that is harmless.
+  #
+  # `usp` only, not `dev-*`. A `dev-2.*` tip has the same gap (its merge commits
+  # carry only `dart-wasm-boundary` too), but today's flow only ever cuts new
+  # branches from `usp`. If that changes, add `dev-*` here as well.
   push:
     branches: [ "usp" ]
 
@@ -422,17 +438,18 @@ jobs:
   # go green and everyone else's sit at "Expected", which reads as "flaky" rather
   # than "misconfigured" and is the more expensive way to find out.
   #
-  # Two things not to require, and one that is not protected at all:
+  # Two things not to require, and one ruleset that protects nothing:
   #
   #  * `dart-wasm-boundary` (usp-boundary.yml) triggers on `usp` and `dev-*` but
   #    NOT `main`, so requiring it would deadlock every PR into main.
   #  * `v*.*.*` is in 4093935 but not in this file's triggers. Latent only — no PR
   #    in the last 300 targeted one, and those branches take tags, which a separate
   #    tag-target ruleset (4093447, `~ALL`) already governs.
-  #  * `usp` is in NEITHER branch ruleset. 4093935 does not include it, and
-  #    `feature branch` (4094648) has an EMPTY include list, so it matches no branch
-  #    and enforces nothing anywhere. The 2.x release target therefore has no PR
-  #    requirement and no force-push protection. Note before "fixing" 4094648 by
+  #  * `usp` used to be in neither branch ruleset. As of 2026-10-06 it is in both:
+  #    4093935 lists `refs/heads/usp` (PR, no force push, no deletion) and
+  #    22061561 requires the five checks on it. `feature branch` (4094648) still
+  #    has an EMPTY include list, so it matches no branch and enforces nothing
+  #    anywhere. Note before "fixing" 4094648 by
   #    setting its include to `~ALL`: its rules are `non_fast_forward` and
   #    `deletion` with only `RepositoryRole:4` bypassing, so switching it on would
   #    block rebase-and-force-push and post-merge branch deletion on every feature

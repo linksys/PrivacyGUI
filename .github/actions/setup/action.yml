@@ -1,6 +1,6 @@
 name: Setup Flutter workspace
 description: >
-  Everything the four PR jobs need before they can run anything: the Flutter
+  Everything the four CI jobs need before they can run anything: the Flutter
   SDK, an SSH agent for the private ui_kit dependency, the env template, pub
   packages and the generated l10n. Measured at 33-49s, and it is paid once per
   job.
