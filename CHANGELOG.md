@@ -2,6 +2,111 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.7.2] - 2026-10-06
+
+- fa448a55 - fix(topology): a phone lists its devices with Devices on (#1630)
+- 06caeb6c - test(pnp): cover the two new phase fields and the save's timing values (#1000)
+- c8cbb764 - fix(pnp): save the WiFi form in one write, and poll before asking to reconnect (#1000, #1490, #1491)
+- 721939aa - fix(remote): logout's unsubscribe cannot report its own 401
+- bb7d394a - fix(remote): a 401 on the bootstrap's health check does not end the session
+- 78a11990 - fix(notification-history): a pull keeps what the viewer chose, and the list
+- 168d0c6a - fix(remote): encode the session id and msgId as one path segment
+- 265e0df6 - feat(admin): save the timezone through the firmware's own contract (#1609)
+- f38902ed - fix(wan): one definition of "online" — the dashboard's, measured against the device (#1646)
+- 4d7dbfc7 - perf(remote): register Guardian subscriptions all at once, not one by one
+- 168171f3 - fix(login): keep the loader up after a successful login instead of flashing the form (#1641)
+- 7d869ca9 - refactor(remote): ask CredentialStrategy whether the SSE bootstrap may connect
+- 1f9ec318 - feat(remote): hold the agent until live updates are set up, and stop the RA banner
+- c9672db8 - fix(devices): Clear empties the filter panel and leaves status and search alone (#1159)
+- 26b3e4e8 - docs(riverpod): two listener comments explained themselves with premises that do not hold
+- aa6931a7 - fix(port-forwarding): the dialogs' Add/Save gate reads the fields, not the last blur (#1543)
+- f5b7a35b - fix(route): read the PnP service before the login redirect awaits (#1641)
+- 96ddebf5 - chore: the constitution stopped citing issues, and devicesDataProvider stopped publishing out of order (#1639)
+- 8bb25ee9 - test(wifi-settings): leaving the page with an unsaved MAC Filtering edit prompts (#1636)
+- 0bda35bd - docs(layout-gate): re-count the page sweep after the MAC Filtering tab case (#1636)
+- f2a7efa0 - fix(menu): hide Instant Privacy on firmware without the MAC filter (#1636)
+- fed2d6ed - fix(mac-filter): a list row without a name shows its MAC once (#1636)
+- 7734c2e4 - fix(remote): End Session no longer loops on its own 401
+- 589ad1ab - fix(remote): code-review remediation for PR #1600
+- e3973af1 - refactor(mac-filter): MAC Filtering is a tab of Wi-Fi Settings, not its own page (#1636)
+- 9b0663e4 - fix(mac-filter): offer wireless clients only (#1636)
+- 36a81f66 - feat(mac-filter): say when the other filter is on, and confirm the override on Save (#1636)
+- 9f36b4b9 - fix(instant-privacy): an allow list over 64 cannot be saved (#1636)
+- f8e3f487 - feat(remote): notification history is a lazy timeline that shows what changed (#1580)
+- 8078256e - fix(mac-filter): each page is on only in its own mode, and guards what Save would refuse (#1636)
+- 7393d36a - refactor(instant-privacy): save-based Allow toggle over the shared MAC-filter state (#1636)
+- 910085e3 - refactor(mac-filter): rework MAC Filter page to a save-based Deny/Off toggle (#1636)
+- b26a51a3 - fix(mac-filter): address code-review findings (#1636)
+- 63dc8600 - feat(mac-filter): MAC Filter page, routing, capability gating + UI coverage (#1636)
+- 2a3f623e - feat(mac-filter): shared MAC-filter service + notifier, migrate Instant Privacy (#1636)
+- f34963ec - docs(1587): the new rule said `ref.watch` without saying who
+- a552873f - feat(capability): device capability gating layer (#1635)
+- 302dc323 - chore(usp): bump usp-codegen 0.16.0 → 0.17.0 and generate network MAC filter
+- 6ccea542 - fix(sse): keep subscriptions across a recovery wait and re-read the dashboard after it
+- aee58a65 - docs(1587): the audit claimed those pages' Status is UI state only — it is not
+- d1279211 - docs(1587): close Phase 0 and Phase 2 — the page-type table was silent on L1
+- 4d55b109 - refactor(usp): delete onSseInvalidation — the dirty guard stood aside when it mattered (#1634)
+- f02b0042 - fix(remote): a 401 on a USP command ends the Remote Assistance session (#1627)
+- c57869fa - feat(remote): Internet Settings is view-only in Remote Assistance (#1626)
+- f3eec424 - test(web): a /* inside a // comment could hide the code the guard reads (#1623)
+- 5228e9b2 - refactor(route): passing the notifier is the only way to guard a route (#1622)
+- d3797e9f - fix(usp): the other five L1 providers had #1615 too — measured, and two were not reachable (#1628)
+- b36dcf10 - fix(usp): an SSE-triggered refresh must not depend on someone watching (#1618)
+- 9656a39d - feat(usp): make the SSE invalidation path observable, because it was not (#1616)
+- 39fb7e13 - fix(web): the service worker no longer reloads the page on every load (#1623)
+- f9599e5c - feat(remote): open notification history from the Remote Assistance popup, not the menu (#1580)
+- 1025473f - chore(firmware): delete nine firmware-update members with no production caller (#1621)
+- 3e756f5f - fix(topology): the AI section guessed where it said it did not know, and S/N was a one-word fix (#1614)
+- 37235967 - fix(topology): the panel said Wi-Fi for a node with no backhaul, and clearing search did not cancel it (#1614)
+- 772b5cd2 - fix(internet-settings): read-only values come from L1, not the page's L2 snapshot (#1613)
+- 40ba0aff - fix(topology): one scan per keystroke, and stop asserting a medium nobody reported (#1614)
+- 3b0edb5b - fix(topology): stop echoing firmware strings, and get two rules out of the widgets (#1614)
+- 61318be1 - fix(topology): round-1 review remediation (#1619)
+- a385add8 - style(topology): the four analyzer infos the readiness pass surfaced (#1614)
+- 13770cd4 - feat(topology): adaptive leaves, gestures, and the released ui_kit 3.4.0 (#1614)
+- e9c574a4 - refactor(topology): close the review findings, and unify three scattered decisions (#1614)
+- c4067187 - fix(topology): a tree row shows two or three facts, not just a name (#1614)
+- 8174a4f6 - fix(topology): give a leaf's panel its own contents, and a reachable Details button (#1614)
+- 24df69a7 - refactor(mascot): delete TriggerDomainMapping, a stale copy of a live mechanism (#1531)
+- 83fe7576 - fix(mascot): park it with a 16px inset instead of flush in the corner (#1531)
+- b3b083ec - fix(mascot): re-park it across a viewport resize, and shrink to 48x66 (#1531)
+- 6a0e2c5d - fix(mascot): park it bottom-right and shrink it, so it stops covering controls
+- b3d3e795 - fix(mascot): defer a cooldown-suppressed change instead of consuming it (#1531)
+- 38f095d1 - fix(mascot): name the device that actually joined (#1531)
+- fda63db4 - refactor(mascot): delete the four triggers that had no evaluator (#1531)
+- c767f761 - fix(mascot): keep the joining device's name out of the release log (#1531)
+- 168e61b6 - refactor(topology): adopt ui_kit 3.4.0, and state the domain at the origin (#1614)
+- f638cc7e - fix(admin): a no-change Save showed a failure snackbar (#1609)
+- 53cead7a - test(admin): drop a dead branch the analyzer caught (#1609)
+- 050a82ec - fix(admin): put the daylight-savings switch back — it was not the cause (#1609)
+- 1e5c9140 - fix(admin): code-review remediation — daylight savings and an NTP-only save (#1609)
+- 820ef76f - fix(admin): write the zone's identity, so a saved timezone reads back as itself (#1609)
+- c1e23544 - fix(admin): show the offset the device reported instead of a raw POSIX string (#1609)
+- 9a10ec83 - fix(admin): show the clock the device reports, not one re-derived from our table (#1609)
+- 05933b51 - test(topology): give hasMedium its own group in the model's test (#1464)
+- 3771424a - chore(deps): ui_kit v3.3.3 — the graph view now draws the medium we hand it (#1464)
+- 8046034d - fix(topology): code-review remediation (#1464, #1441, #1442)
+- 57adea5f - refactor(topology): one normalizer, one map build, a copy-proof full-width guard (#1441, #1442)
+- 2d6d77c0 - test(topology): pin that a zero backhaul rate is no rate (#1442 AC3)
+- a94624f5 - fix(topology): the backhaul rate says it is not internet speed (#1442)
+- 47df9150 - fix(topology): the emitted graph stops claiming what it does not know (#1464, #1441)
+- 5eb57729 - fix(diagnostics): make every unified-diagnostics screen width-safe, and gate them
+- 982bf349 - fix(pnp): make the setup wizard's completion screens width-safe, and gate them
+- 359dab33 - fix(usp): a fault code comes from our suffix, never from the router's prose (#1533)
+- 32ea284a - fix(usp): round-2 review remediation, and a correction to the last commit message (#1533)
+- 2aa4e38c - fix(usp): round-1 review remediation — a refusal reaches the user as a refusal (#1533)
+- fa39c586 - fix(usp): close the seam with #1533's throwing Operate, and the claim it falsifies
+- 55e5856b - fix(remote): code-review remediation for epic #1575
+- 3eb7fd45 - feat(remote): tell 'device offline' from 'connection dropped', and write the heartbeat watchdog (#1577)
+- d52477e2 - feat(remote): reconcile a diagnostic whose push never arrived, via /usp/results (#1578)
+- d49bb859 - refactor(remote): use Guardian's real /usp/health and retire the SerialNumber probe (#1576)
+- 6380ffa3 - feat(remote): notification history panel — session state, history list, per-entry body (#1580)
+- f9077c19 - fix(usp): a diagnostic that succeeded with no output args is a success, not 'Unknown' (#1579)
+- f4f333ad - fix(usp): a refused command now says so on screen, not "something went wrong" (#1533)
+- ac49e52a - fix(usp): a refused Operate throws instead of reading as success (#1533)
+- ad8988f7 - docs: backfill CHANGELOG for 2.7.1
+- a4e92ba7 - chore: bump version to 2.7.2
+
 ## [2.7.1] - 2026-09-18
 
 - 2e9969f2 - fix(session): read the base MAC off SystemInfo instead of a second Get (#1592)
